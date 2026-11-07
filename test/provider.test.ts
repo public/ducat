@@ -91,7 +91,9 @@ describe('providers', () => {
         });
         const fx = via('EUR', table);
         expect(fx.rate('USD', 'JPY')?.ratio).toEqual(exchangeRate('USD', 'JPY', usdJpy).ratio);
-        expect(fx.rate('GBP', 'USD')?.ratio).toEqual(exchangeRate('USD', 'GBP', usdGbp).inverse().ratio);
+        expect(fx.rate('GBP', 'USD')?.ratio).toEqual(
+          exchangeRate('USD', 'GBP', usdGbp).inverse().ratio,
+        );
       }),
     );
   });
@@ -121,7 +123,9 @@ describe('snapshots', () => {
     expect(await hist.at('2026-11-08T12:00:00Z')).toBe(ecb);
     expect(calls).toEqual(['2026-11-08', '2026-11-07']); // misses are retried, the hit is cached
     await expect(hist.at('2026-11-01')).rejects.toThrow(RateUnavailableError);
-    await expect(snapshots(async () => undefined, { lookback: 0 }).at('2026-11-06')).rejects.toThrow(/2026-11-06/);
+    await expect(
+      snapshots(async () => undefined, { lookback: 0 }).at('2026-11-06'),
+    ).rejects.toThrow(/2026-11-06/);
     await expect(hist.at('not a date')).rejects.toThrow(RangeError);
     // a Date and an offset instant resolve to their UTC day
     calls.length = 0;
@@ -185,9 +189,12 @@ describe('convert through a provider', () => {
     const fx = via('EUR', ecb);
     expect(convert(money('100', 'USD'), 'JPY', fx, 'halfEven').toDecimal()).toBe('15833');
     expect(money('100', 'USD').convert('JPY', fx, 'halfEven').toDecimal()).toBe('15833');
-    expect(convert(money('100', 'USD'), 'JPY', fx, 'halfEven', { asOf: '2026-11-08', scale: 2 }).toDecimal()).toBe(
-      '15832.51',
-    );
+    expect(
+      convert(money('100', 'USD'), 'JPY', fx, 'halfEven', {
+        asOf: '2026-11-08',
+        scale: 2,
+      }).toDecimal(),
+    ).toBe('15832.51');
     expect(() => convert(money('1', 'USD'), 'JPY', fx, 'halfEven', { asOf: '2026-11-05' })).toThrow(
       RateUnavailableError,
     );

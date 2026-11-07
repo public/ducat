@@ -1,16 +1,33 @@
-// Exchange rates as exact rationals with metadata. A Rate never loses digits: inverses, compositions
-// and margins are exact products of ratios, and rounding happens once, when an amount is converted.
+// Exchange rates as exact rationals with metadata. A Rate never loses digits: inverses,
+// compositions and margins are exact products of ratios, and rounding happens once, when an amount
+// is converted.
 import { currencyExponent } from './currency.js';
-import { formatScaled, POW10, pow10n, ratio, ratioToDecimal, toSafe, type Factor, type Ratio } from './decimal.js';
+import {
+  formatScaled,
+  POW10,
+  pow10n,
+  ratio,
+  ratioToDecimal,
+  normalizeMinor,
+  type Factor,
+  type Ratio,
+} from './decimal.js';
 import { CurrencyMismatchError, make, type CurrencyInput, type Money } from './money.js';
-import { DEFAULT_ROUNDING, divRound, divRoundBig, type RoundingMode } from './rounding.js';
+import {
+  DEFAULT_ROUNDING,
+  divideAndRound,
+  divideAndRoundBigint,
+  type RoundingMode,
+} from './rounding.js';
 
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 
 /** How a rate was quoted. `inverse()` swaps 'bid' and 'ask'. */
 export type RateType = 'mid' | 'bid' | 'ask' | (string & {});
 
-/** Where a rate came from. `asOf` and `validUntil` are ISO-8601 dates ('2026-11-06') or instants. */
+/**
+ * Where a rate came from. `asOf` and `validUntil` are ISO-8601 dates ('2026-11-06') or instants.
+ */
 export interface RateInfo {
   readonly source?: string;
   readonly asOf?: string | Date;
@@ -76,7 +93,10 @@ export function toIsoString(time: string | Date): string {
   return date.toISOString();
 }
 
-/** The earlier of two ISO-8601 strings (one format compares lexicographically); undefined = no limit. */
+/**
+ * The earlier of two ISO-8601 strings (one format compares lexicographically); undefined = no
+ * limit.
+ */
 function earlier(first: string | undefined, second: string | undefined): string | undefined {
   if (first === undefined) {
     return second;
@@ -88,8 +108,9 @@ function earlier(first: string | undefined, second: string | undefined): string 
 }
 
 /**
- * minor × rate × 10^scaleShift, rounded once with `rounding`. This is the kernel of every conversion:
- * `scaleShift` is the result scale minus the input scale. Pure, and `rate.den > 0` by construction.
+ * minor × rate × 10^scaleShift, rounded once with `rounding`. This is the kernel of every
+ * conversion: `scaleShift` is the result scale minus the input scale. Pure, and `rate.den > 0` by
+ * construction.
  */
 export function multiplyByRatioAtScale(
   minor: number | bigint,
@@ -112,7 +133,7 @@ export function multiplyByRatioAtScale(
     if (numerator <= MAX_SAFE_MINOR && denominator <= MAX_SAFE_MINOR) {
       const product = minor * numerator;
       if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
-        return divRound(product, denominator, rounding);
+        return divideAndRound(product, denominator, rounding);
       }
     }
   }
@@ -125,14 +146,14 @@ export function multiplyByRatioAtScale(
   } else if (scaleShift < 0) {
     denominator *= pow10n(-scaleShift);
   }
-  return toSafe(divRoundBig(numerator, denominator, rounding));
+  return normalizeMinor(divideAndRoundBigint(numerator, denominator, rounding));
 }
 
 /**
  * An exact exchange rate: one unit of `from` is worth `ratio` units of `to`. Build it with
- * `exchangeRate()`. Derived rates (`inverse`, `andThen`, `withMargin`, `round`) keep their inputs in
- * `derivedFrom`, the audit chain. Their `asOf` is the oldest input's, so staleness can't hide, and
- * their `validUntil` is the earliest.
+ * `exchangeRate()`. Derived rates (`inverse`, `andThen`, `withMargin`, `round`) keep their inputs
+ * in `derivedFrom`, the audit chain. Their `asOf` is the oldest input's, so staleness can't hide,
+ * and their `validUntil` is the earliest.
  */
 export class Rate<From extends string = string, To extends string = string> {
   readonly from: From;
@@ -215,7 +236,10 @@ export class Rate<From extends string = string, To extends string = string> {
     return new Rate(this.from, this.to, ratio(numerator, denominator), timingOf(this), [this]);
   }
 
-  /** A new Rate rounded to `places` decimals, for businesses that quote rounded (e.g. inverse) rates. */
+  /**
+   * A new Rate rounded to `places` decimals, for businesses that quote rounded (e.g. inverse)
+   * rates.
+   */
   round(places: number, rounding: RoundingMode = 'halfEven'): Rate<From, To> {
     const rounded = ratio(this.toDecimal(places, rounding));
     return new Rate(this.from, this.to, rounded, timingOf(this, this.type), [this]);
@@ -223,7 +247,7 @@ export class Rate<From extends string = string, To extends string = string> {
 
   /** The rate with exactly `places` decimals, for display. The Rate itself keeps every digit. */
   toDecimal(places: number, rounding: RoundingMode = 'halfEven'): string {
-    const scaled = divRoundBig(this.ratio.num * pow10n(places), this.ratio.den, rounding);
+    const scaled = divideAndRoundBigint(this.ratio.num * pow10n(places), this.ratio.den, rounding);
     return formatScaled(scaled, places);
   }
 
@@ -241,7 +265,10 @@ export class Rate<From extends string = string, To extends string = string> {
     return json;
   }
 
-  /** Whether `validUntil` has passed at `now` (default: the system clock). A date is valid all day (UTC). */
+  /**
+   * Whether `validUntil` has passed at `now` (default: the system clock). A date is valid all day
+   * (UTC).
+   */
   isExpired(now: string | Date = new Date()): boolean {
     if (this.validUntil === undefined) {
       return false;
@@ -257,7 +284,11 @@ export class Rate<From extends string = string, To extends string = string> {
   }
 
   /** Converts `money`, rounding once to the target currency's exponent (or `options.scale`). */
-  convert(money: Money<From>, rounding: RoundingMode = DEFAULT_ROUNDING, options?: ConvertOptions): Money<To> {
+  convert(
+    money: Money<From>,
+    rounding: RoundingMode = DEFAULT_ROUNDING,
+    options?: ConvertOptions,
+  ): Money<To> {
     if (money.currency !== this.from) {
       throw new CurrencyMismatchError(this.from, money.currency);
     }
@@ -292,15 +323,17 @@ function timing(asOf?: string, validUntil?: string, type?: RateType): RateInfo {
   return infoOf({ asOf, validUntil, type });
 }
 
-/** A derived rate keeps the timing of its input; the input's source stays with it, in derivedFrom. */
+/**
+ * A derived rate keeps the timing of its input; the input's source stays with it, in derivedFrom.
+ */
 function timingOf(input: Rate, type?: RateType): RateInfo {
   return timing(input.asOf, input.validUntil, type);
 }
 
 /**
- * An exact rate pinned to a currency pair, so converting the wrong currency is a type error. Give the
- * rate as a decimal string ('1.1165', every digit kept), a "num/den" string, a bigint or a Ratio.
- * Numbers are read at their shortest decimal form (1.234 is exactly 1234/1000).
+ * An exact rate pinned to a currency pair, so converting the wrong currency is a type error. Give
+ * the rate as a decimal string ('1.1165', every digit kept), a "num/den" string, a bigint or a
+ * Ratio. Numbers are read at their shortest decimal form (1.234 is exactly 1234/1000).
  *
  *     const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06' });
  *     eurUsd.convert(money('100', 'EUR'), 'halfEven');   // 111.65 USD

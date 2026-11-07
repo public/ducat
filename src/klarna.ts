@@ -25,8 +25,11 @@ export function isKlarnaCurrency(currency: string): boolean {
   return KLARNA_EXPONENTS[currency.toUpperCase()] !== undefined;
 }
 
+/** Options for the Klarna amount: how to round when Klarna needs a coarser amount. */
 export interface KlarnaAmountOptions {
-  /** How to round when the value has more decimals than the currency (default 'unnecessary': throw). */
+  /**
+   * How to round when the value has more decimals than the currency (default 'unnecessary': throw).
+   */
   readonly rounding?: RoundingMode;
 }
 
@@ -42,7 +45,10 @@ export function toKlarna(money: Money, options?: KlarnaAmountOptions): number {
 }
 
 /** Reads a Klarna amount field: fromKlarna(2500, 'EUR') is 25.00 EUR. */
-export function fromKlarna<C extends CurrencyInput>(amount: number | bigint, currency: C): Money<Uppercase<C>> {
+export function fromKlarna<C extends CurrencyInput>(
+  amount: number | bigint,
+  currency: C,
+): Money<Uppercase<C>> {
   const code = currency.toUpperCase() as Uppercase<C>;
   return fromProcessorAmount('Klarna', amount, code, klarnaExponent(code));
 }

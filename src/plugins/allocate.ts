@@ -1,6 +1,7 @@
 /**
- * `@ducatjs/money/allocate`: allocation, splitting and tranches. Importing this module adds the methods below to
- * every Money; the free functions are exported too (and from `@ducatjs/money/fn`, which changes no prototypes).
+ * `@ducatjs/money/allocate`: allocation, splitting and tranches. Importing this module adds the
+ * methods below to every Money; the free functions are exported too (and from `@ducatjs/money/fn`,
+ * which changes no prototypes).
  */
 import {
   allocate,

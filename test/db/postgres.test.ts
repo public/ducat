@@ -68,7 +68,9 @@ databaseSuite('Postgres', {
       await defaultClient.connect();
 
       try {
-        const result = await defaultClient.query("SELECT 9007199254740993::bigint AS amount_minor, 'EUR' AS currency");
+        const result = await defaultClient.query(
+          "SELECT 9007199254740993::bigint AS amount_minor, 'EUR' AS currency",
+        );
         const row = result.rows[0];
         expect(typeof row.amount_minor).toBe('string');
 

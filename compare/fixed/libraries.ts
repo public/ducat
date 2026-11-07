@@ -9,7 +9,16 @@ import { Money as BigintMoney, Round as BigintRound } from 'bigint-money';
 import * as dnum from 'dnum';
 import { FixedNumber } from 'ethers';
 import jsBigDecimal from 'js-big-decimal';
-import { convert, divide, money, multiply, negate, ratio, toScale, type Money } from '../../src/fn.ts';
+import {
+  convert,
+  divide,
+  money,
+  multiply,
+  negate,
+  ratio,
+  toScale,
+  type Money,
+} from '../../src/fn.ts';
 import { FixedNotSupported, type FixedLibrary, type FixedRounding } from './library.ts';
 
 /** decimals written in a decimal string: "12.340" has 3 */
@@ -117,7 +126,8 @@ const jsBigDecimalLibrary: FixedLibrary<string> = {
   },
   divide: (value, divisor, scale, mode) =>
     (jsBigDecimal as any).divide(value, divisor, scale, JS_BIG_DECIMAL_MODES[mode]),
-  round: (value, scale, mode) => (jsBigDecimal as any).round(value, scale, JS_BIG_DECIMAL_MODES[mode]),
+  round: (value, scale, mode) =>
+    (jsBigDecimal as any).round(value, scale, JS_BIG_DECIMAL_MODES[mode]),
   compare: (first, second) => (jsBigDecimal as any).compareTo(first, second),
   toString: (value) => value,
 };
@@ -133,7 +143,8 @@ const bigDecimalJsLibrary: FixedLibrary<any> = {
   name: 'bigdecimal.js 1.7.2',
   parse: (text) => BigDecimalJava(text),
   add: (first, second) => first.add(second),
-  multiply: (value, factor, scale, mode) => value.multiply(factor).setScale(scale, JAVA_MODES[mode]),
+  multiply: (value, factor, scale, mode) =>
+    value.multiply(factor).setScale(scale, JAVA_MODES[mode]),
   divide: (value, divisor, scale, mode) => value.divide(divisor, scale, JAVA_MODES[mode]),
   round: (value, scale, mode) => value.setScale(scale, JAVA_MODES[mode]),
   compare: (first, second) => first.compareTo(second),
@@ -179,8 +190,16 @@ const BIGINT_MONEY_MODES: Record<FixedRounding, unknown> = {
 };
 
 function roundBigintMoney(exact: any, scale: number, mode: FixedRounding): HeldMoney {
-  const withMode = new (BigintMoney as any)(exact.toFixed(20), BIGINT_MONEY_CURRENCY, BIGINT_MONEY_MODES[mode]);
-  const rounded = new (BigintMoney as any)(withMode.toFixed(scale), BIGINT_MONEY_CURRENCY, BIGINT_MONEY_MODES[mode]);
+  const withMode = new (BigintMoney as any)(
+    exact.toFixed(20),
+    BIGINT_MONEY_CURRENCY,
+    BIGINT_MONEY_MODES[mode],
+  );
+  const rounded = new (BigintMoney as any)(
+    withMode.toFixed(scale),
+    BIGINT_MONEY_CURRENCY,
+    BIGINT_MONEY_MODES[mode],
+  );
   return { value: rounded, scale };
 }
 
@@ -190,8 +209,12 @@ const bigintMoneyLibrary: FixedLibrary<HeldMoney> = {
     value: new (BigintMoney as any)(text, BIGINT_MONEY_CURRENCY, BIGINT_MONEY_MODES.halfEven),
     scale: fractionDigits(text),
   }),
-  add: (first, second) => ({ value: first.value.add(second.value), scale: Math.max(first.scale, second.scale) }),
-  multiply: (held, factor, scale, mode) => roundBigintMoney(held.value.multiply(factor), scale, mode),
+  add: (first, second) => ({
+    value: first.value.add(second.value),
+    scale: Math.max(first.scale, second.scale),
+  }),
+  multiply: (held, factor, scale, mode) =>
+    roundBigintMoney(held.value.multiply(factor), scale, mode),
   divide: (held, divisor, scale, mode) => roundBigintMoney(held.value.divide(divisor), scale, mode),
   round: (held, scale, mode) => roundBigintMoney(held.value, scale, mode),
   compare: (first, second) => first.value.compare(second.value),

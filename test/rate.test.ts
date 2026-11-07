@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { fromMinor, money, ratio, type Money, type RoundingMode } from '../src/index.js';
-import { divRoundBig } from '../src/rounding.js';
+import { divideAndRoundBigint } from '../src/rounding.js';
 import { convert } from '../src/convert.js';
 import {
   exchangeRate,
@@ -48,16 +48,24 @@ function oracle(m: number | bigint, rates: Rate[], shift: number, rounding: Roun
   }
   if (shift > 0) num *= 10n ** BigInt(shift);
   else den *= 10n ** BigInt(-shift);
-  return divRoundBig(num, den, rounding);
+  return divideAndRoundBigint(num, den, rounding);
 }
 
 describe('Rate', () => {
   it('converts with one rounding and checks the pair', () => {
-    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06', type: 'mid' });
+    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
+      source: 'ECB',
+      asOf: '2026-11-06',
+      type: 'mid',
+    });
     expect(d(eurUsd.convert(money('100', 'EUR'), 'halfEven'))).toBe('111.65');
     expect(d(eurUsd.convert(money('0.01', 'EUR'), 'halfEven'))).toBe('0.01');
-    expect(d(exchangeRate('EUR', 'JPY', '162.457').convert(money('100', 'EUR'), 'halfEven'))).toBe('16246');
-    expect(d(exchangeRate('JPY', 'KWD', '0.002034').convert(money('1000', 'JPY'), 'halfEven'))).toBe('2.034');
+    expect(d(exchangeRate('EUR', 'JPY', '162.457').convert(money('100', 'EUR'), 'halfEven'))).toBe(
+      '16246',
+    );
+    expect(
+      d(exchangeRate('JPY', 'KWD', '0.002034').convert(money('1000', 'JPY'), 'halfEven')),
+    ).toBe('2.034');
     expect(d(eurUsd.convert(money('1', 'EUR'), 'halfEven', { scale: 4 }))).toBe('1.1165');
     // @ts-expect-error a EUR→USD rate cannot convert GBP
     expect(() => eurUsd.convert(money('1', 'GBP'))).toThrow(/currency/i);
@@ -68,13 +76,22 @@ describe('Rate', () => {
 
   it('keeps every digit of a decimal-string rate, trailing zeros included', () => {
     expect(exchangeRate('EUR', 'HUF', '363.90').toString()).toBe('363.9');
-    expect(exchangeRate('EUR', 'IDR', '20208.93').ratio).toMatchObject({ num: 2020893n, den: 100n });
+    expect(exchangeRate('EUR', 'IDR', '20208.93').ratio).toMatchObject({
+      num: 2020893n,
+      den: 100n,
+    });
     expect(exchangeRate('EUR', 'USD', 1.234).ratio).toMatchObject({ num: 617n, den: 500n }); // 1234/1000 reduced
-    expect(exchangeRate('EUR', 'USD', '1.12345678901234567890').toString()).toBe('1.1234567890123456789');
+    expect(exchangeRate('EUR', 'USD', '1.12345678901234567890').toString()).toBe(
+      '1.1234567890123456789',
+    );
   });
 
   it('inverts exactly, swapping bid and ask', () => {
-    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06', type: 'bid' });
+    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
+      source: 'ECB',
+      asOf: '2026-11-06',
+      type: 'bid',
+    });
     const inv = eurUsd.inverse();
     expect([inv.from, inv.to]).toEqual(['USD', 'EUR']);
     expect(inv.ratio).toMatchObject({ num: 2000n, den: 2233n });
@@ -89,8 +106,15 @@ describe('Rate', () => {
   });
 
   it('composes exactly, with the oldest asOf and the earliest validUntil', () => {
-    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { asOf: '2026-11-06', validUntil: '2026-11-09', type: 'mid' });
-    const usdJpy = exchangeRate('USD', 'JPY', '158.33', { asOf: '2026-11-07T10:00:00Z', type: 'mid' });
+    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
+      asOf: '2026-11-06',
+      validUntil: '2026-11-09',
+      type: 'mid',
+    });
+    const usdJpy = exchangeRate('USD', 'JPY', '158.33', {
+      asOf: '2026-11-07T10:00:00Z',
+      type: 'mid',
+    });
     const eurJpy = eurUsd.andThen(usdJpy);
     expect([eurJpy.from, eurJpy.to]).toEqual(['EUR', 'JPY']);
     expect(eurJpy.toString()).toBe('176.775445');
@@ -132,11 +156,25 @@ describe('Rate', () => {
   });
 
   it('round-trips through JSON with its audit chain', () => {
-    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06', type: 'mid' });
-    const eurJpy = exchangeRate('EUR', 'JPY', '176.77', { source: 'ECB', asOf: '2026-11-06', type: 'mid' });
+    const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
+      source: 'ECB',
+      asOf: '2026-11-06',
+      type: 'mid',
+    });
+    const eurJpy = exchangeRate('EUR', 'JPY', '176.77', {
+      source: 'ECB',
+      asOf: '2026-11-06',
+      type: 'mid',
+    });
     const usdJpy = eurUsd.inverse().andThen(eurJpy);
     const j = JSON.parse(JSON.stringify(usdJpy));
-    expect(j).toMatchObject({ from: 'USD', to: 'JPY', rate: '32140/203', asOf: '2026-11-06', type: 'mid' });
+    expect(j).toMatchObject({
+      from: 'USD',
+      to: 'JPY',
+      rate: '32140/203',
+      asOf: '2026-11-06',
+      type: 'mid',
+    });
     expect(j.derivedFrom[0].derivedFrom[0]).toEqual({
       from: 'EUR',
       to: 'USD',
@@ -160,7 +198,10 @@ describe('Rate', () => {
     expect(r.ratio).toMatchObject({ num: 3n, den: 2n, n: 3, d: 2 });
     expect(r.convert(money('1.00', 'EUR'), 'halfEven').toDecimal()).toBe('1.50');
     expect(convert(money('1.00', 'EUR'), 'USD', lying, 'halfEven').toDecimal()).toBe('1.50');
-    expect(exchangeRate('EUR', 'USD', { num: 4n, den: 2n, n: 4, d: 2 }).ratio).toMatchObject({ num: 2n, den: 1n });
+    expect(exchangeRate('EUR', 'USD', { num: 4n, den: 2n, n: 4, d: 2 }).ratio).toMatchObject({
+      num: 2n,
+      den: 1n,
+    });
   });
 
   it('stores instants in UTC, so times with offsets compare correctly', () => {
@@ -177,12 +218,16 @@ describe('Rate', () => {
     expect(locked.isExpired()).toBe(true);
     expect(locked.isExpired('2000-01-01T00:04:59Z')).toBe(false);
     expect(locked.convert(money('1', 'EUR')).toDecimal()).toBe('1.10');
-    expect(() => locked.convert(money('1', 'EUR'), 'halfEven', { strictValidity: true })).toThrow(RateExpiredError);
+    expect(() => locked.convert(money('1', 'EUR'), 'halfEven', { strictValidity: true })).toThrow(
+      RateExpiredError,
+    );
     const day = exchangeRate('EUR', 'USD', '1.1', { validUntil: '2026-11-06' });
     expect(day.isExpired('2026-11-06T23:59:59Z')).toBe(false);
     expect(day.isExpired('2026-11-07')).toBe(true);
     expect(exchangeRate('EUR', 'USD', '1.1').isExpired()).toBe(false);
-    expect(convert(money('1', 'EUR'), locked, 'halfEven', { strictValidity: false }).toDecimal()).toBe('1.10');
+    expect(
+      convert(money('1', 'EUR'), locked, 'halfEven', { strictValidity: false }).toDecimal(),
+    ).toBe('1.10');
   });
 
   it('rejects the wrong currency pair at compile time', () => {
@@ -209,7 +254,9 @@ describe('Rate properties', () => {
     fc.assert(
       fc.property(minor, rateStr, fc.integer({ min: -18, max: 18 }), mode, (m, s, shift, rm) => {
         const r = exchangeRate('A', 'B', s);
-        expect(BigInt(multiplyByRatioAtScale(m, r.ratio, shift, rm))).toBe(oracle(m, [r], shift, rm));
+        expect(BigInt(multiplyByRatioAtScale(m, r.ratio, shift, rm))).toBe(
+          oracle(m, [r], shift, rm),
+        );
       }),
       { numRuns: 2000 },
     );
@@ -219,7 +266,9 @@ describe('Rate properties', () => {
     fc.assert(
       fc.property(minor, rateStr, fc.integer({ min: -4, max: 4 }), mode, (m, s, shift, rm) => {
         const v = multiplyByRatioAtScale(m, ratio(s), shift, rm);
-        expect(typeof v === 'number').toBe(Number.isSafeInteger(Number(v)) && BigInt(Number(v)) === BigInt(v));
+        expect(typeof v === 'number').toBe(
+          Number.isSafeInteger(Number(v)) && BigInt(Number(v)) === BigInt(v),
+        );
       }),
     );
   });

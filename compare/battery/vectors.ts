@@ -152,7 +152,12 @@ function requireMethods(library: MoneyLibrary, ...names: (keyof MoneyLibrary)[])
 }
 
 /** An amount from a decimal string when the library parses them, otherwise from minor units. */
-function amountOf(library: MoneyLibrary, decimal: string, currency: string, minorUnits: number | bigint): unknown {
+function amountOf(
+  library: MoneyLibrary,
+  decimal: string,
+  currency: string,
+  minorUnits: number | bigint,
+): unknown {
   if (library.fromDecimal) {
     return library.fromDecimal(decimal, currency);
   }
@@ -326,7 +331,11 @@ export const VECTORS: Vector[] = [
       requireMethods(library, 'fromDecimal');
       const stored = normalizeDecimal(library.toDecimal(library.fromDecimal!('1000.5', 'JPY')));
       if (stored === '1000.5') {
-        return { ok: 'lossy', got: stored, note: 'kept at a finer scale than the currency (allowed by design)' };
+        return {
+          ok: 'lossy',
+          got: stored,
+          note: 'kept at a finer scale than the currency (allowed by design)',
+        };
       }
       return { ok: false, got: stored };
     },
@@ -364,7 +373,8 @@ export const VECTORS: Vector[] = [
     id: 'split3-neg',
     group: 'allocation',
     description: '-100.00 EUR split 3 → -33.34, -33.33, -33.33',
-    check: (library) => splitCheck(library, '-100.00', 'EUR', -10000, 3, ['-33.34', '-33.33', '-33.33']),
+    check: (library) =>
+      splitCheck(library, '-100.00', 'EUR', -10000, 3, ['-33.34', '-33.33', '-33.33']),
   },
   {
     id: 'split-cent',
@@ -386,7 +396,8 @@ export const VECTORS: Vector[] = [
   {
     id: 'alloc-fuzz',
     group: 'allocation',
-    description: '2,000 seeded random allocations: parts sum to the whole, each within 1 unit of its share',
+    description:
+      '2,000 seeded random allocations: parts sum to the whole, each within 1 unit of its share',
     check: allocationFuzz,
   },
 
@@ -537,7 +548,10 @@ export const VECTORS: Vector[] = [
     check: (library) => {
       const amount = amountOf(library, '125000000000000.00', 'USD', 12500000000000000n);
       const parts = decimalsOf(library, splitInto(library, amount, 3));
-      return { ok: sumOfDecimals(parts) === '125000000000000', got: parts.map(normalizeDecimal).join(' ') };
+      return {
+        ok: sumOfDecimals(parts) === '125000000000000',
+        got: parts.map(normalizeDecimal).join(' '),
+      };
     },
   },
   {
@@ -577,7 +591,8 @@ export const VECTORS: Vector[] = [
     id: 'neg-small',
     group: 'negative',
     description: '-0.05 round-trips as "-0.05"',
-    check: (library) => valueCheck(library.toDecimal(amountOf(library, '-0.05', 'EUR', -5)), '-0.05'),
+    check: (library) =>
+      valueCheck(library.toDecimal(amountOf(library, '-0.05', 'EUR', -5)), '-0.05'),
   },
 
   // --- float input

@@ -134,7 +134,9 @@ export function convert(
   return make(to, minor, scale);
 }
 
-/** A conversion's rounded value, what rounding left out, and the rate used (for the audit trail). */
+/**
+ * A conversion's rounded value, what rounding left out, and the rate used (for the audit trail).
+ */
 export interface DetailedConversion<From extends string, To extends string> extends Rounded<To> {
   readonly rate: Rate<From, To>;
 }

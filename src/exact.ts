@@ -5,15 +5,19 @@ import { currencyExponent } from './currency.js';
 import { pow10n, ratio, type Factor } from './decimal.js';
 import { CurrencyMismatchError, make, type Money } from './money.js';
 import type { Rate } from './rate.js';
-import { DEFAULT_ROUNDING, divRoundBig, type RoundingMode } from './rounding.js';
+import { DEFAULT_ROUNDING, divideAndRoundBigint, type RoundingMode } from './rounding.js';
 
-/** A rounded value and what rounding left out: `value + residual` is exactly the unrounded amount. */
+/**
+ * A rounded value and what rounding left out: `value + residual` is exactly the unrounded amount.
+ */
 export interface Rounded<C extends string> {
   readonly value: Money<C>;
   readonly residual: ExactMoney<C>;
 }
 
-/** An exact amount of `currency`: num/den major units, reduced, den > 0. Build it with `exact()`. */
+/**
+ * An exact amount of `currency`: num/den major units, reduced, den > 0. Build it with `exact()`.
+ */
 export class ExactMoney<C extends string = string> {
   readonly currency: C;
   readonly num: bigint;
@@ -109,8 +113,11 @@ export class ExactMoney<C extends string = string> {
   }
 
   /** Rounds once to `scale` (default: the currency's exponent). */
-  round(rounding: RoundingMode = DEFAULT_ROUNDING, scale: number = currencyExponent(this.currency)): Money<C> {
-    const minor = divRoundBig(this.num * pow10n(scale), this.den, rounding);
+  round(
+    rounding: RoundingMode = DEFAULT_ROUNDING,
+    scale: number = currencyExponent(this.currency),
+  ): Money<C> {
+    const minor = divideAndRoundBigint(this.num * pow10n(scale), this.den, rounding);
     return make(this.currency, minor, scale);
   }
 
@@ -144,13 +151,20 @@ function assertSameCurrency(money: ExactMoney, other: ExactMoney): void {
   }
 }
 
-/** The exact value of `money`, for chained arithmetic: `exact(price).divide(3).round('halfEven')`. */
+/**
+ * The exact value of `money`, for chained arithmetic: `exact(price).divide(3).round('halfEven')`.
+ */
 export function exact<C extends string>(money: Money<C>): ExactMoney<C> {
   return new ExactMoney(money.currency, BigInt(money.minor), pow10n(money.scale));
 }
 
-/** The exact sum (zero of `currency` for an empty list). Round it once for a batch's rounding line. */
-export function sumExact<C extends string>(items: readonly ExactMoney<C>[], currency?: C): ExactMoney<C> {
+/**
+ * The exact sum (zero of `currency` for an empty list). Round it once for a batch's rounding line.
+ */
+export function sumExact<C extends string>(
+  items: readonly ExactMoney<C>[],
+  currency?: C,
+): ExactMoney<C> {
   const sumCurrency = currency ?? items[0]?.currency;
   if (sumCurrency === undefined) {
     throw new RangeError('sumExact of an empty list needs a currency');

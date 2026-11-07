@@ -14,7 +14,9 @@ type BindValue = string | number | null;
 
 /** bigint parameters as strings, which MySQL converts exactly */
 function bindable(parameters: unknown[]): BindValue[] {
-  return parameters.map((value) => (typeof value === 'bigint' ? value.toString() : (value as BindValue)));
+  return parameters.map((value) =>
+    typeof value === 'bigint' ? value.toString() : (value as BindValue),
+  );
 }
 
 async function connectToMysql(): Promise<DatabaseAdapter> {
@@ -65,7 +67,9 @@ databaseSuite('MySQL', {
       const defaultConnection = await mysql.createConnection({ uri: connectionUrl });
 
       try {
-        const [rows] = await defaultConnection.query('SELECT CAST(9007199254740993 AS SIGNED) AS v');
+        const [rows] = await defaultConnection.query(
+          'SELECT CAST(9007199254740993 AS SIGNED) AS v',
+        );
         const value = (rows as { v: unknown }[])[0]!.v;
         expect(typeof value).toBe('number');
         expect(() => fromMinor(value as number, 'EUR')).toThrow(/safe integer/);

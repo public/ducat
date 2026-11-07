@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Bundles every package entry point and a set of representative snippets with esbuild (minified ESM),
-// gzips each bundle at level 9, and fails if any is over its budget in scripts/size-budgets.json.
+// Bundles every package entry point and a set of representative snippets with esbuild (minified
+// ESM), gzips each bundle at level 9, and fails if any is over its budget in
+// scripts/size-budgets.json.
 //
 //   node scripts/size.mjs            check the budgets
 //   node scripts/size.mjs --report   print the sizes without failing
@@ -88,11 +89,15 @@ for (const testCase of cases) {
 
 const widths = rows[0].map((_, column) => Math.max(...rows.map((row) => row[column].length)));
 for (const row of rows) {
-  const cells = row.map((cell, column) => (column === 0 ? cell.padEnd(widths[column]) : cell.padStart(widths[column])));
+  const cells = row.map((cell, column) =>
+    column === 0 ? cell.padEnd(widths[column]) : cell.padStart(widths[column]),
+  );
   console.log(cells.join('  '));
 }
 
 if (failures > 0) {
-  console.error(`\n${failures} bundle(s) over budget or without one: see scripts/size-budgets.json`);
+  console.error(
+    `\n${failures} bundle(s) over budget or without one: see scripts/size-budgets.json`,
+  );
   process.exit(1);
 }

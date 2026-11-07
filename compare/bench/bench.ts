@@ -128,7 +128,9 @@ const bigNumberImplementation: Implementation = {
   // bignumber.js names it comparedTo, not cmp
   compare: (first, second) => first.comparedTo(second),
   allocate3(value) {
-    const parts = [1, 1, 1].map((ratio) => value.times(ratio).div(3).decimalPlaces(2, BigNumber.ROUND_DOWN));
+    const parts = [1, 1, 1].map((ratio) =>
+      value.times(ratio).div(3).decimalPlaces(2, BigNumber.ROUND_DOWN),
+    );
     let remainder = value.minus(parts.reduce((sum, part) => sum.plus(part), new BigNumber(0)));
     for (let index = 0; remainder.gt(0); index++) {
       parts[index] = parts[index].plus('0.01');
@@ -164,18 +166,25 @@ const implementations: Record<string, Implementation> = {
   'dinero.js 2': {
     fromMinor: (amount) => Dinero2.dinero({ amount, currency: Dinero2Eur }),
     // no parser in dinero.js: strip the "." and pass minor units
-    parse: (decimal) => Dinero2.dinero({ amount: Number(decimal.replace('.', '')), currency: Dinero2Eur }),
+    parse: (decimal) =>
+      Dinero2.dinero({ amount: Number(decimal.replace('.', '')), currency: Dinero2Eur }),
     add: Dinero2.add,
     mulRatio: (value) =>
-      Dinero2.transformScale(Dinero2.multiply(value, { amount: 1075, scale: 3 }), 2, Dinero2.halfEven),
+      Dinero2.transformScale(
+        Dinero2.multiply(value, { amount: 1075, scale: 3 }),
+        2,
+        Dinero2.halfEven,
+      ),
     allocate3: (value) => Dinero2.allocate(value, [1, 1, 1]),
     toDecimal: (value) => Dinero2.toDecimal(value),
-    format: (value) => Dinero2.toDecimal(value, ({ value: decimal }) => euroFormat.format(Number(decimal))),
+    format: (value) =>
+      Dinero2.toDecimal(value, ({ value: decimal }) => euroFormat.format(Number(decimal))),
     compare: Dinero2.compare,
     notes: 'no parser: parse = strip "." and pass minor units',
   },
   'dinero.js 2 bigint': {
-    fromMinor: (amount) => Dinero2Bigint.dinero({ amount: BigInt(amount), currency: Dinero2BigintEur }),
+    fromMinor: (amount) =>
+      Dinero2Bigint.dinero({ amount: BigInt(amount), currency: Dinero2BigintEur }),
     parse: (decimal) =>
       Dinero2Bigint.dinero({
         amount: BigInt(decimal.replace('.', '')),
@@ -190,7 +199,8 @@ const implementations: Record<string, Implementation> = {
       ),
     allocate3: (value) => Dinero2Bigint.allocate(value, [1n, 1n, 1n]),
     toDecimal: (value) => Dinero2Bigint.toDecimal(value),
-    format: (value) => Dinero2Bigint.toDecimal(value, ({ value: decimal }) => euroFormat.format(decimal)),
+    format: (value) =>
+      Dinero2Bigint.toDecimal(value, ({ value: decimal }) => euroFormat.format(decimal)),
     compare: Dinero2Bigint.compare,
   },
   'dinero.js 1': {
@@ -262,20 +272,35 @@ const implementations: Record<string, Implementation> = {
     fromMinor: (amount) => new BigintMoney(BigInt(amount), 'EUR').divide(100),
     parse: (decimal) => new BigintMoney(decimal, 'EUR', BigintRound.HALF_TO_EVEN),
     add: (first, second) => first.add(second),
-    mulRatio: (value) => new BigintMoney(value.multiply('1.075').toFixed(2), 'EUR', BigintRound.HALF_TO_EVEN),
+    mulRatio: (value) =>
+      new BigintMoney(value.multiply('1.075').toFixed(2), 'EUR', BigintRound.HALF_TO_EVEN),
     allocate3: (value) => value.allocate(3, 2),
     toDecimal: (value) => value.toFixed(2),
     format: (value) => euroFormat.format(value.toFixed(2)),
     compare: (first, second) => first.compare(second),
   },
-  'big.js': decimalImplementation(Big, (decimal, mode) => decimal.round(2, mode), Big.roundDown, Big.roundHalfEven),
+  'big.js': decimalImplementation(
+    Big,
+    (decimal, mode) => decimal.round(2, mode),
+    Big.roundDown,
+    Big.roundHalfEven,
+  ),
   'bignumber.js': bigNumberImplementation,
   'decimal.js': decimalJsImplementation(Decimal),
   'decimal.js-light': decimalJsImplementation(DecimalLight),
   'Prisma.Decimal': decimalJsImplementation(PrismaDecimal),
 };
 
-const OPERATIONS = ['fromMinor', 'parse', 'add', 'mulRatio', 'allocate3', 'toDecimal', 'format', 'compare'] as const;
+const OPERATIONS = [
+  'fromMinor',
+  'parse',
+  'add',
+  'mulRatio',
+  'allocate3',
+  'toDecimal',
+  'format',
+  'compare',
+] as const;
 type Operation = (typeof OPERATIONS)[number];
 
 function operationBodies(implementation: Implementation): Record<Operation, () => unknown> {
@@ -351,7 +376,10 @@ function checkAddAgrees(names: string[]): void {
 
   for (const name of names) {
     const implementation = implementations[name]!;
-    const sum = implementation.add(implementation.fromMinor(cents[0]!), implementation.fromMinor(cents[1]!));
+    const sum = implementation.add(
+      implementation.fromMinor(cents[0]!),
+      implementation.fromMinor(cents[1]!),
+    );
     const actual = implementation.toDecimal(sum);
     if (actual !== expected) {
       throw new Error(`${name} add sanity: ${actual} != ${expected}`);

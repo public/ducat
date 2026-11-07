@@ -1,4 +1,6 @@
-/** `@ducatjs/money/braintree`: Braintree's amount view. Importing this module adds `toBraintree`. */
+/**
+ * `@ducatjs/money/braintree`: Braintree's amount view. Importing this module adds `toBraintree`.
+ */
 import { toBraintree, type BraintreeAmountOptions } from '../braintree.js';
 import { extendMoney, type Money } from '../money.js';
 

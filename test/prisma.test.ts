@@ -3,11 +3,19 @@ import { Decimal as PrismaDecimal } from '@prisma/client/runtime/library';
 import DecimalJs from 'decimal.js';
 import Big from 'big.js';
 import { money, toDecimal } from '../src/index.js';
-import { decimalMoneyField, fromDecimal, minorMoneyField, toDecimalValue, toMinorColumns } from '../src/prisma.js';
+import {
+  decimalMoneyField,
+  fromDecimal,
+  minorMoneyField,
+  toDecimalValue,
+  toMinorColumns,
+} from '../src/prisma.js';
 
 describe('Prisma / DB helpers', () => {
   it('Decimal round trips (Prisma.Decimal, decimal.js, big.js)', () => {
-    for (const D of [PrismaDecimal, DecimalJs, Big] as unknown as (new (v: string) => { toFixed(): string })[]) {
+    for (const D of [PrismaDecimal, DecimalJs, Big] as unknown as (new (v: string) => {
+      toFixed(): string;
+    })[]) {
       const m = money('1234567890123456789.12', 'EUR');
       const dv = toDecimalValue(m, D);
       expect(toDecimal(fromDecimal(dv, 'EUR'))).toBe('1234567890123456789.12');

@@ -28,7 +28,8 @@ interface FixedBenchRun {
 
 const RUNTIME_ORDER = ['node', 'bun', 'deno'];
 
-export const NO_FIXED_RUN_YET = 'No clean-machine run yet; the next run of compare/runner covers it.\n';
+export const NO_FIXED_RUN_YET =
+  'No clean-machine run yet; the next run of compare/runner covers it.\n';
 
 function loadRuns(directory: string): FixedBenchRun[] {
   const runs: FixedBenchRun[] = [];

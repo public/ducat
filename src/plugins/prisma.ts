@@ -1,4 +1,7 @@
-/** `@ducatjs/money/prisma`: Prisma and SQL column helpers. Importing this module adds `toDecimalValue`. */
+/**
+ * `@ducatjs/money/prisma`: Prisma and SQL column helpers. Importing this module adds
+ * `toDecimalValue`.
+ */
 import { extendMoney, type Money } from '../money.js';
 import { toDecimalValue } from '../prisma.js';
 

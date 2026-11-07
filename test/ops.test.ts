@@ -67,7 +67,9 @@ describe('currency conversion', () => {
     expect(d(convert(money('100', 'EUR'), 'USD', '1.0832', 'halfEven'))).toBe('108.32');
     expect(d(convert(money('100', 'EUR'), 'JPY', '162.457', 'halfEven'))).toBe('16246');
     expect(d(convert(money('1000', 'JPY'), 'KWD', '0.002034', 'halfEven'))).toBe('2.034');
-    expect(d(convert(money('1', 'BTC', { scale: 8 }), 'USD', '67250.12345678', 'halfEven'))).toBe('67250.12');
+    expect(d(convert(money('1', 'BTC', { scale: 8 }), 'USD', '67250.12345678', 'halfEven'))).toBe(
+      '67250.12',
+    );
     expect(() => convert(money('1', 'EUR'), 'USD', '0')).toThrow();
     expect(d(convert(money('1', 'EUR'), 'USD', '1.0832'))).toBe('1.08'); // default halfExpand
     expect(() => convert(money('1', 'EUR'), 'USD', '1.0832', 'unnecessary')).toThrow();

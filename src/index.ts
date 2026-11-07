@@ -1,7 +1,8 @@
 /**
- * `@ducatjs/money`: the core. Money with construction, arithmetic, rounding, comparison and serialisation, plus the
- * ISO 4217 exponents. Allocation, tax, conversion, cash rounding, formatting, parsing and the processor and
- * database views are opt-in modules (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, ...; `@ducatjs/money/all` for everything).
+ * `@ducatjs/money`: the core. Money with construction, arithmetic, rounding, comparison and
+ * serialisation, plus the ISO 4217 exponents. Allocation, tax, conversion, cash rounding,
+ * formatting, parsing and the processor and database views are opt-in modules
+ * (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, ...; `@ducatjs/money/all` for everything).
  */
 export {
   money,

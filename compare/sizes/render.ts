@@ -15,7 +15,8 @@ function renderRows(tsvPath: string): string {
   const visibleRows = rows.filter(([library]) => !HIDDEN_LIBRARIES.has(library!));
   const sortedRows = visibleRows.toSorted((first, second) => Number(first[2]) - Number(second[2]));
 
-  let markdown = '| library | program, min | program, gzip | whole package, min | whole package, gzip |\n';
+  let markdown =
+    '| library | program, min | program, gzip | whole package, min | whole package, gzip |\n';
   markdown += '|---|--:|--:|--:|--:|\n';
   for (const [library, snippetMin, snippetGzip, fullMin, fullGzip] of sortedRows) {
     const cells = [snippetMin, snippetGzip, fullMin, fullGzip].map((bytes) => kilobytes(bytes!));

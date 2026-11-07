@@ -48,8 +48,8 @@ for (const [section, file] of [
     process.stderr.write(`running ${file} on ${name}...\n`);
     try {
       md += execFileSync(bin, [...args, file], { encoding: 'utf8', timeout: 900_000 }) + '\n';
-    } catch (e) {
-      md += `(${name} failed: ${String(e.message).split('\n')[0]})\n\n`;
+    } catch (error) {
+      md += `(${name} failed: ${String(error.message).split('\n')[0]})\n\n`;
     }
   }
 }

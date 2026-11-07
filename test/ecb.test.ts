@@ -14,7 +14,11 @@ describe('ECB parsers', () => {
     expect(rest).toEqual([]);
     expect(t).toMatchObject({ base: 'EUR', asOf: '2026-11-06' });
     expect(t!.rates.length).toBe(29);
-    expect(t!.rate('EUR', 'USD')).toMatchObject({ source: 'ECB', type: 'reference', asOf: '2026-11-06' });
+    expect(t!.rate('EUR', 'USD')).toMatchObject({
+      source: 'ECB',
+      type: 'reference',
+      asOf: '2026-11-06',
+    });
     expect(t!.rate('EUR', 'USD')?.toString()).toBe('1.1165');
     expect(t!.rate('EUR', 'IDR')?.toString()).toBe('20208.93');
     expect(t!.rate('EUR', 'HUF')?.ratio).toMatchObject({ num: 3639n, den: 10n });
@@ -35,11 +39,15 @@ describe('ECB parsers', () => {
     const [daily] = parseEcbCsv(fixture('eurofxref.csv'));
     const [xml] = parseEcbXml(fixture('eurofxref-daily.xml'));
     expect(daily!.asOf).toBe('2026-11-06');
-    expect(daily!.rates.map((r) => [r.to, r.ratio])).toEqual(xml!.rates.map((r) => [r.to, r.ratio]));
+    expect(daily!.rates.map((r) => [r.to, r.ratio])).toEqual(
+      xml!.rates.map((r) => [r.to, r.ratio]),
+    );
     const hist = parseEcbCsv(fixture('eurofxref-hist.csv'));
     expect(hist.map((d) => d.asOf)).toEqual(['2026-11-06', '2026-11-05', '2026-11-04']);
     expect(hist[0]!.rate('EUR', 'BGN')).toBeUndefined(); // N/A
-    expect(hist[0]!.rates.map((r) => [r.to, r.ratio])).toEqual(xml!.rates.map((r) => [r.to, r.ratio]));
+    expect(hist[0]!.rates.map((r) => [r.to, r.ratio])).toEqual(
+      xml!.rates.map((r) => [r.to, r.ratio]),
+    );
   });
 
   it('rejects other files', () => {
@@ -52,7 +60,10 @@ describe('ECB parsers', () => {
     const [table] = parseEcbXml(
       oneDay(`<Cube rate="1.1165" currency="USD"/><Cube  currency = 'JPY'  rate = '176.77' />`),
     );
-    expect(table!.rates.map((rate) => `${rate.to} ${rate.toString()}`)).toEqual(['USD 1.1165', 'JPY 176.77']);
+    expect(table!.rates.map((rate) => `${rate.to} ${rate.toString()}`)).toEqual([
+      'USD 1.1165',
+      'JPY 176.77',
+    ]);
     expect(table!.rates[0]!.type).toBe('reference');
     expect(() => parseEcbXml(oneDay(`<Cube currency="USD"/>`))).toThrow(SyntaxError);
     expect(() => parseEcbXml(oneDay(`<Cube currency="USD" rate="1,1165"/>`))).toThrow(SyntaxError);
@@ -62,13 +73,19 @@ describe('ECB parsers', () => {
   it('rejects days that do not exist', () => {
     expect(() => parseEcbCsv('Date,USD\n32 November 2026,1.1')).toThrow(SyntaxError);
     expect(() => parseEcbCsv('Date,USD\n2026-02-29,1.1')).toThrow(SyntaxError);
-    expect(() => parseEcbXml(`<Cube time="2026-11-31"><Cube currency="USD" rate="1.1"/></Cube>`)).toThrow(SyntaxError);
+    expect(() =>
+      parseEcbXml(`<Cube time="2026-11-31"><Cube currency="USD" rate="1.1"/></Cube>`),
+    ).toThrow(SyntaxError);
     expect(parseEcbCsv('Date,USD\n29 February 2028,1.1')[0]!.asOf).toBe('2028-02-29');
   });
 
   it('strips a byte order mark', () => {
-    expect(parseEcbCsv('\uFEFFDate, USD, JPY\n06 November 2026, 1.1165, 176.77')[0]!.asOf).toBe('2026-11-06');
-    expect(parseEcbXml(`\uFEFF<Cube time="2026-11-06"><Cube currency="USD" rate="1.1"/></Cube>`)).toHaveLength(1);
+    expect(parseEcbCsv('\uFEFFDate, USD, JPY\n06 November 2026, 1.1165, 176.77')[0]!.asOf).toBe(
+      '2026-11-06',
+    );
+    expect(
+      parseEcbXml(`\uFEFF<Cube time="2026-11-06"><Cube currency="USD" rate="1.1"/></Cube>`),
+    ).toHaveLength(1);
   });
 
   it('leaves out days with no rates, so a lookback goes on to the day before', async () => {

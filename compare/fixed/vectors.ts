@@ -15,19 +15,23 @@ export interface FixedVector {
 }
 
 function multiplied(factor: string, scale: number, mode: FixedRounding, value: string) {
-  return (library: FixedLibrary) => library.toString(library.multiply(library.parse(value), factor, scale, mode));
+  return (library: FixedLibrary) =>
+    library.toString(library.multiply(library.parse(value), factor, scale, mode));
 }
 
 function divided(divisor: string, scale: number, mode: FixedRounding, value: string) {
-  return (library: FixedLibrary) => library.toString(library.divide(library.parse(value), divisor, scale, mode));
+  return (library: FixedLibrary) =>
+    library.toString(library.divide(library.parse(value), divisor, scale, mode));
 }
 
 function rounded(scale: number, mode: FixedRounding, value: string) {
-  return (library: FixedLibrary) => library.toString(library.round(library.parse(value), scale, mode));
+  return (library: FixedLibrary) =>
+    library.toString(library.round(library.parse(value), scale, mode));
 }
 
 function added(first: string, second: string) {
-  return (library: FixedLibrary) => library.toString(library.add(library.parse(first), library.parse(second)));
+  return (library: FixedLibrary) =>
+    library.toString(library.add(library.parse(first), library.parse(second)));
 }
 
 function roundTrip(value: string) {
@@ -35,7 +39,8 @@ function roundTrip(value: string) {
 }
 
 function compared(first: string, second: string) {
-  return (library: FixedLibrary) => String(library.compare(library.parse(first), library.parse(second)));
+  return (library: FixedLibrary) =>
+    String(library.compare(library.parse(first), library.parse(second)));
 }
 
 export const FIXED_VECTORS: FixedVector[] = [

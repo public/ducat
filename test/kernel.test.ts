@@ -1,10 +1,15 @@
 // The bigint kernel in src/generated/kernel.ts is printed from Lean values whose behaviour is proved in
-// proofs/Ducat/Rounding.lean. These tests cover what is not proved: the printer, the `divRoundBig` dispatch
-// and the number fast path of `divRound`, compared with the generated kernels and an independent oracle.
+// proofs/Ducat/Rounding.lean. These tests cover what is not proved: the printer, the `divideAndRoundBigint` dispatch
+// and the number fast path of `divideAndRound`, compared with the generated kernels and an independent oracle.
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { divideAndRoundBigint } from '../src/generated/kernel.js';
-import { divRound, divRoundBig, RoundingError, type RoundingMode } from '../src/rounding.js';
+import { divideAndRoundBigint as kernelDivideAndRoundBigint } from '../src/generated/kernel.js';
+import {
+  divideAndRound,
+  divideAndRoundBigint,
+  RoundingError,
+  type RoundingMode,
+} from '../src/rounding.js';
 import { MODES, refDivRound } from './oracle.js';
 
 const ALL_MODES: RoundingMode[] = [...MODES, 'unnecessary'];
@@ -14,17 +19,17 @@ type Outcome = bigint | 'throws';
 /** The generated kernel's answer, or 'throws' (only 'unnecessary' on an inexact division may throw). */
 function kernelOutcome(dividend: bigint, divisor: bigint, mode: RoundingMode): Outcome {
   try {
-    return divideAndRoundBigint(dividend, divisor, mode);
+    return kernelDivideAndRoundBigint(dividend, divisor, mode);
   } catch (error) {
     expect(error).toBeInstanceOf(RoundingError);
     return 'throws';
   }
 }
 
-/** `divRound` on JS numbers, which takes the number fast path whenever the inputs allow it. */
+/** `divideAndRound` on JS numbers, which takes the number fast path whenever the inputs allow it. */
 function numberPathOutcome(dividend: number, divisor: number, mode: RoundingMode): Outcome {
   try {
-    return BigInt(divRound(dividend, divisor, mode));
+    return BigInt(divideAndRound(dividend, divisor, mode));
   } catch (error) {
     expect(error).toBeInstanceOf(RoundingError);
     return 'throws';
@@ -60,10 +65,15 @@ describe('generated rounding kernel', () => {
 
   it('agree with the number path over the whole safe-integer range', () => {
     const dividends = fc.integer({ min: -Number.MAX_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER });
-    const divisors = fc.oneof(fc.integer({ min: 1, max: 1000 }), fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }));
+    const divisors = fc.oneof(
+      fc.integer({ min: 1, max: 1000 }),
+      fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }),
+    );
     fc.assert(
       fc.property(dividends, divisors, fc.constantFrom(...ALL_MODES), (dividend, divisor, mode) => {
-        expect(numberPathOutcome(dividend, divisor, mode)).toBe(kernelOutcome(BigInt(dividend), BigInt(divisor), mode));
+        expect(numberPathOutcome(dividend, divisor, mode)).toBe(
+          kernelOutcome(BigInt(dividend), BigInt(divisor), mode),
+        );
       }),
       { numRuns: 20_000 },
     );
@@ -75,26 +85,37 @@ describe('generated rounding kernel', () => {
     const divisors = fc.integer({ min: 1, max: 2 ** 26 });
     const offsets = fc.integer({ min: -1, max: 1 });
     fc.assert(
-      fc.property(quotients, divisors, offsets, fc.constantFrom(...ALL_MODES), (quotient, divisor, offset, mode) => {
-        const sign = quotient < 0 ? -1 : 1;
-        const dividend = quotient * divisor + sign * (Math.floor(divisor / 2) + offset);
-        expect(numberPathOutcome(dividend, divisor, mode)).toBe(kernelOutcome(BigInt(dividend), BigInt(divisor), mode));
-      }),
+      fc.property(
+        quotients,
+        divisors,
+        offsets,
+        fc.constantFrom(...ALL_MODES),
+        (quotient, divisor, offset, mode) => {
+          const sign = quotient < 0 ? -1 : 1;
+          const dividend = quotient * divisor + sign * (Math.floor(divisor / 2) + offset);
+          expect(numberPathOutcome(dividend, divisor, mode)).toBe(
+            kernelOutcome(BigInt(dividend), BigInt(divisor), mode),
+          );
+        },
+      ),
       { numRuns: 20_000 },
     );
   });
 
-  it('agree with the oracle on bigints up to 10^30, and divRoundBig calls them', () => {
+  it('agree with the oracle on bigints up to 10^30, and divideAndRoundBigint calls them', () => {
     const dividends = fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n });
-    const divisors = fc.oneof(fc.bigInt({ min: 1n, max: 1000n }), fc.bigInt({ min: 1n, max: 10n ** 30n }));
+    const divisors = fc.oneof(
+      fc.bigInt({ min: 1n, max: 1000n }),
+      fc.bigInt({ min: 1n, max: 10n ** 30n }),
+    );
     fc.assert(
       fc.property(dividends, divisors, fc.constantFrom(...ALL_MODES), (dividend, divisor, mode) => {
         const kernel = kernelOutcome(dividend, divisor, mode);
         expect(kernel).toBe(oracleOutcome(dividend, divisor, mode));
         if (kernel === 'throws') {
-          expect(() => divRoundBig(dividend, divisor, mode)).toThrow(RoundingError);
+          expect(() => divideAndRoundBigint(dividend, divisor, mode)).toThrow(RoundingError);
         } else {
-          expect(divRoundBig(dividend, divisor, mode)).toBe(kernel);
+          expect(divideAndRoundBigint(dividend, divisor, mode)).toBe(kernel);
         }
       }),
       { numRuns: 20_000 },
@@ -113,26 +134,37 @@ describe('generated rounding kernel', () => {
       [7, 2, 4],
     ];
     for (const [dividend, divisor, expected] of ties) {
-      expect(divRound(dividend, divisor, 'halfEven')).toBe(expected);
-      expect(divRoundBig(BigInt(dividend), BigInt(divisor), 'halfEven')).toBe(BigInt(expected));
+      expect(divideAndRound(dividend, divisor, 'halfEven')).toBe(expected);
+      expect(divideAndRoundBigint(BigInt(dividend), BigInt(divisor), 'halfEven')).toBe(
+        BigInt(expected),
+      );
     }
-    expect(Object.is(divRound(-1, 2, 'halfEven'), 0)).toBe(true);
+    expect(Object.is(divideAndRound(-1, 2, 'halfEven'), 0)).toBe(true);
   });
 
   it('reports an unknown mode only when rounding is needed, on every path', () => {
     // a decision, documented on RoundingMode: exact results return before the mode is looked at
-    for (const mode of ['nearest', 'constructor', 'toString', '__proto__'] as string[] as RoundingMode[]) {
-      expect(() => divRound(7, 2, mode)).toThrow(/Unknown rounding mode/);
-      expect(() => divRoundBig(7n, 2n, mode)).toThrow(/Unknown rounding mode/);
+    for (const mode of [
+      'nearest',
+      'constructor',
+      'toString',
+      '__proto__',
+    ] as string[] as RoundingMode[]) {
+      expect(() => divideAndRound(7, 2, mode)).toThrow(/Unknown rounding mode/);
       expect(() => divideAndRoundBigint(7n, 2n, mode)).toThrow(/Unknown rounding mode/);
+      expect(() => kernelDivideAndRoundBigint(7n, 2n, mode)).toThrow(/Unknown rounding mode/);
       for (const [dividend, divisor, quotient] of [
         [4, 2, 2],
         [-9, 3, -3],
         [4, 1, 4],
       ] as const) {
-        expect(divRound(dividend, divisor, mode)).toBe(quotient);
-        expect(divRoundBig(BigInt(dividend), BigInt(divisor), mode)).toBe(BigInt(quotient));
-        expect(divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode)).toBe(BigInt(quotient));
+        expect(divideAndRound(dividend, divisor, mode)).toBe(quotient);
+        expect(divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode)).toBe(
+          BigInt(quotient),
+        );
+        expect(kernelDivideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode)).toBe(
+          BigInt(quotient),
+        );
       }
     }
   });
