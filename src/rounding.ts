@@ -49,7 +49,18 @@ export class RoundingError extends RangeError {
  * `twiceRem` is 2*|remainder| (non-zero), `d` the divisor, `odd` whether |truncated quotient| is odd.
  */
 function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint, odd: boolean, neg: boolean): boolean {
+  // twiceRem === d is an exact tie; otherwise the half modes round to the nearest.
   switch (mode) {
+    case 'halfExpand':
+      return twiceRem >= d;
+    case 'halfEven':
+      return twiceRem === d ? odd : twiceRem > d;
+    case 'halfTrunc':
+      return twiceRem > d;
+    case 'halfCeil':
+      return twiceRem === d ? !neg : twiceRem > d;
+    case 'halfFloor':
+      return twiceRem === d ? neg : twiceRem > d;
     case 'trunc':
       return false;
     case 'expand':
@@ -61,30 +72,6 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
     case 'unnecessary':
       throw new RoundingError('Inexact result; pass a rounding mode');
   }
-  if (twiceRem !== d) {
-    // number vs number or bigint vs bigint; mixed comparison is exact in JS anyway
-    if (
-      mode === 'halfEven' ||
-      mode === 'halfExpand' ||
-      mode === 'halfTrunc' ||
-      mode === 'halfCeil' ||
-      mode === 'halfFloor'
-    )
-      return twiceRem > d;
-    throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
-  }
-  switch (mode) {
-    case 'halfEven':
-      return odd;
-    case 'halfExpand':
-      return true;
-    case 'halfTrunc':
-      return false;
-    case 'halfCeil':
-      return !neg;
-    case 'halfFloor':
-      return neg;
-  }
   throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
 }
 
@@ -92,25 +79,11 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
 export function divRound(p: number, d: number, mode: RoundingMode): number {
   if (d === 1) return p;
   if (!(Math.abs(p) + d <= MAX)) return Number(divRoundBig(BigInt(p), BigInt(d), mode));
-  let q = Math.trunc(p / d);
-  let r = p - q * d; // exact: |q*d| <= |p| + d <= MAX
-  // the float quotient can be off by one ulp; fix so that r has the sign of p and |r| < d
-  if (p >= 0) {
-    if (r < 0) {
-      q -= 1;
-      r += d;
-    } else if (r >= d) {
-      q += 1;
-      r -= d;
-    }
-  } else if (r > 0) {
-    q += 1;
-    r -= d;
-  } else if (r <= -d) {
-    q -= 1;
-    r += d;
-  }
-  if (r === 0) return q + 0; // + 0 normalises -0
+  // % is exact on integers (it never rounds), so the remainder has p's sign and |r| < d, and
+  // (p - r) / d is an exact integer quotient truncated toward zero.
+  const r = p % d;
+  if (r === 0) return p / d + 0; // + 0 normalises -0
+  let q = (p - r) / d;
   const neg = p < 0;
   if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) q += neg ? -1 : 1;
   return q + 0;

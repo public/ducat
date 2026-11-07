@@ -25,11 +25,12 @@ export interface MoneyJSON<C extends string = string> {
 /** Thrown when two amounts in different currencies are combined. */
 export class CurrencyMismatchError extends TypeError {
   override name = 'CurrencyMismatchError';
-  constructor(
-    readonly expected: string,
-    readonly actual: string,
-  ) {
+  declare readonly expected: string;
+  declare readonly actual: string;
+  constructor(expected: string, actual: string) {
     super(`Currency mismatch: ${expected} vs ${actual}`);
+    this.expected = expected;
+    this.actual = actual;
   }
 }
 
@@ -48,9 +49,9 @@ export class CurrencyMismatchError extends TypeError {
  * add theirs when imported; see `extendMoney`.
  */
 class Money<C extends string = string> {
-  readonly currency: C;
-  readonly minor: number | bigint;
-  readonly scale: number;
+  declare readonly currency: C;
+  declare readonly minor: number | bigint;
+  declare readonly scale: number;
   /** @internal */
   constructor(currency: C, minor: number | bigint, scale: number) {
     this.currency = currency;
@@ -277,9 +278,7 @@ function fromScaled<C extends string>(
     return make(currency, scaleDown(digits, from - to, mode), to);
   } catch (e) {
     if (e instanceof RoundingError)
-      throw new RoundingError(
-        `${String(input)} has over ${to} decimals for ${currency}; pass { rounding }`,
-      );
+      throw new RoundingError(`${String(input)} has over ${to} decimals for ${currency}; pass { rounding }`);
     throw e;
   }
 }
