@@ -10,6 +10,7 @@
     "src/generated",
     "test/fixtures",
     "data",
-    "package-lock.json"
+    "package-lock.json",
+    "test/vectors"
   ]
 }

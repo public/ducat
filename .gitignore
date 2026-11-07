@@ -7,6 +7,7 @@ examples/prisma/generated/
 *.db-journal
 .claude/
 .wt/
+test/vectors/dectest/
 
 # Lean build output
 proofs/.lake/
