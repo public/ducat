@@ -21,8 +21,10 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
   See [Design](README.md#design).
 - **Arithmetic and comparison:** `add`, `subtract`, `sum`, `multiply`, `divide`, `percentage`,
   `discount`, `negate`, `abs`, `compare`, `equals`, `min`, `max`, `clamp` and more, as methods
-  and as free functions of the same name.
-- **Ten rounding modes**, named as in `Intl.NumberFormat` (`halfEven`, `halfExpand`, `trunc`,
+  on `Money`. The same operations are plain functions of the same name in `@ducatjs/money/fn`
+  (and `/all`); the root entry exports only the constructors and list functions (`money`,
+  `fromMinor`, `zero`, `fromJSON`, `sum`, `isMoney`, `ratio`).
+- **Nine rounding modes**, named as in `Intl.NumberFormat` (`halfEven`, `halfExpand`, `trunc`,
   ...), plus `unnecessary`, which throws instead of rounding. Parsing never rounds by default.
 - **Allocation that always sums to the whole:** `allocate` with five remainder strategies,
   `split`, `instalments`, `schedule` (fixed, percentage, capped and rest tranches) and `chunk`.
@@ -34,7 +36,7 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **Small core, opt-in modules.** The core covers construction, arithmetic, rounding,
   comparison and serialisation. Everything else is a subpath import that adds its methods when
   imported (`/allocate`, `/tax`, `/convert`, `/cash`, `/format`, `/parse`), or use `/all` for
-  everything and `/fn` for free functions only. See [Modules](README.md#modules).
+  everything and `/fn` for plain functions only, with no prototype changes. See [Modules](README.md#modules).
 - **Exchange rates:** an exact `Rate` type with composition and round-once conversion, rate
   providers (tables, chains, reversed and cross rates, dated snapshots), `ExactMoney` for
   carrying conversion residuals, `MoneyBag` totals across currencies, ECB reference rate
