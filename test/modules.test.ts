@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { extendMoney, money, type Money } from '../src/index.js';
 
 // Each vitest file gets a fresh module graph, so here the core starts without any plugin installed.
+// `bun test` shares one module cache across files, so the absence checks only hold under vitest.
 const proto = Object.getPrototypeOf(money('1', 'EUR')) as Record<string, unknown>;
+const hasFreshModules = !('Bun' in globalThis);
 
 describe('opt-in modules', () => {
-  it.each(['allocate', 'split', 'addTax', 'convert', 'cashRound', 'format', 'toStripe', 'toAdyen'])(
+  it
+    .skipIf(!hasFreshModules)
+    .each(['allocate', 'split', 'addTax', 'convert', 'cashRound', 'format', 'toStripe', 'toAdyen'])(
     'the core alone has no %s method',
     (name) => {
       expect(name in proto).toBe(false);
@@ -21,7 +25,9 @@ describe('opt-in modules', () => {
     const total = money('100', 'EUR') as Money<'EUR'> & { split(count: number): Money<'EUR'>[] };
     expect(total.split(3).map(String)).toEqual(allocateModule.split(total, 3).map(String));
     expect(Object.keys(total)).toEqual(['currency', 'minor', 'scale']);
-    expect('format' in proto).toBe(false);
+    if (hasFreshModules) {
+      expect('format' in proto).toBe(false);
+    }
     await import('../src/plugins/format.js');
     expect(typeof proto.format).toBe('function');
   });
@@ -61,5 +67,20 @@ describe('opt-in modules', () => {
     expect(String((money('3', 'EUR') as Money & { half(): Money }).half())).toBe('1.50 EUR');
     expect(() => extendMoney({ half: () => 0 })).toThrow(/already defined/);
     expect(() => extendMoney({ add: () => 0 })).toThrow(/already defined/);
+  });
+
+  it('extendMoney: the same owner may replace its own methods (a module loaded twice)', () => {
+    extendMoney({ twice: () => 1 }, { owner: 'example/twice' });
+    extendMoney({ twice: () => 2 }, { owner: 'example/twice' });
+    expect((money('1', 'EUR') as Money & { twice(): number }).twice()).toBe(2);
+    expect(() => extendMoney({ twice: () => 3 }, { owner: 'example/other' })).toThrow(/already defined/);
+    expect(() => extendMoney({ twice: () => 3 })).toThrow(/already defined/);
+  });
+
+  it('extendMoney: names every object inherits are reserved, except toLocaleString', () => {
+    expect(() => extendMoney({ valueOf: () => 0 })).toThrow(/reserved/);
+    expect(() => extendMoney({ hasOwnProperty: () => true })).toThrow(/reserved/);
+    extendMoney({ toLocaleString: () => 'local' });
+    expect(money('1', 'EUR').toLocaleString()).toBe('local');
   });
 });

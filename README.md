@@ -97,7 +97,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/all`      | everything above                                                   | everything                                              |
 | `@ducatjs/money/fn`       | nothing                                                            | every free function, from every module                  |
 
-Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import the modules once, in your entry point. Code that wants no prototype changes, or function-level tree-shaking (a module's methods keep all of its functions in a bundle), can use the free functions from `@ducatjs/money/fn` instead.
+Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that wants no prototype changes, or function-level tree-shaking (a module's methods keep all of its functions in a bundle), can use the free functions from `@ducatjs/money/fn` instead.
 
 Your own module can add methods the same way:
 
@@ -116,7 +116,7 @@ extendMoney({
 });
 ```
 
-`extendMoney` refuses to replace a method that is already defined with a different function, so two modules can't silently fight over a name.
+`extendMoney` refuses names Money already has (its own methods, or ones another module added) and the names every object inherits, so two modules can't silently fight over a name. Pass `{ owner: 'your-package/module' }` so that a second copy of the same module (hot reload, two installed copies) replaces its own methods instead of throwing.
 
 The sections below list each function with its free-function signature; the methods take the same arguments without the first.
 
@@ -302,7 +302,7 @@ Processor differences encoded:
 
 ## Tests
 
-`pnpm test` runs vitest: 171 tests in 9 files.
+`pnpm test` runs vitest: 192 tests in 11 files.
 
 - Unit tests use real-world vectors:
   - the `java.math.RoundingMode` table for all modes
