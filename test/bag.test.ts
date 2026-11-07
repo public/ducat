@@ -59,7 +59,7 @@ describe('comparator', () => {
     const s = [a, b, c].sort(cmp).map(String);
     expect(s).toEqual([...[c, b, a].sort(cmp)].map(String));
     expect(s).toEqual(['1.00 USD', '0.92 EUR', '0.80 GBP']); // 0.90, 0.92, 0.96 EUR
-    for (const x of [a, b, c]) for (const y of [a, b, c]) expect(Math.sign(cmp(x, y))).toBe(-Math.sign(cmp(y, x)));
+    for (const x of [a, b, c]) for (const y of [a, b, c]) expect(cmp(x, y)).toBe(-cmp(y, x) || 0);
   });
 
   it('is transitive on random triples, even over inconsistent pairwise rates', () => {
