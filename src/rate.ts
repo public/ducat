@@ -138,11 +138,13 @@ export class Rate<From extends string = string, To extends string = string> {
   readonly from: From;
   readonly to: To;
   readonly ratio: Ratio;
-  readonly source?: string;
-  readonly asOf?: string;
-  readonly validUntil?: string;
-  readonly type?: RateType;
-  readonly derivedFrom?: readonly Rate[];
+  // The optional fields are `declare`d, so only the ones that are set exist on an instance: class
+  // field semantics would otherwise define them all as undefined.
+  declare readonly source?: string;
+  declare readonly asOf?: string;
+  declare readonly validUntil?: string;
+  declare readonly type?: RateType;
+  declare readonly derivedFrom?: readonly Rate[];
 
   /** @internal use exchangeRate() */
   constructor(from: From, to: To, rate: Ratio, info?: RateInfo, derivedFrom?: readonly Rate[]) {
