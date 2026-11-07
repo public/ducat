@@ -93,6 +93,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/parse`    | nothing                                                            | `parse`                                                 |
 | `@ducatjs/money/stripe`   | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…               |
 | `@ducatjs/money/adyen`    | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                 |
+| `@ducatjs/money/checkout` | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…           |
 | `@ducatjs/money/prisma`   | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers              |
 | `@ducatjs/money/all`      | everything above                                                   | everything                                              |
 | `@ducatjs/money/fn`       | nothing                                                            | every free function, from every module                  |
