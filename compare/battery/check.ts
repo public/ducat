@@ -24,13 +24,22 @@ const problems: string[] = [];
 
 for (const freshPath of freshPaths) {
   const fresh = readResults(join(COMPARE_DIRECTORY, freshPath));
-  if (JSON.stringify(fresh) !== JSON.stringify(committed)) {
-    const changed = fresh.rows.filter((row, index) => {
-      const before = committed.rows[index];
-      return JSON.stringify(row) !== JSON.stringify(before);
-    });
+  // an error's wording is the engine's own (V8 and JavaScriptCore phrase the same TypeError
+  // differently), so errors compare by outcome only; everything else compares exactly
+  const comparable = (row: BatteryResults['rows'][number]) => (row.outcome === 'error' ? { ...row, got: '' } : row);
+  const changed = fresh.rows.filter((row, index) => {
+    const before = committed.rows[index];
+    return !before || JSON.stringify(comparable(row)) !== JSON.stringify(comparable(before));
+  });
+  const sameShape =
+    JSON.stringify(fresh.libraries) === JSON.stringify(committed.libraries) &&
+    JSON.stringify(fresh.vectors) === JSON.stringify(committed.vectors) &&
+    fresh.rows.length === committed.rows.length;
+
+  if (!sameShape || changed.length > 0) {
     const sample = changed.slice(0, 5).map((row) => `${row.library} ${row.id}: ${row.outcome} (${row.got})`);
-    problems.push(`${freshPath} differs from ${committedArgument}:\n  ${sample.join('\n  ')}`);
+    const reason = sameShape ? sample.join('\n  ') : 'libraries or vectors changed';
+    problems.push(`${freshPath} differs from ${committedArgument}:\n  ${reason}`);
   }
 
   const ducatMisses = fresh.rows.filter((row) => row.library.startsWith('ducat') && row.outcome !== 'pass');

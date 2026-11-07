@@ -3,7 +3,7 @@
 // ESM file, so Node, Bun and Deno all run exactly the same code:
 //   node compare/build.mjs battery/run.ts out/battery.mjs
 import { build } from 'esbuild';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { builtinModules } from 'node:module';
 import { join } from 'node:path';
 
 const [entry, output] = process.argv.slice(2);
@@ -11,19 +11,33 @@ if (!entry || !output) {
   throw new Error('usage: node compare/build.mjs <entry.ts> <output.mjs>');
 }
 
-const outputPath = join(import.meta.dirname, output);
+const NODE_BUILTINS = new Set(builtinModules);
+
+/**
+ * Some libraries import Node built-ins they never use here (ethers for its network providers,
+ * monetra for randomUUID). They stay external, written with the node: prefix, which Node, Bun and
+ * Deno all resolve.
+ */
+const nodeBuiltinsExternal = {
+  name: 'node-builtins-external',
+  setup(builder) {
+    builder.onResolve({ filter: /^[a-z_/:]+$/ }, (args) => {
+      const name = args.path.replace(/^node:/, '');
+      if (!NODE_BUILTINS.has(name)) {
+        return undefined;
+      }
+      return { path: `node:${name}`, external: true };
+    });
+  },
+};
+
 await build({
   entryPoints: [join(import.meta.dirname, entry)],
-  outfile: outputPath,
+  outfile: join(import.meta.dirname, output),
   bundle: true,
   format: 'esm',
   platform: 'neutral',
   mainFields: ['module', 'main'],
-  // monetra imports the bare 'crypto' module (randomUUID, for its ledger)
-  external: ['crypto', 'node:crypto'],
+  plugins: [nodeBuiltinsExternal],
   logLevel: 'error',
 });
-
-// Deno resolves Node built-ins only with the node: prefix
-const bundled = readFileSync(outputPath, 'utf8');
-writeFileSync(outputPath, bundled.replaceAll(/from\s*["']crypto["']/g, 'from "node:crypto"'));

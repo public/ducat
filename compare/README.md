@@ -39,22 +39,27 @@ exponent, and the library gets no credit for knowing it.
 A second, currency-free comparison against fixed-point decimal libraries, with its own battery,
 benchmark and size tables (under "Fixed-point decimal libraries" in `RESULTS.md`):
 
-| Library | Version |
-|---|---|
+| Library                                    | Version         |
+| ------------------------------------------ | --------------- |
 | ducat `Money` (EUR with an explicit scale) | this repository |
-| dnum | 2.18.1 |
-| ethers `FixedNumber` | 6.17.0 |
-| js-big-decimal | 2.2.0 |
-| bigdecimal.js | 1.7.2 |
-| @formatjs/bigdecimal | 0.2.10 |
-| bigint-money | 2.0.1 |
+| dnum                                       | 2.18.1          |
+| ethers `FixedNumber`                       | 6.17.0          |
+| js-big-decimal                             | 2.2.0           |
+| bigdecimal.js                              | 1.7.2           |
+| @formatjs/bigdecimal                       | 0.2.10          |
+| bigint-money                               | 2.0.1           |
 
 Only operations every library supports are compared: parse a decimal string, add, multiply and
 divide rounded to a scale, round, compare and toString, each with an explicit rounding mode
 (half-even or half-up). A library without a given mode shows n/a; dnum and ethers have no
 half-even, and @formatjs/bigdecimal cannot round to a number of decimals. `fixed/vectors.ts` holds
-the 26 vectors: the money battery's ties, float traps, amounts beyond 2^53, division and scale
+the 27 vectors: the money battery's ties, float traps, amounts beyond 2^53, division and scale
 changes, without currencies. CI runs it on Node, Bun and Deno like the money battery.
+
+ethers' `FixedNumber.round()` is its only rounding, so the adapter uses it for half-up. It rounds
+negative values toward +infinity rather than to the nearest value (-2 ÷ 3 gives -0.66, and
+-0.125 gives -0.12), and the battery reports those as wrong values, which is what a caller asking
+for half-up would get.
 
 ## Correctness battery
 
