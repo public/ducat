@@ -41,7 +41,8 @@ export class MoneyBag {
 
   /** @internal use bag() */
   constructor(totals: ReadonlyMap<string, Money>) {
-    this.#totals = totals;
+    // Copied, so a caller who keeps the Map can't change an immutable bag.
+    this.#totals = new Map(totals);
   }
 
   /** A new bag with `items` added. */
@@ -102,22 +103,13 @@ export interface ComparatorOptions {
   readonly asOf?: string | Date;
 }
 
-/**
- * Compares amounts in any currencies through one base currency, exactly (no rounding, so rounding
- * makes no ties). One rate per currency makes it a total preorder, so
- * `list.sort(comparator(fx, { base: 'USD' }))` is consistent. Pairwise conversion with bid/ask or
- * slightly inconsistent mids is not, and Array#sort's result then differs between engines.
- * Rates are looked up once per currency.
- */
-export function comparator(
-  provider: RateProvider,
-  options: ComparatorOptions,
-): (money: Money, other: Money) => -1 | 0 | 1 {
+/** Converts amounts exactly into `options.base`, looking each currency's rate up once. */
+function baseConverter(provider: RateProvider, options: ComparatorOptions): (money: Money) => ExactMoney {
   const base = options.base;
   const query = queryFor(options.asOf);
   const ratesToBase = new Map<string, Rate>();
 
-  function inBase(money: Money): ExactMoney {
+  return (money) => {
     if (money.currency === base) {
       return exact(money);
     }
@@ -127,7 +119,40 @@ export function comparator(
       ratesToBase.set(money.currency, rate);
     }
     return exact(money).convert(rate);
-  }
+  };
+}
 
+/**
+ * Compares amounts in any currencies through one base currency, exactly (no rounding, so rounding
+ * makes no ties). One rate per currency makes it a total preorder, so
+ * `list.sort(comparator(fx, { base: 'USD' }))` is consistent. Pairwise conversion with bid/ask or
+ * slightly inconsistent mids is not, and Array#sort's result then differs between engines.
+ * Rates are looked up once per currency, lazily: a missing rate throws from inside `sort`, after the
+ * list may already be partly reordered. `sortByValue` looks every rate up first.
+ */
+export function comparator(
+  provider: RateProvider,
+  options: ComparatorOptions,
+): (money: Money, other: Money) => -1 | 0 | 1 {
+  const inBase = baseConverter(provider, options);
   return (money, other) => inBase(money).compare(inBase(other));
+}
+
+/**
+ * A new array of `items` in ascending order of their value in `options.base`, as `comparator`
+ * orders them. Every amount is converted before sorting, so a missing rate throws
+ * RateUnavailableError before anything is reordered, and each amount is converted only once.
+ *
+ *     sortByValue([jpy100, gbp1, usd1], fx, { base: 'EUR' })   // [jpy100, usd1, gbp1]
+ */
+export function sortByValue<Item extends Money>(
+  items: Iterable<Item>,
+  provider: RateProvider,
+  options: ComparatorOptions,
+): Item[] {
+  const inBase = baseConverter(provider, options);
+  const keyed = Array.from(items, (item) => ({ item, value: inBase(item) }));
+  // Array#sort is stable, so equal values keep their input order.
+  keyed.sort((first, second) => first.value.compare(second.value));
+  return keyed.map((entry) => entry.item);
 }

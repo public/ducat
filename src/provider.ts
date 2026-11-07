@@ -2,7 +2,8 @@
 // Loading rates (network, files, databases) is async and stays outside; `snapshots()` is the one
 // async boundary.
 import type { Factor } from './decimal.js';
-import { exchangeRate, isRate, type Rate, type RateInfo } from './rate.js';
+import { CurrencyMismatchError } from './money.js';
+import { exchangeRate, isRate, toIsoString, type Rate, type RateInfo } from './rate.js';
 
 const DAY_MS = 86_400_000;
 
@@ -49,14 +50,7 @@ export class RateUnavailableError extends Error {
   }
 }
 
-function toIsoString(time: string | Date): string {
-  if (time instanceof Date) {
-    return time.toISOString();
-  }
-  return time;
-}
-
-/** The ISO date ('2026-11-06') of a date, an instant or a Date (in UTC). */
+/** The UTC date ('2026-11-06') of a date, an instant (any offset) or a Date. */
 function dayOf(time: string | Date): string {
   return toIsoString(time).slice(0, 10);
 }
@@ -71,6 +65,14 @@ export function rateOf<From extends string, To extends string>(
   const rate = provider.rate(from, to, query);
   if (rate === undefined) {
     throw new RateUnavailableError(from, to, query?.asOf);
+  }
+
+  // A provider is user code: a wrong pair here would produce Money labelled with the wrong currency.
+  if (rate.from !== from) {
+    throw new CurrencyMismatchError(from, rate.from);
+  }
+  if (rate.to !== to) {
+    throw new CurrencyMismatchError(to, rate.to);
   }
   return rate;
 }
@@ -95,8 +97,11 @@ export interface RateTableSpec extends RateInfo {
 
 /**
  * A fixed table of rates: one base currency against many (ECB style), or a list of Rates. Only the
- * pairs given are answered; wrap it in `reversed()` or `via()` for the others. A query for a day
- * before a rate's asOf gets nothing, because that rate wasn't known yet.
+ * pairs given are answered; wrap it in `reversed()` or `via()` for the others.
+ *
+ * Lookups are by whole UTC day: a query for a day before a rate's asOf gets nothing, and a query at
+ * any time on the rate's own day gets the rate, even before its publication time (the ECB publishes
+ * at about 15:00 UTC). If that matters, query with the previous day until the table is published.
  *
  *     const ecb = rateTable({ base: 'EUR', source: 'ECB', asOf: '2026-11-06', rates: { USD: '1.1165' } });
  */
@@ -219,8 +224,10 @@ export interface Snapshots {
 
 /**
  * Dated tables from a loader you supply: `load('2026-11-06')` resolves to that day's table, or to
- * undefined when there is none. Loaded tables are cached by day. Misses and failures are not cached,
- * so a table that isn't published yet is tried again next time. The rates carry the day they're from.
+ * undefined when there is none. Days are UTC days. Loaded tables are cached by day. Misses and
+ * failures are not cached, so a table that isn't published yet is tried again next time. A loader
+ * that throws fails the lookup rather than falling back to an older day, so an outage doesn't
+ * silently become a stale rate. The rates carry the day they're from.
  *
  *     const history = snapshots(async (day) => parseEcbXml(await readFile(`ecb/${day}.xml`, 'utf8'))[0]);
  *     const fx = await history.at('2026-11-08');   // a Sunday: Friday 2026-11-06's table
@@ -231,19 +238,33 @@ export function snapshots(
 ): Snapshots {
   const lookback = options?.lookback ?? 4;
   const max = options?.max ?? 32;
+  if (!Number.isSafeInteger(lookback) || lookback < 0) {
+    throw new RangeError(`lookback must be a non-negative integer, got ${lookback}`);
+  }
+  if (!Number.isSafeInteger(max) || max < 1) {
+    throw new RangeError(`max must be a positive integer, got ${max}`);
+  }
   // Map iteration order is insertion order, so re-inserting on every use makes it an LRU.
   const cache = new Map<string, Promise<RateProvider | undefined>>();
+
+  // Only drop the entry this load created: a newer load for the same day may have replaced it.
+  function forget(day: string, loading: Promise<RateProvider | undefined>): void {
+    if (cache.get(day) === loading) {
+      cache.delete(day);
+    }
+  }
 
   function loadDay(day: string): Promise<RateProvider | undefined> {
     let pending = cache.get(day);
     if (pending === undefined) {
-      pending = load(day).then((table) => {
+      const loading: Promise<RateProvider | undefined> = load(day).then((table) => {
         if (table === undefined) {
-          cache.delete(day);
+          forget(day, loading);
         }
         return table;
       });
-      pending.catch(() => cache.delete(day));
+      loading.catch(() => forget(day, loading));
+      pending = loading;
     } else {
       cache.delete(day);
     }
@@ -266,6 +287,8 @@ export function snapshots(
 
       for (let i = 0; i <= lookback; i++) {
         const day = new Date(firstDayMs - i * DAY_MS).toISOString().slice(0, 10);
+        // Sequential on purpose: stop at the first day that has a table, without loading older days.
+        // oxlint-disable-next-line no-await-in-loop
         const table = await loadDay(day);
         if (table !== undefined) {
           return table;

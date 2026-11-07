@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { fromMinor, money, type RoundingMode } from '../src/index.js';
 import { exact, isExactMoney, sumExact } from '../src/exact.js';
+import { convert, convertDetailed } from '../src/convert.js';
 import { exchangeRate } from '../src/rate.js';
 
 const MODES: RoundingMode[] = [
@@ -84,7 +85,6 @@ describe('ExactMoney', () => {
 
 describe('convertDetailed and Money#exact', () => {
   it('reports the residual and the rate used', async () => {
-    const { convertDetailed } = await import('../src/convert.js');
     await import('../src/plugins/exact.js');
     const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06' });
     const detail = convertDetailed(money('0.07', 'EUR'), eurUsd, 'halfEven');
@@ -92,5 +92,33 @@ describe('convertDetailed and Money#exact', () => {
     expect(detail.residual.toString()).toBe('-369/200000 USD');
     expect(detail.rate).toBe(eurUsd);
     expect(money('10', 'EUR').exact().divide(3).toString()).toBe('10/3 EUR');
+  });
+  it('value equals convert() on every input (two different kernels)', () => {
+    const rateString = fc
+      .tuple(fc.bigInt({ min: 1n, max: 10n ** 12n }), fc.integer({ min: 0, max: 10 }))
+      .map(([digits, scale]) => {
+        const padded = digits.toString().padStart(scale + 1, '0');
+        return scale === 0 ? padded : `${padded.slice(0, -scale)}.${padded.slice(-scale)}`;
+      });
+    fc.assert(
+      fc.property(
+        fc.oneof(fc.integer(), fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n })),
+        rateString,
+        fc.boolean(),
+        fc.constantFrom(...MODES),
+        fc.option(fc.integer({ min: 0, max: 8 }), { nil: undefined }),
+        (minor, quote, invert, rounding, scale) => {
+          const direct = exchangeRate('EUR', 'JPY', quote);
+          // an inverse usually doesn't terminate, which takes both kernels off their decimal paths
+          const rate = invert ? exchangeRate('JPY', 'EUR', quote).inverse() : direct;
+          const amount = fromMinor(minor, 'EUR');
+          const options = scale === undefined ? undefined : { scale };
+          const detailed = convertDetailed(amount, rate, rounding, options).value;
+          const plain = convert(amount, rate, rounding, options);
+          expect(detailed.equals(plain) && detailed.scale === plain.scale).toBe(true);
+        },
+      ),
+      { numRuns: 2000 },
+    );
   });
 });
