@@ -64,7 +64,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 - **No float arithmetic on amounts.** Factors, rates and percentages are exact rationals (`ratio('1.075')`, `ratio(1, 3)`, `'1/3'`, bigint, integer). A JS number factor such as `0.1` is read at its shortest decimal form (`"0.1"`, exactly 1/10) and never multiplied as a float. `money(0.1 + 0.2, 'EUR')` **throws**: `0.30000000000000004` has too many decimals, and we don't silently turn it into 0.30.
 - **Rounding is never hidden in the representation.** Every operation that may need to round takes a `RoundingMode`. Arithmetic defaults to `'halfExpand'` (ties away from zero, the most common default; see [Decisions](#decisions)); pass `'unnecessary'` to throw `RoundingError` instead. Parsing never rounds by default: `money('1.005', 'EUR')` throws.
-- **Allocation is exact.** The parts always sum to the whole, and the remainder is distributed deterministically. This is property-tested across every remainder strategy, with weights up to 2^40 and amounts up to 10^25.
+- **Allocation is exact.** The parts always sum to the whole, and the remainder is distributed deterministically. This is proved in Lean for every remainder strategy (see [What is proved](#what-is-proved)) and property-tested with weights up to 2^40 and amounts up to 10^25.
 - **Currency mismatch** is a compile-time error for literal currency types (`add(eur, usd)`, `sum([eur, usd])`, `compare`, `exchangeRate(...).convert`). When types are erased (`Money<string>`) it is a runtime `CurrencyMismatchError`. `equals()` across currencies returns `false`.
 
 ---
@@ -252,6 +252,47 @@ Processor differences encoded:
 | CNH, VEF            | not ISO   | n/a                                                                          | listed (2)    |
 
 ---
+
+## What is proved
+
+The integer core of ducat is proved correct in [Lean 4](https://lean-lang.org) with Mathlib, in `proofs/`. `npm run gen:check` rebuilds the proofs, fails if any proof is unfinished (`sorry`), and fails if the generated files below are stale.
+
+**How the proofs reach the shipped code.** The rounding kernels are written once in Lean, as values of a small expression language (`proofs/Ducat/Kernel.lean`). The theorems are about those values, and `npm run gen:kernel` prints the same values as TypeScript into `src/generated/kernel.ts`. `divRoundBig`, the bigint path of every rounded operation, calls them directly. What you have to trust is the printer (about 40 lines) and the fact that JS `bigint` `+ - * /` agree with Lean's `Int` (`/` truncates, `Int.tdiv`). Allocation uses lists and sorting, which the printer does not cover, so its Lean model is compiled to an oracle instead: it evaluates 1,500 generated cases into `test/fixtures/allocate.oracle.json`, and the tests require the TypeScript to match it exactly on both its number and bigint paths.
+
+### Rounding (`proofs/Ducat/Rounding.lean`)
+
+`Rounds m p d q` is the specification: "`q` is `p / d` rounded with mode `m`", written as integer inequalities on the error `p − d·q`. For example, `floor` means `q ≤ p/d < q + 1`. The half modes mean `|p/d − q| ≤ ½`, with the tie going where the mode says. `unnecessary` means the division is exact.
+
+- `kernel_sound`: whatever the generated kernel returns is correctly rounded.
+- `rounds_unique`: the specification has at most one answer, so "correctly rounded" means "the right answer".
+- `kernel_fails_iff`: the kernel throws exactly for `unnecessary` on an inexact division, and never otherwise.
+- `kernel_correct`: so whenever a correctly rounded answer exists, the kernel returns it.
+
+### Tax, scale and conversion (`proofs/Ducat/Tax.lean`)
+
+- `addTax_gross`, `extractTax_gross`: net + tax = gross, exactly.
+- `addTax_bound`: the tax is the exact tax, correctly rounded once. `extractTax_bound`: the extracted net is `gross / (1 + rate)` correctly rounded, and the tax carries the same error with the opposite sign.
+- `rounds_half_bound`, `rounds_directed_bound`: a correctly rounded result is within half a unit of the exact value in the half modes, and under one unit in every mode.
+- `toScale_roundtrip`: raising the scale and lowering it again gives back the original amount in every mode, and `unnecessary` does not throw.
+- `divRound_mul_left`: multiplying the numerator and denominator by the same positive number does not change the result. So reducing a rate by its gcd, or composing exact rates, cannot change a conversion: it is rounded once, from the exact rational product.
+
+### Allocation (`proofs/Ducat/Allocate.lean`)
+
+For an amount `x ≥ 0` and non-negative weights with a positive total `T`:
+
+- `alloc_sum`: the parts add up to `x`, for every remainder strategy.
+- `alloc_zero`: a bucket with zero weight gets zero.
+- `alloc_near_largest`: with `'largest'` (Hamilton's method), each part is less than one unit from its exact share `x·w/T`.
+- `alloc_near`: with `'first'` and `'last'`, each part is at most one unit from its exact share. Exactly one unit can happen: 0.02 split `[2, 1, 1]` with `'first'` gives 0.02, 0, 0.
+- `allocS_neg`: a negative amount is allocated as the mirror image of the positive one.
+- `alloc_scale`: multiplying every weight by the same positive number changes nothing, so decimal weights such as `'33.3'` (scaled to integers) are allocated by their exact ratios.
+- Determinism needs no theorem: the model is a pure function, and the oracle test pins the TypeScript to it.
+
+### Tested, not proved
+
+- The **number fast paths** (`divRound` on JS numbers, the allocation fast path). They are checked against the generated kernel exhaustively for `p ∈ [−300, 300]`, `d ∈ [1, 40]` in every mode, and with fast-check over the full safe-integer range, on ties, and on bigints up to 10^30 (`test/kernel.test.ts`, `test/allocate.oracle.test.ts`).
+- The `Money` layer around the kernels: scale alignment, the number/bigint switch, decimal parsing, `instalments`, `schedule` and `chunk`.
+- `Intl` formatting and parsing, and the processor and database adapters.
 
 ## Tests
 

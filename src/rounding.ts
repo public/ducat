@@ -1,3 +1,5 @@
+import { DIV_ROUND_BIG } from './generated/kernel.js';
+
 /**
  * Rounding modes. The string values are the ones `Intl.NumberFormat` uses for its `roundingMode`
  * option (ES2023), so a mode can be passed straight through to formatting. `Rounding` gives the
@@ -116,13 +118,13 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
   return q + 0;
 }
 
-/** p / d rounded with `mode`; d > 0n. */
+/**
+ * p / d rounded with `mode`; d > 0n. The bigint kernels are generated from the Lean proofs in proofs/Ducat/Rounding.lean
+ * (`src/generated/kernel.ts`).
+ */
 export function divRoundBig(p: bigint, d: bigint, mode: RoundingMode): bigint {
   if (d === 1n) return p;
-  let q = p / d; // truncates towards zero
-  const r = p - q * d;
-  if (r === 0n) return q;
-  const neg = p < 0n;
-  if (away(mode, (neg ? -r : r) * 2n, d, (q & 1n) !== 0n, neg)) q += neg ? -1n : 1n;
-  return q;
+  const k = DIV_ROUND_BIG[mode];
+  if (k === undefined) throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
+  return k(p, d);
 }

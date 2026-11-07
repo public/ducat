@@ -1,6 +1,6 @@
 name = "ducat-proofs"
 version = "0.1.0"
-defaultTargets = ["Ducat", "gen"]
+defaultTargets = ["Ducat", "gen", "oracle"]
 
 [[require]]
 name = "mathlib"
@@ -14,3 +14,8 @@ name = "Ducat"
 [[lean_exe]]
 name = "gen"
 root = "Gen"
+
+# `lake exe oracle` evaluates the proved allocation model on generated cases (test/fixtures/allocate.oracle.json)
+[[lean_exe]]
+name = "oracle"
+root = "Oracle"

@@ -160,7 +160,7 @@ theorem pin_le {d q q' : Int} (hd : 0 < d) (h1 : d * q - d * q' ≤ d) (h2 : d *
 /-- `Rounds` pins down the result: two values that both satisfy the spec are equal. -/
 theorem rounds_unique (m : Mode) (p d q q' : Int) (hd : 0 < d)
     (h : Rounds m p d q) (h' : Rounds m p d q') : q = q' := by
-  cases m <;> unfold Rounds at h h' <;> (try split_ifs at h h') <;>
+  cases m <;> simp only [Rounds] at h h' <;> (try split_ifs at h h') <;>
   first
   | exact pin_lt hd (by linarith) (by linarith)
   | (obtain ⟨a1, a2, a3⟩ := h
@@ -184,12 +184,14 @@ theorem rounds_unique (m : Mode) (p d q q' : Int) (hd : 0 < d)
 /-- The kernel returns a value for every mode except `unnecessary` on an inexact division. -/
 theorem kernel_fails_iff (m : Mode) (p d : Int) (hd : 0 < d) :
     (kernel m).eval [p, d] = none ↔ (m = .unnecessary ∧ ¬ d ∣ p) := by
-  rw [Int.dvd_iff_tmod_eq_zero, Int.tmod_def]
-  by_cases hrn : p < p.tdiv d * d <;>
+  have hdvd : d ∣ p ↔ p - p.tdiv d * d = 0 := by
+    rw [Int.dvd_iff_tmod_eq_zero, Int.tmod_def]
+    constructor <;> intro h <;> linarith [mul_comm d (p.tdiv d)]
+  rw [hdvd]
   cases m <;>
   simp [kernel, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.p, K.d, K.q, K.r, K.a, K.one, K.zero,
-    K.neg, K.exact, K.away, K.odd, K.half, K.yes, K.no, hrn] <;>
-  (try split_ifs) <;> simp_all <;> (try constructor) <;> (try intro) <;> linarith [mul_comm d (p.tdiv d)]
+    K.neg, K.exact, K.away, K.odd, K.half, K.yes, K.no] <;>
+  (try split_ifs) <;> simp
 
 /-- Hence, whenever a correctly rounded answer exists (every mode, or `unnecessary` on an exact
 division), the kernel returns exactly that answer. -/
