@@ -86,12 +86,8 @@ export function parseDecimal(s: string): { digits: bigint; scale: number } {
   const exponent = Number(exp);
   let scale = frac.length - exponent;
   if (!(Math.abs(exponent) <= MAX_DECIMAL_SCALE) || scale > MAX_DECIMAL_SCALE) {
-    // Quote at most 40 characters: the input may be huge.
-    let shown = s;
-    if (shown.length > 40) {
-      shown = shown.slice(0, 40) + '…';
-    }
-    throw new RangeError(`"${shown}" is outside the supported range`);
+    // The input itself is not quoted: it may be huge.
+    throw new RangeError(`Decimal string exponent or fraction digits beyond ${MAX_DECIMAL_SCALE}`);
   }
   let digits = BigInt(int! + frac);
   if (scale < 0) {
