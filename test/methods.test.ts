@@ -1,5 +1,6 @@
 // Every Money method must be exactly the free function of the same name.
 import { describe, expect, it } from 'vitest';
+import { runs } from './fc-config.js';
 import fc from 'fast-check';
 import * as M from '../src/index.js';
 import { money, fromMinor, type Money } from '../src/index.js';
@@ -101,7 +102,7 @@ describe('Money methods', () => {
         expect(a.toMinor()).toBe(M.toMinor(a));
         expect(a.format('en-US')).toBe(M.format(a, 'en-US'));
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
