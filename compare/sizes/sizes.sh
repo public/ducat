@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Bundle size of the same small program (create, add, multiply, toDecimal) per library, plus the
-# whole package (`export *`). esbuild --bundle --minify, ESM, browser platform; gzip -9.
-# Writes compare/results/sizes.tsv.
+# Bundle size of the same small program per library, plus the whole package (`export *`).
+# esbuild --bundle --minify, ESM, browser platform; gzip -9. Two groups:
+# - money libraries: create, add, multiply, toDecimal; writes compare/results/sizes.tsv;
+# - fixed-point decimal libraries: parse "1.00", add it to itself, multiply by "1.075" rounding to
+#   2 decimals half-up (where the library can round), toString; writes compare/results/sizes-fixed.tsv.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -70,3 +72,57 @@ for library in "${LIBRARIES[@]}"; do
 done
 
 column -t -s$'\t' results/sizes.tsv
+
+# --- fixed-point decimal libraries ---------------------------------------------------------------
+
+declare -A FIXED_SNIPPET FIXED_PACKAGE
+FIXED_SNIPPET[ducat Money]="import { money } from '$DUCAT'; const a = money('1.00','EUR'); console.log(a.add(a).multiply('1.075','halfExpand').toDecimal());"
+FIXED_PACKAGE[ducat Money]="export * from '$DUCAT';"
+FIXED_SNIPPET[dnum]="import * as dn from 'dnum'; const a = dn.from('1.00', 2); console.log(dn.toString(dn.multiply(dn.add(a, a), '1.075', { decimals: 2, rounding: 'ROUND_HALF' })));"
+FIXED_PACKAGE[dnum]="export * from 'dnum';"
+FIXED_SNIPPET[js-big-decimal]="import bigDecimal from 'js-big-decimal'; const a = new bigDecimal('1.00'); console.log(a.add(a).multiply(new bigDecimal('1.075')).round(2, bigDecimal.RoundingModes.HALF_UP).getValue());"
+FIXED_PACKAGE[js-big-decimal]="export * from 'js-big-decimal';"
+FIXED_SNIPPET[bigdecimal.js]="import { Big, RoundingMode } from 'bigdecimal.js'; const a = Big('1.00'); console.log(a.add(a).multiply(Big('1.075')).setScale(2, RoundingMode.HALF_UP).toPlainString());"
+FIXED_PACKAGE[bigdecimal.js]="export * from 'bigdecimal.js';"
+# no rounding to a number of decimals at all, so the program stops at the exact product
+FIXED_SNIPPET[@formatjs/bigdecimal]="import { BigDecimal } from '@formatjs/bigdecimal'; const a = new BigDecimal('1.00'); console.log(a.plus(a).times('1.075').toString());"
+FIXED_PACKAGE[@formatjs/bigdecimal]="export * from '@formatjs/bigdecimal';"
+FIXED_SNIPPET[bigint-money]="import { Money, Round } from 'bigint-money'; const a = new Money('1.00','EUR', Round.HALF_AWAY_FROM_0); console.log(a.add(a).multiply('1.075').toFixed(2));"
+FIXED_PACKAGE[bigint-money]="export * from 'bigint-money';"
+
+# ethers: FixedNumber from the package root and from the ethers/utils subpath; the smaller is kept,
+# and its row says which import it was
+ETHERS_ROOT_SNIPPET="import { FixedNumber } from 'ethers'; const f = (s) => FixedNumber.fromString(s, 'fixed128x18'); const a = f('1.00'); console.log(a.add(a).mul(f('1.075')).round(2).toString());"
+ETHERS_UTILS_SNIPPET="import { FixedNumber } from 'ethers/utils'; const f = (s) => FixedNumber.fromString(s, 'fixed128x18'); const a = f('1.00'); console.log(a.add(a).mul(f('1.075')).round(2).toString());"
+
+FIXED_LIBRARIES=("ducat Money" dnum js-big-decimal bigdecimal.js @formatjs/bigdecimal bigint-money)
+
+# one row: name, then minified and gzipped sizes of the program and of the whole package
+size_row() {
+  local name=$1 snippet=$2 package=$3
+  echo "$snippet" > "$SCRATCH/snippet.mjs"
+  echo "$package" > "$SCRATCH/package.mjs"
+  bundle "$SCRATCH/snippet.mjs" "$SCRATCH/snippet.js"
+  bundle "$SCRATCH/package.mjs" "$SCRATCH/package.js"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$name" \
+    "$(wc -c < "$SCRATCH/snippet.js")" "$(gzip_size "$SCRATCH/snippet.js")" \
+    "$(wc -c < "$SCRATCH/package.js")" "$(gzip_size "$SCRATCH/package.js")"
+}
+
+printf 'lib\tsnippet_min\tsnippet_gz\tfull_min\tfull_gz\n' > results/sizes-fixed.tsv
+for library in "${FIXED_LIBRARIES[@]}"; do
+  size_row "$library" "${FIXED_SNIPPET[$library]}" "${FIXED_PACKAGE[$library]}" >> results/sizes-fixed.tsv
+done
+
+root_row=$(size_row "ethers FixedNumber (import from 'ethers')" "$ETHERS_ROOT_SNIPPET" "export * from 'ethers';")
+utils_row=$(size_row "ethers FixedNumber (import from 'ethers/utils')" "$ETHERS_UTILS_SNIPPET" \
+  "export * from 'ethers/utils';")
+root_gzip=$(echo "$root_row" | cut -f3)
+utils_gzip=$(echo "$utils_row" | cut -f3)
+if [ "$utils_gzip" -lt "$root_gzip" ]; then
+  echo "$utils_row" >> results/sizes-fixed.tsv
+else
+  echo "$root_row" >> results/sizes-fixed.tsv
+fi
+
+column -t -s$'\t' results/sizes-fixed.tsv

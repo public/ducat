@@ -49,7 +49,7 @@ function visibleLibraries(run: BenchRun): string[] {
 }
 
 /** ns per operation, with a precision that suits its size */
-function formatNanoseconds(ns: number): string {
+export function formatNanoseconds(ns: number): string {
   if (ns >= 1000) {
     return `${(ns / 1000).toFixed(1)} µs`;
   }

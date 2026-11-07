@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Clean-machine benchmark runner. Runs ONE runtime (named in runtime.txt) over the bundled
-# benchmark. It installs that runtime itself, pinned and checked by SHA-256, so the machine needs
-# nothing but bash, curl, tar, unzip and coreutils. Writes $OUT/bench.json and $OUT/env.txt.
+# Clean-machine benchmark runner. Runs ONE runtime (named in runtime.txt) over the bundled money
+# and fixed-point benchmarks, one after the other. It installs that runtime itself, pinned and
+# checked by SHA-256, so the machine needs nothing but bash, curl, tar, unzip and coreutils.
+# Writes $OUT/bench.json, $OUT/fixed-bench.json and $OUT/env.txt.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -55,11 +56,14 @@ esac
   lscpu | sed -n 's/^Model name: *//p'
   nproc
   uname -r
-  sha256sum bench.bundle.mjs
+  sha256sum bench.bundle.mjs fixed-bench.bundle.mjs
 } > "$OUT/env.txt"
 
 export BENCH_MS="$WARM_UP_MS" BENCH_ROUNDS="$ROUNDS"
 "${COMMAND[@]}" bench.bundle.mjs 2> "$OUT/stderr.txt" | grep '^{' > "$OUT/bench.json"
+"${COMMAND[@]}" fixed-bench.bundle.mjs 2> "$OUT/fixed-stderr.txt" | grep '^{' > "$OUT/fixed-bench.json"
 
 echo "done $RUNTIME"
 head -c 300 "$OUT/bench.json"
+echo
+head -c 300 "$OUT/fixed-bench.json"

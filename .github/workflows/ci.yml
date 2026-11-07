@@ -113,18 +113,26 @@ jobs:
         with:
           deno-version: 2.9.8
       - run: pnpm install --frozen-lockfile
-      - name: Bundle the battery
-        working-directory: compare
-        run: node build.mjs battery/run.ts out/battery.mjs
-      - name: Run it on Node, Bun and Deno
+      - name: Bundle the money and fixed-point batteries
         working-directory: compare
         run: |
-          node out/battery.mjs > out/battery-node.json
-          bun out/battery.mjs > out/battery-bun.json
-          deno run -A --no-config out/battery.mjs > out/battery-deno.json
+          node build.mjs battery/run.ts out/battery.mjs
+          node build.mjs fixed/run.ts out/fixed-battery.mjs
+      - name: Run both on Node, Bun and Deno
+        working-directory: compare
+        run: |
+          for battery in battery fixed-battery; do
+            node out/$battery.mjs > out/$battery-node.json
+            bun out/$battery.mjs > out/$battery-bun.json
+            deno run -A --no-config out/$battery.mjs > out/$battery-deno.json
+          done
       - name: Same outcomes as the committed results, and ducat passes every vector
         working-directory: compare
-        run: node battery/check.ts out/battery-node.json out/battery-bun.json out/battery-deno.json
+        run: |
+          node battery/check.ts results/battery.json \
+            out/battery-node.json out/battery-bun.json out/battery-deno.json
+          node battery/check.ts results/fixed-battery.json \
+            out/fixed-battery-node.json out/fixed-battery-bun.json out/fixed-battery-deno.json
       - name: Comparison tables are up to date
         working-directory: compare
         run: node tables.ts --check

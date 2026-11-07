@@ -1,15 +1,7 @@
 // The same eight operations across money libraries. Runs unchanged on Node, Bun and Deno once
-// bundled by build.ts. Each operation processes N = 1000 pre-built values; the result is
-// nanoseconds per single operation.
-//
-// Method: ROUNDS rounds. In each round the library order is shuffled (seeded, so every run uses the
-// same orders) and every (library, operation) cell gets a warm-up of BENCH_MS milliseconds and then
-// SAMPLES timed samples. Reported: the median over rounds of the per-round median, plus the min and
-// max across rounds.
-//
-//   BENCH_MS      warm-up per cell in ms (default 40)
-//   BENCH_ROUNDS  rounds (default 3)
-//   BENCH_ONLY    comma-separated library names to run (default: all)
+// bundled by build.mjs. Each operation processes N = 1000 pre-built values; the result is
+// nanoseconds per single operation. The method and its settings (BENCH_MS, BENCH_ROUNDS,
+// BENCH_ONLY) are in harness.ts.
 import { Decimal as PrismaDecimal } from '@prisma/client/runtime/index-browser';
 import { Currencies as ScreenyCurrencies, Money as ScreenyMoney } from '@screeny05/ts-money';
 import Big from 'big.js';
@@ -27,6 +19,7 @@ import JsMoney from 'js-money';
 import * as Monetra from 'monetra';
 import TsMoneyPackage from 'ts-money';
 import * as ducat from '../../src/index.ts';
+import { ONLY, runBenchmark } from './harness.ts';
 
 // Library values are opaque here: each implementation only ever sees its own values.
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -45,35 +38,6 @@ interface Implementation {
   compare(first: LibraryValue, second: LibraryValue): number;
   notes?: string;
 }
-
-interface Cell {
-  med: number;
-  min: number;
-  max: number;
-}
-
-const runtimeGlobals = globalThis as unknown as {
-  process?: { env?: Record<string, string | undefined>; versions: { node: string; v8: string } };
-  Deno?: { env: { get(name: string): string | undefined }; version: { deno: string; v8: string } };
-  Bun?: { version: string };
-};
-
-function readEnv(name: string, fallback: string): string {
-  const fromProcess = runtimeGlobals.process?.env?.[name];
-  if (fromProcess !== undefined) {
-    return fromProcess;
-  }
-  const fromDeno = runtimeGlobals.Deno?.env.get(name);
-  if (fromDeno !== undefined) {
-    return fromDeno;
-  }
-  return fallback;
-}
-
-const WARM_UP_MS = Number(readEnv('BENCH_MS', '40'));
-const ROUNDS = Number(readEnv('BENCH_ROUNDS', '3'));
-const SAMPLES = 5;
-const ONLY = readEnv('BENCH_ONLY', '') === '' ? null : readEnv('BENCH_ONLY', '').split(',');
 
 const N = 1000;
 
@@ -312,46 +276,6 @@ const implementations: Record<string, Implementation> = {
 const OPERATIONS = ['fromMinor', 'parse', 'add', 'mulRatio', 'allocate3', 'toDecimal', 'format', 'compare'] as const;
 type Operation = (typeof OPERATIONS)[number];
 
-// results go here so the engine cannot drop the measured work as dead code
-let sink: unknown;
-
-/** Median ns per inner operation of `body`, which performs `innerCount` operations per call. */
-function measureCell(body: () => unknown, innerCount: number): number {
-  let start = performance.now();
-  while (performance.now() - start < WARM_UP_MS) {
-    sink = body();
-  }
-
-  // double the iteration count until one sample takes at least WARM_UP_MS / SAMPLES
-  let iterations = 1;
-  for (;;) {
-    start = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      sink = body();
-    }
-    if (performance.now() - start > WARM_UP_MS / SAMPLES) {
-      break;
-    }
-    iterations *= 2;
-  }
-
-  const samples: number[] = [];
-  for (let sample = 0; sample < SAMPLES; sample++) {
-    start = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      sink = body();
-    }
-    const elapsedNs = (performance.now() - start) * 1e6;
-    samples.push(elapsedNs / (iterations * innerCount));
-  }
-  return median(samples);
-}
-
-function median(values: number[]): number {
-  const sorted = values.toSorted((first, second) => first - second);
-  return sorted[sorted.length >> 1]!;
-}
-
 function operationBodies(implementation: Implementation): Record<Operation, () => unknown> {
   const values = cents.map((amount) => implementation.fromMinor(amount));
 
@@ -433,65 +357,13 @@ function checkAddAgrees(names: string[]): void {
   }
 }
 
-function runtimeName(): string {
-  if (runtimeGlobals.Bun) {
-    return `bun ${runtimeGlobals.Bun.version}`;
-  }
-  if (runtimeGlobals.Deno) {
-    const { deno, v8 } = runtimeGlobals.Deno.version;
-    return `deno ${deno} (V8 ${v8})`;
-  }
-  const { node, v8 } = runtimeGlobals.process!.versions;
-  return `node ${node} (V8 ${v8})`;
-}
-
 const names = Object.keys(implementations).filter((name) => !ONLY || ONLY.includes(name));
 checkAddAgrees(names);
 
-// the same seeded generator as the published runs, so library orders are reproducible
-let seed = 42;
-function random(): number {
-  seed = (seed * 1103515245 + 12345) % 2147483648;
-  return seed / 2147483648;
-}
-
-const perRound: Record<string, Record<string, number[]>> = {};
-for (let round = 0; round < ROUNDS; round++) {
-  const order = names.toSorted(() => random() - 0.5);
-
-  for (const name of order) {
-    const bodies = operationBodies(implementations[name]!);
-    perRound[name] ??= {};
-
-    for (const operation of OPERATIONS) {
-      // add and compare work on N - 1 pairs
-      const pairwise = operation === 'add' || operation === 'compare';
-      const innerCount = pairwise ? N - 1 : N;
-      perRound[name][operation] ??= [];
-      perRound[name][operation].push(measureCell(bodies[operation], innerCount));
-    }
-  }
-}
-
-function summarize(roundValues: number[]): Cell {
-  return { med: median(roundValues), min: Math.min(...roundValues), max: Math.max(...roundValues) };
-}
-
-const ns = Object.fromEntries(
-  names.map((name) => {
-    const cells = OPERATIONS.map((operation) => [operation, summarize(perRound[name]![operation]!)]);
-    return [name, Object.fromEntries(cells)];
-  }),
-);
-
-void sink;
-console.log(
-  JSON.stringify({
-    runtime: runtimeName(),
-    ms: WARM_UP_MS,
-    rounds: ROUNDS,
-    libs: names,
-    ops: OPERATIONS,
-    ns,
-  }),
-);
+// add and compare work on N - 1 pairs
+runBenchmark({
+  libraries: Object.keys(implementations),
+  operations: OPERATIONS,
+  bodiesFor: (name) => operationBodies(implementations[name]!),
+  innerCount: (operation) => (operation === 'add' || operation === 'compare' ? N - 1 : N),
+});

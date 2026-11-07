@@ -9,17 +9,24 @@ import { join, relative } from 'node:path';
 import { renderBenchTables, renderSpeedHeadline } from './bench/render.ts';
 import { LEGEND, renderMatrix, renderNonPasses, renderSummary } from './battery/render.ts';
 import type { BatteryResults } from './battery/run.ts';
-import { renderSizeTable } from './sizes/render.ts';
+import { renderFixedSpeedTable } from './fixed/bench-render.ts';
+import { renderFixedSizeTable, renderSizeTable } from './sizes/render.ts';
 
 const COMPARE_DIRECTORY = import.meta.dirname;
 const RESULTS_DIRECTORY = join(COMPARE_DIRECTORY, 'results');
 const BENCH_RUN_DIRECTORY = join(RESULTS_DIRECTORY, 'genoa-2026-11-07');
 const SIZES_PATH = join(RESULTS_DIRECTORY, 'sizes.tsv');
+const FIXED_SIZES_PATH = join(RESULTS_DIRECTORY, 'sizes-fixed.tsv');
 const isCheck = process.argv.includes('--check');
 
 const battery = JSON.parse(readFileSync(join(RESULTS_DIRECTORY, 'battery.json'), 'utf8')) as BatteryResults;
 
+const fixedBattery = JSON.parse(readFileSync(join(RESULTS_DIRECTORY, 'fixed-battery.json'), 'utf8')) as BatteryResults;
+
 const batterySummary = renderSummary(battery);
+const fixedBatterySummary = renderSummary(fixedBattery);
+const fixedSpeedTable = renderFixedSpeedTable(BENCH_RUN_DIRECTORY);
+const fixedSizeTable = renderFixedSizeTable(FIXED_SIZES_PATH);
 const speedHeadline = renderSpeedHeadline(BENCH_RUN_DIRECTORY);
 const sizeTable = renderSizeTable(SIZES_PATH);
 
@@ -47,6 +54,29 @@ const fullPage = [
   '## Bundle size',
   '',
   sizeTable,
+  '## Fixed-point decimal libraries',
+  '',
+  'Plain decimals without currencies: parse, add, multiply and divide rounded to a scale, ' +
+    'round, compare and toString, each with an explicit rounding mode. A library that cannot ' +
+    'round a given way shows n/a for that vector; it is never emulated.',
+  '',
+  '### Correctness',
+  '',
+  `${fixedBattery.vectors.length} vectors against ${fixedBattery.libraries.length} libraries.`,
+  '',
+  fixedBatterySummary,
+  LEGEND,
+  '',
+  renderMatrix(fixedBattery),
+  '#### Every non-pass, with the value returned',
+  '',
+  renderNonPasses(fixedBattery),
+  '### Speed',
+  '',
+  fixedSpeedTable,
+  '### Bundle size',
+  '',
+  fixedSizeTable,
 ].join('\n');
 
 const outputs: [string, string][] = [
@@ -54,6 +84,9 @@ const outputs: [string, string][] = [
   [join(RESULTS_DIRECTORY, 'tables', 'battery-summary.md'), batterySummary],
   [join(RESULTS_DIRECTORY, 'tables', 'speed-headline.md'), speedHeadline],
   [join(RESULTS_DIRECTORY, 'tables', 'sizes.md'), sizeTable],
+  [join(RESULTS_DIRECTORY, 'tables', 'fixed-battery-summary.md'), fixedBatterySummary],
+  [join(RESULTS_DIRECTORY, 'tables', 'fixed-speed.md'), fixedSpeedTable],
+  [join(RESULTS_DIRECTORY, 'tables', 'fixed-sizes.md'), fixedSizeTable],
 ];
 
 const stale: string[] = [];
