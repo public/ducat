@@ -18,7 +18,7 @@
     {
       // readability (CONTRIBUTING.md): braces on every block, no nested ternaries, names longer than a
       // letter except loop indices and type parameters
-      "files": ["src/**/*.ts"],
+      "files": ["src/**/*.ts", "scripts/**/*.mjs"],
       "rules": {
         "curly": ["error", "all"],
         "no-nested-ternary": "error",
