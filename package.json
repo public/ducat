@@ -123,10 +123,11 @@
     "gen:check": "node scripts/gen-currencies.mjs --check",
     "gen:fetch": "node scripts/gen-currencies.mjs --check --fetch",
     "bench": "node scripts/bench-all.mjs",
+    "size": "node scripts/size.mjs",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "check": "pnpm lint && pnpm fmt:check && pnpm typecheck && pnpm test",
+    "check": "pnpm lint && pnpm fmt:check && pnpm typecheck && pnpm size && pnpm test",
     "bench:vitest": "vitest bench --run"
   },
   "devDependencies": {

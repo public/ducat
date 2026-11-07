@@ -12,6 +12,8 @@ import {
 } from './decimal.js';
 import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
 
+// A module-local constant, not an import: the hot loops (sum, add) read it on every iteration, and
+// V8 reads an imported binding through an extra indirection.
 const MAX = Number.MAX_SAFE_INTEGER;
 
 /** Currency codes accepted by constructors: known codes autocomplete, any string is allowed. */
@@ -26,11 +28,12 @@ export interface MoneyJSON<C extends string = string> {
 /** Thrown when two amounts in different currencies are combined. */
 export class CurrencyMismatchError extends TypeError {
   override name = 'CurrencyMismatchError';
-  constructor(
-    readonly expected: string,
-    readonly actual: string,
-  ) {
+  declare readonly expected: string;
+  declare readonly actual: string;
+  constructor(expected: string, actual: string) {
     super(`Currency mismatch: ${expected} vs ${actual}`);
+    this.expected = expected;
+    this.actual = actual;
   }
 }
 
@@ -49,9 +52,9 @@ export class CurrencyMismatchError extends TypeError {
  * add theirs when imported; see `extendMoney`.
  */
 class Money<C extends string = string> {
-  readonly currency: C;
-  readonly minor: number | bigint;
-  readonly scale: number;
+  declare readonly currency: C;
+  declare readonly minor: number | bigint;
+  declare readonly scale: number;
   /** @internal */
   constructor(currency: C, minor: number | bigint, scale: number) {
     this.currency = currency;
