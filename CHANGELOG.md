@@ -7,7 +7,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
-## [0.1.0] - unreleased
+## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
 dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as ESM only.
