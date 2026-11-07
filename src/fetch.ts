@@ -1,6 +1,6 @@
 // Network fetchers for published reference rates, using the platform fetch. Opt-in: nothing else in
-// the library imports this module, so core and ducat/convert never touch the network. You decide
-// when to call it and how to cache.
+// the library imports this module, so core and @ducatjs/money/convert never touch the
+// network. You decide when to call it and how to cache.
 import { parseEcbXml } from './ecb.js';
 import type { RateTable } from './provider.js';
 
@@ -29,6 +29,7 @@ type AbortSignalStatics = {
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
+/** The ECB's eurofxref files: the latest day, the last 90 days, and the full history since 1999. */
 export const ECB_URLS = {
   daily: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',
   '90d': 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml',
@@ -62,11 +63,11 @@ export class FetchRatesError extends Error {
 }
 
 /**
- * Fetches the ECB euro reference rates and parses them with parseEcbXml: EUR-based tables, newest first.
- * The ECB publishes once per TARGET working day at about 16:00 CET and states that its rates are for
- * information purposes only.
+ * Fetches the ECB euro reference rates and parses them with parseEcbXml: EUR-based tables,
+ * newest first. The ECB publishes once per TARGET working day at about 16:00 CET and states
+ * that its rates are for information purposes only.
  *
- *     const [latest] = await fetchEcb();                      // RateTable for the last published day
+ *     const [latest] = await fetchEcb(); // the RateTable for the last published day
  *     const hist = snapshotsFrom(await fetchEcb({ history: '90d' }));
  */
 export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> {
