@@ -43,7 +43,9 @@ export function currencyExponent(code: string): number {
   if (customExponent !== undefined) {
     return customExponent;
   }
-  throw new RangeError(`Unknown currency "${code}" (not ISO 4217 and not registered with defineCurrency)`);
+  throw new RangeError(
+    `Unknown currency "${code}" (not ISO 4217 and not registered with defineCurrency)`,
+  );
 }
 
 /** Whether the code is an ISO 4217 currency or one registered with `defineCurrency`. */
@@ -51,4 +53,9 @@ export function isCurrency(code: string): code is CurrencyCode {
   return typeof iso[code] === 'number' || custom.has(code);
 }
 
-export { ISO_EXPONENTS, ISO_4217_PUBLISHED, ISO_NON_MONETARY, type IsoCurrencyCode } from './generated/iso4217.js';
+export {
+  ISO_EXPONENTS,
+  ISO_4217_PUBLISHED,
+  ISO_NON_MONETARY,
+  type IsoCurrencyCode,
+} from './generated/iso4217.js';

@@ -58,7 +58,8 @@ export function runtimeName(): string {
   const g = globalThis as any;
   if (g.Bun) return `bun ${g.Bun.version} (JSC)`;
   if (g.Deno) return `deno ${g.Deno.version.deno} (V8 ${g.Deno.version.v8})`;
-  if (g.process?.versions?.node) return `node ${g.process.versions.node} (V8 ${g.process.versions.v8})`;
+  if (g.process?.versions?.node)
+    return `node ${g.process.versions.node} (V8 ${g.process.versions.v8})`;
   if (typeof g.inIon === 'function') return 'SpiderMonkey shell (jsvu)';
   if (typeof g.jscOptions === 'function') return 'JavaScriptCore shell (jsvu)';
   return 'unknown';

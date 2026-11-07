@@ -1,6 +1,6 @@
 /**
- * `@ducatjs/money/fn`: every free function and type of ducat and its opt-in modules, without installing any
- * methods on Money. Bundlers can drop whatever is unused, function by function.
+ * `@ducatjs/money/fn`: every free function and type of ducat and its opt-in modules, without
+ * installing any methods on Money. Bundlers can drop whatever is unused, function by function.
  */
 export * from './index.js';
 export * from './allocate.js';

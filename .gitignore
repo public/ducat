@@ -7,8 +7,13 @@ examples/prisma/generated/
 *.db-journal
 .claude/
 .wt/
+compare/out/
+compare/node_modules/
 reports/
 .stryker-tmp/
 test-results/
 playwright-report/
 test/vectors/dectest/
+
+# Lean build output
+proofs/.lake/

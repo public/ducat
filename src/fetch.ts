@@ -103,7 +103,10 @@ export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> 
 }
 
 /** The caller's signal, a timeout signal, or both combined. */
-function requestSignal(signal: AbortSignalLike | undefined, timeout: number): AbortSignalLike | undefined {
+function requestSignal(
+  signal: AbortSignalLike | undefined,
+  timeout: number,
+): AbortSignalLike | undefined {
   if (!Number.isFinite(timeout) || timeout < 0) {
     throw new RangeError(`timeout must be a non-negative number of milliseconds, got ${timeout}`);
   }

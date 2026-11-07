@@ -31,6 +31,36 @@ Status: this is a prototype. The API is meant to be small, but it is not yet fro
 
 ---
 
+## How it compares
+
+The same 41 correctness vectors, the same benchmark and the same bundle snippet for every library. The details, the
+other libraries' bugs, the fixed-point libraries and the money libraries in other languages are in
+[docs/COMPARISON.md](docs/COMPARISON.md), regenerated from [compare/](compare) for each release.
+
+| library                            | correct (of 41) | wrong, silently |       bundle (gzip) |
+| ---------------------------------- | --------------: | --------------: | ------------------: |
+| **ducat**                          |          **41** |           **0** |              3.7 kB |
+| dinero.js 2 (bigint calculator)    |              34 |               0 |              1.8 kB |
+| monetra                            |              34 |               3 |              4.5 kB |
+| ts-money / js-money                |              31 |           7 / 6 |       30.7 / 8.8 kB |
+| bigint-money                       |              30 |               0 |              1.5 kB |
+| dinero.js 2 (number calculator)    |              30 |               4 |              1.8 kB |
+| decimal.js / big.js / bignumber.js |              22 |               1 | 12.6 / 2.9 / 8.5 kB |
+| currency.js                        |              16 |               6 |              1.3 kB |
+
+- **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
+  units, float traps and negative allocations.
+- **Fastest on arithmetic:** it is the fastest on parse, add, multiply, allocate, toDecimal and compare on Node and
+  Deno. Against the fastest other library the margin ranges from 1.04× (compare: 7.67 against 8.00 ns) to about 10×
+  (allocate: 51 against bigint-money's 495 ns); against dinero.js 2 it is 20× to 30×.
+- **Where it isn't fastest:** formatting, where currency.js (a float) and dinero.js 1 are slightly faster on Node and
+  Bun, and comparisons on Bun, where libraries comparing plain numbers are faster.
+- **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
+  for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
+  is opt-in.
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on a pre-release build under Node 22.11; sizes are
+  gzipped KiB.
+
 ## Design
 
 ### Representation: integer minor units in a JS number, with a bigint fallback
@@ -73,7 +103,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 - **No float arithmetic on amounts.** Factors, rates and percentages are exact rationals (`ratio('1.075')`, `ratio(1, 3)`, `'1/3'`, bigint, integer). A JS number factor such as `0.1` is read at its shortest decimal form (`"0.1"`, exactly 1/10) and never multiplied as a float. `money(0.1 + 0.2, 'EUR')` **throws**: `0.30000000000000004` has too many decimals, and we don't silently turn it into 0.30.
 - **Rounding is never hidden in the representation.** Every operation that may need to round takes a `RoundingMode`. Arithmetic defaults to `'halfExpand'` (ties away from zero, the most common default; see [Decisions](#decisions)); pass `'unnecessary'` to throw `RoundingError` instead. Parsing never rounds by default: `money('1.005', 'EUR')` throws.
-- **Allocation is exact.** The parts always sum to the whole, and the remainder is distributed deterministically. This is property-tested across every remainder strategy, with weights up to 2^40 and amounts up to 10^25.
+- **Allocation is exact.** The parts always sum to the whole, and the remainder is distributed deterministically. A Lean model of it is proved for every remainder strategy, and the TypeScript is checked against that model (see [What is proved](#what-is-proved)) and property-tested with weights up to 2^40 and amounts up to 10^25.
 - **Currency mismatch** is a compile-time error for literal currency types (`add(eur, usd)`, `sum([eur, usd])`, `compare`, `exchangeRate(...).convert`). When types are erased (`Money<string>`) it is a runtime `CurrencyMismatchError`. `equals()` across currencies returns `false`.
 
 ---
@@ -214,7 +244,11 @@ The sections below list each function with its free-function signature; the meth
 ```ts
 import { exchangeRate } from '@ducatjs/money/convert';
 
-const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06', type: 'reference' });
+const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
+  source: 'ECB',
+  asOf: '2026-11-06',
+  type: 'reference',
+});
 eurUsd.convert(money('100', 'EUR'), 'halfEven'); // 111.65 USD
 eurUsd.inverse().toString(); // '2000/2233': exact, not 0.8956...
 eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedFrom`
@@ -332,7 +366,10 @@ const db = new PrismaClient().$extends({
   },
 });
 await db.order.create({
-  data: { ...toMinorColumns(total, 'totalMinor', 'currency'), shipping: toDecimalValue(fee, Prisma.Decimal) },
+  data: {
+    ...toMinorColumns(total, 'totalMinor', 'currency'),
+    shipping: toDecimalValue(fee, Prisma.Decimal),
+  },
 });
 (await db.order.findFirstOrThrow()).total; // Money
 ```
@@ -394,9 +431,61 @@ Processor differences encoded:
 
 ---
 
+## What is proved
+
+`proofs/` holds [Lean 4](https://lean-lang.org) proofs (with Mathlib) of two kinds:
+
+- **Proved code.** The bigint rounding kernels are written once in Lean, as values of a small expression language (`proofs/Ducat/Kernel.lean`). The theorems are about those values, and `pnpm gen:kernel` prints the same values as TypeScript into `src/generated/kernel.ts`. They print as one function, `divideAndRoundBigint`: the steps every mode shares, then a `switch` with each mode's proved decision (`kernel_shared` states that the shared steps really are the same). `divRoundBig` calls it; it is the bigint path of every rounded operation. What you have to trust is the printer (about 60 lines of Lean) and the fact that JS `bigint` `+ - * /` agree with Lean's `Int` (`/` truncates, as `Int.tdiv` does).
+- **Proved models.** Allocation, tax and scale changes are proved about Lean models of what the TypeScript does, not about the TypeScript itself. The allocation model is compiled into an oracle that prints 1,500 generated cases to `test/fixtures/allocate.oracle.json`. The tests require `allocate` to match it exactly, on both its number and bigint paths. The TypeScript for tax, scale and conversion is tested, not proved (see below).
+
+`pnpm gen:check`, which runs in every check without Lean, fails in two cases. One is any unfinished proof (`sorry`, `admit`, a new `axiom`, `native_decide`). The other is a generated file that was edited by hand or not regenerated after `proofs/` changed: each generated file carries a hash of the Lean sources it came from. `pnpm gen:kernel:check` needs Lean, and CI runs it. It rebuilds the proofs, checks that the headline theorems depend only on Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`), and fails if either generated file differs from what the proofs print.
+
+### Rounding kernels: proved code (`proofs/Ducat/Rounding.lean`)
+
+`Rounds m p d q` is the specification: "`q` is `p / d` rounded with mode `m`", written as integer inequalities on the error `p − d·q`. For example, `floor` means `q ≤ p/d < q + 1`. The half modes mean `|p/d − q| ≤ ½`, with the tie going where the mode says. `unnecessary` means the division is exact. For a divisor `d > 0`:
+
+- `kernel_sound`: whatever the generated kernel returns is correctly rounded.
+- `rounds_unique`: the specification has at most one answer, so "correctly rounded" means "the right answer".
+- `kernel_fails_iff`: the kernel throws exactly for `unnecessary` on an inexact division, and never otherwise.
+- `kernel_correct`: so whenever a correctly rounded answer exists, the kernel returns it.
+
+### Allocation: proved model (`proofs/Ducat/Allocate.lean`)
+
+The model takes an amount `x ≥ 0` and non-negative weights with a positive total `T`. Each bucket gets `⌊x·w/T⌋`, and the leftover units go to the non-zero buckets in the order the strategy fixes.
+
+- `alloc_sum`: the parts add up to `x`, for every remainder strategy.
+- `alloc_zero`: a bucket with zero weight gets zero.
+- `alloc_near_largest`: with `'largest'` (Hamilton's method), each part is less than one unit from its exact share `x·w/T`.
+- `alloc_near`: with `'first'` and `'last'`, each part is at most one unit from its exact share. Exactly one unit can happen: 0.02 split `[2, 1, 1]` with `'first'` gives 0.02, 0, 0.
+- `alloc_scale`: multiplying every weight by the same positive number changes nothing, so decimal weights such as `'33.3'`, scaled to integers, are allocated by their exact ratios.
+- Negative amounts are the mirror image of positive ones. The model defines them that way, as `allocate` does, so `allocS_neg` only confirms the definition.
+
+### Tax, scale and conversion: proved model (`proofs/Ducat/Tax.lean`)
+
+These are stated over the proved kernel (`divRound`):
+
+- `addTax_bound`: the modelled tax is the exact tax, correctly rounded once. `extractTax_bound`: the modelled net is `gross / (1 + rate)` correctly rounded, and the tax carries the same error with the opposite sign. (`addTax_gross` and `extractTax_gross`, net + tax = gross, hold by construction, as in the TypeScript.)
+- `rounds_half_bound`, `rounds_directed_bound`: a correctly rounded result is within half a unit of the exact value in the half modes, and under one unit in every mode.
+- `toScale_roundtrip`: raising the scale and lowering it again gives back the original value in every mode, and `unnecessary` does not throw.
+- `divRound_mul_left`: multiplying the numerator and denominator by the same positive number does not change the result. So reducing a rate by its gcd, or composing exact rates, cannot change a rounded result, provided it is computed as a single division of the exact product.
+
+### Tested, not proved
+
+- **The printer** that turns the Lean kernels into TypeScript, and the `divRoundBig` dispatch. The generated kernels are compared with an independent bigint oracle (`test/kernel.test.ts`).
+- **The number fast path** of `divRound`. It computes the exact truncated quotient and remainder itself, then calls `roundTruncatedQuotient`: the same Lean terms as the proved switch, printed over `number`. That is exact while every value is a safe integer, which is the caller's obligation. It is compared with the generated kernels for every `p ∈ [−300, 300]`, `d ∈ [1, 40]` in every mode, and with fast-check over the full safe-integer range, on ties, and on bigints up to 10^30.
+- **The TypeScript `allocate`**, number and bigint paths. It is compared with the 1,500-case oracle fixture, plus property tests against a separate bigint largest-remainder allocator (`test/oracle.test.ts`).
+- **The TypeScript tax, conversion and `multiplyByRatio` code:**
+  - that each rounds with exactly one kernel call on the exact product;
+  - the scale shifts;
+  - that every call site passes a divisor `d > 0`, with the sign moved to the numerator.
+
+  These are covered by unit vectors and by property tests against decimal.js at 200 significant digits (`test/oracle.test.ts`).
+
+- `instalments`, `schedule`, `chunk`, decimal parsing, `Intl` formatting and parsing, and the processor and database adapters.
+
 ## Tests
 
-`pnpm test` runs vitest: 192 tests in 11 files.
+`pnpm test` runs vitest: 376 tests in 26 files.
 
 - Unit tests use real-world vectors:
   - the `java.math.RoundingMode` table for all modes
@@ -406,7 +495,7 @@ Processor differences encoded:
   - Stripe and Adyen doc examples, the statutory cash-rounding thresholds for SE, NO, DK, HU and CA
   - Intl output for de, fr, ja, ar and en-IN
 - fast-check property tests cover:
-  - `divRound` against an independent floor-based bigint oracle over the full safe range, including float-quotient edge cases
+  - `divideAndRound` against an independent floor-based bigint oracle over the full safe range, including float-quotient edge cases
   - rounding-mode invariants (floor ≤ x ≤ ceil, half modes within ½)
   - add associativity, commutativity and identity, and agreement with bigint arithmetic
   - the number-iff-safe representation invariant

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { defineCurrency, fromMinor, money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
+import {
+  defineCurrency,
+  fromMinor,
+  money,
+  toDecimal,
+  RoundingError,
+  ISO_EXPONENTS,
+} from '../src/index.js';
 import {
   checkoutExponent,
   fromCheckout,
@@ -56,7 +63,9 @@ describe('Checkout.com', () => {
     expect(toCheckoutAmount(money('0', 'USD'))).toBe(0);
     expect(() => toCheckoutAmount(money('-5', 'USD'))).toThrow(/can't be negative/);
     // the sign is checked after rounding: -0.004 rounds to zero
-    expect(toCheckoutAmount(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toBe(0);
+    expect(toCheckoutAmount(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toBe(
+      0,
+    );
   });
   it('amounts beyond a safe integer throw', () => {
     expect(() => toCheckoutAmount(fromMinor(2n ** 60n, 'USD'))).toThrow(/too large/);

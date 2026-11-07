@@ -73,7 +73,9 @@ describe('opt-in modules', () => {
     extendMoney({ twice: () => 1 }, { owner: 'example/twice' });
     extendMoney({ twice: () => 2 }, { owner: 'example/twice' });
     expect((money('1', 'EUR') as Money & { twice(): number }).twice()).toBe(2);
-    expect(() => extendMoney({ twice: () => 3 }, { owner: 'example/other' })).toThrow(/already defined/);
+    expect(() => extendMoney({ twice: () => 3 }, { owner: 'example/other' })).toThrow(
+      /already defined/,
+    );
     expect(() => extendMoney({ twice: () => 3 })).toThrow(/already defined/);
   });
 

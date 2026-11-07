@@ -1,7 +1,16 @@
-import { parseDecimal, pow10n, toSafe } from './decimal.js';
-import { CurrencyMismatchError, compare, make, negate, scaleUp, subtract, toScale, type Money } from './money.js';
+import { parseDecimal, pow10n, normalizeMinor } from './decimal.js';
+import {
+  CurrencyMismatchError,
+  compare,
+  make,
+  negate,
+  scaleUp,
+  subtract,
+  toScale,
+  type Money,
+} from './money.js';
 
-const MAX = Number.MAX_SAFE_INTEGER;
+const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 
 /**
  * Where the indivisible remainder (always fewer minor units than there are non-zero buckets for
@@ -28,28 +37,31 @@ function weightsToBig(ws: readonly Weight[]): bigint[] {
 
 function weightsScaled(ws: readonly Weight[]): { ws: bigint[]; scale: number } {
   let scale = 0;
-  const parsed = ws.map((w) => {
-    if (typeof w === 'bigint') {
-      return { digits: w, scale: 0 };
+  const parsed = ws.map((weight) => {
+    if (typeof weight === 'bigint') {
+      return { digits: weight, scale: 0 };
     }
-    if (typeof w === 'number' && Number.isSafeInteger(w)) {
-      return { digits: BigInt(w), scale: 0 };
+    if (typeof weight === 'number' && Number.isSafeInteger(weight)) {
+      return { digits: BigInt(weight), scale: 0 };
     }
-    const p = parseDecimal(String(w));
-    return p;
+    const item = parseDecimal(String(weight));
+    return item;
   });
-  for (const p of parsed) {
-    if (p.digits < 0n) {
+  for (const item of parsed) {
+    if (item.digits < 0n) {
       throw new RangeError('Allocation weights must not be negative');
     }
-    if (p.scale > scale) {
-      scale = p.scale;
+    if (item.scale > scale) {
+      scale = item.scale;
     }
   }
-  return { ws: parsed.map((p) => p.digits * pow10n(scale - p.scale)), scale };
+  return { ws: parsed.map((item) => item.digits * pow10n(scale - item.scale)), scale };
 }
 
-/** Distributes `rem` extra units among the buckets; `frac` are the per-bucket remainders (for 'largest'). */
+/**
+ * Distributes `rem` extra units among the buckets; `frac` are the per-bucket remainders (for
+ * 'largest').
+ */
 function distribute<T extends number | bigint>(
   shares: T[],
   rem: number,
@@ -61,13 +73,17 @@ function distribute<T extends number | bigint>(
   if (rem === 0) {
     return;
   }
-  const n = shares.length;
+  const count = shares.length;
   const eligible: number[] = [];
-  for (let i = 0; i < n; i++) {
-    if (weights[i]! > 0) eligible.push(i);
+  for (let i = 0; i < count; i++) {
+    if (weights[i]! > 0) {
+      eligible.push(i);
+    }
   }
   const plus = (i: number, k: number) => {
-    shares[i] = (typeof one === 'number' ? (shares[i] as number) + k : (shares[i] as bigint) + BigInt(k)) as T;
+    shares[i] = (
+      typeof one === 'number' ? (shares[i] as number) + k : (shares[i] as bigint) + BigInt(k)
+    ) as T;
   };
   switch (mode) {
     case 'toFirst':
@@ -85,8 +101,14 @@ function distribute<T extends number | bigint>(
       }
       return;
     case 'largest': {
-      const f = frac!;
-      eligible.sort((a, b) => (f[a]! > f[b]! ? -1 : f[a]! < f[b]! ? 1 : a - b));
+      const remainders = frac!;
+      // Largest remainder first; equal remainders keep bucket order.
+      eligible.sort((left, right) => {
+        if (remainders[left]! !== remainders[right]!) {
+          return remainders[left]! > remainders[right]! ? -1 : 1;
+        }
+        return left - right;
+      });
       for (let k = 0; k < rem; k++) {
         plus(eligible[k]!, 1);
       }
@@ -97,71 +119,76 @@ function distribute<T extends number | bigint>(
 }
 
 /**
- * Splits `m` into parts proportional to `weights`. Exact: the parts always sum to `m`; no part
- * differs from its ideal share by a full minor unit or more (for the spreading strategies).
- * Negative amounts are allocated as the negation of the positive allocation.
+ * Splits `m` into parts proportional to `weights`. Exact: the parts always sum to `m`, and zero
+ * weights get zero. With 'largest' each part is less than one minor unit from its exact share; with
+ * 'first' and 'last', at most one unit. Negative amounts are allocated as the negation of the
+ * positive allocation. These properties are proved for a Lean model of this function
+ * (proofs/Ducat/Allocate.lean), and test/allocate.oracle.test.ts checks this code against that
+ * model.
  *
  *     allocate(money('100', 'EUR'), [1, 1, 1])        // 33.34, 33.33, 33.33
  *     allocate(money('0.05', 'EUR'), ['70', '30'])    // 0.04, 0.01
  */
 export function allocate<C extends string>(
-  m: Money<C>,
+  money: Money<C>,
   weights: readonly Weight[],
   options?: AllocateOptions,
 ): Money<C>[] {
-  const n = weights.length;
-  if (n === 0) {
+  const count = weights.length;
+  if (count === 0) {
     throw new RangeError('allocate() needs at least one weight');
   }
   const mode = options?.remainder ?? 'largest';
-  if (m.minor < 0) {
-    return allocate(negate(m), weights, options).map(negate);
+  if (money.minor < 0) {
+    return allocate(negate(money), weights, options).map(negate);
   }
-  const x = m.minor;
+  const minor = money.minor;
 
   // fast path: integer weights whose products with the amount fit exactly in a double
-  if (typeof x === 'number') {
-    let total = 0,
-      maxW = 0,
-      ok = true;
-    for (let i = 0; i < n; i++) {
-      const w = weights[i];
-      if (typeof w !== 'number' || !(w >= 0) || !Number.isSafeInteger(w)) {
+  if (typeof minor === 'number') {
+    let total = 0;
+    let maxWeight = 0;
+    let ok = true;
+    for (let i = 0; i < count; i++) {
+      const weight = weights[i];
+      if (typeof weight !== 'number' || !(weight >= 0) || !Number.isSafeInteger(weight)) {
         ok = false;
         break;
       }
-      total += w;
-      if (w > maxW) {
-        maxW = w;
+      total += weight;
+      if (weight > maxWeight) {
+        maxWeight = weight;
       }
     }
-    if (ok && total > 0 && total <= MAX && x * maxW <= MAX - total) {
+    if (ok && total > 0 && total <= MAX_SAFE_MINOR && minor * maxWeight <= MAX_SAFE_MINOR - total) {
       const ws = weights as readonly number[];
-      const shares = new Array<number>(n);
-      const frac = new Array<number>(n);
-      let rem = x;
-      for (let i = 0; i < n; i++) {
-        const p = x * ws[i]!;
-        let q = Math.floor(p / total);
-        let r = p - q * total;
-        if (r < 0) {
-          q -= 1;
-          r += total;
-        } else if (r >= total) {
-          q += 1;
-          r -= total;
+      const shares = new Array<number>(count);
+      const frac = new Array<number>(count);
+      let rem = minor;
+      for (let i = 0; i < count; i++) {
+        const product = minor * ws[i]!;
+        let quotient = Math.floor(product / total);
+        let remainder = product - quotient * total;
+        if (remainder < 0) {
+          quotient -= 1;
+          remainder += total;
+        } else if (remainder >= total) {
+          quotient += 1;
+          remainder -= total;
         } // float-quotient fix-up
-        shares[i] = q;
-        frac[i] = r;
-        rem -= q;
+        shares[i] = quotient;
+        frac[i] = remainder;
+        rem -= quotient;
       }
       if (rem > 0) {
-        if (mode === 'largest' && n <= 32) {
+        if (mode === 'largest' && count <= 32) {
           // selection instead of sort: rem < number of non-zero weights, n small
           for (; rem > 0; rem--) {
             let best = -1;
-            for (let i = 0; i < n; i++) {
-              if (ws[i]! > 0 && frac[i]! >= 0 && (best < 0 || frac[i]! > frac[best]!)) best = i;
+            for (let i = 0; i < count; i++) {
+              if (ws[i]! > 0 && frac[i]! >= 0 && (best < 0 || frac[i]! > frac[best]!)) {
+                best = i;
+              }
             }
             shares[best]! += 1;
             frac[best] = -1;
@@ -170,9 +197,9 @@ export function allocate<C extends string>(
           distribute(shares, rem, ws, frac, mode, 1);
         }
       }
-      const out = new Array<Money<C>>(n);
-      for (let i = 0; i < n; i++) {
-        out[i] = make(m.currency, shares[i]!, m.scale);
+      const out = new Array<Money<C>>(count);
+      for (let i = 0; i < count; i++) {
+        out[i] = make(money.currency, shares[i]!, money.scale);
       }
       return out;
     }
@@ -180,33 +207,37 @@ export function allocate<C extends string>(
 
   const ws = weightsToBig(weights);
   let total = 0n;
-  for (const w of ws) {
-    total += w;
+  for (const weight of ws) {
+    total += weight;
   }
   if (total === 0n) {
     throw new RangeError('Allocation weights must not all be zero');
   }
-  const xb = BigInt(x);
-  const shares: bigint[] = new Array(n);
-  const frac: bigint[] = new Array(n);
+  const xb = BigInt(minor);
+  const shares: bigint[] = new Array(count);
+  const frac: bigint[] = new Array(count);
   let assigned = 0n;
-  for (let i = 0; i < n; i++) {
-    const p = xb * ws[i]!;
-    shares[i] = p / total;
-    frac[i] = p % total;
+  for (let i = 0; i < count; i++) {
+    const product = xb * ws[i]!;
+    shares[i] = product / total;
+    frac[i] = product % total;
     assigned += shares[i]!;
   }
   distribute(shares, Number(xb - assigned), ws, frac, mode, 1n);
-  return shares.map((s) => make(m.currency, s, m.scale));
+  return shares.map((share) => make(money.currency, share, money.scale));
 }
 
 /** Splits into `count` equal parts; the remainder goes per `remainder` (default 'first'). */
-export function split<C extends string>(m: Money<C>, count: number, options?: AllocateOptions): Money<C>[] {
+export function split<C extends string>(
+  money: Money<C>,
+  count: number,
+  options?: AllocateOptions,
+): Money<C>[] {
   if (!Number.isSafeInteger(count) || count < 1) {
     throw new RangeError(`Invalid count ${count}`);
   }
   const weights = new Array<number>(count).fill(1);
-  return allocate(m, weights, { remainder: options?.remainder ?? 'first' });
+  return allocate(money, weights, { remainder: options?.remainder ?? 'first' });
 }
 
 export interface InstalmentOptions<C extends string> {
@@ -242,22 +273,22 @@ export function instalments<C extends string>(
   if (!(unit.minor > 0)) {
     throw new RangeError('unit must be positive');
   }
-  const s = Math.max(total.scale, unit.scale);
-  const t = toScale(total, s),
-    u = BigInt(scaleUp(unit.minor, s - unit.scale));
-  const neg = t.minor < 0;
-  const tv = BigInt(t.minor) * (neg ? -1n : 1n);
-  const per = (tv / (u * BigInt(count))) * u;
+  const scale = Math.max(total.scale, unit.scale);
+  const scaledTotal = toScale(total, scale);
+  const unitMinor = BigInt(scaleUp(unit.minor, scale - unit.scale));
+  const neg = scaledTotal.minor < 0;
+  const tv = BigInt(scaledTotal.minor) * (neg ? -1n : 1n);
+  const per = (tv / (unitMinor * BigInt(count))) * unitMinor;
   const parts = new Array<bigint>(count).fill(per);
   let left = tv - per * BigInt(count);
   // spread whole units first (for 'first'/'last'), then the sub-unit leftover
   if (mode === 'first' || mode === 'last') {
-    for (let k = 0; left >= u; k++, left -= u) {
-      parts[mode === 'first' ? k : count - 1 - k]! += u;
+    for (let k = 0; left >= unitMinor; k++, left -= unitMinor) {
+      parts[mode === 'first' ? k : count - 1 - k]! += unitMinor;
     }
   }
   parts[mode === 'toLast' || mode === 'last' ? count - 1 : 0]! += left;
-  return parts.map((p) => make(total.currency, neg ? -p : p, s));
+  return parts.map((part) => make(total.currency, neg ? -part : part, scale));
 }
 
 export type Tranche<C extends string> =
@@ -274,15 +305,18 @@ export type Tranche<C extends string> =
  *     schedule(money('1000', 'EUR'), [{ percent: 30 }, { amount: money('200', 'EUR') }, { rest: true }])
  *     // 300.00, 200.00, 500.00
  */
-export function schedule<C extends string>(total: Money<C>, tranches: readonly Tranche<NoInfer<C>>[]): Money<C>[] {
+export function schedule<C extends string>(
+  total: Money<C>,
+  tranches: readonly Tranche<NoInfer<C>>[],
+): Money<C>[] {
   const pctIdx: number[] = [];
   const pcts: Weight[] = [];
   let restIdx = -1;
-  tranches.forEach((t, i) => {
-    if ('percent' in t) {
+  tranches.forEach((tranche, i) => {
+    if ('percent' in tranche) {
       pctIdx.push(i);
-      pcts.push(t.percent);
-    } else if ('rest' in t) {
+      pcts.push(tranche.percent);
+    } else if ('rest' in tranche) {
       if (restIdx >= 0) {
         throw new RangeError('schedule() allows only one rest tranche');
       }
@@ -294,8 +328,8 @@ export function schedule<C extends string>(total: Money<C>, tranches: readonly T
   if (pcts.length) {
     const { ws, scale } = weightsScaled(pcts);
     let sum = 0n;
-    for (const w of ws) {
-      sum += w;
+    for (const weight of ws) {
+      sum += weight;
     }
     const hundred = 100n * pow10n(scale);
     if (sum > hundred) {
@@ -303,22 +337,22 @@ export function schedule<C extends string>(total: Money<C>, tranches: readonly T
     }
     const parts = allocate(
       total,
-      [...ws, hundred - sum].map((w) => toSafe(w)),
+      [...ws, hundred - sum].map((weight) => normalizeMinor(weight)),
     );
-    pctIdx.forEach((ti, k) => {
-      let p = parts[k]!;
-      const cap = (tranches[ti] as { cap?: Money<C> }).cap;
-      if (cap && compare(p, cap) > 0) {
-        p = cap;
+    pctIdx.forEach((trancheIndex, k) => {
+      let part = parts[k]!;
+      const cap = (tranches[trancheIndex] as { cap?: Money<C> }).cap;
+      if (cap && compare(part, cap) > 0) {
+        part = cap;
       }
-      out[ti] = p;
-      left = subtract(left, p);
+      out[trancheIndex] = part;
+      left = subtract(left, part);
     });
   }
-  tranches.forEach((t, i) => {
-    if ('amount' in t) {
-      out[i] = t.amount;
-      left = subtract(left, t.amount);
+  tranches.forEach((tranche, i) => {
+    if ('amount' in tranche) {
+      out[i] = tranche.amount;
+      left = subtract(left, tranche.amount);
     }
   });
   if (left.minor < 0) {

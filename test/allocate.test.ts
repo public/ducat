@@ -24,7 +24,11 @@ describe('allocate', () => {
     expect(dec(allocate(eur('100'), [1, 1, 1]))).toEqual(['33.34', '33.33', '33.33']);
     expect(dec(allocate(eur('0.05'), [70, 30]))).toEqual(['0.04', '0.01']);
     expect(dec(allocate(eur('0.05'), ['0.7', '0.3']))).toEqual(['0.04', '0.01']);
-    expect(dec(allocate(eur('1'), [1, 1, 1], { remainder: 'last' }))).toEqual(['0.33', '0.33', '0.34']);
+    expect(dec(allocate(eur('1'), [1, 1, 1], { remainder: 'last' }))).toEqual([
+      '0.33',
+      '0.33',
+      '0.34',
+    ]);
     expect(dec(allocate(eur('0.10'), [1, 1, 1, 1, 1, 1, 1]))).toEqual([
       '0.02',
       '0.02',
@@ -36,13 +40,25 @@ describe('allocate', () => {
     ]);
     // largest remainder favours the bucket with the biggest fractional share, not the first
     expect(dec(allocate(eur('0.10'), [1, 2, 4]))).toEqual(['0.01', '0.03', '0.06']);
-    expect(dec(allocate(eur('0.10'), [1, 2, 4], { remainder: 'first' }))).toEqual(['0.02', '0.03', '0.05']);
-    expect(dec(allocate(eur('0.10'), [1, 2, 4], { remainder: 'toLast' }))).toEqual(['0.01', '0.02', '0.07']);
+    expect(dec(allocate(eur('0.10'), [1, 2, 4], { remainder: 'first' }))).toEqual([
+      '0.02',
+      '0.03',
+      '0.05',
+    ]);
+    expect(dec(allocate(eur('0.10'), [1, 2, 4], { remainder: 'toLast' }))).toEqual([
+      '0.01',
+      '0.02',
+      '0.07',
+    ]);
     expect(dec(allocate(eur('-100'), [1, 1, 1]))).toEqual(['-33.34', '-33.33', '-33.33']);
     expect(dec(allocate(money('100', 'JPY'), [1, 1, 1]))).toEqual(['34', '33', '33']);
   });
   it('zero weights receive nothing, even remainder', () => {
-    expect(dec(allocate(eur('1'), [0, 1, 1], { remainder: 'first' }))).toEqual(['0.00', '0.50', '0.50']);
+    expect(dec(allocate(eur('1'), [0, 1, 1], { remainder: 'first' }))).toEqual([
+      '0.00',
+      '0.50',
+      '0.50',
+    ]);
     expect(dec(allocate(eur('0.01'), [0, 1], { remainder: 'toFirst' }))).toEqual(['0.00', '0.01']);
     expect(() => allocate(eur('1'), [0, 0])).toThrow();
     expect(() => allocate(eur('1'), [-1, 2])).toThrow();
@@ -56,11 +72,17 @@ describe('allocate', () => {
     const modes: Remainder[] = ['largest', 'first', 'last', 'toFirst', 'toLast'];
     fc.assert(
       fc.property(
-        fc.oneof(fc.integer({ min: -1e9, max: 1e9 }), fc.bigInt({ min: -(10n ** 25n), max: 10n ** 25n })),
-        fc.array(fc.oneof(fc.integer({ min: 0, max: 1000 }), fc.integer({ min: 0, max: 2 ** 40 })), {
-          minLength: 1,
-          maxLength: 12,
-        }),
+        fc.oneof(
+          fc.integer({ min: -1e9, max: 1e9 }),
+          fc.bigInt({ min: -(10n ** 25n), max: 10n ** 25n }),
+        ),
+        fc.array(
+          fc.oneof(fc.integer({ min: 0, max: 1000 }), fc.integer({ min: 0, max: 2 ** 40 })),
+          {
+            minLength: 1,
+            maxLength: 12,
+          },
+        ),
         fc.constantFrom(...modes),
         (amt, ws, mode) => {
           fc.pre(ws.some((w) => w > 0));
@@ -116,7 +138,8 @@ describe('allocate', () => {
           const got = parts.map((p, i) => (p.minor as number) - Math.floor((amt * ws[i]!) / W));
           for (let i = 0; i < ws.length; i++)
             for (let j = 0; j < ws.length; j++)
-              if (got[i] === 1 && got[j] === 0) expect(fr[i]! > fr[j]! || (fr[i] === fr[j] && i < j)).toBe(true);
+              if (got[i] === 1 && got[j] === 0)
+                expect(fr[i]! > fr[j]! || (fr[i] === fr[j] && i < j)).toBe(true);
         },
       ),
     );
@@ -129,7 +152,14 @@ describe('split / instalments / schedule / chunk', () => {
     expect(dec(split(eur('10'), 3, { remainder: 'last' }))).toEqual(['3.33', '3.33', '3.34']);
   });
   it('instalments: one instalment absorbs the remainder', () => {
-    expect(dec(instalments(eur('100'), 6))).toEqual(['16.70', '16.66', '16.66', '16.66', '16.66', '16.66']);
+    expect(dec(instalments(eur('100'), 6))).toEqual([
+      '16.70',
+      '16.66',
+      '16.66',
+      '16.66',
+      '16.66',
+      '16.66',
+    ]);
     expect(dec(instalments(eur('100'), 6, { remainder: 'toLast' }))).toEqual([
       '16.66',
       '16.66',
@@ -138,8 +168,16 @@ describe('split / instalments / schedule / chunk', () => {
       '16.66',
       '16.70',
     ]);
-    expect(dec(instalments(eur('100'), 3, { unit: eur('1') }))).toEqual(['34.00', '33.00', '33.00']);
-    expect(dec(instalments(eur('100.50'), 3, { unit: eur('1') }))).toEqual(['34.50', '33.00', '33.00']);
+    expect(dec(instalments(eur('100'), 3, { unit: eur('1') }))).toEqual([
+      '34.00',
+      '33.00',
+      '33.00',
+    ]);
+    expect(dec(instalments(eur('100.50'), 3, { unit: eur('1') }))).toEqual([
+      '34.50',
+      '33.00',
+      '33.00',
+    ]);
     expect(dec(instalments(eur('1000'), 7, { unit: eur('10'), remainder: 'first' }))).toEqual([
       '150.00',
       '150.00',
@@ -159,7 +197,10 @@ describe('split / instalments / schedule / chunk', () => {
         fc.integer({ min: 1, max: 10000 }),
         fc.constantFrom('toFirst', 'toLast', 'first', 'last' as const),
         (amt, n, unit, mode) => {
-          const parts = instalments(fromMinor(amt, 'EUR'), n, { unit: fromMinor(unit, 'EUR'), remainder: mode });
+          const parts = instalments(fromMinor(amt, 'EUR'), n, {
+            unit: fromMinor(unit, 'EUR'),
+            remainder: mode,
+          });
           expect(BigInt(sum(parts).minor)).toBe(BigInt(amt));
           if (mode === 'toFirst')
             parts.slice(1).forEach((p) => {
@@ -171,18 +212,20 @@ describe('split / instalments / schedule / chunk', () => {
     );
   });
   it('schedule: deposit + fixed + rest, caps', () => {
-    expect(dec(schedule(eur('1000'), [{ percent: 30 }, { amount: eur('200') }, { rest: true }]))).toEqual([
-      '300.00',
-      '200.00',
-      '500.00',
+    expect(
+      dec(schedule(eur('1000'), [{ percent: 30 }, { amount: eur('200') }, { rest: true }])),
+    ).toEqual(['300.00', '200.00', '500.00']);
+    expect(
+      dec(schedule(eur('100'), [{ percent: '33.3' }, { percent: '33.3' }, { percent: '33.4' }])),
+    ).toEqual(['33.30', '33.30', '33.40']);
+    expect(dec(schedule(eur('100'), [{ percent: 50, cap: eur('20') }, { rest: true }]))).toEqual([
+      '20.00',
+      '80.00',
     ]);
-    expect(dec(schedule(eur('100'), [{ percent: '33.3' }, { percent: '33.3' }, { percent: '33.4' }]))).toEqual([
-      '33.30',
-      '33.30',
-      '33.40',
+    expect(dec(schedule(eur('0.01'), [{ percent: 50 }, { percent: 50 }]))).toEqual([
+      '0.01',
+      '0.00',
     ]);
-    expect(dec(schedule(eur('100'), [{ percent: 50, cap: eur('20') }, { rest: true }]))).toEqual(['20.00', '80.00']);
-    expect(dec(schedule(eur('0.01'), [{ percent: 50 }, { percent: 50 }]))).toEqual(['0.01', '0.00']);
     expect(() => schedule(eur('100'), [{ percent: 50 }])).toThrow(/unassigned/);
     expect(() => schedule(eur('100'), [{ amount: eur('150') }, { rest: true }])).toThrow(/exceed/);
     expect(() => schedule(eur('100'), [{ percent: 60 }, { percent: 50 }])).toThrow(/exceed 100/);

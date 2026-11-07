@@ -120,7 +120,11 @@ function removeQuotes(text: string): string {
   return text.replace(/^'|'$/g, '');
 }
 
-function isApplicable(values: (DecimalNumber | null)[], expected: DecimalNumber | null, conditions: string[]): boolean {
+function isApplicable(
+  values: (DecimalNumber | null)[],
+  expected: DecimalNumber | null,
+  conditions: string[],
+): boolean {
   if (values.some((value) => value === null) || expected === null) {
     return false;
   }
@@ -159,7 +163,8 @@ function loadCases(fileName: string): { cases: TestCase[]; skippedCount: number 
       continue;
     }
 
-    const casePattern = /^(\S+)\s+(add|subtract|multiply|divide|quantize)\s+(\S+)\s+(\S+)\s+->\s+(\S+)\s*(.*)$/i;
+    const casePattern =
+      /^(\S+)\s+(add|subtract|multiply|divide|quantize)\s+(\S+)\s+(\S+)\s+->\s+(\S+)\s*(.*)$/i;
     const parsed = casePattern.exec(line);
     if (!parsed) {
       continue;
@@ -173,7 +178,12 @@ function loadCases(fileName: string): { cases: TestCase[]; skippedCount: number 
     const mode = DUCAT_MODES[rounding];
     const isDivisionByZero = operation === 'divide' && right?.coefficient === 0n;
 
-    if (!mode || clamp !== 0 || isDivisionByZero || !isApplicable([left, right], expected, conditions)) {
+    if (
+      !mode ||
+      clamp !== 0 ||
+      isDivisionByZero ||
+      !isApplicable([left, right], expected, conditions)
+    ) {
       skippedCount++;
       continue;
     }
@@ -213,7 +223,8 @@ function computeWithDucat(testCase: TestCase, mode: RoundingMode): Money {
       const commonScale = Math.max(leftScale, rightScale);
       const leftMoney = moneyAtScale(left, commonScale);
       const rightMoney = moneyAtScale(right, commonScale);
-      const exact = testCase.operation === 'add' ? add(leftMoney, rightMoney) : subtract(leftMoney, rightMoney);
+      const exact =
+        testCase.operation === 'add' ? add(leftMoney, rightMoney) : subtract(leftMoney, rightMoney);
       return toScale(exact, resultScale, mode);
     }
 
@@ -222,7 +233,11 @@ function computeWithDucat(testCase: TestCase, mode: RoundingMode): Money {
       if (resultScale >= leftScale) {
         return multiply(moneyAtScale(left, resultScale), rightText, mode);
       }
-      const exactProduct = multiply(moneyAtScale(left, leftScale + rightScale), rightText, 'unnecessary');
+      const exactProduct = multiply(
+        moneyAtScale(left, leftScale + rightScale),
+        rightText,
+        'unnecessary',
+      );
       return toScale(exactProduct, resultScale, mode);
     }
 
@@ -236,7 +251,9 @@ function computeWithDucat(testCase: TestCase, mode: RoundingMode): Money {
       const dividend = moneyAtScale(left, leftScale);
       const signedDividend = isNegativeDivisor ? negate(dividend) : dividend;
       const divisorMagnitude = isNegativeDivisor ? rightText.slice(1) : rightText;
-      return convert(signedDividend, 'EUR', ratio(1, divisorMagnitude), mode, { scale: resultScale });
+      return convert(signedDividend, 'EUR', ratio(1, divisorMagnitude), mode, {
+        scale: resultScale,
+      });
     }
 
     case 'quantize':
@@ -257,14 +274,22 @@ function describeOutcome(run: () => Money): string {
 }
 
 // the files fetch:dectest downloads; each describe is skipped until it has been run
-const VECTOR_FILES = ['add.decTest', 'divide.decTest', 'multiply.decTest', 'quantize.decTest', 'rounding.decTest'];
+const VECTOR_FILES = [
+  'add.decTest',
+  'divide.decTest',
+  'multiply.decTest',
+  'quantize.decTest',
+  'rounding.decTest',
+];
 
 // CI sets DUCAT_REQUIRE_DECTEST=1, so a failed or forgotten fetch fails instead of skipping
 const isRequired = process.env.DUCAT_REQUIRE_DECTEST === '1';
 
 describe('decTest files', () => {
   it.skipIf(!isRequired)('are all fetched', () => {
-    const missing = VECTOR_FILES.filter((fileName) => !existsSync(join(VECTOR_DIRECTORY, fileName)));
+    const missing = VECTOR_FILES.filter(
+      (fileName) => !existsSync(join(VECTOR_DIRECTORY, fileName)),
+    );
     expect(missing).toEqual([]);
   });
 });
@@ -296,7 +321,9 @@ for (const fileName of VECTOR_FILES) {
       const mismatches: string[] = [];
       for (const testCase of cases.filter(roundsDirectly)) {
         const outcome = describeOutcome(() => computeWithDucat(testCase, 'unnecessary'));
-        const expected = testCase.isInexact ? 'RoundingError' : String(testCase.expected.coefficient);
+        const expected = testCase.isInexact
+          ? 'RoundingError'
+          : String(testCase.expected.coefficient);
         if (outcome !== expected) {
           mismatches.push(`${testCase.id}: got ${outcome}, want ${expected}`);
         }

@@ -66,7 +66,11 @@ export class MoneyBag {
   }
 
   /** Every entry converted exactly into `to` and summed. Nothing is rounded. */
-  exactTotal<To extends string>(to: To, provider: RateProvider, options?: Pick<TotalOptions, 'asOf'>): ExactMoney<To> {
+  exactTotal<To extends string>(
+    to: To,
+    provider: RateProvider,
+    options?: Pick<TotalOptions, 'asOf'>,
+  ): ExactMoney<To> {
     const query = queryFor(options?.asOf);
     const parts: ExactMoney<To>[] = [];
     for (const money of this.#totals.values()) {
@@ -81,7 +85,12 @@ export class MoneyBag {
   }
 
   /** The total in `to`, rounded once: `bag.total('EUR', fx, 'halfEven')`. */
-  total<To extends string>(to: To, provider: RateProvider, rounding: RoundingMode, options?: TotalOptions): Money<To> {
+  total<To extends string>(
+    to: To,
+    provider: RateProvider,
+    rounding: RoundingMode,
+    options?: TotalOptions,
+  ): Money<To> {
     return this.exactTotal(to, provider, options).round(rounding, options?.scale);
   }
 
@@ -104,7 +113,10 @@ export interface ComparatorOptions {
 }
 
 /** Converts amounts exactly into `options.base`, looking each currency's rate up once. */
-function baseConverter(provider: RateProvider, options: ComparatorOptions): (money: Money) => ExactMoney {
+function baseConverter(
+  provider: RateProvider,
+  options: ComparatorOptions,
+): (money: Money) => ExactMoney {
   const base = options.base;
   const query = queryFor(options.asOf);
   const ratesToBase = new Map<string, Rate>();
@@ -124,11 +136,11 @@ function baseConverter(provider: RateProvider, options: ComparatorOptions): (mon
 
 /**
  * Compares amounts in any currencies through one base currency, exactly (no rounding, so rounding
- * makes no ties). One rate per currency makes it a total preorder, so
- * `list.sort(comparator(fx, { base: 'USD' }))` is consistent. Pairwise conversion with bid/ask or
- * slightly inconsistent mids is not, and Array#sort's result then differs between engines.
- * Rates are looked up once per currency, lazily: a missing rate throws from inside `sort`, after the
- * list may already be partly reordered. `sortByValue` looks every rate up first.
+ * makes no ties). One rate per currency makes it a total preorder, so `list.sort(comparator(fx, {
+ * base: 'USD' }))` is consistent. Pairwise conversion with bid/ask or slightly inconsistent mids is
+ * not, and Array#sort's result then differs between engines. Rates are looked up once per currency,
+ * lazily: a missing rate throws from inside `sort`, after the list may already be partly reordered.
+ * `sortByValue` looks every rate up first.
  */
 export function comparator(
   provider: RateProvider,

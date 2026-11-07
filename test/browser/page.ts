@@ -111,12 +111,16 @@ export function run(seed: number, numRuns: number): PageResult {
   const weightsArb = fc.array(fc.integer({ min: 0, max: 1000 }), { minLength: 1, maxLength: 8 });
   checkProperty(
     'allocation sums to the whole',
-    fc.property(fc.bigInt({ min: -(10n ** 20n), max: 10n ** 20n }), weightsArb, (minorUnits, weights) => {
-      fc.pre(weights.some((weight) => weight > 0));
-      const parts = ducat.allocate(ducat.fromMinor(minorUnits, 'EUR'), weights);
-      const total = parts.reduce((sum, part) => sum + part.toMinor(), 0n);
-      assertEqual(total, minorUnits);
-    }) as never,
+    fc.property(
+      fc.bigInt({ min: -(10n ** 20n), max: 10n ** 20n }),
+      weightsArb,
+      (minorUnits, weights) => {
+        fc.pre(weights.some((weight) => weight > 0));
+        const parts = ducat.allocate(ducat.fromMinor(minorUnits, 'EUR'), weights);
+        const total = parts.reduce((sum, part) => sum + part.toMinor(), 0n);
+        assertEqual(total, minorUnits);
+      },
+    ) as never,
   );
 
   // Intl, per engine: parse() reads back what format() wrote, in every locale. (Comparing format()

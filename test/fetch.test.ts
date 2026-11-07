@@ -13,7 +13,8 @@ function fake(status: number, body: string, seen: unknown[] = []): Fetch {
 
 // Static imports and re-exports (`from './fetch.js'`), side-effect imports and dynamic import(),
 // with either quote, with or without the extension.
-const IMPORTS_FETCH = /(?:\bfrom|\bimport)\s*\(?\s*['"]\.{1,2}\/(?:[\w./-]*\/)?fetch(?:\.[jt]s)?['"]/;
+const IMPORTS_FETCH =
+  /(?:\bfrom|\bimport)\s*\(?\s*['"]\.{1,2}\/(?:[\w./-]*\/)?fetch(?:\.[jt]s)?['"]/;
 
 // A fetch that never answers until its signal aborts it.
 const hanging: Fetch = (_url, init) =>
@@ -34,7 +35,10 @@ describe('fetchEcb', () => {
 
   it('reports HTTP and format errors', async () => {
     await expect(fetchEcb({ fetch: fake(503, '') })).rejects.toThrow(FetchRatesError);
-    await expect(fetchEcb({ fetch: fake(503, '') })).rejects.toMatchObject({ status: 503, url: ECB_URLS.daily });
+    await expect(fetchEcb({ fetch: fake(503, '') })).rejects.toMatchObject({
+      status: 503,
+      url: ECB_URLS.daily,
+    });
     await expect(fetchEcb({ fetch: fake(200, '<html/>') })).rejects.toThrow(SyntaxError);
     await expect(fetchEcb({ fetch: fake(200, '<html/>') })).rejects.toThrow(ECB_URLS.daily);
   });
@@ -52,7 +56,10 @@ describe('fetchEcb', () => {
     expect(combined.aborted).toBe(true);
     await fetchEcb({ fetch: recording, timeout: 0 });
     expect(seen[2]![1].signal).toBeUndefined();
-    await expect(fetchEcb({ fetch: hanging, timeout: 20 })).rejects.toHaveProperty('name', 'TimeoutError');
+    await expect(fetchEcb({ fetch: hanging, timeout: 20 })).rejects.toHaveProperty(
+      'name',
+      'TimeoutError',
+    );
     await expect(fetchEcb({ fetch: recording, timeout: -1 })).rejects.toThrow(RangeError);
   });
 

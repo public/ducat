@@ -1,0 +1,13 @@
+name = "DucatProofs"
+version = "0.1.0"
+defaultTargets = ["Ducat"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.35.0"
+
+# The proofs. Gen.lean (prints src/generated/kernel.ts) and Oracle.lean (prints test/fixtures/allocate.oracle.json)
+# are run with `lake env lean --run`, in the interpreter, so Mathlib never has to be compiled to native code.
+[[lean_lib]]
+name = "Ducat"

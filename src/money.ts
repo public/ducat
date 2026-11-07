@@ -6,15 +6,21 @@ import {
   POW10,
   pow10n,
   ratio,
-  toSafe,
+  normalizeMinor,
   type Factor,
   type Ratio,
 } from './decimal.js';
-import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
+import {
+  DEFAULT_ROUNDING,
+  divideAndRound,
+  divideAndRoundBigint,
+  RoundingError,
+  type RoundingMode,
+} from './rounding.js';
 
 // A module-local constant, not an import: the hot loops (sum, add) read it on every iteration, and
 // V8 reads an imported binding through an extra indirection.
-const MAX = Number.MAX_SAFE_INTEGER;
+const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 
 /** Currency codes accepted by constructors: known codes autocomplete, any string is allowed. */
 export type CurrencyInput = CurrencyCode | (string & {});
@@ -41,16 +47,17 @@ export class CurrencyMismatchError extends TypeError {
 /**
  * An immutable amount of money: an integer number of 10^-scale units of `currency`.
  *
- * `minor` is a JS number whenever it is a safe integer (|v| <= 2^53 - 1) and a bigint otherwise,
- * so ordinary amounts never allocate a bigint, and huge or high-precision amounts never lose a digit.
- * `scale` is normally the currency's ISO exponent (2 for EUR) but can be larger for sub-minor precision
- * (unit prices, FX intermediates); `round()` brings it back.
+ * `minor` is a JS number whenever it is a safe integer (|v| <= 2^53 - 1) and a bigint otherwise, so
+ * ordinary amounts never allocate a bigint, and huge or high-precision amounts never lose a digit.
+ * `scale` is normally the currency's ISO exponent (2 for EUR) but can be larger for sub-minor
+ * precision (unit prices, FX intermediates); `round()` brings it back.
  *
  * Instances are not frozen (Object.freeze costs 5-8x on construction in V8 and JSC; see bench/),
- * but every field is readonly and no operation mutates. Create values with `money()` / `fromMinor()`.
+ * but every field is readonly and no operation mutates. Create values with `money()` /
+ * `fromMinor()`.
  *
- * The class carries the core methods only. Opt-in modules (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, `@ducatjs/money/format`, ...)
- * add theirs when imported; see `extendMoney`.
+ * The class carries the core methods only. Opt-in modules (`@ducatjs/money/allocate`,
+ * `@ducatjs/money/tax`, `@ducatjs/money/format`, ...) add theirs when imported; see `extendMoney`.
  */
 class Money<C extends string = string> {
   declare readonly currency: C;
@@ -74,7 +81,9 @@ class Money<C extends string = string> {
     if (hint === 'string') {
       return this.toString();
     }
-    throw new TypeError('Money cannot be converted to a number; use add(), compare(), toDecimal() etc.');
+    throw new TypeError(
+      'Money cannot be converted to a number; use add(), compare(), toDecimal() etc.',
+    );
   }
 
   // Methods. Each one is a thin wrapper over the free function of the same name (also exported), so
@@ -90,7 +99,10 @@ class Money<C extends string = string> {
   subtract(other: Money<C>): Money<C> {
     return subtract(this, other);
   }
-  /** this * factor, rounded to this scale. `factor` is exact: integer, decimal string ('1.075'), bigint or ratio(). */
+  /**
+   * this * factor, rounded to this scale. `factor` is exact: integer, decimal string ('1.075'),
+   * bigint or ratio().
+   */
   multiply(factor: Factor, rounding?: RoundingMode): Money<C> {
     return multiply(this, factor, rounding);
   }
@@ -162,7 +174,7 @@ class Money<C extends string = string> {
   }
   /** Minor units as a bigint (BIGINT columns) */
   toMinor(): bigint {
-    return big(this.minor);
+    return toBigInt(this.minor);
   }
   /** Minor units as a number; throws beyond 2^53 */
   toMinorNumber(): number {
@@ -176,7 +188,10 @@ export function isMoney(value: unknown): value is Money {
   return value instanceof Money;
 }
 
-/** Which module installed each added method, so a second copy of the same module can replace its own. */
+/**
+ * Which module installed each added method, so a second copy of the same module can replace its
+ * own.
+ */
 const methodOwners = new Map<string, string>();
 
 /**
@@ -190,18 +205,20 @@ const RESERVED_NAMES = new Set(
 /** Options for `extendMoney`. */
 export interface ExtendMoneyOptions {
   /**
-   * Who is installing the methods, e.g. '@ducatjs/money/allocate'. Installing again under the same owner
-   * replaces that owner's methods, which happens when a module is loaded twice (hot reload, two copies of
-   * the package). Without an owner, or under a different one, an existing name throws.
+   * Who is installing the methods, e.g. '@ducatjs/money/allocate'. Installing again under the same
+   * owner replaces that owner's methods, which happens when a module is loaded twice (hot reload,
+   * two copies of the package). Without an owner, or under a different one, an existing name
+   * throws.
    */
   readonly owner?: string;
 }
 
 /**
- * Adds methods to every Money (this is how `@ducatjs/money/allocate`, `@ducatjs/money/format`, ... install theirs).
- * Declare their types with `declare module '@ducatjs/money' { interface Money<C extends string> { ... } }`.
- * The methods are non-enumerable, like class methods. A name that Money already has (one of its own
- * methods, or one added by a different owner) throws, so two modules cannot silently fight over it.
+ * Adds methods to every Money (this is how `@ducatjs/money/allocate`, `@ducatjs/money/format`, ...
+ * install theirs). Declare their types with `declare module '@ducatjs/money' { interface Money<C
+ * extends string> { ... } }`. The methods are non-enumerable, like class methods. A name that Money
+ * already has (one of its own methods, or one added by a different owner) throws, so two modules
+ * cannot silently fight over it.
  */
 export function extendMoney(
   methods: Record<string, (this: Money, ...args: never[]) => unknown>,
@@ -217,8 +234,8 @@ export function extendMoney(
       throw new TypeError(`Money#${name} is reserved`);
     }
 
-    // Replacing an existing method would silently change behaviour for every caller, unless it is the
-    // same function or the same owner installing its own methods again.
+    // Replacing an existing method would silently change behaviour for every caller, unless it is
+    // the same function or the same owner installing its own methods again.
     const previousOwner = methodOwners.get(name);
     const isOwnReinstall = owner !== undefined && previousOwner === owner;
     if (Object.hasOwn(prototype, name) && prototype[name] !== method && !isOwnReinstall) {
@@ -239,11 +256,15 @@ export function extendMoney(
 }
 
 /** @internal construct from a value that may be an unsafe bigint */
-export function make<C extends string>(currency: C, minor: number | bigint, scale: number): Money<C> {
-  return new Money(currency, typeof minor === 'bigint' ? toSafe(minor) : minor, scale);
+export function make<C extends string>(
+  currency: C,
+  minor: number | bigint,
+  scale: number,
+): Money<C> {
+  return new Money(currency, typeof minor === 'bigint' ? normalizeMinor(minor) : minor, scale);
 }
 
-const big = (minor: number | bigint) => (typeof minor === 'bigint' ? minor : BigInt(minor));
+const toBigInt = (minor: number | bigint) => (typeof minor === 'bigint' ? minor : BigInt(minor));
 
 /** v * 10^e exactly (e >= 0) */
 export function scaleUp(minor: number | bigint, exponent: number): number | bigint {
@@ -252,22 +273,26 @@ export function scaleUp(minor: number | bigint, exponent: number): number | bigi
   }
   if (typeof minor === 'number' && exponent <= 15) {
     const scaled = minor * POW10[exponent]!;
-    if (scaled <= MAX && scaled >= -MAX) {
+    if (scaled <= MAX_SAFE_MINOR && scaled >= -MAX_SAFE_MINOR) {
       return scaled;
     }
   }
-  return toSafe(big(minor) * pow10n(exponent));
+  return normalizeMinor(toBigInt(minor) * pow10n(exponent));
 }
 
 /** v / 10^e rounded (e >= 0) */
-export function scaleDown(minor: number | bigint, exponent: number, mode: RoundingMode): number | bigint {
+export function scaleDown(
+  minor: number | bigint,
+  exponent: number,
+  mode: RoundingMode,
+): number | bigint {
   if (exponent === 0) {
     return minor;
   }
   if (typeof minor === 'number' && exponent <= 15) {
-    return divRound(minor, POW10[exponent]!, mode);
+    return divideAndRound(minor, POW10[exponent]!, mode);
   }
-  return toSafe(divRoundBig(big(minor), pow10n(exponent), mode));
+  return normalizeMinor(divideAndRoundBigint(toBigInt(minor), pow10n(exponent), mode));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -301,7 +326,14 @@ export function money<C extends CurrencyInput>(
   const scale = options?.scale ?? currencyExponent(currency);
   if (typeof amount === 'string') {
     const parsed = parsePlainDecimal(amount) ?? parseDecimal(amount);
-    return fromScaled(currency, parsed.digits, parsed.scale, scale, options?.rounding ?? 'unnecessary', amount);
+    return fromScaled(
+      currency,
+      parsed.digits,
+      parsed.scale,
+      scale,
+      options?.rounding ?? 'unnecessary',
+      amount,
+    );
   }
   if (typeof amount === 'number') {
     if (Number.isSafeInteger(amount)) {
@@ -311,10 +343,17 @@ export function money<C extends CurrencyInput>(
       throw new RangeError(`Invalid amount ${amount}`);
     }
     const parsed = parseDecimal(String(amount));
-    return fromScaled(currency, parsed.digits, parsed.scale, scale, options?.rounding ?? 'unnecessary', amount);
+    return fromScaled(
+      currency,
+      parsed.digits,
+      parsed.scale,
+      scale,
+      options?.rounding ?? 'unnecessary',
+      amount,
+    );
   }
   if (typeof amount === 'bigint') {
-    return make(currency, scaleUp(toSafe(amount), scale), scale);
+    return make(currency, scaleUp(normalizeMinor(amount), scale), scale);
   }
   throw new TypeError(`Invalid amount ${String(amount)}`);
 }
@@ -328,7 +367,7 @@ function fromScaled<C extends string>(
   input: unknown,
 ): Money<C> {
   if (typeof digits === 'bigint') {
-    digits = toSafe(digits);
+    digits = normalizeMinor(digits);
   }
   if (from === to) {
     return new Money(currency, digits, to);
@@ -349,11 +388,15 @@ function fromScaled<C extends string>(
 }
 
 /**
- * Creates money from an integer count of minor units (cents): `fromMinor(1234, 'EUR')` is 12.34 EUR.
- * This is the form to read from a BIGINT column or a payment processor (but see `stripe`/`adyen`
- * for processors whose exponent differs from ISO).
+ * Creates money from an integer count of minor units (cents): `fromMinor(1234, 'EUR')` is 12.34
+ * EUR. This is the form to read from a BIGINT column or a payment processor (but see
+ * `stripe`/`adyen` for processors whose exponent differs from ISO).
  */
-export function fromMinor<C extends CurrencyInput>(minor: number | bigint, currency: C, scale?: number): Money<C> {
+export function fromMinor<C extends CurrencyInput>(
+  minor: number | bigint,
+  currency: C,
+  scale?: number,
+): Money<C> {
   const resolvedScale = scale ?? currencyExponent(currency);
   if (typeof minor === 'number') {
     if (!Number.isSafeInteger(minor)) {
@@ -380,14 +423,17 @@ function mismatch(money: Money, other: Money): never {
   throw new CurrencyMismatchError(money.currency, other.currency);
 }
 
-function addSlow<C extends string>(money: Money<C>, other: Money, sign: 1 | -1): Money<C> {
+function addUsingBigInt<C extends string>(money: Money<C>, other: Money, sign: 1 | -1): Money<C> {
   const scale = Math.max(money.scale, other.scale);
-  const left = big(scaleUp(money.minor, scale - money.scale));
-  const right = big(scaleUp(other.minor, scale - other.scale));
+  const left = toBigInt(scaleUp(money.minor, scale - money.scale));
+  const right = toBigInt(scaleUp(other.minor, scale - other.scale));
   return make(money.currency, sign === 1 ? left + right : left - right, scale);
 }
 
-/** a + b. Mixing currencies is a type error for literal currency types and a runtime error otherwise. */
+/**
+ * a + b. Mixing currencies is a type error for literal currency types and a runtime error
+ * otherwise.
+ */
 export function add<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): Money<C> {
   if (money.currency !== other.currency) {
     mismatch(money, other);
@@ -395,12 +441,13 @@ export function add<C extends string>(money: Money<C>, other: Money<NoInfer<C>>)
   const left = money.minor;
   const right = other.minor;
   if (typeof left === 'number' && typeof right === 'number' && money.scale === other.scale) {
-    const sum = left + right; // exact whenever |r| <= MAX: both inputs are safe integers
-    if (sum <= MAX && sum >= -MAX) {
+    // exact whenever |sum| <= MAX_SAFE_MINOR: both inputs are safe integers
+    const sum = left + right;
+    if (sum <= MAX_SAFE_MINOR && sum >= -MAX_SAFE_MINOR) {
       return new Money(money.currency, sum, money.scale);
     }
   }
-  return addSlow(money, other, 1);
+  return addUsingBigInt(money, other, 1);
 }
 
 /** a - b */
@@ -412,20 +459,26 @@ export function subtract<C extends string>(money: Money<C>, other: Money<NoInfer
   const right = other.minor;
   if (typeof left === 'number' && typeof right === 'number' && money.scale === other.scale) {
     const difference = left - right;
-    if (difference <= MAX && difference >= -MAX) {
+    if (difference <= MAX_SAFE_MINOR && difference >= -MAX_SAFE_MINOR) {
       return new Money(money.currency, difference + 0, money.scale);
     }
   }
-  return addSlow(money, other, -1);
+  return addUsingBigInt(money, other, -1);
 }
 
 type IsUnion<T, U = T> = T extends unknown ? ([U] extends [T] ? false : true) : never;
-/** Rejects arrays whose element type mixes several literal currencies, e.g. (Money<'EUR'> | Money<'USD'>)[]. */
+/**
+ * Rejects arrays whose element type mixes several literal currencies, e.g. (Money<'EUR'> |
+ * Money<'USD'>)[].
+ */
 type SingleCurrency<C extends string> =
   true extends IsUnion<C> ? { readonly 'mixed currencies are not allowed': C } : unknown;
 
 /** Sum of a list (same currency; any scale). An empty list needs `currency` and returns zero. */
-export function sum<C extends string>(items: readonly Money<C>[] & SingleCurrency<C>, currency?: NoInfer<C>): Money<C> {
+export function sum<C extends string>(
+  items: readonly Money<C>[] & SingleCurrency<C>,
+  currency?: NoInfer<C>,
+): Money<C> {
   const count = items.length;
   if (count === 0) {
     if (currency === undefined) {
@@ -442,7 +495,8 @@ export function sum<C extends string>(items: readonly Money<C>[] & SingleCurrenc
   const scale = total.scale;
 
   // Fast loop on plain numbers: each partial sum of safe integers is exact while it stays within
-  // MAX. It falls back to add() at the first bigint, scale change or overflow. NaN marks "no fast total".
+  // MAX_SAFE_MINOR. It falls back to add() at the first bigint, scale change or overflow. NaN marks
+  // "no fast total".
   let fastTotal = typeof total.minor === 'number' ? total.minor : NaN;
   let i = 1;
   for (; i < count && fastTotal === fastTotal; i++) {
@@ -454,7 +508,7 @@ export function sum<C extends string>(items: readonly Money<C>[] & SingleCurrenc
       break;
     }
     const next = fastTotal + item.minor;
-    if (!(next <= MAX && next >= -MAX)) {
+    if (!(next <= MAX_SAFE_MINOR && next >= -MAX_SAFE_MINOR)) {
       break;
     }
     fastTotal = next;
@@ -472,7 +526,11 @@ export function sum<C extends string>(items: readonly Money<C>[] & SingleCurrenc
 /** -money */
 export function negate<C extends string>(money: Money<C>): Money<C> {
   const minor = money.minor;
-  return new Money(money.currency, typeof minor === 'number' ? 0 - minor : toSafe(-minor), money.scale);
+  return new Money(
+    money.currency,
+    typeof minor === 'number' ? 0 - minor : normalizeMinor(-minor),
+    money.scale,
+  );
 }
 
 /** |money| */
@@ -481,8 +539,9 @@ export function abs<C extends string>(money: Money<C>): Money<C> {
 }
 
 /**
- * m * factor, rounded to m's scale. `factor` is exact: an integer, a decimal string ('1.075'),
- * a bigint, or a `ratio()`. Rounding defaults to 'halfExpand' (ties away from zero); pass 'unnecessary' to throw instead.
+ * m * factor, rounded to m's scale. `factor` is exact: an integer, a decimal string ('1.075'), a
+ * bigint, or a `ratio()`. Rounding defaults to 'halfExpand' (ties away from zero); pass
+ * 'unnecessary' to throw instead.
  */
 export function multiply<C extends string>(
   money: Money<C>,
@@ -492,35 +551,41 @@ export function multiply<C extends string>(
   const minor = money.minor;
   if (typeof factor === 'number' && Number.isSafeInteger(factor) && typeof minor === 'number') {
     const product = minor * factor;
-    if (product <= MAX && product >= -MAX) {
+    if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
       return new Money(money.currency, product + 0, money.scale);
     }
   }
-  return mulRatio(money, ratio(factor), rounding);
+  return multiplyByRatio(money, ratio(factor), rounding);
 }
 
 /** @internal m * r, rounded */
-export function mulRatio<C extends string>(
+export function multiplyByRatio<C extends string>(
   money: Money<C>,
   factor: Ratio,
   rounding: RoundingMode,
   scale = money.scale,
 ): Money<C> {
   const minor = money.minor;
-  if (typeof minor === 'number' && scale === money.scale && factor.n === factor.n && factor.d === factor.d) {
-    const product = minor * factor.n; // exact when |p| <= MAX (both factors are safe integers)
-    if (product <= MAX && product >= -MAX) {
-      return new Money(money.currency, divRound(product, factor.d, rounding), scale);
+  if (
+    typeof minor === 'number' &&
+    scale === money.scale &&
+    factor.n === factor.n &&
+    factor.d === factor.d
+  ) {
+    // exact when |product| <= MAX_SAFE_MINOR (both factors are safe integers)
+    const product = minor * factor.n;
+    if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
+      return new Money(money.currency, divideAndRound(product, factor.d, rounding), scale);
     }
   }
-  let numerator = big(minor) * factor.num;
+  let numerator = toBigInt(minor) * factor.num;
   let denominator = factor.den;
   if (scale > money.scale) {
     numerator *= pow10n(scale - money.scale);
   } else if (scale < money.scale) {
     denominator *= pow10n(money.scale - scale);
   }
-  return make(money.currency, divRoundBig(numerator, denominator, rounding), scale);
+  return make(money.currency, divideAndRoundBigint(numerator, denominator, rounding), scale);
 }
 
 /** m / divisor, rounded to m's scale (default 'halfExpand'). */
@@ -533,15 +598,24 @@ export function divide<C extends string>(
   if (divisorRatio.num === 0n) {
     throw new RangeError('Division by zero');
   }
-  return mulRatio(money, ratio(divisorRatio.den, divisorRatio.num), rounding);
+  return multiplyByRatio(money, ratio(divisorRatio.den, divisorRatio.num), rounding);
 }
 
-/** Rounds to the currency's exponent (or `scale`): `round(money('1.005', 'EUR', {scale: 3}), 'halfEven')`. */
-export function round<C extends string>(money: Money<C>, rounding: RoundingMode, scale?: number): Money<C> {
+/**
+ * Rounds to the currency's exponent (or `scale`): `round(money('1.005', 'EUR', {scale: 3}),
+ * 'halfEven')`.
+ */
+export function round<C extends string>(
+  money: Money<C>,
+  rounding: RoundingMode,
+  scale?: number,
+): Money<C> {
   return toScale(money, scale ?? currencyExponent(money.currency), rounding);
 }
 
-/** Changes the scale; increasing it is always exact, decreasing it rounds (default 'halfExpand'). */
+/**
+ * Changes the scale; increasing it is always exact, decreasing it rounds (default 'halfExpand').
+ */
 export function toScale<C extends string>(
   money: Money<C>,
   scale: number,
@@ -582,7 +656,9 @@ export function compare<C extends string>(money: Money<C>, other: Money<NoInfer<
   return left > right ? 1 : 0;
 }
 
-/** Same currency and same value (1.0 EUR at scale 1 equals 1.00 EUR). Different currencies: false. */
+/**
+ * Same currency and same value (1.0 EUR at scale 1 equals 1.00 EUR). Different currencies: false.
+ */
 export function equals(money: Money, other: Money): boolean {
   if (money.currency !== other.currency) {
     return false;
@@ -597,14 +673,18 @@ export function equals(money: Money, other: Money): boolean {
 export const lessThan = <C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean =>
   compare(money, other) < 0;
 /** money <= other */
-export const lessThanOrEqual = <C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean =>
-  compare(money, other) <= 0;
+export const lessThanOrEqual = <C extends string>(
+  money: Money<C>,
+  other: Money<NoInfer<C>>,
+): boolean => compare(money, other) <= 0;
 /** money > other */
 export const greaterThan = <C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean =>
   compare(money, other) > 0;
 /** money >= other */
-export const greaterThanOrEqual = <C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean =>
-  compare(money, other) >= 0;
+export const greaterThanOrEqual = <C extends string>(
+  money: Money<C>,
+  other: Money<NoInfer<C>>,
+): boolean => compare(money, other) >= 0;
 
 /** Whether the amount is zero. */
 export const isZero = (money: Money): boolean => money.minor == 0;
@@ -641,7 +721,11 @@ export function max<C extends string>(first: Money<C>, ...rest: Money<NoInfer<C>
   return largest;
 }
 /** Limits m to [lo, hi]. */
-export function clamp<C extends string>(money: Money<C>, lo: Money<NoInfer<C>>, hi: Money<NoInfer<C>>): Money<C> {
+export function clamp<C extends string>(
+  money: Money<C>,
+  lo: Money<NoInfer<C>>,
+  hi: Money<NoInfer<C>>,
+): Money<C> {
   if (compare(lo, hi) > 0) {
     throw new RangeError('clamp(): lo > hi');
   }
@@ -655,14 +739,16 @@ export function clamp<C extends string>(money: Money<C>, lo: Money<NoInfer<C>>, 
 // Serialisation primitives
 // ---------------------------------------------------------------------------------------------
 
-/** Exact decimal string in major units: "12.34", "-0.05", "1000" (JPY). For NUMERIC/DECIMAL columns. */
+/**
+ * Exact decimal string in major units: "12.34", "-0.05", "1000" (JPY). For NUMERIC/DECIMAL columns.
+ */
 export function toDecimal(money: Money): string {
   return formatScaled(money.minor, money.scale);
 }
 
 /** Minor units as a bigint (always safe; use for BIGINT columns). */
 export function toMinor(money: Money): bigint {
-  return big(money.minor);
+  return toBigInt(money.minor);
 }
 
 /** Minor units as a number; throws if not a safe integer. */

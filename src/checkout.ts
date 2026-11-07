@@ -4,7 +4,8 @@
  * - the full amount: BIF DJF GNF ISK JPY KMF KRW PYG RWF UGX VUV VND XAF XOF XPF
  * - divided by 1000, last digit 0: BHD IQD JOD KWD LYD OMR TND
  * - divided by 100 for every other currency. CLP is here too (ISO says 0 decimals), and for payment
- *   requests its last two digits must be 00 (5000 CLP -> 500000). Standalone authentication is exempt.
+ *   requests its last two digits must be 00 (5000 CLP -> 500000). Standalone authentication is
+ *   exempt.
  */
 import { CHECKOUT_RULES } from './generated/checkout.js';
 import { type CurrencyInput, type Money } from './money.js';
@@ -36,7 +37,10 @@ export function checkoutExponent(currency: string): number {
 export interface CheckoutAmountOptions {
   /** How to round when Checkout.com needs a coarser amount (default 'unnecessary': throw). */
   readonly rounding?: RoundingMode;
-  /** An authentication request to the Standalone API, where CLP's "last two digits 00" rule does not apply. */
+  /**
+   * An authentication request to the Standalone API, where CLP's "last two digits 00" rule does not
+   * apply.
+   */
   readonly standalone?: boolean;
 }
 
@@ -56,12 +60,18 @@ export function toCheckoutAmount(money: Money, options?: CheckoutAmountOptions):
 }
 
 /** `{ amount, currency }` for a payment request. */
-export function toCheckout(money: Money, options?: CheckoutAmountOptions): { amount: number; currency: string } {
+export function toCheckout(
+  money: Money,
+  options?: CheckoutAmountOptions,
+): { amount: number; currency: string } {
   return { amount: toCheckoutAmount(money, options), currency: money.currency.toUpperCase() };
 }
 
 /** Reads a Checkout.com amount: fromCheckout(500000, 'CLP') is 5000 CLP. */
-export function fromCheckout<C extends CurrencyInput>(amount: number | bigint, currency: C): Money<Uppercase<C>> {
+export function fromCheckout<C extends CurrencyInput>(
+  amount: number | bigint,
+  currency: C,
+): Money<Uppercase<C>> {
   const code = currency.toUpperCase() as Uppercase<C>;
   return fromProcessorAmount('Checkout.com', amount, code, checkoutExponent(code));
 }

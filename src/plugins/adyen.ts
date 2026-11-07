@@ -7,7 +7,10 @@ export * from '../adyen.js';
 
 declare module '../money.js' {
   interface Money<C extends string> {
-    /** Adyen `amount` object: `money('15000', 'IDR').toAdyen()` is `{ value: 15000, currency: 'IDR' }`. */
+    /**
+     * Adyen `amount` object: `money('15000', 'IDR').toAdyen()` is `{ value: 15000, currency: 'IDR'
+     * }`.
+     */
     toAdyen(rounding?: RoundingMode): { value: number; currency: string };
   }
 }

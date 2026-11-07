@@ -1,14 +1,18 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "printWidth": 120,
+  "printWidth": 100,
   "singleQuote": true,
   "ignorePatterns": [
+    "proofs",
     "dist",
     "examples/prisma/generated",
     "bench/out",
     "src/generated",
+    "test/fixtures",
     "data",
     "package-lock.json",
+    "compare/results",
+    "compare/RESULTS.md",
     "test/vectors"
   ]
 }

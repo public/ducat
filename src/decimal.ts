@@ -2,10 +2,13 @@
 // converted through their shortest round-trip decimal representation (String(x)), never multiplied.
 
 /** The largest minor-unit count held as a number (2^53 - 1); larger values are bigints. */
-const MAX = Number.MAX_SAFE_INTEGER;
-const MAXN = BigInt(MAX);
+const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
+const MAXN = BigInt(MAX_SAFE_MINOR);
 
-/** An exact rational factor num/den (den > 0). `n`/`d` hold the same values as numbers when both are safe. */
+/**
+ * An exact rational factor num/den (den > 0). `n`/`d` hold the same values as numbers when both are
+ * safe.
+ */
 export interface Ratio {
   readonly num: bigint;
   readonly den: bigint;
@@ -23,16 +26,21 @@ export function pow10n(exponent: number): bigint {
   return (POW10N[exponent] ??= 10n ** BigInt(exponent));
 }
 /** 10^e as a number for 0 <= e <= 15 (all exact and safe). */
-export const POW10 = [1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15] as const;
+export const POW10 = [
+  1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
+] as const;
 
-export const toSafe = (value: bigint): number | bigint => (value <= MAXN && value >= -MAXN ? Number(value) : value);
+export const normalizeMinor = (value: bigint): number | bigint =>
+  value <= MAXN && value >= -MAXN ? Number(value) : value;
 
 /**
- * Parses a plain decimal string ("-12.345", "+7", "0.50") into digits/10^scale.
- * Returns the integer of all digits (number when safe, else bigint) and the count of fraction digits.
- * Hand-rolled (no regex, no BigInt for short inputs): this is the hot path of `money("12.34", ...)`.
+ * Parses a plain decimal string ("-12.345", "+7", "0.50") into digits/10^scale. Returns the integer
+ * of all digits (number when safe, else bigint) and the count of fraction digits. Hand-rolled (no
+ * regex, no BigInt for short inputs): this is the hot path of `money("12.34", ...)`.
  */
-export function parsePlainDecimal(input: string): { digits: number | bigint; scale: number } | null {
+export function parsePlainDecimal(
+  input: string,
+): { digits: number | bigint; scale: number } | null {
   const len = input.length;
   let i = 0;
   let neg = false;
@@ -81,7 +89,7 @@ export function parsePlainDecimal(input: string): { digits: number | bigint; sca
   if (big) {
     const raw = input.slice(start).replace('.', '');
     const value = BigInt(raw);
-    return { digits: toSafe(neg ? -value : value), scale };
+    return { digits: normalizeMinor(neg ? -value : value), scale };
   }
   return { digits: neg ? 0 - acc : acc, scale };
 }
@@ -154,7 +162,10 @@ export function ratio(value: Factor, den?: Factor): Ratio {
   if (den !== undefined) {
     const numeratorRatio = ratio(value);
     const denominatorRatio = ratio(den);
-    return makeRatio(numeratorRatio.num * denominatorRatio.den, numeratorRatio.den * denominatorRatio.num);
+    return makeRatio(
+      numeratorRatio.num * denominatorRatio.den,
+      numeratorRatio.den * denominatorRatio.num,
+    );
   }
   if (typeof value === 'object') {
     return value;
@@ -223,7 +234,7 @@ export function formatScaled(minor: number | bigint, scale: number): string {
     // integer/fraction split with exact integer arithmetic (the float quotient is corrected)
     const magnitude = minor < 0 ? 0 - minor : minor;
     const unit = POW10[scale]!;
-    if (magnitude + unit <= MAX) {
+    if (magnitude + unit <= MAX_SAFE_MINOR) {
       let whole = Math.floor(magnitude / unit);
       let fraction = magnitude - whole * unit;
       if (fraction < 0) {
@@ -241,7 +252,8 @@ export function formatScaled(minor: number | bigint, scale: number): string {
     }
   }
   const neg = minor < 0;
-  let digits = typeof minor === 'number' ? String(neg ? 0 - minor : minor) : (neg ? -minor : minor).toString();
+  let digits =
+    typeof minor === 'number' ? String(neg ? 0 - minor : minor) : (neg ? -minor : minor).toString();
   if (scale > 0) {
     if (digits.length <= scale) {
       digits = '0'.repeat(scale - digits.length + 1) + digits;

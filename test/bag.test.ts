@@ -5,7 +5,11 @@ import { bag, comparator, MoneyBag, sortByValue, sumByCurrency } from '../src/ba
 import { chain, rateTable, RateUnavailableError, via } from '../src/provider.js';
 import { exchangeRate } from '../src/rate.js';
 
-const ecb = rateTable({ base: 'EUR', asOf: '2026-11-06', rates: { USD: '1.1165', JPY: '176.77', GBP: '0.83415' } });
+const ecb = rateTable({
+  base: 'EUR',
+  asOf: '2026-11-06',
+  rates: { USD: '1.1165', JPY: '176.77', GBP: '0.83415' },
+});
 const fx = via('EUR', ecb);
 
 describe('MoneyBag', () => {
@@ -19,7 +23,9 @@ describe('MoneyBag', () => {
     expect(JSON.stringify(b2)).toBe(
       '[{"amount":"12.00","currency":"EUR"},{"amount":"5.00","currency":"USD"},{"amount":"1.00","currency":"GBP"}]',
     );
-    expect([...sumByCurrency([money('1', 'EUR'), money('2', 'EUR')]).values()].map(String)).toEqual(['3.00 EUR']);
+    expect([...sumByCurrency([money('1', 'EUR'), money('2', 'EUR')]).values()].map(String)).toEqual(
+      ['3.00 EUR'],
+    );
     const totals = new Map<string, Money>([['EUR', money('1', 'EUR')]]);
     const copied = new MoneyBag(totals);
     totals.set('USD', money('1', 'USD'));
@@ -73,7 +79,10 @@ describe('comparator', () => {
     );
     const cmp = comparator(inconsistent, { base: 'EUR' });
     const amount = fc
-      .tuple(fc.bigInt({ min: -(10n ** 20n), max: 10n ** 20n }), fc.constantFrom('EUR', 'USD', 'GBP', 'JPY'))
+      .tuple(
+        fc.bigInt({ min: -(10n ** 20n), max: 10n ** 20n }),
+        fc.constantFrom('EUR', 'USD', 'GBP', 'JPY'),
+      )
       .map(([minor, currency]) => fromMinor(minor, currency));
     fc.assert(
       fc.property(amount, amount, amount, (first, second, third) => {

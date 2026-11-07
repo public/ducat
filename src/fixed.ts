@@ -1,5 +1,5 @@
-// Fixed-point decimals without a currency: the engine under Money, exposed on its own. A Fixed is an
-// integer (a JS number while it is a safe integer, a bigint beyond) and a scale, the count of
+// Fixed-point decimals without a currency: the engine under Money, exposed on its own. A Fixed is
+// an integer (a JS number while it is a safe integer, a bigint beyond) and a scale, the count of
 // decimal places: `fixed('12.345')` is 12345 at scale 3. Arithmetic is exact, and every operation
 // that has to drop digits rounds once, with an explicit or the default mode.
 import { currencyExponent } from './currency.js';
@@ -9,12 +9,25 @@ import {
   parsePlainDecimal,
   pow10n,
   ratio,
-  toSafe,
+  normalizeMinor,
   type Factor,
   type Ratio,
 } from './decimal.js';
-import { fromMinor, scaleDown, scaleUp, toScale as moneyToScale, type CurrencyInput, type Money } from './money.js';
-import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
+import {
+  fromMinor,
+  scaleDown,
+  scaleUp,
+  toScale as moneyToScale,
+  type CurrencyInput,
+  type Money,
+} from './money.js';
+import {
+  DEFAULT_ROUNDING,
+  divideAndRound,
+  divideAndRoundBigint,
+  RoundingError,
+  type RoundingMode,
+} from './rounding.js';
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 
@@ -58,7 +71,7 @@ export interface ScaledInteger {
 
 /** A number stays; a bigint becomes a number when it is safe (the representation invariant). */
 function normalize(value: number | bigint): number | bigint {
-  return typeof value === 'bigint' ? toSafe(value) : value;
+  return typeof value === 'bigint' ? normalizeMinor(value) : value;
 }
 
 function toBigInt(value: number | bigint): bigint {
@@ -76,7 +89,10 @@ function make(value: number | bigint, scale: number): Fixed {
   return new Fixed(INTERNAL, value, scale);
 }
 
-function resultScale(value: { readonly scale: number }, options: ArithmeticOptions | undefined): number {
+function resultScale(
+  value: { readonly scale: number },
+  options: ArithmeticOptions | undefined,
+): number {
   const scale = options?.scale;
   if (scale === undefined) {
     return value.scale;
@@ -102,7 +118,7 @@ export class Fixed {
       throw new TypeError('Use fixed() or fromScaled() to create a Fixed');
     }
     // `+ 0` turns -0 into 0, so no operation can leak a negative zero.
-    this.value = typeof value === 'bigint' ? toSafe(value) : value + 0;
+    this.value = typeof value === 'bigint' ? normalizeMinor(value) : value + 0;
     this.scale = scale;
   }
 
@@ -123,7 +139,11 @@ export class Fixed {
    * The factor is exact: an integer, a decimal string ('1.075'), a bigint, a `ratio()` or another
    * Fixed. Give `scale` rather than calling toScale afterwards, which would round twice.
    */
-  multiply(factor: Factor | Fixed, rounding: RoundingMode = DEFAULT_ROUNDING, options?: ArithmeticOptions): Fixed {
+  multiply(
+    factor: Factor | Fixed,
+    rounding: RoundingMode = DEFAULT_ROUNDING,
+    options?: ArithmeticOptions,
+  ): Fixed {
     const value = this.value;
     const scale = resultScale(this, options);
 
@@ -147,7 +167,11 @@ export class Fixed {
    * this ÷ divisor, rounded once to this value's scale or `options.scale` (default 'halfExpand'):
    * `fixed('9.990').divide('1.2', 'halfEven', { scale: 2 })` is 8.32.
    */
-  divide(divisor: Factor | Fixed, rounding: RoundingMode = DEFAULT_ROUNDING, options?: ArithmeticOptions): Fixed {
+  divide(
+    divisor: Factor | Fixed,
+    rounding: RoundingMode = DEFAULT_ROUNDING,
+    options?: ArithmeticOptions,
+  ): Fixed {
     const scale = resultScale(this, options);
     const divisorRatio = factorRatio(divisor);
     if (divisorRatio.num === 0n) {
@@ -171,14 +195,16 @@ export class Fixed {
   }
 
   /**
-   * Rounds to `scale` decimal places (default 0, an integer): `fixed('2.5').round('halfEven')` is 2.
-   * Money's round() defaults to the currency's exponent; a Fixed has none, so the default is 0.
+   * Rounds to `scale` decimal places (default 0, an integer): `fixed('2.5').round('halfEven')` is
+   * 2. Money's round() defaults to the currency's exponent; a Fixed has none, so the default is 0.
    */
   round(rounding: RoundingMode, scale = 0): Fixed {
     return this.toScale(scale, rounding);
   }
 
-  /** Changes the scale: increasing it is always exact, decreasing it rounds (default 'halfExpand'). */
+  /**
+   * Changes the scale: increasing it is always exact, decreasing it rounds (default 'halfExpand').
+   */
   toScale(scale: number, rounding: RoundingMode = DEFAULT_ROUNDING): Fixed {
     checkScale(scale);
     if (scale === this.scale) {
@@ -313,20 +339,32 @@ export class Fixed {
     if (hint === 'string') {
       return this.toString();
     }
-    throw new TypeError('Fixed cannot be converted to a number; use add(), compare(), toString() etc.');
+    throw new TypeError(
+      'Fixed cannot be converted to a number; use add(), compare(), toString() etc.',
+    );
   }
 }
 
 /** value × rate at `scale`, rounded once: the kernel of multiply and divide. */
-function multiplyByRatio(fixedValue: Fixed, rate: Ratio, rounding: RoundingMode, scale: number): Fixed {
+function multiplyByRatio(
+  fixedValue: Fixed,
+  rate: Ratio,
+  rounding: RoundingMode,
+  scale: number,
+): Fixed {
   const value = fixedValue.value;
 
   // Fast path: both factors are safe integers, so a product within the safe range is exact, and
-  // divRound then rounds the exact quotient.
-  if (typeof value === 'number' && scale === fixedValue.scale && rate.n === rate.n && rate.d === rate.d) {
+  // divideAndRound then rounds the exact quotient.
+  if (
+    typeof value === 'number' &&
+    scale === fixedValue.scale &&
+    rate.n === rate.n &&
+    rate.d === rate.d
+  ) {
     const product = value * rate.n;
     if (product <= MAX_SAFE && product >= -MAX_SAFE) {
-      return make(divRound(product, rate.d, rounding), scale);
+      return make(divideAndRound(product, rate.d, rounding), scale);
     }
   }
 
@@ -338,7 +376,7 @@ function multiplyByRatio(fixedValue: Fixed, rate: Ratio, rounding: RoundingMode,
   } else if (scale < fixedValue.scale) {
     denominator *= pow10n(fixedValue.scale - scale);
   }
-  return make(divRoundBig(numerator, denominator, rounding), scale);
+  return make(divideAndRoundBigint(numerator, denominator, rounding), scale);
 }
 
 /** first + sign × second, exactly, at the larger scale. */
@@ -347,7 +385,11 @@ function addAligned(first: Fixed, second: Fixed, sign: 1 | -1): Fixed {
   const secondValue = second.value;
 
   // Fast path: two safe integers at one scale have an exact sum whenever it is itself safe.
-  if (typeof firstValue === 'number' && typeof secondValue === 'number' && first.scale === second.scale) {
+  if (
+    typeof firstValue === 'number' &&
+    typeof secondValue === 'number' &&
+    first.scale === second.scale
+  ) {
     const sum = sign === 1 ? firstValue + secondValue : firstValue - secondValue;
     if (sum <= MAX_SAFE && sum >= -MAX_SAFE) {
       return make(sum + 0, first.scale);
@@ -368,7 +410,8 @@ function factorRatio(factor: Factor | Fixed): Ratio {
   if (factor instanceof Fixed) {
     return ratio(toBigInt(factor.value), pow10n(factor.scale));
   }
-  // A Ratio object is trusted as it is, as Money trusts it: build it with ratio(), once, for hot loops.
+  // A Ratio object is trusted as it is, as Money trusts it: build it with ratio(), once, for hot
+  // loops.
   return ratio(factor);
 }
 
@@ -397,13 +440,17 @@ function rescale(
     return make(scaleDown(normalize(digits), fromScale - targetScale, rounding), targetScale);
   } catch (error) {
     if (error instanceof RoundingError) {
-      throw new RoundingError(`${String(input)} has more than ${targetScale} decimal places; pass { rounding }`);
+      throw new RoundingError(
+        `${String(input)} has more than ${targetScale} decimal places; pass { rounding }`,
+      );
     }
     throw error;
   }
 }
 
-/** parseDecimal, refusing exponents that would make a scale (or a power of ten) beyond MAX_SCALE. */
+/**
+ * parseDecimal, refusing exponents that would make a scale (or a power of ten) beyond MAX_SCALE.
+ */
 function parseBoundedDecimal(text: string): { digits: bigint; scale: number } {
   const exponent = EXPONENT.exec(text);
   if (exponent !== null && Math.abs(Number(exponent[1])) > MAX_SCALE) {
@@ -433,9 +480,9 @@ function significantDigits(text: string): number {
  *
  * Numbers are taken at their shortest decimal form, and only when that has at most 15 significant
  * digits, which a double always holds faithfully. So `fixed(0.1 + 0.2)` throws rather than becoming
- * 0.30000000000000004; pass the decimal as a string, or give `scale` and `rounding`. Input with more
- * decimals than `scale` throws unless `rounding` is given, and `rounding` needs a `scale`. Scales
- * run from 0 to 1000.
+ * 0.30000000000000004; pass the decimal as a string, or give `scale` and `rounding`. Input with
+ * more decimals than `scale` throws unless `rounding` is given, and `rounding` needs a `scale`.
+ * Scales run from 0 to 1000.
  */
 export function fixed(value: FixedInput, options?: FixedOptions): Fixed {
   const scale = options?.scale;
@@ -471,7 +518,9 @@ export function fixed(value: FixedInput, options?: FixedOptions): Fixed {
       options?.rounding === undefined &&
       significantDigits(formatScaled(normalize(parsed.digits), parsed.scale)) > MAX_FAITHFUL_DIGITS
     ) {
-      throw new RangeError(`${value} is not an exact decimal; pass a string, or { scale, rounding }`);
+      throw new RangeError(
+        `${value} is not an exact decimal; pass a string, or { scale, rounding }`,
+      );
     }
     return rescale(parsed.digits, parsed.scale, scale ?? parsed.scale, rounding, value);
   }

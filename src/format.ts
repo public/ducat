@@ -2,7 +2,8 @@ import { POW10 } from './decimal.js';
 import { toDecimal, type Money } from './money.js';
 
 const cache = new Map<string, Intl.NumberFormat>();
-// one-entry memo in front of the Map: formatting in a loop is almost always the same locale/currency
+// one-entry memo in front of the Map: formatting in a loop is almost always the same
+// locale/currency
 let lastLocale: string | undefined,
   lastCurrency = '',
   lastScale = -1,
@@ -14,8 +15,9 @@ function supportsStringInput(): boolean {
   if (stringInput === undefined) {
     try {
       stringInput =
-        new Intl.NumberFormat('en', { useGrouping: false }).format('9007199254740993' as unknown as number) ===
-        '9007199254740993';
+        new Intl.NumberFormat('en', { useGrouping: false }).format(
+          '9007199254740993' as unknown as number,
+        ) === '9007199254740993';
     } catch {
       stringInput = false;
     }
@@ -78,11 +80,11 @@ export function format(money: Money, locale?: string, options?: Intl.NumberForma
 }
 
 /**
- * What to hand to Intl (which only accepts doubles or strings).
- * Below 10^15 minor units the value has at most 15 significant digits, so the double nearest to it
- * formats back to exactly the same digits. `minor / 10^scale` is a single correctly rounded IEEE
- * division of two exactly representable integers, i.e. bit-identical to Number(toDecimal(m)) (asserted
- * in test/format.test.ts), and 2-3x cheaper; this display hand-off is the only place a double ever
+ * What to hand to Intl (which only accepts doubles or strings). Below 10^15 minor units the value
+ * has at most 15 significant digits, so the double nearest to it formats back to exactly the same
+ * digits. `minor / 10^scale` is a single correctly rounded IEEE division of two exactly
+ * representable integers, i.e. bit-identical to Number(toDecimal(m)) (asserted in
+ * test/format.test.ts), and 2-3x cheaper; this display hand-off is the only place a double ever
  * touches an amount. Larger values go to Intl as the exact decimal string (Intl.NumberFormat v3).
  */
 function intlValue(money: Money): number {

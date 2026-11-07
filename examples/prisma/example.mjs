@@ -2,7 +2,12 @@
 import { PrismaClient, Prisma } from './generated/index.js';
 import { add, money, toDecimal } from '../../dist/index.js';
 import { format } from '../../dist/plugins/format.js';
-import { decimalMoneyField, minorMoneyField, toDecimalValue, toMinorColumns } from '../../dist/plugins/prisma.js';
+import {
+  decimalMoneyField,
+  minorMoneyField,
+  toDecimalValue,
+  toMinorColumns,
+} from '../../dist/plugins/prisma.js';
 
 const db = new PrismaClient().$extends({
   result: {

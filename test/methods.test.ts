@@ -25,7 +25,9 @@ describe('Money methods', () => {
   });
 
   it('cover every free function that takes a Money first', () => {
-    const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(eur('1'))).filter((k) => k !== 'constructor');
+    const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(eur('1'))).filter(
+      (k) => k !== 'constructor',
+    );
     // free functions that are not methods, on purpose (constructors, parsers, tables, types)
     const notMethods = new Set([
       'money',
@@ -142,7 +144,9 @@ describe('Money methods', () => {
         expect(dec(a.allocate([3, 1, 2]))).toEqual(dec(M.allocate(a, [3, 1, 2])));
         expect(dec(a.split(7))).toEqual(dec(M.split(a, 7)));
         expect(dec(a.instalments(4))).toEqual(dec(M.instalments(a, 4)));
-        expect(dec(a.roundToIncrement(eur('0.05'), r))).toBe(dec(M.roundToIncrement(a, eur('0.05'), r)));
+        expect(dec(a.roundToIncrement(eur('0.05'), r))).toBe(
+          dec(M.roundToIncrement(a, eur('0.05'), r)),
+        );
         expect(a.compare(b)).toBe(M.compare(a, b));
         expect(a.equals(b)).toBe(M.equals(a, b));
         expect(a.lessThan(b)).toBe(M.lessThan(a, b));

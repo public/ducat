@@ -1,7 +1,7 @@
 /**
  * Braintree's amount view (https://developer.paypal.com/braintree/docs/reference/general/currencies,
- * encoded in data/braintree.json). `amount` is a decimal string in major units, "formatted like '10'
- * or '10.00'":
+ * encoded in data/braintree.json). `amount` is a decimal string in major units, "formatted like
+ * '10' or '10.00'":
  * - zero-decimal currencies can't include decimals: BIF CLP DJF GNF ISK JPY KMF KRW LAK PYG RWF UGX
  *   VND VUV XAF XOF XPF (LAK has 2 in ISO 4217);
  * - the others take their ISO decimals ("10.00"). No three-decimal currency is listed.
@@ -33,7 +33,10 @@ export function isBraintreeCurrency(currency: string): boolean {
 
 /** Options for the Braintree amount: how to round when Braintree needs a coarser amount. */
 export interface BraintreeAmountOptions {
-  /** How to round when Braintree needs fewer decimals than the value has (default 'unnecessary': throw). */
+  /**
+   * How to round when Braintree needs fewer decimals than the value has (default 'unnecessary':
+   * throw).
+   */
   readonly rounding?: RoundingMode;
 }
 
@@ -46,11 +49,20 @@ export function toBraintree(money: Money, options?: BraintreeAmountOptions): str
   const rounding = options?.rounding ?? 'unnecessary';
 
   // 81531 "Amount must be greater than zero"; 81501: credits are positive too ("x.xx, not -x.xx").
-  return toProcessorDecimal('Braintree', money, braintreeExponent(money.currency), rounding, 'positive');
+  return toProcessorDecimal(
+    'Braintree',
+    money,
+    braintreeExponent(money.currency),
+    rounding,
+    'positive',
+  );
 }
 
 /** Reads a Braintree amount string exactly: fromBraintree('10.00', 'USD'). */
-export function fromBraintree<C extends CurrencyInput>(amount: string, currency: C): Money<Uppercase<C>> {
+export function fromBraintree<C extends CurrencyInput>(
+  amount: string,
+  currency: C,
+): Money<Uppercase<C>> {
   const code = currency.toUpperCase() as Uppercase<C>;
 
   // Validates the currency before parsing, so an unlisted currency is the error reported.

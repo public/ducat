@@ -1,3 +1,5 @@
+packages:
+  - compare
 allowBuilds:
   '@prisma/client': false
   esbuild: true

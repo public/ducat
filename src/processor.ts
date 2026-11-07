@@ -1,7 +1,12 @@
 import { currencyExponent } from './currency.js';
-import { formatScaled, parseDecimal, parsePlainDecimal, toSafe } from './decimal.js';
+import { formatScaled, parseDecimal, parsePlainDecimal, normalizeMinor } from './decimal.js';
 import { fromMinor, scaleDown, scaleUp, toScale, type CurrencyInput, type Money } from './money.js';
-import { divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
+import {
+  divideAndRound,
+  divideAndRoundBigint,
+  RoundingError,
+  type RoundingMode,
+} from './rounding.js';
 
 /**
  * Which signs a processor field accepts, checked after rounding:
@@ -45,7 +50,8 @@ function rescaleForProcessor(
     return minor;
   }
 
-  const isMultiple = typeof minor === 'number' ? minor % multiple === 0 : minor % BigInt(multiple) === 0n;
+  const isMultiple =
+    typeof minor === 'number' ? minor % multiple === 0 : minor % BigInt(multiple) === 0n;
   if (isMultiple) {
     return minor;
   }
@@ -57,10 +63,10 @@ function rescaleForProcessor(
   }
 
   if (typeof minor === 'number') {
-    return divRound(minor, multiple, rounding) * multiple;
+    return divideAndRound(minor, multiple, rounding) * multiple;
   }
   const bigMultiple = BigInt(multiple);
-  return toSafe(divRoundBig(minor, bigMultiple, rounding) * bigMultiple);
+  return normalizeMinor(divideAndRoundBigint(minor, bigMultiple, rounding) * bigMultiple);
 }
 
 /** Throws a RangeError when the rounded amount has a sign the processor doesn't accept. */
@@ -70,7 +76,9 @@ function checkSign(processor: string, money: Money, minor: number | bigint, sign
     return;
   }
   if (minor < 0) {
-    throw new RangeError(`${processor} amounts can't be negative (${money}); send refunds as positive amounts`);
+    throw new RangeError(
+      `${processor} amounts can't be negative (${money}); send refunds as positive amounts`,
+    );
   }
   if (sign === 'positive' && (minor === 0 || minor === 0n)) {
     throw new RangeError(`${processor} amounts must be greater than zero (${money})`);
@@ -161,7 +169,9 @@ export function fromProcessorDecimal<C extends CurrencyInput>(
   maxLength = Infinity,
 ): Money<C> {
   if (typeof value !== 'string' || value.length > maxLength || !pattern.test(value)) {
-    throw new SyntaxError(`${processor} amount must be a decimal string, got ${JSON.stringify(value)}`);
+    throw new SyntaxError(
+      `${processor} amount must be a decimal string, got ${JSON.stringify(value)}`,
+    );
   }
 
   // PayPal's pattern allows a bare fraction (".5"), which the decimal parsers don't.

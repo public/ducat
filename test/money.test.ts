@@ -148,7 +148,11 @@ describe('arithmetic', () => {
     expect(toDecimal(sum([eur('0.10'), eur('0.20'), eur('0.30')]))).toBe('0.60');
     expect(toDecimal(sum([], 'EUR'))).toBe('0.00');
     expect(() => sum([])).toThrow();
-    const big = [fromMinor(Number.MAX_SAFE_INTEGER, 'EUR'), fromMinor(Number.MAX_SAFE_INTEGER, 'EUR'), eur('1')];
+    const big = [
+      fromMinor(Number.MAX_SAFE_INTEGER, 'EUR'),
+      fromMinor(Number.MAX_SAFE_INTEGER, 'EUR'),
+      eur('1'),
+    ];
     expect(sum(big).minor).toBe(2n * BigInt(Number.MAX_SAFE_INTEGER) + 100n);
   });
   it('round / toScale', () => {
@@ -214,7 +218,9 @@ describe('properties', () => {
     fc.assert(
       fc.property(m, m, (a, b) => {
         expect(BigInt(add(a, b).minor)).toBe(BigInt(a.minor) + BigInt(b.minor));
-        expect(compare(a, b)).toBe(BigInt(a.minor) < BigInt(b.minor) ? -1 : BigInt(a.minor) > BigInt(b.minor) ? 1 : 0);
+        expect(compare(a, b)).toBe(
+          BigInt(a.minor) < BigInt(b.minor) ? -1 : BigInt(a.minor) > BigInt(b.minor) ? 1 : 0,
+        );
       }),
     );
   });
@@ -224,7 +230,9 @@ describe('properties', () => {
         for (const r of [add(a, b), subtract(a, b), multiply(a, 3), negate(a)]) {
           const v = r.minor;
           if (typeof v === 'bigint')
-            expect(v > BigInt(Number.MAX_SAFE_INTEGER) || v < -BigInt(Number.MAX_SAFE_INTEGER)).toBe(true);
+            expect(
+              v > BigInt(Number.MAX_SAFE_INTEGER) || v < -BigInt(Number.MAX_SAFE_INTEGER),
+            ).toBe(true);
           else expect(Number.isSafeInteger(v)).toBe(true);
         }
       }),
@@ -242,12 +250,17 @@ describe('properties', () => {
   });
   it('multiply by a ratio matches the exact rational result', () => {
     fc.assert(
-      fc.property(m, fc.integer({ min: -100000, max: 100000 }), fc.integer({ min: 1, max: 100000 }), (a, n, d) => {
-        const r = multiply(a, ratio(n, d), 'floor');
-        const exact = BigInt(a.minor) * BigInt(n);
-        const lo = BigInt(r.minor) * BigInt(d);
-        expect(lo <= exact && exact < lo + BigInt(d)).toBe(true);
-      }),
+      fc.property(
+        m,
+        fc.integer({ min: -100000, max: 100000 }),
+        fc.integer({ min: 1, max: 100000 }),
+        (a, n, d) => {
+          const r = multiply(a, ratio(n, d), 'floor');
+          const exact = BigInt(a.minor) * BigInt(n);
+          const lo = BigInt(r.minor) * BigInt(d);
+          expect(lo <= exact && exact < lo + BigInt(d)).toBe(true);
+        },
+      ),
     );
   });
 });

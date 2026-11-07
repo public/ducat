@@ -1,10 +1,21 @@
+import {
+  divideAndRoundBigint as provedDivideAndRoundBigint,
+  roundTruncatedQuotient,
+} from './generated/kernel.js';
+import { RoundingError } from './rounding-error.js';
+
 /**
  * Rounding modes. The string values are the ones `Intl.NumberFormat` uses for its `roundingMode`
  * option (ES2023), so a mode can be passed straight through to formatting. `Rounding` gives the
  * familiar names (HalfUp, HalfEven, ...) for the same strings.
+ *
+ * An invalid mode (possible only from untyped code) is reported, with a RangeError, only when
+ * rounding is actually needed: an exact result is returned without looking at the mode, which keeps
+ * the exact path as fast as it can be.
  */
 export type RoundingMode =
-  | 'halfEven' // ties to even ("banker's rounding"; IEEE 754 default, EU VAT practice in many states)
+  // ties to even ("banker's rounding"; IEEE 754 default, EU VAT practice in many states)
+  | 'halfEven'
   | 'halfExpand' // ties away from zero ("half up" in commercial usage)
   | 'halfTrunc' // ties towards zero ("half down")
   | 'halfCeil' // ties towards +infinity
@@ -13,7 +24,8 @@ export type RoundingMode =
   | 'trunc' // towards zero ("down")
   | 'ceil' // towards +infinity
   | 'floor' // towards -infinity
-  | 'unnecessary'; // throw RoundingError if the result is inexact (the default for parsing and processor amounts)
+  // throw RoundingError if the result is inexact (the default for parsing and processor amounts)
+  | 'unnecessary';
 
 export const Rounding = {
   HalfEven: 'halfEven',
@@ -30,101 +42,77 @@ export const Rounding = {
 } as const satisfies Record<string, RoundingMode>;
 
 /**
- * The rounding mode arithmetic uses when none is given: ties away from zero ('half up'). It is the default of
- * decimal.js, big.js, bignumber.js, Prisma.Decimal and Intl.NumberFormat, and what Math.round-based money
- * libraries (currency.js, js-money, ts-money) intend. Parsing (`money('1.005', 'EUR')`, `fromDecimal`) and
- * processor amounts (`toStripeAmount`, `toAdyen`) stay strict: they throw unless a mode is passed.
+ * The rounding mode arithmetic uses when none is given: ties away from zero ('half up'). It is the
+ * default of decimal.js, big.js, bignumber.js, Prisma.Decimal and Intl.NumberFormat, and what
+ * Math.round-based money libraries (currency.js, js-money, ts-money) intend. Parsing
+ * (`money('1.005', 'EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) stay
+ * strict: they throw unless a mode is passed.
  */
 export const DEFAULT_ROUNDING: RoundingMode = 'halfExpand';
 
-/** Thrown when an operation would have to round but the rounding mode is `'unnecessary'`. */
-export class RoundingError extends RangeError {
-  override name = 'RoundingError';
-}
+export { RoundingError };
 
-const MAX = Number.MAX_SAFE_INTEGER;
+const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 
 /**
- * Should a truncated quotient move one step away from zero?
- * `twiceRem` is 2*|remainder| (non-zero), `d` the divisor, `odd` whether |truncated quotient| is odd.
+ * dividend / divisor rounded with `mode`, for safe-integer dividends and divisor > 0. Exact: the
+ * float quotient is only a first guess, corrected until the remainder has the dividend's sign and
+ * is smaller than the divisor.
  */
-function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint, odd: boolean, neg: boolean): boolean {
-  // twiceRem === d is an exact tie; otherwise the half modes round to the nearest. Both operands are
-  // numbers (divRound) or both bigints (divRoundBig), so === and the comparisons below are exact.
-  switch (mode) {
-    case 'halfExpand':
-      return twiceRem >= d;
-    case 'halfEven':
-      return twiceRem === d ? odd : twiceRem > d;
-    case 'halfTrunc':
-      return twiceRem > d;
-    case 'halfCeil':
-      return twiceRem === d ? !neg : twiceRem > d;
-    case 'halfFloor':
-      return twiceRem === d ? neg : twiceRem > d;
-    case 'trunc':
-      return false;
-    case 'expand':
-      return true;
-    case 'ceil':
-      return !neg;
-    case 'floor':
-      return neg;
-    case 'unnecessary':
-      throw new RoundingError('Rounding necessary: the result is not exact; pass a rounding mode');
+export function divideAndRound(dividend: number, divisor: number, mode: RoundingMode): number {
+  if (divisor === 1) {
+    return dividend;
   }
-  throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
-}
+  // Beyond MAX_SAFE_MINOR the product quotient * divisor below could round, so take the bigint
+  // path.
+  if (!(Math.abs(dividend) + divisor <= MAX_SAFE_MINOR)) {
+    return Number(divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode));
+  }
 
-/** p / d rounded with `mode`; p, d safe integers, d > 0. Exact (never uses a float quotient unchecked). */
-export function divRound(p: number, d: number, mode: RoundingMode): number {
-  if (d === 1) {
-    return p;
-  }
-  if (!(Math.abs(p) + d <= MAX)) {
-    return Number(divRoundBig(BigInt(p), BigInt(d), mode));
-  }
-  let q = Math.trunc(p / d);
-  let r = p - q * d; // exact: |q*d| <= |p| + d <= MAX
-  // the float quotient can be off by one ulp; fix so that r has the sign of p and |r| < d
-  if (p >= 0) {
-    if (r < 0) {
-      q -= 1;
-      r += d;
-    } else if (r >= d) {
-      q += 1;
-      r -= d;
+  let quotient = Math.trunc(dividend / divisor);
+  // exact: |quotient * divisor| <= |dividend| + divisor <= MAX
+  let remainder = dividend - quotient * divisor;
+
+  // The float quotient can be off by one ulp; fix it so the remainder has the dividend's sign and
+  // is smaller than the divisor in magnitude.
+  if (dividend >= 0) {
+    if (remainder < 0) {
+      quotient -= 1;
+      remainder += divisor;
+    } else if (remainder >= divisor) {
+      quotient += 1;
+      remainder -= divisor;
     }
-  } else if (r > 0) {
-    q += 1;
-    r -= d;
-  } else if (r <= -d) {
-    q -= 1;
-    r += d;
+  } else if (remainder > 0) {
+    quotient += 1;
+    remainder -= divisor;
+  } else if (remainder <= -divisor) {
+    quotient -= 1;
+    remainder += divisor;
   }
-  if (r === 0) {
-    return q + 0;
-  } // + 0 normalises -0
-  const neg = p < 0;
-  if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) {
-    q += neg ? -1 : 1;
+
+  // The generated switch handles a zero remainder too; returning here saves the call on the hottest
+  // path.
+  if (remainder === 0) {
+    return quotient + 0; // + 0 normalises -0
   }
-  return q + 0;
+  // quotient and remainder are now the exact truncated quotient and remainder, as the generated
+  // switch expects
+  return roundTruncatedQuotient(dividend, divisor, quotient, remainder, mode) + 0;
 }
 
-/** p / d rounded with `mode`; d > 0n. */
-export function divRoundBig(p: bigint, d: bigint, mode: RoundingMode): bigint {
-  if (d === 1n) {
-    return p;
+/**
+ * dividend / divisor rounded with `mode`, for divisor > 0n. The bigint kernel is generated from the
+ * Lean proofs in proofs/Ducat/Rounding.lean (`src/generated/kernel.ts`), and so is the mode switch
+ * `divRound` uses.
+ */
+export function divideAndRoundBigint(
+  dividend: bigint,
+  divisor: bigint,
+  mode: RoundingMode,
+): bigint {
+  if (divisor === 1n) {
+    return dividend;
   }
-  let q = p / d; // truncates towards zero
-  const r = p - q * d;
-  if (r === 0n) {
-    return q;
-  }
-  const neg = p < 0n;
-  if (away(mode, (neg ? -r : r) * 2n, d, (q & 1n) !== 0n, neg)) {
-    q += neg ? -1n : 1n;
-  }
-  return q;
+  return provedDivideAndRoundBigint(dividend, divisor, mode);
 }

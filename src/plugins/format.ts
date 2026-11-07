@@ -1,4 +1,7 @@
-/** `@ducatjs/money/format`: locale formatting through Intl. Importing this module adds the methods below. */
+/**
+ * `@ducatjs/money/format`: locale formatting through Intl. Importing this module adds the methods
+ * below.
+ */
 import { format, formatToParts } from '../format.js';
 import { extendMoney, type Money } from '../money.js';
 

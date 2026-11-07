@@ -88,7 +88,9 @@ function generate() {
   const { published, entries } = parseIsoXml(read('data/iso4217-list-one.xml'));
   const iso = {};
   const nonMonetary = [];
-  for (const entry of [...entries.values()].sort((left, right) => (left.code < right.code ? -1 : 1))) {
+  for (const entry of [...entries.values()].sort((left, right) =>
+    left.code < right.code ? -1 : 1,
+  )) {
     if (entry.exponent === null) {
       nonMonetary.push(entry.code);
     } else {
@@ -106,7 +108,8 @@ function generate() {
     `/** Active codes whose minor unit is "N.A." (precious metals, SDR, testing): not monetary, not in ISO_EXPONENTS. */\n` +
     `export const ISO_NON_MONETARY = ${JSON.stringify(nonMonetary)} as const;\n`;
 
-  // Stripe: [exponent the API expects, multiple the charge amount must be, multiple a payout amount must be]
+  // Stripe: [exponent the API expects, multiple the charge amount must be, multiple a payout amount
+  // must be]
   const stripeData = JSON.parse(read('data/stripe.json'));
   const stripe = {};
   for (const code of [...stripeData.presentment].sort()) {
@@ -135,7 +138,11 @@ function generate() {
     stripe[code] = [entry, charge, payout];
   }
   out['stripe.ts'] =
-    header('data/stripe.json (https://docs.stripe.com/currencies, retrieved ' + stripeData.retrieved + ')') +
+    header(
+      'data/stripe.json (https://docs.stripe.com/currencies, retrieved ' +
+        stripeData.retrieved +
+        ')',
+    ) +
     `\n/**\n * Stripe presentment currencies: [API exponent, charge amount multiple, payout amount multiple].\n` +
     ` * A multiple of 100 means "send a two-decimal value whose decimal part is always 00" (ISK, UGX)\n` +
     ` * or, for payouts only, whole units (HUF, TWD). A multiple of 10 is the three-decimal rule\n` +
@@ -148,7 +155,8 @@ function generate() {
     `\n/** Adyen minor-unit exponents (Adyen's table is authoritative where it differs from ISO: CLP, CVE, IDR, ISK). */\n` +
     `export const ADYEN_EXPONENTS: Readonly<Record<string, number>> = ${obj(adyenData.exponents)};\n`;
 
-  // [API exponent, amount multiple, ...context multiples] when the data has multiples, else the exponent
+  // [API exponent, amount multiple, ...context multiples] when the data has multiples, else the
+  // exponent
   for (const { file, name, extra = [], doc } of PROCESSORS) {
     const processorData = JSON.parse(read(`data/${file}.json`));
     const rules = {};

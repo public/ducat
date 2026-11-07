@@ -44,7 +44,9 @@ describe('PayPal', () => {
     expect(toPayPalValue(money('0.10', 'USD'))).toBe('0.10');
     expect(toPayPalValue(money('999999999999999.99', 'USD'))).toBe('999999999999999.99');
     expect(() => toPayPalValue(money('1000000000000000', 'USD'))).toThrow(/15 digits/);
-    expect(toDecimal(fromPayPal({ currency_code: 'USD', value: '999999999999999.99' }))).toBe('999999999999999.99');
+    expect(toDecimal(fromPayPal({ currency_code: 'USD', value: '999999999999999.99' }))).toBe(
+      '999999999999999.99',
+    );
   });
   it('zero is allowed, negative amounts throw (checked after rounding)', () => {
     expect(toPayPalValue(money('0', 'USD'))).toBe('0.00');
@@ -52,7 +54,9 @@ describe('PayPal', () => {
     expect(toDecimal(fromPayPal({ currency_code: 'USD', value: '0.00' }))).toBe('0.00');
     expect(toDecimal(fromPayPal({ currency_code: 'JPY', value: '0' }))).toBe('0');
     expect(() => toPayPalValue(money('-5.05', 'USD'))).toThrow(/can't be negative/);
-    expect(toPayPalValue(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toBe('0.00');
+    expect(toPayPalValue(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toBe(
+      '0.00',
+    );
   });
   it('values longer than the schema maxLength (32) are rejected', () => {
     const longest = '1.' + '0'.repeat(30);
@@ -70,13 +74,17 @@ describe('PayPal', () => {
   it('rejects strings outside the schema pattern', () => {
     for (const value of ['', '1,00', '1e3', '+1', '1.', ' 1', '0x10', '1.0.0'])
       expect(() => fromPayPal({ currency_code: 'USD', value })).toThrow(SyntaxError);
-    expect(() => fromPayPal({ currency_code: 'USD', value: 1 as unknown as string })).toThrow(SyntaxError);
+    expect(() => fromPayPal({ currency_code: 'USD', value: 1 as unknown as string })).toThrow(
+      SyntaxError,
+    );
   });
   it('unlisted currencies throw', () => {
     expect(isPayPalCurrency('usd')).toBe(true);
     expect(isPayPalCurrency('TND')).toBe(false);
     expect(() => toPayPal(money('1', 'ISK'))).toThrow(/not a PayPal currency/);
-    expect(() => fromPayPal({ currency_code: 'KWD', value: '1.000' })).toThrow(/not a PayPal currency/);
+    expect(() => fromPayPal({ currency_code: 'KWD', value: '1.000' })).toThrow(
+      /not a PayPal currency/,
+    );
   });
   it('the table matches the documented list', () => {
     expect(Object.keys(PAYPAL_EXPONENTS)).toHaveLength(25);

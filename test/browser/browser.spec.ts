@@ -24,7 +24,8 @@ test('suite subset and Intl behaviour in the page', async ({ page }, testInfo) =
 
   const result: PageResult = await page.evaluate(
     ([pageSeed, pageRuns]) => {
-      const exported = (globalThis as unknown as { ducatPage: typeof import('./page.js') }).ducatPage;
+      const exported = (globalThis as unknown as { ducatPage: typeof import('./page.js') })
+        .ducatPage;
       return exported.run(pageSeed, pageRuns);
     },
     [seed, numRuns] as const,

@@ -8,8 +8,8 @@ const symCache = new Map<string, Symbols>();
 
 /**
  * The group and decimal separators `format()` uses for this locale and currency. They come from a
- * currency-style formatter, not a plain number one, because some locales use different separators for
- * money: fr-CH writes 1 234.56 € but 1 234,56 for a number, and de-AT 1.234,56 € but 1 234,56.
+ * currency-style formatter, not a plain number one, because some locales use different separators
+ * for money: fr-CH writes 1 234.56 € but 1 234,56 for a number, and de-AT 1.234,56 € but 1 234,56.
  */
 function symbols(locale: string | undefined, currency: string): Symbols {
   const key = `${locale ?? ''}|${currency}`;
@@ -39,15 +39,17 @@ function separatorParts(locale: string | undefined, currency: string): Intl.Numb
       maximumFractionDigits: 2,
     }).formatToParts(1234567.5);
   } catch {
-    // Codes Intl rejects as currencies (custom ones that are not three letters): a number format's separators.
+    // Codes Intl rejects as currencies (custom ones that are not three letters): a number format's
+    // separators.
     return new Intl.NumberFormat(locale, { useGrouping: true }).formatToParts(1234567.5);
   }
 }
 
-// Zero code points of the decimal digit blocks Intl uses (arab, arabext, deva, beng, thai, fullwide, ...).
+// Zero code points of the decimal digit blocks Intl uses (arab, arabext, deva, beng, thai,
+// fullwide, ...).
 const ZEROS = [
-  0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66, 0xe50, 0xed0, 0xf20, 0x1040,
-  0x17e0, 0x1810, 0xff10,
+  0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66, 0xe50, 0xed0,
+  0xf20, 0x1040, 0x17e0, 0x1810, 0xff10,
 ];
 function asciiDigit(cp: number): number {
   if (cp >= 48 && cp <= 57) {
@@ -62,11 +64,12 @@ function asciiDigit(cp: number): number {
 }
 
 /**
- * Parses a locale-formatted amount: parse('1.234,50 €', 'EUR', 'de-DE'), parse('CHF 1’234.50', 'CHF', 'de-CH'),
- * parse('١٢٣٫٤٥ US$', 'USD', 'ar-EG'). Currency symbols/codes, spaces and bidi marks around the number are
- * ignored (the currency is the `currency` argument, never guessed from the text). A minus sign (ASCII or
- * U+2212) or accounting parentheses anywhere in the affixes make it negative. Inside the number only
- * digits, the locale's group separator (before the decimal separator) and one decimal separator are allowed.
+ * Parses a locale-formatted amount: parse('1.234,50 €', 'EUR', 'de-DE'), parse('CHF 1’234.50',
+ * 'CHF', 'de-CH'), parse('١٢٣٫٤٥ US$', 'USD', 'ar-EG'). Currency symbols/codes, spaces and bidi
+ * marks around the number are ignored (the currency is the `currency` argument, never guessed from
+ * the text). A minus sign (ASCII or U+2212) or accounting parentheses anywhere in the affixes make
+ * it negative. Inside the number only digits, the locale's group separator (before the decimal
+ * separator) and one decimal separator are allowed.
  */
 export function parse<C extends CurrencyInput>(
   input: string,
@@ -116,7 +119,9 @@ export function parse<C extends CurrencyInput>(
       out += '.';
     } else if (isGroup(ch)) {
       if (seenDecimal) {
-        throw new SyntaxError(`Cannot parse "${input}": group separator after the decimal separator`);
+        throw new SyntaxError(
+          `Cannot parse "${input}": group separator after the decimal separator`,
+        );
       }
     } else {
       throw new SyntaxError(`Cannot parse "${input}": unexpected "${ch}"`);
