@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
+import { defineCurrency, fromMinor, money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
 import {
   checkoutExponent,
   fromCheckout,
@@ -51,6 +51,24 @@ describe('Checkout.com', () => {
     const tooPrecise = money('10.005', 'USD', { scale: 3 });
     expect(() => toCheckoutAmount(tooPrecise)).toThrow(RoundingError);
     expect(toCheckoutAmount(tooPrecise, { rounding: 'halfEven' })).toBe(1000);
+  });
+  it('zero (card verification) is allowed; negative amounts throw', () => {
+    expect(toCheckoutAmount(money('0', 'USD'))).toBe(0);
+    expect(() => toCheckoutAmount(money('-5', 'USD'))).toThrow(/can't be negative/);
+    // the sign is checked after rounding: -0.004 rounds to zero
+    expect(toCheckoutAmount(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toBe(0);
+  });
+  it('amounts beyond a safe integer throw', () => {
+    expect(() => toCheckoutAmount(fromMinor(2n ** 60n, 'USD'))).toThrow(/too large/);
+    expect(() => fromCheckout(2 ** 53, 'USD')).toThrow(RangeError);
+  });
+  it('SLL and XDR are listed but need defineCurrency (not active ISO 4217 currencies)', () => {
+    expect(isCheckoutCurrency('SLL')).toBe(true);
+    expect(() => fromCheckout(100, 'XDR')).toThrow(/Unknown currency/);
+    defineCurrency('SLL', 2);
+    defineCurrency('XDR', 2);
+    expect(toCheckout(money('1', 'SLL'))).toEqual({ amount: 100, currency: 'SLL' });
+    expect(toDecimal(fromCheckout(250, 'XDR'))).toBe('2.50');
   });
   it('unlisted currencies throw', () => {
     expect(isCheckoutCurrency('usd')).toBe(true);

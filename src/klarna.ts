@@ -12,7 +12,7 @@ import type { RoundingMode } from './rounding.js';
 export { KLARNA_EXPONENTS };
 
 /** The ISO 4217 exponent of a Klarna purchase currency; throws for any other currency. */
-function klarnaExponent(currency: string): number {
+export function klarnaExponent(currency: string): number {
   const exponent = KLARNA_EXPONENTS[currency.toUpperCase()];
   if (exponent === undefined) {
     throw new RangeError(`${currency} is not a Klarna purchase currency`);
@@ -30,7 +30,12 @@ export interface KlarnaAmountOptions {
   readonly rounding?: RoundingMode;
 }
 
-/** The integer to send in any Klarna amount field: toKlarna(money('25', 'EUR')) === 2500. */
+/**
+ * The integer to send in any Klarna amount field: toKlarna(money('25', 'EUR')) === 2500.
+ * A bare number, because Klarna gives the currency once per order (`purchase_currency`).
+ * Negative amounts pass through: discount order lines are negative ("Negative when type is
+ * discount"), though `order_amount` itself must be non-negative.
+ */
 export function toKlarna(money: Money, options?: KlarnaAmountOptions): number {
   const rounding = options?.rounding ?? 'unnecessary';
   return toProcessorAmount('Klarna', money, klarnaExponent(money.currency), 1, rounding);

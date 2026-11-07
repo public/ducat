@@ -39,12 +39,19 @@ export interface CheckoutAmountOptions {
   readonly standalone?: boolean;
 }
 
-/** The integer `amount` to send, e.g. toCheckoutAmount(money('5000', 'CLP')) === 500000. */
+/**
+ * The integer `amount` to send, e.g. toCheckoutAmount(money('5000', 'CLP')) === 500000.
+ * Throws a RangeError for negative amounts (refunds are sent as positive amounts).
+ * SLL and XDR are on Checkout.com's list but not in ISO 4217's active list: call
+ * `defineCurrency('SLL', 2)` or `defineCurrency('XDR', 2)` before using them.
+ */
 export function toCheckoutAmount(money: Money, options?: CheckoutAmountOptions): number {
   const [exponent, paymentMultiple, standaloneMultiple] = rulesFor(money.currency);
   const multiple = options?.standalone ? standaloneMultiple : paymentMultiple;
   const rounding = options?.rounding ?? 'unnecessary';
-  return toProcessorAmount('Checkout.com', money, exponent, multiple, rounding);
+
+  // "Be greater than zero", except 0 for a card verification (API reference); refunds are positive.
+  return toProcessorAmount('Checkout.com', money, exponent, multiple, rounding, 'nonNegative');
 }
 
 /** `{ amount, currency }` for a payment request. */

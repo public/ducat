@@ -3,9 +3,9 @@
  * encoded in data/braintree.json). `amount` is a decimal string in major units, "formatted like '10'
  * or '10.00'":
  * - zero-decimal currencies can't include decimals: BIF CLP DJF GNF ISK JPY KMF KRW LAK PYG RWF UGX
- *   VND VUV XAF XOF XPF ZWD (LAK has 2 in ISO 4217);
+ *   VND VUV XAF XOF XPF (LAK has 2 in ISO 4217);
  * - the others take their ISO decimals ("10.00"). No three-decimal currency is listed.
- * Amounts can't be negative, refunds and credits included.
+ * Amounts must be greater than zero, refunds and credits included.
  */
 import { BRAINTREE_EXPONENTS } from './generated/braintree.js';
 import { type CurrencyInput, type Money } from './money.js';
@@ -39,14 +39,13 @@ export interface BraintreeAmountOptions {
 /**
  * The exact `amount` string: toBraintree(money('10', 'USD')) === '10.00', JPY 100 -> '100'.
  * Braintree has no currency field on a transaction: the merchant account sets it.
+ * Throws a RangeError for zero or negative amounts.
  */
 export function toBraintree(money: Money, options?: BraintreeAmountOptions): string {
-  if (money.minor < 0) {
-    throw new RangeError(`Braintree amounts can't be negative (${money}); send refunds as positive amounts`);
-  }
-
   const rounding = options?.rounding ?? 'unnecessary';
-  return toProcessorDecimal('Braintree', money, braintreeExponent(money.currency), rounding);
+
+  // 81531 "Amount must be greater than zero"; 81501: credits are positive too ("x.xx, not -x.xx").
+  return toProcessorDecimal('Braintree', money, braintreeExponent(money.currency), rounding, 'positive');
 }
 
 /** Reads a Braintree amount string exactly: fromBraintree('10.00', 'USD'). */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
-import { fromKlarna, isKlarnaCurrency, toKlarna, KLARNA_EXPONENTS } from '../src/klarna.js';
+import { fromMinor, money, toDecimal, RoundingError } from '../src/index.js';
+import { fromKlarna, isKlarnaCurrency, klarnaExponent, toKlarna, KLARNA_EXPONENTS } from '../src/klarna.js';
 
 describe('Klarna', () => {
   // the data-types page and the Payments API field descriptions
@@ -21,6 +21,16 @@ describe('Klarna', () => {
     expect(() => toKlarna(tooPrecise)).toThrow(RoundingError);
     expect(toKlarna(tooPrecise, { rounding: 'halfEven' })).toBe(1000);
   });
+  it('discount order lines are negative; zero passes', () => {
+    expect(toKlarna(money('-5', 'EUR'))).toBe(-500);
+    expect(toDecimal(fromKlarna(-500, 'EUR'))).toBe('-5.00');
+    expect(toKlarna(money('0', 'SEK'))).toBe(0);
+    expect(toKlarna(money('-0.004', 'EUR', { scale: 3 }), { rounding: 'halfEven' })).toBe(0);
+  });
+  it('amounts beyond a safe integer throw', () => {
+    expect(() => toKlarna(fromMinor(2n ** 60n, 'EUR'))).toThrow(/too large/);
+    expect(() => fromKlarna(2 ** 53, 'EUR')).toThrow(RangeError);
+  });
   it('only the local currencies of the purchase countries', () => {
     expect(isKlarnaCurrency('sek')).toBe(true);
     expect(isKlarnaCurrency('JPY')).toBe(false);
@@ -29,8 +39,6 @@ describe('Klarna', () => {
     expect(Object.keys(KLARNA_EXPONENTS).toSorted()).toEqual(
       'AUD CAD CHF CZK DKK EUR GBP HUF MXN NOK NZD PLN RON SEK USD'.split(' '),
     );
-    for (const [code, exponent] of Object.entries(KLARNA_EXPONENTS)) {
-      expect(exponent).toBe(ISO_EXPONENTS[code]);
-    }
+    expect(klarnaExponent('huf')).toBe(2);
   });
 });

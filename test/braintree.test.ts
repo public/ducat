@@ -8,7 +8,8 @@ import {
   BRAINTREE_EXPONENTS,
 } from '../src/braintree.js';
 
-const ZERO = 'BIF CLP DJF GNF ISK JPY KMF KRW LAK PYG RWF UGX VND VUV XAF XOF XPF ZWD'.split(' ');
+// the codes marked with an asterisk on the currencies page, copied from the page
+const ASTERISKED = 'BIF CLP DJF GNF ISK JPY KMF KRW LAK PYG RWF UGX VND VUV XAF XOF XPF'.split(' ');
 
 describe('Braintree', () => {
   // the transaction.sale example, and 81503 "formatted like '10' or '10.00'"
@@ -34,8 +35,14 @@ describe('Braintree', () => {
     // a fractional amount read back keeps its precision
     expect(toDecimal(fromBraintree('5.25', 'JPY'))).toBe('5.25');
   });
-  it('81501: amounts cannot be negative, credits included', () => {
+  it('81531 and 81501: amounts must be greater than zero, credits included', () => {
     expect(() => toBraintree(money('-5', 'USD'))).toThrow(/can't be negative/);
+    expect(() => toBraintree(money('0', 'USD'))).toThrow(/greater than zero/);
+    // checked after rounding: -0.004 rounds to zero, which is rejected as zero
+    expect(() => toBraintree(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toThrow(
+      /greater than zero/,
+    );
+    expect(toBraintree(money('0.01', 'USD'))).toBe('0.01');
     expect(() => fromBraintree('-5.00', 'USD')).toThrow(SyntaxError);
   });
   it('more decimals than Braintree takes need a rounding mode', () => {
@@ -58,11 +65,14 @@ describe('Braintree', () => {
   });
   it('the table matches the documented list', () => {
     expect(Object.keys(BRAINTREE_EXPONENTS)).toHaveLength(134);
-    for (const [code, exponent] of Object.entries(BRAINTREE_EXPONENTS)) {
-      // withdrawn codes still listed (HRK, LTL, SLL, STD, ZMK) aren't in ISO_EXPONENTS and take 2
-      const expected = ZERO.includes(code) ? 0 : (ISO_EXPONENTS[code] ?? 2);
-      expect(exponent).toBe(expected);
+
+    // exactly the asterisked codes are zero-decimal; the page lists no three-decimal currency
+    const zeroDecimal = Object.keys(BRAINTREE_EXPONENTS).filter((code) => BRAINTREE_EXPONENTS[code] === 0);
+    expect(zeroDecimal.toSorted()).toEqual(ASTERISKED);
+    const others = Object.entries(BRAINTREE_EXPONENTS).filter(([code]) => !ASTERISKED.includes(code));
+    for (const [code, exponent] of others) {
+      expect([code, exponent]).toEqual([code, 2]);
     }
-    expect(new Set(Object.values(BRAINTREE_EXPONENTS))).toEqual(new Set([0, 2]));
+    expect(braintreeExponent('ZWD')).toBe(2);
   });
 });
