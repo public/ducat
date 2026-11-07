@@ -5,6 +5,10 @@ import { RoundingError } from './rounding-error.js';
  * Rounding modes. The string values are the ones `Intl.NumberFormat` uses for its `roundingMode`
  * option (ES2023), so a mode can be passed straight through to formatting. `Rounding` gives the
  * familiar names (HalfUp, HalfEven, ...) for the same strings.
+ *
+ * An invalid mode (possible only from untyped code) is reported, with a RangeError, only when rounding
+ * is actually needed: an exact result is returned without looking at the mode, which keeps the exact
+ * path as fast as it can be.
  */
 export type RoundingMode =
   | 'halfEven' // ties to even ("banker's rounding"; IEEE 754 default, EU VAT practice in many states)
@@ -47,8 +51,7 @@ const MAX = Number.MAX_SAFE_INTEGER;
 /** p / d rounded with `mode`; p, d safe integers, d > 0. Exact (never uses a float quotient unchecked). */
 export function divRound(p: number, d: number, mode: RoundingMode): number {
   if (d === 1) {
-    // still through the switch, so an unknown mode is rejected
-    return roundTruncatedQuotient(p, 1, p, 0, mode) + 0;
+    return p;
   }
   if (!(Math.abs(p) + d <= MAX)) return Number(divRoundBig(BigInt(p), BigInt(d), mode));
   let q = Math.trunc(p / d);
@@ -79,5 +82,8 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
  * proofs/Ducat/Rounding.lean (`src/generated/kernel.ts`), and so is the mode switch that `divRound` uses.
  */
 export function divRoundBig(p: bigint, d: bigint, mode: RoundingMode): bigint {
+  if (d === 1n) {
+    return p;
+  }
   return divideAndRoundBigint(p, d, mode);
 }

@@ -32,7 +32,12 @@ def caseOrder : List Mode :=
 
 def unknownMode : String := "throw new RangeError(`Unknown rounding mode \"${String(mode)}\"`);"
 
-def cases : List (String × String × E) := caseOrder.map fun m => (m.tsName, s!"rounds {m.describe}", kernelRet m)
+/-- The cases are the kernels' results after their shared first branch (`kernelRet_exact_first`). -/
+def cases : List (String × String × E) := caseOrder.map fun m => (m.tsName, s!"rounds {m.describe}", kernelRest m)
+
+/-- An exact division returns the quotient in every mode, so that check comes before the switch. An unknown
+mode is then reported only when rounding is actually needed. -/
+def exactFirst : Option (B × E) := some (K.exact, K.quotient)
 
 /-- The parameters of the switch: the kernel's own two, then the two `let`s the caller computes. -/
 def switchParams : List String := ["dividend", "divisor"] ++ (sharedLets.take 2).map (·.1)
@@ -41,14 +46,14 @@ def roundBigint : String :=
   switchToTS true false "roundTruncatedQuotientBigint"
     (" * Rounds the truncated `quotient` of `dividend / divisor` (with `remainder = dividend - quotient * divisor`)\n" ++
      " * with `mode`; `divisor` must be positive.\n *\n" ++ theorems)
-    switchParams "mode" "RoundingMode" (sharedLets.drop 2) cases unknownMode
+    switchParams "mode" "RoundingMode" (sharedLets.drop 2) exactFirst cases unknownMode
 
 def roundNumber : String :=
   switchToTS false true "roundTruncatedQuotient"
     (" * The same switch over `number`: rounds the truncated `quotient` of `dividend / divisor`, where\n" ++
      " * `remainder = dividend - quotient * divisor` exactly and `divisor` is positive. Every input must be a safe\n" ++
      " * integer. This copy is not proved; test/kernel.test.ts compares it with the `bigint` one.")
-    switchParams "mode" "RoundingMode" (sharedLets.drop 2) cases unknownMode
+    switchParams "mode" "RoundingMode" (sharedLets.drop 2) exactFirst cases unknownMode
 
 def divideBigint : String :=
   let (body, _) := letsToTS true ["dividend", "divisor"] (sharedLets.take 2)

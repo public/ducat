@@ -119,17 +119,20 @@ describe('generated rounding kernel', () => {
     expect(Object.is(divRound(-1, 2, 'halfEven'), 0)).toBe(true);
   });
 
-  it('rejects an unknown mode on every path, exact divisions included', () => {
+  it('reports an unknown mode only when rounding is needed, on every path', () => {
+    // a decision, documented on RoundingMode: exact results return before the mode is looked at
     for (const mode of ['nearest', 'constructor', 'toString', '__proto__'] as string[] as RoundingMode[]) {
-      // inexact, exact, and division by one (each path has its own shortcut for the last two)
-      for (const [dividend, divisor] of [
-        [7, 2],
-        [4, 2],
-        [4, 1],
+      expect(() => divRound(7, 2, mode)).toThrow(/Unknown rounding mode/);
+      expect(() => divRoundBig(7n, 2n, mode)).toThrow(/Unknown rounding mode/);
+      expect(() => divideAndRoundBigint(7n, 2n, mode)).toThrow(/Unknown rounding mode/);
+      for (const [dividend, divisor, quotient] of [
+        [4, 2, 2],
+        [-9, 3, -3],
+        [4, 1, 4],
       ] as const) {
-        expect(() => divRound(dividend, divisor, mode)).toThrow(/Unknown rounding mode/);
-        expect(() => divRoundBig(BigInt(dividend), BigInt(divisor), mode)).toThrow(/Unknown rounding mode/);
-        expect(() => divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode)).toThrow(/Unknown rounding mode/);
+        expect(divRound(dividend, divisor, mode)).toBe(quotient);
+        expect(divRoundBig(BigInt(dividend), BigInt(divisor), mode)).toBe(BigInt(quotient));
+        expect(divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode)).toBe(BigInt(quotient));
       }
     }
   });

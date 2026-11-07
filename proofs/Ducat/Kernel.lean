@@ -138,13 +138,22 @@ def letsToTS (big : Bool) (params : List String) (lets : List (String × E)) : S
 
 /-- Several kernels with the same parameters and `let`s as one function: the shared `let`s, then a
 `switch` on `selector` whose case `key` is the result of the kernel for that key. Any other key throws.
+If every kernel's result is `ite c t rest`, pass `first := some (c, t)` and the `rest`s as the cases:
+`if (c) return t;` is printed once, before the `let`s and the switch (`c` and `t` may only use the
+parameters).
 The `let`s may be split: those listed in `params` beyond the kernel's own are computed by the caller
 (see `Gen.lean`), which prints them with the same `letsToTS`. -/
 def switchToTS (big : Bool) (exported : Bool) (name doc : String) (params : List String)
-    (selector selectorType : String) (lets : List (String × E)) (cases : List (String × String × E))
-    (otherwise : String) : String :=
+    (selector selectorType : String) (lets : List (String × E)) (first : Option (B × E))
+    (cases : List (String × String × E)) (otherwise : String) : String :=
   let type := if big then "bigint" else "number"
-  let (body, names) := letsToTS big params lets
+  let (lines, names) := letsToTS big params lets
+  -- a first branch shared by every case is printed once, before the switch
+  let shared := match first with
+    | some (c, t) => s!"  if ({c.toTS big names}) \{\n    return {t.toTS big names};\n  }\n"
+    | none => ""
+  -- the `let`s are pure, so the shared branch may come first; it then skips them on exact divisions
+  let body := shared ++ lines
   let sig := ", ".intercalate (params.map (· ++ s!": {type}") ++ [s!"{selector}: {selectorType}"])
   let arms := cases.map fun (key, comment, ret) =>
     s!"    // {comment}\n    case '{key}': \{\n{ret.toReturn big names "      "}    }\n"

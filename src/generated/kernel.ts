@@ -1,4 +1,4 @@
-// lean-sources sha256:e52feb82534b5bff7983c67bd45ec1f6dd3c0b2c64698669411fb4cca06bf11e content sha256:bd45329f38151a83c48be3d60202a1e25c88cd6e11222f93519381aa830e3f6a
+// lean-sources sha256:704e08310697742a7501cecc9da70c2ecf6abbc9fb445bbcb61a18ce619a5322 content sha256:cee3c1de013d6aaff28587aeb824d2e205ccce08e27cd3d09217b0b2b7243601
 // GENERATED from proofs/Ducat/Rounding.lean by `pnpm gen:kernel`. Do not edit.
 import { RoundingError } from '../rounding-error.js';
 import type { RoundingMode } from '../rounding.js';
@@ -35,6 +35,9 @@ function roundTruncatedQuotientBigint(
   remainder: bigint,
   mode: RoundingMode,
 ): bigint {
+  if (remainder === 0n) {
+    return quotient;
+  }
   const twiceRemainder = remainder < 0n ? -2n * remainder : 2n * remainder;
 
   switch (mode) {
@@ -94,9 +97,6 @@ function roundTruncatedQuotientBigint(
     }
     // rounds away from zero
     case 'expand': {
-      if (remainder === 0n) {
-        return quotient;
-      }
       if (dividend < 0n) {
         return quotient - 1n;
       }
@@ -104,23 +104,20 @@ function roundTruncatedQuotientBigint(
     }
     // rounds towards +infinity
     case 'ceil': {
-      if (remainder === 0n || dividend < 0n) {
+      if (dividend < 0n) {
         return quotient;
       }
       return quotient + 1n;
     }
     // rounds towards -infinity
     case 'floor': {
-      if (remainder === 0n || !(dividend < 0n)) {
+      if (!(dividend < 0n)) {
         return quotient;
       }
       return quotient - 1n;
     }
     // rounds not at all: throws RoundingError unless the division is exact
     case 'unnecessary': {
-      if (remainder === 0n) {
-        return quotient;
-      }
       throw new RoundingError(ROUNDING_NECESSARY);
     }
   }
@@ -139,6 +136,9 @@ export function roundTruncatedQuotient(
   remainder: number,
   mode: RoundingMode,
 ): number {
+  if (remainder === 0) {
+    return quotient;
+  }
   const twiceRemainder = remainder < 0 ? -2 * remainder : 2 * remainder;
 
   switch (mode) {
@@ -198,9 +198,6 @@ export function roundTruncatedQuotient(
     }
     // rounds away from zero
     case 'expand': {
-      if (remainder === 0) {
-        return quotient;
-      }
       if (dividend < 0) {
         return quotient - 1;
       }
@@ -208,23 +205,20 @@ export function roundTruncatedQuotient(
     }
     // rounds towards +infinity
     case 'ceil': {
-      if (remainder === 0 || dividend < 0) {
+      if (dividend < 0) {
         return quotient;
       }
       return quotient + 1;
     }
     // rounds towards -infinity
     case 'floor': {
-      if (remainder === 0 || !(dividend < 0)) {
+      if (!(dividend < 0)) {
         return quotient;
       }
       return quotient - 1;
     }
     // rounds not at all: throws RoundingError unless the division is exact
     case 'unnecessary': {
-      if (remainder === 0) {
-        return quotient;
-      }
       throw new RoundingError(ROUNDING_NECESSARY);
     }
   }

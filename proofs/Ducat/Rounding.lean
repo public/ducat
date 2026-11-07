@@ -79,17 +79,24 @@ def half (cond : B) : E := .ite cond away quotient
 def pastHalfOr (tie : B) : B := .or (.lt divisor twiceRemainder) (.and (.eq twiceRemainder divisor) tie)
 end K
 
-def kernelRet : Mode → E
+/-- What each kernel does when the division is not exact. -/
+def kernelRest : Mode → E
   | .trunc => K.quotient
-  | .expand => .ite K.exact K.quotient K.away
-  | .ceil => .ite (.or K.exact K.neg) K.quotient (.add K.quotient K.one)
-  | .floor => .ite (.or K.exact (.not K.neg)) K.quotient (.sub K.quotient K.one)
-  | .unnecessary => .ite K.exact K.quotient .fail
+  | .expand => K.away
+  | .ceil => .ite K.neg K.quotient (.add K.quotient K.one)
+  | .floor => .ite (.not K.neg) K.quotient (.sub K.quotient K.one)
+  | .unnecessary => .fail
   | .halfEven => K.half (K.pastHalfOr K.odd)
   | .halfExpand => K.half (.le K.divisor K.twiceRemainder)
   | .halfTrunc => K.half (.lt K.divisor K.twiceRemainder)
   | .halfCeil => K.half (K.pastHalfOr (.not K.neg))
   | .halfFloor => K.half (K.pastHalfOr K.neg)
+
+/-- Every kernel first returns the quotient when the division is exact. `Gen.lean` prints that shared
+first branch once, before the switch on the mode (`kernelRet_exact_first`). -/
+def kernelRet (m : Mode) : E := .ite K.exact K.quotient (kernelRest m)
+
+theorem kernelRet_exact_first (m : Mode) : kernelRet m = .ite K.exact K.quotient (kernelRest m) := rfl
 
 /-- What each mode does, for the generated JSDoc. -/
 def Mode.describe : Mode → String
@@ -143,7 +150,7 @@ theorem kernel_sound (m : Mode) (p d : Int) (hd : 0 < d) (q : Int)
   obtain ⟨hpos, hneg⟩ := tdiv_facts p d hd
   by_cases hrn : p < p.tdiv d * d <;>
   cases m <;>
-  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient,
+  simp [kernel, sharedLets, kernelRet, kernelRest, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient,
     K.remainder, K.twiceRemainder, K.one, K.zero, K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr, hrn, even_iff] at h <;>
   generalize p.tdiv d = t at * <;>
   unfold Rounds <;>
@@ -221,7 +228,7 @@ theorem kernel_fails_iff (m : Mode) (p d : Int) (_hd : 0 < d) :
     constructor <;> intro h <;> linarith [mul_comm d (p.tdiv d)]
   rw [hdvd]
   cases m <;>
-  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient,
+  simp [kernel, sharedLets, kernelRet, kernelRest, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient,
     K.remainder, K.twiceRemainder, K.one, K.zero, K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr] <;>
   (try split_ifs) <;> (try simp) <;>
   -- name the truncated quotients so that what is left is linear
