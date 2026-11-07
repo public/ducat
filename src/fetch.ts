@@ -105,7 +105,7 @@ function requestSignal(signal: AbortSignalLike | undefined, timeout: number): Ab
   if (!Number.isFinite(timeout) || timeout < 0) {
     throw new RangeError(`timeout must be a non-negative number of milliseconds, got ${timeout}`);
   }
-  const statics = (globalThis as { AbortSignal?: AbortSignalStatics }).AbortSignal;
+  const statics = (globalThis as unknown as { AbortSignal?: AbortSignalStatics }).AbortSignal;
   if (timeout === 0 || statics?.timeout === undefined) {
     return signal;
   }

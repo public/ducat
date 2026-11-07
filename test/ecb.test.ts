@@ -28,7 +28,7 @@ describe('ECB parsers', () => {
     expect(days.map((d) => d.asOf)).toEqual(['2026-11-06', '2026-11-05']);
     expect(days[1]!.rate('EUR', 'USD')?.toString()).toBe('1.1224');
     const hist = snapshotsFrom(days);
-    expect((await hist.at('2026-11-08')).asOf).toBe('2026-11-06');
+    expect(await hist.at('2026-11-08')).toBe(days[0]); // Sunday: Friday's table
   });
 
   it('parses both CSV layouts and agrees with the XML', () => {
