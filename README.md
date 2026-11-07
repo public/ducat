@@ -1,4 +1,5 @@
-<p align="center"><img src="assets/logo.svg" width="128" height="128" alt="ducat"></p>
+<p align="center"><img src="assets/logo.png" width="128" height="128" alt="A gold ducat of Doge Francesco Foscari, 1423–1457"></p>
+<p align="center"><sub>Gold ducat of Francesco Foscari, Venice, 1423–1457. Photo: Francesco Bini, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>, via Wikimedia Commons (<a href="assets/CREDITS.md">credits</a>).</sub></p>
 
 # ducat
 
