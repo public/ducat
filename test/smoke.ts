@@ -5,6 +5,8 @@ import { toStripeAmount } from '../src/stripe.ts';
 import { toAdyen } from '../src/adyen.ts';
 import { toCheckoutAmount } from '../src/checkout.ts';
 import { toPayPalValue } from '../src/paypal.ts';
+import { toBraintree } from '../src/braintree.ts';
+import { toKlarna } from '../src/klarna.ts';
 import { log, runtimeName } from '../bench/harness.ts';
 
 let failures = 0,
@@ -38,6 +40,8 @@ eq(toStripeAmount(M.money('5', 'ISK')), 500, 'stripe ISK');
 eq(toAdyen(M.money('15000', 'IDR')).value, 15000, 'adyen IDR');
 eq(toCheckoutAmount(M.money('5000', 'CLP')), 500000, 'checkout CLP');
 eq(toPayPalValue(M.money('1000', 'HUF')), '1000', 'paypal HUF');
+eq(toBraintree(M.money('5000', 'LAK')), '5000', 'braintree LAK');
+eq(toKlarna(M.money('1000', 'HUF')), 100000, 'klarna HUF');
 eq(JSON.stringify(eur('12.34')), '{"amount":"12.34","currency":"EUR"}', 'json');
 const n = (s: string) => s.replace(/[  ]/g, ' ');
 eq(n(M.format(eur('1234.5'), 'de-DE')), '1.234,50 €', 'format de-DE');

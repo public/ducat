@@ -85,6 +85,14 @@
       "types": "./dist/plugins/paypal.d.ts",
       "default": "./dist/plugins/paypal.js"
     },
+    "./braintree": {
+      "types": "./dist/plugins/braintree.d.ts",
+      "default": "./dist/plugins/braintree.js"
+    },
+    "./klarna": {
+      "types": "./dist/plugins/klarna.d.ts",
+      "default": "./dist/plugins/klarna.js"
+    },
     "./stripe-fx": {
       "types": "./dist/stripe-fx.d.ts",
       "default": "./dist/stripe-fx.js"
