@@ -1,4 +1,4 @@
-// lean-sources sha256:704e08310697742a7501cecc9da70c2ecf6abbc9fb445bbcb61a18ce619a5322 content sha256:cee3c1de013d6aaff28587aeb824d2e205ccce08e27cd3d09217b0b2b7243601
+// lean-sources sha256:704e08310697742a7501cecc9da70c2ecf6abbc9fb445bbcb61a18ce619a5322 content sha256:dc3d761f86eb9b865b2cfa6a6dba6e6b3853afdab3ec5c8811415f9942c6231c
 // GENERATED from proofs/Ducat/Rounding.lean by `pnpm gen:kernel`. Do not edit.
 import { RoundingError } from '../rounding-error.js';
 import type { RoundingMode } from '../rounding.js';
@@ -13,7 +13,11 @@ const ROUNDING_NECESSARY = 'Rounding necessary: the result is not exact; pass a 
  * `rounds_unique` (only one value does) and `kernel_fails_iff` (it throws only for 'unnecessary' on an
  * inexact division), hence `kernel_correct`. Unknown modes throw a RangeError.
  */
-export function divideAndRoundBigint(dividend: bigint, divisor: bigint, mode: RoundingMode): bigint {
+export function divideAndRoundBigint(
+  dividend: bigint,
+  divisor: bigint,
+  mode: RoundingMode,
+): bigint {
   const quotient = dividend / divisor;
   const remainder = dividend - quotient * divisor;
   return roundTruncatedQuotientBigint(dividend, divisor, quotient, remainder, mode);
