@@ -72,8 +72,11 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
     q -= 1;
     r += d;
   }
-  // q and r are now the exact truncated quotient and remainder, so the generated switch applies;
-  // + 0 normalises -0
+  // the generated switch returns q for r === 0 too; doing it here saves the call on the hottest path
+  if (r === 0) {
+    return q + 0; // + 0 normalises -0
+  }
+  // q and r are now the exact truncated quotient and remainder, so the generated switch applies
   return roundTruncatedQuotient(p, d, q, r, mode) + 0;
 }
 
