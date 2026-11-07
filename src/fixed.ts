@@ -34,6 +34,12 @@ export interface FixedOptions {
   readonly rounding?: RoundingMode;
 }
 
+/** Options for multiply and divide. */
+export interface ArithmeticOptions {
+  /** The result's scale (default: the scale of the value being multiplied or divided). */
+  readonly scale?: number;
+}
+
 /** The integer-and-scale form of a Fixed: `value / 10^scale`. */
 export interface ScaledInteger {
   readonly value: number | bigint;
@@ -53,6 +59,15 @@ function checkScale(scale: number): void {
   if (!Number.isSafeInteger(scale) || scale < 0) {
     throw new RangeError(`Invalid scale ${scale}`);
   }
+}
+
+function resultScale(value: { readonly scale: number }, options: ArithmeticOptions | undefined): number {
+  const scale = options?.scale;
+  if (scale === undefined) {
+    return value.scale;
+  }
+  checkScale(scale);
+  return scale;
 }
 
 /**
@@ -85,30 +100,41 @@ export class Fixed {
   }
 
   /**
-   * this × factor, rounded once to this value's scale (default 'halfExpand'). The factor is exact:
-   * an integer, a decimal string ('1.075'), a bigint, a `ratio()` or another Fixed.
+   * this × factor, rounded once to this value's scale or `options.scale` (default 'halfExpand').
+   * The factor is exact: an integer, a decimal string ('1.075'), a bigint, a `ratio()` or another
+   * Fixed. Give `scale` rather than calling toScale afterwards, which would round twice.
    */
-  multiply(factor: Factor | Fixed, rounding: RoundingMode = DEFAULT_ROUNDING): Fixed {
+  multiply(factor: Factor | Fixed, rounding: RoundingMode = DEFAULT_ROUNDING, options?: ArithmeticOptions): Fixed {
     const value = this.value;
+    const scale = resultScale(this, options);
 
     // An integer factor keeps the scale and can't need rounding, so a safe product is the answer.
-    if (typeof factor === 'number' && Number.isSafeInteger(factor) && typeof value === 'number') {
+    if (
+      scale === this.scale &&
+      typeof factor === 'number' &&
+      Number.isSafeInteger(factor) &&
+      typeof value === 'number'
+    ) {
       const product = value * factor;
       if (product <= MAX_SAFE && product >= -MAX_SAFE) {
         return new Fixed(product + 0, this.scale);
       }
     }
 
-    return this.multiplyByRatio(factorRatio(factor), rounding, this.scale);
+    return this.multiplyByRatio(factorRatio(factor), rounding, scale);
   }
 
-  /** this ÷ divisor, rounded once to this value's scale (default 'halfExpand'). */
-  divide(divisor: Factor | Fixed, rounding: RoundingMode = DEFAULT_ROUNDING): Fixed {
+  /**
+   * this ÷ divisor, rounded once to this value's scale or `options.scale` (default 'halfExpand'):
+   * `fixed('9.990').divide('1.2', 'halfEven', { scale: 2 })` is 8.32.
+   */
+  divide(divisor: Factor | Fixed, rounding: RoundingMode = DEFAULT_ROUNDING, options?: ArithmeticOptions): Fixed {
+    const scale = resultScale(this, options);
     const divisorRatio = factorRatio(divisor);
     if (divisorRatio.num === 0n) {
       throw new RangeError('Division by zero');
     }
-    return this.multiplyByRatio(ratio(divisorRatio.den, divisorRatio.num), rounding, this.scale);
+    return this.multiplyByRatio(ratio(divisorRatio.den, divisorRatio.num), rounding, scale);
   }
 
   /** @internal this × rate at `scale`, rounded once. */

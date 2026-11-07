@@ -93,6 +93,17 @@ describe('Fixed arithmetic', () => {
     expect(() => fixed('1.00').divide(3, 'unnecessary')).toThrow(RoundingError);
     expect(() => fixed('1').divide('0')).toThrow(RangeError);
     expect(fixed('1.00').multiply({ num: 3n, den: 2n, n: 1, d: 1 }).toString()).toBe('1.50'); // re-normalised
+    // a target scale rounds once, at that scale
+    expect(fixed('9.990').divide('1.2', 'halfEven', { scale: 2 }).toString()).toBe('8.32');
+    expect(fixed('1.00').divide(3, 'halfEven', { scale: 6 }).toString()).toBe('0.333333');
+    expect(fixed('0.25').multiply('0.5', 'halfEven', { scale: 3 }).toString()).toBe('0.125');
+    expect(fixed('2').multiply(3, 'unnecessary', { scale: 2 }).toString()).toBe('6.00');
+    // double rounding: 0.0145 at scale 2 is 1.45 hundredths, so one rounding gives 0.01, but rounding
+    // to scale 3 first makes the tie 0.015, which then rounds up to 0.02
+    expect(fixed('0.0145').multiply(1, 'halfEven', { scale: 2 }).toString()).toBe('0.01');
+    expect(fixed('0.0145').toScale(3, 'halfExpand').toScale(2, 'halfExpand').toString()).toBe('0.02');
+    expect(fixed('0.0145').multiply(1, 'halfExpand', { scale: 2 }).toString()).toBe('0.01');
+    expect(() => fixed('1').divide(3, 'halfEven', { scale: -1 })).toThrow(RangeError);
   });
 
   it('rounds, changes scale and reports sign', () => {
@@ -198,11 +209,13 @@ describe('Fixed properties against a bigint rational oracle', () => {
 
   it('multiply rounds the exact product once', () => {
     fc.assert(
-      fc.property(anyFixed, anyFixed, mode, (value, factor, rounding) => {
+      fc.property(anyFixed, anyFixed, mode, scale, (value, factor, rounding, target) => {
         const [valueNum, valueDen] = exactOf(value);
         const [factorNum, factorDen] = exactOf(factor);
         const expected = oracleAtScale(valueNum * factorNum, valueDen * factorDen, value.scale, rounding);
         expect(BigInt(value.multiply(factor, rounding).value)).toBe(expected);
+        const atTarget = oracleAtScale(valueNum * factorNum, valueDen * factorDen, target, rounding);
+        expect(BigInt(value.multiply(factor, rounding, { scale: target }).value)).toBe(atTarget);
       }),
       { numRuns: 2000 },
     );
@@ -210,12 +223,14 @@ describe('Fixed properties against a bigint rational oracle', () => {
 
   it('divide rounds the exact quotient once', () => {
     fc.assert(
-      fc.property(anyFixed, anyFixed, mode, (value, divisor, rounding) => {
+      fc.property(anyFixed, anyFixed, mode, scale, (value, divisor, rounding, target) => {
         fc.pre(!divisor.isZero());
         const [valueNum, valueDen] = exactOf(value);
         const [divisorNum, divisorDen] = exactOf(divisor);
         const expected = oracleAtScale(valueNum * divisorDen, valueDen * divisorNum, value.scale, rounding);
         expect(BigInt(value.divide(divisor, rounding).value)).toBe(expected);
+        const atTarget = oracleAtScale(valueNum * divisorDen, valueDen * divisorNum, target, rounding);
+        expect(BigInt(value.divide(divisor, rounding, { scale: target }).value)).toBe(atTarget);
       }),
       { numRuns: 2000 },
     );
