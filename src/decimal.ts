@@ -2,7 +2,7 @@
 // converted through their shortest round-trip decimal representation (String(x)), never multiplied.
 
 /** The largest minor-unit count held as a number (2^53 - 1); larger values are bigints. */
-export const MAX = Number.MAX_SAFE_INTEGER;
+const MAX = Number.MAX_SAFE_INTEGER;
 const MAXN = BigInt(MAX);
 
 /** An exact rational factor num/den (den > 0). `n`/`d` hold the same values as numbers when both are safe. */

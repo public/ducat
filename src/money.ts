@@ -1,7 +1,6 @@
 import { currencyExponent, type CurrencyCode } from './currency.js';
 import {
   formatScaled,
-  MAX,
   parseDecimal,
   parsePlainDecimal,
   POW10,
@@ -12,6 +11,10 @@ import {
   type Ratio,
 } from './decimal.js';
 import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
+
+// A module-local constant, not an import: the hot loops (sum, add) read it on every iteration, and
+// V8 reads an imported binding through an extra indirection.
+const MAX = Number.MAX_SAFE_INTEGER;
 
 /** Currency codes accepted by constructors: known codes autocomplete, any string is allowed. */
 export type CurrencyInput = CurrencyCode | (string & {});
