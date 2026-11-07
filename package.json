@@ -1,14 +1,22 @@
 {
   "name": "@ducatjs/money",
   "version": "0.1.0",
-  "private": true,
   "description": "Exact, fast, typed Money for TypeScript: integer minor units, bigint fallback, Stripe/Adyen views, allocation, cash rounding, Prisma helpers.",
+  "homepage": "https://github.com/public/ducat#readme",
+  "bugs": {
+    "url": "https://github.com/public/ducat/issues"
+  },
   "license": "MIT",
   "author": "Alex Stapleton <alexs@prol.etari.at>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/public/ducat.git"
+  },
   "files": [
     "dist",
     "src",
     "data",
+    "assets/CREDITS.md",
     "LICENSE"
   ],
   "type": "module",
@@ -69,6 +77,14 @@
       "types": "./dist/plugins/adyen.d.ts",
       "default": "./dist/plugins/adyen.js"
     },
+    "./checkout": {
+      "types": "./dist/plugins/checkout.d.ts",
+      "default": "./dist/plugins/checkout.js"
+    },
+    "./paypal": {
+      "types": "./dist/plugins/paypal.d.ts",
+      "default": "./dist/plugins/paypal.js"
+    },
     "./prisma": {
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"
@@ -83,6 +99,9 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json",
     "test": "vitest run",
+    "test:deep": "DUCAT_DEEP=1 vitest run",
+    "fetch:dectest": "node scripts/fetch-dectest.mjs",
+    "vectors:check": "python3 scripts/gen-pydecimal-vectors.py --check",
     "test:runtimes": "node scripts/smoke-runtimes.mjs",
     "gen": "node scripts/gen-currencies.mjs",
     "gen:check": "node scripts/gen-currencies.mjs --check",
@@ -91,9 +110,11 @@
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "check": "pnpm lint && pnpm fmt:check && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm fmt:check && pnpm typecheck && pnpm test",
+    "bench:vitest": "vitest bench --run"
   },
   "devDependencies": {
+    "@codspeed/vitest-plugin": "6.1.1",
     "@prisma/client": "^6.19.3",
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.6.6",

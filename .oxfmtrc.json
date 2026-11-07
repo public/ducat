@@ -2,5 +2,13 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 120,
   "singleQuote": true,
-  "ignorePatterns": ["dist", "examples/prisma/generated", "bench/out", "src/generated", "data", "package-lock.json"]
+  "ignorePatterns": [
+    "dist",
+    "examples/prisma/generated",
+    "bench/out",
+    "src/generated",
+    "data",
+    "package-lock.json",
+    "test/vectors"
+  ]
 }

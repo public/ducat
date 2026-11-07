@@ -2,7 +2,7 @@
 // Runs the full vitest suite on Node, Bun (bun test) and Deno, then the bundled smoke test on every
 // engine found, including old Node (/usr/bin/node) and the jsvu SpiderMonkey / JSC shells.
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -10,14 +10,27 @@ const home = homedir();
 const BUN = process.env.BUN ?? join(home, '.bun/bin/bun');
 const DENO = process.env.DENO ?? join(home, '.deno/bin/deno');
 const run = (bin, args) => execFileSync(bin, args, { stdio: 'inherit' });
+// a bare command name (BUN=bun, as in CI) is looked up on PATH; a path must exist
+function isAvailable(bin) {
+  if (bin === process.execPath || !bin.includes('/')) {
+    return true;
+  }
+  return existsSync(bin);
+}
+
+// bun test ignores vitest's include and also matches *.spec.ts (browser tests) and test/db/, so it
+// gets the unit test files by name
+const unitTestFiles = readdirSync('test')
+  .filter((name) => name.endsWith('.test.ts'))
+  .map((name) => `./test/${name}`);
 
 const suites = [
   ['node', process.execPath, ['node_modules/vitest/vitest.mjs', 'run']],
-  ['bun', BUN, ['test']],
+  ['bun', BUN, ['test', ...unitTestFiles]],
   ['deno', DENO, ['run', '-A', 'node_modules/vitest/vitest.mjs', 'run']],
 ];
 for (const [name, bin, args] of suites) {
-  if (bin !== process.execPath && !existsSync(bin)) {
+  if (!isAvailable(bin)) {
     console.log(`skip ${name} (not installed)`);
     continue;
   }
@@ -26,8 +39,9 @@ for (const [name, bin, args] of suites) {
 }
 
 execFileSync(
-  'npx',
+  'pnpm',
   [
+    'exec',
     'esbuild',
     'test/smoke.ts',
     '--bundle',
@@ -47,4 +61,8 @@ const smoke = [
   [join(home, '.jsvu/bin/jsc'), ['-m', 'bench/out/smoke.mjs']],
 ];
 console.log('\n== smoke test per engine');
-for (const [bin, args] of smoke) if (bin === process.execPath || existsSync(bin)) run(bin, args);
+for (const [bin, args] of smoke) {
+  if (isAvailable(bin)) {
+    run(bin, args);
+  }
+}
