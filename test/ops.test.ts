@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defineCurrency } from '../src/index.js';
+import { defineCurrency } from '../src/plugins/all.js';
 defineCurrency('BTC', 8);
 import fc from 'fast-check';
 import {
@@ -15,7 +15,7 @@ import {
   percentage,
   toDecimal,
   type Money,
-} from '../src/index.js';
+} from '../src/plugins/all.js';
 
 const d = (m: Money) => toDecimal(m);
 const gbp = (s: string) => money(s, 'GBP');

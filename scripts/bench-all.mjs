@@ -38,7 +38,7 @@ let md =
   `# Benchmark results\n\n**Indicative only.** Machine: ${cpus().length} vCPU ${cpus()[0]?.model.trim()} (shared, noisy VPS). ` +
   `Each figure is the median of 5 short samples after a short warm-up; run-to-run variation on this box is often ±20-30% and ` +
   `occasionally 2x, so compare orders of magnitude and relative positions, not exact numbers. ` +
-  `Generated ${new Date().toISOString().slice(0, 10)} by \`npm run bench\`.\n\n`;
+  `Generated ${new Date().toISOString().slice(0, 10)} by \`pnpm bench\`.\n\n`;
 for (const [section, file] of [
   ['Library comparison', 'bench/out/libs.mjs'],
   ['Representation choice', 'bench/out/designs.mjs'],
