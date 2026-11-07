@@ -71,7 +71,9 @@ function dnumRounding(mode: FixedRounding): 'ROUND_HALF' {
 const dnumLibrary: FixedLibrary<dnum.Dnum> = {
   name: 'dnum 2.18.1',
   parse: (text) => dnum.from(text),
-  add: (first, second) => dnum.add(first, second),
+  // dnum.add keeps the first operand's decimals unless told otherwise, and dnum.from('1.00') trims to 0 decimals,
+  // so pass the wider of the two, as dnum's documentation describes
+  add: (first, second) => dnum.add(first, second, Math.max(first[1], second[1])),
   multiply: (value, factor, scale, mode) =>
     dnum.multiply(value, dnum.from(factor), { decimals: scale, rounding: dnumRounding(mode) }),
   divide: (value, divisor, scale, mode) =>
