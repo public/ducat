@@ -13,7 +13,7 @@ import {
   equals,
   type Money,
   type Remainder,
-} from '../src/index.js';
+} from '../src/plugins/all.js';
 
 const eur = (s: string) => money(s, 'EUR');
 const dec = (ms: Money[]) => ms.map(toDecimal);
