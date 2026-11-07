@@ -59,13 +59,15 @@ describe('opt-in modules', () => {
   });
 
   it('extendMoney: re-installing the same function is a no-op, a different one throws', () => {
-    const half = function (this: Money) {
+    // a name no other test installs: under bun test, every test file shares one Money.prototype
+    const halfForModulesTest = function (this: Money) {
       return this.divide(2);
     };
-    extendMoney({ half });
-    extendMoney({ half });
-    expect(String((money('3', 'EUR') as Money & { half(): Money }).half())).toBe('1.50 EUR');
-    expect(() => extendMoney({ half: () => 0 })).toThrow(/already defined/);
+    extendMoney({ halfForModulesTest });
+    extendMoney({ halfForModulesTest });
+    const three = money('3', 'EUR') as Money & { halfForModulesTest(): Money };
+    expect(String(three.halfForModulesTest())).toBe('1.50 EUR');
+    expect(() => extendMoney({ halfForModulesTest: () => 0 })).toThrow(/already defined/);
     expect(() => extendMoney({ add: () => 0 })).toThrow(/already defined/);
   });
 

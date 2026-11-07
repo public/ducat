@@ -153,11 +153,14 @@ declare module '@ducatjs/money' {
     half(): Money<C>;
   }
 }
-extendMoney({
-  half(this: Money) {
-    return this.divide(2);
+extendMoney(
+  {
+    half(this: Money) {
+      return this.divide(2);
+    },
   },
-});
+  { owner: 'my-app/half' },
+);
 money('10', 'EUR').half(); // → 5.00 EUR
 ```
 
