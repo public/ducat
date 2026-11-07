@@ -13,7 +13,7 @@ the shipped code is the proved code up to this printer and JS `bigint` semantics
   taken, like `E.eval`. `&&` and `||` short-circuit in JS but not in `B.eval`; that can only differ
   when the skipped operand would fail, and no kernel puts `fail` inside a condition.
 
-The printer is the trusted part (about 40 lines below). It is exercised by `test/kernel.test.ts`,
+The printer is the trusted part (about 60 lines below). It is exercised by `test/kernel.test.ts`,
 which compares the generated code against an independent TypeScript oracle.
 -/
 

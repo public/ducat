@@ -88,9 +88,21 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
   throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
 }
 
+const ROUNDING_MODES: ReadonlySet<string> = new Set(Object.values(Rounding));
+
+/** The shortcuts for exact divisions must reject an unknown mode as the general path does. */
+function assertRoundingMode(mode: RoundingMode): void {
+  if (!ROUNDING_MODES.has(mode)) {
+    throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
+  }
+}
+
 /** p / d rounded with `mode`; p, d safe integers, d > 0. Exact (never uses a float quotient unchecked). */
 export function divRound(p: number, d: number, mode: RoundingMode): number {
-  if (d === 1) return p;
+  if (d === 1) {
+    assertRoundingMode(mode);
+    return p;
+  }
   if (!(Math.abs(p) + d <= MAX)) return Number(divRoundBig(BigInt(p), BigInt(d), mode));
   let q = Math.trunc(p / d);
   let r = p - q * d; // exact: |q*d| <= |p| + d <= MAX
@@ -110,7 +122,10 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
     q -= 1;
     r += d;
   }
-  if (r === 0) return q + 0; // + 0 normalises -0
+  if (r === 0) {
+    assertRoundingMode(mode);
+    return q + 0; // + 0 normalises -0
+  }
   const neg = p < 0;
   if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) q += neg ? -1 : 1;
   return q + 0;
@@ -122,6 +137,7 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
  */
 export function divRoundBig(p: bigint, d: bigint, mode: RoundingMode): bigint {
   if (d === 1n) {
+    assertRoundingMode(mode);
     return p;
   }
   return divideAndRoundBigint(p, d, mode);

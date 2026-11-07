@@ -60,34 +60,34 @@ Variables: `dividend` = 0, `divisor` = 1, then `quotient = dividend / divisor` (
 `remainder = dividend - quotient * divisor` = 3, `twiceRemainder = 2 * |remainder|` = 4. -/
 
 namespace K
-def p : E := .var 0
-def d : E := .var 1
-def q : E := .var 2
-def r : E := .var 3
-def a : E := .var 4
+def dividend : E := .var 0
+def divisor : E := .var 1
+def quotient : E := .var 2
+def remainder : E := .var 3
+def twiceRemainder : E := .var 4
 def one : E := .lit 1
 def zero : E := .lit 0
-def neg : B := .lt p zero
-def exact : B := .eq r zero
+def neg : B := .lt dividend zero
+def exact : B := .eq remainder zero
 /-- one step away from zero -/
-def away : E := .ite neg (.sub q one) (.add q one)
-/-- q is odd: `(q / 2) * 2 !== q` -/
-def odd : B := .not (.eq (.mul (.tdiv q (.lit 2)) (.lit 2)) q)
+def away : E := .ite neg (.sub quotient one) (.add quotient one)
+/-- the quotient is odd: `(quotient / 2) * 2 !== quotient` -/
+def odd : B := .not (.eq (.mul (.tdiv quotient (.lit 2)) (.lit 2)) quotient)
 /-- the half modes step away from zero when `cond` holds (past the half, or on it for some ties) -/
-def half (cond : B) : E := .ite cond away q
+def half (cond : B) : E := .ite cond away quotient
 /-- past the half, or exactly on it and `tie` holds -/
-def pastHalfOr (tie : B) : B := .or (.lt d a) (.and (.eq a d) tie)
+def pastHalfOr (tie : B) : B := .or (.lt divisor twiceRemainder) (.and (.eq twiceRemainder divisor) tie)
 end K
 
 def kernelRet : Mode → E
-  | .trunc => K.q
-  | .expand => .ite K.exact K.q K.away
-  | .ceil => .ite (.or K.exact K.neg) K.q (.add K.q K.one)
-  | .floor => .ite (.or K.exact (.not K.neg)) K.q (.sub K.q K.one)
-  | .unnecessary => .ite K.exact K.q .fail
+  | .trunc => K.quotient
+  | .expand => .ite K.exact K.quotient K.away
+  | .ceil => .ite (.or K.exact K.neg) K.quotient (.add K.quotient K.one)
+  | .floor => .ite (.or K.exact (.not K.neg)) K.quotient (.sub K.quotient K.one)
+  | .unnecessary => .ite K.exact K.quotient .fail
   | .halfEven => K.half (K.pastHalfOr K.odd)
-  | .halfExpand => K.half (.le K.d K.a)
-  | .halfTrunc => K.half (.lt K.d K.a)
+  | .halfExpand => K.half (.le K.divisor K.twiceRemainder)
+  | .halfTrunc => K.half (.lt K.divisor K.twiceRemainder)
   | .halfCeil => K.half (K.pastHalfOr (.not K.neg))
   | .halfFloor => K.half (K.pastHalfOr K.neg)
 
@@ -106,8 +106,8 @@ def Mode.describe : Mode → String
 
 /-- The `let`s every kernel starts with: quotient, remainder and twice the remainder's magnitude. -/
 def sharedLets : List (String × E) :=
-  [("quotient", .tdiv K.p K.d), ("remainder", .sub K.p (.mul K.q K.d)),
-    ("twiceRemainder", .ite (.lt K.r K.zero) (.mul (.lit (-2)) K.r) (.mul (.lit 2) K.r))]
+  [("quotient", .tdiv K.dividend K.divisor), ("remainder", .sub K.dividend (.mul K.quotient K.divisor)),
+    ("twiceRemainder", .ite (.lt K.remainder K.zero) (.mul (.lit (-2)) K.remainder) (.mul (.lit 2) K.remainder))]
 
 def kernel (m : Mode) : Prog where
   name := s!"divideAndRound{m.tsName.capitalize}"
@@ -147,7 +147,7 @@ theorem kernel_sound (m : Mode) (p d : Int) (hd : 0 < d) (q : Int)
   have hev := even_iff (p.tdiv d)
   by_cases hrn : p < p.tdiv d * d <;>
   cases m <;>
-  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.p, K.d, K.q, K.r, K.a, K.one, K.zero,
+  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient, K.remainder, K.twiceRemainder, K.one, K.zero,
     K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr, hrn] at h <;>
   generalize p.tdiv d = t at * <;>
   unfold Rounds <;>
@@ -225,7 +225,7 @@ theorem kernel_fails_iff (m : Mode) (p d : Int) (_hd : 0 < d) :
     constructor <;> intro h <;> linarith [mul_comm d (p.tdiv d)]
   rw [hdvd]
   cases m <;>
-  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.p, K.d, K.q, K.r, K.a, K.one, K.zero,
+  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient, K.remainder, K.twiceRemainder, K.one, K.zero,
     K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr] <;>
   (try split_ifs) <;> (try simp) <;>
   -- name the truncated quotients so that what is left is linear

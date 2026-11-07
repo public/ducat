@@ -101,10 +101,18 @@ describe('generated rounding kernel', () => {
     );
   });
 
-  it('rejects an unknown mode, including names inherited from Object.prototype', () => {
-    for (const mode of ['nearest', 'constructor', 'toString', '__proto__']) {
-      expect(() => divRoundBig(7n, 2n, mode as RoundingMode)).toThrow(/Unknown rounding mode/);
-      expect(() => divideAndRoundBigint(7n, 2n, mode as RoundingMode)).toThrow(/Unknown rounding mode/);
+  it('rejects an unknown mode on every path, exact divisions included', () => {
+    for (const mode of ['nearest', 'constructor', 'toString', '__proto__'] as RoundingMode[]) {
+      // inexact, exact, and division by one (each path has its own shortcut for the last two)
+      for (const [dividend, divisor] of [
+        [7, 2],
+        [4, 2],
+        [4, 1],
+      ] as const) {
+        expect(() => divRound(dividend, divisor, mode)).toThrow(/Unknown rounding mode/);
+        expect(() => divRoundBig(BigInt(dividend), BigInt(divisor), mode)).toThrow(/Unknown rounding mode/);
+        expect(() => divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode)).toThrow(/Unknown rounding mode/);
+      }
     }
   });
 });
