@@ -184,6 +184,8 @@ The same 1000 units of each currency on the wire (from `test/processors.test.ts`
 
 When the processor needs less precision than the value has, the conversion throws unless you pass a rounding mode. This happens for IDR or CVE on Adyen, MGA on Stripe, Stripe's HUF/TWD payouts, CLP payments on Checkout.com and three-decimal currencies on Stripe and Checkout.com. `fromStripe`, `fromAdyen` and `fromCheckout` return the value at its ISO scale when that is exact, and otherwise keep the processor's extra precision instead of rounding it away.
 
+Signs follow each processor's docs and are checked after rounding. Checkout.com takes zero (a card verification) but not negative amounts; refunds are sent as positive amounts.
+
 ### Databases
 
 | storage                              | Postgres                                                      | MySQL             | SQLite                                                                          | helpers                                                                                |
@@ -344,7 +346,7 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
   - Per-jurisdiction tie rules are all `halfExpand`. Singapore's "round down in the customer's favour" practice and USD's state-by-state post-penny rules aren't modelled.
 - **Checkout.com currency list.** The currency-codes page calls itself the "major currencies we support"; `toCheckout` refuses anything not on it. Its amount limits (the docs say greater than zero and at most nine digits, the API schema allows 0 for card verification and up to ten digits) aren't enforced.
 - **Processor coverage.** Stripe, Adyen and Checkout.com are covered. There is no PayPal, Braintree or Klarna view yet, and no Adyen Terminal API (it uses major units). There is no per-account-country Stripe currency availability; the table is the union of all countries.
-- **Withdrawn and non-ISO codes** (ANG, STD, CNH, VEF) aren't in the core registry. Stripe/Adyen list them, so `defineCurrency` is needed to hold them. There is no historical ISO data (validity dates).
+- **Withdrawn and non-ISO codes** (ANG, STD, CNH, VEF, SLL, XDR) aren't in the core registry. Stripe, Adyen and Checkout.com list them, so `defineCurrency` is needed to hold them. There is no historical ISO data (validity dates).
 - **Formatting gaps:**
   - No pluggable formatter for engines without Intl.
   - `parse` is lenient about group sizes (it accepts `1,23,4.00` in en-US). It also doesn't check the currency symbol in the text against the `currency` argument.
