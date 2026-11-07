@@ -35,7 +35,7 @@ export function stripeRate<From extends string>(
     return undefined;
   }
   const charged = from.toUpperCase() as Uppercase<From>;
-  const balance = transaction.currency.toUpperCase();
+  const balance = transaction.currency.toUpperCase() as Uppercase<string>;
   return exchangeRate(charged, balance, transaction.exchange_rate, stripeInfo(transaction));
 }
 
