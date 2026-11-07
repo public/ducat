@@ -37,7 +37,7 @@ describe('fixed()', () => {
     expect(fixed('1e-3').toString()).toBe('0.001');
     expect(() => fixed(0.1 + 0.2)).toThrow(RangeError);
     expect(fixed(0.1 + 0.2, { scale: 2, rounding: 'halfEven' }).toString()).toBe('0.30');
-    expect(() => fixed(0.1 + 0.2, { scale: 2 })).toThrow(RoundingError);
+    expect(() => fixed(0.1 + 0.2, { scale: 2 })).toThrow(RangeError); // a float needs a rounding mode
     expect(() => fixed(2 ** 60 + 0.5)).toThrow(RangeError); // 1152921504606846976: 19 digits
     expect(() => fixed(Number.NaN)).toThrow(RangeError);
     expect(() => fixed('12,34')).toThrow(SyntaxError);
@@ -50,7 +50,7 @@ describe('fixed()', () => {
     expect(() => fixed('1e-999999999')).toThrow(RangeError);
     expect(() => fixed('1e999999999')).toThrow(RangeError);
     expect(() => fixed(`0.${'0'.repeat(1000)}1`)).toThrow(RangeError);
-    expect(fixed(`0.${'0'.repeat(998)}1`).scale).toBe(1000);
+    expect(fixed(`0.${'0'.repeat(999)}1`).scale).toBe(1000);
     expect(() => fixed('1').toScale(1001)).toThrow(RangeError);
     expect(() => fixed('1').divide(3, 'halfEven', { scale: 1001 })).toThrow(RangeError);
     // a float needs an explicit rounding mode before its extra digits may be dropped or kept
