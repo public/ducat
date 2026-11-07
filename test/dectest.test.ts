@@ -24,7 +24,7 @@ import {
   toScale,
   type Money,
   type RoundingMode,
-} from '../src/index.js';
+} from '../src/fn.js';
 
 const VECTOR_DIRECTORY = join(import.meta.dirname, 'vectors', 'dectest');
 

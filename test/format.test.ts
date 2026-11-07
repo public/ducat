@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import { equals, format, fromMinor, money, parse, toDecimal } from '../src/index.js';
+import { equals, format, fromMinor, money, parse, toDecimal } from '../src/plugins/all.js';
 
 const norm = (s: string) => s.replace(/[  ]/g, ' ');
 

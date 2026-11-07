@@ -7,7 +7,7 @@ import {
   ISO_4217_PUBLISHED,
   ISO_EXPONENTS,
   ISO_NON_MONETARY,
-} from '../src/index.js';
+} from '../src/plugins/all.js';
 
 describe('ISO 4217 table', () => {
   it('generated table is up to date with data/', () => {

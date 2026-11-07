@@ -15,7 +15,7 @@ import {
   toScale,
   type Money,
   type RoundingMode,
-} from '../src/index.js';
+} from '../src/fn.js';
 
 interface VectorCase {
   op: string;
