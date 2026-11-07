@@ -2,6 +2,7 @@
 import { currencyExponent } from './currency.js';
 import { ratio, type Factor } from './decimal.js';
 import { make, type CurrencyInput, type Money } from './money.js';
+import { rateOf, type RateProvider } from './provider.js';
 import { isRate, multiplyByRatioAtScale, type ConvertOptions, type Rate } from './rate.js';
 import { DEFAULT_ROUNDING, type RoundingMode } from './rounding.js';
 
@@ -18,6 +19,33 @@ export {
   type RateJSON,
   type RateType,
 } from './rate.js';
+export {
+  chain,
+  identity,
+  rateOf,
+  rateTable,
+  RateUnavailableError,
+  reversed,
+  snapshots,
+  snapshotsFrom,
+  via,
+  type RateProvider,
+  type RateQuery,
+  type RateTable,
+  type RateTableSpec,
+  type SnapshotOptions,
+  type Snapshots,
+} from './provider.js';
+
+/** Options for converting through a provider. */
+export interface ProviderConvertOptions extends ConvertOptions {
+  /** The time the rate is wanted for (an ISO-8601 date or instant, or a Date). */
+  readonly asOf?: string | Date;
+}
+
+function isProvider(value: unknown): value is RateProvider {
+  return typeof (value as RateProvider | undefined)?.rate === 'function';
+}
 
 /**
  * Converts `money` at a Rate, rounding once to the target currency's exponent (or `options.scale`).
@@ -45,20 +73,42 @@ export function convert<To extends CurrencyInput>(
   rounding?: RoundingMode,
   options?: ConvertOptions,
 ): Money<To>;
+/**
+ * Converts through a provider: looks up money's currency → `to` (as of `options.asOf`) and rounds
+ * once. Throws RateUnavailableError when the provider has no rate.
+ *
+ *     convert(money('100', 'USD'), 'JPY', via('EUR', ecb), 'halfEven')
+ */
+export function convert<To extends CurrencyInput>(
+  money: Money,
+  to: To,
+  provider: RateProvider,
+  rounding?: RoundingMode,
+  options?: ProviderConvertOptions,
+): Money<To>;
 export function convert(
   money: Money,
   rateOrTarget: Rate | string,
-  roundingOrRate?: RoundingMode | Factor,
+  roundingOrRate?: RoundingMode | Factor | RateProvider,
   optionsOrRounding?: ConvertOptions | RoundingMode,
-  maybeOptions?: ConvertOptions,
+  maybeOptions?: ProviderConvertOptions,
 ): Money {
   if (isRate(rateOrTarget)) {
     const rounding = roundingOrRate as RoundingMode | undefined;
     return rateOrTarget.convert(money, rounding, optionsOrRounding as ConvertOptions | undefined);
   }
 
-  // The bare-rate form converts directly, without building a Rate, to keep it allocation-light.
   const to = rateOrTarget;
+  if (isProvider(roundingOrRate)) {
+    let query: { asOf: string | Date } | undefined;
+    if (maybeOptions?.asOf !== undefined) {
+      query = { asOf: maybeOptions.asOf };
+    }
+    const rate = rateOf(roundingOrRate, money.currency, to, query);
+    return rate.convert(money, optionsOrRounding as RoundingMode | undefined, maybeOptions);
+  }
+
+  // The bare-rate form converts directly, without building a Rate, to keep it allocation-light.
   let rate = ratio(roundingOrRate as Factor);
   if (typeof roundingOrRate === 'object') {
     // A hand-made Ratio object is passed through by ratio(); rebuild it so it is reduced and its
