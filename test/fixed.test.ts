@@ -44,6 +44,35 @@ describe('fixed()', () => {
     expect(() => fixed({} as never)).toThrow(TypeError);
   });
 
+  it('refuses input that would break the invariant or cost unbounded work', () => {
+    const FixedClass = Fixed as unknown as new (value: number, scale: number) => Fixed;
+    expect(() => new FixedClass(1.5, 2)).toThrow(TypeError);
+    expect(() => fixed('1e-999999999')).toThrow(RangeError);
+    expect(() => fixed('1e999999999')).toThrow(RangeError);
+    expect(() => fixed(`0.${'0'.repeat(1000)}1`)).toThrow(RangeError);
+    expect(fixed(`0.${'0'.repeat(998)}1`).scale).toBe(1000);
+    expect(() => fixed('1').toScale(1001)).toThrow(RangeError);
+    expect(() => fixed('1').divide(3, 'halfEven', { scale: 1001 })).toThrow(RangeError);
+    // a float needs an explicit rounding mode before its extra digits may be dropped or kept
+    expect(() => fixed(0.1 + 0.2, { scale: 17 })).toThrow(RangeError);
+    expect(fixed(0.1 + 0.2, { scale: 17, rounding: 'halfEven' }).toString()).toBe('0.30000000000000004');
+    expect(() => fixed('1.5', { rounding: 'halfEven' })).toThrow(RangeError);
+  });
+
+  it('never produces a negative zero', () => {
+    for (const result of [
+      fixed('0').multiply('-2'),
+      fixed('0').multiply(-2n),
+      fixed('0').multiply(-2),
+      fixed('0.00').divide(-1),
+      fixed('-0.001').round('halfEven', 2),
+      fixed('-0'),
+      fromScaled(-0, 2),
+    ]) {
+      expect(Object.is(result.value, -0)).toBe(false);
+    }
+  });
+
   it('rounds input only when asked to', () => {
     expect(() => fixed('1.005', { scale: 2 })).toThrow(RoundingError);
     expect(fixed('1.005', { scale: 2, rounding: 'halfEven' }).toString()).toBe('1.00');
@@ -92,7 +121,6 @@ describe('Fixed arithmetic', () => {
     expect(fixed('1').divide(ratio(1, 3), 'unnecessary').toString()).toBe('3');
     expect(() => fixed('1.00').divide(3, 'unnecessary')).toThrow(RoundingError);
     expect(() => fixed('1').divide('0')).toThrow(RangeError);
-    expect(fixed('1.00').multiply({ num: 3n, den: 2n, n: 1, d: 1 }).toString()).toBe('1.50'); // re-normalised
     // a target scale rounds once, at that scale
     expect(fixed('9.990').divide('1.2', 'halfEven', { scale: 2 }).toString()).toBe('8.32');
     expect(fixed('1.00').divide(3, 'halfEven', { scale: 6 }).toString()).toBe('0.333333');
@@ -166,22 +194,26 @@ describe('battery, adapted for fixed point', () => {
 describe('Fixed and Money', () => {
   it('converts both ways exactly, and rounds into a currency only when asked to', () => {
     const price = money('12.34', 'EUR');
-    expect(price.toFixed().toString()).toBe('12.34');
-    expect(price.toFixed().toMoney('EUR').equals(price)).toBe(true);
+    expect(price.toFixedPoint().toString()).toBe('12.34');
+    expect(price.toFixedPoint().toMoney('EUR').equals(price)).toBe(true);
     expect(fixed('100').toMoney('JPY').toDecimal()).toBe('100');
     expect(fixed('1.5').toMoney('EUR').toDecimal()).toBe('1.50');
     expect(() => fixed('1.005').toMoney('EUR')).toThrow(RoundingError);
     expect(fixed('1.005').toMoney('EUR', 'halfEven').toDecimal()).toBe('1.00');
     expect(fixed('1.234').toMoney('KWD').toDecimal()).toBe('1.234');
+    // a bigint value at a high scale rounds once into the currency
+    const big = fromScaled(123456789012345678901234567890n, 10);
+    expect(big.toMoney('EUR', 'halfEven').toDecimal()).toBe('12345678901234567890.12');
+    expect(() => big.toMoney('EUR')).toThrow(RoundingError);
   });
 
   it('round-trips any Money', () => {
     fc.assert(
       fc.property(scaledValue, fc.constantFrom('EUR', 'JPY', 'KWD', 'CLF'), (minor, currency) => {
         const amount = fromMinor(minor, currency);
-        const back = amount.toFixed().toMoney(currency);
+        const back = amount.toFixedPoint().toMoney(currency);
         expect(back.equals(amount) && back.scale === amount.scale).toBe(true);
-        expect(amount.toFixed().toString()).toBe(amount.toDecimal());
+        expect(amount.toFixedPoint().toString()).toBe(amount.toDecimal());
       }),
     );
   });
@@ -280,18 +312,40 @@ describe('Fixed properties against a bigint rational oracle', () => {
 
   it('values are numbers exactly when they are safe integers', () => {
     fc.assert(
-      fc.property(anyFixed, anyFixed, mode, (first, second, rounding) => {
-        for (const result of [
+      fc.property(anyFixed, anyFixed, mode, scale, (first, second, rounding, target) => {
+        const results = [
           first.add(second),
           first.subtract(second),
           first.multiply(second, rounding),
           first.negate(),
-        ]) {
+          first.toScale(target, rounding),
+          fromScaled(BigInt(first.value), first.scale),
+        ];
+        if (!second.isZero()) {
+          results.push(first.divide(second, rounding), first.divide(second, rounding, { scale: target }));
+        }
+        for (const result of results) {
           const isSafe =
             Number.isSafeInteger(Number(result.value)) && BigInt(Number(result.value)) === BigInt(result.value);
           expect(typeof result.value === 'number').toBe(isSafe);
         }
       }),
+    );
+  });
+
+  it('fixed(number) is exact for every number with at most 15 significant digits', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: -(10 ** 15) + 1, max: 10 ** 15 - 1 }),
+        fc.integer({ min: -30, max: 20 }),
+        (digits, exponent) => {
+          const decimal = `${digits}e${exponent}`;
+          const value = Number(decimal);
+          fc.pre(Number.isFinite(value));
+          expect(fixed(value).equals(fixed(decimal))).toBe(true);
+        },
+      ),
+      { numRuns: 2000 },
     );
   });
 

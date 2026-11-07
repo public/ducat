@@ -38,7 +38,7 @@ describe('Money methods', () => {
       'parse',
       'cashRule',
       'exchangeRate',
-      // fixed-point constructors; Money#toFixed covers moneyToFixed
+      // fixed-point constructors; Money#toFixedPoint covers moneyToFixed
       'fixed',
       'fromScaled',
       'isFixed',

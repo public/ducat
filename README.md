@@ -82,25 +82,25 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                     | adds to `Money`                                                    | also exports                                            |
-| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
-| `@ducatjs/money`           | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents |
-| `@ducatjs/money/allocate`  | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                              |
-| `@ducatjs/money/tax`       | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                |
-| `@ducatjs/money/convert`   | `convert`                                                          | `convert`, `exchangeRate`                               |
-| `@ducatjs/money/cash`      | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                      |
-| `@ducatjs/money/format`    | `format`, `formatToParts`                                          | the same                                                |
-| `@ducatjs/money/parse`     | nothing                                                            | `parse`                                                 |
-| `@ducatjs/money/stripe`    | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…               |
-| `@ducatjs/money/adyen`     | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                 |
-| `@ducatjs/money/checkout`  | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…           |
-| `@ducatjs/money/paypal`    | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…               |
-| `@ducatjs/money/braintree` | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…         |
-| `@ducatjs/money/klarna`    | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…               |
-| `@ducatjs/money/prisma`    | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers              |
-| `@ducatjs/money/fixed`     | `toFixed`                                                          | `Fixed`, `fixed`, `fromScaled`, `isFixed`               |
-| `@ducatjs/money/all`       | everything above                                                   | everything                                              |
-| `@ducatjs/money/fn`        | nothing                                                            | every free function, from every module                  |
+| import                     | adds to `Money`                                                    | also exports                                              |
+| -------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- |
+| `@ducatjs/money`           | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents   |
+| `@ducatjs/money/allocate`  | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                                |
+| `@ducatjs/money/tax`       | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                  |
+| `@ducatjs/money/convert`   | `convert`                                                          | `convert`, `exchangeRate`                                 |
+| `@ducatjs/money/cash`      | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                        |
+| `@ducatjs/money/format`    | `format`, `formatToParts`                                          | the same                                                  |
+| `@ducatjs/money/parse`     | nothing                                                            | `parse`                                                   |
+| `@ducatjs/money/stripe`    | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                 |
+| `@ducatjs/money/adyen`     | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                   |
+| `@ducatjs/money/checkout`  | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…             |
+| `@ducatjs/money/paypal`    | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                 |
+| `@ducatjs/money/braintree` | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…           |
+| `@ducatjs/money/klarna`    | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                 |
+| `@ducatjs/money/prisma`    | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                |
+| `@ducatjs/money/fixed`     | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed` |
+| `@ducatjs/money/all`       | everything above                                                   | everything                                                |
+| `@ducatjs/money/fn`        | nothing                                                            | every free function, from every module                    |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that wants no prototype changes, or function-level tree-shaking (a module's methods keep all of its functions in a bundle), can use the free functions from `@ducatjs/money/fn` instead.
 
@@ -223,7 +223,7 @@ Input is strict in the same way as `money()`. A string keeps its own scale. A nu
 
 Arithmetic follows Money's rules. `add`, `subtract` and `compare` align to the larger scale exactly. `multiply` and `divide` take exact factors (integers, decimal strings, bigints, `ratio()` or another `Fixed`) and round once, with `'halfExpand'` by default. The result keeps this value's scale unless you pass another: `fixed('9.990').divide('1.2', 'halfEven', { scale: 2 })` is 8.32. Pass the scale instead of calling `toScale` afterwards, which would round twice. `toScale` and `round` take any of the ten rounding modes, including `'unnecessary'`, which throws if digits would be lost.
 
-To convert, `money.toFixed()` gives the exact amount at the money's scale, and `fixedValue.toMoney('EUR')` makes Money at the currency's exponent. That conversion throws RoundingError when it would drop digits, unless a rounding mode is passed: `fixed('1.005').toMoney('EUR', 'halfEven')` is 1.00 EUR.
+To convert, `money.toFixedPoint()` gives the exact amount at the money's scale, and `fixedValue.toMoney('EUR')` makes Money at the currency's exponent. That conversion throws RoundingError when it would drop digits, unless a rounding mode is passed: `fixed('1.005').toMoney('EUR', 'halfEven')` is 1.00 EUR.
 
 ### Payment processors: the amount you send
 
