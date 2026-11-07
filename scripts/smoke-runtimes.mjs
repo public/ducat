@@ -2,7 +2,7 @@
 // Runs the full vitest suite on Node, Bun (bun test) and Deno, then the bundled smoke test on every
 // engine found, including old Node (/usr/bin/node) and the jsvu SpiderMonkey / JSC shells.
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -18,9 +18,15 @@ function isAvailable(bin) {
   return existsSync(bin);
 }
 
+// bun test ignores vitest's include and also matches *.spec.ts (browser tests) and test/db/, so it
+// gets the unit test files by name
+const unitTestFiles = readdirSync('test')
+  .filter((name) => name.endsWith('.test.ts'))
+  .map((name) => `./test/${name}`);
+
 const suites = [
   ['node', process.execPath, ['node_modules/vitest/vitest.mjs', 'run']],
-  ['bun', BUN, ['test']],
+  ['bun', BUN, ['test', ...unitTestFiles]],
   ['deno', DENO, ['run', '-A', 'node_modules/vitest/vitest.mjs', 'run']],
 ];
 for (const [name, bin, args] of suites) {
