@@ -42,9 +42,11 @@
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "check": "npm run lint && npm run fmt:check && npm run typecheck && npm test"
+    "check": "npm run lint && npm run fmt:check && npm run typecheck && npm test",
+    "bench:vitest": "vitest bench --run"
   },
   "devDependencies": {
+    "@codspeed/vitest-plugin": "^6.1.1",
     "@prisma/client": "^6.19.3",
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.6.6",
