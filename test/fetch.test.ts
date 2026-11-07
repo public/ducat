@@ -52,7 +52,7 @@ describe('fetchEcb', () => {
     expect(combined.aborted).toBe(true);
     await fetchEcb({ fetch: recording, timeout: 0 });
     expect(seen[2]![1].signal).toBeUndefined();
-    await expect(fetchEcb({ fetch: hanging, timeout: 20 })).rejects.toThrow(/abort|timeout/i);
+    await expect(fetchEcb({ fetch: hanging, timeout: 20 })).rejects.toHaveProperty('name', 'TimeoutError');
     await expect(fetchEcb({ fetch: recording, timeout: -1 })).rejects.toThrow(RangeError);
   });
 
