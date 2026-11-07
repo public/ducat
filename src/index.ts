@@ -1,9 +1,15 @@
+/**
+ * `@ducatjs/money`: the core. Money with construction, arithmetic, rounding, comparison and serialisation, plus the
+ * ISO 4217 exponents. Allocation, tax, conversion, cash rounding, formatting, parsing and the processor and
+ * database views are opt-in modules (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, ...; `@ducatjs/money/all` for everything).
+ */
 export {
   money,
   fromMinor,
   zero,
   fromJSON,
   isMoney,
+  extendMoney,
   add,
   subtract,
   sum,
@@ -50,27 +56,3 @@ export {
   type IsoCurrencyCode,
   type CustomCurrencies,
 } from './currency.js';
-export {
-  allocate,
-  split,
-  instalments,
-  schedule,
-  chunk,
-  type Remainder,
-  type AllocateOptions,
-  type InstalmentOptions,
-  type Tranche,
-  type Weight,
-} from './allocate.js';
-export {
-  percentage,
-  addTax,
-  extractTax,
-  discount,
-  convert,
-  exchangeRate,
-  type TaxBreakdown,
-  type ConvertOptions,
-} from './ops.js';
-export { roundToIncrement, cashRound, cashRule, CASH_RULES, type CashRule, type CashRoundOptions } from './cash.js';
-export { format, formatToParts, parse } from './format.js';

@@ -1,38 +1,75 @@
 {
-  "name": "ducat",
+  "name": "@ducatjs/money",
   "version": "0.1.0",
   "private": true,
   "description": "Exact, fast, typed Money for TypeScript: integer minor units, bigint fallback, Stripe/Adyen views, allocation, cash rounding, Prisma helpers.",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Alex Stapleton <alexs@prol.etari.at>",
   "files": [
     "dist",
     "src",
-    "data"
+    "data",
+    "LICENSE"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/plugins/*.js",
+    "./src/plugins/*.ts"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./fn": {
+      "types": "./dist/fn.d.ts",
+      "default": "./dist/fn.js"
+    },
+    "./allocate": {
+      "types": "./dist/plugins/allocate.d.ts",
+      "default": "./dist/plugins/allocate.js"
+    },
+    "./tax": {
+      "types": "./dist/plugins/tax.d.ts",
+      "default": "./dist/plugins/tax.js"
+    },
+    "./convert": {
+      "types": "./dist/plugins/convert.d.ts",
+      "default": "./dist/plugins/convert.js"
+    },
+    "./cash": {
+      "types": "./dist/plugins/cash.d.ts",
+      "default": "./dist/plugins/cash.js"
+    },
+    "./format": {
+      "types": "./dist/plugins/format.d.ts",
+      "default": "./dist/plugins/format.js"
+    },
+    "./parse": {
+      "types": "./dist/parse.d.ts",
+      "default": "./dist/parse.js"
+    },
     "./stripe": {
-      "types": "./dist/stripe.d.ts",
-      "default": "./dist/stripe.js"
+      "types": "./dist/plugins/stripe.d.ts",
+      "default": "./dist/plugins/stripe.js"
     },
     "./adyen": {
-      "types": "./dist/adyen.d.ts",
-      "default": "./dist/adyen.js"
+      "types": "./dist/plugins/adyen.d.ts",
+      "default": "./dist/plugins/adyen.js"
     },
     "./prisma": {
-      "types": "./dist/prisma.d.ts",
-      "default": "./dist/prisma.js"
-    }
+      "types": "./dist/plugins/prisma.d.ts",
+      "default": "./dist/plugins/prisma.js"
+    },
+    "./all": {
+      "types": "./dist/plugins/all.d.ts",
+      "default": "./dist/plugins/all.js"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.test.json",
+    "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json",
     "test": "vitest run",
     "test:runtimes": "node scripts/smoke-runtimes.mjs",
     "gen": "node scripts/gen-currencies.mjs",

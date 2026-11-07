@@ -11,22 +11,6 @@ import {
   type Ratio,
 } from './decimal.js';
 import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
-// Circular on purpose: the Money methods delegate to these modules, which import money.ts. Safe because
-// nothing in this module's top level calls into them; they are only referenced inside method bodies.
-import {
-  allocate,
-  chunk,
-  instalments,
-  schedule,
-  split,
-  type AllocateOptions,
-  type InstalmentOptions,
-  type Tranche,
-  type Weight,
-} from './allocate.js';
-import { cashRound, roundToIncrement, type CashRoundOptions } from './cash.js';
-import { format, formatToParts } from './format.js';
-import { addTax, convert, discount, extractTax, percentage, type ConvertOptions, type TaxBreakdown } from './ops.js';
 
 const MAX = Number.MAX_SAFE_INTEGER;
 
@@ -60,6 +44,9 @@ export class CurrencyMismatchError extends TypeError {
  *
  * Instances are not frozen (Object.freeze costs 5-8x on construction in V8 and JSC; see bench/),
  * but every field is readonly and no operation mutates. Create values with `money()` / `fromMinor()`.
+ *
+ * The class carries the core methods only. Opt-in modules (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, `@ducatjs/money/format`, ...)
+ * add theirs when imported; see `extendMoney`.
  */
 class Money<C extends string = string> {
   readonly currency: C;
@@ -119,60 +106,6 @@ class Money<C extends string = string> {
   toScale(scale: number, rounding?: RoundingMode): Money<C> {
     return toScale(this, scale, rounding);
   }
-  /** `percent`% of this, e.g. `price.percentage(15, 'halfEven')` */
-  percentage(percent: Factor, rounding?: RoundingMode): Money<C> {
-    return percentage(this, percent, rounding);
-  }
-  /** this minus `percent`% */
-  discount(percent: Factor, rounding?: RoundingMode): Money<C> {
-    return discount(this, percent, rounding);
-  }
-  /** Treats this as net: `{ net, tax, gross }`, net + tax = gross exactly. */
-  addTax(percent: Factor, rounding?: RoundingMode): TaxBreakdown<C> {
-    return addTax(this, percent, rounding);
-  }
-  /** Treats this as gross: `{ net, tax, gross }`, net + tax = gross exactly. */
-  extractTax(percent: Factor, rounding?: RoundingMode): TaxBreakdown<C> {
-    return extractTax(this, percent, rounding);
-  }
-  /** Converts at an exact decimal-string rate: `eur.convert('USD', '1.0832', 'halfEven')`. */
-  convert<To extends CurrencyInput>(
-    to: To,
-    rate: Factor,
-    rounding?: RoundingMode,
-    options?: ConvertOptions,
-  ): Money<To> {
-    return convert(this, to, rate, rounding, options);
-  }
-
-  // allocation
-  /** Splits by weights; the parts always sum to this. */
-  allocate(weights: readonly Weight[], options?: AllocateOptions): Money<C>[] {
-    return allocate(this, weights, options);
-  }
-  /** Splits into `count` near-equal parts that sum to this. */
-  split(count: number, options?: AllocateOptions): Money<C>[] {
-    return split(this, count, options);
-  }
-  instalments(count: number, options?: InstalmentOptions<C>): Money<C>[] {
-    return instalments(this, count, options);
-  }
-  schedule(tranches: readonly Tranche<C>[]): Money<C>[] {
-    return schedule(this, tranches);
-  }
-  /** Tranches of at most `max`: 1000 by 300 gives 300, 300, 300, 100. */
-  chunk(max: Money<C>): Money<C>[] {
-    return chunk(this, max);
-  }
-
-  // cash rounding (cash tenders only; card payments are never rounded)
-  cashRound(options?: CashRoundOptions): Money<C> {
-    return cashRound(this, options);
-  }
-  roundToIncrement(increment: Money<C>, rounding?: RoundingMode): Money<C> {
-    return roundToIncrement(this, increment, rounding);
-  }
-
   // comparison
   /** -1, 0 or 1; throws on currency mismatch */
   compare(other: Money<C>): -1 | 0 | 1 {
@@ -229,18 +162,39 @@ class Money<C extends string = string> {
   toMinorNumber(): number {
     return toMinorNumber(this);
   }
-  /** Locale formatting via Intl: `price.format('de-DE')` gives "19,99 €" */
-  format(locale?: string, options?: Intl.NumberFormatOptions): string {
-    return format(this, locale, options);
-  }
-  formatToParts(locale?: string, options?: Intl.NumberFormatOptions): Intl.NumberFormatPart[] {
-    return formatToParts(this, locale, options);
-  }
 }
 export type { Money };
 
 export function isMoney(x: unknown): x is Money {
   return x instanceof Money;
+}
+
+/**
+ * Adds methods to every Money (this is how `@ducatjs/money/allocate`, `@ducatjs/money/format`, ... install theirs).
+ * Declare their types with `declare module '@ducatjs/money' { interface Money<C extends string> { ... } }`.
+ * The methods are non-enumerable, like class methods. Re-installing the same function is a no-op;
+ * replacing a different one throws, so two plugins cannot silently fight over a name.
+ */
+export function extendMoney(methods: Record<string, (this: Money, ...args: never[]) => unknown>): void {
+  const prototype = Money.prototype as unknown as Record<string, unknown>;
+
+  for (const name of Object.keys(methods)) {
+    const method = methods[name];
+
+    // Installing the same function twice (a module imported through two paths) is harmless;
+    // replacing a different one would silently change behaviour for every caller.
+    if (name in prototype && prototype[name] !== method) {
+      throw new TypeError(`Money#${name} is already defined`);
+    }
+
+    // Non-enumerable, like the class's own methods, so Object.keys and spreads see only the fields.
+    Object.defineProperty(prototype, name, {
+      value: method,
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
+  }
 }
 
 /** @internal construct from a value that may be an unsafe bigint */
