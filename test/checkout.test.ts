@@ -6,7 +6,7 @@ import {
   toDecimal,
   RoundingError,
   ISO_EXPONENTS,
-} from '../src/index.js';
+} from '../src/fn.js';
 import {
   checkoutExponent,
   fromCheckout,

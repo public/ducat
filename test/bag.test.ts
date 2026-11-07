@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { fromMinor, money, type Money } from '../src/index.js';
+import { fromMinor, money, type Money } from '../src/fn.js';
 import { bag, comparator, MoneyBag, sortByValue, sumByCurrency } from '../src/bag.js';
 import { chain, rateTable, RateUnavailableError, via } from '../src/provider.js';
 import { exchangeRate } from '../src/rate.js';

@@ -1,4 +1,5 @@
 // Compile-time tests: `pnpm typecheck` must pass. Each @ts-expect-error must be an actual error.
+import '../src/plugins/all.js';
 import {
   add,
   allocate,
@@ -9,7 +10,7 @@ import {
   money,
   sum,
   type Money,
-} from '../src/plugins/all.js';
+} from '../src/fn.js';
 
 const eur = money('1', 'EUR');
 const usd = money('1', 'USD');

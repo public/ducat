@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Decimal as PrismaDecimal } from '@prisma/client/runtime/library';
 import DecimalJs from 'decimal.js';
 import Big from 'big.js';
-import { money, toDecimal } from '../src/index.js';
+import { money, toDecimal } from '../src/fn.js';
 import {
   decimalMoneyField,
   fromDecimal,

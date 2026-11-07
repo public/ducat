@@ -1,6 +1,7 @@
 /**
  * `@ducatjs/money`: the core. Money with construction, arithmetic, rounding, comparison and
- * serialisation, plus the ISO 4217 exponents. Allocation, tax, conversion, cash rounding,
+ * serialisation as methods (`price.add(fee).multiply('1.075')`), plus the ISO 4217 exponents.
+ * The same operations as plain functions (`add(price, fee)`) are in `@ducatjs/money/fn`. Allocation, tax, conversion, cash rounding,
  * formatting, parsing and the processor and database views are opt-in modules
  * (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, ...; `@ducatjs/money/all` for everything).
  */
@@ -12,31 +13,7 @@ export {
   isMoney,
   extendMoney,
   type ExtendMoneyOptions,
-  add,
-  subtract,
   sum,
-  negate,
-  abs,
-  multiply,
-  divide,
-  round,
-  toScale,
-  compare,
-  equals,
-  lessThan,
-  lessThanOrEqual,
-  greaterThan,
-  greaterThanOrEqual,
-  isZero,
-  isPositive,
-  isNegative,
-  sign,
-  min,
-  max,
-  clamp,
-  toDecimal,
-  toMinor,
-  toMinorNumber,
   ratio,
   CurrencyMismatchError,
   type Money,

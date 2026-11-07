@@ -9,7 +9,7 @@ import {
   ratio,
   RoundingError,
   type RoundingMode,
-} from '../src/index.js';
+} from '../src/fn.js';
 import { Fixed, fixed, fromScaled, isFixed } from '../src/plugins/fixed.js';
 import { MODES, refDivRound } from './oracle.js';
 

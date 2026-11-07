@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { money } from '../src/index.js';
+import { money } from '../src/fn.js';
 import { parseEcbCsv, parseEcbXml } from '../src/ecb.js';
 import { snapshotsFrom, via } from '../src/provider.js';
 

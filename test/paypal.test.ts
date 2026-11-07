@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { add, money, multiply, toDecimal, RoundingError, currencyExponent } from '../src/index.js';
+import { add, money, multiply, toDecimal, RoundingError, currencyExponent } from '../src/fn.js';
 import {
   fromPayPal,
   isPayPalCurrency,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromMinor, money, toDecimal, RoundingError } from '../src/index.js';
+import { fromMinor, money, toDecimal, RoundingError } from '../src/fn.js';
 import {
   fromKlarna,
   isKlarnaCurrency,
