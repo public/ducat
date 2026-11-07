@@ -113,11 +113,11 @@ describe('battery: allocation', () => {
   });
 
   it('alloc-fuzz: 2,000 seeded allocations sum to the whole, each part within one unit', () => {
-    // the same linear congruential generator the battery used for every library
-    let state = 12345;
+    // a linear congruential generator, in bigint: the product overflows 2^53 as a double
+    let state = 12345n;
     function randomBelow(limit: number): number {
-      state = (state * 1103515245 + 12345) % 2147483648;
-      return state % limit;
+      state = (state * 1103515245n + 12345n) % 2147483648n;
+      return Number(state % BigInt(limit));
     }
 
     for (let i = 0; i < 2000; i++) {
