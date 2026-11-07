@@ -22,6 +22,9 @@ const formatted = eur.map((m) => P.format(m, 'de-DE'));
 const rate = M.ratio('1.075');
 const eurUsd = P.exchangeRate('EUR', 'USD', '1.0832');
 const fiveCents = M.money('0.05', 'CHF');
+// exact inputs: every division below leaves no remainder, so rounding returns before the mode is used
+const eurBy4 = cents.map((c) => M.fromMinor(c * 4, 'EUR'));
+const eurScale3 = cents.map((c) => M.fromMinor(c * 10, 'EUR', 3));
 
 let sink: unknown;
 
@@ -69,6 +72,24 @@ describe('arithmetic', () => {
   });
   bench('toScale (up and down)', () => {
     for (let i = 0; i < N; i++) sink = M.toScale(M.toScale(eur[i]!, 4), 2, 'halfEven');
+  });
+});
+
+describe('exact divisions', () => {
+  bench('divide exact (by 4)', () => {
+    for (let i = 0; i < N; i++) sink = M.divide(eurBy4[i]!, 4, 'halfEven');
+  });
+  bench('multiply exact (by 0.5)', () => {
+    for (let i = 0; i < N; i++) sink = M.multiply(eurBy4[i]!, '0.5', 'halfEven');
+  });
+  bench('round exact (scale 3 to 2)', () => {
+    for (let i = 0; i < N; i++) sink = M.round(eurScale3[i]!, 'halfEven');
+  });
+  bench('toScale down exact', () => {
+    for (let i = 0; i < N; i++) sink = M.toScale(eurScale3[i]!, 2, 'halfExpand');
+  });
+  bench('allocate exact [1, 1]', () => {
+    for (let i = 0; i < N; i++) sink = P.allocate(eurBy4[i]!, [1, 1]);
   });
 });
 
