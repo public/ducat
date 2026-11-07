@@ -36,6 +36,7 @@ export const ECB_URLS = {
   all: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml',
 } as const;
 
+/** Options for fetching ECB reference rates. */
 export interface FetchEcbOptions {
   /** 'daily' (default): the latest day; '90d': the last 90 days; 'all': since 1999 (several MB). */
   readonly history?: keyof typeof ECB_URLS;

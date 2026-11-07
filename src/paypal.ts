@@ -36,6 +36,7 @@ export function isPayPalCurrency(currency: string): boolean {
   return PAYPAL_EXPONENTS[currency.toUpperCase()] !== undefined;
 }
 
+/** Options for the PayPal amount: how to round when PayPal needs a coarser amount. */
 export interface PayPalAmountOptions {
   /** How to round when PayPal needs fewer decimals than the value has (default 'unnecessary': throw). */
   readonly rounding?: RoundingMode;

@@ -32,6 +32,7 @@ export function checkoutExponent(currency: string): number {
   return rulesFor(currency)[0];
 }
 
+/** Options for the Checkout.com amount: how to round when Checkout.com needs a coarser amount. */
 export interface CheckoutAmountOptions {
   /** How to round when Checkout.com needs a coarser amount (default 'unnecessary': throw). */
   readonly rounding?: RoundingMode;

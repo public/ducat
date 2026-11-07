@@ -13,17 +13,19 @@ const symCache = new Map<string, Symbols>();
  */
 function symbols(locale: string | undefined, currency: string): Symbols {
   const key = `${locale ?? ''}|${currency}`;
-  let s = symCache.get(key);
-  if (!s) {
+  let found = symCache.get(key);
+  if (!found) {
     const parts = separatorParts(locale, currency);
-    s = {
-      group: parts.find((p) => p.type === 'group')?.value ?? ',',
-      decimal: parts.find((p) => p.type === 'decimal')?.value ?? '.',
+    found = {
+      group: parts.find((part) => part.type === 'group')?.value ?? ',',
+      decimal: parts.find((part) => part.type === 'decimal')?.value ?? '.',
     };
-    if (symCache.size > 256) symCache.clear();
-    symCache.set(key, s);
+    if (symCache.size > 256) {
+      symCache.clear();
+    }
+    symCache.set(key, found);
   }
-  return s;
+  return found;
 }
 
 function separatorParts(locale: string | undefined, currency: string): Intl.NumberFormatPart[] {
@@ -48,8 +50,14 @@ const ZEROS = [
   0x17e0, 0x1810, 0xff10,
 ];
 function asciiDigit(cp: number): number {
-  if (cp >= 48 && cp <= 57) return cp - 48;
-  for (const z of ZEROS) if (cp >= z && cp <= z + 9) return cp - z;
+  if (cp >= 48 && cp <= 57) {
+    return cp - 48;
+  }
+  for (const zero of ZEROS) {
+    if (cp >= zero && cp <= zero + 9) {
+      return cp - zero;
+    }
+  }
   return -1;
 }
 
@@ -72,16 +80,21 @@ export function parse<C extends CurrencyInput>(
     last = -1;
   for (let i = 0; i < chars.length; i++) {
     if (asciiDigit(chars[i]!.codePointAt(0)!) >= 0) {
-      if (first < 0) first = i;
+      if (first < 0) {
+        first = i;
+      }
       last = i;
     }
   }
-  if (first < 0) throw new SyntaxError(`Cannot parse "${input}": no digits`);
+  if (first < 0) {
+    throw new SyntaxError(`Cannot parse "${input}": no digits`);
+  }
   const prefix = chars.slice(0, first).join('');
   const suffix = chars.slice(last + 1).join('');
   const affix = prefix + suffix;
-  if (!/^[\p{L}\p{Sc}\p{Z}\s\p{Cf}.()+\-−]*$/u.test(affix))
+  if (!/^[\p{L}\p{Sc}\p{Z}\s\p{Cf}.()+\-−]*$/u.test(affix)) {
     throw new SyntaxError(`Cannot parse "${input}": unexpected characters`);
+  }
   const neg = /[-−(]/.test(affix);
   const isGroup = (ch: string) =>
     ch === group ||
@@ -92,15 +105,22 @@ export function parse<C extends CurrencyInput>(
   let seenDecimal = out !== '';
   for (let i = first; i <= last; i++) {
     const ch = chars[i]!;
-    const d = asciiDigit(ch.codePointAt(0)!);
-    if (d >= 0) out += d;
-    else if (ch === decimal || ch === '٫') {
-      if (seenDecimal) throw new SyntaxError(`Cannot parse "${input}": more than one decimal separator`);
+    const digit = asciiDigit(ch.codePointAt(0)!);
+    if (digit >= 0) {
+      out += digit;
+    } else if (ch === decimal || ch === '٫') {
+      if (seenDecimal) {
+        throw new SyntaxError(`Cannot parse "${input}": more than one decimal separator`);
+      }
       seenDecimal = true;
       out += '.';
     } else if (isGroup(ch)) {
-      if (seenDecimal) throw new SyntaxError(`Cannot parse "${input}": group separator after the decimal separator`);
-    } else throw new SyntaxError(`Cannot parse "${input}": unexpected "${ch}"`);
+      if (seenDecimal) {
+        throw new SyntaxError(`Cannot parse "${input}": group separator after the decimal separator`);
+      }
+    } else {
+      throw new SyntaxError(`Cannot parse "${input}": unexpected "${ch}"`);
+    }
   }
   return money((neg ? '-' : '') + out, currency, options);
 }

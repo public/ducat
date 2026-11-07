@@ -50,17 +50,29 @@ export function parsePlainDecimal(s: string): { digits: number | bigint; scale: 
     c = s.charCodeAt(i);
     if (c >= 48 && c <= 57) {
       digitsSeen++;
-      if (scale >= 0) scale++;
+      if (scale >= 0) {
+        scale++;
+      }
       if (!big) {
-        if (digitsSeen > 15) big = true; // 15 digits always fit exactly; beyond that use BigInt
-        else acc = acc * 10 + (c - 48);
+        if (digitsSeen > 15) {
+          big = true;
+        } // 15 digits always fit exactly; beyond that use BigInt
+        else {
+          acc = acc * 10 + (c - 48);
+        }
       }
     } else if (c === 46 /* . */ && scale < 0 && digitsSeen > 0) {
       scale = 0;
-    } else return null;
+    } else {
+      return null;
+    }
   }
-  if (digitsSeen === 0 || scale === 0) return null; // "", "-", "12."
-  if (scale < 0) scale = 0;
+  if (digitsSeen === 0 || scale === 0) {
+    return null;
+  } // "", "-", "12."
+  if (scale < 0) {
+    scale = 0;
+  }
   if (big) {
     const raw = s.slice(start).replace('.', '');
     const v = BigInt(raw);
@@ -74,7 +86,9 @@ const EXP_RE = /^([+-]?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/;
 /** Parses a decimal string, allowing exponent notation ("1e-7", as produced by String(1e-7)). */
 export function parseDecimal(s: string): { digits: bigint; scale: number } {
   const m = EXP_RE.exec(s.trim());
-  if (!m) throw new SyntaxError(`Invalid decimal string "${s}"`);
+  if (!m) {
+    throw new SyntaxError(`Invalid decimal string "${s}"`);
+  }
   const [, sign, int, frac = '', exp = '0'] = m;
   let digits = BigInt(int! + frac);
   let scale = frac.length - Number(exp);
@@ -86,13 +100,19 @@ export function parseDecimal(s: string): { digits: bigint; scale: number } {
 }
 
 function gcd(a: bigint, b: bigint): bigint {
-  if (a < 0n) a = -a;
-  while (b) [a, b] = [b, a % b];
+  if (a < 0n) {
+    a = -a;
+  }
+  while (b) {
+    [a, b] = [b, a % b];
+  }
   return a;
 }
 
 function makeRatio(num: bigint, den: bigint): Ratio {
-  if (den === 0n) throw new RangeError('Division by zero');
+  if (den === 0n) {
+    throw new RangeError('Division by zero');
+  }
   if (den < 0n) {
     num = -num;
     den = -den;
@@ -120,25 +140,36 @@ export function ratio(x: Factor, den?: Factor): Ratio {
       b = ratio(den);
     return makeRatio(a.num * b.den, a.den * b.num);
   }
-  if (typeof x === 'object') return x;
+  if (typeof x === 'object') {
+    return x;
+  }
   if (typeof x === 'number') {
     if (Number.isSafeInteger(x)) {
-      if (x >= 0 && x < 128) return (INT_RATIOS[x] ??= makeRatio(BigInt(x), 1n));
+      if (x >= 0 && x < 128) {
+        return (INT_RATIOS[x] ??= makeRatio(BigInt(x), 1n));
+      }
       return makeRatio(BigInt(x), 1n);
     }
-    if (!Number.isFinite(x)) throw new RangeError(`Invalid factor ${x}`);
+    if (!Number.isFinite(x)) {
+      throw new RangeError(`Invalid factor ${x}`);
+    }
     x = String(x);
   }
-  if (typeof x === 'bigint') return makeRatio(x, 1n);
+  if (typeof x === 'bigint') {
+    return makeRatio(x, 1n);
+  }
   let r = cache.get(x);
   if (r === undefined) {
     const slash = x.indexOf('/');
-    if (slash > 0) r = ratio(x.slice(0, slash).trim(), x.slice(slash + 1).trim());
-    else {
+    if (slash > 0) {
+      r = ratio(x.slice(0, slash).trim(), x.slice(slash + 1).trim());
+    } else {
       const { digits, scale } = parseDecimal(x);
       r = makeRatio(digits, pow10n(scale));
     }
-    if (cache.size >= 1024) cache.clear();
+    if (cache.size >= 1024) {
+      cache.clear();
+    }
     cache.set(x, r);
   }
   return r;
@@ -157,7 +188,9 @@ export function ratioToDecimal(r: Ratio): string | null {
     d /= 5n;
     fives++;
   }
-  if (d !== 1n) return null;
+  if (d !== 1n) {
+    return null;
+  }
   const scale = Math.max(twos, fives);
   return formatScaled(r.num * (pow10n(scale) / r.den), scale);
 }
@@ -168,7 +201,9 @@ const ZPAD = Array.from({ length: 16 }, (_, length) => '0'.repeat(length));
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
 export function formatScaled(v: number | bigint, scale: number): string {
   if (typeof v === 'number' && scale <= 15) {
-    if (scale === 0) return String(v);
+    if (scale === 0) {
+      return String(v);
+    }
     // integer/fraction split with exact integer arithmetic (the float quotient is corrected)
     const a = v < 0 ? 0 - v : v;
     const p = POW10[scale]!;
@@ -183,14 +218,18 @@ export function formatScaled(v: number | bigint, scale: number): string {
         r -= p;
       }
       let f = String(r);
-      if (f.length < scale) f = ZPAD[scale - f.length] + f;
+      if (f.length < scale) {
+        f = ZPAD[scale - f.length] + f;
+      }
       return (v < 0 ? '-' : '') + q + '.' + f;
     }
   }
   const neg = v < 0;
   let s = typeof v === 'number' ? String(neg ? 0 - v : v) : (neg ? -v : v).toString();
   if (scale > 0) {
-    if (s.length <= scale) s = '0'.repeat(scale - s.length + 1) + s;
+    if (s.length <= scale) {
+      s = '0'.repeat(scale - s.length + 1) + s;
+    }
     s = s.slice(0, s.length - scale) + '.' + s.slice(s.length - scale);
   }
   return neg ? '-' + s : s;

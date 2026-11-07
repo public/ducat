@@ -25,6 +25,7 @@ export function isKlarnaCurrency(currency: string): boolean {
   return KLARNA_EXPONENTS[currency.toUpperCase()] !== undefined;
 }
 
+/** Options for the Klarna amount: how to round when Klarna needs a coarser amount. */
 export interface KlarnaAmountOptions {
   /** How to round when the value has more decimals than the currency (default 'unnecessary': throw). */
   readonly rounding?: RoundingMode;

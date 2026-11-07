@@ -23,8 +23,8 @@ export function fromDecimal<C extends CurrencyInput>(
 }
 
 /** A Decimal for a NUMERIC column: toDecimalValue(m, Prisma.Decimal). */
-export function toDecimalValue<D>(m: Money, Decimal: new (value: string) => D): D {
-  return new Decimal(toDecimal(m));
+export function toDecimalValue<D>(money: Money, Decimal: new (value: string) => D): D {
+  return new Decimal(toDecimal(money));
 }
 
 type Row<A extends string, V> = { [P in A]: V };
@@ -59,18 +59,18 @@ export function decimalMoneyField<const A extends string, const C extends Curren
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function decimalMoneyField(
   amount: string,
-  c: { currencyField: string } | { currency: string },
+  currencySource: { currencyField: string } | { currency: string },
 ): { needs: Record<string, true>; compute: (row: any) => Money } {
-  if ('currencyField' in c) {
+  if ('currencyField' in currencySource) {
     return {
-      needs: { [amount]: true, [c.currencyField]: true },
+      needs: { [amount]: true, [currencySource.currencyField]: true },
       compute: (row: Record<string, unknown>) =>
-        fromDecimal(row[amount] as DecimalLike, row[c.currencyField] as string),
+        fromDecimal(row[amount] as DecimalLike, row[currencySource.currencyField] as string),
     };
   }
   return {
     needs: { [amount]: true },
-    compute: (row: Record<string, unknown>) => fromDecimal(row[amount] as DecimalLike, c.currency),
+    compute: (row: Record<string, unknown>) => fromDecimal(row[amount] as DecimalLike, currencySource.currency),
   };
 }
 
@@ -80,16 +80,17 @@ export function decimalMoneyField(
  * the column cannot record it.
  */
 export function toMinorColumns<const A extends string, const K extends string>(
-  m: Money,
+  money: Money,
   amount: A,
   currency: K,
 ): Row<A, bigint> & Row<K, string> {
-  return { [amount]: toMinorAtIsoScale(m), [currency]: m.currency } as Row<A, bigint> & Row<K, string>;
+  return { [amount]: toMinorAtIsoScale(money), [currency]: money.currency } as Row<A, bigint> & Row<K, string>;
 }
 
-function toMinorAtIsoScale(m: Money): bigint {
-  const iso = fromMinor(0, m.currency).scale;
-  if (m.scale !== iso)
-    throw new RangeError(`${m} has scale ${m.scale}; round() it to ${iso} decimals before storing minor units`);
-  return toMinor(m);
+function toMinorAtIsoScale(money: Money): bigint {
+  const iso = fromMinor(0, money.currency).scale;
+  if (money.scale !== iso) {
+    throw new RangeError(`${money} has scale ${money.scale}; round() it to ${iso} decimals before storing minor units`);
+  }
+  return toMinor(money);
 }

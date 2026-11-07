@@ -2,20 +2,21 @@ import { ratio, type Factor, type Ratio } from './decimal.js';
 import { add, mulRatio, subtract, type Money } from './money.js';
 import { DEFAULT_ROUNDING, type RoundingMode } from './rounding.js';
 
-const percentRatio = (p: Factor): Ratio => {
-  const r = ratio(p);
-  return ratio(r.num, r.den * 100n);
+const percentRatio = (percent: Factor): Ratio => {
+  const asRatio = ratio(percent);
+  return ratio(asRatio.num, asRatio.den * 100n);
 };
 
 /** percent% of m: percentage(EUR 80, '12.5', 'halfEven') = EUR 10.00. Rounding defaults to 'halfExpand'. */
 export function percentage<C extends string>(
-  m: Money<C>,
+  money: Money<C>,
   percent: Factor,
   rounding: RoundingMode = DEFAULT_ROUNDING,
 ): Money<C> {
-  return mulRatio(m, percentRatio(percent), rounding);
+  return mulRatio(money, percentRatio(percent), rounding);
 }
 
+/** A tax split: net + tax is always exactly gross. */
 export interface TaxBreakdown<C extends string> {
   readonly net: Money<C>;
   readonly tax: Money<C>;
@@ -44,9 +45,9 @@ export function extractTax<C extends string>(
   percent: Factor,
   rounding: RoundingMode = DEFAULT_ROUNDING,
 ): TaxBreakdown<C> {
-  const p = ratio(percent);
+  const percentRatio = ratio(percent);
   // 1 / (1 + p/100) = 100 den / (100 den + num)
-  const net = mulRatio(gross, ratio(100n * p.den, 100n * p.den + p.num), rounding);
+  const net = mulRatio(gross, ratio(100n * percentRatio.den, 100n * percentRatio.den + percentRatio.num), rounding);
   return { net, tax: subtract(gross, net), gross };
 }
 

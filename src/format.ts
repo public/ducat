@@ -24,7 +24,7 @@ function supportsStringInput(): boolean {
 }
 
 function formatter(
-  m: Money,
+  money: Money,
   locale: string | undefined,
   options: Intl.NumberFormatOptions | undefined,
 ): Intl.NumberFormat {
@@ -32,34 +32,37 @@ function formatter(
     options === undefined &&
     lastF !== undefined &&
     locale === lastLocale &&
-    m.currency === lastCurrency &&
-    m.scale === lastScale
-  )
+    money.currency === lastCurrency &&
+    money.scale === lastScale
+  ) {
     return lastF;
-  const key = options === undefined ? `${locale}|${m.currency}|${m.scale}` : null;
-  let f = key === null ? undefined : cache.get(key);
-  if (f === undefined) {
-    f = new Intl.NumberFormat(locale, {
+  }
+  const key = options === undefined ? `${locale}|${money.currency}|${money.scale}` : null;
+  let numberFormat = key === null ? undefined : cache.get(key);
+  if (numberFormat === undefined) {
+    numberFormat = new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: m.currency,
+      currency: money.currency,
       // ISO exponent (or the value's scale), not the engine's default digits: V8 (CLDR) shows ALL,
       // IQD, RSD ... with 0 decimals and JSC with ISO's; we always show what the value holds.
-      minimumFractionDigits: m.scale,
-      maximumFractionDigits: m.scale,
+      minimumFractionDigits: money.scale,
+      maximumFractionDigits: money.scale,
       ...options,
     });
     if (key !== null) {
-      if (cache.size > 256) cache.clear();
-      cache.set(key, f);
+      if (cache.size > 256) {
+        cache.clear();
+      }
+      cache.set(key, numberFormat);
     }
   }
   if (key !== null) {
     lastLocale = locale;
-    lastCurrency = m.currency;
-    lastScale = m.scale;
-    lastF = f;
+    lastCurrency = money.currency;
+    lastScale = money.scale;
+    lastF = numberFormat;
   }
-  return f;
+  return numberFormat;
 }
 
 /**
@@ -70,8 +73,8 @@ function formatter(
  *     format(money('1234.5', 'EUR'), 'de-DE')               // "1.234,50 €"
  *     format(money('1234.5', 'EUR'), 'en-GB', { currencyDisplay: 'code' })
  */
-export function format(m: Money, locale?: string, options?: Intl.NumberFormatOptions): string {
-  return formatter(m, locale, options).format(intlValue(m));
+export function format(money: Money, locale?: string, options?: Intl.NumberFormatOptions): string {
+  return formatter(money, locale, options).format(intlValue(money));
 }
 
 /**
@@ -82,14 +85,20 @@ export function format(m: Money, locale?: string, options?: Intl.NumberFormatOpt
  * in test/format.test.ts), and 2-3x cheaper; this display hand-off is the only place a double ever
  * touches an amount. Larger values go to Intl as the exact decimal string (Intl.NumberFormat v3).
  */
-function intlValue(m: Money): number {
-  const v = m.minor;
-  if (typeof v === 'number' && v < 1e15 && v > -1e15 && m.scale <= 15) return v / POW10[m.scale]!;
-  const s = toDecimal(m);
-  return (supportsStringInput() ? s : Number(s)) as number;
+function intlValue(money: Money): number {
+  const minor = money.minor;
+  if (typeof minor === 'number' && minor < 1e15 && minor > -1e15 && money.scale <= 15) {
+    return minor / POW10[money.scale]!;
+  }
+  const decimal = toDecimal(money);
+  return (supportsStringInput() ? decimal : Number(decimal)) as number;
 }
 
 /** Like format(), but returns Intl parts (for styling the currency symbol separately, etc.). */
-export function formatToParts(m: Money, locale?: string, options?: Intl.NumberFormatOptions): Intl.NumberFormatPart[] {
-  return formatter(m, locale, options).formatToParts(intlValue(m));
+export function formatToParts(
+  money: Money,
+  locale?: string,
+  options?: Intl.NumberFormatOptions,
+): Intl.NumberFormatPart[] {
+  return formatter(money, locale, options).formatToParts(intlValue(money));
 }

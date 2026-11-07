@@ -31,6 +31,7 @@ export function isBraintreeCurrency(currency: string): boolean {
   return BRAINTREE_EXPONENTS[currency.toUpperCase()] !== undefined;
 }
 
+/** Options for the Braintree amount: how to round when Braintree needs a coarser amount. */
 export interface BraintreeAmountOptions {
   /** How to round when Braintree needs fewer decimals than the value has (default 'unnecessary': throw). */
   readonly rounding?: RoundingMode;

@@ -78,8 +78,12 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
 
 /** p / d rounded with `mode`; p, d safe integers, d > 0. Exact (never uses a float quotient unchecked). */
 export function divRound(p: number, d: number, mode: RoundingMode): number {
-  if (d === 1) return p;
-  if (!(Math.abs(p) + d <= MAX)) return Number(divRoundBig(BigInt(p), BigInt(d), mode));
+  if (d === 1) {
+    return p;
+  }
+  if (!(Math.abs(p) + d <= MAX)) {
+    return Number(divRoundBig(BigInt(p), BigInt(d), mode));
+  }
   let q = Math.trunc(p / d);
   let r = p - q * d; // exact: |q*d| <= |p| + d <= MAX
   // the float quotient can be off by one ulp; fix so that r has the sign of p and |r| < d
@@ -98,19 +102,29 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
     q -= 1;
     r += d;
   }
-  if (r === 0) return q + 0; // + 0 normalises -0
+  if (r === 0) {
+    return q + 0;
+  } // + 0 normalises -0
   const neg = p < 0;
-  if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) q += neg ? -1 : 1;
+  if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) {
+    q += neg ? -1 : 1;
+  }
   return q + 0;
 }
 
 /** p / d rounded with `mode`; d > 0n. */
 export function divRoundBig(p: bigint, d: bigint, mode: RoundingMode): bigint {
-  if (d === 1n) return p;
+  if (d === 1n) {
+    return p;
+  }
   let q = p / d; // truncates towards zero
   const r = p - q * d;
-  if (r === 0n) return q;
+  if (r === 0n) {
+    return q;
+  }
   const neg = p < 0n;
-  if (away(mode, (neg ? -r : r) * 2n, d, (q & 1n) !== 0n, neg)) q += neg ? -1n : 1n;
+  if (away(mode, (neg ? -r : r) * 2n, d, (q & 1n) !== 0n, neg)) {
+    q += neg ? -1n : 1n;
+  }
   return q;
 }
