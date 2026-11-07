@@ -1,7 +1,7 @@
 // Type-level check that the helpers fit Prisma's result-extension types: `pnpm exec tsc -p examples/prisma`.
 import { PrismaClient } from './generated/index.js';
 import type { Money } from '../../src/index.js';
-import { add } from '../../src/index.js';
+import { add } from '../../src/fn.js';
 import { decimalMoneyField, minorMoneyField } from '../../src/prisma.js';
 
 const db = new PrismaClient().$extends({

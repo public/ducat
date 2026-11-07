@@ -534,7 +534,7 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - `format` is dominated by Intl itself (about 0.7–1.5 µs on every engine).
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
   - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.7 kB**, of which about 0.55 kB is the ISO table
-  - the core entry point: 4.8 kB; everything (`@ducatjs/money/all`): 18.9 kB
+  - the core entry point: 4.7 kB; everything (`@ducatjs/money/all`): 19.0 kB
   - the same snippet with dinero.js (EUR only): 1.9 kB
 
 ---

@@ -2,7 +2,8 @@
 // affinity converts them to REAL or INTEGER, which loses digits (see the last test).
 import { DatabaseSync } from 'node:sqlite';
 import { expect, it } from 'vitest';
-import { money, toDecimal } from '../../src/index.js';
+import { money } from '../../src/index.js';
+import { toDecimal } from '../../src/fn.js';
 import { fromDecimal } from '../../src/prisma.js';
 import { databaseSuite, type DatabaseAdapter } from './suite.js';
 

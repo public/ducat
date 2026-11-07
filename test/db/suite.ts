@@ -2,7 +2,8 @@
 // SQLite. Each driver file supplies a small adapter; the suite covers the two storage layouts the
 // helpers support (BIGINT minor units + currency, or a DECIMAL/NUMERIC column) and Money as JSON.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { fromJSON, fromMinor, money, toDecimal, type Money } from '../../src/index.js';
+import { fromJSON, fromMinor, money, type Money } from '../../src/index.js';
+import { toDecimal } from '../../src/fn.js';
 import {
   decimalMoneyField,
   fromDecimal,
