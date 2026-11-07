@@ -52,6 +52,10 @@ describe('Money methods', () => {
       'via',
       'snapshots',
       'snapshotsFrom',
+      // exact intermediates: constructors, a batch sum, and a conversion that returns a record
+      'convertDetailed',
+      'sumExact',
+      'isExactMoney',
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
