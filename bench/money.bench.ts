@@ -1,10 +1,9 @@
 // CodSpeed / vitest benchmarks for the library's hot paths.
 // Each case processes N pre-built values so a single iteration is meaningful under simulation.
-// Run locally with `npm run bench:vitest`; the cross-library comparison lives in `npm run bench`.
+// Run locally with `pnpm bench:vitest`; the cross-library comparison lives in `pnpm bench`.
 import { bench, describe } from 'vitest';
-import * as M from '../src/index.ts';
-import { fromAdyen, toAdyen } from '../src/adyen.ts';
-import { fromStripe, toStripe } from '../src/stripe.ts';
+import * as M from '../src/fn.ts';
+import { fromAdyen, fromStripe, toAdyen, toStripe } from '../src/fn.ts';
 
 const N = 1000;
 const cents = Array.from({ length: N }, (_, i) => ((i * 7919) % 10_000_000) + 1);

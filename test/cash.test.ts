@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CASH_RULES, cashRound, cashRule, money, roundToIncrement, toDecimal } from '../src/index.js';
+import { CASH_RULES, cashRound, cashRule, money, roundToIncrement, toDecimal } from '../src/plugins/all.js';
 
 const cr = (amt: string, cur: string, country?: string) =>
   toDecimal(cashRound(money(amt, cur), country ? { country } : undefined));
