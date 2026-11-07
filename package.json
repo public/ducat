@@ -45,6 +45,10 @@
       "types": "./dist/plugins/convert.d.ts",
       "default": "./dist/plugins/convert.js"
     },
+    "./convert/ecb": {
+      "types": "./dist/ecb.d.ts",
+      "default": "./dist/ecb.js"
+    },
     "./exact": {
       "types": "./dist/plugins/exact.d.ts",
       "default": "./dist/plugins/exact.js"

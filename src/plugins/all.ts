@@ -4,6 +4,7 @@ export * from './allocate.js';
 export * from './tax.js';
 export * from './convert.js';
 export * from './exact.js';
+export * from '../ecb.js';
 export * from './cash.js';
 export * from './format.js';
 export * from '../parse.js';

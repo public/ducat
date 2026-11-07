@@ -61,6 +61,9 @@ describe('Money methods', () => {
       'comparator',
       'sortByValue',
       'sumByCurrency',
+      // ECB file parsers
+      'parseEcbXml',
+      'parseEcbCsv',
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
