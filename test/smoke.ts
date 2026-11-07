@@ -34,7 +34,7 @@ eq(M.format(M.money('1', 'ALL'), 'en-US', { currencyDisplay: 'code' }).replace(/
 eq(M.parse('1.234,50 €', 'EUR', 'de-DE').minor, 123450, 'parse de-DE');
 eq(M.parse('($5.00)', 'USD', 'en-US').minor, -500, 'parse accounting');
 let threw = false;
-try { (eur('1') as unknown as number) + 1; } catch { threw = true; }
+try { void ((eur('1') as unknown as number) + 1); } catch { threw = true; }
 eq(threw, true, 'toPrimitive guard');
 // string input to Intl (exact beyond 2^53) - informational
 const big = M.format(M.money('123456789012345678.91', 'USD'), 'en-US');

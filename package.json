@@ -31,7 +31,7 @@
     "data"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -41,9 +41,12 @@
     "gen": "node scripts/gen-currencies.mjs",
     "gen:check": "node scripts/gen-currencies.mjs --check",
     "gen:fetch": "node scripts/gen-currencies.mjs --check --fetch",
-    "bench": "node scripts/bench-all.mjs"
+    "bench": "node scripts/bench-all.mjs",
+    "lint": "oxlint",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "check": "npm run lint && npm run fmt:check && npm run typecheck && npm test"
   },
-  "dependencies": {},
   "devDependencies": {
     "@prisma/client": "^6.19.3",
     "@types/big.js": "^7.0.0",
@@ -54,6 +57,8 @@
     "dinero.js": "^2.0.2",
     "esbuild": "^0.28.2",
     "fast-check": "^4.10.2",
+    "oxfmt": "0.77.0",
+    "oxlint": "1.92.0",
     "ts-money": "^0.4.8",
     "typescript": "^5.9.3",
     "vitest": "^4.1.12"

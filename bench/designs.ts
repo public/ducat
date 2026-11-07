@@ -3,7 +3,6 @@
 import { bench, log, runtimeName, type Result } from './harness.ts';
 
 const MAX = Number.MAX_SAFE_INTEGER;
-const pow10n = (n: number) => 10n ** BigInt(n);
 
 // --- shared: ratio 1.075 as n/d, half-even division -------------------------------
 function divHalfEvenNum(p: number, d: number): number {
@@ -157,7 +156,7 @@ function record(rs: Result[]) {
 for (const [label, C] of [['A:number+bigint', A], ['A+freeze', AF]] as const) {
   record(
     suite(label, (i) => new (C as any)('EUR', i, 2) as AMoney, {
-      construct: (xs) => { let last; for (let i = 0; i < N; i++) last = new (C as any)('EUR', ints[i]!, 2); return last; },
+      construct: (_xs) => { let last; for (let i = 0; i < N; i++) last = new (C as any)('EUR', ints[i]!, 2); return last; },
       add: (xs) => { let acc = xs[0]!; for (let i = 1; i < N; i++) acc = aAdd(C as any, acc, xs[i]!); return acc; },
       mulRatio: (xs) => { let last; for (let i = 0; i < N; i++) last = aMul(C as any, xs[i]!, 1075, 1000); return last; },
       allocate3: (xs) => { let last; for (let i = 0; i < N; i++) last = aAlloc(C as any, xs[i]!, ratios); return last; },

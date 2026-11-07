@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "vitest"],
+  "categories": { "correctness": "error", "suspicious": "warn", "perf": "warn" },
+  "rules": {
+    // new Array(n) preallocates on the allocation hot path (faster than Array.from on V8 and JSC); see bench/
+    "unicorn/no-new-array": "off",
+    // property tests guard their inputs (`if (f != 0) expect(divide(...))`)
+    "vitest/no-conditional-expect": "off",
+    // fc.integer(), fc.property(): fast-check's documented namespace idiom
+    "import/no-named-as-default-member": "off",
+    // tightened as the suite asserts specific error classes
+    "vitest/require-to-throw-message": "warn",
+    "vitest/expect-expect": ["warn", { "assertFunctionNames": ["expect", "eq", "fc.assert"] }],
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+  },
+  "ignorePatterns": ["dist", "node_modules", "examples/prisma/generated", "bench/out"]
+}
