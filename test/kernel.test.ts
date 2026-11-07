@@ -102,7 +102,7 @@ describe('generated rounding kernel', () => {
   });
 
   it('rejects an unknown mode on every path, exact divisions included', () => {
-    for (const mode of ['nearest', 'constructor', 'toString', '__proto__'] as RoundingMode[]) {
+    for (const mode of ['nearest', 'constructor', 'toString', '__proto__'] as string[] as RoundingMode[]) {
       // inexact, exact, and division by one (each path has its own shortcut for the last two)
       for (const [dividend, divisor] of [
         [7, 2],
