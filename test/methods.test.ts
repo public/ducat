@@ -1,5 +1,6 @@
 // Every Money method must be exactly the free function of the same name.
 import { describe, expect, it } from 'vitest';
+import { runs } from './fc-config.js';
 import fc from 'fast-check';
 import * as M from '../src/plugins/all.js';
 import { money, fromMinor, type Money } from '../src/plugins/all.js';
@@ -40,6 +41,24 @@ describe('Money methods', () => {
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
+      'extendMoney',
+      // processor and database helpers that take codes, amounts or columns rather than a Money
+      'isStripeCurrency',
+      'stripeExponent',
+      'fromStripe',
+      'isAdyenCurrency',
+      'adyenExponent',
+      'fromAdyen',
+      'isCheckoutCurrency',
+      'checkoutExponent',
+      'fromCheckout',
+      'isPayPalCurrency',
+      'paypalExponent',
+      'fromPayPal',
+      'fromDecimal',
+      'minorMoneyField',
+      'decimalMoneyField',
+      'toMinorColumns',
     ]);
     const fns = Object.entries(M)
       .filter(([k, v]) => typeof v === 'function' && /^[a-z]/.test(k) && !notMethods.has(k))
@@ -101,7 +120,7 @@ describe('Money methods', () => {
         expect(a.toMinor()).toBe(M.toMinor(a));
         expect(a.format('en-US')).toBe(M.format(a, 'en-US'));
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 

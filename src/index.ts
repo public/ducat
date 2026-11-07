@@ -10,6 +10,7 @@ export {
   fromJSON,
   isMoney,
   extendMoney,
+  type ExtendMoneyOptions,
   add,
   subtract,
   sum,

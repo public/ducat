@@ -1,4 +1,4 @@
-// Compile-time tests: `npm run typecheck` must pass. Each @ts-expect-error must be an actual error.
+// Compile-time tests: `pnpm typecheck` must pass. Each @ts-expect-error must be an actual error.
 import {
   add,
   allocate,

@@ -13,11 +13,14 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  toStripeAmount(this: Money, options?: StripeAmountOptions) {
-    return toStripeAmount(this, options);
+extendMoney(
+  {
+    toStripeAmount(this: Money, options?: StripeAmountOptions) {
+      return toStripeAmount(this, options);
+    },
+    toStripe(this: Money, options?: StripeAmountOptions) {
+      return toStripe(this, options);
+    },
   },
-  toStripe(this: Money, options?: StripeAmountOptions) {
-    return toStripe(this, options);
-  },
-});
+  { owner: '@ducatjs/money/stripe' },
+);

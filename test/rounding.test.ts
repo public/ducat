@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { runs } from './fc-config.js';
 import fc from 'fast-check';
 import { money, round, Rounding, RoundingError, toDecimal, type RoundingMode } from '../src/index.js';
 import { divRound, divRoundBig } from '../src/rounding.js';
@@ -184,7 +185,7 @@ describe('divRound agrees with an independent bigint oracle', () => {
       fc.property(fc.oneof(safe, small), div, mode, (p, d, m) => {
         expect(divRound(p, d, m)).toBe(Number(refDivRound(BigInt(p), BigInt(d), m)));
       }),
-      { numRuns: 20000 },
+      { numRuns: runs(20000) },
     );
   });
   it('bigint path', () => {
@@ -197,7 +198,7 @@ describe('divRound agrees with an independent bigint oracle', () => {
           expect(divRoundBig(p, d, m)).toBe(refDivRound(p, d, m));
         },
       ),
-      { numRuns: 5000 },
+      { numRuns: runs(5000) },
     );
   });
   it('near-integer quotients where p/d in floating point rounds across an integer', () => {

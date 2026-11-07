@@ -169,21 +169,51 @@ export function isMoney(x: unknown): x is Money {
   return x instanceof Money;
 }
 
+/** Which module installed each added method, so a second copy of the same module can replace its own. */
+const methodOwners = new Map<string, string>();
+
+/**
+ * Names `extendMoney` refuses: the ones every object inherits, whose meaning other code relies on.
+ * `toLocaleString` is allowed, since a formatting module may want to provide it.
+ */
+const RESERVED_NAMES = new Set(
+  Object.getOwnPropertyNames(Object.prototype).filter((name) => name !== 'toLocaleString'),
+);
+
+export interface ExtendMoneyOptions {
+  /**
+   * Who is installing the methods, e.g. '@ducatjs/money/allocate'. Installing again under the same owner
+   * replaces that owner's methods, which happens when a module is loaded twice (hot reload, two copies of
+   * the package). Without an owner, or under a different one, an existing name throws.
+   */
+  readonly owner?: string;
+}
+
 /**
  * Adds methods to every Money (this is how `@ducatjs/money/allocate`, `@ducatjs/money/format`, ... install theirs).
  * Declare their types with `declare module '@ducatjs/money' { interface Money<C extends string> { ... } }`.
- * The methods are non-enumerable, like class methods. Re-installing the same function is a no-op;
- * replacing a different one throws, so two plugins cannot silently fight over a name.
+ * The methods are non-enumerable, like class methods. A name that Money already has (one of its own
+ * methods, or one added by a different owner) throws, so two modules cannot silently fight over it.
  */
-export function extendMoney(methods: Record<string, (this: Money, ...args: never[]) => unknown>): void {
+export function extendMoney(
+  methods: Record<string, (this: Money, ...args: never[]) => unknown>,
+  options?: ExtendMoneyOptions,
+): void {
   const prototype = Money.prototype as unknown as Record<string, unknown>;
+  const owner = options?.owner;
 
   for (const name of Object.keys(methods)) {
     const method = methods[name];
 
-    // Installing the same function twice (a module imported through two paths) is harmless;
-    // replacing a different one would silently change behaviour for every caller.
-    if (name in prototype && prototype[name] !== method) {
+    if (RESERVED_NAMES.has(name)) {
+      throw new TypeError(`Money#${name} is reserved`);
+    }
+
+    // Replacing an existing method would silently change behaviour for every caller, unless it is the
+    // same function or the same owner installing its own methods again.
+    const previousOwner = methodOwners.get(name);
+    const isOwnReinstall = owner !== undefined && previousOwner === owner;
+    if (Object.hasOwn(prototype, name) && prototype[name] !== method && !isOwnReinstall) {
       throw new TypeError(`Money#${name} is already defined`);
     }
 
@@ -194,6 +224,9 @@ export function extendMoney(methods: Record<string, (this: Money, ...args: never
       configurable: true,
       enumerable: false,
     });
+    if (owner !== undefined) {
+      methodOwners.set(name, owner);
+    }
   }
 }
 
