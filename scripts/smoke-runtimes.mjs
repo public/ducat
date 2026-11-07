@@ -10,6 +10,13 @@ const home = homedir();
 const BUN = process.env.BUN ?? join(home, '.bun/bin/bun');
 const DENO = process.env.DENO ?? join(home, '.deno/bin/deno');
 const run = (bin, args) => execFileSync(bin, args, { stdio: 'inherit' });
+// a bare command name (BUN=bun, as in CI) is looked up on PATH; a path must exist
+function isAvailable(bin) {
+  if (bin === process.execPath || !bin.includes('/')) {
+    return true;
+  }
+  return existsSync(bin);
+}
 
 const suites = [
   ['node', process.execPath, ['node_modules/vitest/vitest.mjs', 'run']],
@@ -17,7 +24,7 @@ const suites = [
   ['deno', DENO, ['run', '-A', 'node_modules/vitest/vitest.mjs', 'run']],
 ];
 for (const [name, bin, args] of suites) {
-  if (bin !== process.execPath && !existsSync(bin)) {
+  if (!isAvailable(bin)) {
     console.log(`skip ${name} (not installed)`);
     continue;
   }
@@ -47,4 +54,8 @@ const smoke = [
   [join(home, '.jsvu/bin/jsc'), ['-m', 'bench/out/smoke.mjs']],
 ];
 console.log('\n== smoke test per engine');
-for (const [bin, args] of smoke) if (bin === process.execPath || existsSync(bin)) run(bin, args);
+for (const [bin, args] of smoke) {
+  if (isAvailable(bin)) {
+    run(bin, args);
+  }
+}
