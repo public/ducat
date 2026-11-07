@@ -16,6 +16,7 @@
     "dist",
     "src",
     "data",
+    "assets/CREDITS.md",
     "LICENSE"
   ],
   "type": "module",
