@@ -1,8 +1,9 @@
 // Every Money method must be exactly the free function of the same name.
 import { describe, expect, it } from 'vitest';
+import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import * as M from '../src/index.js';
-import { money, fromMinor, type Money } from '../src/index.js';
+import * as M from '../src/plugins/all.js';
+import { money, fromMinor, type Money } from '../src/plugins/all.js';
 
 const eur = (s: string) => money(s, 'EUR');
 const dec = (x: Money | Money[] | { net: Money; tax: Money; gross: Money }) =>
@@ -37,9 +38,63 @@ describe('Money methods', () => {
       'parse',
       'cashRule',
       'exchangeRate',
+      // rate constructors and the conversion kernel, which work on rates rather than an amount
+      'impliedRate',
+      'isRate',
+      'rateFromJSON',
+      'multiplyByRatioAtScale',
+      // rate providers and their combinators
+      'rateOf',
+      'identity',
+      'rateTable',
+      'chain',
+      'reversed',
+      'via',
+      'snapshots',
+      'snapshotsFrom',
+      // exact intermediates: constructors, a batch sum, and a conversion that returns a record
+      'convertDetailed',
+      'sumExact',
+      'isExactMoney',
+      // multi-currency totals and ordering
+      'bag',
+      'comparator',
+      'sortByValue',
+      'sumByCurrency',
+      // ECB file parsers
+      'parseEcbXml',
+      'parseEcbCsv',
+      // processor rates, read from processor records rather than a Money
+      'stripeRate',
+      'stripeImpliedRate',
+      'adyenRate',
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
+      'extendMoney',
+      // processor and database helpers that take codes, amounts or columns rather than a Money
+      'isStripeCurrency',
+      'stripeExponent',
+      'fromStripe',
+      'isAdyenCurrency',
+      'adyenExponent',
+      'fromAdyen',
+      'isCheckoutCurrency',
+      'checkoutExponent',
+      'fromCheckout',
+      'isPayPalCurrency',
+      'paypalExponent',
+      'fromPayPal',
+      'isBraintreeCurrency',
+      'braintreeExponent',
+      'fromBraintree',
+      'isKlarnaCurrency',
+      'klarnaExponent',
+      'fromKlarna',
+      'fromDecimal',
+      'minorMoneyField',
+      'decimalMoneyField',
+      'toMinorColumns',
     ]);
     const fns = Object.entries(M)
       .filter(([k, v]) => typeof v === 'function' && /^[a-z]/.test(k) && !notMethods.has(k))
@@ -101,7 +156,7 @@ describe('Money methods', () => {
         expect(a.toMinor()).toBe(M.toMinor(a));
         expect(a.format('en-US')).toBe(M.format(a, 'en-US'));
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import { equals, format, fromMinor, money, parse, toDecimal } from '../src/index.js';
+import { equals, format, fromMinor, money, parse, toDecimal } from '../src/plugins/all.js';
 
 const norm = (s: string) => s.replace(/[  ]/g, ' ');
 
@@ -36,6 +37,19 @@ describe('parse', () => {
     expect(parse('₹1,23,456.78', 'INR', 'en-IN').minor).toBe(12345678);
     expect(parse('￥1,234', 'JPY', 'ja-JP').minor).toBe(1234);
   });
+  it('reads separators from the currency format, which differs from the number format in some locales', () => {
+    // fr-CH: '.' decimal for money (',' for plain numbers); de-AT: '.' groups for money (spaces for numbers)
+    for (const [locale, currency] of [
+      ['fr-CH', 'EUR'],
+      ['fr-CH', 'CHF'],
+      ['de-AT', 'EUR'],
+    ] as const) {
+      for (const minor of [5, 123456, -98765432, 100000000]) {
+        const m = fromMinor(minor, currency);
+        expect(equals(parse(format(m, locale), currency, locale), m), `${locale} ${currency} ${minor}`).toBe(true);
+      }
+    }
+  });
   it('rejects ambiguous or garbage input', () => {
     expect(() => parse('1,234.50', 'EUR', 'de-DE')).toThrow(); // ',' is the decimal mark in de-DE
     expect(() => parse('12.3.4', 'EUR', 'en-US')).toThrow();
@@ -56,6 +70,8 @@ describe('parse', () => {
       'en-IN',
       'fa-IR',
       'th-TH',
+      'fr-CH',
+      'de-AT',
     ];
     fc.assert(
       fc.property(
@@ -68,7 +84,7 @@ describe('parse', () => {
           expect(equals(parse(format(m, loc, { currencySign: 'accounting' }), cur, loc), m)).toBe(true);
         },
       ),
-      { numRuns: 2000 },
+      { numRuns: runs(2000) },
     );
   });
 });
@@ -79,7 +95,7 @@ describe('Intl hand-off', () => {
       fc.property(fc.integer({ min: -(1e15 - 1), max: 1e15 - 1 }), fc.integer({ min: 0, max: 15 }), (v, s) => {
         expect(v / 10 ** s).toBe(Number(toDecimal(fromMinor(v, 'EUR', s))));
       }),
-      { numRuns: 50000 },
+      { numRuns: runs(50000) },
     );
   });
 });

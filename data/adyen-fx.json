@@ -1,0 +1,19 @@
+{
+  "source": "https://docs.adyen.com/reporting/settlement-reconciliation/transaction-level/settlement-details-report",
+  "retrieved": "2026-11-07",
+  "columns": {
+    "Gross Currency": "The three-character ISO currency code for the transaction currency.",
+    "Net Currency": "The three-character ISO currency code for the settlement currency.",
+    "Exchange Rate": "The exchange rate used for converting the gross amount into the net amount. This will be 1 if you process and settle in the same currency.",
+    "Creation Date": "The timestamp indicating when the payment was created on the Adyen payments platform. Format: YYYY-MM-DD HH:MM:SS",
+    "TimeZone": "The time zone of the Creation Date.",
+    "DCC Markup (NC)": "The DCC markup (in Net Currency)."
+  },
+  "notes": [
+    "For externally settled payments the listed exchange rate is Adyen's reference exchange rate, not the actual rate applied by the external acquirer.",
+    "Checkout dccQuote (ForexQuote, https://github.com/Adyen/adyen-openapi json/CheckoutService-v71.json at e7986c7): buy, sell and interbank are Amount objects ({currency, value} in minor units) described only as 'The buy rate.', 'The sell rate.' and 'The interbank amount.'; basePoints is an int32 'The base points.'; validTill is a date-time. How they map to a rate is not documented, so no adapter is provided for them."
+  ],
+  "vectors": [
+    { "row": { "Gross Currency": "GBP", "Gross Credit (GC)": "5.00", "Exchange Rate": "1", "Net Currency": "GBP", "Net Credit (NC)": "4.88" } }
+  ]
+}

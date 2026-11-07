@@ -11,23 +11,9 @@ import {
   type Ratio,
 } from './decimal.js';
 import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
-// Circular on purpose: the Money methods delegate to these modules, which import money.ts. Safe because
-// nothing in this module's top level calls into them; they are only referenced inside method bodies.
-import {
-  allocate,
-  chunk,
-  instalments,
-  schedule,
-  split,
-  type AllocateOptions,
-  type InstalmentOptions,
-  type Tranche,
-  type Weight,
-} from './allocate.js';
-import { cashRound, roundToIncrement, type CashRoundOptions } from './cash.js';
-import { format, formatToParts } from './format.js';
-import { addTax, convert, discount, extractTax, percentage, type ConvertOptions, type TaxBreakdown } from './ops.js';
 
+// A module-local constant, not an import: the hot loops (sum, add) read it on every iteration, and
+// V8 reads an imported binding through an extra indirection.
 const MAX = Number.MAX_SAFE_INTEGER;
 
 /** Currency codes accepted by constructors: known codes autocomplete, any string is allowed. */
@@ -42,11 +28,12 @@ export interface MoneyJSON<C extends string = string> {
 /** Thrown when two amounts in different currencies are combined. */
 export class CurrencyMismatchError extends TypeError {
   override name = 'CurrencyMismatchError';
-  constructor(
-    readonly expected: string,
-    readonly actual: string,
-  ) {
+  declare readonly expected: string;
+  declare readonly actual: string;
+  constructor(expected: string, actual: string) {
     super(`Currency mismatch: ${expected} vs ${actual}`);
+    this.expected = expected;
+    this.actual = actual;
   }
 }
 
@@ -60,11 +47,14 @@ export class CurrencyMismatchError extends TypeError {
  *
  * Instances are not frozen (Object.freeze costs 5-8x on construction in V8 and JSC; see bench/),
  * but every field is readonly and no operation mutates. Create values with `money()` / `fromMinor()`.
+ *
+ * The class carries the core methods only. Opt-in modules (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, `@ducatjs/money/format`, ...)
+ * add theirs when imported; see `extendMoney`.
  */
 class Money<C extends string = string> {
-  readonly currency: C;
-  readonly minor: number | bigint;
-  readonly scale: number;
+  declare readonly currency: C;
+  declare readonly minor: number | bigint;
+  declare readonly scale: number;
   /** @internal */
   constructor(currency: C, minor: number | bigint, scale: number) {
     this.currency = currency;
@@ -119,60 +109,6 @@ class Money<C extends string = string> {
   toScale(scale: number, rounding?: RoundingMode): Money<C> {
     return toScale(this, scale, rounding);
   }
-  /** `percent`% of this, e.g. `price.percentage(15, 'halfEven')` */
-  percentage(percent: Factor, rounding?: RoundingMode): Money<C> {
-    return percentage(this, percent, rounding);
-  }
-  /** this minus `percent`% */
-  discount(percent: Factor, rounding?: RoundingMode): Money<C> {
-    return discount(this, percent, rounding);
-  }
-  /** Treats this as net: `{ net, tax, gross }`, net + tax = gross exactly. */
-  addTax(percent: Factor, rounding?: RoundingMode): TaxBreakdown<C> {
-    return addTax(this, percent, rounding);
-  }
-  /** Treats this as gross: `{ net, tax, gross }`, net + tax = gross exactly. */
-  extractTax(percent: Factor, rounding?: RoundingMode): TaxBreakdown<C> {
-    return extractTax(this, percent, rounding);
-  }
-  /** Converts at an exact decimal-string rate: `eur.convert('USD', '1.0832', 'halfEven')`. */
-  convert<To extends CurrencyInput>(
-    to: To,
-    rate: Factor,
-    rounding?: RoundingMode,
-    options?: ConvertOptions,
-  ): Money<To> {
-    return convert(this, to, rate, rounding, options);
-  }
-
-  // allocation
-  /** Splits by weights; the parts always sum to this. */
-  allocate(weights: readonly Weight[], options?: AllocateOptions): Money<C>[] {
-    return allocate(this, weights, options);
-  }
-  /** Splits into `count` near-equal parts that sum to this. */
-  split(count: number, options?: AllocateOptions): Money<C>[] {
-    return split(this, count, options);
-  }
-  instalments(count: number, options?: InstalmentOptions<C>): Money<C>[] {
-    return instalments(this, count, options);
-  }
-  schedule(tranches: readonly Tranche<C>[]): Money<C>[] {
-    return schedule(this, tranches);
-  }
-  /** Tranches of at most `max`: 1000 by 300 gives 300, 300, 300, 100. */
-  chunk(max: Money<C>): Money<C>[] {
-    return chunk(this, max);
-  }
-
-  // cash rounding (cash tenders only; card payments are never rounded)
-  cashRound(options?: CashRoundOptions): Money<C> {
-    return cashRound(this, options);
-  }
-  roundToIncrement(increment: Money<C>, rounding?: RoundingMode): Money<C> {
-    return roundToIncrement(this, increment, rounding);
-  }
-
   // comparison
   /** -1, 0 or 1; throws on currency mismatch */
   compare(other: Money<C>): -1 | 0 | 1 {
@@ -229,18 +165,72 @@ class Money<C extends string = string> {
   toMinorNumber(): number {
     return toMinorNumber(this);
   }
-  /** Locale formatting via Intl: `price.format('de-DE')` gives "19,99 €" */
-  format(locale?: string, options?: Intl.NumberFormatOptions): string {
-    return format(this, locale, options);
-  }
-  formatToParts(locale?: string, options?: Intl.NumberFormatOptions): Intl.NumberFormatPart[] {
-    return formatToParts(this, locale, options);
-  }
 }
 export type { Money };
 
 export function isMoney(x: unknown): x is Money {
   return x instanceof Money;
+}
+
+/** Which module installed each added method, so a second copy of the same module can replace its own. */
+const methodOwners = new Map<string, string>();
+
+/**
+ * Names `extendMoney` refuses: the ones every object inherits, whose meaning other code relies on.
+ * `toLocaleString` is allowed, since a formatting module may want to provide it.
+ */
+const RESERVED_NAMES = new Set(
+  Object.getOwnPropertyNames(Object.prototype).filter((name) => name !== 'toLocaleString'),
+);
+
+export interface ExtendMoneyOptions {
+  /**
+   * Who is installing the methods, e.g. '@ducatjs/money/allocate'. Installing again under the same owner
+   * replaces that owner's methods, which happens when a module is loaded twice (hot reload, two copies of
+   * the package). Without an owner, or under a different one, an existing name throws.
+   */
+  readonly owner?: string;
+}
+
+/**
+ * Adds methods to every Money (this is how `@ducatjs/money/allocate`, `@ducatjs/money/format`, ... install theirs).
+ * Declare their types with `declare module '@ducatjs/money' { interface Money<C extends string> { ... } }`.
+ * The methods are non-enumerable, like class methods. A name that Money already has (one of its own
+ * methods, or one added by a different owner) throws, so two modules cannot silently fight over it.
+ */
+export function extendMoney(
+  methods: Record<string, (this: Money, ...args: never[]) => unknown>,
+  options?: ExtendMoneyOptions,
+): void {
+  const prototype = Money.prototype as unknown as Record<string, unknown>;
+  const owner = options?.owner;
+
+  for (const name of Object.keys(methods)) {
+    const method = methods[name];
+
+    if (RESERVED_NAMES.has(name)) {
+      throw new TypeError(`Money#${name} is reserved`);
+    }
+
+    // Replacing an existing method would silently change behaviour for every caller, unless it is the
+    // same function or the same owner installing its own methods again.
+    const previousOwner = methodOwners.get(name);
+    const isOwnReinstall = owner !== undefined && previousOwner === owner;
+    if (Object.hasOwn(prototype, name) && prototype[name] !== method && !isOwnReinstall) {
+      throw new TypeError(`Money#${name} is already defined`);
+    }
+
+    // Non-enumerable, like the class's own methods, so Object.keys and spreads see only the fields.
+    Object.defineProperty(prototype, name, {
+      value: method,
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
+    if (owner !== undefined) {
+      methodOwners.set(name, owner);
+    }
+  }
 }
 
 /** @internal construct from a value that may be an unsafe bigint */

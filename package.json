@@ -1,66 +1,163 @@
 {
-  "name": "ducat",
+  "name": "@ducatjs/money",
   "version": "0.1.0",
-  "private": true,
   "description": "Exact, fast, typed Money for TypeScript: integer minor units, bigint fallback, Stripe/Adyen views, allocation, cash rounding, Prisma helpers.",
-  "license": "UNLICENSED",
+  "homepage": "https://github.com/public/ducat#readme",
+  "bugs": {
+    "url": "https://github.com/public/ducat/issues"
+  },
+  "license": "MIT",
   "author": "Alex Stapleton <alexs@prol.etari.at>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/public/ducat.git"
+  },
   "files": [
     "dist",
     "src",
-    "data"
+    "data",
+    "assets/CREDITS.md",
+    "LICENSE"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/plugins/*.js",
+    "./src/plugins/*.ts"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./fn": {
+      "types": "./dist/fn.d.ts",
+      "default": "./dist/fn.js"
+    },
+    "./allocate": {
+      "types": "./dist/plugins/allocate.d.ts",
+      "default": "./dist/plugins/allocate.js"
+    },
+    "./tax": {
+      "types": "./dist/plugins/tax.d.ts",
+      "default": "./dist/plugins/tax.js"
+    },
+    "./convert": {
+      "types": "./dist/plugins/convert.d.ts",
+      "default": "./dist/plugins/convert.js"
+    },
+    "./convert/ecb": {
+      "types": "./dist/ecb.d.ts",
+      "default": "./dist/ecb.js"
+    },
+    "./convert/fetch": {
+      "types": "./dist/fetch.d.ts",
+      "default": "./dist/fetch.js"
+    },
+    "./exact": {
+      "types": "./dist/plugins/exact.d.ts",
+      "default": "./dist/plugins/exact.js"
+    },
+    "./cash": {
+      "types": "./dist/plugins/cash.d.ts",
+      "default": "./dist/plugins/cash.js"
+    },
+    "./format": {
+      "types": "./dist/plugins/format.d.ts",
+      "default": "./dist/plugins/format.js"
+    },
+    "./parse": {
+      "types": "./dist/parse.d.ts",
+      "default": "./dist/parse.js"
+    },
     "./stripe": {
-      "types": "./dist/stripe.d.ts",
-      "default": "./dist/stripe.js"
+      "types": "./dist/plugins/stripe.d.ts",
+      "default": "./dist/plugins/stripe.js"
     },
     "./adyen": {
-      "types": "./dist/adyen.d.ts",
-      "default": "./dist/adyen.js"
+      "types": "./dist/plugins/adyen.d.ts",
+      "default": "./dist/plugins/adyen.js"
+    },
+    "./checkout": {
+      "types": "./dist/plugins/checkout.d.ts",
+      "default": "./dist/plugins/checkout.js"
+    },
+    "./paypal": {
+      "types": "./dist/plugins/paypal.d.ts",
+      "default": "./dist/plugins/paypal.js"
+    },
+    "./braintree": {
+      "types": "./dist/plugins/braintree.d.ts",
+      "default": "./dist/plugins/braintree.js"
+    },
+    "./klarna": {
+      "types": "./dist/plugins/klarna.d.ts",
+      "default": "./dist/plugins/klarna.js"
+    },
+    "./stripe-fx": {
+      "types": "./dist/stripe-fx.d.ts",
+      "default": "./dist/stripe-fx.js"
+    },
+    "./adyen-fx": {
+      "types": "./dist/adyen-fx.d.ts",
+      "default": "./dist/adyen-fx.js"
     },
     "./prisma": {
-      "types": "./dist/prisma.d.ts",
-      "default": "./dist/prisma.js"
-    }
+      "types": "./dist/plugins/prisma.d.ts",
+      "default": "./dist/plugins/prisma.js"
+    },
+    "./all": {
+      "types": "./dist/plugins/all.d.ts",
+      "default": "./dist/plugins/all.js"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.test.json",
+    "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json",
     "test": "vitest run",
+    "test:deep": "DUCAT_DEEP=1 vitest run",
+    "test:db": "vitest run --config vitest.db.config.ts",
+    "test:browser": "playwright test",
+    "test:mutation": "DUCAT_MAX_RUNS=50 stryker run",
+    "fetch:dectest": "node scripts/fetch-dectest.mjs",
+    "vectors:check": "python3 scripts/gen-pydecimal-vectors.py --check",
     "test:runtimes": "node scripts/smoke-runtimes.mjs",
     "gen": "node scripts/gen-currencies.mjs",
     "gen:check": "node scripts/gen-currencies.mjs --check",
     "gen:fetch": "node scripts/gen-currencies.mjs --check --fetch",
     "bench": "node scripts/bench-all.mjs",
+    "size": "node scripts/size.mjs",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "check": "npm run lint && npm run fmt:check && npm run typecheck && npm test"
+    "check": "pnpm lint && pnpm fmt:check && pnpm typecheck && pnpm size && pnpm test",
+    "bench:vitest": "vitest bench --run"
   },
   "devDependencies": {
+    "@codspeed/vitest-plugin": "6.1.1",
+    "@playwright/test": "1.65.0",
     "@prisma/client": "^6.19.3",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.6.6",
+    "@types/pg": "8.23.1",
     "big.js": "^7.0.1",
     "currency.js": "^2.0.4",
     "decimal.js": "^10.6.0",
     "dinero.js": "^2.0.2",
     "esbuild": "^0.28.2",
     "fast-check": "^4.10.2",
+    "mysql2": "3.24.6",
     "oxfmt": "0.77.0",
     "oxlint": "1.92.0",
+    "pg": "8.23.1",
     "ts-money": "^0.4.8",
     "typescript": "^5.9.3",
     "vitest": "^4.1.12"
   },
   "engines": {
     "node": ">=24"
-  }
+  },
+  "packageManager": "pnpm@12.18.0"
 }

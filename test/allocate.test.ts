@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { runs } from './fc-config.js';
 import fc from 'fast-check';
 import {
   allocate,
@@ -13,7 +14,7 @@ import {
   equals,
   type Money,
   type Remainder,
-} from '../src/index.js';
+} from '../src/plugins/all.js';
 
 const eur = (s: string) => money(s, 'EUR');
 const dec = (ms: Money[]) => ms.map(toDecimal);
@@ -73,13 +74,35 @@ describe('allocate', () => {
             const ideal = x * BigInt(ws[i]!); // ideal share * W
             const diff = BigInt(p.minor) * W - ideal;
             if (ws[i] === 0) expect(p.minor == 0).toBe(true);
-            if (mode !== 'toFirst' && mode !== 'toLast') expect((diff < 0n ? -diff : diff) < W).toBe(true);
+            const distance = diff < 0n ? -diff : diff;
+            // largest remainder stays strictly within one unit of the share; 'first' and 'last' can
+            // land exactly one unit away, when a part whose share is already whole also receives a
+            // leftover unit
+            if (mode === 'largest') {
+              expect(distance < W).toBe(true);
+            } else if (mode === 'first' || mode === 'last') {
+              expect(distance <= W).toBe(true);
+            }
           });
           expect(dec(allocate(m, ws, { remainder: mode }))).toEqual(dec(parts));
         },
       ),
-      { numRuns: 3000 },
+      { numRuns: runs(3000) },
     );
+  });
+  it("'first' can put a part exactly one unit from its share: 0.02 by [2,1,1] -> 0.02, 0, 0", () => {
+    const twoCents = fromMinor(2, 'EUR');
+    const weights = [2, 1, 1];
+
+    // part 0's exact share is 1 unit, so |part * W - amount * weight| = |2 * 4 - 2 * 2| = 4 = W
+    const firstParts = allocate(twoCents, weights, { remainder: 'first' });
+    expect(firstParts.map((part) => part.minor)).toEqual([2, 0, 0]);
+
+    const largestParts = allocate(twoCents, weights);
+    expect(largestParts.map((part) => part.minor)).toEqual([1, 1, 0]);
+
+    const negativeParts = allocate(fromMinor(-2, 'EUR'), weights, { remainder: 'first' });
+    expect(negativeParts.map((part) => part.minor)).toEqual([-2, 0, 0]);
   });
   it('property: largest remainder never gives a unit to a smaller fraction before a larger one', () => {
     fc.assert(
