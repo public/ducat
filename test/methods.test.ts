@@ -43,6 +43,27 @@ describe('Money methods', () => {
       'isRate',
       'rateFromJSON',
       'multiplyByRatioAtScale',
+      // rate providers and their combinators
+      'rateOf',
+      'identity',
+      'rateTable',
+      'chain',
+      'reversed',
+      'via',
+      'snapshots',
+      'snapshotsFrom',
+      // exact intermediates: constructors, a batch sum, and a conversion that returns a record
+      'convertDetailed',
+      'sumExact',
+      'isExactMoney',
+      // multi-currency totals and ordering
+      'bag',
+      'comparator',
+      'sortByValue',
+      'sumByCurrency',
+      // ECB file parsers
+      'parseEcbXml',
+      'parseEcbCsv',
       'currencyExponent',
       'defineCurrency',
       'isCurrency',

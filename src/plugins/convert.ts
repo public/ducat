@@ -2,6 +2,8 @@
 import { convert } from '../convert.js';
 import type { Factor } from '../decimal.js';
 import { extendMoney, type CurrencyInput, type Money } from '../money.js';
+import type { ProviderConvertOptions } from '../convert.js';
+import type { RateProvider } from '../provider.js';
 import type { ConvertOptions, Rate } from '../rate.js';
 import type { RoundingMode } from '../rounding.js';
 
@@ -21,6 +23,13 @@ declare module '../money.js' {
       rate: Factor,
       rounding?: RoundingMode,
       options?: ConvertOptions,
+    ): Money<To>;
+    /** Converts through a provider, rounding once: `usd.convert('JPY', via('EUR', ecb), 'halfEven')`. */
+    convert<To extends CurrencyInput>(
+      to: To,
+      provider: RateProvider,
+      rounding?: RoundingMode,
+      options?: ProviderConvertOptions,
     ): Money<To>;
   }
 }
