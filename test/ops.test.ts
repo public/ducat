@@ -2,7 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { defineCurrency } from '../src/index.js';
 defineCurrency('BTC', 8);
 import fc from 'fast-check';
-import { add, addTax, convert, discount, equals, exchangeRate, extractTax, fromMinor, money, percentage, toDecimal, type Money } from '../src/index.js';
+import {
+  add,
+  addTax,
+  convert,
+  discount,
+  equals,
+  exchangeRate,
+  extractTax,
+  fromMinor,
+  money,
+  percentage,
+  toDecimal,
+  type Money,
+} from '../src/index.js';
 
 const d = (m: Money) => toDecimal(m);
 const gbp = (s: string) => money(s, 'GBP');
@@ -29,13 +42,19 @@ describe('percentages, tax and discounts', () => {
     expect(d(addTax(money('0.99', 'EUR'), '19', 'halfExpand').tax)).toBe('0.19');
   });
   it('property: tax breakdowns always add up', () => {
-    fc.assert(fc.property(fc.integer({ min: 0, max: 1e12 }), fc.constantFrom('20', '19', '7', '5.5', '8.1', '0', '25', '17.5'), (amt, rate) => {
-      const g = fromMinor(amt, 'EUR');
-      const x = extractTax(g, rate, 'halfEven');
-      expect(equals(add(x.net, x.tax), g)).toBe(true);
-      const a = addTax(g, rate, 'halfEven');
-      expect(equals(add(a.net, a.tax), a.gross)).toBe(true);
-    }));
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 1e12 }),
+        fc.constantFrom('20', '19', '7', '5.5', '8.1', '0', '25', '17.5'),
+        (amt, rate) => {
+          const g = fromMinor(amt, 'EUR');
+          const x = extractTax(g, rate, 'halfEven');
+          expect(equals(add(x.net, x.tax), g)).toBe(true);
+          const a = addTax(g, rate, 'halfEven');
+          expect(equals(add(a.net, a.tax), a.gross)).toBe(true);
+        },
+      ),
+    );
   });
   it('discount', () => {
     expect(d(discount(money('19.99', 'EUR'), 10, 'halfEven'))).toBe('17.99');

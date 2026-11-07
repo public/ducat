@@ -34,7 +34,10 @@ eur.minor = 5;
 // @ts-expect-error not a known rounding mode
 money('1.005', 'EUR', { rounding: 'halfUp' });
 
-void ok; void wrong; void inUsd; void parts;
+void ok;
+void wrong;
+void inUsd;
+void parts;
 
 // --- methods carry the same currency checks as the free functions
 eur.add(eur);
@@ -49,4 +52,5 @@ const chained: Money<'EUR'> = eur.add(eur).multiply('1.075', 'halfEven').negate(
 dyn.add(fromMinor(1, 'USD' as string)); // erased types: checked at runtime instead
 // @ts-expect-error not a known rounding mode
 eur.multiply('1.1', 'halfUp');
-void viaMethod; void chained;
+void viaMethod;
+void chained;

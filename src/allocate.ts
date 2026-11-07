@@ -42,7 +42,14 @@ function weightsScaled(ws: readonly Weight[]): { ws: bigint[]; scale: number } {
 }
 
 /** Distributes `rem` extra units among the buckets; `frac` are the per-bucket remainders (for 'largest'). */
-function distribute<T extends number | bigint>(shares: T[], rem: number, weights: readonly (number | bigint)[], frac: readonly (number | bigint)[] | null, mode: Remainder, one: T): void {
+function distribute<T extends number | bigint>(
+  shares: T[],
+  rem: number,
+  weights: readonly (number | bigint)[],
+  frac: readonly (number | bigint)[] | null,
+  mode: Remainder,
+  one: T,
+): void {
   if (rem === 0) return;
   const n = shares.length;
   const eligible: number[] = [];
@@ -51,10 +58,16 @@ function distribute<T extends number | bigint>(shares: T[], rem: number, weights
     shares[i] = (typeof one === 'number' ? (shares[i] as number) + k : (shares[i] as bigint) + BigInt(k)) as T;
   };
   switch (mode) {
-    case 'toFirst': return plus(eligible[0]!, rem);
-    case 'toLast': return plus(eligible[eligible.length - 1]!, rem);
-    case 'first': for (let k = 0; k < rem; k++) plus(eligible[k]!, 1); return;
-    case 'last': for (let k = 0; k < rem; k++) plus(eligible[eligible.length - 1 - k]!, 1); return;
+    case 'toFirst':
+      return plus(eligible[0]!, rem);
+    case 'toLast':
+      return plus(eligible[eligible.length - 1]!, rem);
+    case 'first':
+      for (let k = 0; k < rem; k++) plus(eligible[k]!, 1);
+      return;
+    case 'last':
+      for (let k = 0; k < rem; k++) plus(eligible[eligible.length - 1 - k]!, 1);
+      return;
     case 'largest': {
       const f = frac!;
       eligible.sort((a, b) => (f[a]! > f[b]! ? -1 : f[a]! < f[b]! ? 1 : a - b));
@@ -73,7 +86,11 @@ function distribute<T extends number | bigint>(shares: T[], rem: number, weights
  *     allocate(money('100', 'EUR'), [1, 1, 1])        // 33.34, 33.33, 33.33
  *     allocate(money('0.05', 'EUR'), ['70', '30'])    // 0.04, 0.01
  */
-export function allocate<C extends string>(m: Money<C>, weights: readonly Weight[], options?: AllocateOptions): Money<C>[] {
+export function allocate<C extends string>(
+  m: Money<C>,
+  weights: readonly Weight[],
+  options?: AllocateOptions,
+): Money<C>[] {
   const n = weights.length;
   if (n === 0) throw new RangeError('allocate() needs at least one weight');
   const mode = options?.remainder ?? 'largest';
@@ -82,10 +99,15 @@ export function allocate<C extends string>(m: Money<C>, weights: readonly Weight
 
   // fast path: integer weights whose products with the amount fit exactly in a double
   if (typeof x === 'number') {
-    let total = 0, maxW = 0, ok = true;
+    let total = 0,
+      maxW = 0,
+      ok = true;
     for (let i = 0; i < n; i++) {
       const w = weights[i];
-      if (typeof w !== 'number' || !(w >= 0) || !Number.isSafeInteger(w)) { ok = false; break; }
+      if (typeof w !== 'number' || !(w >= 0) || !Number.isSafeInteger(w)) {
+        ok = false;
+        break;
+      }
       total += w;
       if (w > maxW) maxW = w;
     }
@@ -98,7 +120,13 @@ export function allocate<C extends string>(m: Money<C>, weights: readonly Weight
         const p = x * ws[i]!;
         let q = Math.floor(p / total);
         let r = p - q * total;
-        if (r < 0) { q -= 1; r += total; } else if (r >= total) { q += 1; r -= total; } // float-quotient fix-up
+        if (r < 0) {
+          q -= 1;
+          r += total;
+        } else if (r >= total) {
+          q += 1;
+          r -= total;
+        } // float-quotient fix-up
         shares[i] = q;
         frac[i] = r;
         rem -= q;
@@ -108,7 +136,8 @@ export function allocate<C extends string>(m: Money<C>, weights: readonly Weight
           // selection instead of sort: rem < number of non-zero weights, n small
           for (; rem > 0; rem--) {
             let best = -1;
-            for (let i = 0; i < n; i++) if (ws[i]! > 0 && frac[i]! >= 0 && (best < 0 || frac[i]! > frac[best]!)) best = i;
+            for (let i = 0; i < n; i++)
+              if (ws[i]! > 0 && frac[i]! >= 0 && (best < 0 || frac[i]! > frac[best]!)) best = i;
             shares[best]! += 1;
             frac[best] = -1;
           }
@@ -159,7 +188,11 @@ export interface InstalmentOptions<C extends string> {
  *     instalments(money('100', 'EUR'), 3, { remainder: 'toLast' })          // 33.33, 33.33, 33.34
  *     instalments(money('100', 'EUR'), 3, { unit: money('1', 'EUR') })      // 34.00, 33.00, 33.00
  */
-export function instalments<C extends string>(total: Money<C>, count: number, options?: InstalmentOptions<NoInfer<C>>): Money<C>[] {
+export function instalments<C extends string>(
+  total: Money<C>,
+  count: number,
+  options?: InstalmentOptions<NoInfer<C>>,
+): Money<C>[] {
   if (!Number.isSafeInteger(count) || count < 1) throw new RangeError(`Invalid count ${count}`);
   const mode = options?.remainder ?? 'toFirst';
   const unit = options?.unit;
@@ -167,10 +200,11 @@ export function instalments<C extends string>(total: Money<C>, count: number, op
   if (unit.currency !== total.currency) throw new CurrencyMismatchError(total.currency, unit.currency);
   if (!(unit.minor > 0)) throw new RangeError('unit must be positive');
   const s = Math.max(total.scale, unit.scale);
-  const t = toScale(total, s), u = BigInt(scaleUp(unit.minor, s - unit.scale));
+  const t = toScale(total, s),
+    u = BigInt(scaleUp(unit.minor, s - unit.scale));
   const neg = t.minor < 0;
   const tv = BigInt(t.minor) * (neg ? -1n : 1n);
-  const per = tv / (u * BigInt(count)) * u;
+  const per = (tv / (u * BigInt(count))) * u;
   const parts = new Array<bigint>(count).fill(per);
   let left = tv - per * BigInt(count);
   // spread whole units first (for 'first'/'last'), then the sub-unit leftover
@@ -200,8 +234,10 @@ export function schedule<C extends string>(total: Money<C>, tranches: readonly T
   const pcts: Weight[] = [];
   let restIdx = -1;
   tranches.forEach((t, i) => {
-    if ('percent' in t) { pctIdx.push(i); pcts.push(t.percent); }
-    else if ('rest' in t) {
+    if ('percent' in t) {
+      pctIdx.push(i);
+      pcts.push(t.percent);
+    } else if ('rest' in t) {
       if (restIdx >= 0) throw new RangeError('schedule() allows only one rest tranche');
       restIdx = i;
     }
@@ -214,7 +250,10 @@ export function schedule<C extends string>(total: Money<C>, tranches: readonly T
     for (const w of ws) sum += w;
     const hundred = 100n * pow10n(scale);
     if (sum > hundred) throw new RangeError('schedule() percentages exceed 100');
-    const parts = allocate(total, [...ws, hundred - sum].map((w) => toSafe(w)));
+    const parts = allocate(
+      total,
+      [...ws, hundred - sum].map((w) => toSafe(w)),
+    );
     pctIdx.forEach((ti, k) => {
       let p = parts[k]!;
       const cap = (tranches[ti] as { cap?: Money<C> }).cap;
@@ -224,7 +263,10 @@ export function schedule<C extends string>(total: Money<C>, tranches: readonly T
     });
   }
   tranches.forEach((t, i) => {
-    if ('amount' in t) { out[i] = t.amount; left = subtract(left, t.amount); }
+    if ('amount' in t) {
+      out[i] = t.amount;
+      left = subtract(left, t.amount);
+    }
   });
   if (left.minor < 0) throw new RangeError(`schedule() tranches exceed the total by ${negate(left)}`);
   if (restIdx >= 0) out[restIdx] = left;
@@ -238,8 +280,10 @@ export function chunk<C extends string>(total: Money<C>, max: Money<NoInfer<C>>)
   if (total.minor < 0) throw new RangeError('chunk() total must not be negative');
   const out: Money<C>[] = [];
   let left = total;
-  while (compare(left, max) > 0) { out.push(max as Money<C>); left = subtract(left, max); }
+  while (compare(left, max) > 0) {
+    out.push(max as Money<C>);
+    left = subtract(left, max);
+  }
   if (left.minor > 0 || out.length === 0) out.push(left);
   return out;
 }
-

@@ -14,7 +14,11 @@ export interface DecimalLike {
 }
 
 /** Money from a Decimal (or decimal string) column. Exact; throws if it has more decimals than the currency. */
-export function fromDecimal<C extends CurrencyInput>(value: DecimalLike | string, currency: C, options?: MoneyOptions): Money<C> {
+export function fromDecimal<C extends CurrencyInput>(
+  value: DecimalLike | string,
+  currency: C,
+  options?: MoneyOptions,
+): Money<C> {
   return money(typeof value === 'string' ? value : value.toFixed(), currency, options);
 }
 
@@ -53,14 +57,21 @@ export function decimalMoneyField<const A extends string, const C extends Curren
   currency: { currency: C },
 ): { needs: { [P in A]: true }; compute: (row: Row<A, DecimalLike>) => Money<C> };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function decimalMoneyField(amount: string, c: { currencyField: string } | { currency: string }): { needs: Record<string, true>; compute: (row: any) => Money } {
+export function decimalMoneyField(
+  amount: string,
+  c: { currencyField: string } | { currency: string },
+): { needs: Record<string, true>; compute: (row: any) => Money } {
   if ('currencyField' in c) {
     return {
       needs: { [amount]: true, [c.currencyField]: true },
-      compute: (row: Record<string, unknown>) => fromDecimal(row[amount] as DecimalLike, row[c.currencyField] as string),
+      compute: (row: Record<string, unknown>) =>
+        fromDecimal(row[amount] as DecimalLike, row[c.currencyField] as string),
     };
   }
-  return { needs: { [amount]: true }, compute: (row: Record<string, unknown>) => fromDecimal(row[amount] as DecimalLike, c.currency) };
+  return {
+    needs: { [amount]: true },
+    compute: (row: Record<string, unknown>) => fromDecimal(row[amount] as DecimalLike, c.currency),
+  };
 }
 
 /**
@@ -68,12 +79,17 @@ export function decimalMoneyField(amount: string, c: { currencyField: string } |
  * Minor units are a bigint (Prisma BigInt). Throws if the value has a non-standard scale, because
  * the column cannot record it.
  */
-export function toMinorColumns<const A extends string, const K extends string>(m: Money, amount: A, currency: K): Row<A, bigint> & Row<K, string> {
+export function toMinorColumns<const A extends string, const K extends string>(
+  m: Money,
+  amount: A,
+  currency: K,
+): Row<A, bigint> & Row<K, string> {
   return { [amount]: toMinorAtIsoScale(m), [currency]: m.currency } as Row<A, bigint> & Row<K, string>;
 }
 
 function toMinorAtIsoScale(m: Money): bigint {
   const iso = fromMinor(0, m.currency).scale;
-  if (m.scale !== iso) throw new RangeError(`${m} has scale ${m.scale}; round() it to ${iso} decimals before storing minor units`);
+  if (m.scale !== iso)
+    throw new RangeError(`${m} has scale ${m.scale}; round() it to ${iso} decimals before storing minor units`);
   return toMinor(m);
 }

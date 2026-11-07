@@ -17,15 +17,32 @@ const engines = [
 ].filter(([, bin]) => bin === process.execPath || existsSync(bin));
 
 const build = (entry, out) =>
-  execFileSync('npx', ['esbuild', entry, '--bundle', '--format=esm', '--platform=neutral', '--main-fields=module,main', `--outfile=${out}`, '--log-level=warning'], { stdio: 'inherit' });
+  execFileSync(
+    'npx',
+    [
+      'esbuild',
+      entry,
+      '--bundle',
+      '--format=esm',
+      '--platform=neutral',
+      '--main-fields=module,main',
+      `--outfile=${out}`,
+      '--log-level=warning',
+    ],
+    { stdio: 'inherit' },
+  );
 build('bench/designs.ts', 'bench/out/designs.mjs');
 build('bench/libs.ts', 'bench/out/libs.mjs');
 
-let md = `# Benchmark results\n\n**Indicative only.** Machine: ${cpus().length} vCPU ${cpus()[0]?.model.trim()} (shared, noisy VPS). ` +
+let md =
+  `# Benchmark results\n\n**Indicative only.** Machine: ${cpus().length} vCPU ${cpus()[0]?.model.trim()} (shared, noisy VPS). ` +
   `Each figure is the median of 5 short samples after a short warm-up; run-to-run variation on this box is often ±20-30% and ` +
   `occasionally 2x, so compare orders of magnitude and relative positions, not exact numbers. ` +
   `Generated ${new Date().toISOString().slice(0, 10)} by \`npm run bench\`.\n\n`;
-for (const [section, file] of [['Library comparison', 'bench/out/libs.mjs'], ['Representation choice', 'bench/out/designs.mjs']]) {
+for (const [section, file] of [
+  ['Library comparison', 'bench/out/libs.mjs'],
+  ['Representation choice', 'bench/out/designs.mjs'],
+]) {
   md += `## ${section}\n\n`;
   for (const [name, bin, args] of engines) {
     process.stderr.write(`running ${file} on ${name}...\n`);

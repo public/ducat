@@ -63,7 +63,13 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
   }
   if (twiceRem !== d) {
     // number vs number or bigint vs bigint; mixed comparison is exact in JS anyway
-    if (mode === 'halfEven' || mode === 'halfExpand' || mode === 'halfTrunc' || mode === 'halfCeil' || mode === 'halfFloor')
+    if (
+      mode === 'halfEven' ||
+      mode === 'halfExpand' ||
+      mode === 'halfTrunc' ||
+      mode === 'halfCeil' ||
+      mode === 'halfFloor'
+    )
       return twiceRem > d;
     throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
   }
@@ -90,8 +96,20 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
   let r = p - q * d; // exact: |q*d| <= |p| + d <= MAX
   // the float quotient can be off by one ulp; fix so that r has the sign of p and |r| < d
   if (p >= 0) {
-    if (r < 0) { q -= 1; r += d; } else if (r >= d) { q += 1; r -= d; }
-  } else if (r > 0) { q += 1; r -= d; } else if (r <= -d) { q -= 1; r += d; }
+    if (r < 0) {
+      q -= 1;
+      r += d;
+    } else if (r >= d) {
+      q += 1;
+      r -= d;
+    }
+  } else if (r > 0) {
+    q += 1;
+    r -= d;
+  } else if (r <= -d) {
+    q -= 1;
+    r += d;
+  }
   if (r === 0) return q + 0; // + 0 normalises -0
   const neg = p < 0;
   if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) q += neg ? -1 : 1;

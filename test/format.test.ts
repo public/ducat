@@ -43,24 +43,43 @@ describe('parse', () => {
     expect(() => parse('1.234', 'EUR', 'en-US')).toThrow(); // 3 decimals for EUR
   });
   it('property: parse(format(x)) === x across locales', () => {
-    const locales = ['en-US', 'de-DE', 'fr-FR', 'de-CH', 'ja-JP', 'ar-EG', 'hi-IN', 'sv-SE', 'pt-BR', 'en-IN', 'fa-IR', 'th-TH'];
-    fc.assert(fc.property(
-      fc.oneof(fc.integer({ min: -1e13, max: 1e13 }), fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n })),
-      fc.constantFrom('EUR', 'JPY', 'KWD', 'USD', 'CHF'),
-      fc.constantFrom(...locales),
-      (amt, cur, loc) => {
-        const m = fromMinor(amt, cur);
-        expect(equals(parse(format(m, loc), cur, loc), m)).toBe(true);
-        expect(equals(parse(format(m, loc, { currencySign: 'accounting' }), cur, loc), m)).toBe(true);
-      },
-    ), { numRuns: 2000 });
+    const locales = [
+      'en-US',
+      'de-DE',
+      'fr-FR',
+      'de-CH',
+      'ja-JP',
+      'ar-EG',
+      'hi-IN',
+      'sv-SE',
+      'pt-BR',
+      'en-IN',
+      'fa-IR',
+      'th-TH',
+    ];
+    fc.assert(
+      fc.property(
+        fc.oneof(fc.integer({ min: -1e13, max: 1e13 }), fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n })),
+        fc.constantFrom('EUR', 'JPY', 'KWD', 'USD', 'CHF'),
+        fc.constantFrom(...locales),
+        (amt, cur, loc) => {
+          const m = fromMinor(amt, cur);
+          expect(equals(parse(format(m, loc), cur, loc), m)).toBe(true);
+          expect(equals(parse(format(m, loc, { currencySign: 'accounting' }), cur, loc), m)).toBe(true);
+        },
+      ),
+      { numRuns: 2000 },
+    );
   });
 });
 
 describe('Intl hand-off', () => {
   it('property: minor / 10^scale is bit-identical to Number(decimal string) below 10^15', () => {
-    fc.assert(fc.property(fc.integer({ min: -(1e15 - 1), max: 1e15 - 1 }), fc.integer({ min: 0, max: 15 }), (v, s) => {
-      expect(v / 10 ** s).toBe(Number(toDecimal(fromMinor(v, 'EUR', s))));
-    }), { numRuns: 50000 });
+    fc.assert(
+      fc.property(fc.integer({ min: -(1e15 - 1), max: 1e15 - 1 }), fc.integer({ min: 0, max: 15 }), (v, s) => {
+        expect(v / 10 ** s).toBe(Number(toDecimal(fromMinor(v, 'EUR', s))));
+      }),
+      { numRuns: 50000 },
+    );
   });
 });

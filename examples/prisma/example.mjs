@@ -15,7 +15,10 @@ const db = new PrismaClient().$extends({
 await db.order.deleteMany();
 const total = money('1234567.89', 'EUR');
 await db.order.create({
-  data: { ...toMinorColumns(total, 'totalMinor', 'currency'), shipping: toDecimalValue(money('4.95', 'EUR'), Prisma.Decimal) },
+  data: {
+    ...toMinorColumns(total, 'totalMinor', 'currency'),
+    shipping: toDecimalValue(money('4.95', 'EUR'), Prisma.Decimal),
+  },
 });
 const order = await db.order.findFirstOrThrow();
 const grand = add(order.total, order.shippingMoney);

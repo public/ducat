@@ -1,9 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import {
-  abs, add, clamp, compare, CurrencyMismatchError, defineCurrency, divide, equals, fromJSON, fromMinor, greaterThan,
-  isNegative, isZero, max, min, money, multiply, negate, ratio, round, RoundingError, subtract, sum, toDecimal,
-  toMinor, toMinorNumber, toScale, zero, type Money,
+  abs,
+  add,
+  clamp,
+  compare,
+  CurrencyMismatchError,
+  defineCurrency,
+  divide,
+  equals,
+  fromJSON,
+  fromMinor,
+  greaterThan,
+  isNegative,
+  isZero,
+  max,
+  min,
+  money,
+  multiply,
+  negate,
+  ratio,
+  round,
+  RoundingError,
+  subtract,
+  sum,
+  toDecimal,
+  toMinor,
+  toMinorNumber,
+  toScale,
+  zero,
+  type Money,
 } from '../src/index.js';
 
 const eur = (s: string, o?: Parameters<typeof money>[2]) => money(s, 'EUR', o);
@@ -33,7 +59,8 @@ describe('construction', () => {
     expect(() => money(NaN, 'EUR')).toThrow();
   });
   it('rejects malformed input', () => {
-    for (const bad of ['', '-', '1.', '.5', '1,5', '1..2', 'abc', '1 2', '0x10', 'Infinity']) expect(() => eur(bad)).toThrow();
+    for (const bad of ['', '-', '1.', '.5', '1,5', '1..2', 'abc', '1 2', '0x10', 'Infinity'])
+      expect(() => eur(bad)).toThrow();
   });
   it('rejects unknown currencies but accepts registered ones', () => {
     expect(() => money('1', 'XYZ')).toThrow(/Unknown currency/);
@@ -163,42 +190,53 @@ describe('properties', () => {
   );
   const m = amount.map((v) => fromMinor(v, 'EUR'));
   it('add is associative and commutative, with zero as identity', () => {
-    fc.assert(fc.property(m, m, m, (a, b, c) => {
-      expect(equals(add(add(a, b), c), add(a, add(b, c)))).toBe(true);
-      expect(equals(add(a, b), add(b, a))).toBe(true);
-      expect(equals(add(a, zero('EUR')), a)).toBe(true);
-      expect(equals(subtract(add(a, b), b), a)).toBe(true);
-    }));
+    fc.assert(
+      fc.property(m, m, m, (a, b, c) => {
+        expect(equals(add(add(a, b), c), add(a, add(b, c)))).toBe(true);
+        expect(equals(add(a, b), add(b, a))).toBe(true);
+        expect(equals(add(a, zero('EUR')), a)).toBe(true);
+        expect(equals(subtract(add(a, b), b), a)).toBe(true);
+      }),
+    );
   });
   it('agrees with bigint arithmetic', () => {
-    fc.assert(fc.property(m, m, (a, b) => {
-      expect(BigInt(add(a, b).minor)).toBe(BigInt(a.minor) + BigInt(b.minor));
-      expect(compare(a, b)).toBe(BigInt(a.minor) < BigInt(b.minor) ? -1 : BigInt(a.minor) > BigInt(b.minor) ? 1 : 0);
-    }));
+    fc.assert(
+      fc.property(m, m, (a, b) => {
+        expect(BigInt(add(a, b).minor)).toBe(BigInt(a.minor) + BigInt(b.minor));
+        expect(compare(a, b)).toBe(BigInt(a.minor) < BigInt(b.minor) ? -1 : BigInt(a.minor) > BigInt(b.minor) ? 1 : 0);
+      }),
+    );
   });
   it('representation invariant: number iff safe', () => {
-    fc.assert(fc.property(m, m, (a, b) => {
-      for (const r of [add(a, b), subtract(a, b), multiply(a, 3), negate(a)]) {
-        const v = r.minor;
-        if (typeof v === 'bigint') expect(v > BigInt(Number.MAX_SAFE_INTEGER) || v < -BigInt(Number.MAX_SAFE_INTEGER)).toBe(true);
-        else expect(Number.isSafeInteger(v)).toBe(true);
-      }
-    }));
+    fc.assert(
+      fc.property(m, m, (a, b) => {
+        for (const r of [add(a, b), subtract(a, b), multiply(a, 3), negate(a)]) {
+          const v = r.minor;
+          if (typeof v === 'bigint')
+            expect(v > BigInt(Number.MAX_SAFE_INTEGER) || v < -BigInt(Number.MAX_SAFE_INTEGER)).toBe(true);
+          else expect(Number.isSafeInteger(v)).toBe(true);
+        }
+      }),
+    );
   });
   it('decimal string, JSON and minor-unit round trips', () => {
-    fc.assert(fc.property(m, fc.constantFrom('EUR', 'JPY', 'KWD', 'CLF'), (a, cur) => {
-      const x = fromMinor(a.minor, cur);
-      expect(equals(money(toDecimal(x), cur), x)).toBe(true);
-      expect(equals(fromJSON(JSON.parse(JSON.stringify(x))), x)).toBe(true);
-      expect(equals(fromMinor(toMinor(x), cur), x)).toBe(true);
-    }));
+    fc.assert(
+      fc.property(m, fc.constantFrom('EUR', 'JPY', 'KWD', 'CLF'), (a, cur) => {
+        const x = fromMinor(a.minor, cur);
+        expect(equals(money(toDecimal(x), cur), x)).toBe(true);
+        expect(equals(fromJSON(JSON.parse(JSON.stringify(x))), x)).toBe(true);
+        expect(equals(fromMinor(toMinor(x), cur), x)).toBe(true);
+      }),
+    );
   });
   it('multiply by a ratio matches the exact rational result', () => {
-    fc.assert(fc.property(m, fc.integer({ min: -100000, max: 100000 }), fc.integer({ min: 1, max: 100000 }), (a, n, d) => {
-      const r = multiply(a, ratio(n, d), 'floor');
-      const exact = BigInt(a.minor) * BigInt(n);
-      const lo = BigInt(r.minor) * BigInt(d);
-      expect(lo <= exact && exact < lo + BigInt(d)).toBe(true);
-    }));
+    fc.assert(
+      fc.property(m, fc.integer({ min: -100000, max: 100000 }), fc.integer({ min: 1, max: 100000 }), (a, n, d) => {
+        const r = multiply(a, ratio(n, d), 'floor');
+        const exact = BigInt(a.minor) * BigInt(n);
+        const lo = BigInt(r.minor) * BigInt(d);
+        expect(lo <= exact && exact < lo + BigInt(d)).toBe(true);
+      }),
+    );
   });
 });

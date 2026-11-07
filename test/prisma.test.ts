@@ -28,7 +28,10 @@ describe('Prisma / DB helpers', () => {
     expect(h.needs).toEqual({ price: true, cur: true });
   });
   it('write columns', () => {
-    expect(toMinorColumns(money('12.34', 'EUR'), 'totalMinor', 'currency')).toEqual({ totalMinor: 1234n, currency: 'EUR' });
+    expect(toMinorColumns(money('12.34', 'EUR'), 'totalMinor', 'currency')).toEqual({
+      totalMinor: 1234n,
+      currency: 'EUR',
+    });
     expect(() => toMinorColumns(money('1.234', 'EUR', { scale: 3 }), 'a', 'c')).toThrow(/round/);
   });
 });

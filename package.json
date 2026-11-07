@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "description": "Exact, fast, typed Money for TypeScript: integer minor units, bigint fallback, Stripe/Adyen views, allocation, cash rounding, Prisma helpers.",
-  "type": "module",
-  "sideEffects": false,
   "license": "UNLICENSED",
   "author": "Alex Stapleton <alexs@prol.etari.at>",
+  "files": [
+    "dist",
+    "src",
+    "data"
+  ],
+  "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,14 +29,6 @@
       "types": "./dist/prisma.d.ts",
       "default": "./dist/prisma.js"
     }
-  },
-  "files": [
-    "dist",
-    "src",
-    "data"
-  ],
-  "engines": {
-    "node": ">=24"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -62,5 +59,8 @@
     "ts-money": "^0.4.8",
     "typescript": "^5.9.3",
     "vitest": "^4.1.12"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

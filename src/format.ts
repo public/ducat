@@ -4,14 +4,19 @@ import { POW10 } from './decimal.js';
 
 const cache = new Map<string, Intl.NumberFormat>();
 // one-entry memo in front of the Map: formatting in a loop is almost always the same locale/currency
-let lastLocale: string | undefined, lastCurrency = '', lastScale = -1, lastF: Intl.NumberFormat | undefined;
+let lastLocale: string | undefined,
+  lastCurrency = '',
+  lastScale = -1,
+  lastF: Intl.NumberFormat | undefined;
 
 let stringInput: boolean | undefined;
 /** ES2023 Intl.NumberFormat v3 formats decimal strings exactly; older engines convert to Number. */
 function supportsStringInput(): boolean {
   if (stringInput === undefined) {
     try {
-      stringInput = new Intl.NumberFormat('en', { useGrouping: false }).format('9007199254740993' as unknown as number) === '9007199254740993';
+      stringInput =
+        new Intl.NumberFormat('en', { useGrouping: false }).format('9007199254740993' as unknown as number) ===
+        '9007199254740993';
     } catch {
       stringInput = false;
     }
@@ -19,8 +24,19 @@ function supportsStringInput(): boolean {
   return stringInput;
 }
 
-function formatter(m: Money, locale: string | undefined, options: Intl.NumberFormatOptions | undefined): Intl.NumberFormat {
-  if (options === undefined && lastF !== undefined && locale === lastLocale && m.currency === lastCurrency && m.scale === lastScale) return lastF;
+function formatter(
+  m: Money,
+  locale: string | undefined,
+  options: Intl.NumberFormatOptions | undefined,
+): Intl.NumberFormat {
+  if (
+    options === undefined &&
+    lastF !== undefined &&
+    locale === lastLocale &&
+    m.currency === lastCurrency &&
+    m.scale === lastScale
+  )
+    return lastF;
   const key = options === undefined ? `${locale}|${m.currency}|${m.scale}` : null;
   let f = key === null ? undefined : cache.get(key);
   if (f === undefined) {
@@ -38,7 +54,12 @@ function formatter(m: Money, locale: string | undefined, options: Intl.NumberFor
       cache.set(key, f);
     }
   }
-  if (key !== null) { lastLocale = locale; lastCurrency = m.currency; lastScale = m.scale; lastF = f; }
+  if (key !== null) {
+    lastLocale = locale;
+    lastCurrency = m.currency;
+    lastScale = m.scale;
+    lastF = f;
+  }
   return f;
 }
 
@@ -74,7 +95,10 @@ export function formatToParts(m: Money, locale?: string, options?: Intl.NumberFo
   return formatter(m, locale, options).formatToParts(intlValue(m));
 }
 
-interface Symbols { group: string; decimal: string }
+interface Symbols {
+  group: string;
+  decimal: string;
+}
 const symCache = new Map<string, Symbols>();
 function symbols(locale: string | undefined): Symbols {
   const key = locale ?? '';
@@ -91,7 +115,10 @@ function symbols(locale: string | undefined): Symbols {
 }
 
 // Zero code points of the decimal digit blocks Intl uses (arab, arabext, deva, beng, thai, fullwide, ...).
-const ZEROS = [0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66, 0xe50, 0xed0, 0xf20, 0x1040, 0x17e0, 0x1810, 0xff10];
+const ZEROS = [
+  0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66, 0xe50, 0xed0, 0xf20, 0x1040,
+  0x17e0, 0x1810, 0xff10,
+];
 function asciiDigit(cp: number): number {
   if (cp >= 48 && cp <= 57) return cp - 48;
   for (const z of ZEROS) if (cp >= z && cp <= z + 9) return cp - z;
@@ -105,21 +132,34 @@ function asciiDigit(cp: number): number {
  * U+2212) or accounting parentheses anywhere in the affixes make it negative. Inside the number only
  * digits, the locale's group separator (before the decimal separator) and one decimal separator are allowed.
  */
-export function parse<C extends CurrencyInput>(input: string, currency: C, locale?: string, options?: MoneyOptions): Money<C> {
+export function parse<C extends CurrencyInput>(
+  input: string,
+  currency: C,
+  locale?: string,
+  options?: MoneyOptions,
+): Money<C> {
   const { group, decimal } = symbols(locale);
   const chars = Array.from(input);
-  let first = -1, last = -1;
+  let first = -1,
+    last = -1;
   for (let i = 0; i < chars.length; i++) {
-    if (asciiDigit(chars[i]!.codePointAt(0)!) >= 0) { if (first < 0) first = i; last = i; }
+    if (asciiDigit(chars[i]!.codePointAt(0)!) >= 0) {
+      if (first < 0) first = i;
+      last = i;
+    }
   }
   if (first < 0) throw new SyntaxError(`Cannot parse "${input}": no digits`);
   const prefix = chars.slice(0, first).join('');
   const suffix = chars.slice(last + 1).join('');
   const affix = prefix + suffix;
-  if (!/^[\p{L}\p{Sc}\p{Z}\s\p{Cf}.()+\-−]*$/u.test(affix)) throw new SyntaxError(`Cannot parse "${input}": unexpected characters`);
+  if (!/^[\p{L}\p{Sc}\p{Z}\s\p{Cf}.()+\-−]*$/u.test(affix))
+    throw new SyntaxError(`Cannot parse "${input}": unexpected characters`);
   const neg = /[-−(]/.test(affix);
   const isGroup = (ch: string) =>
-    ch === group || (/^[\s\p{Z}]$/u.test(group) && /^[\s\p{Z}]$/u.test(ch)) || ((group === '’' || group === "'") && (ch === "'" || ch === '’')) || ch === '٬';
+    ch === group ||
+    (/^[\s\p{Z}]$/u.test(group) && /^[\s\p{Z}]$/u.test(ch)) ||
+    ((group === '’' || group === "'") && (ch === "'" || ch === '’')) ||
+    ch === '٬';
   let out = prefix.endsWith(decimal) ? '0.' : '';
   let seenDecimal = out !== '';
   for (let i = first; i <= last; i++) {

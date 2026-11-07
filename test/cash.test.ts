@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { CASH_RULES, cashRound, cashRule, money, roundToIncrement, toDecimal } from '../src/index.js';
 
-const cr = (amt: string, cur: string, country?: string) => toDecimal(cashRound(money(amt, cur), country ? { country } : undefined));
+const cr = (amt: string, cur: string, country?: string) =>
+  toDecimal(cashRound(money(amt, cur), country ? { country } : undefined));
 
 describe('cash rounding', () => {
   it('CHF to 0.05', () => {
-    expect(['10.01', '10.02', '10.03', '10.04', '10.07', '10.08'].map((a) => cr(a, 'CHF'))).toEqual(['10.00', '10.00', '10.05', '10.05', '10.05', '10.10']);
+    expect(['10.01', '10.02', '10.03', '10.04', '10.07', '10.08'].map((a) => cr(a, 'CHF'))).toEqual([
+      '10.00',
+      '10.00',
+      '10.05',
+      '10.05',
+      '10.05',
+      '10.10',
+    ]);
   });
   it('SEK and NOK to whole kronor (1-49 down, 50-99 up)', () => {
     expect([cr('10.49', 'SEK'), cr('10.50', 'SEK'), cr('10.99', 'SEK')]).toEqual(['10.00', '11.00', '11.00']);
@@ -15,12 +23,30 @@ describe('cash rounding', () => {
     expect(['0.24', '0.25', '0.74', '0.75'].map((a) => cr(a, 'DKK'))).toEqual(['0.00', '0.50', '0.50', '1.00']);
   });
   it('CAD and AUD to 0.05, NZD to 0.10', () => {
-    expect(['1.01', '1.02', '1.03', '1.04', '1.06', '1.07', '1.08', '1.09'].map((a) => cr(a, 'CAD'))).toEqual(['1.00', '1.00', '1.05', '1.05', '1.05', '1.05', '1.10', '1.10']);
+    expect(['1.01', '1.02', '1.03', '1.04', '1.06', '1.07', '1.08', '1.09'].map((a) => cr(a, 'CAD'))).toEqual([
+      '1.00',
+      '1.00',
+      '1.05',
+      '1.05',
+      '1.05',
+      '1.05',
+      '1.10',
+      '1.10',
+    ]);
     expect(cr('1.02', 'AUD')).toBe('1.00');
     expect([cr('1.04', 'NZD'), cr('1.05', 'NZD'), cr('1.06', 'NZD')]).toEqual(['1.00', '1.10', '1.10']);
   });
   it('HUF to 5 forint, CZK to whole koruna', () => {
-    expect(['1', '2', '3', '4', '6', '7', '8', '9'].map((a) => cr(a, 'HUF'))).toEqual(['0.00', '0.00', '5.00', '5.00', '5.00', '5.00', '10.00', '10.00']);
+    expect(['1', '2', '3', '4', '6', '7', '8', '9'].map((a) => cr(a, 'HUF'))).toEqual([
+      '0.00',
+      '0.00',
+      '5.00',
+      '5.00',
+      '5.00',
+      '5.00',
+      '10.00',
+      '10.00',
+    ]);
     expect(cr('10.50', 'CZK')).toBe('11.00');
   });
   it('EUR only by country', () => {

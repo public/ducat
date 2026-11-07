@@ -62,7 +62,9 @@ describe('Adyen', () => {
     expect(toDecimal(fromAdyen({ value: 15000, currency: 'IDR' }))).toBe('15000.00');
   });
   it('agrees with ISO except for the documented exceptions', () => {
-    const diff = Object.entries(ADYEN_EXPONENTS).filter(([c, e]) => c in ISO_EXPONENTS && ISO_EXPONENTS[c as keyof typeof ISO_EXPONENTS] !== e).map(([c]) => c);
+    const diff = Object.entries(ADYEN_EXPONENTS)
+      .filter(([c, e]) => c in ISO_EXPONENTS && ISO_EXPONENTS[c as keyof typeof ISO_EXPONENTS] !== e)
+      .map(([c]) => c);
     expect(diff.sort()).toEqual(['CLP', 'CVE', 'IDR', 'ISK']);
     expect(adyenExponent('KWD')).toBe(3);
   });

@@ -36,7 +36,10 @@ export function parsePlainDecimal(s: string): { digits: number | bigint; scale: 
   let i = 0;
   let neg = false;
   let c = s.charCodeAt(0);
-  if (c === 45 /* - */ || c === 43 /* + */) { neg = c === 45; i = 1; }
+  if (c === 45 /* - */ || c === 43 /* + */) {
+    neg = c === 45;
+    i = 1;
+  }
   let acc = 0;
   let digitsSeen = 0;
   let scale = -1;
@@ -74,7 +77,10 @@ export function parseDecimal(s: string): { digits: bigint; scale: number } {
   const [, sign, int, frac = '', exp = '0'] = m;
   let digits = BigInt(int! + frac);
   let scale = frac.length - Number(exp);
-  if (scale < 0) { digits *= pow10n(-scale); scale = 0; }
+  if (scale < 0) {
+    digits *= pow10n(-scale);
+    scale = 0;
+  }
   return { digits: sign === '-' ? -digits : digits, scale };
 }
 
@@ -86,9 +92,15 @@ function gcd(a: bigint, b: bigint): bigint {
 
 function makeRatio(num: bigint, den: bigint): Ratio {
   if (den === 0n) throw new RangeError('Division by zero');
-  if (den < 0n) { num = -num; den = -den; }
+  if (den < 0n) {
+    num = -num;
+    den = -den;
+  }
   const g = gcd(num, den);
-  if (g > 1n) { num /= g; den /= g; }
+  if (g > 1n) {
+    num /= g;
+    den /= g;
+  }
   const safe = (v: bigint) => (v <= MAXN && v >= -MAXN ? Number(v) : NaN);
   return { num, den, n: safe(num), d: safe(den) };
 }
@@ -103,7 +115,8 @@ const INT_RATIOS: Ratio[] = [];
  */
 export function ratio(x: Factor, den?: Factor): Ratio {
   if (den !== undefined) {
-    const a = ratio(x), b = ratio(den);
+    const a = ratio(x),
+      b = ratio(den);
     return makeRatio(a.num * b.den, a.den * b.num);
   }
   if (typeof x === 'object') return x;
@@ -132,16 +145,41 @@ export function ratio(x: Factor, den?: Factor): Ratio {
 
 /** num/den -> exact decimal string if the expansion terminates, else null. */
 export function ratioToDecimal(r: Ratio): string | null {
-  let d = r.den, twos = 0, fives = 0;
-  while (d % 2n === 0n) { d /= 2n; twos++; }
-  while (d % 5n === 0n) { d /= 5n; fives++; }
+  let d = r.den,
+    twos = 0,
+    fives = 0;
+  while (d % 2n === 0n) {
+    d /= 2n;
+    twos++;
+  }
+  while (d % 5n === 0n) {
+    d /= 5n;
+    fives++;
+  }
   if (d !== 1n) return null;
   const scale = Math.max(twos, fives);
   return formatScaled(r.num * (pow10n(scale) / r.den), scale);
 }
 
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
-const ZPAD = ['', '0', '00', '000', '0000', '00000', '000000', '0000000', '00000000', '000000000', '0000000000', '00000000000', '000000000000', '0000000000000', '00000000000000', '000000000000000'];
+const ZPAD = [
+  '',
+  '0',
+  '00',
+  '000',
+  '0000',
+  '00000',
+  '000000',
+  '0000000',
+  '00000000',
+  '000000000',
+  '0000000000',
+  '00000000000',
+  '000000000000',
+  '0000000000000',
+  '00000000000000',
+  '000000000000000',
+];
 export function formatScaled(v: number | bigint, scale: number): string {
   if (typeof v === 'number' && scale <= 15) {
     if (scale === 0) return String(v);
@@ -151,7 +189,13 @@ export function formatScaled(v: number | bigint, scale: number): string {
     if (a + p <= MAX) {
       let q = Math.floor(a / p);
       let r = a - q * p;
-      if (r < 0) { q -= 1; r += p; } else if (r >= p) { q += 1; r -= p; }
+      if (r < 0) {
+        q -= 1;
+        r += p;
+      } else if (r >= p) {
+        q += 1;
+        r -= p;
+      }
       let f = String(r);
       if (f.length < scale) f = ZPAD[scale - f.length] + f;
       return (v < 0 ? '-' : '') + q + '.' + f;

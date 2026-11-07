@@ -17,12 +17,27 @@ const suites = [
   ['deno', DENO, ['run', '-A', 'node_modules/vitest/vitest.mjs', 'run']],
 ];
 for (const [name, bin, args] of suites) {
-  if (bin !== process.execPath && !existsSync(bin)) { console.log(`skip ${name} (not installed)`); continue; }
+  if (bin !== process.execPath && !existsSync(bin)) {
+    console.log(`skip ${name} (not installed)`);
+    continue;
+  }
   console.log(`\n== full suite on ${name}`);
   run(bin, args);
 }
 
-execFileSync('npx', ['esbuild', 'test/smoke.ts', '--bundle', '--format=esm', '--platform=neutral', '--outfile=bench/out/smoke.mjs', '--log-level=warning'], { stdio: 'inherit' });
+execFileSync(
+  'npx',
+  [
+    'esbuild',
+    'test/smoke.ts',
+    '--bundle',
+    '--format=esm',
+    '--platform=neutral',
+    '--outfile=bench/out/smoke.mjs',
+    '--log-level=warning',
+  ],
+  { stdio: 'inherit' },
+);
 const smoke = [
   [process.execPath, ['bench/out/smoke.mjs']],
   ['/usr/bin/node', ['bench/out/smoke.mjs']],

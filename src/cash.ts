@@ -8,7 +8,11 @@ import { currencyExponent } from './currency.js';
  * Default rounding 'halfExpand' (nearest, ties away from zero), which is what the statutory
  * cash-rounding rules (SE, NO, DK, HU, CZ, FI, BE ...) prescribe.
  */
-export function roundToIncrement<C extends string>(m: Money<C>, increment: Money<NoInfer<C>>, rounding: RoundingMode = 'halfExpand'): Money<C> {
+export function roundToIncrement<C extends string>(
+  m: Money<C>,
+  increment: Money<NoInfer<C>>,
+  rounding: RoundingMode = 'halfExpand',
+): Money<C> {
   if (m.currency !== increment.currency) throw new CurrencyMismatchError(m.currency, increment.currency);
   if (!(increment.minor > 0)) throw new RangeError('increment must be positive');
   const s = Math.max(m.scale, increment.scale);

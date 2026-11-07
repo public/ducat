@@ -19,7 +19,8 @@ const iso = ISO_EXPONENTS as Readonly<Record<string, number>>;
  * hold balances in). ISO codes cannot be redefined: use an explicit `scale` for extra precision.
  */
 export function defineCurrency(code: string, exponent: number): void {
-  if (!Number.isInteger(exponent) || exponent < 0 || exponent > 30) throw new RangeError(`Invalid exponent ${exponent}`);
+  if (!Number.isInteger(exponent) || exponent < 0 || exponent > 30)
+    throw new RangeError(`Invalid exponent ${exponent}`);
   if (typeof iso[code] === 'number') throw new TypeError(`${code} is an ISO 4217 currency and cannot be redefined`);
   const prev = custom.get(code);
   if (prev !== undefined && prev !== exponent) throw new TypeError(`${code} is already defined with exponent ${prev}`);
