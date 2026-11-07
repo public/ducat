@@ -30,20 +30,23 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  allocate(this: Money, weights: readonly Weight[], options?: AllocateOptions) {
-    return allocate(this, weights, options);
+extendMoney(
+  {
+    allocate(this: Money, weights: readonly Weight[], options?: AllocateOptions) {
+      return allocate(this, weights, options);
+    },
+    split(this: Money, count: number, options?: AllocateOptions) {
+      return split(this, count, options);
+    },
+    instalments(this: Money, count: number, options?: InstalmentOptions<string>) {
+      return instalments(this, count, options);
+    },
+    schedule(this: Money, tranches: readonly Tranche<string>[]) {
+      return schedule(this, tranches);
+    },
+    chunk(this: Money, max: Money) {
+      return chunk(this, max);
+    },
   },
-  split(this: Money, count: number, options?: AllocateOptions) {
-    return split(this, count, options);
-  },
-  instalments(this: Money, count: number, options?: InstalmentOptions<string>) {
-    return instalments(this, count, options);
-  },
-  schedule(this: Money, tranches: readonly Tranche<string>[]) {
-    return schedule(this, tranches);
-  },
-  chunk(this: Money, max: Money) {
-    return chunk(this, max);
-  },
-});
+  { owner: '@ducatjs/money/allocate' },
+);
