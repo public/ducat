@@ -79,11 +79,25 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
 export function divRound(p: number, d: number, mode: RoundingMode): number {
   if (d === 1) return p;
   if (!(Math.abs(p) + d <= MAX)) return Number(divRoundBig(BigInt(p), BigInt(d), mode));
-  // % is exact on integers (it never rounds), so the remainder has p's sign and |r| < d, and
-  // (p - r) / d is an exact integer quotient truncated toward zero.
-  const r = p % d;
-  if (r === 0) return p / d + 0; // + 0 normalises -0
-  let q = (p - r) / d;
+  let q = Math.trunc(p / d);
+  let r = p - q * d; // exact: |q*d| <= |p| + d <= MAX
+  // the float quotient can be off by one ulp; fix so that r has the sign of p and |r| < d
+  if (p >= 0) {
+    if (r < 0) {
+      q -= 1;
+      r += d;
+    } else if (r >= d) {
+      q += 1;
+      r -= d;
+    }
+  } else if (r > 0) {
+    q += 1;
+    r -= d;
+  } else if (r <= -d) {
+    q -= 1;
+    r += d;
+  }
+  if (r === 0) return q + 0; // + 0 normalises -0
   const neg = p < 0;
   if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) q += neg ? -1 : 1;
   return q + 0;

@@ -162,13 +162,36 @@ export function ratioToDecimal(r: Ratio): string | null {
   return formatScaled(r.num * (pow10n(scale) / r.den), scale);
 }
 
+// Zero padding for the fraction digits, built once: indexing it is faster than padStart.
+const ZPAD = Array.from({ length: 16 }, (_, length) => '0'.repeat(length));
+
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
 export function formatScaled(v: number | bigint, scale: number): string {
-  const negative = v < 0;
-  let digits = String(negative ? -v : v);
-  if (scale > 0) {
-    digits = digits.padStart(scale + 1, '0');
-    digits = digits.slice(0, -scale) + '.' + digits.slice(-scale);
+  if (typeof v === 'number' && scale <= 15) {
+    if (scale === 0) return String(v);
+    // integer/fraction split with exact integer arithmetic (the float quotient is corrected)
+    const a = v < 0 ? 0 - v : v;
+    const p = POW10[scale]!;
+    if (a + p <= MAX) {
+      let q = Math.floor(a / p);
+      let r = a - q * p;
+      if (r < 0) {
+        q -= 1;
+        r += p;
+      } else if (r >= p) {
+        q += 1;
+        r -= p;
+      }
+      let f = String(r);
+      if (f.length < scale) f = ZPAD[scale - f.length] + f;
+      return (v < 0 ? '-' : '') + q + '.' + f;
+    }
   }
-  return negative ? '-' + digits : digits;
+  const neg = v < 0;
+  let s = typeof v === 'number' ? String(neg ? 0 - v : v) : (neg ? -v : v).toString();
+  if (scale > 0) {
+    if (s.length <= scale) s = '0'.repeat(scale - s.length + 1) + s;
+    s = s.slice(0, s.length - scale) + '.' + s.slice(s.length - scale);
+  }
+  return neg ? '-' + s : s;
 }
