@@ -2,7 +2,8 @@
 
 Raw output of the money benchmark (`compare/bench/bench.ts`) and the fixed-point benchmark
 (`compare/fixed/bench.ts`), one runtime per run, run back to back on the same machine against the
-ducat 0.1.0 release candidate. `pnpm tables` renders them. The earlier pre-release run is kept in
+ducat 0.1.0 release candidate: library code at commit 8ebce79, benchmark harness at fa5c41a (which made the fixed-point
+benchmark run). `pnpm tables` renders them. The earlier pre-release run is kept in
 `../genoa-2026-11-07/` for reference.
 
 ## Machine

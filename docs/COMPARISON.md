@@ -98,7 +98,7 @@ float's error (`0.30000000000000004`) instead of being rejected.
 
 ### Speed
 
-One quiet AMD EPYC Genoa machine (Vultr, Frankfurt; kernel 6.8; CPU steal 0.02%). Each runtime was a separate run
+One quiet AMD EPYC Genoa machine (Vultr, Frankfurt; kernel 6.8; CPU steal 0.03–0.04%). Each runtime was a separate run
 on the same machine. Each cell is nanoseconds per operation over 1,000 values: the median of 5 rounds, with library
 order shuffled each round.
 
@@ -115,13 +115,14 @@ order shuffled each round.
 
 Measured on 2026-11-07 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on the ducat 0.1.0 release candidate. Lower is better; the faster of ducat and the fastest other money library is in bold.
 
-Where ducat is not fastest (every cell where another library measured faster):
+The ducat column measures its methods API. Where ducat is not fastest (every cell where another library measured
+faster):
 
 - **Formatting:** every library spends most of its time inside `Intl.NumberFormat`. currency.js (formatting a float)
   and dinero.js 1 are faster on Node (405 and 432 ns against 437), and currency.js on Bun (293 against 304). On Deno
   ducat and currency.js are level (459 and 462).
 - **Comparing on Bun:** libraries that compare plain numbers are faster: currency.js 7.4, js-money 8.8, ts-money 9.1,
-  @screeny05/ts-money 9.4 and monetra 9.5 ns, against ducat's 11.5. On Node ducat is level with currency.js (8.10 and
+  @screeny05/ts-money 9.4 and monetra 9.5 ns, against ducat's 11.5. On Node ducat is slightly ahead of currency.js (8.10 against
   8.38).
 - **toDecimal on Bun:** @screeny05/ts-money, ts-money and js-money are slightly faster (81.7, 84.5 and 86.4 ns against
   88.1).
@@ -194,7 +195,7 @@ The ducat row here also measures `Money`, not `Fixed`.
 
 ### Speed (fixed point)
 
-Same machine and method as above; multiply by 1.075 and divide by 3, rounded half-up to 2 decimals. Node 24.22.2
+Same machine and method as above; multiply by 1.075 and divide by 3, rounded half away from zero (`halfExpand`) to 2 decimals. Node 24.22.2
 shown; Bun and Deno are in `compare/RESULTS.md`.
 
 | ns/op                       |  parse |    add | multiply |  divide | compare | toString |
@@ -207,10 +208,18 @@ shown; Bun and Deno are in `compare/RESULTS.md`.
 | @formatjs/bigdecimal 0.2.10 |    131 |   39.9 |      n/a |     n/a |    26.6 |     56.8 |
 | bigint-money 2.0.1          |    619 |   54.4 |   3.1 µs |  3.0 µs |    15.5 |      527 |
 
-**ducat is not the fastest fixed-point library.** It is fastest on add on every runtime and on compare on Node and Deno,
-but bigdecimal.js is faster on parse, multiply and divide (divide by 3: 65 against ducat's 185 ns on Node, and 37
-against 527 ns on Bun, where ducat's exact division goes through bigint), and js-big-decimal and ethers are faster at
-`toString`.
+**ducat is not the fastest fixed-point library.** It is fastest on add on every runtime and on compare on Node and Deno.
+Every cell where another library measured faster:
+
+- **parse:** bigdecimal.js and js-big-decimal on every runtime (Node 52 and 70 ns against ducat's 133; Bun 35 and 40
+  against 103; Deno 40 and 73 against 144), and @formatjs/bigdecimal narrowly on Node and Deno (131 and 130).
+- **multiply:** bigdecimal.js on every runtime (Node 86 against 94 ns).
+- **divide by 3:** bigdecimal.js on every runtime (Node 65 against 185 ns; Bun 37 against 527; Deno 56 against 157),
+  and dnum on Bun (348). ducat's exact division by a non-terminating factor goes through bigint, which is slowest on
+  Bun.
+- **compare on Bun:** bigdecimal.js, by a hair (8.55 against 8.63 ns).
+- **toString:** js-big-decimal is fastest everywhere (about 2–5 ns), followed by ethers (4–6 ns), against ducat's 34
+  on Node and Deno and 86 on Bun.
 
 ## Notable money libraries in other languages
 

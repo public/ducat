@@ -1,4 +1,4 @@
-// Markdown tables from a benchmark results directory such as compare/results/genoa-2026-11-07/,
+// Markdown tables from a benchmark results directory such as compare/results/genoa-2026-11-07-rc/,
 // which holds one sub-directory per runtime with the runner's bench.json and env.txt. Pure: reads
 // files, returns strings; compare/tables.ts decides where they go.
 import { existsSync, readFileSync } from 'node:fs';
