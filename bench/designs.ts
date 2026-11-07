@@ -200,7 +200,8 @@ record(
 }
 
 const designs = ['A:number+bigint', 'A+freeze', 'B:bigint', 'C:string', 'A:bigint-path'];
-log(`# Representation benchmark — ${runtimeName()} — ns/op (median of 7), lower is better`);
+log(`### ${runtimeName()} — ns/op, lower is better`);
+log("");
 log(`| op | ${designs.join(' | ')} |`);
 log(`|---|${designs.map(() => '---:').join('|')}|`);
 for (const [op, row] of Object.entries(results)) {

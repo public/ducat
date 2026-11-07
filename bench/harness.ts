@@ -25,9 +25,13 @@ export interface Result {
 
 /**
  * Runs `fn` (which performs `inner` operations per call) for ~`ms` milliseconds after warm-up,
- * in 7 samples, and reports the median ns/op.
+ * in SAMPLES samples, and reports the median ns/op.
  */
-export function bench(name: string, fn: () => unknown, inner = 1, ms = 150): Result {
+// Kept short on purpose (the box is shared): ~40 ms warm-up + 5 samples of ~8 ms per case.
+const DEFAULT_MS = ((globalThis as any).BENCH_MS as number | undefined) ?? 40;
+const SAMPLES = 5;
+
+export function bench(name: string, fn: () => unknown, inner = 1, ms = DEFAULT_MS): Result {
   // warm-up: let the JIT tier up
   let t0 = now();
   while (now() - t0 < ms) consume(fn());
@@ -36,17 +40,17 @@ export function bench(name: string, fn: () => unknown, inner = 1, ms = 150): Res
   for (;;) {
     t0 = now();
     for (let i = 0; i < iters; i++) consume(fn());
-    if (now() - t0 > ms / 7) break;
+    if (now() - t0 > ms / SAMPLES) break;
     iters *= 2;
   }
   const samples: number[] = [];
-  for (let s = 0; s < 7; s++) {
+  for (let s = 0; s < SAMPLES; s++) {
     t0 = now();
     for (let i = 0; i < iters; i++) consume(fn());
     samples.push(((now() - t0) * 1e6) / (iters * inner));
   }
   samples.sort((a, b) => a - b);
-  const nsPerOp = samples[3]!;
+  const nsPerOp = samples[SAMPLES >> 1]!;
   return { name, nsPerOp, opsPerSec: 1e9 / nsPerOp };
 }
 

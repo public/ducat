@@ -1,5 +1,5 @@
 // Same seven operations across money libraries. Each op processes N=1000 pre-built values;
-// results are ns per single operation (median of 7 samples). Indicative only: see README.
+// results are ns per single operation (median of 5 short samples). Indicative only: see README.
 import { bench, log, runtimeName } from './harness.ts';
 import * as M from '../src/index.ts';
 import { dinero, add as dAdd, multiply as dMul, allocate as dAlloc, transformScale, halfEven, toDecimal as dToDecimal, compare as dCompare } from 'dinero.js';
@@ -132,7 +132,7 @@ for (const [name, impl] of Object.entries(impls)) {
     format: () => { let l; for (let i = 0; i < N; i++) l = impl.format(xs[i]); return l; },
     compare: () => { let c = 0; for (let i = 1; i < N; i++) c += impl.compare(xs[i - 1], xs[i]) < 0 ? 1 : 0; return c; },
   };
-  for (const op of ops) (table[op] ??= {})[name] = bench(`${name} ${op}`, run[op], op === 'add' || op === 'compare' ? N - 1 : N, 120).nsPerOp;
+  for (const op of ops) (table[op] ??= {})[name] = bench(`${name} ${op}`, run[op], op === 'add' || op === 'compare' ? N - 1 : N).nsPerOp;
 }
 
 const names = Object.keys(impls).filter((n) => !only || only.includes(n));
