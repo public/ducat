@@ -1,4 +1,9 @@
+<p align="center"><img src="assets/logo.png" width="128" height="128" alt="A gold ducat of Doge Francesco Foscari, 1423–1457"></p>
+<p align="center"><sub>Gold ducat of Francesco Foscari, Venice, 1423–1457. Photo: Francesco Bini, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>, via Wikimedia Commons (<a href="assets/CREDITS.md">credits</a>).</sub></p>
+
 # ducat
+
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/public/ducat?utm_source=badge)
 
 An exact, fast, typed Money type for TypeScript. It has zero runtime dependencies and runs on Node, Bun, Deno and browsers.
 
@@ -333,7 +338,7 @@ These are stated over the proved kernel (`divRound`):
 
 ## Benchmarks (indicative only)
 
-> These were run on a shared, noisy 4-vCPU Broadwell VPS. Runs are deliberately short, and run-to-run variation is ±20–30%, sometimes 2x. Use them to compare designs and libraries by order of magnitude, not as absolute numbers. To reproduce: `pnpm bench` (writes `bench/RESULTS.md`).
+> These were run on a shared, noisy 4-vCPU Broadwell VPS. Runs are deliberately short, and run-to-run variation is ±20–30%, sometimes 2x. Use them to compare designs and libraries by order of magnitude, not as absolute numbers. To reproduce: `pnpm bench` (writes `bench/RESULTS.md`). Separately, `bench/money.bench.ts` holds vitest benchmarks of the library's own hot paths that run in CI on every push and pull request with [CodSpeed](https://codspeed.io) (`pnpm bench:vitest` locally).
 
 ns per operation, this lib vs the fastest and slowest alternatives (full tables for all 7 libraries × 5 engines are in [bench/RESULTS.md](bench/RESULTS.md)):
 
