@@ -321,7 +321,7 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **Methods on `Money`** (Alex, 2026-11-07: free functions only were "awkward to use"): `price.add(fee).multiply('1.075').split(3)`. Each method is the free function of the same name, and the free functions stay exported. Operands are `Money` only, never bare numbers (monetra's `add(5)` means 5 minor units, a trap we avoid).
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic (Alex: "what do other libs use? pick that"). That is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
 - **Stripe UGX is ×100** (Alex, 2026-11-07, quoting Stripe's docs): "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
-- **Dual ESM + CJS build; Node ≥ 20** (Alex: OK). Node 18 is EOL, and dropping it also removes the lossy `format()` above 2^53 there.
+- **ESM only; Node ≥ 24** (Alex: "you can target Node >=24"). Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
 - **Withdrawn and non-ISO codes** go in an opt-in `ducat/historic` table (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…), with withdrawal dates.
 - **Processors:** Stripe and Adyen now; Checkout.com, PayPal, Braintree and Klarna views to come (Alex: "all of those").
 - **Test matrix:** real Postgres, MySQL and SQLite for the DB helpers; real browsers (Chromium, Firefox, WebKit via Playwright) alongside Node, Bun, Deno and the engine shells.
@@ -335,7 +335,6 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **Withdrawn and non-ISO codes** (ANG, STD, CNH, VEF) aren't in the core registry. Stripe/Adyen list them, so `defineCurrency` is needed to hold them. There is no historical ISO data (validity dates).
 - **Formatting gaps:**
   - No pluggable formatter for engines without Intl.
-  - Node 18 loses digits beyond 2^53 in `format()`.
   - `parse` is lenient about group sizes (it accepts `1,23,4.00` in en-US). It also doesn't check the currency symbol in the text against the `currency` argument.
 - **Not yet benchmarked:**
   - Browsers themselves; only their engines were tested via the jsvu shells.
@@ -344,4 +343,4 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **No Money arrays or columnar ops** (e.g. summing a `Float64Array`/`BigInt64Array` of minor units).
 - **The ISO table is always bundled** (about 1.3 kB gz). Per-currency imports like dinero's would make the minimum bundle smaller.
 - **Minor-unit columns can't round-trip values with a non-ISO scale.** `toMinorColumns` refuses them by design. There is no `scale` column helper.
-- **No fixed API names or package name yet**, no docs site and no CI config. Only an ESM build (no CJS).
+- **No docs site and no CI config yet.**
