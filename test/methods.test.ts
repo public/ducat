@@ -38,6 +38,11 @@ describe('Money methods', () => {
       'parse',
       'cashRule',
       'exchangeRate',
+      // rate constructors and the conversion kernel, which work on rates rather than an amount
+      'impliedRate',
+      'isRate',
+      'rateFromJSON',
+      'multiplyByRatioAtScale',
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
