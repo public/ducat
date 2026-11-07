@@ -7,8 +7,8 @@ Everything in the JavaScript section is reproducible with the harness in `compar
 the same benchmark operations and the same bundle snippet for every library. Library versions are listed below. Where
 another library does something ducat doesn't, or does it better, this document says so.
 
-> **Note.** These numbers were measured on ducat's pre-release code in November 2026. The tables are regenerated
-> from `compare/results` for each release.
+> **Note.** These numbers were measured on ducat's pre-release code in November 2026. The tables come from
+> `compare/results` (`pnpm tables` writes them to `compare/RESULTS.md`), and this document is updated from them.
 
 ## JavaScript and TypeScript libraries
 
@@ -47,7 +47,7 @@ Libraries tested (npm weekly downloads in parentheses, November 2026):
 ### Correctness: one test battery for every library
 
 41 test vectors, run through a small adapter per library that uses the library's own API as its documentation
-shows. A capability the library doesn't have counts as "n/a", never as a failure. Results are identical on Node 24,
+shows. A capability the library doesn't have counts as "n/a", never as a failure. Results were identical when run on Node 24,
 Bun 1.4 and Deno 2.9.
 
 The vectors cover:
@@ -87,12 +87,11 @@ float's error (`0.30000000000000004`) instead of being rejected.
 **Issues found in other libraries** (reported here neutrally; each has a regression test in ducat's suite):
 
 - **monetra 2.3.0:** allocating a negative amount loses minor units: −100.00 split three ways gives −33.33 × 3.
-- **@screeny05/ts-money 1.2.0:** `allocate` throws when the amount is smaller than the number of parts (1 or 2 cents
-  split three ways).
+- **@screeny05/ts-money 1.2.0:** `allocate` throws when the amount is smaller than the number of parts (1 cent split three ways).
 - **js-money 0.6.3:** `Money.fromDecimal(1.15, 'EUR')` throws, because 1.15 × 100 is 114.99999999999999 in floating
   point.
-- **Float-based multiplication** (js-money, ts-money, @screeny05/ts-money, currency.js, dinero.js 1): 0.50 × 1.15 rounds to 0.57 instead
-  of 0.58, even when a correct rounding function is supplied.
+- **Float-based multiplication** (js-money, ts-money, @screeny05/ts-money): 0.50 × 1.15 rounds to 0.57 instead of
+  0.58, even when a correct rounding function is supplied.
 - **money-math 2.6.3:** `mul('-0.25', '0.50')` returns `-0.11`; the exact product is −0.125.
 - **Number-based libraries above 2⁵³ minor units** (90 trillion in a 2-decimal currency): amounts are silently
   corrupted (e.g. 90,071,992,547,409.93 becomes …409.94).
@@ -101,7 +100,7 @@ float's error (`0.30000000000000004`) instead of being rejected.
 
 One quiet AMD EPYC Genoa machine (Vultr, Frankfurt; kernel 6.8; CPU steal 0.02%). Each runtime was a separate run
 on the same machine. Each cell is nanoseconds per operation over 1,000 values: the median of 5 rounds, with library
-order shuffled each round. Lower is better.
+order shuffled each round.
 
 | ns/op     |                                                        node 22.11.0 |                                                             bun 1.4.4 |                                                          deno 2.9.8 |
 | --------- | ------------------------------------------------------------------: | --------------------------------------------------------------------: | ------------------------------------------------------------------: |
@@ -116,6 +115,8 @@ order shuffled each round. Lower is better.
 
 Measured on 2026-11-07 on one AMD EPYC Genoa vCPU with Node 22.11, Bun 1.4.4 and Deno 2.9.8, using an earlier ducat build from before the module split; numbers for the current code need a new clean-machine run (compare/runner). Lower is better; the faster of ducat and the fastest other money library is in bold.
 
+That build ran on Node 22.11, below the `engines` requirement of Node 24 for releases.
+
 Where ducat is not fastest:
 
 - **Formatting:** every library spends most of its time inside `Intl.NumberFormat`. currency.js (formatting a float)
@@ -127,7 +128,8 @@ Where ducat is not fastest:
 ### Bundle size
 
 The same program in every library (create an amount, add, multiply, print a decimal string), bundled with esbuild and
-minified; "whole package" bundles everything the package exports.
+minified, then gzipped; sizes in KiB. "Whole package" bundles each library's root entry; for ducat that is the core,
+and everything (`@ducatjs/money/all`) is about 18.9 kB gzipped.
 
 | library             | program, min | program, gzip | whole package, min | whole package, gzip |
 | ------------------- | -----------: | ------------: | -----------------: | ------------------: |
@@ -146,7 +148,8 @@ minified; "whole package" bundles everything the package exports.
 | decimal.js          |      31.6 kB |       12.6 kB |            31.6 kB |             12.6 kB |
 | ts-money            |      91.3 kB |       30.7 kB |            91.3 kB |             30.7 kB |
 
-ducat's figure includes exact decimal-string parsing, which dinero.js and currency.js leave to the caller.
+ducat's figure includes exact decimal-string parsing; dinero.js leaves parsing to the caller, and currency.js parses
+into a float.
 Everything beyond the core (allocation, tax, conversion, formatting, processors, database helpers) is an opt-in
 import and costs nothing unless used.
 
@@ -171,10 +174,12 @@ Vectors: ties in both modes and both signs, float traps, values beyond 2⁵³, e
 | @formatjs/bigdecimal 0.2.10 |    7 |              0 |     0 |     0 |  20 |
 | bigint-money 2.0.1          |   27 |              0 |     0 |     0 |   0 |
 
-ducat is not alone here: js-big-decimal, bigdecimal.js and bigint-money also pass every vector they support. The ducat
-row measures `Money`; a `Fixed` adapter is added with the next run.
+ducat is not alone here: js-big-decimal, bigdecimal.js and bigint-money pass all 27, and dnum and @formatjs/bigdecimal
+pass every vector they support. The ducat row measures `Money`; a `Fixed` adapter is added with the next run.
 
 ### Bundle size (fixed point)
+
+The ducat row here also measures `Money`, not `Fixed`.
 
 | library                                   | program, min | program, gzip | whole package, min | whole package, gzip |
 | ----------------------------------------- | -----------: | ------------: | -----------------: | ------------------: |
@@ -227,7 +232,7 @@ runner (`compare/runner/`) and the committed results:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm compare          # run the batteries, benchmarks and sizes, and write compare/results
+pnpm compare          # run the correctness batteries and regenerate the tables
 pnpm compare:check    # fail if ducat misses a vector or the committed tables are stale
 pnpm tables           # regenerate the tables in compare/RESULTS.md from compare/results
 ```

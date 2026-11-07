@@ -51,13 +51,15 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 - **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
   units, float traps and negative allocations.
 - **Fastest on arithmetic:** it is the fastest on parse, add, multiply, allocate, toDecimal and compare on Node and
-  Deno, by 1.3× to 30× (for example add 11.7 ns against monetra's 15.1 and dinero.js's 250; allocate 51 ns against
-  bigint-money's 495).
+  Deno. Against the fastest other library the margin ranges from 1.04× (compare: 7.67 against 8.00 ns) to about 10×
+  (allocate: 51 against bigint-money's 495 ns); against dinero.js 2 it is 20× to 30×.
 - **Where it isn't fastest:** formatting, where currency.js (a float) and dinero.js 1 are slightly faster on Node and
   Bun, and comparisons on Bun, where libraries comparing plain numbers are faster.
-- **Not the smallest:** currency.js, bigint-money and dinero.js 2 are smaller for the same snippet. ducat's core
-  includes exact decimal parsing, bigint support and the ISO table; everything else is opt-in.
-- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on a pre-release build under Node 22.11.
+- **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
+  for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
+  is opt-in.
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on a pre-release build under Node 22.11; sizes are
+  gzipped KiB.
 
 ## Design
 
