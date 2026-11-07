@@ -48,7 +48,9 @@ describe('generated rounding kernel', () => {
           const numberPath = numberPathOutcome(dividend, divisor, mode);
           const oracle = oracleOutcome(BigInt(dividend), BigInt(divisor), mode);
           if (kernel !== numberPath || kernel !== oracle) {
-            mismatches.push(`${dividend} / ${divisor} ${mode}: kernel ${kernel}, number ${numberPath}, oracle ${oracle}`);
+            mismatches.push(
+              `${dividend} / ${divisor} ${mode}: kernel ${kernel}, number ${numberPath}, oracle ${oracle}`,
+            );
           }
         }
       }
@@ -58,10 +60,7 @@ describe('generated rounding kernel', () => {
 
   it('agree with the number path over the whole safe-integer range', () => {
     const dividends = fc.integer({ min: -Number.MAX_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER });
-    const divisors = fc.oneof(
-      fc.integer({ min: 1, max: 1000 }),
-      fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }),
-    );
+    const divisors = fc.oneof(fc.integer({ min: 1, max: 1000 }), fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }));
     fc.assert(
       fc.property(dividends, divisors, fc.constantFrom(...ALL_MODES), (dividend, divisor, mode) => {
         expect(numberPathOutcome(dividend, divisor, mode)).toBe(kernelOutcome(BigInt(dividend), BigInt(divisor), mode));

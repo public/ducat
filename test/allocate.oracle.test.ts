@@ -33,7 +33,9 @@ describe('allocate matches the proved Lean model', () => {
           const parts = allocate(amount, weights, { remainder: strategy });
           const actual = parts.map((part) => String(part.minor)).join();
           if (actual !== expected) {
-            mismatches.push(`${oracleCase.amount} by [${oracleCase.weights}] (${form}): ${actual}, expected ${expected}`);
+            mismatches.push(
+              `${oracleCase.amount} by [${oracleCase.weights}] (${form}): ${actual}, expected ${expected}`,
+            );
           }
         }
       }

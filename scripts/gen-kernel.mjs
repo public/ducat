@@ -41,7 +41,10 @@ function leanFiles(dir) {
 
 /** Everything the generated files depend on: the Lean sources and the pinned toolchain and packages. */
 function leanSourcesHash() {
-  const files = [...leanFiles(proofsDir), ...['lakefile.toml', 'lean-toolchain', 'lake-manifest.json'].map((name) => join(proofsDir, name))];
+  const files = [
+    ...leanFiles(proofsDir),
+    ...['lakefile.toml', 'lean-toolchain', 'lake-manifest.json'].map((name) => join(proofsDir, name)),
+  ];
   const hash = createHash('sha256');
   for (const file of files.map((path) => relative(root, path)).sort()) {
     hash.update(`${file}\0${readFileSync(join(root, file), 'utf8')}\0`);
@@ -83,7 +86,10 @@ function checkAxioms(run) {
     throw new Error(`expected ${expected} axiom reports from CheckAxioms.lean, got ${reports.length}:\n${output}`);
   }
   for (const [, theorem, list] of reports) {
-    const extra = (list ?? '').split(',').map((name) => name.trim()).filter((name) => name && !allowed.has(name));
+    const extra = (list ?? '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter((name) => name && !allowed.has(name));
     if (extra.length > 0) {
       throw new Error(`${theorem} depends on non-standard axioms: ${extra.join(', ')}`);
     }

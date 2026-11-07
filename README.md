@@ -342,13 +342,14 @@ These are stated over the proved kernel (`divRound`):
 
 - **The printer** that turns the Lean kernels into TypeScript, and the `divRoundBig` dispatch. The generated kernels are compared with an independent bigint oracle (`test/kernel.test.ts`).
 - **The number fast path** of `divRound`. It is compared with the generated kernels for every `p ∈ [−300, 300]`, `d ∈ [1, 40]` in every mode, and with fast-check over the full safe-integer range, on ties, and on bigints up to 10^30.
-- **The TypeScript `allocate`**, number and bigint paths. It is compared with the 1,500-case oracle fixture, plus property tests against a separate largest-remainder reference.
+- **The TypeScript `allocate`**, number and bigint paths. It is compared with the 1,500-case oracle fixture, plus property tests against a separate bigint largest-remainder allocator (`test/oracle.test.ts`).
 - **The TypeScript tax, conversion and `mulRatio` code:**
   - that each rounds with exactly one kernel call on the exact product;
   - the scale shifts;
   - that every call site passes a divisor `d > 0`, with the sign moved to the numerator.
 
-  These are covered by unit vectors and by property tests against Python's `decimal`.
+  These are covered by unit vectors and by property tests against decimal.js at 200 significant digits (`test/oracle.test.ts`).
+
 - `instalments`, `schedule`, `chunk`, decimal parsing, `Intl` formatting and parsing, and the processor and database adapters.
 
 ## Tests
