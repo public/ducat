@@ -20,3 +20,4 @@ export * from './paypal.js';
 export * from './braintree.js';
 export * from './klarna.js';
 export * from './prisma.js';
+export * from './fixed.js';
