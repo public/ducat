@@ -1,6 +1,7 @@
 // Exact decimal-string handling. No floating point is used on amounts: numbers given as factors are
 // converted through their shortest round-trip decimal representation (String(x)), never multiplied.
 
+/** The largest minor-unit count held as a number (2^53 - 1); larger values are bigints. */
 const MAX = Number.MAX_SAFE_INTEGER;
 const MAXN = BigInt(MAX);
 
@@ -161,25 +162,10 @@ export function ratioToDecimal(r: Ratio): string | null {
   return formatScaled(r.num * (pow10n(scale) / r.den), scale);
 }
 
+// Zero padding for the fraction digits, built once: indexing it is faster than padStart.
+const ZPAD = Array.from({ length: 16 }, (_, length) => '0'.repeat(length));
+
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
-const ZPAD = [
-  '',
-  '0',
-  '00',
-  '000',
-  '0000',
-  '00000',
-  '000000',
-  '0000000',
-  '00000000',
-  '000000000',
-  '0000000000',
-  '00000000000',
-  '000000000000',
-  '0000000000000',
-  '00000000000000',
-  '000000000000000',
-];
 export function formatScaled(v: number | bigint, scale: number): string {
   if (typeof v === 'number' && scale <= 15) {
     if (scale === 0) return String(v);
