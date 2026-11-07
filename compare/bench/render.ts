@@ -1,4 +1,4 @@
-// Markdown tables from a benchmark results directory such as compare/results/genoa-2026-11-07/,
+// Markdown tables from a benchmark results directory such as compare/results/genoa-2026-11-07-rc/,
 // which holds one sub-directory per runtime with the runner's bench.json and env.txt. Pure: reads
 // files, returns strings; compare/tables.ts decides where they go.
 import { existsSync, readFileSync } from 'node:fs';
@@ -131,11 +131,10 @@ function fastestOtherMoneyLibrary(run: BenchRun, op: string): { library: string;
  * library and dinero.js 2. Decimal libraries are left out of "fastest other": they carry no
  * currency, so they skip work a money library must do.
  */
-/** Shown with every speed table built from the 2026-11-07 Genoa runs. */
+/** Shown with every speed table built from the 0.1.0 release-candidate Genoa runs. */
 export const GENOA_CAVEAT =
-  'Measured on 2026-11-07 on one AMD EPYC Genoa vCPU with Node 22.11, Bun 1.4.4 and Deno 2.9.8, ' +
-  'using an earlier ducat build from before the module split; numbers for the current code need a ' +
-  'new clean-machine run (compare/runner). Lower is better; the faster of ducat and the fastest ' +
+  'Measured on 2026-11-07 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, ' +
+  'on the ducat 0.1.0 release candidate. Lower is better; the faster of ducat and the fastest ' +
   'other money library is in bold.';
 
 export function renderSpeedHeadline(directory: string): string {

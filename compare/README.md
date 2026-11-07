@@ -53,7 +53,7 @@ Only operations every library supports are compared: parse a decimal string, add
 divide rounded to a scale, round, compare and toString, each with an explicit rounding mode
 (half-even or half-up). A library without a given mode shows n/a; dnum and ethers have no
 half-even, and @formatjs/bigdecimal cannot round to a number of decimals. `fixed/vectors.ts` holds
-the 27 vectors: the money battery's ties, float traps, amounts beyond 2^53, division and scale
+the 28 vectors: the money battery's ties, float traps, amounts beyond 2^53, division and scale
 changes, without currencies. CI runs it on Node, Bun and Deno like the money battery.
 
 ethers' `FixedNumber.round()` is its only rounding, so the adapter uses it for half-up. It rounds
@@ -115,7 +115,7 @@ It runs the money benchmark and then the fixed-point benchmark, and writes `out/
 `out/fixed-bench.json` (one JSON line each: per library and operation, the median, min and max ns
 per operation over rounds) and `out/env.txt` (settings, CPU model, core count, kernel, and the
 SHA-256 of both bundles). Commit them under `results/<machine>-<date>/<runtime>/` with a README describing the
-machine, as in `results/genoa-2026-11-07/`.
+machine, as in `results/genoa-2026-11-07-rc/` (the earlier pre-release run is in `results/genoa-2026-11-07/`).
 
 ## Bundle sizes
 
