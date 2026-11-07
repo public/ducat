@@ -37,6 +37,7 @@ Libraries tested (npm weekly downloads in parentheses, November 2026):
 | **Cash rounding by jurisdiction** | 34 rules with sources (8 checked against primary sources, the rest secondary) | no | no | no | no | no | no |
 | **Payment processor amounts** | Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna | no | no | no | no | no | no |
 | **Currency conversion** | exact rates with metadata; providers (tables, chains, reversed, via a base currency, dated snapshots); ECB parsers and an opt-in fetcher; Stripe and Adyen rates; residuals; a money bag | scaled rates | no | no | number rates | no | hand-rolled |
+| **Fixed-point decimal type** | `@ducatjs/money/fixed`: currency-free exact decimal on the same engine and rounding as Money | no | no | no | no | no | arbitrary-precision decimals rather than fixed point |
 | **Mixing currencies** | compile-time *and* runtime error | runtime error | not detectable | runtime error | runtime error | runtime error | not detectable |
 | **Formatting / parsing** | Intl; locale-aware parsing | via a transformer; no parser | own; lenient | basic | Intl; strings | basic | `toFixed` |
 | **Default JSON** | `{"amount":"12.34","currency":"EUR"}` | minor units + currency object | number | minor units, no exponent | minor units + precision | `["12.34","EUR"]` | `"12.34"` |
