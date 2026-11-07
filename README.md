@@ -291,6 +291,15 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 
 ---
 
+## Decisions
+
+* **JSON is a decimal string plus the currency, never minor units** (Alex, 2026-11-07): `{"amount":"12.34","currency":"EUR"}`. Minor units only mean something to a reader who knows the exponent, and the exponent isn't fixed:
+  * Processors disagree with ISO. Stripe sends ISK and UGX as two-decimal; Adyen has its own exceptions.
+  * ISO exponents change over time.
+  * Generic consumers (other languages, `NUMERIC` and `Decimal` columns, logs) expect a decimal amount.
+  
+  Minor units remain available, but only through explicit, named conversions, where the owner of the exponent is known: `toMinor`, `toStripeAmount`, `toAdyenAmount`, and the BIGINT column helpers.
+
 ## What's missing (honest list)
 
 * **Stripe UGX is ambiguous in Stripe's own docs.** UGX appears in the zero-decimal list but also in "special cases" ("represent it as a two-decimal value… 5 UGX → 500"). We encode the special case. This must be confirmed against the live API before production use, because the two readings differ by 100x.
