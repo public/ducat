@@ -20,7 +20,15 @@ export {
   type RateJSON,
   type RateType,
 } from './rate.js';
-export { bag, comparator, MoneyBag, sumByCurrency, type ComparatorOptions, type TotalOptions } from './bag.js';
+export {
+  bag,
+  comparator,
+  MoneyBag,
+  sortByValue,
+  sumByCurrency,
+  type ComparatorOptions,
+  type TotalOptions,
+} from './bag.js';
 export {
   chain,
   identity,
