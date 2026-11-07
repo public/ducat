@@ -1,51 +1,75 @@
+// `ducat/convert` free functions: exact exchange rates and conversion that rounds once.
 import { currencyExponent } from './currency.js';
 import { ratio, type Factor } from './decimal.js';
-import { CurrencyMismatchError, make, mulRatio, type CurrencyInput, type Money } from './money.js';
+import { make, type CurrencyInput, type Money } from './money.js';
+import { isRate, multiplyByRatioAtScale, type ConvertOptions, type Rate } from './rate.js';
 import { DEFAULT_ROUNDING, type RoundingMode } from './rounding.js';
 
-export interface ConvertOptions {
-  /** Result scale (default: the target currency's exponent). */
-  readonly scale?: number;
-}
+export {
+  exchangeRate,
+  impliedRate,
+  isRate,
+  multiplyByRatioAtScale,
+  Rate,
+  RateExpiredError,
+  rateFromJSON,
+  type ConvertOptions,
+  type RateInfo,
+  type RateJSON,
+  type RateType,
+} from './rate.js';
 
 /**
- * Converts at an explicit rate (units of `to` per unit of m's currency), e.g. '1.0832' as a string
- * so no float is ever involved. The result is rounded once, to the target currency's exponent.
+ * Converts `money` at a Rate, rounding once to the target currency's exponent (or `options.scale`).
+ * The rate's pair is checked, at compile time for literal currencies and at run time otherwise.
  *
- *     convert(money('100', 'EUR'), 'USD', '1.0832', 'halfEven')   // 108.32 USD
- *     convert(money('100', 'EUR'), 'JPY', '162.457', 'halfEven')  // 16246 JPY
+ *     convert(money('100', 'EUR'), eurUsd, 'halfEven')               // 111.65 USD
+ *     convert(money('100', 'USD'), eurUsd.inverse().andThen(eurJpy))  // composed exactly, rounded once
  */
-export function convert<To extends CurrencyInput, C extends string = string>(
-  m: Money<C>,
+export function convert<From extends string, To extends string>(
+  money: Money<From>,
+  rate: Rate<NoInfer<From>, To>,
+  rounding?: RoundingMode,
+  options?: ConvertOptions,
+): Money<To>;
+/**
+ * Converts at a bare rate: units of `to` per unit of money's currency, as a decimal string so that
+ * no float is involved ('1.0832', every digit kept). Rounds once.
+ *
+ *     convert(money('100', 'EUR'), 'JPY', '162.457', 'halfEven')   // 16246 JPY
+ */
+export function convert<To extends CurrencyInput>(
+  money: Money,
   to: To,
   rate: Factor,
-  rounding: RoundingMode = DEFAULT_ROUNDING,
+  rounding?: RoundingMode,
   options?: ConvertOptions,
-): Money<To> {
-  const r = ratio(rate);
-  if (r.num <= 0n) throw new RangeError('Exchange rate must be positive');
-  const scale = options?.scale ?? currencyExponent(to);
-  const res = mulRatio(m, r, rounding, scale);
-  return make(to, res.minor, scale);
-}
+): Money<To>;
+export function convert(
+  money: Money,
+  rateOrTarget: Rate | string,
+  roundingOrRate?: RoundingMode | Factor,
+  optionsOrRounding?: ConvertOptions | RoundingMode,
+  maybeOptions?: ConvertOptions,
+): Money {
+  if (isRate(rateOrTarget)) {
+    const rounding = roundingOrRate as RoundingMode | undefined;
+    return rateOrTarget.convert(money, rounding, optionsOrRounding as ConvertOptions | undefined);
+  }
 
-/**
- * An exchange rate pinned to a currency pair, so converting the wrong currency is a type error.
- *     const eurUsd = exchangeRate('EUR', 'USD', '1.0832');
- *     eurUsd.convert(money('100', 'EUR'), 'halfEven');
- */
-export function exchangeRate<From extends CurrencyInput, To extends CurrencyInput>(from: From, to: To, rate: Factor) {
-  const r = ratio(rate);
-  return {
-    from,
-    to,
-    rate: r,
-    convert(m: Money<From>, rounding: RoundingMode = DEFAULT_ROUNDING, options?: ConvertOptions): Money<To> {
-      if (m.currency !== from) throw new CurrencyMismatchError(from, m.currency);
-      return convert(m, to, r, rounding, options);
-    },
-    inverse() {
-      return exchangeRate(to, from, ratio(r.den, r.num));
-    },
-  };
+  // The bare-rate form converts directly, without building a Rate, to keep it allocation-light.
+  const to = rateOrTarget;
+  let rate = ratio(roundingOrRate as Factor);
+  if (typeof roundingOrRate === 'object') {
+    // A hand-made Ratio object is passed through by ratio(); rebuild it so it is reduced and its
+    // number fields match its bigints. Strings and numbers are already normalised (and cached).
+    rate = ratio(rate.num, rate.den);
+  }
+  if (rate.num <= 0n) {
+    throw new RangeError('Exchange rate must be positive');
+  }
+  const rounding = (optionsOrRounding as RoundingMode | undefined) ?? DEFAULT_ROUNDING;
+  const scale = maybeOptions?.scale ?? currencyExponent(to);
+  const minor = multiplyByRatioAtScale(money.minor, rate, scale - money.scale, rounding);
+  return make(to, minor, scale);
 }

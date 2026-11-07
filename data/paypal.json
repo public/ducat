@@ -1,0 +1,65 @@
+{
+  "processor": "PayPal",
+  "retrieved": "2026-11-07",
+  "amountFormat": "decimal-string",
+  "sources": {
+    "currencies": {
+      "url": "https://developer.paypal.com/api/rest/reference/currency-codes/",
+      "lastUpdated": "2026-08-17",
+      "quotes": [
+        "This currency does not support decimals. If you pass a decimal amount, an error occurs.",
+        "This currency is supported as a payment currency and a currency balance for in-country PayPal accounts only. If the receiver of funds is not from Brazil, then PayPal converts funds into the primary holding currency of the account with the applicable currency conversion rate. The currency conversion rate includes PayPal's applicable spread or fee.",
+        "This currency is supported as a payment currency and a currency balance for in-country PayPal accounts only."
+      ]
+    },
+    "currencyReference": {
+      "url": "https://developer.paypal.com/reference/currency-codes/",
+      "lastUpdated": "2026-08-17",
+      "quotes": [
+        "Zero-digit currency — no decimal places or fractions",
+        "This currency is supported as a payment currency (buyer currency) or settlement currency (holding currency) only for in-country PayPal accounts. If the settlement account is based outside the country, PayPal converts money into the account's primary currency with the applicable currency conversion rate, which includes a spread or fee."
+      ]
+    },
+    "orders": {
+      "url": "https://developer.paypal.com/api/orders/v2/schema.yaml",
+      "quotes": [
+        "money.value: The value, which might be: An integer for currencies like `JPY` that are not typically fractional. A decimal fraction for currencies like `TND` that are subdivided into thousandths. For the required number of decimal places for a currency code, see Currency Codes.",
+        "money.value: {\"type\": \"string\", \"minLength\": 0, \"maxLength\": 32, \"pattern\": \"^((-?[0-9]+)|(-?([0-9]+)?[.][0-9]+))$\"}",
+        "The amount must be a positive number. The `amount.value` field supports up to 15 digits preceding the decimal.",
+        "Create Order - Minimal Request and Response: {\"currency_code\": \"USD\", \"value\": \"100.00\"}",
+        "amount {\"currency_code\": \"USD\", \"value\": \"230.00\"}, breakdown item_total \"220.00\", shipping \"10.00\"; items unit_amount \"20.00\" x quantity \"1\" and \"100.00\" x quantity \"2\""
+      ]
+    }
+  },
+  "defaultExponent": "iso",
+  "exponents": {
+    "HUF": 0,
+    "JPY": 0,
+    "TWD": 0
+  },
+  "currencies": [
+    "AUD", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "ILS", "JPY",
+    "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RUB", "SEK", "SGD", "THB", "TWD", "USD"
+  ],
+  "inCountryOnly": ["BRL", "CNY", "MYR"],
+  "notes": [
+    "The amount is a decimal string in major units. HUF and TWD (ISO 2 decimals) and JPY must be whole numbers; every other listed currency is two-decimal, as in ISO 4217.",
+    "The Orders schema mentions TND (three decimals) as an example, but TND is not on either currency page, so it is not accepted here.",
+    "The two currency pages disagree: the REST reference page (linked from the Orders schema) lists RUB; the general reference page does not.",
+    "The schema pattern allows a leading minus and a bare fraction such as \".5\"; the text says the amount must be positive. ducat emits a leading 0 and does not enforce the sign."
+  ],
+  "unverified": [
+    {
+      "claim": "A zero fraction such as \"100.00\" for JPY, HUF or TWD is rejected (the page says only that a decimal amount is an error). toPayPal always sends whole numbers for these.",
+      "verified": false
+    },
+    {
+      "claim": "RUB is still accepted (listed on the REST reference page only).",
+      "verified": false
+    },
+    {
+      "claim": "Payouts use the same currency rules (no Payouts-specific currency page was found).",
+      "verified": false
+    }
+  ]
+}
