@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { fromMinor, money, ratio, RoundingError, type RoundingMode } from '../src/index.js';
+import { currencyExponent, fromMinor, money, ratio, RoundingError, type RoundingMode } from '../src/index.js';
 import { Fixed, fixed, fromScaled, isFixed } from '../src/plugins/fixed.js';
 import { MODES, refDivRound } from './oracle.js';
 
@@ -285,5 +287,38 @@ describe('Fixed properties against a bigint rational oracle', () => {
         expect(back.equals(value) && back.scale === value.scale).toBe(true);
       }),
     );
+  });
+});
+
+describe('Python decimal vectors, through Fixed', () => {
+  interface VectorCase {
+    op: string;
+    currency: string;
+    minor: string;
+    mode: RoundingMode;
+    factor?: string;
+    divisor?: string;
+    scale?: number;
+    want: string | [string, string];
+  }
+  const vectorPath = join(import.meta.dirname, 'vectors', 'pydecimal.json');
+  const { cases } = JSON.parse(readFileSync(vectorPath, 'utf8')) as { cases: VectorCase[] };
+  // The currency-free operations: the value is the minor units at the currency's exponent.
+  const fixedCases = cases.filter((vector) => ['multiply', 'divide', 'toScale'].includes(vector.op));
+
+  it('covers every multiply, divide and toScale vector', () => {
+    expect(fixedCases.length).toBeGreaterThan(0);
+    for (const vector of fixedCases) {
+      const value = fromScaled(BigInt(vector.minor), currencyExponent(vector.currency));
+      let result: Fixed;
+      if (vector.op === 'multiply') {
+        result = value.multiply(vector.factor!, vector.mode);
+      } else if (vector.op === 'divide') {
+        result = value.divide(vector.divisor!, vector.mode);
+      } else {
+        result = value.toScale(vector.scale!, vector.mode);
+      }
+      expect([vector, String(result.value)]).toEqual([vector, vector.want]);
+    }
   });
 });

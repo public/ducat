@@ -1,0 +1,95 @@
+{
+  "processor": "Klarna",
+  "retrieved": "2026-11-07",
+  "amountFormat": "integer",
+  "sources": {
+    "dataTypes": {
+      "url": "https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/",
+      "quotes": [
+        "We express amounts in minor units according to the ISO 4217 standard. That means they are expressed in the smallest unit of currency. Examples are USD with 1000 representing USD GBP 10, with 500 representing GBP EUR 5, with 50 representing EUR 0.50 and SEK with 100 representing 1kr.",
+        "{\"order_amount\": 1000}"
+      ]
+    },
+    "countries": {
+      "url": "https://docs.klarna.com/klarna-payments/in-depth-knowledge/puchase-countries-currencies-locales/",
+      "quotes": [
+        "We only support the local currency of each country.",
+        "The following table shows the list of available countries, locales, and currencies for Klarna payments."
+      ]
+    },
+    "api": {
+      "url": "https://docs.klarna.com/acquirer/klarna/api/payments/",
+      "quotes": [
+        "order_amount: {\"type\": \"integer\", \"format\": \"int64\", \"example\": 2000, \"minimum\": 0} Total amount of the order including tax and any available discounts. The value should be in non-negative minor units. Eg: 25 Euros should be 2500.",
+        "order_lines[].total_amount: Total amount of the order line. Must be defined as minor units. Includes tax and discount. Eg: 2000=20 euros\nValue = (quantity x unit_price) - total_discount_amount. \n(max value: 200000000)",
+        "order_lines[].tax_rate: {\"type\": \"integer\", \"minimum\": 0, \"maximum\": 10000} Tax rate of the order line. Non-negative value. The percentage value is represented with two implicit decimals. I.e 2000 = 20%.",
+        "purchase_currency: The purchase currency of the order. Formatted according to ISO 4217 standard, e.g. USD, EUR, SEK, GBP, etc.",
+        "order_lines[].total_tax_amount: Total tax amount of the order line. Must be within ±1 of total_amount - total_amount 10000 / (10000 + tax_rate). Negative when type is discount.",
+        "order_lines[].unit_price: Price for a single unit of the order line. Must be defined as minor units and exclude any discount."
+      ]
+    }
+  },
+  "defaultExponent": "iso",
+  "currencies": [
+    "AUD",
+    "CAD",
+    "CHF",
+    "CZK",
+    "DKK",
+    "EUR",
+    "GBP",
+    "HUF",
+    "MXN",
+    "NOK",
+    "NZD",
+    "PLN",
+    "RON",
+    "SEK",
+    "USD"
+  ],
+  "countryCurrency": {
+    "AU": "AUD",
+    "AT": "EUR",
+    "BE": "EUR",
+    "CA": "CAD",
+    "CZ": "CZK",
+    "DK": "DKK",
+    "FI": "EUR",
+    "FR": "EUR",
+    "DE": "EUR",
+    "GR": "EUR",
+    "HU": "HUF",
+    "IE": "EUR",
+    "IT": "EUR",
+    "MX": "MXN",
+    "NL": "EUR",
+    "NZ": "NZD",
+    "NO": "NOK",
+    "PL": "PLN",
+    "PT": "EUR",
+    "RO": "RON",
+    "SK": "EUR",
+    "ES": "EUR",
+    "SE": "SEK",
+    "CH": "CHF",
+    "GB": "GBP",
+    "US": "USD"
+  },
+  "notes": [
+    "Amounts are integers in ISO 4217 minor units for every supported currency; all 15 are two-decimal in ISO, so HUF is in fillér (1000 HUF = 100000), unlike PayPal (HUF takes no decimals).",
+    "The data-types sentence is quoted as published; its examples read: USD 1000 = USD 10, GBP 500 = GBP 5, EUR 50 = EUR 0.50, SEK 100 = 1 kr.",
+    "Each purchase country has exactly one currency; the pairing is not checked by ducat.",
+    "Limits (order_amount >= 0; an order line's total_amount at most 200000000) are not enforced by ducat.",
+    "Signs: order_amount, order_tax_amount and total_discount_amount have minimum 0; order-line unit_price and total_amount have no minimum, and total_tax_amount is negative for discount lines. toKlarna therefore passes negative amounts through."
+  ],
+  "unverified": [
+    {
+      "claim": "HUF is sent in fillér (2 decimals, per the ISO 4217 statement); no Klarna page gives a HUF example.",
+      "verified": false
+    },
+    {
+      "claim": "Captures and refunds (Order Management API) use the same integer minor units (the reference page renders its schema client-side; only the Payments schema was read).",
+      "verified": false
+    }
+  ]
+}

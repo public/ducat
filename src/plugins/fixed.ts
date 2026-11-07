@@ -14,8 +14,11 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  toFixed(this: Money) {
-    return moneyToFixed(this);
+extendMoney(
+  {
+    toFixed(this: Money) {
+      return moneyToFixed(this);
+    },
   },
-});
+  { owner: '@ducatjs/money/fixed' },
+);

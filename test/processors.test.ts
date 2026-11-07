@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { fromMinor, money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
 import { fromStripe, stripeExponent, toStripe, toStripeAmount, STRIPE_RULES } from '../src/stripe.js';
 import { adyenExponent, fromAdyen, toAdyen, ADYEN_EXPONENTS } from '../src/adyen.js';
+import { toCheckoutAmount } from '../src/checkout.js';
+import { toPayPalValue } from '../src/paypal.js';
+import { toBraintree } from '../src/braintree.js';
+import { toKlarna } from '../src/klarna.js';
 
 describe('Stripe', () => {
   it('standard and zero-decimal currencies', () => {
@@ -68,18 +72,44 @@ describe('Adyen', () => {
     expect(diff.sort()).toEqual(['CLP', 'CVE', 'IDR', 'ISK']);
     expect(adyenExponent('KWD')).toBe(3);
   });
-  it('same amount, different wire values', () => {
-    const rows = (['USD', 'JPY', 'ISK', 'IDR', 'CLP', 'KWD'] as const).map((c) => {
-      const m = fromMinor(10 ** (ISO_EXPONENTS[c] + 3), c); // 1000 major units
-      return [c, toStripeAmount(m), toAdyen(m).value];
+});
+
+// The README's cross-processor table: the same 1000 major units on each processor's wire
+// ('-' where the processor doesn't take the currency)
+const orDash = <T>(f: () => T): T | '-' => {
+  try {
+    return f();
+  } catch (error) {
+    const isUnsupported = error instanceof RangeError && /not a .* currency|not in .* table/.test(error.message);
+    if (isUnsupported) {
+      return '-';
+    }
+    throw error;
+  }
+};
+
+describe('same amount, different wire values', () => {
+  it('1000 units on every processor', () => {
+    const rows = (['USD', 'JPY', 'ISK', 'IDR', 'CLP', 'KWD', 'HUF'] as const).map((code) => {
+      const thousandUnits = fromMinor(10 ** (ISO_EXPONENTS[code] + 3), code);
+      return [
+        code,
+        toStripeAmount(thousandUnits),
+        toAdyen(thousandUnits).value,
+        toCheckoutAmount(thousandUnits),
+        orDash(() => toPayPalValue(thousandUnits)),
+        orDash(() => toBraintree(thousandUnits)),
+        orDash(() => toKlarna(thousandUnits)),
+      ];
     });
     expect(rows).toEqual([
-      ['USD', 100000, 100000],
-      ['JPY', 1000, 1000],
-      ['ISK', 100000, 100000],
-      ['IDR', 100000, 1000],
-      ['CLP', 1000, 100000],
-      ['KWD', 1000000, 1000000],
+      ['USD', 100000, 100000, 100000, '1000.00', '1000.00', 100000],
+      ['JPY', 1000, 1000, 1000, '1000', '1000', '-'],
+      ['ISK', 100000, 100000, 1000, '-', '1000', '-'],
+      ['IDR', 100000, 1000, 100000, '-', '1000.00', '-'],
+      ['CLP', 1000, 100000, 100000, '-', '1000', '-'],
+      ['KWD', 1000000, 1000000, 1000000, '-', '-', '-'],
+      ['HUF', 100000, 100000, 100000, '1000', '1000.00', 100000],
     ]);
   });
 });
