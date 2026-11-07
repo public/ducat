@@ -3,7 +3,7 @@ import { ISO_EXPONENTS, type IsoCurrencyCode } from './generated/iso4217.js';
 /**
  * Augment this interface to add non-ISO currencies to the `CurrencyCode` type:
  *
- *     declare module 'money' { interface CustomCurrencies { BTC: true; USDC: true } }
+ *     declare module '@ducatjs/money' { interface CustomCurrencies { BTC: true; USDC: true } }
  *     defineCurrency('BTC', 8);
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

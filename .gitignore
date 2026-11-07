@@ -6,6 +6,7 @@ examples/prisma/generated/
 *.db
 *.db-journal
 .claude/
+.wt/
 reports/
 .stryker-tmp/
 test-results/

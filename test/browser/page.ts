@@ -4,7 +4,7 @@
 // DUCAT_SEED.
 import DecimalJs from 'decimal.js';
 import fc from 'fast-check';
-import * as ducat from '../../src/index.js';
+import * as ducat from '../../src/fn.js';
 
 export interface PageResult {
   readonly passed: number;
