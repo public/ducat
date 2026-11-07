@@ -73,7 +73,7 @@ const EXP_RE = /^([+-]?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/;
 
 /**
  * The largest exponent and number of fraction digits a decimal string may have. Far beyond any real
- * amount or rate, and it keeps untrusted input such as "1e999999999" from building enormous powers of ten.
+ * amount or rate, and it keeps input such as "1e999999999" from building enormous powers of ten.
  */
 export const MAX_DECIMAL_SCALE = 1000;
 
@@ -85,7 +85,12 @@ export function parseDecimal(s: string): { digits: bigint; scale: number } {
   const exponent = Number(exp);
   let scale = frac.length - exponent;
   if (!(Math.abs(exponent) <= MAX_DECIMAL_SCALE) || scale > MAX_DECIMAL_SCALE) {
-    throw new RangeError(`"${s.length > 40 ? s.slice(0, 40) + '…' : s}" is outside the supported range`);
+    // Quote at most 40 characters: the input may be huge.
+    let shown = s;
+    if (shown.length > 40) {
+      shown = shown.slice(0, 40) + '…';
+    }
+    throw new RangeError(`"${shown}" is outside the supported range`);
   }
   let digits = BigInt(int! + frac);
   if (scale < 0) {
