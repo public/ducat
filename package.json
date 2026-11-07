@@ -66,6 +66,10 @@
       "types": "./dist/plugins/format.d.ts",
       "default": "./dist/plugins/format.js"
     },
+    "./fixed": {
+      "types": "./dist/plugins/fixed.d.ts",
+      "default": "./dist/plugins/fixed.js"
+    },
     "./parse": {
       "types": "./dist/parse.d.ts",
       "default": "./dist/parse.js"
