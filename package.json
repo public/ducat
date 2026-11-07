@@ -49,6 +49,10 @@
       "types": "./dist/ecb.d.ts",
       "default": "./dist/ecb.js"
     },
+    "./convert/fetch": {
+      "types": "./dist/fetch.d.ts",
+      "default": "./dist/fetch.js"
+    },
     "./exact": {
       "types": "./dist/plugins/exact.d.ts",
       "default": "./dist/plugins/exact.js"
@@ -88,6 +92,14 @@
     "./klarna": {
       "types": "./dist/plugins/klarna.d.ts",
       "default": "./dist/plugins/klarna.js"
+    },
+    "./stripe-fx": {
+      "types": "./dist/stripe-fx.d.ts",
+      "default": "./dist/stripe-fx.js"
+    },
+    "./adyen-fx": {
+      "types": "./dist/adyen-fx.d.ts",
+      "default": "./dist/adyen-fx.js"
     },
     "./prisma": {
       "types": "./dist/plugins/prisma.d.ts",
