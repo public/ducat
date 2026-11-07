@@ -77,17 +77,26 @@ describe('Adyen', () => {
 const orDash = <T>(f: () => T): T | '-' => {
   try {
     return f();
-  } catch (e) {
-    if (e instanceof RangeError && /not a .* currency|not in .* table/.test(e.message)) return '-';
-    throw e;
+  } catch (error) {
+    const isUnsupported = error instanceof RangeError && /not a .* currency|not in .* table/.test(error.message);
+    if (isUnsupported) {
+      return '-';
+    }
+    throw error;
   }
 };
 
 describe('same amount, different wire values', () => {
   it('1000 units on every processor', () => {
-    const rows = (['USD', 'JPY', 'ISK', 'IDR', 'CLP', 'KWD', 'HUF'] as const).map((c) => {
-      const m = fromMinor(10 ** (ISO_EXPONENTS[c] + 3), c);
-      return [c, toStripeAmount(m), toAdyen(m).value, toCheckoutAmount(m), orDash(() => toPayPalValue(m))];
+    const rows = (['USD', 'JPY', 'ISK', 'IDR', 'CLP', 'KWD', 'HUF'] as const).map((code) => {
+      const thousandUnits = fromMinor(10 ** (ISO_EXPONENTS[code] + 3), code);
+      return [
+        code,
+        toStripeAmount(thousandUnits),
+        toAdyen(thousandUnits).value,
+        toCheckoutAmount(thousandUnits),
+        orDash(() => toPayPalValue(thousandUnits)),
+      ];
     });
     expect(rows).toEqual([
       ['USD', 100000, 100000, 100000, '1000.00'],

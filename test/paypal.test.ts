@@ -42,10 +42,22 @@ describe('PayPal', () => {
   });
   it('values are exact strings, not floats', () => {
     expect(toPayPalValue(money('0.10', 'USD'))).toBe('0.10');
-    expect(toPayPalValue(money('-5.05', 'USD'))).toBe('-5.05');
     expect(toPayPalValue(money('999999999999999.99', 'USD'))).toBe('999999999999999.99');
     expect(() => toPayPalValue(money('1000000000000000', 'USD'))).toThrow(/15 digits/);
     expect(toDecimal(fromPayPal({ currency_code: 'USD', value: '999999999999999.99' }))).toBe('999999999999999.99');
+  });
+  it('zero is allowed, negative amounts throw (checked after rounding)', () => {
+    expect(toPayPalValue(money('0', 'USD'))).toBe('0.00');
+    expect(toPayPalValue(money('0', 'JPY'))).toBe('0');
+    expect(toDecimal(fromPayPal({ currency_code: 'USD', value: '0.00' }))).toBe('0.00');
+    expect(toDecimal(fromPayPal({ currency_code: 'JPY', value: '0' }))).toBe('0');
+    expect(() => toPayPalValue(money('-5.05', 'USD'))).toThrow(/can't be negative/);
+    expect(toPayPalValue(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toBe('0.00');
+  });
+  it('values longer than the schema maxLength (32) are rejected', () => {
+    const longest = '1.' + '0'.repeat(30);
+    expect(toDecimal(fromPayPal({ currency_code: 'USD', value: longest }))).toBe('1.00');
+    expect(() => fromPayPal({ currency_code: 'USD', value: longest + '0' })).toThrow(SyntaxError);
   });
   it('reading keeps the ISO scale when exact and extra precision otherwise', () => {
     expect(toDecimal(fromPayPal({ currency_code: 'HUF', value: '1000' }))).toBe('1000.00');
