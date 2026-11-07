@@ -1,10 +1,8 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "import", "vitest"],
+  "plugins": ["typescript", "oxc", "import", "vitest"],
   "categories": { "correctness": "error", "suspicious": "warn", "perf": "warn" },
   "rules": {
-    // new Array(n) preallocates on the allocation hot path (faster than Array.from on V8 and JSC); see bench/
-    "unicorn/no-new-array": "off",
     // property tests guard their inputs (`if (f != 0) expect(divide(...))`)
     "vitest/no-conditional-expect": "off",
     // fc.integer(), fc.property(): fast-check's documented namespace idiom
