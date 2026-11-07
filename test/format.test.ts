@@ -135,11 +135,15 @@ describe('parse digit detection', () => {
     const notDigits = ZERO_CODE_POINTS.flatMap((zero) => [zero - 1, zero + 10]);
     // in the gap before the fullwidth block, where € and the narrow no-break space are
     notDigits.push(0x20ac, 0x202f, 0x2000, 0xfe0f);
-    for (const codePoint of notDigits) {
-      expect(() => parse(String.fromCodePoint(codePoint), 'JPY'), codePoint.toString(16)).toThrow(
-        /no digits/,
-      );
-    }
+    const readAsDigits = notDigits.filter((codePoint) => {
+      try {
+        parse(String.fromCodePoint(codePoint), 'JPY');
+        return true;
+      } catch (error) {
+        return !(error instanceof SyntaxError && /no digits/.test(error.message));
+      }
+    });
+    expect(readAsDigits.map((codePoint) => codePoint.toString(16))).toEqual([]);
   });
 
   it('still reads amounts with currency signs and narrow no-break spaces around them', () => {
