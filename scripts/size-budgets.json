@@ -20,7 +20,7 @@
     },
     "functions: money, add, multiply, toDecimal": {
       "code": "import { money, add, multiply, toDecimal } from '@ducatjs/money/fn'; const a = money('1.00', 'EUR'); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
-      "gzipped": 3.7
+      "gzipped": 3.62
     },
     "allocate: split a total three ways": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/allocate'; console.log(money('100', 'EUR').split(3).map(String));",
