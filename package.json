@@ -33,6 +33,10 @@
       "types": "./dist/paypal.d.ts",
       "default": "./dist/paypal.js"
     },
+    "./braintree": {
+      "types": "./dist/braintree.d.ts",
+      "default": "./dist/braintree.js"
+    },
     "./prisma": {
       "types": "./dist/prisma.d.ts",
       "default": "./dist/prisma.js"

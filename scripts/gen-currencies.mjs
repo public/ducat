@@ -68,6 +68,11 @@ const PROCESSORS = [
     name: 'PAYPAL_EXPONENTS',
     doc: 'PayPal decimals per currency (`value` is a decimal string). HUF, JPY and TWD take none.',
   },
+  {
+    file: 'braintree',
+    name: 'BRAINTREE_EXPONENTS',
+    doc: 'Braintree decimals per currency (`amount` is a decimal string). The zero-decimal list includes LAK (ISO 2).',
+  },
 ];
 
 function generate() {
