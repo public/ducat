@@ -44,7 +44,8 @@ databaseSuite('SQLite', {
 
       // the cents are gone before the helpers ever see the value
       expect(row!.storage).toBe('integer');
-      expect(toDecimal(fromDecimal(String(row!.n), 'EUR'))).not.toBe('92233720368547758.07');
+      expect(row!.n).toBe(92233720368547760n);
+      expect(toDecimal(fromDecimal(String(row!.n), 'EUR'))).toBe('92233720368547760.00');
     });
   },
 });

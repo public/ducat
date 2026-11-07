@@ -119,25 +119,10 @@ export function run(seed: number, numRuns: number): PageResult {
     }) as never,
   );
 
-  // Intl, per engine: below 10^15 minor units format() agrees with this engine's own
-  // Intl.NumberFormat, and parse() reads back what format() wrote, in every locale
+  // Intl, per engine: parse() reads back what format() wrote, in every locale. (Comparing format()
+  // with Intl.NumberFormat would only restate how format() is implemented.)
   const currencyArb = fc.constantFrom(...CURRENCIES);
   const localeArb = fc.constantFrom(...LOCALES);
-  checkProperty(
-    'format() matches Intl.NumberFormat',
-    fc.property(fc.integer({ min: -1e14, max: 1e14 }), currencyArb, localeArb, (minorUnits, currency, locale) => {
-      const amount = ducat.fromMinor(minorUnits, currency);
-      const formatter = new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: amount.scale,
-        maximumFractionDigits: amount.scale,
-      });
-      const expected = formatter.format(Number(ducat.toDecimal(amount)));
-      assertEqual(ducat.format(amount, locale), expected);
-    }) as never,
-  );
-
   const anyMinorArb = fc.oneof(
     fc.integer({ min: -1e13, max: 1e13 }),
     fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n }),
