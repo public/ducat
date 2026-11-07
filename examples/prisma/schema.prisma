@@ -1,0 +1,21 @@
+// Two ways to store money. See the README ("Databases") for Postgres/MySQL column types.
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Order {
+  id         Int     @id @default(autoincrement())
+  // 1. integer minor units + ISO code: exact, fast, indexable. Postgres: BIGINT + CHAR(3).
+  totalMinor BigInt  @map("total_minor")
+  currency   String
+  // 2. a decimal column with a fixed currency. Postgres: NUMERIC(19,4) (@db.Decimal(19, 4)).
+  //    SQLite has no real DECIMAL type (NUMERIC affinity may store a REAL): prefer option 1 there.
+  shipping   Decimal
+  @@map("orders")
+}
