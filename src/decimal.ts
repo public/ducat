@@ -59,6 +59,7 @@ export function parsePlainDecimal(s: string): { digits: number | bigint; scale: 
     } else return null;
   }
   if (digitsSeen === 0 || scale === 0) return null; // "", "-", "12."
+  if (scale > MAX_DECIMAL_SCALE) return null; // parseDecimal reports it
   if (scale < 0) scale = 0;
   if (big) {
     const raw = s.slice(start).replace('.', '');
@@ -70,13 +71,23 @@ export function parsePlainDecimal(s: string): { digits: number | bigint; scale: 
 
 const EXP_RE = /^([+-]?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/;
 
+/**
+ * The largest exponent and number of fraction digits a decimal string may have. Far beyond any real
+ * amount or rate, and it keeps untrusted input such as "1e999999999" from building enormous powers of ten.
+ */
+export const MAX_DECIMAL_SCALE = 1000;
+
 /** Parses a decimal string, allowing exponent notation ("1e-7", as produced by String(1e-7)). */
 export function parseDecimal(s: string): { digits: bigint; scale: number } {
   const m = EXP_RE.exec(s.trim());
   if (!m) throw new SyntaxError(`Invalid decimal string "${s}"`);
   const [, sign, int, frac = '', exp = '0'] = m;
+  const exponent = Number(exp);
+  let scale = frac.length - exponent;
+  if (!(Math.abs(exponent) <= MAX_DECIMAL_SCALE) || scale > MAX_DECIMAL_SCALE) {
+    throw new RangeError(`"${s.length > 40 ? s.slice(0, 40) + '…' : s}" is outside the supported range`);
+  }
   let digits = BigInt(int! + frac);
-  let scale = frac.length - Number(exp);
   if (scale < 0) {
     digits *= pow10n(-scale);
     scale = 0;
