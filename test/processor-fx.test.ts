@@ -112,7 +112,9 @@ describe('processor rates', () => {
           `2026-03-${day}T06:30:00.000Z`,
         );
       }
-      expect(zones).toEqual(['Asia/Kolkata']);
+      // At most one: the cache is module-wide, so another test may already have built it.
+      expect(zones.length).toBeLessThanOrEqual(1);
+      expect(zones.every((zone) => zone === 'Asia/Kolkata')).toBe(true);
     });
 
     it('stays correct when more zones are used than are cached', () => {
