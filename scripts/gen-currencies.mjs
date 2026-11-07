@@ -63,6 +63,11 @@ const PROCESSORS = [
     extra: ['standaloneMultiples'],
     doc: 'Checkout.com currencies: [API exponent, payment amount multiple, Standalone API (authentication) multiple]. CLP is two-decimal with a multiple of 100; three-decimal currencies need a multiple of 10.',
   },
+  {
+    file: 'paypal',
+    name: 'PAYPAL_EXPONENTS',
+    doc: 'PayPal decimals per currency (`value` is a decimal string). HUF, JPY and TWD take none.',
+  },
 ];
 
 function generate() {

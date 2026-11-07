@@ -1,5 +1,5 @@
 import { currencyExponent } from './currency.js';
-import { toSafe } from './decimal.js';
+import { formatScaled, parseDecimal, parsePlainDecimal, toSafe } from './decimal.js';
 import { fromMinor, scaleDown, scaleUp, toScale, type CurrencyInput, type Money } from './money.js';
 import { divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
 
@@ -100,6 +100,24 @@ export function toProcessorAmount(
 }
 
 /**
+ * @internal Money -> a processor's decimal string with exactly `exponent` decimals
+ * ("10.00", or "1000" for JPY), built from the integer so it never goes through a float.
+ */
+export function toProcessorDecimal(
+  processor: string,
+  money: Money,
+  exponent: number,
+  rounding: RoundingMode,
+  sign: SignRule = 'any',
+): string {
+  const minor = rescaleForProcessor(processor, money, exponent, 1, rounding);
+  checkSign(processor, money, minor, sign);
+
+  // `+ 0` turns -0 into 0, so a zero amount never serialises as "-0".
+  return formatScaled(typeof minor === 'number' ? minor + 0 : minor, exponent);
+}
+
+/**
  * Returns Money at the currency's ISO scale when that is exact, and otherwise at the scale it
  * came with, so a processor's extra precision (Stripe's ISK 12.34) is kept rather than lost.
  */
@@ -128,4 +146,26 @@ export function fromProcessorAmount<C extends CurrencyInput>(
   }
 
   return toIsoScaleWhenExact(fromMinor(amount, currency, exponent), currency);
+}
+
+/**
+ * @internal A processor's decimal string -> Money, exactly (never via a float). `pattern` is the
+ * processor's documented format and `maxLength` its length limit, if any. The scale follows
+ * `toIsoScaleWhenExact`.
+ */
+export function fromProcessorDecimal<C extends CurrencyInput>(
+  processor: string,
+  value: string,
+  currency: C,
+  pattern: RegExp,
+  maxLength = Infinity,
+): Money<C> {
+  if (typeof value !== 'string' || value.length > maxLength || !pattern.test(value)) {
+    throw new SyntaxError(`${processor} amount must be a decimal string, got ${JSON.stringify(value)}`);
+  }
+
+  // PayPal's pattern allows a bare fraction (".5"), which the decimal parsers don't.
+  const withLeadingZero = value.replace(/^(-?)\./, '$10.');
+  const parsed = parsePlainDecimal(withLeadingZero) ?? parseDecimal(withLeadingZero);
+  return toIsoScaleWhenExact(fromMinor(parsed.digits, currency, parsed.scale), currency);
 }

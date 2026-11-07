@@ -69,6 +69,10 @@
       "types": "./dist/plugins/checkout.d.ts",
       "default": "./dist/plugins/checkout.js"
     },
+    "./paypal": {
+      "types": "./dist/plugins/paypal.d.ts",
+      "default": "./dist/plugins/paypal.js"
+    },
     "./prisma": {
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"

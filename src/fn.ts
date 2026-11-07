@@ -12,4 +12,5 @@ export * from './parse.js';
 export * from './stripe.js';
 export * from './adyen.js';
 export * from './checkout.js';
+export * from './paypal.js';
 export * from './prisma.js';
