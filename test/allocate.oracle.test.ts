@@ -1,46 +1,48 @@
 // test/fixtures/allocate.oracle.json is printed by proofs/Oracle.lean from the allocation model whose
-// properties are proved in proofs/Ducat/Allocate.lean (`npm run gen:kernel`). Here the TypeScript, on both its
-// number fast path and its bigint path, must give exactly the model's answer.
+// properties are proved in proofs/Ducat/Allocate.lean (regenerate with `pnpm gen:kernel`). The TypeScript,
+// on its number fast path and on its bigint path, must give exactly the model's answer for every case.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { allocate, fromMinor, money, type Remainder } from '../src/index.js';
 
-interface Case {
-  x: string;
-  w: string[];
-  largest: string[];
-  first: string[];
-  last: string[];
-  toFirst: string[];
-  toLast: string[];
-}
+type OracleCase = { amount: string; weights: string[] } & Record<Remainder, string[]>;
 
-const cases: Case[] = JSON.parse(readFileSync(new URL('./fixtures/allocate.oracle.json', import.meta.url), 'utf8'));
+const fixture = JSON.parse(readFileSync(new URL('./fixtures/allocate.oracle.json', import.meta.url), 'utf8'));
+const cases: OracleCase[] = fixture.cases;
 const STRATEGIES: Remainder[] = ['largest', 'first', 'last', 'toFirst', 'toLast'];
 
 describe('allocate matches the proved Lean model', () => {
-  it('has cases', () => expect(cases.length).toBeGreaterThan(1000));
+  it('has enough cases', () => {
+    expect(cases.length).toBeGreaterThan(1000);
+  });
 
-  for (const s of STRATEGIES)
-    it(`remainder: '${s}'`, () => {
-      let bad = 0;
-      for (const c of cases) {
-        const x = BigInt(c.x);
-        const m = fromMinor(x, 'EUR');
-        const want = c[s];
-        // number weights take the fast path when they fit; bigint and string weights the bigint path
-        const asNumber = c.w.map(Number);
-        const asBig = c.w.map(BigInt);
-        const asString = c.w.map((w) => `${w}.0`);
-        for (const ws of [asNumber, asBig, asString]) {
-          const got = allocate(m, ws, { remainder: s }).map((p) => String(p.minor));
-          if (got.join() !== want.join() && bad++ < 3) expect({ c: c.x, w: c.w, got }).toEqual({ c: c.x, w: c.w, got: want });
+  for (const strategy of STRATEGIES) {
+    it(`remainder: '${strategy}'`, () => {
+      const mismatches: string[] = [];
+      for (const oracleCase of cases) {
+        const amount = fromMinor(BigInt(oracleCase.amount), 'EUR');
+        const expected = oracleCase[strategy].join();
+        // number weights take the fast path when the products fit in a double; bigint and decimal-string
+        // weights always take the bigint path
+        const weightForms = {
+          number: oracleCase.weights.map(Number),
+          bigint: oracleCase.weights.map(BigInt),
+          decimal: oracleCase.weights.map((weight) => `${weight}.0`),
+        };
+        for (const [form, weights] of Object.entries(weightForms)) {
+          const parts = allocate(amount, weights, { remainder: strategy });
+          const actual = parts.map((part) => String(part.minor)).join();
+          if (actual !== expected) {
+            mismatches.push(`${oracleCase.amount} by [${oracleCase.weights}] (${form}): ${actual}, expected ${expected}`);
+          }
         }
       }
-      expect(bad).toBe(0);
+      expect(mismatches.slice(0, 5)).toEqual([]);
     });
+  }
 
-  it('a sample case reads as expected', () => {
-    expect(allocate(money('100', 'EUR'), [1, 1, 1]).map(String)).toEqual(['EUR 33.34', 'EUR 33.33', 'EUR 33.33']);
+  it('reads as expected on a familiar case', () => {
+    const parts = allocate(money('100', 'EUR'), [1, 1, 1]);
+    expect(parts.map(String)).toEqual(['33.34 EUR', '33.33 EUR', '33.33 EUR']);
   });
 });

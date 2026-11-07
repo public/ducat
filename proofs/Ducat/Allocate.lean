@@ -81,8 +81,8 @@ theorem frac_lt (hT : 0 < total w) (i : Fin n) : frac x w i < total w := Int.emo
 
 /-- `base i * T - x * w i = -frac i` -/
 theorem base_mul (i : Fin n) : base x w i * total w = x * w i - frac x w i := by
-  have := Int.ediv_add_emod (x * w i) (total w)
-  simp only [base, frac]; linarith [mul_comm (total w) (x * w i / total w)]
+  have := Int.ediv_mul_add_emod (x * w i) (total w)
+  simp only [base, frac]; linarith
 
 theorem frac_zero (i : Fin n) (h : w i = 0) : frac x w i = 0 := by simp [frac, h]
 theorem base_zero (i : Fin n) (h : w i = 0) : base x w i = 0 := by simp [base, h]
@@ -107,19 +107,30 @@ theorem rem_nonneg (hT : 0 < total w) : 0 ≤ rem x w := by
   have : 0 ≤ ∑ i, frac x w i := sum_nonneg fun i _ => frac_nonneg hT i
   nlinarith
 
+/-- A positive total needs a bucket with positive weight. -/
+theorem elig_nonempty (hw : ∀ i, 0 ≤ w i) (hT : 0 < total w) : 0 < (elig w).card := by
+  rw [Finset.card_pos]
+  by_contra hne
+  rw [Finset.not_nonempty_iff_eq_empty] at hne
+  have h0 : total w = 0 := by
+    unfold total
+    refine sum_eq_zero fun i _ => ?_
+    have hi : i ∉ elig w := by simp [hne]
+    simp only [elig, mem_filter, mem_univ, true_and, not_lt] at hi
+    linarith [hw i]
+  linarith
+
 /-- Fewer units are left over than there are eligible buckets. -/
 theorem rem_lt (hw : ∀ i, 0 ≤ w i) (hT : 0 < total w) : rem x w < (elig w).card := by
   have h := rem_mul (x := x) (w := w)
   rw [sum_frac_elig hw] at h
   have hle : ∑ i ∈ elig w, frac x w i ≤ ∑ _i ∈ elig w, (total w - 1) :=
-    sum_le_sum fun i _ => by linarith [frac_lt (x := x) hT i]
+    sum_le_sum fun i _ => by have := frac_lt (x := x) hT i; omega
   rw [sum_const, nsmul_eq_mul] at hle
+  have hpos := elig_nonempty hw hT
+  by_contra hc
+  have := mul_le_mul_of_nonneg_right (not_lt.mp hc) hT.le
   nlinarith
-
-theorem elig_nonempty (hw : ∀ i, 0 ≤ w i) (hT : 0 < total w) : 0 < (elig w).card := by
-  have := rem_lt (x := 0) hw hT
-  have := rem_nonneg (x := 0) (w := w) hT
-  omega
 
 end
 
@@ -179,19 +190,16 @@ theorem chosen_sub (k : ℕ) : chosen r w k ⊆ elig w := filter_subset _ _
 end
 
 theorem before_total (x : ℤ) (w : Fin n → ℤ) (s : Remainder) : StrictTotal (before x w s) := by
-  cases s <;> constructor <;> simp only [before] <;> intros <;> (try omega) <;>
-    (try (rename_i i j h; rcases lt_or_gt_of_ne h with h | h <;> simp [h]))
-  all_goals (rename_i i j h; rcases lt_trichotomy (frac x w i) (frac x w j) with e | e | e <;>
-    (try (rcases lt_or_gt_of_ne h with h | h)) <;> simp_all) <;> (try omega)
+  cases s <;> constructor <;> simp only [before] <;> intros <;> omega
 
 /-! ## The theorems -/
 
 section
 variable {x : ℤ} {w : Fin n → ℤ}
 
-theorem sum_ite_mem (S : Finset (Fin n)) (c : ℤ) :
+theorem sum_indicator (S : Finset (Fin n)) (c : ℤ) :
     ∑ i, (if i ∈ S then c else 0) = S.card * c := by
-  rw [sum_ite_mem, univ_inter, sum_const, nsmul_eq_mul]
+  rw [Finset.sum_ite_mem, univ_inter, sum_const, nsmul_eq_mul]
 
 /-- The parts add up to the whole. -/
 theorem alloc_sum (s : Remainder) (hw : ∀ i, 0 ≤ w i) (hT : 0 < total w) :
@@ -200,8 +208,10 @@ theorem alloc_sum (s : Remainder) (hw : ∀ i, 0 ≤ w i) (hT : 0 < total w) :
   have h0 := rem_nonneg (x := x) hT
   have hlt := rem_lt (x := x) hw hT
   have hpos := elig_nonempty hw hT
-  cases s <;> simp only [alloc, sum_add_distrib, sum_ite_mem, card_chosen hr] <;> simp only [rem] at * <;>
-    omega
+  have hrem : rem x w = x - ∑ i, base x w i := rfl
+  have hmin1 : min 1 (elig w).card = 1 := by omega
+  have hmink : min (rem x w).toNat (elig w).card = (rem x w).toNat := by omega
+  cases s <;> simp only [alloc, sum_add_distrib, sum_indicator, card_chosen hr, hmin1, hmink] <;> omega
 
 /-- Buckets with zero weight get nothing. -/
 theorem alloc_zero (s : Remainder) (i : Fin n) (h : w i = 0) : alloc s x w i = 0 := by
@@ -231,7 +241,7 @@ theorem alloc_near_largest (hw : ∀ i, 0 ≤ w i) (hT : 0 < total w) (i : Fin n
   by_contra hf
   have hfi : frac x w i = 0 := by omega
   have hr := before_total x w .largest
-  set k := (rem x w).toNat
+  set k := (rem x w).toNat with hkdef
   set C := chosen (before x w .largest) w k
   have hiC : i ∈ elig w ∧ rank (before x w .largest) w i < k := by simpa [C, chosen] using hc
   -- every eligible bucket not chosen comes after `i`, so its remainder is zero too
@@ -253,15 +263,19 @@ theorem alloc_near_largest (hw : ∀ i, 0 ≤ w i) (hT : 0 < total w) (i : Fin n
   have hCe : (elig w).filter (· ∈ C) = C := by
     ext j; simp only [mem_filter]; exact ⟨fun h => h.2, fun h => ⟨chosen_sub k h, h⟩⟩
   rw [hz, add_zero, hCe] at hsum
-  have hle : ∑ j ∈ C, frac x w j ≤ ∑ _j ∈ C, (total w - 1) - 1 := by
+  -- every chosen remainder is at most T - 1, and the one at `i` is 0
+  have hle : ∑ j ∈ C, frac x w j ≤ ∑ _j ∈ C, (total w - 1) - (total w - 1) := by
     rw [← sum_erase_add C _ hc, ← sum_erase_add C (fun _ => total w - 1) hc, hfi]
-    have := sum_le_sum (s := C.erase i) fun j _ => by linarith [frac_lt (x := x) hT j]
+    have := sum_le_sum (s := C.erase i) (f := fun j => frac x w j) (g := fun _ => total w - 1)
+      fun j _ => by have := frac_lt (x := x) hT j; omega
     linarith
   rw [sum_const, nsmul_eq_mul, card_chosen hr] at hle
   have h0 := rem_nonneg (x := x) hT
   have hlt := rem_lt (x := x) hw hT
-  have hk : (min k (elig w).card : ℤ) = rem x w := by simp only [k]; omega
+  have hk : ((min k (elig w).card : ℕ) : ℤ) = rem x w := by omega
+  have hk0 : 0 < rem x w := by have := hiC.2; omega
   rw [hk] at hle
+  -- rem * T = Σ frac ≤ rem * (T - 1) - (T - 1), impossible with rem ≥ 1 and T ≥ 1
   nlinarith
 
 /-- A negative amount is allocated as the mirror image of the positive one. -/
@@ -281,10 +295,18 @@ theorem alloc_scale (s : Remainder) {k : ℤ} (hk : 0 < k) (i : Fin n) :
   have he : elig (fun j => k * w j) = elig w := by
     ext j; simp [elig]; constructor <;> intro h <;> nlinarith
   have hr : rem x (fun j => k * w j) = rem x w := by simp [rem, hb]
-  have hbe : before x (fun j => k * w j) s = before x w s := by
-    cases s <;> funext a b <;> simp only [before, hf] <;>
-      simp only [mul_lt_mul_left hk, mul_right_inj' hk.ne']
-  cases s <;> simp only [alloc, hb, hr, chosen, rank, he, hbe]
+  have hlt : ∀ a b : ℤ, k * a < k * b ↔ a < b := fun a b => by
+    constructor
+    · intro h; by_contra h'; push Not at h'; nlinarith
+    · intro h; nlinarith
+  have heq : ∀ a b : ℤ, k * a = k * b ↔ a = b := fun a b => mul_right_inj' hk.ne'
+  have hbe : ∀ a b, before x (fun j => k * w j) s a b ↔ before x w s a b := by
+    intro a b; cases s <;> simp only [before, hf, hlt, heq]
+  have hrank : ∀ i, rank (before x (fun j => k * w j) s) (fun j => k * w j) i = rank (before x w s) w i := by
+    intro i; unfold rank; rw [he]; exact congrArg card (filter_congr fun j _ => hbe j i)
+  have hchosen : ∀ c, chosen (before x (fun j => k * w j) s) (fun j => k * w j) c = chosen (before x w s) w c := by
+    intro c; unfold chosen; rw [he]; exact filter_congr fun j _ => by rw [hrank j]
+  cases s <;> simp only [alloc, hb, hr, hchosen]
 
 end
 

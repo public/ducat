@@ -1,95 +1,111 @@
-// The bigint kernels in src/generated/kernel.ts are printed from Lean values whose behaviour is proved
-// (proofs/Ducat/Rounding.lean). These tests check what is not proved: the number fast path of `divRound`,
-// the printer, and the `divRoundBig` dispatch, against the generated kernels and an independent oracle.
+// The bigint kernel in src/generated/kernel.ts is printed from Lean values whose behaviour is proved in
+// proofs/Ducat/Rounding.lean. These tests cover what is not proved: the printer, the `divRoundBig` dispatch
+// and the number fast path of `divRound`, compared with the generated kernels and an independent oracle.
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { DIV_ROUND_BIG } from '../src/generated/kernel.js';
+import { divideAndRoundBigint } from '../src/generated/kernel.js';
 import { divRound, divRoundBig, RoundingError, type RoundingMode } from '../src/rounding.js';
 import { MODES, refDivRound } from './oracle.js';
 
-const ALL: RoundingMode[] = [...MODES, 'unnecessary'];
+const ALL_MODES: RoundingMode[] = [...MODES, 'unnecessary'];
 
-/** The generated kernel's answer, or 'fail' when it throws (only `unnecessary` on an inexact division). */
-function kernel(p: bigint, d: bigint, mode: RoundingMode): bigint | 'fail' {
+type Outcome = bigint | 'throws';
+
+/** The generated kernel's answer, or 'throws' (only 'unnecessary' on an inexact division may throw). */
+function kernelOutcome(dividend: bigint, divisor: bigint, mode: RoundingMode): Outcome {
   try {
-    return DIV_ROUND_BIG[mode]!(p, d);
-  } catch (e) {
-    expect(e).toBeInstanceOf(RoundingError);
-    return 'fail';
+    return divideAndRoundBigint(dividend, divisor, mode);
+  } catch (error) {
+    expect(error).toBeInstanceOf(RoundingError);
+    return 'throws';
   }
 }
 
-function numberPath(p: number, d: number, mode: RoundingMode): bigint | 'fail' {
+/** `divRound` on JS numbers, which takes the number fast path whenever the inputs allow it. */
+function numberPathOutcome(dividend: number, divisor: number, mode: RoundingMode): Outcome {
   try {
-    return BigInt(divRound(p, d, mode));
-  } catch (e) {
-    expect(e).toBeInstanceOf(RoundingError);
-    return 'fail';
+    return BigInt(divRound(dividend, divisor, mode));
+  } catch (error) {
+    expect(error).toBeInstanceOf(RoundingError);
+    return 'throws';
   }
 }
 
-function oracle(p: bigint, d: bigint, mode: RoundingMode): bigint | 'fail' {
-  if (mode === 'unnecessary') return p % d === 0n ? p / d : 'fail';
-  return refDivRound(p, d, mode);
+function oracleOutcome(dividend: bigint, divisor: bigint, mode: RoundingMode): Outcome {
+  if (mode === 'unnecessary') {
+    return dividend % divisor === 0n ? dividend / divisor : 'throws';
+  }
+  return refDivRound(dividend, divisor, mode);
 }
 
-describe('generated kernel', () => {
-  it('has one kernel per rounding mode', () => {
-    expect(Object.keys(DIV_ROUND_BIG).sort()).toEqual([...ALL].sort());
-  });
-
-  it('matches the number path and the oracle exhaustively on p in [-300, 300], d in [1, 40]', () => {
-    let mismatches = 0;
-    for (const mode of ALL)
-      for (let d = 1; d <= 40; d++)
-        for (let p = -300; p <= 300; p++) {
-          const k = kernel(BigInt(p), BigInt(d), mode);
-          if (k !== numberPath(p, d, mode) || k !== oracle(BigInt(p), BigInt(d), mode)) {
-            if (mismatches++ < 5) expect({ p, d, mode, k }).toEqual({ p, d, mode, k: oracle(BigInt(p), BigInt(d), mode) });
+describe('generated rounding kernel', () => {
+  it('agree with the number path and the oracle for every dividend in [-300, 300] and divisor in [1, 40]', () => {
+    const mismatches: string[] = [];
+    for (const mode of ALL_MODES) {
+      for (let divisor = 1; divisor <= 40; divisor++) {
+        for (let dividend = -300; dividend <= 300; dividend++) {
+          const kernel = kernelOutcome(BigInt(dividend), BigInt(divisor), mode);
+          const numberPath = numberPathOutcome(dividend, divisor, mode);
+          const oracle = oracleOutcome(BigInt(dividend), BigInt(divisor), mode);
+          if (kernel !== numberPath || kernel !== oracle) {
+            mismatches.push(`${dividend} / ${divisor} ${mode}: kernel ${kernel}, number ${numberPath}, oracle ${oracle}`);
           }
         }
-    expect(mismatches).toBe(0);
+      }
+    }
+    expect(mismatches.slice(0, 5)).toEqual([]);
   });
 
-  it('matches the number path over the safe range', () => {
-    const safe = fc.integer({ min: -Number.MAX_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER });
-    const div = fc.oneof(fc.integer({ min: 1, max: 1000 }), fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }));
+  it('agree with the number path over the whole safe-integer range', () => {
+    const dividends = fc.integer({ min: -Number.MAX_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER });
+    const divisors = fc.oneof(
+      fc.integer({ min: 1, max: 1000 }),
+      fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }),
+    );
     fc.assert(
-      fc.property(safe, div, fc.constantFrom(...ALL), (p, d, mode) => {
-        expect(numberPath(p, d, mode)).toBe(kernel(BigInt(p), BigInt(d), mode));
+      fc.property(dividends, divisors, fc.constantFrom(...ALL_MODES), (dividend, divisor, mode) => {
+        expect(numberPathOutcome(dividend, divisor, mode)).toBe(kernelOutcome(BigInt(dividend), BigInt(divisor), mode));
       }),
       { numRuns: 20_000 },
     );
   });
 
-  it('matches the number path on ties and near-ties over the safe range', () => {
-    // p = q*d + r with r near d/2 hits the tie-breaking branches far more often than uniform sampling
-    const q = fc.integer({ min: -(2 ** 26), max: 2 ** 26 });
-    const d = fc.integer({ min: 1, max: 2 ** 26 });
+  it('agree with the number path on ties and near-ties', () => {
+    // dividend = quotient * divisor + (about half a divisor): uniform sampling rarely lands on a tie
+    const quotients = fc.integer({ min: -(2 ** 26), max: 2 ** 26 });
+    const divisors = fc.integer({ min: 1, max: 2 ** 26 });
+    const offsets = fc.integer({ min: -1, max: 1 });
     fc.assert(
-      fc.property(q, d, fc.integer({ min: -1, max: 1 }), fc.constantFrom(...ALL), (q, d, off, mode) => {
-        const p = q * d + Math.sign(q || 1) * (Math.floor(d / 2) + off);
-        expect(numberPath(p, d, mode)).toBe(kernel(BigInt(p), BigInt(d), mode));
+      fc.property(quotients, divisors, offsets, fc.constantFrom(...ALL_MODES), (quotient, divisor, offset, mode) => {
+        const sign = quotient < 0 ? -1 : 1;
+        const dividend = quotient * divisor + sign * (Math.floor(divisor / 2) + offset);
+        expect(numberPathOutcome(dividend, divisor, mode)).toBe(kernelOutcome(BigInt(dividend), BigInt(divisor), mode));
       }),
       { numRuns: 20_000 },
     );
   });
 
-  it('matches the oracle on bigints up to 10^30, and divRoundBig dispatches to it', () => {
-    const big = fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n });
-    const div = fc.oneof(fc.bigInt({ min: 1n, max: 1000n }), fc.bigInt({ min: 1n, max: 10n ** 30n }));
+  it('agree with the oracle on bigints up to 10^30, and divRoundBig calls them', () => {
+    const dividends = fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n });
+    const divisors = fc.oneof(fc.bigInt({ min: 1n, max: 1000n }), fc.bigInt({ min: 1n, max: 10n ** 30n }));
     fc.assert(
-      fc.property(big, div, fc.constantFrom(...ALL), (p, d, mode) => {
-        const k = kernel(p, d, mode);
-        expect(k).toBe(oracle(p, d, mode));
-        if (k === 'fail') expect(() => divRoundBig(p, d, mode)).toThrow(RoundingError);
-        else expect(divRoundBig(p, d, mode)).toBe(k);
+      fc.property(dividends, divisors, fc.constantFrom(...ALL_MODES), (dividend, divisor, mode) => {
+        const kernel = kernelOutcome(dividend, divisor, mode);
+        expect(kernel).toBe(oracleOutcome(dividend, divisor, mode));
+        if (kernel === 'throws') {
+          expect(() => divRoundBig(dividend, divisor, mode)).toThrow(RoundingError);
+        } else {
+          expect(divRoundBig(dividend, divisor, mode)).toBe(kernel);
+        }
       }),
       { numRuns: 20_000 },
     );
   });
 
-  it('divRoundBig rejects an unknown mode', () => {
-    expect(() => divRoundBig(7n, 2n, 'nearest' as RoundingMode)).toThrow(/Unknown rounding mode/);
+  it('rejects an unknown mode, including names inherited from Object.prototype', () => {
+    for (const mode of ['nearest', 'constructor', 'toString', '__proto__']) {
+      expect(() => divRoundBig(7n, 2n, mode as RoundingMode)).toThrow(/Unknown rounding mode/);
+      expect(() => divideAndRoundBigint(7n, 2n, mode as RoundingMode)).toThrow(/Unknown rounding mode/);
+    }
   });
 });

@@ -8,7 +8,10 @@ the shipped code is the proved code up to this printer and JS `bigint` semantics
 * `+ - *` on `bigint` are exact, like `Int`.
 * `a / b` on `bigint` truncates towards zero: `Int.tdiv`. Kernels divide only by a divisor the caller
   guarantees positive, so JS's `RangeError` on division by zero cannot arise.
-* `fail` prints as a call to `fail()`, which throws; in the semantics it is `none`.
+* `fail` prints as `throw new RoundingError(…)`; in the semantics it is `none`.
+* A conditional in result position prints as `if (…) { return …; }`; JS evaluates only the branch
+  taken, like `E.eval`. `&&` and `||` short-circuit in JS but not in `B.eval`; that can only differ
+  when the skipped operand would fail, and no kernel puts `fail` inside a condition.
 
 The printer is the trusted part (about 40 lines below). It is exercised by `test/kernel.test.ts`,
 which compares the generated code against an independent TypeScript oracle.
@@ -90,7 +93,7 @@ mutual
     | .tdiv a b => s!"({a.toTS names} / {b.toTS names})"
     | .neg a => s!"(-{a.toTS names})"
     | .ite c t e => s!"({c.toTS names} ? {t.toTS names} : {e.toTS names})"
-    | .fail => "fail()"
+    | .fail => "(() => { throw new RoundingError(ROUNDING_NECESSARY); })()"
 
   def B.toTS (names : Array String) : B → String
     | .lt a b => s!"({a.toTS names} < {b.toTS names})"
@@ -101,13 +104,37 @@ mutual
     | .or a b => s!"({a.toTS names} || {b.toTS names})"
 end
 
-def Prog.toTS (p : Prog) : String := Id.run do
-  let mut names : Array String := p.params.toArray
+/-- The result expression as statements: a conditional becomes `if (…) { return …; }` followed by the
+other branch, so the output has no nested ternaries. -/
+def E.toReturn (names : Array String) (indent : String) : E → String
+  | .ite c t e =>
+    s!"{indent}if ({c.toTS names}) \{\n{t.toReturn names (indent ++ "  ")}{indent}}\n" ++ e.toReturn names indent
+  | .fail => s!"{indent}throw new RoundingError(ROUNDING_NECESSARY);\n"
+  | e => s!"{indent}return {e.toTS names};\n"
+
+/-- The `const` lines for `lets`, and the variable names in scope after them. -/
+def letsToTS (params : List String) (lets : List (String × E)) : String × Array String := Id.run do
+  let mut names : Array String := params.toArray
   let mut body := ""
-  for (n, e) in p.lets do
+  for (n, e) in lets do
     body := body ++ s!"  const {n} = {e.toTS names};\n"
     names := names.push n
+  return (body, names)
+
+def Prog.toTS (p : Prog) : String :=
+  let (body, names) := letsToTS p.params p.lets
   let sig := ", ".intercalate (p.params.map (· ++ ": bigint"))
-  return s!"/** {p.doc} */\nexport function {p.name}({sig}): bigint \{\n{body}  return {p.ret.toTS names};\n}\n"
+  s!"/** {p.doc} */\nexport function {p.name}({sig}): bigint \{\n{body}\n{p.ret.toReturn names "  "}}\n"
+
+/-- Several kernels with the same parameters and `let`s as one function: the shared `let`s, then a
+`switch` on `selector` whose case `key` is the result of the kernel for that key. Any other key throws. -/
+def switchToTS (name doc : String) (params : List String) (selector selectorType : String)
+    (lets : List (String × E)) (cases : List (String × String × E)) (otherwise : String) : String :=
+  let (body, names) := letsToTS params lets
+  let sig := ", ".intercalate (params.map (· ++ ": bigint") ++ [s!"{selector}: {selectorType}"])
+  let arms := cases.map fun (key, comment, ret) =>
+    s!"    // {comment}\n    case '{key}': \{\n{ret.toReturn names "      "}    }\n"
+  s!"/**\n{doc}\n */\nexport function {name}({sig}): bigint \{\n{body}\n  switch ({selector}) \{\n" ++
+    String.join arms ++ s!"  }\n  {otherwise}\n}\n"
 
 end Ducat

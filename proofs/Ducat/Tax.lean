@@ -49,7 +49,8 @@ def Mode.isHalf : Mode → Bool
 /-- Half modes: `|p/d - q| ≤ 1/2`. -/
 theorem rounds_half_bound (m : Mode) (hm : m.isHalf) (p d q : Int) (h : Rounds m p d q) :
     -d ≤ 2 * (p - d * q) ∧ 2 * (p - d * q) ≤ d := by
-  cases m <;> simp only [Mode.isHalf] at hm <;> simp only [Rounds] at h <;> (try split_ifs at h) <;> omega
+  cases m <;> simp only [Mode.isHalf, Bool.false_eq_true] at hm <;> simp only [Rounds] at h <;> (try split_ifs at h) <;>
+    omega
 
 /-- Every mode: `|p/d - q| < 1`. -/
 theorem rounds_directed_bound (m : Mode) (p d q : Int) (hd : 0 < d) (h : Rounds m p d q) :
@@ -100,24 +101,46 @@ theorem toScale_roundtrip (m : Mode) (v : Int) (e : Nat) : scaleDown m (scaleUp 
   apply divRound_spec m _ _ hd
   · simp only [scaleUp, mul_comm v]
     cases m <;> simp only [Rounds] <;> (try split_ifs) <;> simp [hd.le, hd]
+    -- left over: halfEven's tie clause, whose premise `0 = 10 ^ e` is false
+    intro h
+    omega
   · right; exact ⟨v, by simp only [scaleUp]; ring⟩
 
 /-! ## Rounding once -/
 
-theorem rounds_mul_left (m : Mode) {k : Int} (hk : 0 < k) (p d q : Int) :
-    Rounds m (k * p) (k * d) q ↔ Rounds m p d q := by
+/-- Scaling numerator and denominator by `k > 0` keeps a correctly rounded answer correct. -/
+theorem rounds_mul_left (m : Mode) {k : Int} (hk : 0 < k) (p d q : Int) (h : Rounds m p d q) :
+    Rounds m (k * p) (k * d) q := by
   have e : k * p - k * d * q = k * (p - d * q) := by ring
-  have hp : (0 ≤ k * p ↔ 0 ≤ p) := ⟨fun h => nonneg_of_mul_nonneg_right (by linarith) hk, fun h => by positivity⟩
-  have h2 : 2 * (k * (p - d * q)) = k * (2 * (p - d * q)) := by ring
-  cases m <;> simp only [Rounds, e, h2, hp, mul_lt_mul_left hk, mul_le_mul_left hk,
-    show -(k * d) = k * -d by ring, mul_eq_mul_left_iff, hk.ne', or_false, mul_eq_zero, false_or] <;>
-    (try rfl) <;> (try exact Iff.rfl)
+  have hp : (0 ≤ k * p ↔ 0 ≤ p) :=
+    ⟨fun h' => by by_contra hc; push Not at hc; nlinarith, fun h' => mul_nonneg hk.le h'⟩
+  cases m
+  case unnecessary =>
+    simp only [Rounds] at h ⊢
+    rw [e, h, mul_zero]
+  case halfEven =>
+    simp only [Rounds] at h ⊢
+    rw [e]
+    generalize p - d * q = x at h ⊢
+    obtain ⟨h1, h2, h3⟩ := h
+    refine ⟨by nlinarith, by nlinarith, fun ht => h3 ?_⟩
+    rcases ht with ht | ht
+    · left
+      exact mul_left_cancel₀ hk.ne' (by rw [← ht]; ring)
+    · right
+      exact mul_left_cancel₀ hk.ne' (by rw [mul_neg, ← ht]; ring)
+  all_goals
+    simp only [Rounds, hp] at h ⊢
+    rw [e]
+    generalize p - d * q = x at h ⊢
+    (try split_ifs at h ⊢)
+    all_goals (obtain ⟨h1, h2⟩ := h; constructor <;> nlinarith)
 
 /-- Scaling a fraction by `k > 0` does not change how it rounds. -/
 theorem divRound_mul_left (m : Mode) {k : Int} (hk : 0 < k) (p d : Int) (hd : 0 < d)
     (hok : m ≠ .unnecessary ∨ d ∣ p) : divRound m (k * p) (k * d) = divRound m p d := by
   apply divRound_spec m _ _ (by positivity)
-  · exact (rounds_mul_left m hk p d _).2 (divRound_rounds m p d hd hok)
+  · exact rounds_mul_left m hk p d _ (divRound_rounds m p d hd hok)
   · rcases hok with h | h
     · exact Or.inl h
     · exact Or.inr (mul_dvd_mul_left k h)

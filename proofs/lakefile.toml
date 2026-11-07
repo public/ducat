@@ -1,21 +1,13 @@
 name = "ducat-proofs"
 version = "0.1.0"
-defaultTargets = ["Ducat", "gen", "oracle"]
+defaultTargets = ["Ducat"]
 
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.35.0"
 
+# The proofs. Gen.lean (prints src/generated/kernel.ts) and Oracle.lean (prints test/fixtures/allocate.oracle.json)
+# are run with `lake env lean --run`, in the interpreter, so Mathlib never has to be compiled to native code.
 [[lean_lib]]
 name = "Ducat"
-
-# `lake exe gen` prints the verified kernels as TypeScript (src/generated/kernel.ts)
-[[lean_exe]]
-name = "gen"
-root = "Gen"
-
-# `lake exe oracle` evaluates the proved allocation model on generated cases (test/fixtures/allocate.oracle.json)
-[[lean_exe]]
-name = "oracle"
-root = "Oracle"

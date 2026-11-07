@@ -56,7 +56,8 @@ def Rounds (m : Mode) (p d q : Int) : Prop :=
 
 /-! ## The kernels
 
-Variables: `p` = 0, `d` = 1, then `q = p / d` (truncated) = 2, `r = p - q*d` = 3, `a = 2|r|` = 4. -/
+Variables: `dividend` = 0, `divisor` = 1, then `quotient = dividend / divisor` (truncated) = 2,
+`remainder = dividend - quotient * divisor` = 3, `twiceRemainder = 2 * |remainder|` = 4. -/
 
 namespace K
 def p : E := .var 0
@@ -72,10 +73,10 @@ def exact : B := .eq r zero
 def away : E := .ite neg (.sub q one) (.add q one)
 /-- q is odd: `(q / 2) * 2 !== q` -/
 def odd : B := .not (.eq (.mul (.tdiv q (.lit 2)) (.lit 2)) q)
-/-- the half modes step away from zero when `a > d`, and on a tie (`a = d`) when `tie` holds -/
-def half (tie : B) : E := .ite (.or (.lt d a) (.and (.eq a d) tie)) away q
-def yes : B := .eq zero zero
-def no : B := .not yes
+/-- the half modes step away from zero when `cond` holds (past the half, or on it for some ties) -/
+def half (cond : B) : E := .ite cond away q
+/-- past the half, or exactly on it and `tie` holds -/
+def pastHalfOr (tie : B) : B := .or (.lt d a) (.and (.eq a d) tie)
 end K
 
 def kernelRet : Mode → E
@@ -84,20 +85,41 @@ def kernelRet : Mode → E
   | .ceil => .ite (.or K.exact K.neg) K.q (.add K.q K.one)
   | .floor => .ite (.or K.exact (.not K.neg)) K.q (.sub K.q K.one)
   | .unnecessary => .ite K.exact K.q .fail
-  | .halfEven => K.half K.odd
-  | .halfExpand => K.half K.yes
-  | .halfTrunc => K.half K.no
-  | .halfCeil => K.half (.not K.neg)
-  | .halfFloor => K.half K.neg
+  | .halfEven => K.half (K.pastHalfOr K.odd)
+  | .halfExpand => K.half (.le K.d K.a)
+  | .halfTrunc => K.half (.lt K.d K.a)
+  | .halfCeil => K.half (K.pastHalfOr (.not K.neg))
+  | .halfFloor => K.half (K.pastHalfOr K.neg)
 
-def capitalize (s : String) : String := s.capitalize
+/-- What each mode does, for the generated JSDoc. -/
+def Mode.describe : Mode → String
+  | .halfEven => "to the nearest integer, ties to the even neighbour"
+  | .halfExpand => "to the nearest integer, ties away from zero"
+  | .halfTrunc => "to the nearest integer, ties towards zero"
+  | .halfCeil => "to the nearest integer, ties towards +infinity"
+  | .halfFloor => "to the nearest integer, ties towards -infinity"
+  | .expand => "away from zero"
+  | .trunc => "towards zero"
+  | .ceil => "towards +infinity"
+  | .floor => "towards -infinity"
+  | .unnecessary => "not at all: throws RoundingError unless the division is exact"
+
+/-- The `let`s every kernel starts with: quotient, remainder and twice the remainder's magnitude. -/
+def sharedLets : List (String × E) :=
+  [("quotient", .tdiv K.p K.d), ("remainder", .sub K.p (.mul K.q K.d)),
+    ("twiceRemainder", .ite (.lt K.r K.zero) (.mul (.lit (-2)) K.r) (.mul (.lit 2) K.r))]
 
 def kernel (m : Mode) : Prog where
-  name := s!"divRound{capitalize m.tsName}"
-  doc := s!"p / d rounded '{m.tsName}' (d > 0). Generated from proofs/Ducat/Rounding.lean; proved there."
-  params := ["p", "d"]
-  lets := [("q", .tdiv K.p K.d), ("r", .sub K.p (.mul K.q K.d)), ("a", .ite (.lt K.r K.zero) (.mul (.lit (-2)) K.r) (.mul (.lit 2) K.r))]
+  name := s!"divideAndRound{m.tsName.capitalize}"
+  doc := s!"`dividend / divisor` rounded {m.describe}"
+  params := ["dividend", "divisor"]
+  lets := sharedLets
   ret := kernelRet m
+
+/-- Every kernel has the same parameters and `let`s, so `Gen.lean` prints them once, followed by a
+`switch` on the mode whose cases are the kernels' results. -/
+theorem kernel_shared (m : Mode) : (kernel m).params = ["dividend", "divisor"] ∧ (kernel m).lets = sharedLets :=
+  ⟨rfl, rfl⟩
 
 /-! ## Facts about truncated division -/
 
@@ -125,12 +147,12 @@ theorem kernel_sound (m : Mode) (p d : Int) (hd : 0 < d) (q : Int)
   have hev := even_iff (p.tdiv d)
   by_cases hrn : p < p.tdiv d * d <;>
   cases m <;>
-  simp [kernel, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.p, K.d, K.q, K.r, K.a, K.one, K.zero,
-    K.neg, K.exact, K.away, K.odd, K.half, K.yes, K.no, hrn] at h <;>
+  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.p, K.d, K.q, K.r, K.a, K.one, K.zero,
+    K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr, hrn] at h <;>
   generalize p.tdiv d = t at * <;>
   unfold Rounds <;>
   (try split_ifs at h) <;> (try simp only [Option.some.injEq] at h) <;> (try subst h) <;> (try split_ifs) <;>
-  (try simp only [not_lt, not_le, ne_eq, not_not, not_or, not_and] at *) <;>
+  (try simp only [not_lt, not_le, not_not, not_or, not_and] at *) <;>
   (try simp only [mul_add, mul_sub, mul_one, mul_comm d t] at *) <;>
   first
   | (refine ⟨by linarith, by linarith⟩)
@@ -157,41 +179,58 @@ theorem pin_le {d q q' : Int} (hd : 0 < d) (h1 : d * q - d * q' ≤ d) (h2 : d *
     · right; left; exact g
     · nlinarith
 
+/-- The `halfEven` case of `rounds_unique`: two neighbours cannot both be the even one. -/
+theorem half_even_unique {p d q q' : Int} (hd : 0 < d)
+    (h : -d ≤ 2 * (p - d * q) ∧ 2 * (p - d * q) ≤ d ∧ (2 * (p - d * q) = d ∨ 2 * (p - d * q) = -d → 2 ∣ q))
+    (h' : -d ≤ 2 * (p - d * q') ∧ 2 * (p - d * q') ≤ d ∧ (2 * (p - d * q') = d ∨ 2 * (p - d * q') = -d → 2 ∣ q')) :
+    q = q' := by
+  obtain ⟨a1, a2, a3⟩ := h
+  obtain ⟨b1, b2, b3⟩ := h'
+  have hq : d * q - d * q' ≤ d := by linarith
+  have hq' : d * q' - d * q ≤ d := by linarith
+  rcases pin_le hd hq hq' with e | e | e
+  · exact e.symm
+  · have e2 : d * q' = d * q + d := by rw [e]; ring
+    have ta : 2 * (p - d * q) = d := by linarith
+    have tb : 2 * (p - d * q') = -d := by linarith
+    have h1 := a3 (Or.inl ta)
+    have h2 := b3 (Or.inr tb)
+    rw [e] at h2
+    omega
+  · have e2 : d * q' = d * q - d := by rw [e]; ring
+    have ta : 2 * (p - d * q) = -d := by linarith
+    have tb : 2 * (p - d * q') = d := by linarith
+    have h1 := a3 (Or.inr ta)
+    have h2 := b3 (Or.inl tb)
+    rw [e] at h2
+    omega
+
 /-- `Rounds` pins down the result: two values that both satisfy the spec are equal. -/
 theorem rounds_unique (m : Mode) (p d q q' : Int) (hd : 0 < d)
     (h : Rounds m p d q) (h' : Rounds m p d q') : q = q' := by
-  cases m <;> simp only [Rounds] at h h' <;> (try split_ifs at h h') <;>
-  first
-  | exact pin_lt hd (by linarith) (by linarith)
-  | (obtain ⟨a1, a2, a3⟩ := h
-     obtain ⟨b1, b2, b3⟩ := h'
-     rcases pin_le hd (by linarith) (by linarith) with e | e | e
-     · exact e.symm
-     · subst e
-       simp only [mul_add, mul_one] at b1 b2 b3
-       have ta : 2 * (p - d * q) = d := by linarith
-       have tb : 2 * (p - (d * q + d)) = -d := by linarith
-       have := a3 (Or.inl ta); have := b3 (Or.inr tb); omega
-     · subst e
-       simp only [mul_sub, mul_one] at b1 b2 b3
-       have ta : 2 * (p - d * q) = -d := by linarith
-       have tb : 2 * (p - (d * q - d)) = d := by linarith
-       have := a3 (Or.inr ta); have := b3 (Or.inl tb); omega)
-  | exact pin_lt hd (by linarith) (by linarith)
+  cases m
+  case halfEven => exact half_even_unique hd h h'
+  all_goals
+    simp only [Rounds] at h h'
+    (try split_ifs at h h')
+    all_goals exact pin_lt hd (by linarith) (by linarith)
 
 /-! ## The kernel fails exactly when it must -/
 
 /-- The kernel returns a value for every mode except `unnecessary` on an inexact division. -/
-theorem kernel_fails_iff (m : Mode) (p d : Int) (hd : 0 < d) :
+theorem kernel_fails_iff (m : Mode) (p d : Int) (_hd : 0 < d) :
     (kernel m).eval [p, d] = none ↔ (m = .unnecessary ∧ ¬ d ∣ p) := by
   have hdvd : d ∣ p ↔ p - p.tdiv d * d = 0 := by
     rw [Int.dvd_iff_tmod_eq_zero, Int.tmod_def]
     constructor <;> intro h <;> linarith [mul_comm d (p.tdiv d)]
   rw [hdvd]
   cases m <;>
-  simp [kernel, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.p, K.d, K.q, K.r, K.a, K.one, K.zero,
-    K.neg, K.exact, K.away, K.odd, K.half, K.yes, K.no] <;>
-  (try split_ifs) <;> simp
+  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.p, K.d, K.q, K.r, K.a, K.one, K.zero,
+    K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr] <;>
+  (try split_ifs) <;> (try simp) <;>
+  -- name the truncated quotients so that what is left is linear
+  generalize (p.tdiv d).tdiv 2 = u at * <;> generalize p.tdiv d * d = s at * <;> generalize p.tdiv d = t at * <;>
+  omega
 
 /-- Hence, whenever a correctly rounded answer exists (every mode, or `unnecessary` on an exact
 division), the kernel returns exactly that answer. -/

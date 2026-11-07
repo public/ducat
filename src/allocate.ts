@@ -82,7 +82,8 @@ function distribute<T extends number | bigint>(
  * Splits `m` into parts proportional to `weights`. Exact: the parts always sum to `m`, and zero
  * weights get zero. With 'largest' each part is less than one minor unit from its exact share; with
  * 'first' and 'last', at most one unit. Negative amounts are allocated as the negation of the positive
- * allocation. These are proved in proofs/Ducat/Allocate.lean.
+ * allocation. These properties are proved for a Lean model of this function
+ * (proofs/Ducat/Allocate.lean), and test/allocate.oracle.test.ts checks this code against that model.
  *
  *     allocate(money('100', 'EUR'), [1, 1, 1])        // 33.34, 33.33, 33.33
  *     allocate(money('0.05', 'EUR'), ['70', '30'])    // 0.04, 0.01

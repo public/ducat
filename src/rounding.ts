@@ -1,4 +1,5 @@
-import { DIV_ROUND_BIG } from './generated/kernel.js';
+import { divideAndRoundBigint } from './generated/kernel.js';
+import { RoundingError } from './rounding-error.js';
 
 /**
  * Rounding modes. The string values are the ones `Intl.NumberFormat` uses for its `roundingMode`
@@ -39,10 +40,7 @@ export const Rounding = {
  */
 export const DEFAULT_ROUNDING: RoundingMode = 'halfExpand';
 
-/** Thrown when an operation would have to round but the rounding mode is `'unnecessary'`. */
-export class RoundingError extends RangeError {
-  override name = 'RoundingError';
-}
+export { RoundingError };
 
 const MAX = Number.MAX_SAFE_INTEGER;
 
@@ -119,12 +117,12 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
 }
 
 /**
- * p / d rounded with `mode`; d > 0n. The bigint kernels are generated from the Lean proofs in proofs/Ducat/Rounding.lean
- * (`src/generated/kernel.ts`).
+ * p / d rounded with `mode`; d > 0n. The bigint kernel is generated from the Lean proofs in
+ * proofs/Ducat/Rounding.lean (`src/generated/kernel.ts`).
  */
 export function divRoundBig(p: bigint, d: bigint, mode: RoundingMode): bigint {
-  if (d === 1n) return p;
-  const k = DIV_ROUND_BIG[mode];
-  if (k === undefined) throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
-  return k(p, d);
+  if (d === 1n) {
+    return p;
+  }
+  return divideAndRoundBigint(p, d, mode);
 }
