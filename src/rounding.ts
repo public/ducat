@@ -1,4 +1,4 @@
-import { divideAndRoundBigint } from './generated/kernel.js';
+import { divideAndRoundBigint, roundTruncatedQuotient } from './generated/kernel.js';
 import { RoundingError } from './rounding-error.js';
 
 /**
@@ -44,52 +44,11 @@ export { RoundingError };
 
 const MAX = Number.MAX_SAFE_INTEGER;
 
-/**
- * Should a truncated quotient move one step away from zero?
- * `twiceRem` is 2*|remainder| (non-zero), `d` the divisor, `odd` whether |truncated quotient| is odd.
- */
-function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint, odd: boolean, neg: boolean): boolean {
-  // twiceRem === d is an exact tie; otherwise the half modes round to the nearest. Both operands are
-  // numbers (divRound) or both bigints (divRoundBig), so === and the comparisons below are exact.
-  switch (mode) {
-    case 'halfExpand':
-      return twiceRem >= d;
-    case 'halfEven':
-      return twiceRem === d ? odd : twiceRem > d;
-    case 'halfTrunc':
-      return twiceRem > d;
-    case 'halfCeil':
-      return twiceRem === d ? !neg : twiceRem > d;
-    case 'halfFloor':
-      return twiceRem === d ? neg : twiceRem > d;
-    case 'trunc':
-      return false;
-    case 'expand':
-      return true;
-    case 'ceil':
-      return !neg;
-    case 'floor':
-      return neg;
-    case 'unnecessary':
-      throw new RoundingError('Rounding necessary: the result is not exact; pass a rounding mode');
-  }
-  throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
-}
-
-const ROUNDING_MODES: ReadonlySet<string> = new Set(Object.values(Rounding));
-
-/** The shortcuts for exact divisions must reject an unknown mode as the general path does. */
-function assertRoundingMode(mode: RoundingMode): void {
-  if (!ROUNDING_MODES.has(mode)) {
-    throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
-  }
-}
-
 /** p / d rounded with `mode`; p, d safe integers, d > 0. Exact (never uses a float quotient unchecked). */
 export function divRound(p: number, d: number, mode: RoundingMode): number {
   if (d === 1) {
-    assertRoundingMode(mode);
-    return p;
+    // still through the switch, so an unknown mode is rejected
+    return roundTruncatedQuotient(p, 1, p, 0, mode) + 0;
   }
   if (!(Math.abs(p) + d <= MAX)) return Number(divRoundBig(BigInt(p), BigInt(d), mode));
   let q = Math.trunc(p / d);
@@ -110,23 +69,15 @@ export function divRound(p: number, d: number, mode: RoundingMode): number {
     q -= 1;
     r += d;
   }
-  if (r === 0) {
-    assertRoundingMode(mode);
-    return q + 0; // + 0 normalises -0
-  }
-  const neg = p < 0;
-  if (away(mode, Math.abs(r) * 2, d, q % 2 !== 0, neg)) q += neg ? -1 : 1;
-  return q + 0;
+  // q and r are now the exact truncated quotient and remainder, so the generated switch applies;
+  // + 0 normalises -0
+  return roundTruncatedQuotient(p, d, q, r, mode) + 0;
 }
 
 /**
  * p / d rounded with `mode`; d > 0n. The bigint kernel is generated from the Lean proofs in
- * proofs/Ducat/Rounding.lean (`src/generated/kernel.ts`).
+ * proofs/Ducat/Rounding.lean (`src/generated/kernel.ts`), and so is the mode switch that `divRound` uses.
  */
 export function divRoundBig(p: bigint, d: bigint, mode: RoundingMode): bigint {
-  if (d === 1n) {
-    assertRoundingMode(mode);
-    return p;
-  }
   return divideAndRoundBigint(p, d, mode);
 }

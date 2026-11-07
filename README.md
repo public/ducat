@@ -435,7 +435,7 @@ These are stated over the proved kernel (`divRound`):
 ### Tested, not proved
 
 - **The printer** that turns the Lean kernels into TypeScript, and the `divRoundBig` dispatch. The generated kernels are compared with an independent bigint oracle (`test/kernel.test.ts`).
-- **The number fast path** of `divRound`. It is compared with the generated kernels for every `p ∈ [−300, 300]`, `d ∈ [1, 40]` in every mode, and with fast-check over the full safe-integer range, on ties, and on bigints up to 10^30.
+- **The number fast path** of `divRound`. It computes the exact truncated quotient and remainder itself, then calls `roundTruncatedQuotient`: the same Lean terms as the proved switch, printed over `number`. That is exact while every value is a safe integer, which is the caller's obligation. It is compared with the generated kernels for every `p ∈ [−300, 300]`, `d ∈ [1, 40]` in every mode, and with fast-check over the full safe-integer range, on ties, and on bigints up to 10^30.
 - **The TypeScript `allocate`**, number and bigint paths. It is compared with the 1,500-case oracle fixture, plus property tests against a separate bigint largest-remainder allocator (`test/oracle.test.ts`).
 - **The TypeScript tax, conversion and `mulRatio` code:**
   - that each rounds with exactly one kernel call on the exact product;

@@ -71,8 +71,8 @@ def neg : B := .lt dividend zero
 def exact : B := .eq remainder zero
 /-- one step away from zero -/
 def away : E := .ite neg (.sub quotient one) (.add quotient one)
-/-- the quotient is odd: `(quotient / 2) * 2 !== quotient` -/
-def odd : B := .not (.eq (.mul (.tdiv quotient (.lit 2)) (.lit 2)) quotient)
+/-- the quotient is odd: `quotient % 2 !== 0` -/
+def odd : B := .not (.eq (.tmod quotient (.lit 2)) zero)
 /-- the half modes step away from zero when `cond` holds (past the half, or on it for some ties) -/
 def half (cond : B) : E := .ite cond away quotient
 /-- past the half, or exactly on it and `tie` holds -/
@@ -134,21 +134,17 @@ theorem tdiv_facts (p d : Int) (hd : 0 < d) :
   have h3 : (-p).tmod d < d := Int.tmod_lt_of_pos _ hd
   omega
 
-theorem even_iff (q : Int) : q.tdiv 2 * 2 = q ↔ 2 ∣ q := by
-  constructor
-  · intro h; exact ⟨q.tdiv 2, by linarith⟩
-  · intro h; exact Int.tdiv_mul_cancel h
+theorem even_iff (q : Int) : q.tmod 2 = 0 ↔ 2 ∣ q := Int.dvd_iff_tmod_eq_zero.symm
 
 /-! ## Soundness: whatever the kernel returns is correctly rounded -/
 
 theorem kernel_sound (m : Mode) (p d : Int) (hd : 0 < d) (q : Int)
     (h : (kernel m).eval [p, d] = some q) : Rounds m p d q := by
   obtain ⟨hpos, hneg⟩ := tdiv_facts p d hd
-  have hev := even_iff (p.tdiv d)
   by_cases hrn : p < p.tdiv d * d <;>
   cases m <;>
-  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient, K.remainder, K.twiceRemainder, K.one, K.zero,
-    K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr, hrn] at h <;>
+  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient,
+    K.remainder, K.twiceRemainder, K.one, K.zero, K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr, hrn, even_iff] at h <;>
   generalize p.tdiv d = t at * <;>
   unfold Rounds <;>
   (try split_ifs at h) <;> (try simp only [Option.some.injEq] at h) <;> (try subst h) <;> (try split_ifs) <;>
@@ -225,11 +221,11 @@ theorem kernel_fails_iff (m : Mode) (p d : Int) (_hd : 0 < d) :
     constructor <;> intro h <;> linarith [mul_comm d (p.tdiv d)]
   rw [hdvd]
   cases m <;>
-  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient, K.remainder, K.twiceRemainder, K.one, K.zero,
-    K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr] <;>
+  simp [kernel, sharedLets, kernelRet, Prog.eval, evalLets, E.eval, B.eval, K.dividend, K.divisor, K.quotient,
+    K.remainder, K.twiceRemainder, K.one, K.zero, K.neg, K.exact, K.away, K.odd, K.half, K.pastHalfOr] <;>
   (try split_ifs) <;> (try simp) <;>
   -- name the truncated quotients so that what is left is linear
-  generalize (p.tdiv d).tdiv 2 = u at * <;> generalize p.tdiv d * d = s at * <;> generalize p.tdiv d = t at * <;>
+  generalize (p.tdiv d).tmod 2 = u at * <;> generalize p.tdiv d * d = s at * <;> generalize p.tdiv d = t at * <;>
   omega
 
 /-- Hence, whenever a correctly rounded answer exists (every mode, or `unnecessary` on an exact

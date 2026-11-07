@@ -101,6 +101,24 @@ describe('generated rounding kernel', () => {
     );
   });
 
+  it('treats negative odd quotients as odd on both paths (half-even ties)', () => {
+    // -5/2 = -2.5 -> -2, -7/2 = -3.5 -> -4, -3/2 = -1.5 -> -2, -1/2 = -0.5 -> 0, -9/6 = -1.5 -> -2
+    const ties: Array<[number, number, number]> = [
+      [-5, 2, -2],
+      [-7, 2, -4],
+      [-3, 2, -2],
+      [-1, 2, 0],
+      [-9, 6, -2],
+      [5, 2, 2],
+      [7, 2, 4],
+    ];
+    for (const [dividend, divisor, expected] of ties) {
+      expect(divRound(dividend, divisor, 'halfEven')).toBe(expected);
+      expect(divRoundBig(BigInt(dividend), BigInt(divisor), 'halfEven')).toBe(BigInt(expected));
+    }
+    expect(Object.is(divRound(-1, 2, 'halfEven'), 0)).toBe(true);
+  });
+
   it('rejects an unknown mode on every path, exact divisions included', () => {
     for (const mode of ['nearest', 'constructor', 'toString', '__proto__'] as string[] as RoundingMode[]) {
       // inexact, exact, and division by one (each path has its own shortcut for the last two)
