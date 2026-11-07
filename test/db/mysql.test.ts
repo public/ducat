@@ -9,9 +9,12 @@ import { databaseSuite, type DatabaseAdapter } from './suite.js';
 // empty when unset, so the suite is skipped (mysql2's options need a string)
 const connectionUrl = process.env.DUCAT_MYSQL_URL ?? '';
 
+/** The parameters these tests bind: integers, decimal strings, JSON text and NULL. */
+type BindValue = string | number | null;
+
 /** bigint parameters as strings, which MySQL converts exactly */
-function bindable(parameters: unknown[]): unknown[] {
-  return parameters.map((value) => (typeof value === 'bigint' ? value.toString() : value));
+function bindable(parameters: unknown[]): BindValue[] {
+  return parameters.map((value) => (typeof value === 'bigint' ? value.toString() : (value as BindValue)));
 }
 
 async function connectToMysql(): Promise<DatabaseAdapter> {
