@@ -12,11 +12,14 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  format(this: Money, locale?: string, options?: Intl.NumberFormatOptions) {
-    return format(this, locale, options);
+extendMoney(
+  {
+    format(this: Money, locale?: string, options?: Intl.NumberFormatOptions) {
+      return format(this, locale, options);
+    },
+    formatToParts(this: Money, locale?: string, options?: Intl.NumberFormatOptions) {
+      return formatToParts(this, locale, options);
+    },
   },
-  formatToParts(this: Money, locale?: string, options?: Intl.NumberFormatOptions) {
-    return formatToParts(this, locale, options);
-  },
-});
+  { owner: '@ducatjs/money/format' },
+);
