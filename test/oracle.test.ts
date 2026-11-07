@@ -27,7 +27,7 @@ import {
   toScale,
   type Money,
   type RoundingMode,
-} from '../src/index.js';
+} from '../src/fn.js';
 import { runs } from './fc-config.js';
 
 const Decimal = DecimalJs.clone({

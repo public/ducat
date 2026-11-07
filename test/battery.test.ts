@@ -20,7 +20,7 @@ import {
   split,
   subtract,
   type Money,
-} from '../src/index.js';
+} from '../src/fn.js';
 
 function decimalOf(amount: Money): string {
   return amount.toDecimal();
