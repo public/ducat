@@ -1,0 +1,61 @@
+# Stages a release on npm when a v* tag is pushed, through npm trusted publishing (OIDC): no token or
+# secret is involved. The staged version goes live only after a maintainer approves it on npmjs.com.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    # The npm trusted publisher is bound to this environment, which only allows v* tags.
+    environment: npm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Installs the pnpm version named in package.json's packageManager field.
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      # Staged publishing needs npm 11.15.0 or later. Pinned, so a release never depends on the npm
+      # that happens to ship with Node.
+      - run: npm install --global npm@11.21.2
+
+      - name: Check that the tag matches package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $version"
+            exit 1
+          fi
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm build
+
+      # Prereleases (1.0.0-beta.1) need an explicit dist-tag; everything else is tagged latest.
+      # The publish step is the npm CLI: trusted and staged publishing are npm features.
+      - name: Stage the release on npm
+        run: |
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-*) dist_tag=next ;;
+            *) dist_tag=latest ;;
+          esac
+          npm stage publish --provenance --access public --tag "$dist_tag"
