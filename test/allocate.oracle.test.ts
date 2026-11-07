@@ -3,7 +3,7 @@
 // on its number fast path and on its bigint path, must give exactly the model's answer for every case.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { allocate, fromMinor, money, type Remainder } from '../src/index.js';
+import { allocate, fromMinor, money, type Remainder } from '../src/fn.js';
 
 type OracleCase = { amount: string; weights: string[] } & Record<Remainder, string[]>;
 

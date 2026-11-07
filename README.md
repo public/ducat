@@ -383,7 +383,7 @@ These are stated over the proved kernel (`divRound`):
 
 ## Tests
 
-`pnpm test` runs vitest: 192 tests in 11 files.
+`pnpm test` runs vitest: 376 tests in 26 files.
 
 - Unit tests use real-world vectors:
   - the `java.math.RoundingMode` table for all modes
