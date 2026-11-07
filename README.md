@@ -441,7 +441,7 @@ Processor differences encoded:
 `proofs/` holds [Lean 4](https://lean-lang.org) proofs (with Mathlib) of two kinds:
 
 - **Proved code.** The bigint rounding kernels are written once in Lean, as values of a small expression language (`proofs/Ducat/Kernel.lean`). The theorems are about those values, and `pnpm gen:kernel` prints the same values as TypeScript into `src/generated/kernel.ts`. They print as one function, `divideAndRoundBigint`: the steps every mode shares, then a `switch` with each mode's proved decision (`kernel_shared` states that the shared steps really are the same). The TypeScript `divideAndRoundBigint` in `src/rounding.ts` calls it; it is the bigint path of every rounded operation. What you have to trust is the printer (about 60 lines of Lean) and the fact that JS `bigint` `+ - * /` agree with Lean's `Int` (`/` truncates, as `Int.tdiv` does).
-- **Proved models.** Allocation, tax and scale changes are proved about Lean models of what the TypeScript does, not about the TypeScript itself. The allocation model is compiled into an oracle that prints 1,500 generated cases to `test/fixtures/allocate.oracle.json`. The tests require `allocate` to match it exactly, on both its number and bigint paths. The TypeScript for tax, scale and conversion is tested, not proved (see below).
+- **Proved models.** Allocation, instalments, chunks, schedules, cash rounding, tax and scale changes are proved about Lean models of what the TypeScript does, not about the TypeScript itself. The allocation, instalment, chunk, schedule and increment models are compiled into an oracle that prints generated cases to `test/fixtures/<model>.oracle.json`. The tests require the TypeScript to match each one exactly (`allocate` on both its number and bigint paths). The TypeScript for tax, scale and conversion is tested, not proved (see below).
 
 `pnpm gen:check`, which runs in every check without Lean, fails in two cases. One is any unfinished proof (`sorry`, `admit`, a new `axiom`, `native_decide`). The other is a generated file that was edited by hand or not regenerated after `proofs/` changed: each generated file carries a hash of the Lean sources it came from. `pnpm gen:kernel:check` needs Lean, and CI runs it. It rebuilds the proofs, checks that the headline theorems depend only on Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`), and fails if either generated file differs from what the proofs print.
 
@@ -465,6 +465,24 @@ The model takes an amount `x ≥ 0` and non-negative weights with a positive tot
 - `alloc_scale`: multiplying every weight by the same positive number changes nothing, so decimal weights such as `'33.3'`, scaled to integers, are allocated by their exact ratios.
 - Negative amounts are the mirror image of positive ones. The model defines them that way, as `allocate` does, so `allocS_neg` only confirms the definition.
 
+### Instalments, chunks and schedules: proved models (`proofs/Ducat/Schedule.lean`)
+
+For a non-negative total; negative totals are the mirror image, as in `allocate`.
+
+- `inst_sum`: the instalments add up to the total, for every remainder mode.
+- `inst_multiple`: with a `unit`, every instalment except the one that takes the leftover is a whole number of units. `inst_near`: with `'first'`/`'last'`, those instalments are the regular amount or one unit more (both hold by how the model builds the instalments), and the leftover is less than one unit.
+- `chunk_sum`, `chunk_le`, `chunk_full`, `chunk_last_pos`: the chunks add up to the total, none exceeds `max`, every chunk but the last is exactly `max`, and the last is positive (a zero total gives a single zero).
+- `sched_sum`: whenever `schedule` succeeds, its tranches add up to the total. This holds by construction, since the rest tranche takes whatever is left, as in the TypeScript. The oracle cases include each way it must fail: two rest tranches, percentages over 100, tranches exceeding the total, and a leftover with no rest tranche.
+- `sched_shares_near`: the percentage shares that `schedule` computes, before capping, are each less than one unit from their exact share. That they reach the right tranches, with caps applied, is checked by the oracle cases, not proved.
+
+### Cash rounding: proved model (`proofs/Ducat/Cash.lean`)
+
+The model of `roundToIncrement` (and so of `cashRound`) is one kernel division times the increment. The TypeScript also aligns scales and, for safe integers, takes the number path. The oracle cases compare it with the model on both paths.
+
+- `increment_multiple`: the result is a whole number of increments.
+- `increment_near`, `increment_half`: it is less than one increment from the amount in every mode, and at most half an increment in the half modes.
+- `increment_exact`, `increment_idem`: an amount that already is a multiple comes back unchanged in every mode, so rounding twice is rounding once.
+
 ### Tax, scale and conversion: proved model (`proofs/Ducat/Tax.lean`)
 
 These are stated over the proved kernel (`divRound`):
@@ -486,7 +504,8 @@ These are stated over the proved kernel (`divRound`):
 
   These are covered by unit vectors and by property tests against decimal.js at 200 significant digits (`test/oracle.test.ts`).
 
-- `instalments`, `schedule`, `chunk`, decimal parsing, `Intl` formatting and parsing, and the processor and database adapters.
+- **The TypeScript `instalments`, `chunk`, `schedule` and `roundToIncrement`**, compared with their models' oracle fixtures, on both the number and bigint paths, including the cases where `schedule` must throw.
+- `split` without a unit is `allocate` with equal weights. Decimal parsing, `Intl` formatting and parsing, and the processor and database adapters are tested, not proved.
 
 ## Tests
 

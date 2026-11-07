@@ -106,6 +106,15 @@ theorem toScale_roundtrip (m : Mode) (v : Int) (e : Nat) : scaleDown m (scaleUp 
     omega
   · right; exact ⟨v, by simp only [scaleUp]; ring⟩
 
+/-- An exact multiple divides back exactly, in every mode. -/
+theorem divRound_exact (m : Mode) {s : Int} (k : Int) (hs : 0 < s) : divRound m (s * k) s = k := by
+  apply divRound_spec m _ _ hs
+  · cases m <;> simp only [Rounds] <;> (try split_ifs) <;> simp [hs.le, hs]
+    -- left over: halfEven's tie clause, whose premise `0 = s` is false
+    intro h
+    omega
+  · right; exact ⟨k, rfl⟩
+
 /-! ## Rounding once -/
 
 /-- Scaling numerator and denominator by `k > 0` keeps a correctly rounded answer correct. -/
