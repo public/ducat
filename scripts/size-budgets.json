@@ -1,23 +1,26 @@
 {
   "entries": {
     "@ducatjs/money": 4.8,
-    "@ducatjs/money/fn": 16.43,
+    "@ducatjs/money/fn": 17.32,
     "@ducatjs/money/allocate": 5.03,
     "@ducatjs/money/tax": 3.62,
     "@ducatjs/money/convert": 6.6,
     "@ducatjs/money/convert/ecb": 5.41,
+    "@ducatjs/money/convert/fetch": 5.73,
     "@ducatjs/money/exact": 3.94,
     "@ducatjs/money/cash": 5.44,
     "@ducatjs/money/format": 3.83,
-    "@ducatjs/money/parse": 4.35,
+    "@ducatjs/money/parse": 4.43,
     "@ducatjs/money/stripe": 4.7,
     "@ducatjs/money/adyen": 4.17,
     "@ducatjs/money/checkout": 4.67,
     "@ducatjs/money/paypal": 4.61,
     "@ducatjs/money/braintree": 4.47,
     "@ducatjs/money/klarna": 4.14,
+    "@ducatjs/money/stripe-fx": 5.24,
+    "@ducatjs/money/adyen-fx": 5.05,
     "@ducatjs/money/prisma": 4.22,
-    "@ducatjs/money/all": 16.77
+    "@ducatjs/money/all": 17.66
   },
   "snippets": {
     "methods: money, add, multiply, toDecimal": {
