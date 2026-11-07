@@ -1,6 +1,7 @@
 import { currencyExponent, type CurrencyCode } from './currency.js';
 import {
   formatScaled,
+  MAX,
   parseDecimal,
   parsePlainDecimal,
   POW10,
@@ -11,8 +12,6 @@ import {
   type Ratio,
 } from './decimal.js';
 import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
-
-const MAX = Number.MAX_SAFE_INTEGER;
 
 /** Currency codes accepted by constructors: known codes autocomplete, any string is allowed. */
 export type CurrencyInput = CurrencyCode | (string & {});
@@ -68,7 +67,7 @@ class Money<C extends string = string> {
   /** Blocks `a + b`, `a > b`, `+a`: arithmetic and comparison must go through the library. */
   [Symbol.toPrimitive](hint: string): string {
     if (hint === 'string') return this.toString();
-    throw new TypeError('Money cannot be converted to a number; use add(), compare(), toDecimal() etc.');
+    throw new TypeError('Money is not a number; use its methods');
   }
 
   // Methods. Each one is a thin wrapper over the free function of the same name (also exported), so
@@ -279,7 +278,7 @@ function fromScaled<C extends string>(
   } catch (e) {
     if (e instanceof RoundingError)
       throw new RoundingError(
-        `${String(input)} has more than ${to} decimal places for ${currency}; pass { rounding } or { scale }`,
+        `${String(input)} has over ${to} decimals for ${currency}; pass { rounding }`,
       );
     throw e;
   }
@@ -511,7 +510,7 @@ export function toMinor(m: Money): bigint {
 
 /** Minor units as a number; throws if not a safe integer. */
 export function toMinorNumber(m: Money): number {
-  if (typeof m.minor === 'bigint') throw new RangeError(`${m} does not fit in a safe integer; use toMinor()`);
+  if (typeof m.minor === 'bigint') throw new RangeError(`${m} is unsafe as a number; use toMinor()`);
   return m.minor;
 }
 

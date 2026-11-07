@@ -1,3 +1,5 @@
+import { MAX } from './decimal.js';
+
 /**
  * Rounding modes. The string values are the ones `Intl.NumberFormat` uses for its `roundingMode`
  * option (ES2023), so a mode can be passed straight through to formatting. `Rounding` gives the
@@ -42,8 +44,6 @@ export class RoundingError extends RangeError {
   override name = 'RoundingError';
 }
 
-const MAX = Number.MAX_SAFE_INTEGER;
-
 /**
  * Should a truncated quotient move one step away from zero?
  * `twiceRem` is 2*|remainder| (non-zero), `d` the divisor, `odd` whether |truncated quotient| is odd.
@@ -59,7 +59,7 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
     case 'floor':
       return neg;
     case 'unnecessary':
-      throw new RoundingError('Rounding necessary: the result is not exact; pass a rounding mode');
+      throw new RoundingError('Inexact result; pass a rounding mode');
   }
   if (twiceRem !== d) {
     // number vs number or bigint vs bigint; mixed comparison is exact in JS anyway

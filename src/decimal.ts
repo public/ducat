@@ -1,7 +1,8 @@
 // Exact decimal-string handling. No floating point is used on amounts: numbers given as factors are
 // converted through their shortest round-trip decimal representation (String(x)), never multiplied.
 
-const MAX = Number.MAX_SAFE_INTEGER;
+/** The largest minor-unit count held as a number (2^53 - 1); larger values are bigints. */
+export const MAX = Number.MAX_SAFE_INTEGER;
 const MAXN = BigInt(MAX);
 
 /** An exact rational factor num/den (den > 0). `n`/`d` hold the same values as numbers when both are safe. */
@@ -162,24 +163,6 @@ export function ratioToDecimal(r: Ratio): string | null {
 }
 
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
-const ZPAD = [
-  '',
-  '0',
-  '00',
-  '000',
-  '0000',
-  '00000',
-  '000000',
-  '0000000',
-  '00000000',
-  '000000000',
-  '0000000000',
-  '00000000000',
-  '000000000000',
-  '0000000000000',
-  '00000000000000',
-  '000000000000000',
-];
 export function formatScaled(v: number | bigint, scale: number): string {
   if (typeof v === 'number' && scale <= 15) {
     if (scale === 0) return String(v);
@@ -196,15 +179,14 @@ export function formatScaled(v: number | bigint, scale: number): string {
         q += 1;
         r -= p;
       }
-      let f = String(r);
-      if (f.length < scale) f = ZPAD[scale - f.length] + f;
-      return (v < 0 ? '-' : '') + q + '.' + f;
+      const fraction = String(r).padStart(scale, '0');
+      return (v < 0 ? '-' : '') + q + '.' + fraction;
     }
   }
   const neg = v < 0;
   let s = typeof v === 'number' ? String(neg ? 0 - v : v) : (neg ? -v : v).toString();
   if (scale > 0) {
-    if (s.length <= scale) s = '0'.repeat(scale - s.length + 1) + s;
+    s = s.padStart(scale + 1, '0');
     s = s.slice(0, s.length - scale) + '.' + s.slice(s.length - scale);
   }
   return neg ? '-' + s : s;
