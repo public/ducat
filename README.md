@@ -94,6 +94,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/stripe`   | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…               |
 | `@ducatjs/money/adyen`    | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                 |
 | `@ducatjs/money/prisma`   | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers              |
+| `@ducatjs/money/fixed`    | `toFixed`                                                          | `Fixed`, `fixed`, `fromScaled`, `isFixed`               |
 | `@ducatjs/money/all`      | everything above                                                   | everything                                              |
 | `@ducatjs/money/fn`       | nothing                                                            | every free function, from every module                  |
 
@@ -197,6 +198,28 @@ The sections below list each function with its free-function signature; the meth
 
 - `currencyExponent(code)`, `isCurrency(code)`, `ISO_EXPONENTS`, `ISO_4217_PUBLISHED`
 - `defineCurrency('BTC', 8)` adds a non-ISO code. To also get it in the `CurrencyCode` type, augment `interface CustomCurrencies`.
+
+### Fixed-point decimals
+
+`@ducatjs/money/fixed` gives the engine under Money its own type: `Fixed`, an exact decimal without a currency. It is an integer and a scale, the count of decimal places, so `fixed('12.345')` is 12345 at scale 3. The integer is a JS number while it is a safe integer and a bigint beyond, as for Money, so everyday values stay fast and very large ones stay exact. Use it for quantities, unit prices with more decimals than the currency, rates, and intermediate values that are not money yet.
+
+```ts
+import { fixed, fromScaled } from '@ducatjs/money/fixed';
+
+const unitPrice = fixed('0.0425'); // scale 4
+const total = unitPrice.multiply(1200); // 51.0000, exact
+const perDay = fixed('100.00').divide(3, 'halfEven'); // 33.33: rounded once, to this value's scale
+fixed('1.5').add('0.25'); // 1.75: mixed scales align to the larger one
+fixed('2.5').round('halfEven'); // 2: round() defaults to scale 0
+fromScaled(12345, 3).toString(); // '12.345'
+JSON.stringify({ unitPrice }); // '{"unitPrice":"0.0425"}'
+```
+
+Input is strict in the same way as `money()`. A string keeps its own scale. A number is read at its shortest decimal form, and only when that has at most 15 significant digits, which a double always holds faithfully. So `fixed(0.1 + 0.2)` throws instead of becoming 0.30000000000000004: pass the decimal as a string, or give `{ scale, rounding }`. With a `scale`, input that has more decimals throws unless `rounding` is also given.
+
+Arithmetic follows Money's rules. `add`, `subtract` and `compare` align to the larger scale exactly. `multiply` and `divide` take exact factors (integers, decimal strings, bigints, `ratio()` or another `Fixed`), keep this value's scale, and round once, with `'halfExpand'` by default. `toScale` and `round` take any of the ten rounding modes, including `'unnecessary'`, which throws if digits would be lost.
+
+To convert, `money.toFixed()` gives the exact amount at the money's scale, and `fixedValue.toMoney('EUR')` makes Money at the currency's exponent. That conversion throws RoundingError when it would drop digits, unless a rounding mode is passed: `fixed('1.005').toMoney('EUR', 'halfEven')` is 1.00 EUR.
 
 ### Payment processors: the amount you send
 

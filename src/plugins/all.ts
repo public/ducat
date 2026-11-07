@@ -9,3 +9,4 @@ export * from '../parse.js';
 export * from './stripe.js';
 export * from './adyen.js';
 export * from './prisma.js';
+export * from './fixed.js';
