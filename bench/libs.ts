@@ -1,7 +1,8 @@
 // Same seven operations across money libraries. Each op processes N=1000 pre-built values;
 // results are ns per single operation (median of 5 short samples). Indicative only: see README.
+import '../src/plugins/all.ts';
 import { bench, log, runtimeName } from './harness.ts';
-import * as M from '../src/plugins/all.ts';
+import * as M from '../src/fn.ts';
 import {
   dinero,
   add as dAdd,

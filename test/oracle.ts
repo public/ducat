@@ -1,5 +1,5 @@
 // Independent reference implementation of rounding (bigint, floor-based) used to check the library.
-import type { RoundingMode } from '../src/index.js';
+import type { RoundingMode } from '../src/fn.js';
 
 export function refDivRound(p: bigint, d: bigint, mode: RoundingMode): bigint {
   if (d < 0n) {

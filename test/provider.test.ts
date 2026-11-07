@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { money } from '../src/index.js';
+import { money } from '../src/fn.js';
 import {
   chain,
   identity,

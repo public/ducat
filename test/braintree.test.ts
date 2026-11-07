@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
+import { money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/fn.js';
 import {
   braintreeExponent,
   fromBraintree,

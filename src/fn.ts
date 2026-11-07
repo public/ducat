@@ -1,8 +1,65 @@
 /**
- * `@ducatjs/money/fn`: every free function and type of ducat and its opt-in modules, without
- * installing any methods on Money. Bundlers can drop whatever is unused, function by function.
+ * `@ducatjs/money/fn`: every operation of ducat and its opt-in modules as a plain function
+ * (`add(price, fee)`, `allocate(total, [1, 1])`), for code that prefers that style or must not
+ * install methods on Money (importing it changes no prototype).
  */
-export * from './index.js';
+// Everything the root entry exports, plus the core Money methods as plain functions. Each is
+// re-exported straight from its own module, so every name is one re-export away from its definition
+// (under vitest each hop is a getter call, which shows in the CodSpeed benchmarks).
+export {
+  money,
+  fromMinor,
+  zero,
+  fromJSON,
+  isMoney,
+  extendMoney,
+  type ExtendMoneyOptions,
+  sum,
+  ratio,
+  add,
+  subtract,
+  negate,
+  abs,
+  multiply,
+  divide,
+  round,
+  toScale,
+  compare,
+  equals,
+  lessThan,
+  lessThanOrEqual,
+  greaterThan,
+  greaterThanOrEqual,
+  isZero,
+  isPositive,
+  isNegative,
+  sign,
+  min,
+  max,
+  clamp,
+  toDecimal,
+  toMinor,
+  toMinorNumber,
+  CurrencyMismatchError,
+  type Money,
+  type MoneyJSON,
+  type MoneyOptions,
+  type CurrencyInput,
+  type Factor,
+  type Ratio,
+} from './money.js';
+export { DEFAULT_ROUNDING, Rounding, RoundingError, type RoundingMode } from './rounding.js';
+export {
+  currencyExponent,
+  defineCurrency,
+  isCurrency,
+  ISO_EXPONENTS,
+  ISO_4217_PUBLISHED,
+  ISO_NON_MONETARY,
+  type CurrencyCode,
+  type IsoCurrencyCode,
+  type CustomCurrencies,
+} from './currency.js';
 export * from './allocate.js';
 export * from './tax.js';
 export * from './convert.js';

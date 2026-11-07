@@ -1,12 +1,6 @@
+import '../src/plugins/all.js';
 import { describe, expect, it } from 'vitest';
-import {
-  CASH_RULES,
-  cashRound,
-  cashRule,
-  money,
-  roundToIncrement,
-  toDecimal,
-} from '../src/plugins/all.js';
+import { CASH_RULES, cashRound, cashRule, money, roundToIncrement, toDecimal } from '../src/fn.js';
 
 const cr = (amt: string, cur: string, country?: string) =>
   toDecimal(cashRound(money(amt, cur), country ? { country } : undefined));

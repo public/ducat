@@ -1,9 +1,10 @@
 // Every Money method must be exactly the free function of the same name.
+import '../src/plugins/all.js';
 import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import * as M from '../src/plugins/all.js';
-import { money, fromMinor, type Money } from '../src/plugins/all.js';
+import * as M from '../src/fn.js';
+import { money, fromMinor, type Money } from '../src/fn.js';
 
 const eur = (s: string) => money(s, 'EUR');
 const dec = (x: Money | Money[] | { net: Money; tax: Money; gross: Money }) =>

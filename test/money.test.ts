@@ -30,7 +30,7 @@ import {
   toScale,
   zero,
   type Money,
-} from '../src/index.js';
+} from '../src/fn.js';
 
 const eur = (s: string, o?: Parameters<typeof money>[2]) => money(s, 'EUR', o);
 

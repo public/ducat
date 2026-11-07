@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import {
-  money,
-  round,
-  Rounding,
-  RoundingError,
-  toDecimal,
-  type RoundingMode,
-} from '../src/index.js';
+import { money, round, Rounding, RoundingError, toDecimal, type RoundingMode } from '../src/fn.js';
 import { divideAndRound, divideAndRoundBigint } from '../src/rounding.js';
 import { MODES, refDivRound } from './oracle.js';
 

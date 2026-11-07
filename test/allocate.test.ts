@@ -1,3 +1,4 @@
+import '../src/plugins/all.js';
 import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
@@ -14,7 +15,7 @@ import {
   equals,
   type Money,
   type Remainder,
-} from '../src/plugins/all.js';
+} from '../src/fn.js';
 
 const eur = (s: string) => money(s, 'EUR');
 const dec = (ms: Money[]) => ms.map(toDecimal);

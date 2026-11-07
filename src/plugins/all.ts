@@ -1,5 +1,32 @@
 /** `@ducatjs/money/all`: core plus every opt-in module, with all methods installed. */
 export * from '../index.js';
+// The core Money methods as plain functions too, as in /fn: /all is everything.
+export {
+  add,
+  subtract,
+  negate,
+  abs,
+  multiply,
+  divide,
+  round,
+  toScale,
+  compare,
+  equals,
+  lessThan,
+  lessThanOrEqual,
+  greaterThan,
+  greaterThanOrEqual,
+  isZero,
+  isPositive,
+  isNegative,
+  sign,
+  min,
+  max,
+  clamp,
+  toDecimal,
+  toMinor,
+  toMinorNumber,
+} from '../money.js';
 export * from './allocate.js';
 export * from './tax.js';
 export * from './convert.js';

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { money } from '../src/index.js';
+import { money } from '../src/fn.js';
 import { adyenRate } from '../src/adyen-fx.js';
 import { impliedRate } from '../src/rate.js';
 import { stripeImpliedRate, stripeRate } from '../src/stripe-fx.js';

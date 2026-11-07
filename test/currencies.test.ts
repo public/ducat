@@ -1,3 +1,4 @@
+import '../src/plugins/all.js';
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import {
@@ -7,7 +8,7 @@ import {
   ISO_4217_PUBLISHED,
   ISO_EXPONENTS,
   ISO_NON_MONETARY,
-} from '../src/plugins/all.js';
+} from '../src/fn.js';
 
 describe('ISO 4217 table', () => {
   it('generated table is up to date with data/', () => {
