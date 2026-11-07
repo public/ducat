@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/logo.png" width="128" height="128" alt="A gold ducat of Doge Francesco Foscari, 1423–1457"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/public/ducat/main/assets/logo.png" width="128" height="128" alt="A gold ducat of Doge Francesco Foscari, 1423–1457"></p>
 <p align="center"><sub>Gold ducat of Francesco Foscari, Venice, 1423–1457. Photo: Francesco Bini, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>, via Wikimedia Commons (<a href="assets/CREDITS.md">credits</a>).</sub></p>
 
 # ducat
@@ -23,7 +23,7 @@ price.add(money('1', 'USD')); // compile error, and a runtime error if types are
 
 Every method is also a free function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`), for pipelines and for code that prefers that style.
 
-Status: this is a prototype. The API is meant to be small, but it is not yet frozen. See [What's missing](#whats-missing-honest-list).
+Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
 
 ---
 
@@ -36,7 +36,7 @@ A `Money<C>` has three readonly fields:
 | field                     | meaning                                                                                                                                                                                   |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `currency: C`             | ISO 4217 code (or a code registered with `defineCurrency`). It is a type parameter, so `Money<'EUR'>` and `Money<'USD'>` don't mix.                                                       |
-| `minor: number \| bigint` | Integer count of 10^-scale units. It is a **number whenever it is a safe integer** (                                                                                                      | v   | ≤ 2^53−1) and a **bigint only beyond that**. The invariant is enforced everywhere, so ordinary amounts never allocate a bigint and huge amounts never lose a digit. |
+| `minor: number \| bigint` | Integer count of 10^-scale units. It is a **number whenever it is a safe integer** (absolute value ≤ 2^53−1) and a **bigint only beyond that**. The invariant is enforced everywhere, so ordinary amounts never allocate a bigint and huge amounts never lose a digit. |
 | `scale: number`           | Decimal places. Defaults to the currency's ISO exponent (EUR 2, JPY 0, KWD 3, CLF 4). It can be larger for sub-minor precision (unit prices, FX intermediates). `round()` brings it back. |
 
 Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](bench/RESULTS.md)):
