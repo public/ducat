@@ -6,7 +6,8 @@ import { expect, it } from 'vitest';
 import { fromMinor } from '../../src/index.js';
 import { databaseSuite, type DatabaseAdapter } from './suite.js';
 
-const connectionUrl = process.env.DUCAT_MYSQL_URL;
+// empty when unset, so the suite is skipped (mysql2's options need a string)
+const connectionUrl = process.env.DUCAT_MYSQL_URL ?? '';
 
 /** bigint parameters as strings, which MySQL converts exactly */
 function bindable(parameters: unknown[]): unknown[] {
@@ -54,7 +55,7 @@ async function connectToMysql(): Promise<DatabaseAdapter> {
 
 // skipped unless DUCAT_MYSQL_URL points at a server
 databaseSuite('MySQL', {
-  enabled: Boolean(connectionUrl),
+  enabled: connectionUrl !== '',
   connect: connectToMysql,
   extraTests: () => {
     it('BIGINT read as a plain number (the driver default) is rejected beyond 2^53', async () => {
