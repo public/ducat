@@ -136,19 +136,19 @@ export const FIXED_VECTORS: FixedVector[] = [
     expected: '135802467913580246.79',
   },
 
-  // --- division
+  // --- division (the exact quotients use half-up, which every rounding library offers: nothing rounds)
   {
     id: 'div-exact',
     group: 'division',
     description: '12.00 ÷ 1.2 = 10.00',
-    compute: divided('1.2', 2, 'halfEven', '12.00'),
+    compute: divided('1.2', 2, 'halfExpand', '12.00'),
     expected: '10.00',
   },
   {
     id: 'div-119',
     group: 'division',
     description: '119.00 ÷ 1.19 = 100.00',
-    compute: divided('1.19', 2, 'halfEven', '119.00'),
+    compute: divided('1.19', 2, 'halfExpand', '119.00'),
     expected: '100.00',
   },
   {
@@ -183,7 +183,7 @@ export const FIXED_VECTORS: FixedVector[] = [
     id: 'div-eighth',
     group: 'division',
     description: '1 ÷ 8 = 0.125 at 3 decimals, exactly',
-    compute: divided('8', 3, 'halfEven', '1'),
+    compute: divided('8', 3, 'halfExpand', '1'),
     expected: '0.125',
   },
 

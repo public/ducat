@@ -68,11 +68,11 @@ boundaries, float traps, amounts beyond 2^53, negatives, float input and currenc
 The ducat test suite (`test/battery.test.ts`) runs the same vectors, so the two cannot drift.
 
 ```sh
-pnpm compare          # run the battery, write results/battery.json, regenerate the tables
-pnpm compare:check    # what CI runs: fails on any change in outcomes or a stale table
+pnpm compare          # run both batteries, write results/*battery.json, regenerate the tables
+pnpm compare:check    # the same checks locally: fails on any change in outcomes or a stale table
 ```
 
-CI runs the bundled battery on Node, Bun and Deno and requires identical outcomes on all three,
+CI runs its own steps with the same scripts: the bundled batteries on Node, Bun and Deno, and requires identical outcomes on all three,
 that ducat passes every vector, and that `results/battery.json` and the tables are current. A
 change in any library's behaviour therefore shows up as a reviewed diff.
 
@@ -128,6 +128,9 @@ It does the same for the fixed-point decimal libraries (parse "1.00", add it to 
 @formatjs/bigdecimal cannot round to a number of decimals, so its program stops at the exact
 product. ethers is measured importing `FixedNumber` from both `ethers` and `ethers/utils`, and the
 smaller is reported, with the import named in the row.
+
+Sizes (`sizes/sizes.sh`) and the benchmark (`compare/runner`, on a clean machine) are rerun by
+hand, not in CI: their committed results change only when someone regenerates them.
 
 ## Tables
 

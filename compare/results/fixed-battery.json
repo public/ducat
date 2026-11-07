@@ -389,14 +389,14 @@
   {
    "library": "dnum 2.18.1",
    "id": "div-exact",
-   "outcome": "unsupported",
-   "got": "no half-even rounding"
+   "outcome": "pass",
+   "got": "10"
   },
   {
    "library": "dnum 2.18.1",
    "id": "div-119",
-   "outcome": "unsupported",
-   "got": "no half-even rounding"
+   "outcome": "pass",
+   "got": "100"
   },
   {
    "library": "dnum 2.18.1",
@@ -425,8 +425,8 @@
   {
    "library": "dnum 2.18.1",
    "id": "div-eighth",
-   "outcome": "unsupported",
-   "got": "no half-even rounding"
+   "outcome": "pass",
+   "got": "0.125"
   },
   {
    "library": "dnum 2.18.1",
@@ -551,14 +551,14 @@
   {
    "library": "ethers FixedNumber 6.17.0",
    "id": "div-exact",
-   "outcome": "unsupported",
-   "got": "no half-even rounding"
+   "outcome": "pass",
+   "got": "10"
   },
   {
    "library": "ethers FixedNumber 6.17.0",
    "id": "div-119",
-   "outcome": "unsupported",
-   "got": "no half-even rounding"
+   "outcome": "pass",
+   "got": "100"
   },
   {
    "library": "ethers FixedNumber 6.17.0",
@@ -587,8 +587,8 @@
   {
    "library": "ethers FixedNumber 6.17.0",
    "id": "div-eighth",
-   "outcome": "unsupported",
-   "got": "no half-even rounding"
+   "outcome": "pass",
+   "got": "0.125"
   },
   {
    "library": "ethers FixedNumber 6.17.0",

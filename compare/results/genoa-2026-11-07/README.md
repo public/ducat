@@ -27,9 +27,9 @@ back to back on the same machine. `pnpm tables` renders them.
 
 ## Caveats
 
-- These runs measured an earlier ducat build, bundled from the methods API branch before it was
-  merged (bundle SHA-256 `fdf79e901eab5c98c33e73d36cac43ccadb332fd1140ba9fbd1c6df51f8d3e1a`, the
+- These runs measured an earlier ducat build, from before the module split
+  (bundle SHA-256 `fdf79e901eab5c98c33e73d36cac43ccadb332fd1140ba9fbd1c6df51f8d3e1a`, the
   same bundle on all three runtimes). Numbers for the current code need a new run.
 - Node was 22.11, from before ducat required Node 24; the runner now pins Node 24.22.2.
-- The raw `bench.json` files include an internal prototype that was never published; the rendered
-  tables omit it.
+- The raw `bench.json` files also include an earlier design of ducat, measured for comparison; the
+  rendered tables omit it.

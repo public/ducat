@@ -117,9 +117,12 @@ export function sumOfDecimals(values: string[]): string {
   return normalizeDecimal(isNegative ? '-' + digits : digits);
 }
 
-/** A sort key for same-scale decimal strings: the digits as one integer. */
+/** A sort key for decimal strings: the value in units of 10^-30, exactly. */
 function scaledKey(value: string): bigint {
-  return BigInt(value.replace('.', '').padEnd(30, '0'));
+  const isNegative = value.startsWith('-');
+  const [integerPart, fractionPart = ''] = value.replace('-', '').split('.');
+  const units = BigInt(integerPart! + fractionPart.padEnd(30, '0'));
+  return isNegative ? -units : units;
 }
 
 /** Exact numeric sort of decimal strings, for comparing split results as multisets. */
@@ -272,6 +275,9 @@ function allocationFuzz(library: MoneyLibrary): Check {
 function mismatchByDesign(got: string): Check {
   return { ok: false, got, note: 'by design' };
 }
+
+/** The exact value of the double nearest to 1.005. */
+const EXACT_DOUBLE_1_005 = '1.00499999999999989341858963598497211933135986328125';
 
 export const VECTORS: Vector[] = [
   // --- currencies and minor units
@@ -586,6 +592,9 @@ export const VECTORS: Vector[] = [
       if (stored === '0.3') {
         return { ok: 'lossy', got: stored, note: 'silently rounded to 0.30' };
       }
+      if (stored === '0.30000000000000004') {
+        return { ok: false, got: stored, note: "accepted, keeping the float's error" };
+      }
       return { ok: false, got: stored };
     },
   },
@@ -603,11 +612,16 @@ export const VECTORS: Vector[] = [
   {
     id: 'float-1.005',
     group: 'float',
-    description: 'money(1.005) (really 1.00499999999999989…) is rejected or exact',
+    description:
+      'money(1.005) is rejected, or kept exactly: as the decimal 1.005 (its shortest form) or as the double 1.00499999999999989…',
     expectsThrow: true,
     check: (library) => {
       requireMethods(library, 'fromFloat');
       const stored = normalizeDecimal(library.toDecimal(library.fromFloat!(1.005, 'EUR')));
+      const exactReadings = ['1.005', EXACT_DOUBLE_1_005];
+      if (exactReadings.includes(stored)) {
+        return { ok: true, got: stored };
+      }
       const roundedSilently = stored === '1.01' || stored === '1';
       return { ok: roundedSilently ? 'lossy' : false, got: stored, note: 'silently rounded' };
     },

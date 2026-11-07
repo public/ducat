@@ -244,10 +244,16 @@ function onlyTwoDecimalCurrencies(code: string): void {
   }
 }
 
-function moneyMathFactor(text: string, what: string): void {
-  if (!/^\d+\.\d\d$/.test(text)) {
-    throw new NotSupported(`${what} must be an x.yy amount`);
+/**
+ * A factor in money-math's own "x.yy" format: '0.5' is written '0.50'. A factor with more than two
+ * decimals cannot be written that way, so it is not supported.
+ */
+function moneyMathFactor(text: string, what: string): string {
+  const [integerPart, fractionPart = ''] = text.split('.');
+  if (!/^\d+$/.test(integerPart!) || fractionPart.length > 2 || !/^\d*$/.test(fractionPart)) {
+    throw new NotSupported(`${what} must fit an x.yy amount`);
   }
+  return `${integerPart}.${fractionPart.padEnd(2, '0')}`;
 }
 
 const moneyMathLibrary: AnyLibrary = {
@@ -271,15 +277,13 @@ const moneyMathLibrary: AnyLibrary = {
     if (mode !== 'halfExpand') {
       throw new NotSupported('fixed half-up');
     }
-    moneyMathFactor(factor, 'factor');
-    return (moneyMath as any).mul(value, factor);
+    return (moneyMath as any).mul(value, moneyMathFactor(factor, 'factor'));
   },
   divide: (value, divisor, mode) => {
     if (mode !== 'halfExpand') {
       throw new NotSupported('fixed half-up');
     }
-    moneyMathFactor(divisor, 'divisor');
-    return (moneyMath as any).div(value, divisor);
+    return (moneyMath as any).div(value, moneyMathFactor(divisor, 'divisor'));
   },
   compare: (moneyMath as any).cmp,
   equals: (moneyMath as any).isEqual,
@@ -344,11 +348,12 @@ const bigintMoneyLibrary: AnyLibrary = {
 interface DecimalOperations {
   create(amount: string | number): any;
   roundTo(value: any, decimals: number, mode: RoundingName): any;
-  toFixed(value: any, decimals: number): string;
+  /** the stored value in full, without rounding it */
+  toPlainString(value: any): string;
 }
 
 function decimalLibrary(name: string, operations: DecimalOperations): AnyLibrary {
-  const { create, roundTo, toFixed } = operations;
+  const { create, roundTo, toPlainString } = operations;
 
   function withCode(value: any, code: string): { value: any; code: string } {
     return { value, code };
@@ -360,7 +365,8 @@ function decimalLibrary(name: string, operations: DecimalOperations): AnyLibrary
     hasNoCurrency: true,
     fromDecimal: (decimal, code) => withCode(create(decimal), code),
     fromFloat: (amount, code) => withCode(create(amount), code),
-    toDecimal: (held) => toFixed(held.value, ISO_EXPONENTS[held.code]!),
+    // printed as stored: rounding it here would credit the library with rounding it never did
+    toDecimal: (held) => toPlainString(held.value),
     add: (first, second) => withCode(first.value.plus(second.value), first.code),
     subtract: (first, second) => withCode(first.value.minus(second.value), first.code),
     multiply: (held, factor, mode) => {
@@ -389,7 +395,7 @@ function decimalJsFamily(DecimalClass: any, name: string): AnyLibrary {
   return decimalLibrary(name, {
     create: (amount) => new DecimalClass(amount),
     roundTo: (value, decimals, mode) => value.toDecimalPlaces(decimals, modes[mode]),
-    toFixed: (value, decimals) => value.toFixed(decimals),
+    toPlainString: (value) => value.toFixed(),
   });
 }
 
@@ -418,12 +424,12 @@ export const LIBRARIES: AnyLibrary[] = [
   decimalLibrary('big.js 7.0.1', {
     create: (amount) => new Big(amount),
     roundTo: (value, decimals, mode) => value.round(decimals, bigJsModes[mode]),
-    toFixed: (value, decimals) => value.toFixed(decimals),
+    toPlainString: (value) => value.toFixed(),
   }),
   decimalLibrary('bignumber.js 11.1.5', {
     create: (amount) => new BigNumber(amount),
     roundTo: (value, decimals, mode) => value.decimalPlaces(decimals, bigNumberModes[mode]),
-    toFixed: (value, decimals) => value.toFixed(decimals),
+    toPlainString: (value) => value.toFixed(),
   }),
   decimalJsFamily(Decimal, 'decimal.js 10.6.0'),
   decimalJsFamily(DecimalLight, 'decimal.js-light 2.5.1'),

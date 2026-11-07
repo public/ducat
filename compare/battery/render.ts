@@ -62,11 +62,29 @@ export function renderNonPasses(results: BatteryResults): string {
 }
 
 export function renderSummary(results: BatteryResults): string {
-  const lines = ['| library | pass | wrong (silent) | lossy | threw | n/a |', '|---|--:|--:|--:|--:|--:|'];
+  // values without a currency cannot detect a currency mismatch; that is by design, not an error
+  const isByDesign = (row: BatteryResults['rows'][number]) => row.note === 'by design';
+  const hasByDesign = results.rows.some(isByDesign);
+
+  const header = ['library', 'pass', 'wrong (silent)', 'lossy', 'threw', 'n/a'];
+  if (hasByDesign) {
+    header.push('no currency (by design)');
+  }
+  const lines = [
+    `| ${header.join(' | ')} |`,
+    `|---|${header
+      .slice(1)
+      .map(() => '--:')
+      .join('|')}|`,
+  ];
+
   for (const library of results.libraries) {
-    const count = (outcome: Outcome) =>
-      results.rows.filter((row) => row.library === library && row.outcome === outcome).length;
+    const rows = results.rows.filter((row) => row.library === library);
+    const count = (outcome: Outcome) => rows.filter((row) => row.outcome === outcome && !isByDesign(row)).length;
     const counts = [count('pass'), count('fail'), count('lossy'), count('error'), count('unsupported')];
+    if (hasByDesign) {
+      counts.push(rows.filter(isByDesign).length);
+    }
     lines.push(`| ${library} | ${counts.join(' | ')} |`);
   }
   return lines.join('\n') + '\n';

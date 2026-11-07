@@ -125,6 +125,13 @@ function fastestOtherMoneyLibrary(run: BenchRun, op: string): { library: string;
  * library and dinero.js 2. Decimal libraries are left out of "fastest other": they carry no
  * currency, so they skip work a money library must do.
  */
+/** Shown with every speed table built from the 2026-11-07 Genoa runs. */
+export const GENOA_CAVEAT =
+  'Measured on 2026-11-07 on one AMD EPYC Genoa vCPU with Node 22.11, Bun 1.4.4 and Deno 2.9.8, ' +
+  'using an earlier ducat build from before the module split; numbers for the current code need a ' +
+  'new clean-machine run (compare/runner). Lower is better; the faster of ducat and the fastest ' +
+  'other money library is in bold.';
+
 export function renderSpeedHeadline(directory: string): string {
   const runs = loadRuns(directory);
   const columns = runs.map((run) => shortRuntime(run));
@@ -132,12 +139,23 @@ export function renderSpeedHeadline(directory: string): string {
 
   for (const op of runs[0]!.ops) {
     const cells = runs.map((run) => {
-      const ducat = formatNanoseconds(run.ns[DUCAT]![op]!.med);
+      const ducatNs = run.ns[DUCAT]![op]!.med;
       const fastest = fastestOtherMoneyLibrary(run, op);
+      const ducatText = formatNanoseconds(ducatNs);
+      const fastestText = `${fastest.library} ${formatNanoseconds(fastest.ns)}`;
+
+      // bold whichever is faster, so the table never claims a win it does not show
+      const ducatCell = ducatNs <= fastest.ns ? `**${ducatText}**` : ducatText;
+      const fastestCell = fastest.ns < ducatNs ? `**${fastestText}**` : fastestText;
+
+      // dinero.js 2 is the usual reference point; it is named once even when it is the fastest
+      if (fastest.library === DINERO) {
+        return `${ducatCell} (fastest other: ${fastestCell})`;
+      }
       const dinero = formatNanoseconds(run.ns[DINERO]![op]!.med);
-      return `**${ducat}** (fastest other: ${fastest.library} ${formatNanoseconds(fastest.ns)}; dinero.js 2 ${dinero})`;
+      return `${ducatCell} (fastest other: ${fastestCell}; dinero.js 2 ${dinero})`;
     });
     markdown += `| ${op} | ${cells.join(' | ')} |\n`;
   }
-  return markdown;
+  return `${markdown}\n${GENOA_CAVEAT}\n`;
 }

@@ -206,7 +206,7 @@
   {
    "id": "float-1.005",
    "group": "float",
-   "description": "money(1.005) (really 1.00499999999999989…) is rejected or exact"
+   "description": "money(1.005) is rejected, or kept exactly: as the decimal 1.005 (its shortest form) or as the double 1.00499999999999989…"
   },
   {
    "id": "mix-add",
@@ -2299,8 +2299,8 @@
   {
    "library": "money-math 2.6.3",
    "id": "vat-9.99-up",
-   "outcome": "unsupported",
-   "got": "divisor must be an x.yy amount"
+   "outcome": "pass",
+   "got": "8.33"
   },
   {
    "library": "money-math 2.6.3",
@@ -2317,14 +2317,14 @@
   {
    "library": "money-math 2.6.3",
    "id": "half-up",
-   "outcome": "unsupported",
-   "got": "factor must be an x.yy amount"
+   "outcome": "pass",
+   "got": "0.13"
   },
   {
    "library": "money-math 2.6.3",
    "id": "half-up-neg",
-   "outcome": "unsupported",
-   "got": "factor must be an x.yy amount"
+   "outcome": "fail",
+   "got": "-0.11"
   },
   {
    "library": "money-math 2.6.3",
@@ -2341,8 +2341,8 @@
   {
    "library": "money-math 2.6.3",
    "id": "float-mul-0.7",
-   "outcome": "unsupported",
-   "got": "factor must be an x.yy amount"
+   "outcome": "pass",
+   "got": "0.32"
   },
   {
    "library": "money-math 2.6.3",
@@ -3158,9 +3158,9 @@
   {
    "library": "big.js 7.0.1",
    "id": "float-in",
-   "outcome": "lossy",
-   "got": "0.3",
-   "note": "silently rounded to 0.30"
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
   },
   {
    "library": "big.js 7.0.1",
@@ -3171,9 +3171,8 @@
   {
    "library": "big.js 7.0.1",
    "id": "float-1.005",
-   "outcome": "lossy",
-   "got": "1.01",
-   "note": "silently rounded"
+   "outcome": "pass",
+   "got": "1.005"
   },
   {
    "library": "big.js 7.0.1",
@@ -3409,9 +3408,9 @@
   {
    "library": "bignumber.js 11.1.5",
    "id": "float-in",
-   "outcome": "lossy",
-   "got": "0.3",
-   "note": "silently rounded to 0.30"
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
   },
   {
    "library": "bignumber.js 11.1.5",
@@ -3422,9 +3421,8 @@
   {
    "library": "bignumber.js 11.1.5",
    "id": "float-1.005",
-   "outcome": "lossy",
-   "got": "1.01",
-   "note": "silently rounded"
+   "outcome": "pass",
+   "got": "1.005"
   },
   {
    "library": "bignumber.js 11.1.5",
@@ -3660,9 +3658,9 @@
   {
    "library": "decimal.js 10.6.0",
    "id": "float-in",
-   "outcome": "lossy",
-   "got": "0.3",
-   "note": "silently rounded to 0.30"
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
   },
   {
    "library": "decimal.js 10.6.0",
@@ -3673,9 +3671,8 @@
   {
    "library": "decimal.js 10.6.0",
    "id": "float-1.005",
-   "outcome": "lossy",
-   "got": "1.01",
-   "note": "silently rounded"
+   "outcome": "pass",
+   "got": "1.005"
   },
   {
    "library": "decimal.js 10.6.0",
@@ -3911,9 +3908,9 @@
   {
    "library": "decimal.js-light 2.5.1",
    "id": "float-in",
-   "outcome": "lossy",
-   "got": "0.3",
-   "note": "silently rounded to 0.30"
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
   },
   {
    "library": "decimal.js-light 2.5.1",
@@ -3924,9 +3921,8 @@
   {
    "library": "decimal.js-light 2.5.1",
    "id": "float-1.005",
-   "outcome": "lossy",
-   "got": "1.01",
-   "note": "silently rounded"
+   "outcome": "pass",
+   "got": "1.005"
   },
   {
    "library": "decimal.js-light 2.5.1",
@@ -4162,9 +4158,9 @@
   {
    "library": "Prisma.Decimal 7.10.1",
    "id": "float-in",
-   "outcome": "lossy",
-   "got": "0.3",
-   "note": "silently rounded to 0.30"
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
   },
   {
    "library": "Prisma.Decimal 7.10.1",
@@ -4175,9 +4171,8 @@
   {
    "library": "Prisma.Decimal 7.10.1",
    "id": "float-1.005",
-   "outcome": "lossy",
-   "got": "1.01",
-   "note": "silently rounded"
+   "outcome": "pass",
+   "got": "1.005"
   },
   {
    "library": "Prisma.Decimal 7.10.1",

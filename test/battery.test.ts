@@ -4,7 +4,7 @@
 // decimal strings worked out by hand, not taken from any library.
 import { describe, expect, it } from 'vitest';
 import { ducatLibrary } from '../compare/battery/ducat.ts';
-import { runVector, VECTORS } from '../compare/battery/vectors.ts';
+import { normalizeDecimal, runVector, sumOfDecimals, VECTORS } from '../compare/battery/vectors.ts';
 import {
   add,
   allocate,
@@ -24,28 +24,6 @@ function decimalOf(amount: Money): string {
 
 function decimalsOf(amounts: Money[]): string[] {
   return amounts.map(decimalOf);
-}
-
-/** Exact sum of decimal strings, computed in bigint at the widest scale, without ducat. */
-function sumOfDecimals(values: string[]): string {
-  const fractionLengths = values.map((value) => (value.split('.')[1] ?? '').length);
-  const scale = Math.max(0, ...fractionLengths);
-
-  let total = 0n;
-  for (const value of values) {
-    const isNegative = value.startsWith('-');
-    const [integerPart, fractionPart = ''] = value.replace('-', '').split('.');
-    const units = BigInt(integerPart! + fractionPart.padEnd(scale, '0'));
-    total += isNegative ? -units : units;
-  }
-
-  const isNegative = total < 0n;
-  const magnitude = isNegative ? -total : total;
-  let digits = magnitude.toString().padStart(scale + 1, '0');
-  if (scale > 0) {
-    digits = digits.slice(0, -scale) + '.' + digits.slice(-scale);
-  }
-  return isNegative ? '-' + digits : digits;
 }
 
 describe('cross-library battery: ducat passes every vector', () => {
@@ -70,7 +48,7 @@ describe('regressions from other libraries', () => {
 
     for (const [amount, weights] of cases) {
       const parts = decimalsOf(allocate(money(amount, 'EUR'), weights));
-      expect(sumOfDecimals(parts)).toBe(amount);
+      expect(sumOfDecimals(parts)).toBe(normalizeDecimal(amount));
 
       // the mirror image of the positive allocation
       const positiveAmount = amount.slice(1);
