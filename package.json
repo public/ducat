@@ -76,12 +76,14 @@
     "gen:check": "node scripts/gen-currencies.mjs --check",
     "gen:fetch": "node scripts/gen-currencies.mjs --check --fetch",
     "bench": "node scripts/bench-all.mjs",
+    "bench:codspeed": "vitest bench --run",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "check": "pnpm lint && pnpm fmt:check && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
+    "@codspeed/vitest-plugin": "6.1.1",
     "@prisma/client": "^6.19.3",
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.6.6",
