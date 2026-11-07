@@ -95,6 +95,39 @@ jobs:
         env:
           DUCAT_SEED: ${{ inputs.seed }}
 
+  compare:
+    name: cross-library battery and comparison tables
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.x
+          cache: pnpm
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: 2.9.8
+      - run: pnpm install --frozen-lockfile
+      - name: Bundle the battery
+        working-directory: compare
+        run: node build.mjs battery/run.ts out/battery.mjs
+      - name: Run it on Node, Bun and Deno
+        working-directory: compare
+        run: |
+          node out/battery.mjs > out/battery-node.json
+          bun out/battery.mjs > out/battery-bun.json
+          deno run -A --no-config out/battery.mjs > out/battery-deno.json
+      - name: Same outcomes as the committed results, and ducat passes every vector
+        working-directory: compare
+        run: node battery/check.ts out/battery-node.json out/battery-bun.json out/battery-deno.json
+      - name: Comparison tables are up to date
+        working-directory: compare
+        run: node tables.ts --check
+
   proofs:
     name: Lean proofs and generated kernel
     # the proofs land separately; until then there is nothing to build

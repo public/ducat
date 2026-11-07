@@ -1,0 +1,29 @@
+// A Markdown table from compare/results/sizes.tsv (written by sizes.sh). Pure: reads the file,
+// returns a string.
+import { readFileSync } from 'node:fs';
+
+/** never shown: an unpublished build that appears in some raw results */
+const HIDDEN_LIBRARIES = new Set(['prototype']);
+
+function kilobytes(bytes: string): string {
+  return `${(Number(bytes) / 1024).toFixed(1)} kB`;
+}
+
+/**
+ * Per library: the same small program (create, add, multiply, toDecimal) and the whole package,
+ * minified and gzipped, smallest program first.
+ */
+export function renderSizeTable(tsvPath: string): string {
+  const lines = readFileSync(tsvPath, 'utf8').trim().split('\n');
+  const rows = lines.slice(1).map((line) => line.split('\t'));
+  const visibleRows = rows.filter(([library]) => !HIDDEN_LIBRARIES.has(library!));
+  const sortedRows = visibleRows.toSorted((first, second) => Number(first[2]) - Number(second[2]));
+
+  let markdown = '| library | program, min | program, gzip | whole package, min | whole package, gzip |\n';
+  markdown += '|---|--:|--:|--:|--:|\n';
+  for (const [library, snippetMin, snippetGzip, fullMin, fullGzip] of sortedRows) {
+    const cells = [snippetMin, snippetGzip, fullMin, fullGzip].map((bytes) => kilobytes(bytes!));
+    markdown += `| ${library} | ${cells.join(' | ')} |\n`;
+  }
+  return markdown;
+}

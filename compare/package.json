@@ -1,0 +1,32 @@
+{
+  "name": "@ducatjs/compare",
+  "private": true,
+  "type": "module",
+  "description": "Reproducible comparison of ducat with other JavaScript money and decimal libraries: correctness battery, benchmark and bundle sizes.",
+  "scripts": {
+    "battery": "node build.mjs battery/run.ts out/battery.mjs && node out/battery.mjs > results/battery.json",
+    "battery:check": "node build.mjs battery/run.ts out/battery.mjs && node out/battery.mjs > out/battery-node.json && node battery/check.ts out/battery-node.json",
+    "tables": "node tables.ts",
+    "tables:check": "node tables.ts --check"
+  },
+  "dependencies": {
+    "@prisma/client": "7.10.1",
+    "@screeny05/ts-money": "1.2.0",
+    "big.js": "7.0.1",
+    "bigint-money": "2.0.1",
+    "bignumber.js": "11.1.5",
+    "currency.js": "2.0.4",
+    "decimal.js": "10.6.0",
+    "decimal.js-light": "2.5.1",
+    "dinero-v1": "npm:dinero.js@1.9.1",
+    "dinero.js": "2.0.2",
+    "js-money": "0.6.3",
+    "monetra": "2.3.0",
+    "money-math": "2.6.3",
+    "ts-money": "0.4.8"
+  },
+  "devDependencies": {
+    "@types/big.js": "6.2.2",
+    "esbuild": "0.28.2"
+  }
+}

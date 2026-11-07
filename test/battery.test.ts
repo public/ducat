@@ -1,18 +1,14 @@
-// Cross-library correctness battery: every vector that was run against ducat and 16 other money
-// and decimal libraries, plus explicit regressions for each bug found in those libraries, so ducat
-// never acquires one. Expected values are exact decimal strings worked out by hand, not taken from
-// any library.
+// The cross-library correctness battery (compare/battery/vectors.ts, the same vectors `pnpm compare`
+// runs against the other money and decimal libraries), run against ducat, plus explicit regressions
+// for each bug found in those libraries, so ducat never acquires one. Expected values are exact
+// decimal strings worked out by hand, not taken from any library.
 import { describe, expect, it } from 'vitest';
+import { ducatLibrary } from '../compare/battery/ducat.ts';
+import { runVector, VECTORS } from '../compare/battery/vectors.ts';
 import {
   add,
   allocate,
-  compare,
-  convert,
   CurrencyMismatchError,
-  currencyExponent,
-  divide,
-  equals,
-  extractTax,
   fromMinor,
   money,
   multiply,
@@ -28,11 +24,6 @@ function decimalOf(amount: Money): string {
 
 function decimalsOf(amounts: Money[]): string[] {
   return amounts.map(decimalOf);
-}
-
-/** Sorted copy, for comparing split results as multisets: part order is a remainder policy. */
-function sortedCopy(values: string[]): string[] {
-  return values.toSorted();
 }
 
 /** Exact sum of decimal strings, computed in bigint at the widest scale, without ducat. */
@@ -57,209 +48,12 @@ function sumOfDecimals(values: string[]): string {
   return isNegative ? '-' + digits : digits;
 }
 
-describe('battery: currencies and minor units', () => {
-  it.each([
-    ['JPY', 0],
-    ['KWD', 3],
-    ['CLF', 4],
-    ['ISK', 0],
-    ['EUR', 2],
-  ])('exponent of %s is %i', (currency, exponent) => {
-    expect(currencyExponent(currency)).toBe(exponent);
-  });
+describe('cross-library battery: ducat passes every vector', () => {
+  const cases = VECTORS.map((vector) => [`${vector.id}: ${vector.description}`, vector] as const);
 
-  it('jpy-1000: 1000 JPY round-trips', () => {
-    expect(decimalOf(fromMinor(1000, 'JPY'))).toBe('1000');
-  });
-
-  it('jpy-frac: "1000.5" JPY is rejected, not rounded', () => {
-    expect(() => money('1000.5', 'JPY')).toThrow(RoundingError);
-    expect(() => money(1000.5, 'JPY')).toThrow(RoundingError);
-  });
-
-  it('kwd-1.234: 1234 fils is 1.234 KWD', () => {
-    expect(decimalOf(fromMinor(1234, 'KWD'))).toBe('1.234');
-    expect(money('1.234', 'KWD').minor).toBe(1234);
-  });
-
-  it('kwd-split3', () => {
-    const parts = decimalsOf(split(money('1.000', 'KWD'), 3));
-    expect(sortedCopy(parts)).toEqual(sortedCopy(['0.334', '0.333', '0.333']));
-  });
-
-  it('jpy-split3', () => {
-    const parts = decimalsOf(split(money('100', 'JPY'), 3));
-    expect(sortedCopy(parts)).toEqual(sortedCopy(['34', '33', '33']));
-  });
-});
-
-describe('battery: allocation', () => {
-  it('split3', () => {
-    expect(decimalsOf(split(money('100.00', 'EUR'), 3))).toEqual(['33.34', '33.33', '33.33']);
-  });
-
-  it('split3-neg', () => {
-    const parts = decimalsOf(split(money('-100.00', 'EUR'), 3));
-    expect(parts).toEqual(['-33.34', '-33.33', '-33.33']);
-  });
-
-  it('split-cent', () => {
-    expect(decimalsOf(split(money('0.01', 'EUR'), 3))).toEqual(['0.01', '0.00', '0.00']);
-  });
-
-  it('alloc-zero-w: a zero weight gets nothing', () => {
-    const parts = decimalsOf(allocate(money('10.00', 'EUR'), [1, 0, 1]));
-    expect(parts).toEqual(['5.00', '0.00', '5.00']);
-  });
-
-  it('alloc-fuzz: 2,000 seeded allocations sum to the whole, each part within one unit', () => {
-    // the same linear congruential generator the battery used for every library
-    let state = 12345;
-    function randomBelow(limit: number): number {
-      state = (state * 1103515245 + 12345) % 2147483648;
-      return state % limit;
-    }
-
-    for (let i = 0; i < 2000; i++) {
-      const amountMinor = randomBelow(1_000_000_000) - 100_000_000;
-      const weightCount = 2 + randomBelow(6);
-      const weights = Array.from({ length: weightCount }, () => 1 + randomBelow(1000));
-      const totalWeight = weights.reduce((total, weight) => total + weight, 0);
-
-      const whole = fromMinor(amountMinor, 'EUR');
-      const parts = allocate(whole, weights);
-      expect(sumOfDecimals(decimalsOf(parts))).toBe(decimalOf(whole));
-
-      // |part * W - amount * weight| < W, in exact bigint
-      for (let k = 0; k < parts.length; k++) {
-        const scaledPart = BigInt(parts[k]!.minor) * BigInt(totalWeight);
-        const scaledShare = BigInt(amountMinor) * BigInt(weights[k]!);
-        const error = scaledPart - scaledShare;
-        expect(error < BigInt(totalWeight)).toBe(true);
-        expect(error > -BigInt(totalWeight)).toBe(true);
-      }
-    }
-  });
-});
-
-describe('battery: tax', () => {
-  it('vat-12: 12.00 GBP / 1.2 = 10.00', () => {
-    expect(decimalOf(divide(money('12.00', 'GBP'), '1.2', 'halfEven'))).toBe('10.00');
-  });
-
-  it('vat-9.99-even: 8.325 -> 8.32', () => {
-    expect(decimalOf(divide(money('9.99', 'GBP'), '1.2', 'halfEven'))).toBe('8.32');
-  });
-
-  it('vat-9.99-up: 8.325 -> 8.33', () => {
-    expect(decimalOf(divide(money('9.99', 'GBP'), '1.2', 'halfExpand'))).toBe('8.33');
-  });
-
-  it('vat-119: 119.00 EUR / 1.19 = 100.00', () => {
-    expect(decimalOf(divide(money('119.00', 'EUR'), '1.19', 'halfEven'))).toBe('100.00');
-  });
-
-  it('extractTax agrees with divide and adds up', () => {
-    const breakdown = extractTax(money('9.99', 'GBP'), 20, 'halfEven');
-    const parts = [breakdown.net, breakdown.tax, breakdown.gross].map(decimalOf);
-    expect(parts).toEqual(['8.32', '1.67', '9.99']);
-  });
-});
-
-describe('battery: rounding at .5 boundaries', () => {
-  it.each([
-    ['0.25', '0.5', 'halfEven', '0.12'],
-    ['0.25', '0.5', 'halfExpand', '0.13'],
-    ['-0.25', '0.5', 'halfExpand', '-0.13'],
-    ['-0.25', '0.5', 'halfEven', '-0.12'],
-  ] as const)('%s x %s (%s) = %s', (amount, factor, mode, expected) => {
-    expect(decimalOf(multiply(money(amount, 'EUR'), factor, mode))).toBe(expected);
-  });
-
-  it('fx-jpy: 100.00 EUR at 162.457 -> 16246 JPY', () => {
-    const converted = convert(money('100.00', 'EUR'), 'JPY', '162.457', 'halfExpand');
-    expect(decimalOf(converted)).toBe('16246');
-  });
-
-  it('fx-float: 1.15 EUR at 1.1 -> 1.26 USD (float gives 1.27)', () => {
-    const converted = convert(money('1.15', 'EUR'), 'USD', '1.1', 'halfEven');
-    expect(decimalOf(converted)).toBe('1.26');
-  });
-});
-
-describe('battery: amounts beyond 2^53', () => {
-  it('big-2^53+1 cents round-trips', () => {
-    expect(decimalOf(money('90071992547409.93', 'EUR'))).toBe('90071992547409.93');
-    expect(money('90071992547409.93', 'EUR').toMinor()).toBe(9007199254740993n);
-    expect(decimalOf(fromMinor(9007199254740993n, 'EUR'))).toBe('90071992547409.93');
-  });
-
-  it('big-add: 2^53 cents + 0.01', () => {
-    const total = add(money('90071992547409.92', 'EUR'), money('0.01', 'EUR'));
-    expect(decimalOf(total)).toBe('90071992547409.93');
-  });
-
-  it('gdp: 1.25e16 cents + 0.01', () => {
-    const total = add(money('125000000000000.00', 'USD'), money('0.01', 'USD'));
-    expect(decimalOf(total)).toBe('125000000000000.01');
-  });
-
-  it('gdp-split3 sums to the whole', () => {
-    const parts = decimalsOf(split(money('125000000000000.00', 'USD'), 3));
-    expect(sumOfDecimals(parts)).toBe('125000000000000.00');
-    expect(parts).toEqual(['41666666666666.67', '41666666666666.67', '41666666666666.66']);
-  });
-
-  it('bigint-max: BIGINT max cents round-trips', () => {
-    const bigintMax = money('92233720368547758.07', 'EUR');
-    expect(decimalOf(bigintMax)).toBe('92233720368547758.07');
-    expect(bigintMax.toMinor()).toBe(9223372036854775807n);
-  });
-});
-
-describe('battery: negatives', () => {
-  it('neg-add', () => {
-    expect(decimalOf(add(money('-5.00', 'EUR'), money('2.50', 'EUR')))).toBe('-2.50');
-  });
-
-  it('neg-sub', () => {
-    expect(decimalOf(subtract(money('2.50', 'EUR'), money('5.00', 'EUR')))).toBe('-2.50');
-  });
-
-  it('neg-small', () => {
-    expect(decimalOf(money('-0.05', 'EUR'))).toBe('-0.05');
-  });
-});
-
-describe('battery: float input', () => {
-  it('float-in: money(0.1 + 0.2) is rejected', () => {
-    expect(() => money(0.1 + 0.2, 'EUR')).toThrow(RoundingError);
-  });
-
-  it('dec-add: 0.10 + 0.20 = 0.30 exactly', () => {
-    expect(decimalOf(add(money('0.10', 'EUR'), money('0.20', 'EUR')))).toBe('0.30');
-  });
-
-  it('float-1.005: money(1.005) is the decimal 1.005, so it is rejected at scale 2', () => {
-    expect(() => money(1.005, 'EUR')).toThrow(RoundingError);
-    expect(decimalOf(money(1.005, 'EUR', { scale: 3 }))).toBe('1.005');
-  });
-});
-
-describe('battery: currency mismatch', () => {
-  const euro = money('1.00', 'EUR') as Money<string>;
-  const dollar = money('1.00', 'USD') as Money<string>;
-
-  it('mix-add throws', () => {
-    expect(() => add(euro, dollar)).toThrow(CurrencyMismatchError);
-  });
-
-  it('mix-cmp throws', () => {
-    expect(() => compare(euro, dollar)).toThrow(CurrencyMismatchError);
-  });
-
-  it('mix-eq is false', () => {
-    expect(equals(euro, dollar)).toBe(false);
+  it.each(cases)('%s', (_, vector) => {
+    const result = runVector(vector, ducatLibrary);
+    expect(result).toMatchObject({ outcome: 'pass' });
   });
 });
 
