@@ -51,6 +51,17 @@ describe('construction', () => {
     expect(eur('12.345', { scale: 3 }).minor).toBe(12345);
     expect(() => money('1.5', 'JPY')).toThrow(/more than 0 decimal/);
   });
+  it('rejects exponents and fraction lengths beyond 1000 instead of building huge powers of ten', () => {
+    expect(() => eur('1e999999999')).toThrow(RangeError);
+    expect(() => eur('1e-999999999')).toThrow(RangeError);
+    expect(() => eur('0.' + '0'.repeat(1000) + '1')).toThrow(RangeError);
+    expect(() => ratio('1e5000')).toThrow(RangeError);
+    expect(() => fromJSON({ amount: '1e999999999', currency: 'EUR' })).toThrow(RangeError);
+    // still fine just inside the limits
+    expect(eur('1e2').minor).toBe(10000);
+    expect(eur('0.' + '0'.repeat(997) + '1', { rounding: 'floor' }).minor).toBe(0);
+    expect(ratio('1e-1000').den).toBe(10n ** 1000n);
+  });
   it('integers are major units; floats are taken at their shortest decimal form', () => {
     expect(money(12, 'EUR').minor).toBe(1200);
     expect(money(12.34, 'EUR').minor).toBe(1234);
