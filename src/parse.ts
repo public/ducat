@@ -51,12 +51,25 @@ const ZEROS = [
   0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66, 0xe50, 0xed0,
   0xf20, 0x1040, 0x17e0, 0x1810, 0xff10,
 ];
+const FULLWIDTH_ZERO = 0xff10;
+const LAST_BLOCK_BEFORE_FULLWIDTH = 0x1810;
 function asciiDigit(cp: number): number {
   if (cp >= 48 && cp <= 57) {
     return cp - 48;
   }
-  for (const zero of ZEROS) {
-    if (cp >= zero && cp <= zero + 9) {
+  // Every non-digit character used to scan the whole table. Separators, signs and Latin-1 spaces
+  // are below the first block (U+0660); currency signs such as € (U+20AC) and the narrow no-break
+  // space (U+202F) fall in the gap before the fullwidth digits.
+  if (cp < ZEROS[0]! || (cp > LAST_BLOCK_BEFORE_FULLWIDTH + 9 && cp < FULLWIDTH_ZERO)) {
+    return -1;
+  }
+  // ZEROS is sorted, so the first block above cp ends the search
+  for (let i = 0; i < ZEROS.length; i++) {
+    const zero = ZEROS[i]!;
+    if (cp < zero) {
+      return -1;
+    }
+    if (cp <= zero + 9) {
       return cp - zero;
     }
   }

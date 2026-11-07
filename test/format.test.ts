@@ -116,3 +116,38 @@ describe('Intl hand-off', () => {
     );
   });
 });
+
+describe('parse digit detection', () => {
+  // The zero of every decimal digit block parse reads (arab, arabext, nko, deva, ..., fullwidth).
+  const ZERO_CODE_POINTS = [
+    0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66, 0xe50,
+    0xed0, 0xf20, 0x1040, 0x17e0, 0x1810, 0xff10,
+  ];
+
+  it('reads every digit of every block', () => {
+    for (const zero of ZERO_CODE_POINTS) {
+      const digits = String.fromCodePoint(zero + 9, zero + 0, zero + 1, zero + 5);
+      expect([zero, parse(digits, 'JPY').minor]).toEqual([zero, 9015]);
+    }
+  });
+
+  it('takes the code points just outside each block, and the gaps between blocks, as non-digits', () => {
+    const notDigits = ZERO_CODE_POINTS.flatMap((zero) => [zero - 1, zero + 10]);
+    // in the gap before the fullwidth block, where € and the narrow no-break space are
+    notDigits.push(0x20ac, 0x202f, 0x2000, 0xfe0f);
+    const readAsDigits = notDigits.filter((codePoint) => {
+      try {
+        parse(String.fromCodePoint(codePoint), 'JPY');
+        return true;
+      } catch (error) {
+        return !(error instanceof SyntaxError && /no digits/.test(error.message));
+      }
+    });
+    expect(readAsDigits.map((codePoint) => codePoint.toString(16))).toEqual([]);
+  });
+
+  it('still reads amounts with currency signs and narrow no-break spaces around them', () => {
+    expect(parse('1 234,50 €', 'EUR', 'fr-FR').minor).toBe(123450);
+    expect(parse('€ ١٢٣٫٤٥', 'EUR', 'ar-EG').minor).toBe(12345);
+  });
+});

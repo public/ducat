@@ -131,10 +131,19 @@ function gcd(left: bigint, right: bigint): bigint {
   if (left < 0n) {
     left = -left;
   }
+  // a temporary, not a destructuring swap: `[a, b] = [b, a % b]` builds an array per step until the
+  // optimiser removes it, and this loop runs for every ratio that is built
   while (right) {
-    [left, right] = [right, left % right];
+    const remainder = left % right;
+    left = right;
+    right = remainder;
   }
   return left;
+}
+
+/** The value as a number when it is a safe integer, otherwise NaN (a Ratio's `n` and `d`). */
+function safeNumberOrNaN(value: bigint): number {
+  return value <= MAXN && value >= -MAXN ? Number(value) : NaN;
 }
 
 function makeRatio(num: bigint, den: bigint): Ratio {
@@ -145,13 +154,15 @@ function makeRatio(num: bigint, den: bigint): Ratio {
     num = -num;
     den = -den;
   }
-  const divisor = gcd(num, den);
-  if (divisor > 1n) {
-    num /= divisor;
-    den /= divisor;
+  // an integer (den 1) is already in lowest terms
+  if (den !== 1n) {
+    const divisor = gcd(num, den);
+    if (divisor > 1n) {
+      num /= divisor;
+      den /= divisor;
+    }
   }
-  const safe = (value: bigint) => (value <= MAXN && value >= -MAXN ? Number(value) : NaN);
-  return { num, den, n: safe(num), d: safe(den) };
+  return { num, den, n: safeNumberOrNaN(num), d: safeNumberOrNaN(den) };
 }
 
 const cache = new Map<string, Ratio>();
@@ -164,6 +175,10 @@ const INT_RATIOS: Ratio[] = [];
  */
 export function ratio(value: Factor, den?: Factor): Ratio {
   if (den !== undefined) {
+    // two bigints (divide, percentages, tax): one reduction instead of three
+    if (typeof value === 'bigint' && typeof den === 'bigint') {
+      return makeRatio(value, den);
+    }
     const numeratorRatio = ratio(value);
     const denominatorRatio = ratio(den);
     return makeRatio(

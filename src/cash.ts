@@ -44,20 +44,44 @@ export function roundToIncrement<C extends string>(
  * EUR has no euro-wide rule: pass the country (BE, NL, FI, IE, IT, SK, EE, LT).
  */
 export function cashRule(currency: string, country?: string): CashRule | undefined {
-  let found: CashRule | undefined;
-  for (const rule of CASH_RULES) {
-    if (rule.currency !== currency) {
-      continue;
-    }
-    if (country !== undefined) {
-      if (rule.countries.includes(country)) {
-        return rule;
+  const rules = cashRulesFor(currency);
+  if (rules === undefined) {
+    return undefined;
+  }
+  if (country !== undefined) {
+    for (let i = 0; i < rules.length; i++) {
+      if (rules[i]!.countries.includes(country)) {
+        return rules[i];
       }
-    } else if (currency !== 'EUR') {
-      found ??= rule;
+    }
+    return undefined;
+  }
+  // EUR has no euro-wide rule, so it needs a country
+  if (currency === 'EUR') {
+    return undefined;
+  }
+  return rules[0];
+}
+
+// CASH_RULES grouped by currency, in table order. Built on first use, not at import, so the module
+// stays free of side effects; cashRound calls cashRule on every amount, and a scan of the whole table
+// was most of its cost.
+let rulesByCurrency: Map<string, CashRule[]> | undefined;
+
+function cashRulesFor(currency: string): readonly CashRule[] | undefined {
+  if (rulesByCurrency === undefined) {
+    rulesByCurrency = new Map();
+    for (let i = 0; i < CASH_RULES.length; i++) {
+      const rule = CASH_RULES[i]!;
+      const forCurrency = rulesByCurrency.get(rule.currency);
+      if (forCurrency === undefined) {
+        rulesByCurrency.set(rule.currency, [rule]);
+      } else {
+        forCurrency.push(rule);
+      }
     }
   }
-  return found;
+  return rulesByCurrency.get(currency);
 }
 
 /**

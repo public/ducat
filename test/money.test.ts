@@ -264,3 +264,36 @@ describe('properties', () => {
     );
   });
 });
+
+describe('ratio of two bigints', () => {
+  it('equals the same ratio built from strings, in lowest terms with a positive denominator', () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt(-(10n ** 30n), 10n ** 30n),
+        fc.bigInt(-(10n ** 30n), 10n ** 30n),
+        (num, den) => {
+          if (den === 0n) {
+            expect(() => ratio(num, den)).toThrow(RangeError);
+            return;
+          }
+          const direct = ratio(num, den);
+          const viaStrings = ratio(`${num}/${den}`);
+          expect([direct.num, direct.den, direct.n, direct.d]).toEqual([
+            viaStrings.num,
+            viaStrings.den,
+            viaStrings.n,
+            viaStrings.d,
+          ]);
+          expect(direct.den > 0n).toBe(true);
+        },
+      ),
+    );
+  });
+
+  it('keeps divide, percentage and tax exact', () => {
+    expect(toDecimal(money('100', 'EUR').divide(3))).toBe('33.33');
+    expect(toDecimal(money('-100', 'EUR').divide('-3'))).toBe('33.33');
+    expect(ratio(6n, -4n)).toMatchObject({ num: -3n, den: 2n, n: -3, d: 2 });
+    expect(ratio(2n ** 60n, 2n ** 58n)).toMatchObject({ num: 4n, den: 1n, n: 4, d: 1 });
+  });
+});
