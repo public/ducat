@@ -49,6 +49,15 @@ nothing in bundle size.
   imported binding through an extra indirection). Check with the benchmarks.
 - **Generated code follows the same rules**, and goes through the formatter.
 
+## README examples
+
+The TypeScript examples in the README are tests (`test/readme.test.ts`, like Python's doctest). Each
+block runs as its own module, so it needs its own imports, and the blocks are type-checked. Write a
+result as `// → value`, the way `show()` in `test/doctest.ts` prints it: `25.00 EUR` for Money, `'text'`
+for strings, `[...]` and `{ key: value }`, with any note after it. `// throws` and `// compile error`
+are checked as well. A comment without an arrow is a note. `<!-- doctest: skip (reason) -->` or
+`<!-- doctest: setup CODE -->` on the line before a block skips it or adds hidden setup code.
+
 ## Pull requests
 
 Keep them small and focused, with a description that says what changes and why, and the before and
