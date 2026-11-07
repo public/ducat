@@ -56,6 +56,11 @@ describe('Money methods', () => {
       'convertDetailed',
       'sumExact',
       'isExactMoney',
+      // multi-currency totals and ordering
+      'bag',
+      'comparator',
+      'sortByValue',
+      'sumByCurrency',
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
