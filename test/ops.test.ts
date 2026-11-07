@@ -11,7 +11,8 @@ describe('percentages, tax and discounts', () => {
   it('percentage', () => {
     expect(d(percentage(money('80', 'EUR'), '12.5'))).toBe('10.00');
     expect(d(percentage(money('9.99', 'EUR'), 15, 'halfEven'))).toBe('1.50');
-    expect(() => percentage(money('9.99', 'EUR'), 15)).toThrow();
+    expect(d(percentage(money('9.99', 'EUR'), 15))).toBe('1.50'); // 1.4985, default halfExpand
+    expect(() => percentage(money('9.99', 'EUR'), 15, 'unnecessary')).toThrow();
   });
   it('UK VAT 20%: exclusive and inclusive', () => {
     const t = addTax(gbp('10'), 20);
@@ -49,7 +50,8 @@ describe('currency conversion', () => {
     expect(d(convert(money('1000', 'JPY'), 'KWD', '0.002034', 'halfEven'))).toBe('2.034');
     expect(d(convert(money('1', 'BTC', { scale: 8 }), 'USD', '67250.12345678', 'halfEven'))).toBe('67250.12');
     expect(() => convert(money('1', 'EUR'), 'USD', '0')).toThrow();
-    expect(() => convert(money('1', 'EUR'), 'USD', '1.0832')).toThrow(); // inexact without a mode
+    expect(d(convert(money('1', 'EUR'), 'USD', '1.0832'))).toBe('1.08'); // default halfExpand
+    expect(() => convert(money('1', 'EUR'), 'USD', '1.0832', 'unnecessary')).toThrow();
   });
   it('exchangeRate pins the pair', () => {
     const r = exchangeRate('EUR', 'USD', '1.25');

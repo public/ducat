@@ -7,7 +7,7 @@ export {
   CurrencyMismatchError,
   type Money, type MoneyJSON, type MoneyOptions, type CurrencyInput, type Factor, type Ratio,
 } from './money.js';
-export { Rounding, RoundingError, type RoundingMode } from './rounding.js';
+export { DEFAULT_ROUNDING, Rounding, RoundingError, type RoundingMode } from './rounding.js';
 export {
   currencyExponent, defineCurrency, isCurrency, ISO_EXPONENTS, ISO_4217_PUBLISHED, ISO_NON_MONETARY,
   type CurrencyCode, type IsoCurrencyCode, type CustomCurrencies,

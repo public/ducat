@@ -1,19 +1,22 @@
-# money (prototype)
+# ducat
 
-An exact, fast, typed Money type for TypeScript. It has zero runtime dependencies, ships as ESM, and is tree-shakable.
+An exact, fast, typed Money type for TypeScript. It has zero runtime dependencies and runs on Node, Bun, Deno and browsers.
 
 ```ts
-import { money, add, multiply, allocate, format, extractTax, convert } from 'money';
+import { money } from 'ducat';
 
 const price = money('19.99', 'EUR');                 // Money<'EUR'>
-const total = add(price, money('5.01', 'EUR'));      // 25.00 EUR
-multiply(total, '1.075', 'halfEven');                // 26.88 EUR (rounding mode is explicit)
-allocate(money('100', 'EUR'), [1, 1, 1]);            // 33.34, 33.33, 33.33 (sums to 100.00, always)
-extractTax(money('12', 'GBP'), 20, 'halfEven');      // { net: 10.00, tax: 2.00, gross: 12.00 }
-convert(total, 'JPY', '162.457', 'halfEven');        // 4061 JPY
-format(total, 'de-DE');                              // "25,00 €"
-add(price, money('1', 'USD'));                       // compile error, and a runtime error if types are erased
+const total = price.add(money('5.01', 'EUR'));       // 25.00 EUR
+total.multiply('1.075');                             // 26.88 EUR (26.875 rounds half away from zero by default)
+total.multiply('1.075', 'halfEven');                 // 26.88 EUR (any of 10 modes, or 'unnecessary' to throw)
+money('100', 'EUR').allocate([1, 1, 1]);             // 33.34, 33.33, 33.33 (sums to 100.00, always)
+money('12', 'GBP').extractTax(20);                   // { net: 10.00, tax: 2.00, gross: 12.00 }
+total.convert('JPY', '162.457');                     // 4061 JPY
+total.format('de-DE');                               // "25,00 €"
+price.add(money('1', 'USD'));                        // compile error, and a runtime error if types are erased
 ```
+
+Every method is also a free function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`), for pipelines and for code that prefers that style.
 
 Status: this is a prototype. The API is meant to be small, but it is not yet frozen. See [What's missing](#whats-missing-honest-list).
 
@@ -60,7 +63,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 ### Correctness rules
 
 * **No float arithmetic on amounts.** Factors, rates and percentages are exact rationals (`ratio('1.075')`, `ratio(1, 3)`, `'1/3'`, bigint, integer). A JS number factor such as `0.1` is read at its shortest decimal form (`"0.1"`, exactly 1/10) and never multiplied as a float. `money(0.1 + 0.2, 'EUR')` **throws**: `0.30000000000000004` has too many decimals, and we don't silently turn it into 0.30.
-* **Rounding is always explicit.** Every operation that may need to round takes a `RoundingMode`, and the default is `'unnecessary'`, which throws `RoundingError` if the result is inexact. You never get silent rounding.
+* **Rounding is never hidden in the representation.** Every operation that may need to round takes a `RoundingMode`. Arithmetic defaults to `'halfExpand'` (ties away from zero, the most common default; see [Decisions](#decisions)); pass `'unnecessary'` to throw `RoundingError` instead. Parsing never rounds by default: `money('1.005', 'EUR')` throws.
 * **Allocation is exact.** The parts always sum to the whole, and the remainder is distributed deterministically. This is property-tested across every remainder strategy, with weights up to 2^40 and amounts up to 10^25.
 * **Currency mismatch** is a compile-time error for literal currency types (`add(eur, usd)`, `sum([eur, usd])`, `compare`, `exchangeRate(...).convert`). When types are erased (`Money<string>`) it is a runtime `CurrencyMismatchError`. `equals()` across currencies returns `false`.
 
@@ -68,7 +71,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ## API
 
-Everything is exported from `money`. The processor views are in `money/stripe` and `money/adyen`, and the DB helpers in `money/prisma`.
+Everything is exported from `ducat`, as methods on `Money` and as free functions. The processor views are in `ducat/stripe` and `ducat/adyen`, and the DB helpers in `ducat/prisma`.
 
 **Create**
 * `money(amount: string | number | bigint, currency, { scale?, rounding? })`: the amount is in major units. A string is the recommended form. An integer number means major units (`money(12,'EUR')` is 12.00).
@@ -143,8 +146,8 @@ Everything is exported from `money`. The processor views are in `money/stripe` a
 ### Payment processors: the amount you send
 
 ```ts
-import { toStripe, toStripeAmount, fromStripe } from 'money/stripe';
-import { toAdyen, fromAdyen } from 'money/adyen';
+import { toStripe, toStripeAmount, fromStripe } from 'ducat/stripe';
+import { toAdyen, fromAdyen } from 'ducat/adyen';
 
 toStripe(money('10.99', 'USD'))          // { amount: 1099, currency: 'usd' }
 toStripeAmount(money('5', 'ISK'))        // 500     (Stripe: two-decimal value ending in 00)
@@ -227,7 +230,7 @@ Processor differences encoded:
 | | ISO | Stripe | Adyen |
 |---|---|---|---|
 | ISK | 0 | 2, amount must be a multiple of 100 | 2 |
-| UGX | 0 | 2, amount must be a multiple of 100 (**see open question 1**) | 0 |
+| UGX | 0 | 2, amount must be a multiple of 100 (confirmed, see [Decisions](#decisions)) | 0 |
 | CLP | 0 | 0 | **2** |
 | IDR | 2 | 2 | **0** |
 | CVE | 2 | 2 | **0** |
@@ -300,9 +303,18 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
   
   Minor units remain available, but only through explicit, named conversions, where the owner of the exponent is known: `toMinor`, `toStripeAmount`, `toAdyenAmount`, and the BIGINT column helpers.
 
+  Evidence from the comparison (`~/work/money-compare`): by default, `JSON.stringify` of 12.34 EUR gives minor units in dinero.js 2 (`{"amount":1234,"currency":{"code":"EUR","base":10,"exponent":2},"scale":2}`; with the bigint calculator it throws "Do not know how to serialize a BigInt"), dinero.js 1 (`{"amount":1234,"currency":"EUR","precision":2}`), js-money, ts-money and @screeny05/ts-money (`{"amount":1234,"currency":"EUR"}`, with no exponent, so the reader must know it) and monetra (`{"amount":"1234","currency":"EUR","precision":2}`). The decimal libraries and money-math give `"12.34"`, and bigint-money gives `["12.34","EUR"]`. Related dinero.js issues: #22 (`JSON.stringify` gave `{}`, then `toJSON` was debated), #636 (deserialising needs the full currency object from a dynamic code), and #771 (`allocate` hangs on a value deserialised at scale 19).
+* **The package is called `ducat`** (Alex, 2026-11-07: "a cool sounding historical currency name that's free on npm"). The ducat was the Venetian gold trade coin, used across Europe for about 600 years. Alternatives that were also free: drachma, daric, sestertius, scudo.
+* **Methods on `Money`** (Alex, 2026-11-07: free functions only were "awkward to use"): `price.add(fee).multiply('1.075').split(3)`. Each method is the free function of the same name, and the free functions stay exported. Operands are `Money` only, never bare numbers (monetra's `add(5)` means 5 minor units, a trap we avoid).
+* **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic (Alex: "what do other libs use? pick that"). That is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
+* **Stripe UGX is ×100** (Alex, 2026-11-07, quoting Stripe's docs): "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
+* **Dual ESM + CJS build; Node ≥ 20** (Alex: OK). Node 18 is EOL, and dropping it also removes the lossy `format()` above 2^53 there.
+* **Withdrawn and non-ISO codes** go in an opt-in `ducat/historic` table (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…), with withdrawal dates.
+* **Processors:** Stripe and Adyen now; Checkout.com, PayPal, Braintree and Klarna views to come (Alex: "all of those").
+* **Test matrix:** real Postgres, MySQL and SQLite for the DB helpers; real browsers (Chromium, Firefox, WebKit via Playwright) alongside Node, Bun, Deno and the engine shells.
+
 ## What's missing (honest list)
 
-* **Stripe UGX is ambiguous in Stripe's own docs.** UGX appears in the zero-decimal list but also in "special cases" ("represent it as a two-decimal value… 5 UGX → 500"). We encode the special case. This must be confirmed against the live API before production use, because the two readings differ by 100x.
 * **Stripe three-decimal rule.** The "last digit must be 0" rule comes from a June 2024 archived copy of Stripe's page. The live page no longer has that section (it is marked unverified in `data/stripe.json`).
 * **Cash-rounding rules.** Some are backed only by secondary sources (`verified: false`): CHF, DKK, AUD, NZD, ILS, MYR, SGD, FI/IE/IT/SK/LT EUR and several others. `includeUnverified: false` turns them off.
   * Per-jurisdiction tie rules are all `halfExpand`. Singapore's "round down in the customer's favour" practice and USD's state-by-state post-penny rules aren't modelled.

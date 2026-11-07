@@ -13,7 +13,7 @@ export type RoundingMode =
   | 'trunc' // towards zero ("down")
   | 'ceil' // towards +infinity
   | 'floor' // towards -infinity
-  | 'unnecessary'; // throw RoundingError if the result is inexact (the default everywhere)
+  | 'unnecessary'; // throw RoundingError if the result is inexact (the default for parsing and processor amounts)
 
 export const Rounding = {
   HalfEven: 'halfEven',
@@ -28,6 +28,14 @@ export const Rounding = {
   Floor: 'floor',
   Unnecessary: 'unnecessary',
 } as const satisfies Record<string, RoundingMode>;
+
+/**
+ * The rounding mode arithmetic uses when none is given: ties away from zero ('half up'). It is the default of
+ * decimal.js, big.js, bignumber.js, Prisma.Decimal and Intl.NumberFormat, and what Math.round-based money
+ * libraries (currency.js, js-money, ts-money) intend. Parsing (`money('1.005', 'EUR')`, `fromDecimal`) and
+ * processor amounts (`toStripeAmount`, `toAdyen`) stay strict: they throw unless a mode is passed.
+ */
+export const DEFAULT_ROUNDING: RoundingMode = 'halfExpand';
 
 /** Thrown when an operation would have to round but the rounding mode is `'unnecessary'`. */
 export class RoundingError extends RangeError {

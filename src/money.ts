@@ -1,6 +1,12 @@
 import { currencyExponent, type CurrencyCode } from './currency.js';
 import { formatScaled, parseDecimal, parsePlainDecimal, POW10, pow10n, ratio, toSafe, type Factor, type Ratio } from './decimal.js';
-import { divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
+import { DEFAULT_ROUNDING, divRound, divRoundBig, RoundingError, type RoundingMode } from './rounding.js';
+// Circular on purpose: the Money methods delegate to these modules, which import money.ts. Safe because
+// nothing in this module's top level calls into them; they are only referenced inside method bodies.
+import { allocate, chunk, instalments, schedule, split, type AllocateOptions, type InstalmentOptions, type Tranche, type Weight } from './allocate.js';
+import { cashRound, roundToIncrement, type CashRoundOptions } from './cash.js';
+import { format, formatToParts } from './format.js';
+import { addTax, convert, discount, extractTax, percentage, type ConvertOptions, type TaxBreakdown } from './ops.js';
 
 const MAX = Number.MAX_SAFE_INTEGER;
 
@@ -54,6 +60,80 @@ class Money<C extends string = string> {
     if (hint === 'string') return this.toString();
     throw new TypeError('Money cannot be converted to a number; use add(), compare(), toDecimal() etc.');
   }
+
+  // Methods. Each one is a thin wrapper over the free function of the same name (also exported), so
+  // `a.add(b)` and `add(a, b)` are the same code. Operands are Money only: a bare number is never
+  // guessed to mean major or minor units.
+
+  // arithmetic
+  /** this + other (same currency; any scale) */
+  add(other: Money<C>): Money<C> { return add(this, other); }
+  /** this - other */
+  subtract(other: Money<C>): Money<C> { return subtract(this, other); }
+  /** this * factor, rounded to this scale. `factor` is exact: integer, decimal string ('1.075'), bigint or ratio(). */
+  multiply(factor: Factor, rounding?: RoundingMode): Money<C> { return multiply(this, factor, rounding); }
+  /** this / divisor, rounded to this scale */
+  divide(divisor: Factor, rounding?: RoundingMode): Money<C> { return divide(this, divisor, rounding); }
+  negate(): Money<C> { return negate(this); }
+  abs(): Money<C> { return abs(this); }
+  /** Rounds to the currency's exponent (or `scale`). */
+  round(rounding: RoundingMode, scale?: number): Money<C> { return round(this, rounding, scale); }
+  /** Changes the scale; decreasing it rounds (default 'halfExpand'). */
+  toScale(scale: number, rounding?: RoundingMode): Money<C> { return toScale(this, scale, rounding); }
+  /** `percent`% of this, e.g. `price.percentage(15, 'halfEven')` */
+  percentage(percent: Factor, rounding?: RoundingMode): Money<C> { return percentage(this, percent, rounding); }
+  /** this minus `percent`% */
+  discount(percent: Factor, rounding?: RoundingMode): Money<C> { return discount(this, percent, rounding); }
+  /** Treats this as net: `{ net, tax, gross }`, net + tax = gross exactly. */
+  addTax(percent: Factor, rounding?: RoundingMode): TaxBreakdown<C> { return addTax(this, percent, rounding); }
+  /** Treats this as gross: `{ net, tax, gross }`, net + tax = gross exactly. */
+  extractTax(percent: Factor, rounding?: RoundingMode): TaxBreakdown<C> { return extractTax(this, percent, rounding); }
+  /** Converts at an exact decimal-string rate: `eur.convert('USD', '1.0832', 'halfEven')`. */
+  convert<To extends CurrencyInput>(to: To, rate: Factor, rounding?: RoundingMode, options?: ConvertOptions): Money<To> {
+    return convert(this, to, rate, rounding, options);
+  }
+
+  // allocation
+  /** Splits by weights; the parts always sum to this. */
+  allocate(weights: readonly Weight[], options?: AllocateOptions): Money<C>[] { return allocate(this, weights, options); }
+  /** Splits into `count` near-equal parts that sum to this. */
+  split(count: number, options?: AllocateOptions): Money<C>[] { return split(this, count, options); }
+  instalments(count: number, options?: InstalmentOptions<C>): Money<C>[] { return instalments(this, count, options); }
+  schedule(tranches: readonly Tranche<C>[]): Money<C>[] { return schedule(this, tranches); }
+  /** Tranches of at most `max`: 1000 by 300 gives 300, 300, 300, 100. */
+  chunk(max: Money<C>): Money<C>[] { return chunk(this, max); }
+
+  // cash rounding (cash tenders only; card payments are never rounded)
+  cashRound(options?: CashRoundOptions): Money<C> { return cashRound(this, options); }
+  roundToIncrement(increment: Money<C>, rounding?: RoundingMode): Money<C> { return roundToIncrement(this, increment, rounding); }
+
+  // comparison
+  /** -1, 0 or 1; throws on currency mismatch */
+  compare(other: Money<C>): -1 | 0 | 1 { return compare(this, other); }
+  /** same currency and value; a different currency is simply not equal */
+  equals(other: Money): boolean { return equals(this, other); }
+  lessThan(other: Money<C>): boolean { return compare(this, other) < 0; }
+  lessThanOrEqual(other: Money<C>): boolean { return compare(this, other) <= 0; }
+  greaterThan(other: Money<C>): boolean { return compare(this, other) > 0; }
+  greaterThanOrEqual(other: Money<C>): boolean { return compare(this, other) >= 0; }
+  isZero(): boolean { return this.minor == 0; }
+  isPositive(): boolean { return this.minor > 0; }
+  isNegative(): boolean { return this.minor < 0; }
+  sign(): -1 | 0 | 1 { return sign(this); }
+  min(...others: Money<C>[]): Money<C> { return min(this, ...others); }
+  max(...others: Money<C>[]): Money<C> { return max(this, ...others); }
+  clamp(lo: Money<C>, hi: Money<C>): Money<C> { return clamp(this, lo, hi); }
+
+  // output
+  /** Exact decimal string in major units: "12.34" */
+  toDecimal(): string { return formatScaled(this.minor, this.scale); }
+  /** Minor units as a bigint (BIGINT columns) */
+  toMinor(): bigint { return big(this.minor); }
+  /** Minor units as a number; throws beyond 2^53 */
+  toMinorNumber(): number { return toMinorNumber(this); }
+  /** Locale formatting via Intl: `price.format('de-DE')` gives "19,99 €" */
+  format(locale?: string, options?: Intl.NumberFormatOptions): string { return format(this, locale, options); }
+  formatToParts(locale?: string, options?: Intl.NumberFormatOptions): Intl.NumberFormatPart[] { return formatToParts(this, locale, options); }
 }
 export type { Money };
 
@@ -233,9 +313,9 @@ export function abs<C extends string>(m: Money<C>): Money<C> {
 
 /**
  * m * factor, rounded to m's scale. `factor` is exact: an integer, a decimal string ('1.075'),
- * a bigint, or a `ratio()`. Rounding defaults to 'unnecessary' (throws if the result is inexact).
+ * a bigint, or a `ratio()`. Rounding defaults to 'halfExpand' (ties away from zero); pass 'unnecessary' to throw instead.
  */
-export function multiply<C extends string>(m: Money<C>, factor: Factor, rounding: RoundingMode = 'unnecessary'): Money<C> {
+export function multiply<C extends string>(m: Money<C>, factor: Factor, rounding: RoundingMode = DEFAULT_ROUNDING): Money<C> {
   const x = m.minor;
   if (typeof factor === 'number' && Number.isSafeInteger(factor) && typeof x === 'number') {
     const p = x * factor;
@@ -258,8 +338,8 @@ export function mulRatio<C extends string>(m: Money<C>, r: Ratio, rounding: Roun
   return make(m.currency, divRoundBig(num, den, rounding), scale);
 }
 
-/** m / divisor, rounded to m's scale (default 'unnecessary'). */
-export function divide<C extends string>(m: Money<C>, divisor: Factor, rounding: RoundingMode = 'unnecessary'): Money<C> {
+/** m / divisor, rounded to m's scale (default 'halfExpand'). */
+export function divide<C extends string>(m: Money<C>, divisor: Factor, rounding: RoundingMode = DEFAULT_ROUNDING): Money<C> {
   const r = ratio(divisor);
   if (r.num === 0n) throw new RangeError('Division by zero');
   return mulRatio(m, ratio(r.den, r.num), rounding);
@@ -270,8 +350,8 @@ export function round<C extends string>(m: Money<C>, rounding: RoundingMode, sca
   return toScale(m, scale ?? currencyExponent(m.currency), rounding);
 }
 
-/** Changes the scale; increasing it is always exact, decreasing it rounds (default 'unnecessary'). */
-export function toScale<C extends string>(m: Money<C>, scale: number, rounding: RoundingMode = 'unnecessary'): Money<C> {
+/** Changes the scale; increasing it is always exact, decreasing it rounds (default 'halfExpand'). */
+export function toScale<C extends string>(m: Money<C>, scale: number, rounding: RoundingMode = DEFAULT_ROUNDING): Money<C> {
   if (!Number.isInteger(scale) || scale < 0) throw new RangeError(`Invalid scale ${scale}`);
   if (scale === m.scale) return m;
   if (scale > m.scale) return make(m.currency, scaleUp(m.minor, scale - m.scale), scale);

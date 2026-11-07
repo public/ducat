@@ -90,11 +90,15 @@ describe('arithmetic', () => {
     expect(toDecimal(r)).toBe('1.001');
     expect(equals(money('1.0', 'EUR', { scale: 1 }), eur('1'))).toBe(true);
   });
-  it('multiply / divide need a rounding mode when inexact', () => {
+  it('multiply / divide round half away from zero by default; unnecessary throws', () => {
     expect(toDecimal(multiply(eur('10.00'), '1.075', 'halfEven'))).toBe('10.75');
     expect(toDecimal(multiply(eur('0.05'), '0.5', 'halfEven'))).toBe('0.02');
     expect(toDecimal(multiply(eur('0.05'), '0.5', 'halfExpand'))).toBe('0.03');
-    expect(() => multiply(eur('0.05'), '0.5')).toThrow(RoundingError);
+    expect(toDecimal(multiply(eur('0.05'), '0.5'))).toBe('0.03'); // default: halfExpand
+    expect(toDecimal(multiply(eur('-0.05'), '0.5'))).toBe('-0.03'); // ties away from zero, not towards +inf
+    expect(toDecimal(divide(eur('10.00'), 3))).toBe('3.33');
+    expect(() => multiply(eur('0.05'), '0.5', 'unnecessary')).toThrow(RoundingError);
+    expect(() => divide(eur('10.00'), 3, 'unnecessary')).toThrow(RoundingError);
     expect(toDecimal(multiply(eur('1.00'), ratio(1, 3), 'halfEven'))).toBe('0.33');
     expect(toDecimal(multiply(eur('1.00'), '1/3', 'ceil'))).toBe('0.34');
     expect(toDecimal(divide(eur('10.00'), 3, 'halfEven'))).toBe('3.33');
@@ -113,7 +117,9 @@ describe('arithmetic', () => {
     const fine = money('2.675', 'GBP', { scale: 3 }); // the classic float trap: (2.675).toFixed(2) === '2.67'
     expect(toDecimal(round(fine, 'halfExpand'))).toBe('2.68');
     expect(toDecimal(toScale(eur('1.5'), 4))).toBe('1.5000');
-    expect(() => toScale(fine, 2)).toThrow(RoundingError);
+    expect(toDecimal(toScale(fine, 2))).toBe('2.68'); // default: halfExpand
+    expect(() => toScale(fine, 2, 'unnecessary')).toThrow(RoundingError);
+    expect(() => money('1.005', 'EUR')).toThrow(RoundingError); // parsing stays strict
   });
 });
 

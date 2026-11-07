@@ -35,3 +35,18 @@ eur.minor = 5;
 money('1.005', 'EUR', { rounding: 'halfUp' });
 
 void ok; void wrong; void inUsd; void parts;
+
+// --- methods carry the same currency checks as the free functions
+eur.add(eur);
+// @ts-expect-error different currencies cannot be added via a method
+eur.add(usd);
+// @ts-expect-error nor compared
+eur.compare(usd);
+// @ts-expect-error nor allocated against a foreign increment
+eur.chunk(usd);
+const viaMethod: Money<'USD'> = eur.convert('USD', '1.08', 'halfEven');
+const chained: Money<'EUR'> = eur.add(eur).multiply('1.075', 'halfEven').negate();
+dyn.add(fromMinor(1, 'USD' as string)); // erased types: checked at runtime instead
+// @ts-expect-error not a known rounding mode
+eur.multiply('1.1', 'halfUp');
+void viaMethod; void chained;
