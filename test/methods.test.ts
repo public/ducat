@@ -56,6 +56,18 @@ describe('Money methods', () => {
       'convertDetailed',
       'sumExact',
       'isExactMoney',
+      // multi-currency totals and ordering
+      'bag',
+      'comparator',
+      'sortByValue',
+      'sumByCurrency',
+      // ECB file parsers
+      'parseEcbXml',
+      'parseEcbCsv',
+      // processor rates, read from processor records rather than a Money
+      'stripeRate',
+      'stripeImpliedRate',
+      'adyenRate',
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
