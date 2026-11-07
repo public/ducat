@@ -80,6 +80,8 @@
     "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json",
     "test": "vitest run",
     "test:deep": "DUCAT_DEEP=1 vitest run",
+    "fetch:dectest": "node scripts/fetch-dectest.mjs",
+    "vectors:check": "python3 scripts/gen-pydecimal-vectors.py --check",
     "test:runtimes": "node scripts/smoke-runtimes.mjs",
     "gen": "node scripts/gen-currencies.mjs",
     "gen:check": "node scripts/gen-currencies.mjs --check",
