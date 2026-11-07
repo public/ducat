@@ -24,6 +24,18 @@ data/adyen.json
   retrieved 2026-11-07, with short quotations of the special cases.
   Adyen is a trademark of Adyen N.V.
 
+data/stripe-fx.json
+  Field definitions for exchange rates on balance transactions, quoted
+  from Stripe's API reference,
+  https://docs.stripe.com/api/balance_transactions/object, retrieved
+  2026-11-07.
+
+data/adyen-fx.json
+  Column definitions for exchange rates in the settlement details
+  report, quoted from Adyen's documentation,
+  https://docs.adyen.com/reporting/settlement-reconciliation/transaction-level/settlement-details-report,
+  retrieved 2026-11-07.
+
 data/cash-rounding.json
   Cash rounding rules compiled from central-bank, statutory and
   government publications, retrieved 2026-11-07. Each entry records
