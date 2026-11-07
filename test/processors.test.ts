@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { fromMinor, money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/fn.js';
 import {
   fromStripe,
+  isStripeCurrency,
   stripeExponent,
   toStripe,
   toStripeAmount,
   STRIPE_RULES,
 } from '../src/stripe.js';
-import { adyenExponent, fromAdyen, toAdyen, ADYEN_EXPONENTS } from '../src/adyen.js';
+import {
+  adyenExponent,
+  fromAdyen,
+  isAdyenCurrency,
+  toAdyen,
+  ADYEN_EXPONENTS,
+} from '../src/adyen.js';
 import { toCheckoutAmount } from '../src/checkout.js';
 import { toPayPalValue } from '../src/paypal.js';
 import { toBraintree } from '../src/braintree.js';
@@ -98,6 +105,28 @@ const orDash = <T>(f: () => T): T | '-' => {
     throw error;
   }
 };
+
+describe('names every object inherits are not currencies', () => {
+  const inherited = ['toString', 'constructor', 'valueOf', 'hasOwnProperty', '__proto__'];
+  const throws = (lookup: () => unknown) => {
+    try {
+      lookup();
+      return false;
+    } catch (error) {
+      return error instanceof RangeError;
+    }
+  };
+
+  it('in the Adyen table', () => {
+    expect(inherited.filter((name) => isAdyenCurrency(name))).toEqual([]);
+    expect(inherited.filter((name) => !throws(() => adyenExponent(name)))).toEqual([]);
+  });
+
+  it('in the Stripe table', () => {
+    expect(inherited.filter((name) => isStripeCurrency(name))).toEqual([]);
+    expect(inherited.filter((name) => !throws(() => stripeExponent(name)))).toEqual([]);
+  });
+});
 
 describe('same amount, different wire values', () => {
   it('1000 units on every processor', () => {
