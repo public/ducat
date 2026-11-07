@@ -37,6 +37,19 @@ describe('parse', () => {
     expect(parse('₹1,23,456.78', 'INR', 'en-IN').minor).toBe(12345678);
     expect(parse('￥1,234', 'JPY', 'ja-JP').minor).toBe(1234);
   });
+  it('reads separators from the currency format, which differs from the number format in some locales', () => {
+    // fr-CH: '.' decimal for money (',' for plain numbers); de-AT: '.' groups for money (spaces for numbers)
+    for (const [locale, currency] of [
+      ['fr-CH', 'EUR'],
+      ['fr-CH', 'CHF'],
+      ['de-AT', 'EUR'],
+    ] as const) {
+      for (const minor of [5, 123456, -98765432, 100000000]) {
+        const m = fromMinor(minor, currency);
+        expect(equals(parse(format(m, locale), currency, locale), m), `${locale} ${currency} ${minor}`).toBe(true);
+      }
+    }
+  });
   it('rejects ambiguous or garbage input', () => {
     expect(() => parse('1,234.50', 'EUR', 'de-DE')).toThrow(); // ',' is the decimal mark in de-DE
     expect(() => parse('12.3.4', 'EUR', 'en-US')).toThrow();
@@ -57,6 +70,8 @@ describe('parse', () => {
       'en-IN',
       'fa-IR',
       'th-TH',
+      'fr-CH',
+      'de-AT',
     ];
     fc.assert(
       fc.property(

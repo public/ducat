@@ -5,18 +5,41 @@ interface Symbols {
   decimal: string;
 }
 const symCache = new Map<string, Symbols>();
-function symbols(locale: string | undefined): Symbols {
-  const key = locale ?? '';
+
+/**
+ * The group and decimal separators `format()` uses for this locale and currency. They come from a
+ * currency-style formatter, not a plain number one, because some locales use different separators for
+ * money: fr-CH writes 1 234.56 € but 1 234,56 for a number, and de-AT 1.234,56 € but 1 234,56.
+ */
+function symbols(locale: string | undefined, currency: string): Symbols {
+  const key = `${locale ?? ''}|${currency}`;
   let s = symCache.get(key);
   if (!s) {
-    const parts = new Intl.NumberFormat(locale, { useGrouping: true }).formatToParts(1234567.5);
+    const parts = separatorParts(locale, currency);
     s = {
       group: parts.find((p) => p.type === 'group')?.value ?? ',',
       decimal: parts.find((p) => p.type === 'decimal')?.value ?? '.',
     };
+    if (symCache.size > 256) symCache.clear();
     symCache.set(key, s);
   }
   return s;
+}
+
+function separatorParts(locale: string | undefined, currency: string): Intl.NumberFormatPart[] {
+  try {
+    // Two fraction digits even for JPY and the like, so the decimal separator always appears.
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      useGrouping: true,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).formatToParts(1234567.5);
+  } catch {
+    // Codes Intl rejects as currencies (custom ones that are not three letters): a number format's separators.
+    return new Intl.NumberFormat(locale, { useGrouping: true }).formatToParts(1234567.5);
+  }
 }
 
 // Zero code points of the decimal digit blocks Intl uses (arab, arabext, deva, beng, thai, fullwide, ...).
@@ -43,7 +66,7 @@ export function parse<C extends CurrencyInput>(
   locale?: string,
   options?: MoneyOptions,
 ): Money<C> {
-  const { group, decimal } = symbols(locale);
+  const { group, decimal } = symbols(locale, currency);
   const chars = Array.from(input);
   let first = -1,
     last = -1;
