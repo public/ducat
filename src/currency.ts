@@ -33,7 +33,7 @@ export function currencyExponent(code: string): number {
   if (typeof e === 'number') return e;
   const c = custom.get(code);
   if (c !== undefined) return c;
-  throw new RangeError(`Unknown currency ${code}; see defineCurrency()`);
+  throw new RangeError(`Unknown currency "${code}" (not ISO 4217 and not registered with defineCurrency)`);
 }
 
 export function isCurrency(code: string): code is CurrencyCode {

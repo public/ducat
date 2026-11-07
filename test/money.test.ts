@@ -49,7 +49,7 @@ describe('construction', () => {
     expect(() => eur('12.345')).toThrow(RoundingError);
     expect(eur('12.345', { rounding: 'halfEven' }).minor).toBe(1234);
     expect(eur('12.345', { scale: 3 }).minor).toBe(12345);
-    expect(() => money('1.5', 'JPY')).toThrow(/over 0 decimals/);
+    expect(() => money('1.5', 'JPY')).toThrow(/more than 0 decimal/);
   });
   it('integers are major units; floats are taken at their shortest decimal form', () => {
     expect(money(12, 'EUR').minor).toBe(1200);

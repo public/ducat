@@ -42,14 +42,15 @@ export class RoundingError extends RangeError {
   override name = 'RoundingError';
 }
 
+const MAX = Number.MAX_SAFE_INTEGER;
+
 /**
  * Should a truncated quotient move one step away from zero?
  * `twiceRem` is 2*|remainder| (non-zero), `d` the divisor, `odd` whether |truncated quotient| is odd.
  */
-const MAX = Number.MAX_SAFE_INTEGER;
-
 function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint, odd: boolean, neg: boolean): boolean {
-  // twiceRem === d is an exact tie; otherwise the half modes round to the nearest.
+  // twiceRem === d is an exact tie; otherwise the half modes round to the nearest. Both operands are
+  // numbers (divRound) or both bigints (divRoundBig), so === and the comparisons below are exact.
   switch (mode) {
     case 'halfExpand':
       return twiceRem >= d;
@@ -70,7 +71,7 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
     case 'floor':
       return neg;
     case 'unnecessary':
-      throw new RoundingError('Inexact result; pass a rounding mode');
+      throw new RoundingError('Rounding necessary: the result is not exact; pass a rounding mode');
   }
   throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
 }
