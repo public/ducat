@@ -85,6 +85,101 @@ const PROCESSORS = [
   },
 ];
 
+/**
+ * Packs ISO codes and exponents into one short string: 26 space-separated groups (A to Z), each
+ * listing the last two letters of its codes, followed by the exponent digit when it is not 2. "EDFN
+ * BHD3" is AED, AFN, BHD (exponent 3). It gzips smaller than the object literal it replaces.
+ */
+function packIsoExponents(iso) {
+  const groups = Array.from({ length: 26 }, () => '');
+  for (const [code, exponent] of Object.entries(iso)) {
+    if (!/^[A-Z]{3}$/.test(code) || !Number.isInteger(exponent) || exponent < 0 || exponent > 9) {
+      throw new Error(`cannot pack ${code}: ${exponent}`);
+    }
+    const exponentDigit = exponent === 2 ? '' : String(exponent);
+    groups[code.charCodeAt(0) - 65] += code.slice(1) + exponentDigit;
+  }
+  return groups.join(' ');
+}
+
+// The decoder emitted into src/generated/iso4217.ts. The generator runs the same code (below) to
+// check that the packed string decodes to exactly the ISO table.
+const UNPACK_SOURCE = `function unpackIsoExponents(packed: string): Record<string, number> {
+  const exponents: Record<string, number> = {};
+  for (const [letter, group] of packed.split(' ').entries()) {
+    for (let i = 0; i < group.length; i += 2) {
+      const code = String.fromCharCode(65 + letter) + group.slice(i, i + 2);
+      const next = group.charCodeAt(i + 2);
+      const hasExponent = next >= 48 && next <= 57;
+      exponents[code] = hasExponent ? next - 48 : 2;
+      if (hasExponent) {
+        i++;
+      }
+    }
+  }
+  // An object built key by key is a slow hash table in V8, while lookups with one constant code
+  // (money('1', 'EUR')) are fastest on an object literal. Using the table as a prototype makes V8
+  // turn it into a fast object like a literal; other engines are unaffected.
+  function UseAsPrototype() {}
+  UseAsPrototype.prototype = exponents;
+  return exponents;
+}`;
+
+// The same decoder as plain JavaScript (only the signature and one annotation differ).
+const unpackIsoExponents = new Function(
+  'packed',
+  UNPACK_SOURCE.slice(UNPACK_SOURCE.indexOf('{') + 1, -1).replace(
+    ': Record<string, number> = {}',
+    ' = {}',
+  ),
+);
+
+/**
+ * Source for an exponent table stored relative to the ISO table, which every bundle ships anyway:
+ * the ISO codes the table leaves out, plus the entries that differ from ISO or are not ISO codes.
+ * Returns null when listing the table in full would be shorter. The generator rebuilds the table
+ * from that description and fails unless it matches exactly.
+ */
+function isoRelativeExponents(name, table, iso) {
+  const notListed = Object.keys(iso).filter((code) => !(code in table));
+  const overrides = {};
+  for (const [code, exponent] of Object.entries(table)) {
+    if (iso[code] !== exponent) {
+      overrides[code] = exponent;
+    }
+  }
+  if (notListed.length + Object.keys(overrides).length > Object.keys(table).length / 2) {
+    return null;
+  }
+  const rebuilt = {};
+  for (const [code, exponent] of Object.entries(iso)) {
+    if (!notListed.includes(code)) {
+      rebuilt[code] = exponent;
+    }
+  }
+  Object.assign(rebuilt, overrides);
+  if (
+    JSON.stringify(Object.entries(rebuilt).sort()) !== JSON.stringify(Object.entries(table).sort())
+  ) {
+    throw new Error(`${name}: the ISO-relative form does not rebuild the table`);
+  }
+  const overridesSource = Object.entries(overrides)
+    .map(([code, exponent]) => `${code}: ${exponent}`)
+    .join(', ');
+  return (
+    `/* @__PURE__ */ exponentsFromIso(\n  ${JSON.stringify(notListed.join(' '))},\n  { ${overridesSource} },\n);\n\n` +
+    `/** The ISO exponents, without the codes in \`notListed\`, with \`overrides\` applied. */\n` +
+    `function exponentsFromIso(notListed: string, overrides: Record<string, number>): Record<string, number> {\n` +
+    `  const skip = new Set(notListed.split(' '));\n` +
+    `  const exponents: Record<string, number> = {};\n` +
+    `  for (const [code, exponent] of Object.entries(ISO_EXPONENTS)) {\n` +
+    `    if (!skip.has(code)) {\n      exponents[code] = exponent;\n    }\n  }\n` +
+    `  Object.assign(exponents, overrides);\n` +
+    `  // As in iso4217.ts: using the table as a prototype makes V8 turn it into a fast object.\n` +
+    `  function UseAsPrototype() {}\n  UseAsPrototype.prototype = exponents;\n  return exponents;\n}\n`
+  );
+}
+
 function generate() {
   const { published, entries } = parseIsoXml(read('data/iso4217-list-one.xml'));
   const iso = {};
@@ -99,14 +194,27 @@ function generate() {
     }
   }
   const out = {};
+  const packed = packIsoExponents(iso);
+  const unpacked = unpackIsoExponents(packed);
+  if (
+    JSON.stringify(Object.entries(unpacked).sort()) !== JSON.stringify(Object.entries(iso).sort())
+  ) {
+    throw new Error('the packed ISO table does not decode to the ISO table');
+  }
+  const codes = Object.keys(iso);
   out['iso4217.ts'] =
     header('data/iso4217-list-one.xml') +
     `\n/** Publication date of the ISO 4217 List One snapshot the table was generated from. */\n` +
     `export const ISO_4217_PUBLISHED = ${JSON.stringify(published)};\n\n` +
-    `/** ISO 4217 minor-unit exponent for every active code that has one (${Object.keys(iso).length} codes). */\n` +
-    `export const ISO_EXPONENTS = ${obj(iso)} as const;\n\n` +
-    `export type IsoCurrencyCode = keyof typeof ISO_EXPONENTS;\n\n` +
-    `/** Active codes whose minor unit is "N.A." (precious metals, SDR, testing): not monetary, not in ISO_EXPONENTS. */\n` +
+    `/** An active ISO 4217 code with a minor unit (${codes.length} codes). */\n` +
+    `export type IsoCurrencyCode =\n${codes.map((code) => `  | ${JSON.stringify(code)}`).join('\n')};\n\n` +
+    `/**\n * The ISO table, packed: 26 space-separated groups (A to Z), each listing the last two letters\n` +
+    ` * of its codes, followed by the exponent when it is not 2.\n */\n` +
+    `const PACKED = ${JSON.stringify(packed)};\n\n` +
+    `/** ISO 4217 minor-unit exponent for every active code that has one. */\n` +
+    `export const ISO_EXPONENTS: Readonly<Record<IsoCurrencyCode, number>> = /* @__PURE__ */ unpackIsoExponents(\n  PACKED,\n) as Record<IsoCurrencyCode, number>;\n\n` +
+    UNPACK_SOURCE +
+    `\n\n/** Active codes whose minor unit is "N.A." (precious metals, SDR, testing): not monetary, not in ISO_EXPONENTS. */\n` +
     `export const ISO_NON_MONETARY = ${JSON.stringify(nonMonetary)} as const;\n`;
 
   // Stripe: [exponent the API expects, multiple the charge amount must be, multiple a payout amount
@@ -151,10 +259,12 @@ function generate() {
     `export const STRIPE_RULES: Readonly<Record<string, readonly [exponent: number, chargeMultiple: number, payoutMultiple: number]>> = ${obj(stripe)};\n`;
 
   const adyenData = JSON.parse(read('data/adyen.json'));
+  const adyenRelative = isoRelativeExponents('Adyen', adyenData.exponents, iso);
   out['adyen.ts'] =
     header('data/adyen.json (' + adyenData.source + ', retrieved ' + adyenData.retrieved + ')') +
+    (adyenRelative ? `import { ISO_EXPONENTS } from './iso4217.js';\n` : '') +
     `\n/** Adyen minor-unit exponents (Adyen's table is authoritative where it differs from ISO: CLP, CVE, IDR, ISK). */\n` +
-    `export const ADYEN_EXPONENTS: Readonly<Record<string, number>> = ${obj(adyenData.exponents)};\n`;
+    `export const ADYEN_EXPONENTS: Readonly<Record<string, number>> = ${adyenRelative ?? obj(adyenData.exponents) + ';\n'}`;
 
   // [API exponent, amount multiple, ...context multiples] when the data has multiples, else the
   // exponent
@@ -180,12 +290,14 @@ function generate() {
       ...extra.map((k) => `${k.replace(/Multiples$/, '')}Multiple: number`),
     ];
     const type = processorData.multiples ? `readonly [${tuple.join(', ')}]` : 'number';
+    const relative = processorData.multiples ? null : isoRelativeExponents(name, rules, iso);
     out[`${file}.ts`] =
       header(
         `data/${file}.json (${Object.values(processorData.sources)[0].url}, retrieved ${processorData.retrieved})`,
       ) +
+      (relative ? `import { ISO_EXPONENTS } from './iso4217.js';\n` : '') +
       `\n/** ${doc} */\n` +
-      `export const ${name}: Readonly<Record<string, ${type}>> = ${obj(rules)};\n`;
+      `export const ${name}: Readonly<Record<string, ${type}>> = ${relative ?? obj(rules) + ';\n'}`;
   }
 
   const cashData = JSON.parse(read('data/cash-rounding.json'));
