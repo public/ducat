@@ -1,0 +1,51 @@
+@ducatjs/money
+Copyright (c) Alex Stapleton
+Licensed under the MIT License (see LICENSE).
+
+This package bundles data compiled from third-party sources. The data
+files keep their source and retrieval date, and the generated code in
+src/generated/ is derived from them.
+
+data/iso4217-list-one.xml
+  ISO 4217 List One (current currency and funds code list), published
+  by SIX Financial Information AG as the ISO 4217 maintenance agency,
+  https://www.six-group.com/en/products-services/financial-information/data-standards.html
+  Snapshot published 2026-09-17. ISO 4217 is a standard of the
+  International Organization for Standardization.
+
+data/stripe.json
+  Currency and minor-unit rules from Stripe's documentation,
+  https://docs.stripe.com/currencies, retrieved 2026-11-07, with short
+  quotations of the special cases. Stripe is a trademark of Stripe, Inc.
+
+data/adyen.json
+  Currency codes and decimals from Adyen's documentation,
+  https://docs.adyen.com/development-resources/currency-codes,
+  retrieved 2026-11-07, with short quotations of the special cases.
+  Adyen is a trademark of Adyen N.V.
+
+data/stripe-fx.json
+  Field definitions for exchange rates on balance transactions, quoted
+  from Stripe's API reference,
+  https://docs.stripe.com/api/balance_transactions/object, retrieved
+  2026-11-07.
+
+data/adyen-fx.json
+  Column definitions for exchange rates in the settlement details
+  report, quoted from Adyen's documentation,
+  https://docs.adyen.com/reporting/settlement-reconciliation/transaction-level/settlement-details-report,
+  retrieved 2026-11-07.
+
+data/cash-rounding.json
+  Cash rounding rules compiled from central-bank, statutory and
+  government publications, retrieved 2026-11-07. Each entry records
+  its source URL and whether it was verified against a primary source.
+
+assets/logo.png
+  Gold ducat of Francesco Foscari, Venice, 1423-1457. Photo by
+  Francesco Bini, CC BY-SA 4.0, via Wikimedia Commons. See
+  assets/CREDITS.md.
+
+The data is provided as is, with no warranty of accuracy. Check
+processor rules against the processor's current documentation before
+relying on them.

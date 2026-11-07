@@ -17,6 +17,7 @@
     "src",
     "data",
     "assets/CREDITS.md",
+    "NOTICE",
     "LICENSE"
   ],
   "type": "module",
