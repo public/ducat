@@ -77,7 +77,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json",
     "test": "vitest run",
     "test:deep": "DUCAT_DEEP=1 vitest run",
     "test:db": "vitest run --config vitest.db.config.ts",
