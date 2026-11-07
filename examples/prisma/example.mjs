@@ -1,7 +1,8 @@
 // End-to-end: write Money into both column styles, read it back as Money through a client extension.
 import { PrismaClient, Prisma } from './generated/index.js';
-import { add, format, money, toDecimal } from '../../dist/index.js';
-import { decimalMoneyField, minorMoneyField, toDecimalValue, toMinorColumns } from '../../dist/prisma.js';
+import { add, money, toDecimal } from '../../dist/index.js';
+import { format } from '../../dist/plugins/format.js';
+import { decimalMoneyField, minorMoneyField, toDecimalValue, toMinorColumns } from '../../dist/plugins/prisma.js';
 
 const db = new PrismaClient().$extends({
   result: {

@@ -39,8 +39,9 @@ for (const [name, bin, args] of suites) {
 }
 
 execFileSync(
-  'npx',
+  'pnpm',
   [
+    'exec',
     'esbuild',
     'test/smoke.ts',
     '--bundle',

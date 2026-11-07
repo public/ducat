@@ -6,3 +6,4 @@ examples/prisma/generated/
 *.db
 *.db-journal
 .claude/
+.wt/
