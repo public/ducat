@@ -31,6 +31,36 @@ Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may c
 
 ---
 
+## How it compares
+
+The same 41 correctness vectors, the same benchmark and the same bundle snippet for every library. The details, the
+other libraries' bugs, the fixed-point libraries and the money libraries in other languages are in
+[docs/COMPARISON.md](docs/COMPARISON.md), regenerated from [compare/](compare) for each release.
+
+| library                            | correct (of 41) | wrong, silently |       bundle (gzip) |
+| ---------------------------------- | --------------: | --------------: | ------------------: |
+| **ducat**                          |          **41** |           **0** |              3.7 kB |
+| dinero.js 2 (bigint calculator)    |              34 |               0 |              1.8 kB |
+| monetra                            |              34 |               3 |              4.5 kB |
+| ts-money / js-money                |              31 |           7 / 6 |       30.7 / 8.8 kB |
+| bigint-money                       |              30 |               0 |              1.5 kB |
+| dinero.js 2 (number calculator)    |              30 |               4 |              1.8 kB |
+| decimal.js / big.js / bignumber.js |              22 |               1 | 12.6 / 2.9 / 8.5 kB |
+| currency.js                        |              16 |               6 |              1.3 kB |
+
+- **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
+  units, float traps and negative allocations.
+- **Fastest on arithmetic:** it is the fastest on parse, add, multiply, allocate, toDecimal and compare on Node and
+  Deno. Against the fastest other library the margin ranges from 1.04× (compare: 7.67 against 8.00 ns) to about 10×
+  (allocate: 51 against bigint-money's 495 ns); against dinero.js 2 it is 20× to 30×.
+- **Where it isn't fastest:** formatting, where currency.js (a float) and dinero.js 1 are slightly faster on Node and
+  Bun, and comparisons on Bun, where libraries comparing plain numbers are faster.
+- **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
+  for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
+  is opt-in.
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on a pre-release build under Node 22.11; sizes are
+  gzipped KiB.
+
 ## Design
 
 ### Representation: integer minor units in a JS number, with a bigint fallback
@@ -468,7 +498,7 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
-- **Withdrawn and non-ISO codes** go in an opt-in `@ducatjs/money/historic` table (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…), with withdrawal dates.
+- **Withdrawn and non-ISO codes** (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…) stay out of the core registry. An opt-in table of them with withdrawal dates is planned for a later release; until then, register any you need with `defineCurrency`.
 - **Processors:** Stripe, Adyen, Checkout.com, PayPal, Braintree and Klarna, each an opt-in entry point (`@ducatjs/money/<processor>`).
 - **Test matrix:** real Postgres, MySQL and SQLite for the DB helpers; real browsers (Chromium, Firefox, WebKit via Playwright) alongside Node, Bun, Deno and the engine shells.
 

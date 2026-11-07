@@ -1,0 +1,8 @@
+lib	snippet_min	snippet_gz	full_min	full_gz
+ducat Money	9387	3771	12300	4804
+dnum	3460	1506	7373	2823
+js-big-decimal	9513	3102	9426	3068
+bigdecimal.js	46957	11835	46971	11836
+@formatjs/bigdecimal	9152	2375	9120	2357
+bigint-money	3785	1564	3774	1561
+ethers FixedNumber (import from 'ethers')	8713	3325	385415	144151

@@ -9,6 +9,8 @@
     "src/generated",
     "data",
     "package-lock.json",
+    "compare/results",
+    "compare/RESULTS.md",
     "test/vectors"
   ]
 }
