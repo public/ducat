@@ -120,6 +120,13 @@ export const FIXED_VECTORS: FixedVector[] = [
     expected: '90071992547409.93',
   },
   {
+    id: 'add-trailing-zeros',
+    group: 'arithmetic',
+    description: '1.00 + 80.19 = 81.19 (the first operand has trailing zeros)',
+    compute: added('1.00', '80.19'),
+    expected: '81.19',
+  },
+  {
     id: 'big-add',
     group: 'large',
     description: '90071992547409.92 + 0.01 = 90071992547409.93',

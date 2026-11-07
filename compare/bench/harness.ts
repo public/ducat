@@ -134,13 +134,14 @@ export function runBenchmark<Operation extends string>(options: BenchmarkOptions
   const names = libraries.filter((name) => !ONLY || ONLY.includes(name));
   const random = seededRandom();
 
-  const perRound: Record<string, Record<string, number[] | null>> = {};
+  // prototype-free maps: operation names such as `toString` must not resolve to Object.prototype members
+  const perRound: Record<string, Record<string, number[] | null>> = Object.create(null);
   for (let round = 0; round < ROUNDS; round++) {
     const order = names.toSorted(() => random() - 0.5);
 
     for (const name of order) {
       const bodies = bodiesFor(name);
-      perRound[name] ??= {};
+      perRound[name] ??= Object.create(null);
 
       for (const operation of operations) {
         const body = bodies[operation];

@@ -362,17 +362,17 @@ Plain decimals without currencies: parse, add, multiply and divide rounded to a 
 
 ### Correctness
 
-27 vectors against 7 libraries.
+28 vectors against 7 libraries.
 
 | library | pass | wrong (silent) | lossy | threw | n/a |
 |---|--:|--:|--:|--:|--:|
-| ducat Money | 27 | 0 | 0 | 0 | 0 |
-| dnum 2.18.1 | 20 | 0 | 0 | 0 | 7 |
-| ethers FixedNumber 6.17.0 | 17 | 3 | 0 | 0 | 7 |
-| js-big-decimal 2.2.0 | 27 | 0 | 0 | 0 | 0 |
-| bigdecimal.js 1.7.2 | 27 | 0 | 0 | 0 | 0 |
-| @formatjs/bigdecimal 0.2.10 | 7 | 0 | 0 | 0 | 20 |
-| bigint-money 2.0.1 | 27 | 0 | 0 | 0 | 0 |
+| ducat Money | 28 | 0 | 0 | 0 | 0 |
+| dnum 2.18.1 | 21 | 0 | 0 | 0 | 7 |
+| ethers FixedNumber 6.17.0 | 18 | 3 | 0 | 0 | 7 |
+| js-big-decimal 2.2.0 | 28 | 0 | 0 | 0 | 0 |
+| bigdecimal.js 1.7.2 | 28 | 0 | 0 | 0 | 0 |
+| @formatjs/bigdecimal 0.2.10 | 8 | 0 | 0 | 0 | 20 |
+| bigint-money 2.0.1 | 28 | 0 | 0 | 0 | 0 |
 
 Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see note), ! threw where a value was expected, · not supported by the library.
 
@@ -388,6 +388,7 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | `float-mul-1.1` 1.15 × 1.1 = 1.265 → half-even 1.26 (float gives 1.26500…01) | ✓ | · | · | ✓ | ✓ | · | ✓ |
 | `dec-add` 0.10 + 0.20 = 0.30 exactly | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `big-2^53+1` 90071992547409.93 (2^53+1 hundredths) round-trips | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `add-trailing-zeros` 1.00 + 80.19 = 81.19 (the first operand has trailing zeros) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `big-add` 90071992547409.92 + 0.01 = 90071992547409.93 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `bigint-max` 92233720368547758.07 (BIGINT max hundredths) round-trips | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `big-mul` 123456789012345678.90 × 1.1 = 135802467913580246.79 (half-up) | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
