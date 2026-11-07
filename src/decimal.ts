@@ -141,7 +141,22 @@ export function ratioToDecimal(r: Ratio): string | null {
 }
 
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
+const ZPAD = ['', '0', '00', '000', '0000', '00000', '000000', '0000000', '00000000', '000000000', '0000000000', '00000000000', '000000000000', '0000000000000', '00000000000000', '000000000000000'];
 export function formatScaled(v: number | bigint, scale: number): string {
+  if (typeof v === 'number' && scale <= 15) {
+    if (scale === 0) return String(v);
+    // integer/fraction split with exact integer arithmetic (the float quotient is corrected)
+    const a = v < 0 ? 0 - v : v;
+    const p = POW10[scale]!;
+    if (a + p <= MAX) {
+      let q = Math.floor(a / p);
+      let r = a - q * p;
+      if (r < 0) { q -= 1; r += p; } else if (r >= p) { q += 1; r -= p; }
+      let f = String(r);
+      if (f.length < scale) f = ZPAD[scale - f.length] + f;
+      return (v < 0 ? '-' : '') + q + '.' + f;
+    }
+  }
   const neg = v < 0;
   let s = typeof v === 'number' ? String(neg ? 0 - v : v) : (neg ? -v : v).toString();
   if (scale > 0) {

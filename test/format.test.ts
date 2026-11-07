@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { equals, format, fromMinor, money, parse } from '../src/index.js';
+import { equals, format, fromMinor, money, parse, toDecimal } from '../src/index.js';
 
 const norm = (s: string) => s.replace(/[  ]/g, ' ');
 
@@ -54,5 +54,13 @@ describe('parse', () => {
         expect(equals(parse(format(m, loc, { currencySign: 'accounting' }), cur, loc), m)).toBe(true);
       },
     ), { numRuns: 2000 });
+  });
+});
+
+describe('Intl hand-off', () => {
+  it('property: minor / 10^scale is bit-identical to Number(decimal string) below 10^15', () => {
+    fc.assert(fc.property(fc.integer({ min: -(1e15 - 1), max: 1e15 - 1 }), fc.integer({ min: 0, max: 15 }), (v, s) => {
+      expect(v / 10 ** s).toBe(Number(toDecimal(fromMinor(v, 'EUR', s))));
+    }), { numRuns: 50000 });
   });
 });

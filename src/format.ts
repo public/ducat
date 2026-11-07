@@ -1,6 +1,10 @@
 import { money, toDecimal, type CurrencyInput, type Money, type MoneyOptions } from './money.js';
 
+import { POW10 } from './decimal.js';
+
 const cache = new Map<string, Intl.NumberFormat>();
+// one-entry memo in front of the Map: formatting in a loop is almost always the same locale/currency
+let lastLocale: string | undefined, lastCurrency = '', lastScale = -1, lastF: Intl.NumberFormat | undefined;
 
 let stringInput: boolean | undefined;
 /** ES2023 Intl.NumberFormat v3 formats decimal strings exactly; older engines convert to Number. */
@@ -16,14 +20,15 @@ function supportsStringInput(): boolean {
 }
 
 function formatter(m: Money, locale: string | undefined, options: Intl.NumberFormatOptions | undefined): Intl.NumberFormat {
+  if (options === undefined && lastF !== undefined && locale === lastLocale && m.currency === lastCurrency && m.scale === lastScale) return lastF;
   const key = options === undefined ? `${locale}|${m.currency}|${m.scale}` : null;
   let f = key === null ? undefined : cache.get(key);
   if (f === undefined) {
     f = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: m.currency,
-      // ISO exponent (or the value's scale), not CLDR's display digits: CLDR shows e.g. HUF/TWD
-      // with 0 or 2 digits depending on cash vs. accounting; we always show what the value holds.
+      // ISO exponent (or the value's scale), not the engine's default digits: V8 (CLDR) shows ALL,
+      // IQD, RSD ... with 0 decimals and JSC with ISO's; we always show what the value holds.
       minimumFractionDigits: m.scale,
       maximumFractionDigits: m.scale,
       ...options,
@@ -33,6 +38,7 @@ function formatter(m: Money, locale: string | undefined, options: Intl.NumberFor
       cache.set(key, f);
     }
   }
+  if (key !== null) { lastLocale = locale; lastCurrency = m.currency; lastScale = m.scale; lastF = f; }
   return f;
 }
 
@@ -45,15 +51,27 @@ function formatter(m: Money, locale: string | undefined, options: Intl.NumberFor
  *     format(money('1234.5', 'EUR'), 'en-GB', { currencyDisplay: 'code' })
  */
 export function format(m: Money, locale?: string, options?: Intl.NumberFormatOptions): string {
-  const f = formatter(m, locale, options);
+  return formatter(m, locale, options).format(intlValue(m));
+}
+
+/**
+ * What to hand to Intl (which only accepts doubles or strings).
+ * Below 10^15 minor units the value has at most 15 significant digits, so the double nearest to it
+ * formats back to exactly the same digits. `minor / 10^scale` is a single correctly rounded IEEE
+ * division of two exactly representable integers, i.e. bit-identical to Number(toDecimal(m)) (asserted
+ * in test/format.test.ts), and 2-3x cheaper; this display hand-off is the only place a double ever
+ * touches an amount. Larger values go to Intl as the exact decimal string (Intl.NumberFormat v3).
+ */
+function intlValue(m: Money): number {
+  const v = m.minor;
+  if (typeof v === 'number' && v < 1e15 && v > -1e15 && m.scale <= 15) return v / POW10[m.scale]!;
   const s = toDecimal(m);
-  return f.format((supportsStringInput() ? s : Number(s)) as number);
+  return (supportsStringInput() ? s : Number(s)) as number;
 }
 
 /** Like format(), but returns Intl parts (for styling the currency symbol separately, etc.). */
 export function formatToParts(m: Money, locale?: string, options?: Intl.NumberFormatOptions): Intl.NumberFormatPart[] {
-  const s = toDecimal(m);
-  return formatter(m, locale, options).formatToParts((supportsStringInput() ? s : Number(s)) as number);
+  return formatter(m, locale, options).formatToParts(intlValue(m));
 }
 
 interface Symbols { group: string; decimal: string }

@@ -1,5 +1,5 @@
 import { parseDecimal, pow10n, toSafe } from './decimal.js';
-import { CurrencyMismatchError, compare, fromMinor, make, negate, scaleUp, subtract, toScale, type Money } from './money.js';
+import { CurrencyMismatchError, compare, make, negate, scaleUp, subtract, toScale, type Money } from './money.js';
 
 const MAX = Number.MAX_SAFE_INTEGER;
 
@@ -80,32 +80,42 @@ export function allocate<C extends string>(m: Money<C>, weights: readonly Weight
   if (m.minor < 0) return allocate(negate(m), weights, options).map(negate);
   const x = m.minor;
 
-  // fast path: small integer weights, products fit in a double exactly
+  // fast path: integer weights whose products with the amount fit exactly in a double
   if (typeof x === 'number') {
-    let total = 0, allInts = true, maxW = 0;
+    let total = 0, maxW = 0, ok = true;
     for (let i = 0; i < n; i++) {
       const w = weights[i];
-      if (typeof w !== 'number' || !Number.isSafeInteger(w) || w < 0) { allInts = false; break; }
+      if (typeof w !== 'number' || !(w >= 0) || !Number.isSafeInteger(w)) { ok = false; break; }
       total += w;
       if (w > maxW) maxW = w;
     }
-    if (allInts && total > 0 && total <= MAX && x * maxW <= MAX - total) {
-      const shares: number[] = new Array(n);
-      const frac: number[] = new Array(n);
-      let assigned = 0;
+    if (ok && total > 0 && total <= MAX && x * maxW <= MAX - total) {
+      const ws = weights as readonly number[];
+      const shares = new Array<number>(n);
+      const frac = new Array<number>(n);
+      let rem = x;
       for (let i = 0; i < n; i++) {
-        const p = x * (weights[i] as number);
-        const q = Math.floor(p / total);
+        const p = x * ws[i]!;
+        let q = Math.floor(p / total);
         let r = p - q * total;
-        let s = q;
-        if (r < 0) { s -= 1; r += total; } else if (r >= total) { s += 1; r -= total; } // float-quotient fix-up
-        shares[i] = s;
+        if (r < 0) { q -= 1; r += total; } else if (r >= total) { q += 1; r -= total; } // float-quotient fix-up
+        shares[i] = q;
         frac[i] = r;
-        assigned += s;
+        rem -= q;
       }
-      distribute(shares, x - assigned, weights as number[], frac, mode, 1);
-      const out: Money<C>[] = new Array(n);
-      for (let i = 0; i < n; i++) out[i] = fromMinor(shares[i]!, m.currency, m.scale);
+      if (rem > 0) {
+        if (mode === 'largest' && n <= 32) {
+          // selection instead of sort: rem < number of non-zero weights, n small
+          for (; rem > 0; rem--) {
+            let best = -1;
+            for (let i = 0; i < n; i++) if (ws[i]! > 0 && frac[i]! >= 0 && (best < 0 || frac[i]! > frac[best]!)) best = i;
+            shares[best]! += 1;
+            frac[best] = -1;
+          }
+        } else distribute(shares, rem, ws, frac, mode, 1);
+      }
+      const out = new Array<Money<C>>(n);
+      for (let i = 0; i < n; i++) out[i] = make(m.currency, shares[i]!, m.scale);
       return out;
     }
   }

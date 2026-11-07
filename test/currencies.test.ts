@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { currencyExponent, ISO_4217_PUBLISHED, ISO_EXPONENTS, ISO_NON_MONETARY } from '../src/index.js';
+import { currencyExponent, format, fromMinor, ISO_4217_PUBLISHED, ISO_EXPONENTS, ISO_NON_MONETARY } from '../src/index.js';
 
 describe('ISO 4217 table', () => {
   it('generated table is up to date with data/', () => {
@@ -21,16 +21,14 @@ describe('ISO 4217 table', () => {
     expect(() => currencyExponent('BGN')).toThrow(); // withdrawn 2026 (Bulgaria joined the euro)
     expect(ISO_NON_MONETARY).toContain('XAU');
   });
-  it('differences from CLDR (what Intl.NumberFormat shows by default) are the known ones', () => {
-    const diffs: string[] = [];
+  it('format() shows ISO digits on every engine, whatever CLDR default the engine has', () => {
+    // Engines disagree on Intl's default currency digits: V8 (CLDR) shows ALL, IQD, LAK, RSD, ... with
+    // 0 decimals; JSC (Bun/Safari) shows ISO digits. We never rely on the default.
     for (const [c, e] of Object.entries(ISO_EXPONENTS)) {
-      let cldr: number;
-      try { cldr = new Intl.NumberFormat('en', { style: 'currency', currency: c }).resolvedOptions().maximumFractionDigits!; } catch { continue; }
-      if (cldr !== e) diffs.push(`${c}:${e}/${cldr}`);
+      let s: string;
+      try { s = format(fromMinor(123456, c), 'en-US', { currencyDisplay: 'code', useGrouping: false }); } catch { continue; }
+      const digits = /\.(\d+)/.exec(s)?.[1]?.length ?? 0;
+      expect([c, digits]).toEqual([c, e]);
     }
-    // CLDR drops decimals that are not used in practice. We always use ISO (or a processor table).
-    // The exact set depends on the engine's CLDR version, so only assert the stable core.
-    for (const d of ['ALL:2/0', 'IQD:3/0', 'LAK:2/0', 'LBP:2/0', 'MMK:2/0', 'RSD:2/0', 'SOS:2/0', 'SYP:2/0', 'YER:2/0', 'IRR:2/0'])
-      expect(diffs).toContain(d);
   });
 });
