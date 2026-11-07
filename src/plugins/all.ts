@@ -11,4 +11,5 @@ export * from './adyen.js';
 export * from './checkout.js';
 export * from './paypal.js';
 export * from './braintree.js';
+export * from './klarna.js';
 export * from './prisma.js';

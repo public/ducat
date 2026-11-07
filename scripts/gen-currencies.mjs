@@ -73,6 +73,11 @@ const PROCESSORS = [
     name: 'BRAINTREE_EXPONENTS',
     doc: 'Braintree decimals per currency (`amount` is a decimal string). The zero-decimal list includes LAK (ISO 2).',
   },
+  {
+    file: 'klarna',
+    name: 'KLARNA_EXPONENTS',
+    doc: 'Klarna purchase currencies and their ISO 4217 exponents (amounts are integer minor units).',
+  },
 ];
 
 function generate() {

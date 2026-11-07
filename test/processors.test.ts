@@ -5,6 +5,7 @@ import { adyenExponent, fromAdyen, toAdyen, ADYEN_EXPONENTS } from '../src/adyen
 import { toCheckoutAmount } from '../src/checkout.js';
 import { toPayPalValue } from '../src/paypal.js';
 import { toBraintree } from '../src/braintree.js';
+import { toKlarna } from '../src/klarna.js';
 
 describe('Stripe', () => {
   it('standard and zero-decimal currencies', () => {
@@ -98,16 +99,17 @@ describe('same amount, different wire values', () => {
         toCheckoutAmount(thousandUnits),
         orDash(() => toPayPalValue(thousandUnits)),
         orDash(() => toBraintree(thousandUnits)),
+        orDash(() => toKlarna(thousandUnits)),
       ];
     });
     expect(rows).toEqual([
-      ['USD', 100000, 100000, 100000, '1000.00', '1000.00'],
-      ['JPY', 1000, 1000, 1000, '1000', '1000'],
-      ['ISK', 100000, 100000, 1000, '-', '1000'],
-      ['IDR', 100000, 1000, 100000, '-', '1000.00'],
-      ['CLP', 1000, 100000, 100000, '-', '1000'],
-      ['KWD', 1000000, 1000000, 1000000, '-', '-'],
-      ['HUF', 100000, 100000, 100000, '1000', '1000.00'],
+      ['USD', 100000, 100000, 100000, '1000.00', '1000.00', 100000],
+      ['JPY', 1000, 1000, 1000, '1000', '1000', '-'],
+      ['ISK', 100000, 100000, 1000, '-', '1000', '-'],
+      ['IDR', 100000, 1000, 100000, '-', '1000.00', '-'],
+      ['CLP', 1000, 100000, 100000, '-', '1000', '-'],
+      ['KWD', 1000000, 1000000, 1000000, '-', '-', '-'],
+      ['HUF', 100000, 100000, 100000, '1000', '1000.00', 100000],
     ]);
   });
 });
