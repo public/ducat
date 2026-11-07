@@ -95,7 +95,10 @@ describe('regressions from other libraries', () => {
     }
   });
 
-  it('js-money / ts-money: fromDecimal(1.15) gave 114 cents (1.15 * 100 = 114.99999999999999)', () => {
+  // 1.15 * 100 is 114.99999999999999 in binary floating point: js-money 0.6.3 throws
+  // "Amount must be an integer" unless given a rounding function, and a library that truncated
+  // would store 114 cents
+  it('js-money: fromDecimal(1.15) throws, since 1.15 * 100 = 114.99999999999999', () => {
     expect(money(1.15, 'EUR').minor).toBe(115);
     expect(money('1.15', 'EUR').minor).toBe(115);
 

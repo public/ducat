@@ -676,6 +676,10 @@ export function runVector(vector: Vector, library: MoneyLibrary): VectorResult {
       return { outcome: 'pass', got: result.got };
     }
     const outcome = result.ok === 'lossy' ? 'lossy' : 'fail';
+    // only rows that carry a note have the key (exactOptionalPropertyTypes)
+    if (result.note === undefined) {
+      return { outcome, got: result.got };
+    }
     return { outcome, got: result.got, note: result.note };
   } catch (error) {
     if (error instanceof NotSupported) {
