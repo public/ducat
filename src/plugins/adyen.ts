@@ -12,8 +12,11 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  toAdyen(this: Money, rounding?: RoundingMode) {
-    return toAdyen(this, rounding);
+extendMoney(
+  {
+    toAdyen(this: Money, rounding?: RoundingMode) {
+      return toAdyen(this, rounding);
+    },
   },
-});
+  { owner: '@ducatjs/money/adyen' },
+);

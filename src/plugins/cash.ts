@@ -17,11 +17,14 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  cashRound(this: Money, options?: CashRoundOptions) {
-    return cashRound(this, options);
+extendMoney(
+  {
+    cashRound(this: Money, options?: CashRoundOptions) {
+      return cashRound(this, options);
+    },
+    roundToIncrement(this: Money, increment: Money, rounding?: RoundingMode) {
+      return roundToIncrement(this, increment, rounding);
+    },
   },
-  roundToIncrement(this: Money, increment: Money, rounding?: RoundingMode) {
-    return roundToIncrement(this, increment, rounding);
-  },
-});
+  { owner: '@ducatjs/money/cash' },
+);

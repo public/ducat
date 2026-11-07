@@ -11,8 +11,11 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  toDecimalValue(this: Money, Decimal: new (value: string) => unknown) {
-    return toDecimalValue(this, Decimal);
+extendMoney(
+  {
+    toDecimalValue(this: Money, Decimal: new (value: string) => unknown) {
+      return toDecimalValue(this, Decimal);
+    },
   },
-});
+  { owner: '@ducatjs/money/prisma' },
+);
