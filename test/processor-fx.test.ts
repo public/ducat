@@ -31,6 +31,22 @@ describe('processor rates', () => {
     })!;
     expect([r.from, r.to, r.toString(), r.source, r.asOf]).toEqual(['EUR', 'GBP', '0.83415', 'adyen', '2026-11-06']);
     expect(adyenRate({ 'Gross Currency': 'EUR' })).toBeUndefined();
+    const usdEur = { 'Gross Currency': 'USD', 'Net Currency': 'EUR', 'Exchange Rate': '0.9' };
+    // 23:30 in Los Angeles on the 6th is already the 7th in UTC
+    expect(adyenRate({ ...usdEur, 'Creation Date': '2026-11-06 23:30:00', TimeZone: 'PST' })?.asOf).toBe(
+      '2026-11-07T07:30:00.000Z',
+    );
+    expect(adyenRate({ ...usdEur, 'Creation Date': '2026-11-06 00:30:00', TimeZone: 'CET' })?.asOf).toBe(
+      '2026-11-05T23:30:00.000Z',
+    );
+    expect(adyenRate({ ...usdEur, 'Creation Date': '2026-11-06 12:00', TimeZone: '+05:30' })?.asOf).toBe(
+      '2026-11-06T06:30:00.000Z',
+    );
+    expect(adyenRate({ ...usdEur, 'Creation Date': '2026-11-06 12:00:00', TimeZone: 'GMT-3' })?.asOf).toBe(
+      '2026-11-06T15:00:00.000Z',
+    );
+    // an ambiguous zone keeps the local day
+    expect(adyenRate({ ...usdEur, 'Creation Date': '2026-11-06 23:30:00', TimeZone: 'IST' })?.asOf).toBe('2026-11-06');
   });
 
   it('impliedRate is the exact settled ÷ presented, refunds included', () => {

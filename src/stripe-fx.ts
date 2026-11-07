@@ -23,6 +23,8 @@ function stripeInfo(transaction: StripeBalanceTransaction): RateInfo {
  * The rate Stripe quotes on a balance transaction, from the charge currency `from` to the balance
  * currency: "the amount in currency A, multiplied by the exchange_rate, equals the amount in currency
  * B". The JSON number is read at its shortest decimal form, so 1.234 is exactly 1234/1000.
+ * `asOf` is the balance transaction's `created` time, the closest timestamp Stripe gives for the
+ * conversion; it is not the charge's creation time, and Stripe doesn't say when the rate was quoted.
  * `undefined` when nothing was converted.
  */
 export function stripeRate<From extends string>(
