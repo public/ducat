@@ -6,5 +6,6 @@ examples/prisma/generated/
 *.db
 *.db-journal
 .claude/
+.wt/
 compare/out/
 compare/node_modules/

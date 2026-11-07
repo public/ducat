@@ -1,2 +1,8 @@
 packages:
   - compare
+allowBuilds:
+  '@prisma/client': false
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@codspeed/core@6.1.1'
+  - '@codspeed/vitest-plugin@6.1.1'

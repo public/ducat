@@ -2,8 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import * as M from '../src/index.js';
-import { money, fromMinor, type Money } from '../src/index.js';
+import * as M from '../src/plugins/all.js';
+import { money, fromMinor, type Money } from '../src/plugins/all.js';
 
 const eur = (s: string) => money(s, 'EUR');
 const dec = (x: Money | Money[] | { net: Money; tax: Money; gross: Money }) =>
@@ -41,6 +41,18 @@ describe('Money methods', () => {
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
+      'extendMoney',
+      // processor and database helpers that take codes, amounts or columns rather than a Money
+      'isStripeCurrency',
+      'stripeExponent',
+      'fromStripe',
+      'isAdyenCurrency',
+      'adyenExponent',
+      'fromAdyen',
+      'fromDecimal',
+      'minorMoneyField',
+      'decimalMoneyField',
+      'toMinorColumns',
     ]);
     const fns = Object.entries(M)
       .filter(([k, v]) => typeof v === 'function' && /^[a-z]/.test(k) && !notMethods.has(k))

@@ -18,7 +18,9 @@ import { EUR as Dinero2Eur } from 'dinero.js/currencies';
 import JsMoney from 'js-money';
 import * as Monetra from 'monetra';
 import TsMoneyPackage from 'ts-money';
-import * as ducat from '../../src/index.ts';
+// the free functions of every module, and (through the plugins) the same operations as methods
+import * as ducat from '../../src/fn.ts';
+import '../../src/plugins/all.ts';
 import { ONLY, runBenchmark } from './harness.ts';
 
 // Library values are opaque here: each implementation only ever sees its own values.

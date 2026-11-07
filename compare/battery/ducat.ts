@@ -1,5 +1,7 @@
 // ducat itself, from this repository's source, driven entirely through Money methods. Kept apart
 // from libraries.ts so the test suite can run the battery without installing the other libraries.
+// the plugin modules add allocate, split and convert to every Money
+import '../../src/plugins/all.ts';
 import { currencyExponent, fromMinor, money, type Money } from '../../src/index.ts';
 import type { MoneyLibrary } from './vectors.ts';
 

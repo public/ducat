@@ -9,7 +9,7 @@ import { Money as BigintMoney, Round as BigintRound } from 'bigint-money';
 import * as dnum from 'dnum';
 import { FixedNumber } from 'ethers';
 import jsBigDecimal from 'js-big-decimal';
-import { convert, divide, money, multiply, negate, ratio, toScale, type Money } from '../../src/index.ts';
+import { convert, divide, money, multiply, negate, ratio, toScale, type Money } from '../../src/fn.ts';
 import { FixedNotSupported, type FixedLibrary, type FixedRounding } from './library.ts';
 
 /** decimals written in a decimal string: "12.340" has 3 */
