@@ -2,7 +2,7 @@
 // check passes or records a failure message, and the spec asserts the list is empty. Property
 // checks use fast-check with the seed passed in from the runner, so a failure reproduces with
 // DUCAT_SEED.
-import DecimalJs from 'decimal.js';
+import { Decimal as DecimalJs } from 'decimal.js';
 import fc from 'fast-check';
 import * as ducat from '../../src/fn.js';
 
