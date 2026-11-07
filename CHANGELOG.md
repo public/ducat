@@ -39,6 +39,10 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
   providers (tables, chains, reversed and cross rates, dated snapshots), `ExactMoney` for
   carrying conversion residuals, `MoneyBag` totals across currencies, ECB reference rate
   parsers (`/convert/ecb`) and an opt-in ECB fetcher (`/convert/fetch`).
+- **Fixed-point decimals:** `@ducatjs/money/fixed` adds `Fixed`, an exact decimal without a
+  currency (unit prices, quantities, intermediate results), with the same strict input and
+  rounding rules as `Money`. `Money#toFixedPoint()` and `moneyToFixed` convert between them.
+  See [Fixed-point decimals](README.md#fixed-point-decimals).
 - **Payment processor views:** the amount each processor expects, with its own minor-unit
   exceptions, for Stripe, Adyen, Checkout.com, PayPal, Braintree and Klarna (`/stripe`,
   `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna`), plus Stripe and Adyen exchange

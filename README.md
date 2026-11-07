@@ -194,7 +194,7 @@ The sections below list each function with its free-function signature; the meth
   - NBSP and narrow NBSP, Swiss `’`
   - Arabic-Indic, Persian, Devanagari and Thai digits
   - accounting parentheses and U+2212 minus
-- The currency always comes from the argument and is never guessed from the text. A `parse(format(x)) == x` property test runs across 12 locales.
+- The currency always comes from the argument and is never guessed from the text. A `parse(format(x)) == x` property test runs across 14 locales.
 
 **Serialise**
 
@@ -396,7 +396,7 @@ Processor differences encoded:
 
 ## Tests
 
-`pnpm test` runs vitest: 192 tests in 11 files.
+`pnpm test` runs the vitest suite.
 
 - Unit tests use real-world vectors:
   - the `java.math.RoundingMode` table for all modes
@@ -414,12 +414,12 @@ Processor differences encoded:
   - multiply against exact rationals
   - allocation: sums are exact, each part is within one unit of its ideal share, results are deterministic, and largest-remainder order holds
   - instalment sums, tax breakdowns that add up
-  - `parse(format(x))` across 12 locales
+  - `parse(format(x))` across 14 locales
   - the Intl hand-off being bit-identical
 - `pnpm typecheck` compiles `test/types.ts`. Its `@ts-expect-error` lines prove that currency mismatch, readonly fields and unknown rounding modes are compile errors.
 - `pnpm test:runtimes` runs:
-  - the **full suite on Node 22, Bun 1.4 (via `bun test`) and Deno 2.9**: all pass
-  - a bundled smoke test on Node 22, Node 18, Bun, Deno and the **SpiderMonkey and JavaScriptCore shells** (installed with jsvu): all pass. On Node 18, `format()` of amounts above 2^53 is lossy (no Intl string input).
+  - the **full suite on Node 24, Bun 1.4 (via `bun test`) and Deno 2.9**: all pass
+  - a bundled smoke test on Node 24, Node 18, Bun, Deno and the **SpiderMonkey and JavaScriptCore shells** (installed with jsvu): all pass. On Node 18, `format()` of amounts above 2^53 is lossy (no Intl string input).
 - `pnpm test:db` runs the SQL helpers against real databases: SQLite through Node's built-in `node:sqlite`, and Postgres and MySQL when `DUCAT_PG_URL` and `DUCAT_MYSQL_URL` point at a server (CI runs both as service containers, and sets `DUCAT_REQUIRE_DB=1` so a missing URL fails instead of skipping). It covers BIGINT minor units beyond 2^53 and at the BIGINT limits, `NUMERIC(19,4)` and `NUMERIC(38,4)` columns, Money as JSON/JSONB, values a column rounded silently (rejected on read), NaN and Infinity, and driver defaults that lose precision.
 - `pnpm test:browser` runs a smoke and property subset in Chromium, Firefox and WebKit through Playwright, including `parse(format())` round trips in 18 locales; `DUCAT_BROWSER_RUNS` sets the cases per property (default 300) and `DUCAT_SEED` the seed.
 - `pnpm test:mutation` runs Stryker over `src/` with property counts capped; CI runs it nightly and keeps the report.
@@ -444,8 +444,8 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - It is on par with currency.js and ts-money on compare and format, but those two use floats.
 - `format` is dominated by Intl itself (about 0.7–1.5 µs on every engine).
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
-  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.6 kB**, of which about 0.55 kB is the ISO table
-  - the core entry point: 4.6 kB; everything (`@ducatjs/money/all`): 10.9 kB
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.7 kB**, of which about 0.55 kB is the ISO table
+  - the core entry point: 4.8 kB; everything (`@ducatjs/money/all`): 18.9 kB
   - the same snippet with dinero.js (EUR only): 1.9 kB
 
 ---
@@ -493,4 +493,4 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **No Money arrays or columnar ops** (e.g. summing a `Float64Array`/`BigInt64Array` of minor units).
 - **The ISO table is always bundled** (about 1.3 kB gz). Per-currency imports like dinero's would make the minimum bundle smaller.
 - **Minor-unit columns can't round-trip values with a non-ISO scale.** `toMinorColumns` refuses them by design. There is no `scale` column helper.
-- **No docs site and no CI config yet.**
+- **No docs site yet.**
