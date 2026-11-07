@@ -76,6 +76,7 @@ describe('currency conversion', () => {
     const r = exchangeRate('EUR', 'USD', '1.25');
     expect(d(r.convert(money('10', 'EUR')))).toBe('12.50');
     expect(d(r.inverse().convert(money('12.50', 'USD')))).toBe('10.00');
-    expect(() => r.convert(money('1', 'GBP') as never)).toThrow();
+    // @ts-expect-error a EUR→USD rate cannot convert GBP
+    expect(() => r.convert(money('1', 'GBP'))).toThrow();
   });
 });
