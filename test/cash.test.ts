@@ -1,40 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import { CASH_RULES, cashRound, cashRule, money, roundToIncrement, toDecimal } from '../src/plugins/all.js';
+import {
+  CASH_RULES,
+  cashRound,
+  cashRule,
+  money,
+  roundToIncrement,
+  toDecimal,
+} from '../src/plugins/all.js';
 
 const cr = (amt: string, cur: string, country?: string) =>
   toDecimal(cashRound(money(amt, cur), country ? { country } : undefined));
 
 describe('cash rounding', () => {
   it('CHF to 0.05', () => {
-    expect(['10.01', '10.02', '10.03', '10.04', '10.07', '10.08'].map((a) => cr(a, 'CHF'))).toEqual([
-      '10.00',
-      '10.00',
-      '10.05',
-      '10.05',
-      '10.05',
-      '10.10',
-    ]);
+    expect(['10.01', '10.02', '10.03', '10.04', '10.07', '10.08'].map((a) => cr(a, 'CHF'))).toEqual(
+      ['10.00', '10.00', '10.05', '10.05', '10.05', '10.10'],
+    );
   });
   it('SEK and NOK to whole kronor (1-49 down, 50-99 up)', () => {
-    expect([cr('10.49', 'SEK'), cr('10.50', 'SEK'), cr('10.99', 'SEK')]).toEqual(['10.00', '11.00', '11.00']);
+    expect([cr('10.49', 'SEK'), cr('10.50', 'SEK'), cr('10.99', 'SEK')]).toEqual([
+      '10.00',
+      '11.00',
+      '11.00',
+    ]);
     expect([cr('10.49', 'NOK'), cr('10.50', 'NOK')]).toEqual(['10.00', '11.00']);
   });
   it('DKK to 0.50 (1-24 down, 25-74 to 50, 75-99 up)', () => {
-    expect(['0.24', '0.25', '0.74', '0.75'].map((a) => cr(a, 'DKK'))).toEqual(['0.00', '0.50', '0.50', '1.00']);
+    expect(['0.24', '0.25', '0.74', '0.75'].map((a) => cr(a, 'DKK'))).toEqual([
+      '0.00',
+      '0.50',
+      '0.50',
+      '1.00',
+    ]);
   });
   it('CAD and AUD to 0.05, NZD to 0.10', () => {
-    expect(['1.01', '1.02', '1.03', '1.04', '1.06', '1.07', '1.08', '1.09'].map((a) => cr(a, 'CAD'))).toEqual([
+    expect(
+      ['1.01', '1.02', '1.03', '1.04', '1.06', '1.07', '1.08', '1.09'].map((a) => cr(a, 'CAD')),
+    ).toEqual(['1.00', '1.00', '1.05', '1.05', '1.05', '1.05', '1.10', '1.10']);
+    expect(cr('1.02', 'AUD')).toBe('1.00');
+    expect([cr('1.04', 'NZD'), cr('1.05', 'NZD'), cr('1.06', 'NZD')]).toEqual([
       '1.00',
-      '1.00',
-      '1.05',
-      '1.05',
-      '1.05',
-      '1.05',
       '1.10',
       '1.10',
     ]);
-    expect(cr('1.02', 'AUD')).toBe('1.00');
-    expect([cr('1.04', 'NZD'), cr('1.05', 'NZD'), cr('1.06', 'NZD')]).toEqual(['1.00', '1.10', '1.10']);
   });
   it('HUF to 5 forint, CZK to whole koruna', () => {
     expect(['1', '2', '3', '4', '6', '7', '8', '9'].map((a) => cr(a, 'HUF'))).toEqual([
@@ -62,9 +70,13 @@ describe('cash rounding', () => {
     expect(toDecimal(cashRound(money('10.49', 'SEK'), { includeUnverified: false }))).toBe('10.00');
   });
   it('roundToIncrement with any increment and mode', () => {
-    expect(toDecimal(roundToIncrement(money('7.13', 'EUR'), money('0.25', 'EUR'), 'ceil'))).toBe('7.25');
+    expect(toDecimal(roundToIncrement(money('7.13', 'EUR'), money('0.25', 'EUR'), 'ceil'))).toBe(
+      '7.25',
+    );
     expect(toDecimal(roundToIncrement(money('-1.03', 'CHF'), money('0.05', 'CHF')))).toBe('-1.05');
-    expect(toDecimal(roundToIncrement(money('1234', 'JPY'), money('100', 'JPY'), 'floor'))).toBe('1200');
+    expect(toDecimal(roundToIncrement(money('1234', 'JPY'), money('100', 'JPY'), 'floor'))).toBe(
+      '1200',
+    );
   });
   it('every rule increment is a positive whole number of minor units', () => {
     for (const r of CASH_RULES) expect(Number.isInteger(r.increment) && r.increment > 0).toBe(true);

@@ -98,7 +98,8 @@ function dinero2Library(api: any, currencies: any, usesBigint: boolean, name: st
       const { amount, scale } = scaledAmount(decimal);
       return api.dinero({ amount, currency: currencyNamed(code), scale });
     },
-    fromMinor: (minorUnits, code) => api.dinero({ amount: toNumeric(minorUnits), currency: currencyNamed(code) }),
+    fromMinor: (minorUnits, code) =>
+      api.dinero({ amount: toNumeric(minorUnits), currency: currencyNamed(code) }),
     toDecimal: (value) => api.toDecimal(value),
     add: api.add,
     subtract: api.subtract,
@@ -330,8 +331,10 @@ function roundBigintMoney(exact: any, code: string, mode: RoundingName): any {
 const bigintMoneyLibrary: AnyLibrary = {
   name: 'bigint-money 2.0.1',
   hasNoExponentTable: true,
-  fromDecimal: (decimal, code) => new (BigintMoney as any)(decimal, code, (BigintRound as any).HALF_TO_EVEN),
-  fromFloat: (amount, code) => new (BigintMoney as any)(amount, code, (BigintRound as any).HALF_TO_EVEN),
+  fromDecimal: (decimal, code) =>
+    new (BigintMoney as any)(decimal, code, (BigintRound as any).HALF_TO_EVEN),
+  fromFloat: (amount, code) =>
+    new (BigintMoney as any)(amount, code, (BigintRound as any).HALF_TO_EVEN),
   // the output precision is caller-supplied
   toDecimal: (value) => value.toFixed(ISO_EXPONENTS[value.currency]),
   add: (first, second) => first.add(second),

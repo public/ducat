@@ -1,4 +1,7 @@
-/** `@ducatjs/money/paypal`: PayPal's amount view. Importing this module adds `toPayPal` and `toPayPalValue`. */
+/**
+ * `@ducatjs/money/paypal`: PayPal's amount view. Importing this module adds `toPayPal` and
+ * `toPayPalValue`.
+ */
 import { extendMoney, type Money } from '../money.js';
 import { toPayPal, toPayPalValue, type PayPalAmountOptions } from '../paypal.js';
 

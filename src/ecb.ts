@@ -24,8 +24,8 @@ const RATE_TEXT = /^\d+(?:\.\d+)?$/;
 const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
 
 /**
- * The ECB's rates are typed 'reference', not 'mid': they are set once a day, around 14:10 CET, from a
- * regular concertation between central banks, and published for information only. They are not a
+ * The ECB's rates are typed 'reference', not 'mid': they are set once a day, around 14:10 CET, from
+ * a regular concertation between central banks, and published for information only. They are not a
  * market mid-rate that anyone deals at.
  */
 function ecbTable(asOf: string, rates: Record<string, string>): RateTable {
@@ -54,7 +54,12 @@ function ratesOfDay(body: string): Record<string, string> {
       continue;
     }
     // Fail rather than silently drop a currency: a missing rate would look like "not quoted".
-    if (currency === undefined || !/^[A-Z]{3}$/.test(currency) || rate === undefined || !RATE_TEXT.test(rate)) {
+    if (
+      currency === undefined ||
+      !/^[A-Z]{3}$/.test(currency) ||
+      rate === undefined ||
+      !RATE_TEXT.test(rate)
+    ) {
       throw new SyntaxError(`Malformed ECB rate entry <Cube${attributeText}>`);
     }
     rates[currency] = rate;
@@ -95,7 +100,11 @@ export function parseEcbXml(xml: string): RateTable[] {
 /** The ISO date of year-month-day, or a SyntaxError when that day doesn't exist (32 November). */
 function calendarDay(year: number, month: number, day: number): string {
   const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
     throw new SyntaxError(`Not a calendar day: ${year}-${month}-${day}`);
   }
   return date.toISOString().slice(0, 10);

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { fromMinor, money, toDecimal, RoundingError } from '../src/index.js';
-import { fromKlarna, isKlarnaCurrency, klarnaExponent, toKlarna, KLARNA_EXPONENTS } from '../src/klarna.js';
+import {
+  fromKlarna,
+  isKlarnaCurrency,
+  klarnaExponent,
+  toKlarna,
+  KLARNA_EXPONENTS,
+} from '../src/klarna.js';
 
 describe('Klarna', () => {
   // the data-types page and the Payments API field descriptions

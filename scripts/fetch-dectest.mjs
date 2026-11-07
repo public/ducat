@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Fetches the General Decimal Arithmetic test cases (Cowlishaw's decTest files, as shipped with CPython)
-// into test/vectors/dectest/, which is git-ignored: the files are IBM copyright and are not redistributed
-// here. Pinned to a CPython tag and checked by SHA-256, so the vectors never change silently.
+// Fetches the General Decimal Arithmetic test cases (Cowlishaw's decTest files, as shipped with
+// CPython) into test/vectors/dectest/, which is git-ignored: the files are IBM copyright and are
+// not redistributed here. Pinned to a CPython tag and checked by SHA-256, so the vectors never
+// change silently.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

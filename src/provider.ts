@@ -15,7 +15,11 @@ export interface RateQuery {
 
 /** Looks up a rate synchronously. `undefined` when it has none for the pair (or for `asOf`). */
 export interface RateProvider {
-  rate<From extends string, To extends string>(from: From, to: To, query?: RateQuery): Rate<From, To> | undefined;
+  rate<From extends string, To extends string>(
+    from: From,
+    to: To,
+    query?: RateQuery,
+  ): Rate<From, To> | undefined;
 }
 
 /** A fixed set of rates, as built by rateTable() and returned by the ECB parsers and fetchers. */
@@ -67,7 +71,8 @@ export function rateOf<From extends string, To extends string>(
     throw new RateUnavailableError(from, to, query?.asOf);
   }
 
-  // A provider is user code: a wrong pair here would produce Money labelled with the wrong currency.
+  // A provider is user code: a wrong pair here would produce Money labelled with the wrong
+  // currency.
   if (rate.from !== from) {
     throw new CurrencyMismatchError(from, rate.from);
   }
@@ -133,7 +138,9 @@ export function rateTable(spec: RateTableSpec | readonly Rate[]): RateTable {
         return undefined;
       }
       const askedBeforeRateExisted =
-        query?.asOf !== undefined && rate.asOf !== undefined && dayOf(query.asOf) < dayOf(rate.asOf);
+        query?.asOf !== undefined &&
+        rate.asOf !== undefined &&
+        dayOf(query.asOf) < dayOf(rate.asOf);
       if (askedBeforeRateExisted) {
         return undefined;
       }
@@ -288,8 +295,8 @@ export function snapshots(
 
       for (let i = 0; i <= lookback; i++) {
         const day = new Date(firstDayMs - i * DAY_MS).toISOString().slice(0, 10);
-        // Sequential on purpose: stop at the first day that has a table, without loading older days.
-        // oxlint-disable-next-line no-await-in-loop
+        // Sequential on purpose: stop at the first day that has a table, without loading older
+        // days. oxlint-disable-next-line no-await-in-loop
         const table = await loadDay(day);
         if (table !== undefined) {
           return table;

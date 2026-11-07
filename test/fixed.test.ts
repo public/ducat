@@ -2,14 +2,26 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { currencyExponent, fromMinor, money, ratio, RoundingError, type RoundingMode } from '../src/index.js';
+import {
+  currencyExponent,
+  fromMinor,
+  money,
+  ratio,
+  RoundingError,
+  type RoundingMode,
+} from '../src/index.js';
 import { Fixed, fixed, fromScaled, isFixed } from '../src/plugins/fixed.js';
 import { MODES, refDivRound } from './oracle.js';
 
 const ALL_MODES: RoundingMode[] = [...MODES, 'unnecessary'];
 
 /** The oracle: value / 10^scale as an exact bigint fraction, rescaled and rounded independently. */
-function oracleAtScale(numerator: bigint, denominator: bigint, scale: number, mode: RoundingMode): bigint {
+function oracleAtScale(
+  numerator: bigint,
+  denominator: bigint,
+  scale: number,
+  mode: RoundingMode,
+): bigint {
   return refDivRound(numerator * 10n ** BigInt(scale), denominator, mode);
 }
 
@@ -18,7 +30,9 @@ const scaledValue = fc.oneof(
   fc.bigInt({ min: -(10n ** 40n), max: 10n ** 40n }),
 );
 const scale = fc.integer({ min: 0, max: 20 });
-const anyFixed = fc.tuple(scaledValue, scale).map(([value, decimals]) => fromScaled(value, decimals));
+const anyFixed = fc
+  .tuple(scaledValue, scale)
+  .map(([value, decimals]) => fromScaled(value, decimals));
 const mode = fc.constantFrom(...MODES);
 
 function exactOf(value: Fixed): [bigint, bigint] {
@@ -55,7 +69,9 @@ describe('fixed()', () => {
     expect(() => fixed('1').divide(3, 'halfEven', { scale: 1001 })).toThrow(RangeError);
     // a float needs an explicit rounding mode before its extra digits may be dropped or kept
     expect(() => fixed(0.1 + 0.2, { scale: 17 })).toThrow(RangeError);
-    expect(fixed(0.1 + 0.2, { scale: 17, rounding: 'halfEven' }).toString()).toBe('0.30000000000000004');
+    expect(fixed(0.1 + 0.2, { scale: 17, rounding: 'halfEven' }).toString()).toBe(
+      '0.30000000000000004',
+    );
     expect(() => fixed('1.5', { rounding: 'halfEven' })).toThrow(RangeError);
   });
 
@@ -129,7 +145,9 @@ describe('Fixed arithmetic', () => {
     // double rounding: 0.0145 at scale 2 is 1.45 hundredths, so one rounding gives 0.01, but rounding
     // to scale 3 first makes the tie 0.015, which then rounds up to 0.02
     expect(fixed('0.0145').multiply(1, 'halfEven', { scale: 2 }).toString()).toBe('0.01');
-    expect(fixed('0.0145').toScale(3, 'halfExpand').toScale(2, 'halfExpand').toString()).toBe('0.02');
+    expect(fixed('0.0145').toScale(3, 'halfExpand').toScale(2, 'halfExpand').toString()).toBe(
+      '0.02',
+    );
     expect(fixed('0.0145').multiply(1, 'halfExpand', { scale: 2 }).toString()).toBe('0.01');
     expect(() => fixed('1').divide(3, 'halfEven', { scale: -1 })).toThrow(RangeError);
   });
@@ -184,7 +202,9 @@ describe('battery, adapted for fixed point', () => {
     expect(fixed('-5.00').add('2.50').toString()).toBe('-2.50');
     expect(fixed('2.50').subtract('5.00').toString()).toBe('-2.50');
     expect(fixed('0.10').add('0.20').toString()).toBe('0.30');
-    const awkwardFloats = [0.07, 0.29, 0.57, 1.13, 1.15, 2.01, 4.35, 8.2, 9.95, 19.99, 100.5, 1234.56];
+    const awkwardFloats = [
+      0.07, 0.29, 0.57, 1.13, 1.15, 2.01, 4.35, 8.2, 9.95, 19.99, 100.5, 1234.56,
+    ];
     for (const value of awkwardFloats) {
       expect(fixed(value, { scale: 2 }).toString()).toBe(value.toFixed(2));
     }
@@ -230,7 +250,9 @@ describe('Fixed properties against a bigint rational oracle', () => {
         expect(sum.scale).toBe(Math.max(first.scale, second.scale));
         // value / 10^scale equals the exact rational sum, cross-multiplied
         const [sumNum, sumDen] = exactOf(sum);
-        expect(sumNum * firstDen * secondDen).toBe((firstNum * secondDen + secondNum * firstDen) * sumDen);
+        expect(sumNum * firstDen * secondDen).toBe(
+          (firstNum * secondDen + secondNum * firstDen) * sumDen,
+        );
         const [differenceNum, differenceDen] = exactOf(difference);
         expect(differenceNum * firstDen * secondDen).toBe(
           (firstNum * secondDen - secondNum * firstDen) * differenceDen,
@@ -244,9 +266,19 @@ describe('Fixed properties against a bigint rational oracle', () => {
       fc.property(anyFixed, anyFixed, mode, scale, (value, factor, rounding, target) => {
         const [valueNum, valueDen] = exactOf(value);
         const [factorNum, factorDen] = exactOf(factor);
-        const expected = oracleAtScale(valueNum * factorNum, valueDen * factorDen, value.scale, rounding);
+        const expected = oracleAtScale(
+          valueNum * factorNum,
+          valueDen * factorDen,
+          value.scale,
+          rounding,
+        );
         expect(BigInt(value.multiply(factor, rounding).value)).toBe(expected);
-        const atTarget = oracleAtScale(valueNum * factorNum, valueDen * factorDen, target, rounding);
+        const atTarget = oracleAtScale(
+          valueNum * factorNum,
+          valueDen * factorDen,
+          target,
+          rounding,
+        );
         expect(BigInt(value.multiply(factor, rounding, { scale: target }).value)).toBe(atTarget);
       }),
       { numRuns: 2000 },
@@ -259,9 +291,19 @@ describe('Fixed properties against a bigint rational oracle', () => {
         fc.pre(!divisor.isZero());
         const [valueNum, valueDen] = exactOf(value);
         const [divisorNum, divisorDen] = exactOf(divisor);
-        const expected = oracleAtScale(valueNum * divisorDen, valueDen * divisorNum, value.scale, rounding);
+        const expected = oracleAtScale(
+          valueNum * divisorDen,
+          valueDen * divisorNum,
+          value.scale,
+          rounding,
+        );
         expect(BigInt(value.divide(divisor, rounding).value)).toBe(expected);
-        const atTarget = oracleAtScale(valueNum * divisorDen, valueDen * divisorNum, target, rounding);
+        const atTarget = oracleAtScale(
+          valueNum * divisorDen,
+          valueDen * divisorNum,
+          target,
+          rounding,
+        );
         expect(BigInt(value.divide(divisor, rounding, { scale: target }).value)).toBe(atTarget);
       }),
       { numRuns: 2000 },
@@ -322,11 +364,15 @@ describe('Fixed properties against a bigint rational oracle', () => {
           fromScaled(BigInt(first.value), first.scale),
         ];
         if (!second.isZero()) {
-          results.push(first.divide(second, rounding), first.divide(second, rounding, { scale: target }));
+          results.push(
+            first.divide(second, rounding),
+            first.divide(second, rounding, { scale: target }),
+          );
         }
         for (const result of results) {
           const isSafe =
-            Number.isSafeInteger(Number(result.value)) && BigInt(Number(result.value)) === BigInt(result.value);
+            Number.isSafeInteger(Number(result.value)) &&
+            BigInt(Number(result.value)) === BigInt(result.value);
           expect(typeof result.value === 'number').toBe(isSafe);
         }
       }),
@@ -373,7 +419,9 @@ describe('Python decimal vectors, through Fixed', () => {
   const vectorPath = join(import.meta.dirname, 'vectors', 'pydecimal.json');
   const { cases } = JSON.parse(readFileSync(vectorPath, 'utf8')) as { cases: VectorCase[] };
   // The currency-free operations: the value is the minor units at the currency's exponent.
-  const fixedCases = cases.filter((vector) => ['multiply', 'divide', 'toScale'].includes(vector.op));
+  const fixedCases = cases.filter((vector) =>
+    ['multiply', 'divide', 'toScale'].includes(vector.op),
+  );
 
   it('covers every multiply, divide and toScale vector', () => {
     expect(fixedCases.length).toBeGreaterThan(0);

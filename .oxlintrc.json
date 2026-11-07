@@ -14,5 +14,25 @@
     "vitest/expect-expect": ["warn", { "assertFunctionNames": ["expect", "eq", "fc.assert"] }],
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
   },
+  "overrides": [
+    {
+      // readability (CONTRIBUTING.md): braces on every block, no nested ternaries, names longer than a
+      // letter except loop indices and type parameters
+      "files": ["src/**/*.ts", "scripts/**/*.mjs"],
+      "rules": {
+        "curly": ["error", "all"],
+        "no-nested-ternary": "error",
+        "id-length": [
+          "error",
+          {
+            "min": 2,
+            "exceptions": ["i", "j", "k", "_"],
+            "exceptionPatterns": ["^[A-Z]$"],
+            "properties": "never"
+          }
+        ]
+      }
+    }
+  ],
   "ignorePatterns": ["dist", "node_modules", "examples/prisma/generated", "bench/out"]
 }

@@ -39,9 +39,9 @@ describe('Braintree', () => {
     expect(() => toBraintree(money('-5', 'USD'))).toThrow(/can't be negative/);
     expect(() => toBraintree(money('0', 'USD'))).toThrow(/greater than zero/);
     // checked after rounding: -0.004 rounds to zero, which is rejected as zero
-    expect(() => toBraintree(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' })).toThrow(
-      /greater than zero/,
-    );
+    expect(() =>
+      toBraintree(money('-0.004', 'USD', { scale: 3 }), { rounding: 'halfEven' }),
+    ).toThrow(/greater than zero/);
     expect(toBraintree(money('0.01', 'USD'))).toBe('0.01');
     expect(() => fromBraintree('-5.00', 'USD')).toThrow(SyntaxError);
   });
@@ -67,9 +67,13 @@ describe('Braintree', () => {
     expect(Object.keys(BRAINTREE_EXPONENTS)).toHaveLength(134);
 
     // exactly the asterisked codes are zero-decimal; the page lists no three-decimal currency
-    const zeroDecimal = Object.keys(BRAINTREE_EXPONENTS).filter((code) => BRAINTREE_EXPONENTS[code] === 0);
+    const zeroDecimal = Object.keys(BRAINTREE_EXPONENTS).filter(
+      (code) => BRAINTREE_EXPONENTS[code] === 0,
+    );
     expect(zeroDecimal.toSorted()).toEqual(ASTERISKED);
-    const others = Object.entries(BRAINTREE_EXPONENTS).filter(([code]) => !ASTERISKED.includes(code));
+    const others = Object.entries(BRAINTREE_EXPONENTS).filter(
+      ([code]) => !ASTERISKED.includes(code),
+    );
     for (const [code, exponent] of others) {
       expect([code, exponent]).toEqual([code, 2]);
     }

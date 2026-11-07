@@ -3,7 +3,13 @@
 // helpers support (BIGINT minor units + currency, or a DECIMAL/NUMERIC column) and Money as JSON.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { fromJSON, fromMinor, money, toDecimal, type Money } from '../../src/index.js';
-import { decimalMoneyField, fromDecimal, minorMoneyField, toMinorColumns, type DecimalLike } from '../../src/prisma.js';
+import {
+  decimalMoneyField,
+  fromDecimal,
+  minorMoneyField,
+  toMinorColumns,
+  type DecimalLike,
+} from '../../src/prisma.js';
 
 export interface DatabaseAdapter {
   /** column types for this dialect */
@@ -92,7 +98,9 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
         `CREATE TABLE ${tableName('decimal')} ` +
           `(id INTEGER PRIMARY KEY, n19 ${numeric19}, n38 ${numeric38}, currency ${text})`,
       );
-      await database.execute(`CREATE TABLE ${tableName('json')} (id INTEGER PRIMARY KEY, doc ${json})`);
+      await database.execute(
+        `CREATE TABLE ${tableName('json')} (id INTEGER PRIMARY KEY, doc ${json})`,
+      );
     });
 
     afterAll(async () => {
@@ -109,14 +117,18 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
       }
 
       const field = minorMoneyField('amount_minor', 'currency');
-      const rows = await database.query(`SELECT amount_minor, currency FROM ${tableName('minor')} ORDER BY id`);
+      const rows = await database.query(
+        `SELECT amount_minor, currency FROM ${tableName('minor')} ORDER BY id`,
+      );
       const readBack = rows.map((row) => toDecimal(field.compute(row as never)));
       expect(readBack).toEqual(AMOUNTS.map(([decimal]) => decimal));
     });
 
     it('NUMERIC(19,4) and NUMERIC(38,4) round-trip at currency scale (trailing zeros accepted)', async () => {
       await database.execute(`DELETE FROM ${tableName('decimal')}`);
-      const placeholders = [1, 2, 3, 4].map((position) => database.placeholder(position)).join(', ');
+      const placeholders = [1, 2, 3, 4]
+        .map((position) => database.placeholder(position))
+        .join(', ');
       const insert = `INSERT INTO ${tableName('decimal')} (id, n19, n38, currency) VALUES (${placeholders})`;
 
       for (const [index, [decimal, currency]] of AMOUNTS.entries()) {
@@ -126,7 +138,9 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
 
       const narrowField = decimalMoneyField('n19', { currencyField: 'currency' });
       const wideField = decimalMoneyField('n38', { currencyField: 'currency' });
-      const rows = await database.query(`SELECT n19, n38, currency FROM ${tableName('decimal')} ORDER BY id`);
+      const rows = await database.query(
+        `SELECT n19, n38, currency FROM ${tableName('decimal')} ORDER BY id`,
+      );
       expect(rows).toHaveLength(AMOUNTS.length);
 
       for (const [index, row] of rows.entries()) {

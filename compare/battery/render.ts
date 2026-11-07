@@ -21,7 +21,9 @@ function shortName(library: string): string {
 }
 
 function rowFor(results: BatteryResults, library: string, id: string) {
-  const row = results.rows.find((candidate) => candidate.library === library && candidate.id === id);
+  const row = results.rows.find(
+    (candidate) => candidate.library === library && candidate.id === id,
+  );
   if (!row) {
     throw new Error(`no result for ${library} ${id}`);
   }
@@ -34,7 +36,9 @@ export function renderMatrix(results: BatteryResults): string {
   const lines = [header, divider];
 
   for (const vector of results.vectors) {
-    const cells = results.libraries.map((library) => SYMBOLS[rowFor(results, library, vector.id).outcome]);
+    const cells = results.libraries.map(
+      (library) => SYMBOLS[rowFor(results, library, vector.id).outcome],
+    );
     lines.push(`| \`${vector.id}\` ${vector.description} | ${cells.join(' | ')} |`);
   }
   return lines.join('\n') + '\n';
@@ -80,8 +84,15 @@ export function renderSummary(results: BatteryResults): string {
 
   for (const library of results.libraries) {
     const rows = results.rows.filter((row) => row.library === library);
-    const count = (outcome: Outcome) => rows.filter((row) => row.outcome === outcome && !isByDesign(row)).length;
-    const counts = [count('pass'), count('fail'), count('lossy'), count('error'), count('unsupported')];
+    const count = (outcome: Outcome) =>
+      rows.filter((row) => row.outcome === outcome && !isByDesign(row)).length;
+    const counts = [
+      count('pass'),
+      count('fail'),
+      count('lossy'),
+      count('error'),
+      count('unsupported'),
+    ];
     if (hasByDesign) {
       counts.push(rows.filter(isByDesign).length);
     }

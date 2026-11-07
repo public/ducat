@@ -36,6 +36,7 @@ export const ECB_URLS = {
   all: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml',
 } as const;
 
+/** Options for fetching ECB reference rates. */
 export interface FetchEcbOptions {
   /** 'daily' (default): the latest day; '90d': the last 90 days; 'all': since 1999 (several MB). */
   readonly history?: keyof typeof ECB_URLS;
@@ -102,7 +103,10 @@ export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> 
 }
 
 /** The caller's signal, a timeout signal, or both combined. */
-function requestSignal(signal: AbortSignalLike | undefined, timeout: number): AbortSignalLike | undefined {
+function requestSignal(
+  signal: AbortSignalLike | undefined,
+  timeout: number,
+): AbortSignalLike | undefined {
   if (!Number.isFinite(timeout) || timeout < 0) {
     throw new RangeError(`timeout must be a non-negative number of milliseconds, got ${timeout}`);
   }

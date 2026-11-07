@@ -244,7 +244,11 @@ The sections below list each function with its free-function signature; the meth
 ```ts
 import { exchangeRate } from '@ducatjs/money/convert';
 
-const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06', type: 'reference' });
+const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
+  source: 'ECB',
+  asOf: '2026-11-06',
+  type: 'reference',
+});
 eurUsd.convert(money('100', 'EUR'), 'halfEven'); // 111.65 USD
 eurUsd.inverse().toString(); // '2000/2233': exact, not 0.8956...
 eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedFrom`
@@ -362,7 +366,10 @@ const db = new PrismaClient().$extends({
   },
 });
 await db.order.create({
-  data: { ...toMinorColumns(total, 'totalMinor', 'currency'), shipping: toDecimalValue(fee, Prisma.Decimal) },
+  data: {
+    ...toMinorColumns(total, 'totalMinor', 'currency'),
+    shipping: toDecimalValue(fee, Prisma.Decimal),
+  },
 });
 (await db.order.findFirstOrThrow()).total; // Money
 ```
@@ -428,7 +435,7 @@ Processor differences encoded:
 
 `proofs/` holds [Lean 4](https://lean-lang.org) proofs (with Mathlib) of two kinds:
 
-- **Proved code.** The bigint rounding kernels are written once in Lean, as values of a small expression language (`proofs/Ducat/Kernel.lean`). The theorems are about those values, and `pnpm gen:kernel` prints the same values as TypeScript into `src/generated/kernel.ts`. They print as one function, `divideAndRoundBigint`: the steps every mode shares, then a `switch` with each mode's proved decision (`kernel_shared` states that the shared steps really are the same). `divRoundBig` calls it; it is the bigint path of every rounded operation. What you have to trust is the printer (about 60 lines of Lean) and the fact that JS `bigint` `+ - * /` agree with Lean's `Int` (`/` truncates, as `Int.tdiv` does).
+- **Proved code.** The bigint rounding kernels are written once in Lean, as values of a small expression language (`proofs/Ducat/Kernel.lean`). The theorems are about those values, and `pnpm gen:kernel` prints the same values as TypeScript into `src/generated/kernel.ts`. They print as one function, `divideAndRoundBigint`: the steps every mode shares, then a `switch` with each mode's proved decision (`kernel_shared` states that the shared steps really are the same). The TypeScript `divideAndRoundBigint` in `src/rounding.ts` calls it; it is the bigint path of every rounded operation. What you have to trust is the printer (about 60 lines of Lean) and the fact that JS `bigint` `+ - * /` agree with Lean's `Int` (`/` truncates, as `Int.tdiv` does).
 - **Proved models.** Allocation, tax and scale changes are proved about Lean models of what the TypeScript does, not about the TypeScript itself. The allocation model is compiled into an oracle that prints 1,500 generated cases to `test/fixtures/allocate.oracle.json`. The tests require `allocate` to match it exactly, on both its number and bigint paths. The TypeScript for tax, scale and conversion is tested, not proved (see below).
 
 `pnpm gen:check`, which runs in every check without Lean, fails in two cases. One is any unfinished proof (`sorry`, `admit`, a new `axiom`, `native_decide`). The other is a generated file that was edited by hand or not regenerated after `proofs/` changed: each generated file carries a hash of the Lean sources it came from. `pnpm gen:kernel:check` needs Lean, and CI runs it. It rebuilds the proofs, checks that the headline theorems depend only on Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`), and fails if either generated file differs from what the proofs print.
@@ -464,10 +471,10 @@ These are stated over the proved kernel (`divRound`):
 
 ### Tested, not proved
 
-- **The printer** that turns the Lean kernels into TypeScript, and the `divRoundBig` dispatch. The generated kernels are compared with an independent bigint oracle (`test/kernel.test.ts`).
-- **The number fast path** of `divRound`. It computes the exact truncated quotient and remainder itself, then calls `roundTruncatedQuotient`: the same Lean terms as the proved switch, printed over `number`. That is exact while every value is a safe integer, which is the caller's obligation. It is compared with the generated kernels for every `p ∈ [−300, 300]`, `d ∈ [1, 40]` in every mode, and with fast-check over the full safe-integer range, on ties, and on bigints up to 10^30.
+- **The printer** that turns the Lean kernels into TypeScript, and the `divideAndRoundBigint` dispatch in `src/rounding.ts`. The generated kernels are compared with an independent bigint oracle (`test/kernel.test.ts`).
+- **The number fast path** of `divideAndRound`. It computes the exact truncated quotient and remainder itself, then calls `roundTruncatedQuotient`: the same Lean terms as the proved switch, printed over `number`. That is exact while every value is a safe integer, which is the caller's obligation. It is compared with the generated kernels for every `p ∈ [−300, 300]`, `d ∈ [1, 40]` in every mode, and with fast-check over the full safe-integer range, on ties, and on bigints up to 10^30.
 - **The TypeScript `allocate`**, number and bigint paths. It is compared with the 1,500-case oracle fixture, plus property tests against a separate bigint largest-remainder allocator (`test/oracle.test.ts`).
-- **The TypeScript tax, conversion and `mulRatio` code:**
+- **The TypeScript tax, conversion and `multiplyByRatio` code:**
   - that each rounds with exactly one kernel call on the exact product;
   - the scale shifts;
   - that every call site passes a divisor `d > 0`, with the sign moved to the numerator.
@@ -488,7 +495,7 @@ These are stated over the proved kernel (`divRound`):
   - Stripe and Adyen doc examples, the statutory cash-rounding thresholds for SE, NO, DK, HU and CA
   - Intl output for de, fr, ja, ar and en-IN
 - fast-check property tests cover:
-  - `divRound` against an independent floor-based bigint oracle over the full safe range, including float-quotient edge cases
+  - `divideAndRound` against an independent floor-based bigint oracle over the full safe range, including float-quotient edge cases
   - rounding-mode invariants (floor ≤ x ≤ ceil, half modes within ½)
   - add associativity, commutativity and identity, and agreement with bigint arithmetic
   - the number-iff-safe representation invariant
@@ -573,6 +580,6 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
   - Memory and GC pressure, which were reasoned about but not measured.
   - dinero.js's bigint calculator.
 - **No Money arrays or columnar ops** (e.g. summing a `Float64Array`/`BigInt64Array` of minor units).
-- **The ISO table is always bundled** (about 1.3 kB gz). Per-currency imports like dinero's would make the minimum bundle smaller.
+- **The ISO table is always bundled** (about 0.55 kB gzipped, 1 kB minified). Per-currency imports like dinero's would make the minimum bundle smaller.
 - **Minor-unit columns can't round-trip values with a non-ISO scale.** `toMinorColumns` refuses them by design. There is no `scale` column helper.
 - **No docs site yet.**

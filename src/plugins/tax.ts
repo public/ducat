@@ -1,4 +1,7 @@
-/** `@ducatjs/money/tax`: percentages, discounts and tax breakdowns. Importing this module adds the methods below. */
+/**
+ * `@ducatjs/money/tax`: percentages, discounts and tax breakdowns. Importing this module adds the
+ * methods below.
+ */
 import type { Factor } from '../decimal.js';
 import { extendMoney, type Money } from '../money.js';
 import type { RoundingMode } from '../rounding.js';

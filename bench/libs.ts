@@ -96,7 +96,14 @@ const impls: Record<string, Impl<any>> = {
     parse: (s) => new Big(s),
     add: (a, b) => a.plus(b),
     mulRatio: (a) => a.times('1.075').round(2, Big.roundHalfEven),
-    allocate3: (a) => decimalAllocate(a, [1, 1, 1], (d: Big) => d.round(2, Big.roundDown), new Big('0.01'), new Big(0)),
+    allocate3: (a) =>
+      decimalAllocate(
+        a,
+        [1, 1, 1],
+        (d: Big) => d.round(2, Big.roundDown),
+        new Big('0.01'),
+        new Big(0),
+      ),
     toDecimal: (a) => a.toFixed(2),
     format: (a) => nf.format(a.toFixed(2)),
     compare: (a, b) => a.cmp(b),
@@ -148,7 +155,16 @@ const impls: Record<string, Impl<any>> = {
 };
 
 const only = (globalThis as any).BENCH_ONLY as string[] | undefined;
-const ops = ['fromMinor', 'parse', 'add', 'mulRatio', 'allocate3', 'toDecimal', 'format', 'compare'] as const;
+const ops = [
+  'fromMinor',
+  'parse',
+  'add',
+  'mulRatio',
+  'allocate3',
+  'toDecimal',
+  'format',
+  'compare',
+] as const;
 const table: Record<string, Record<string, number>> = {};
 for (const [name, impl] of Object.entries(impls)) {
   if (only && !only.includes(name)) continue;
@@ -200,7 +216,11 @@ for (const [name, impl] of Object.entries(impls)) {
     },
   };
   for (const op of ops)
-    (table[op] ??= {})[name] = bench(`${name} ${op}`, run[op], op === 'add' || op === 'compare' ? N - 1 : N).nsPerOp;
+    (table[op] ??= {})[name] = bench(
+      `${name} ${op}`,
+      run[op],
+      op === 'add' || op === 'compare' ? N - 1 : N,
+    ).nsPerOp;
 }
 
 const names = Object.keys(impls).filter((n) => !only || only.includes(n));

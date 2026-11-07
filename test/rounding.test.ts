@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import { money, round, Rounding, RoundingError, toDecimal, type RoundingMode } from '../src/index.js';
-import { divRound, divRoundBig } from '../src/rounding.js';
+import {
+  money,
+  round,
+  Rounding,
+  RoundingError,
+  toDecimal,
+  type RoundingMode,
+} from '../src/index.js';
+import { divideAndRound, divideAndRoundBigint } from '../src/rounding.js';
 import { MODES, refDivRound } from './oracle.js';
 
 // The table from java.math.RoundingMode's documentation (UP=expand, DOWN=trunc, HALF_UP=halfExpand ...).
@@ -175,15 +182,18 @@ describe('rounding modes (java.math.RoundingMode table)', () => {
   });
 });
 
-describe('divRound agrees with an independent bigint oracle', () => {
+describe('divideAndRound agrees with an independent bigint oracle', () => {
   const safe = fc.integer({ min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER });
   const small = fc.integer({ min: -1_000_000, max: 1_000_000 });
-  const div = fc.oneof(fc.integer({ min: 1, max: 1000 }), fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }));
+  const div = fc.oneof(
+    fc.integer({ min: 1, max: 1000 }),
+    fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }),
+  );
   const mode = fc.constantFrom(...MODES);
   it('number path, full safe range (float quotient fix-up)', () => {
     fc.assert(
       fc.property(fc.oneof(safe, small), div, mode, (p, d, m) => {
-        expect(divRound(p, d, m)).toBe(Number(refDivRound(BigInt(p), BigInt(d), m)));
+        expect(divideAndRound(p, d, m)).toBe(Number(refDivRound(BigInt(p), BigInt(d), m)));
       }),
       { numRuns: runs(20000) },
     );
@@ -195,7 +205,7 @@ describe('divRound agrees with an independent bigint oracle', () => {
         fc.bigInt({ min: 1n, max: 10n ** 20n }),
         mode,
         (p, d, m) => {
-          expect(divRoundBig(p, d, m)).toBe(refDivRound(p, d, m));
+          expect(divideAndRoundBigint(p, d, m)).toBe(refDivRound(p, d, m));
         },
       ),
       { numRuns: runs(5000) },
@@ -206,13 +216,14 @@ describe('divRound agrees with an independent bigint oracle', () => {
     for (const d of [3, 7, 1000, 8191, 1_000_003]) {
       const k = Math.floor(Number.MAX_SAFE_INTEGER / d) - 1;
       for (const p of [k * d - 1, k * d + 1, -(k * d - 1), -(k * d + 1)]) {
-        for (const m of MODES) expect(divRound(p, d, m)).toBe(Number(refDivRound(BigInt(p), BigInt(d), m)));
+        for (const m of MODES)
+          expect(divideAndRound(p, d, m)).toBe(Number(refDivRound(BigInt(p), BigInt(d), m)));
       }
     }
   });
   it('never returns -0', () => {
-    expect(Object.is(divRound(-1, 3, 'trunc'), -0)).toBe(false);
-    expect(Object.is(divRound(-1, 3, 'halfEven'), -0)).toBe(false);
+    expect(Object.is(divideAndRound(-1, 3, 'trunc'), -0)).toBe(false);
+    expect(Object.is(divideAndRound(-1, 3, 'halfEven'), -0)).toBe(false);
   });
   it('mode invariants: floor <= x <= ceil, trunc towards zero, half modes within 1/2', () => {
     fc.assert(
@@ -220,14 +231,20 @@ describe('divRound agrees with an independent bigint oracle', () => {
         fc.bigInt({ min: -(10n ** 25n), max: 10n ** 25n }),
         fc.bigInt({ min: 1n, max: 10n ** 6n }),
         (p, d) => {
-          const f = divRoundBig(p, d, 'floor'),
-            c = divRoundBig(p, d, 'ceil');
+          const f = divideAndRoundBigint(p, d, 'floor'),
+            c = divideAndRoundBigint(p, d, 'ceil');
           expect(f * d <= p && p <= c * d).toBe(true);
           expect(c - f <= 1n).toBe(true);
-          const t = divRoundBig(p, d, 'trunc');
+          const t = divideAndRoundBigint(p, d, 'trunc');
           expect((t < 0n ? -t : t) * d <= (p < 0n ? -p : p)).toBe(true);
-          for (const m of ['halfEven', 'halfExpand', 'halfTrunc', 'halfCeil', 'halfFloor'] as const) {
-            const q = divRoundBig(p, d, m);
+          for (const m of [
+            'halfEven',
+            'halfExpand',
+            'halfTrunc',
+            'halfCeil',
+            'halfFloor',
+          ] as const) {
+            const q = divideAndRoundBigint(p, d, m);
             const err = q * d - p;
             expect(2n * (err < 0n ? -err : err) <= d).toBe(true);
           }

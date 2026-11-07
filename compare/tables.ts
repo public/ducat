@@ -19,9 +19,13 @@ const SIZES_PATH = join(RESULTS_DIRECTORY, 'sizes.tsv');
 const FIXED_SIZES_PATH = join(RESULTS_DIRECTORY, 'sizes-fixed.tsv');
 const isCheck = process.argv.includes('--check');
 
-const battery = JSON.parse(readFileSync(join(RESULTS_DIRECTORY, 'battery.json'), 'utf8')) as BatteryResults;
+const battery = JSON.parse(
+  readFileSync(join(RESULTS_DIRECTORY, 'battery.json'), 'utf8'),
+) as BatteryResults;
 
-const fixedBattery = JSON.parse(readFileSync(join(RESULTS_DIRECTORY, 'fixed-battery.json'), 'utf8')) as BatteryResults;
+const fixedBattery = JSON.parse(
+  readFileSync(join(RESULTS_DIRECTORY, 'fixed-battery.json'), 'utf8'),
+) as BatteryResults;
 
 const batterySummary = renderSummary(battery);
 const fixedBatterySummary = renderSummary(fixedBattery);

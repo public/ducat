@@ -88,7 +88,11 @@ function ianaToUtc(localAsUtcMs: number, timeZone: string): number {
 }
 
 /** Creation Date as a UTC instant when its zone is known; otherwise its local day. */
-function creationAsOf(created: string, label: string | undefined, timeZone: string | undefined): string | undefined {
+function creationAsOf(
+  created: string,
+  label: string | undefined,
+  timeZone: string | undefined,
+): string | undefined {
   const local = LOCAL_TIME.exec(created.trim());
   if (local === null) {
     return /^\d{4}-\d\d-\d\d/.test(created) ? created.slice(0, 10) : undefined;
@@ -141,7 +145,8 @@ export function adyenRate(row: AdyenSettlementRow, options?: AdyenRateOptions): 
 
   const created = row['Creation Date'];
   let info: RateInfo = { source: 'adyen' };
-  const asOf = created === undefined ? undefined : creationAsOf(created, row['TimeZone'], options?.timeZone);
+  const asOf =
+    created === undefined ? undefined : creationAsOf(created, row['TimeZone'], options?.timeZone);
   if (asOf !== undefined) {
     info = { source: 'adyen', asOf };
   }

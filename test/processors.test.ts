@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { fromMinor, money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
-import { fromStripe, stripeExponent, toStripe, toStripeAmount, STRIPE_RULES } from '../src/stripe.js';
+import {
+  fromStripe,
+  stripeExponent,
+  toStripe,
+  toStripeAmount,
+  STRIPE_RULES,
+} from '../src/stripe.js';
 import { adyenExponent, fromAdyen, toAdyen, ADYEN_EXPONENTS } from '../src/adyen.js';
 import { toCheckoutAmount } from '../src/checkout.js';
 import { toPayPalValue } from '../src/paypal.js';
@@ -31,7 +37,9 @@ describe('Stripe', () => {
   });
   it('HUF/TWD: payouts must be whole units', () => {
     expect(toStripeAmount(money('10.45', 'HUF'))).toBe(1045);
-    expect(() => toStripeAmount(money('10.45', 'HUF'), { payout: true })).toThrow(/multiple of 100/);
+    expect(() => toStripeAmount(money('10.45', 'HUF'), { payout: true })).toThrow(
+      /multiple of 100/,
+    );
     expect(toStripeAmount(money('10.45', 'HUF'), { payout: true, rounding: 'floor' })).toBe(1000);
     expect(toStripeAmount(money('800.45', 'TWD'), { payout: true, rounding: 'floor' })).toBe(80000);
   });
@@ -67,7 +75,9 @@ describe('Adyen', () => {
   });
   it('agrees with ISO except for the documented exceptions', () => {
     const diff = Object.entries(ADYEN_EXPONENTS)
-      .filter(([c, e]) => c in ISO_EXPONENTS && ISO_EXPONENTS[c as keyof typeof ISO_EXPONENTS] !== e)
+      .filter(
+        ([c, e]) => c in ISO_EXPONENTS && ISO_EXPONENTS[c as keyof typeof ISO_EXPONENTS] !== e,
+      )
       .map(([c]) => c);
     expect(diff.sort()).toEqual(['CLP', 'CVE', 'IDR', 'ISK']);
     expect(adyenExponent('KWD')).toBe(3);
@@ -80,7 +90,8 @@ const orDash = <T>(f: () => T): T | '-' => {
   try {
     return f();
   } catch (error) {
-    const isUnsupported = error instanceof RangeError && /not a .* currency|not in .* table/.test(error.message);
+    const isUnsupported =
+      error instanceof RangeError && /not a .* currency|not in .* table/.test(error.message);
     if (isUnsupported) {
       return '-';
     }

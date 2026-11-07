@@ -1,4 +1,7 @@
-/** `@ducatjs/money/stripe`: Stripe's minor-unit view. Importing this module adds `toStripe` and `toStripeAmount`. */
+/**
+ * `@ducatjs/money/stripe`: Stripe's minor-unit view. Importing this module adds `toStripe` and
+ * `toStripeAmount`.
+ */
 import { extendMoney, type Money } from '../money.js';
 import { toStripe, toStripeAmount, type StripeAmountOptions } from '../stripe.js';
 

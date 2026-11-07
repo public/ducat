@@ -93,7 +93,9 @@ const minorArb = fc.oneof(
   { weight: 1, arbitrary: fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n }) },
 );
 
-const amountArb = fc.tuple(minorArb, currencyArb).map(([minorUnits, [currency]]) => fromMinor(minorUnits, currency));
+const amountArb = fc
+  .tuple(minorArb, currencyArb)
+  .map(([minorUnits, [currency]]) => fromMinor(minorUnits, currency));
 
 /** a decimal factor such as '1.075', '-0.5' or '12' */
 const factorArb = fc
@@ -145,7 +147,10 @@ describe('oracle: arithmetic against decimal.js', () => {
     const listArb = fc.array(minorArb, { minLength: 1, maxLength: 20 });
     const property = fc.property(listArb, (minorUnitsList) => {
       const amounts = minorUnitsList.map((minorUnits) => fromMinor(minorUnits, 'EUR'));
-      const expected = amounts.reduce((total, amount) => total.add(valueOf(amount)), new Decimal(0));
+      const expected = amounts.reduce(
+        (total, amount) => total.add(valueOf(amount)),
+        new Decimal(0),
+      );
       expect(valueOf(sum(amounts)).eq(expected)).toBe(true);
     });
     fc.assert(property, { numRuns: runs(1000) });
@@ -294,7 +299,10 @@ function largestRemainderAllocation(amount: bigint, weights: bigint[]): bigint[]
 }
 
 describe('oracle: allocation against a from-scratch largest-remainder allocator', () => {
-  const weightArb = fc.oneof(fc.integer({ min: 0, max: 1000 }), fc.integer({ min: 0, max: 2 ** 40 }));
+  const weightArb = fc.oneof(
+    fc.integer({ min: 0, max: 1000 }),
+    fc.integer({ min: 0, max: 2 ** 40 }),
+  );
   const weightsArb = fc
     .array(weightArb, { minLength: 1, maxLength: 12 })
     .filter((weights) => weights.some((weight) => weight > 0));
@@ -309,7 +317,10 @@ describe('oracle: allocation against a from-scratch largest-remainder allocator'
   });
 
   it('decimal-string weights (scaled to a common denominator)', () => {
-    const decimalWeightArb = fc.tuple(fc.bigInt({ min: 0n, max: 10n ** 6n }), fc.integer({ min: 0, max: 4 }));
+    const decimalWeightArb = fc.tuple(
+      fc.bigInt({ min: 0n, max: 10n ** 6n }),
+      fc.integer({ min: 0, max: 4 }),
+    );
     const decimalWeightsArb = fc.array(decimalWeightArb, { minLength: 1, maxLength: 8 });
 
     const property = fc.property(minorArb, decimalWeightsArb, (minorUnits, weights) => {

@@ -13,10 +13,14 @@ describe('format', () => {
     expect(format(money('1234', 'JPY'), 'ja-JP')).toBe('￥1,234');
     expect(norm(format(money('1.234', 'KWD'), 'en-US'))).toBe('KWD 1.234');
     expect(format(money('-5', 'USD'), 'en-US', { currencySign: 'accounting' })).toBe('($5.00)');
-    expect(format(money('1234.5', 'EUR'), 'en-GB', { currencyDisplay: 'code' })).toMatch(/^EUR\s1,234\.50$/);
+    expect(format(money('1234.5', 'EUR'), 'en-GB', { currencyDisplay: 'code' })).toMatch(
+      /^EUR\s1,234\.50$/,
+    );
   });
   it('formats beyond 2^53 exactly (Intl.NumberFormat v3 string input)', () => {
-    expect(format(money('123456789012345678.91', 'USD'), 'en-US')).toBe('$123,456,789,012,345,678.91');
+    expect(format(money('123456789012345678.91', 'USD'), 'en-US')).toBe(
+      '$123,456,789,012,345,678.91',
+    );
   });
   it('shows sub-minor scale when present', () => {
     expect(format(money('0.1234', 'USD', { scale: 4 }), 'en-US')).toBe('$0.1234');
@@ -46,7 +50,10 @@ describe('parse', () => {
     ] as const) {
       for (const minor of [5, 123456, -98765432, 100000000]) {
         const m = fromMinor(minor, currency);
-        expect(equals(parse(format(m, locale), currency, locale), m), `${locale} ${currency} ${minor}`).toBe(true);
+        expect(
+          equals(parse(format(m, locale), currency, locale), m),
+          `${locale} ${currency} ${minor}`,
+        ).toBe(true);
       }
     }
   });
@@ -75,13 +82,18 @@ describe('parse', () => {
     ];
     fc.assert(
       fc.property(
-        fc.oneof(fc.integer({ min: -1e13, max: 1e13 }), fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n })),
+        fc.oneof(
+          fc.integer({ min: -1e13, max: 1e13 }),
+          fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n }),
+        ),
         fc.constantFrom('EUR', 'JPY', 'KWD', 'USD', 'CHF'),
         fc.constantFrom(...locales),
         (amt, cur, loc) => {
           const m = fromMinor(amt, cur);
           expect(equals(parse(format(m, loc), cur, loc), m)).toBe(true);
-          expect(equals(parse(format(m, loc, { currencySign: 'accounting' }), cur, loc), m)).toBe(true);
+          expect(equals(parse(format(m, loc, { currencySign: 'accounting' }), cur, loc), m)).toBe(
+            true,
+          );
         },
       ),
       { numRuns: runs(2000) },
@@ -92,9 +104,13 @@ describe('parse', () => {
 describe('Intl hand-off', () => {
   it('property: minor / 10^scale is bit-identical to Number(decimal string) below 10^15', () => {
     fc.assert(
-      fc.property(fc.integer({ min: -(1e15 - 1), max: 1e15 - 1 }), fc.integer({ min: 0, max: 15 }), (v, s) => {
-        expect(v / 10 ** s).toBe(Number(toDecimal(fromMinor(v, 'EUR', s))));
-      }),
+      fc.property(
+        fc.integer({ min: -(1e15 - 1), max: 1e15 - 1 }),
+        fc.integer({ min: 0, max: 15 }),
+        (v, s) => {
+          expect(v / 10 ** s).toBe(Number(toDecimal(fromMinor(v, 'EUR', s))));
+        },
+      ),
       { numRuns: runs(50000) },
     );
   });

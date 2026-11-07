@@ -157,7 +157,10 @@ export function runBenchmark<Operation extends string>(options: BenchmarkOptions
 
   const ns = Object.fromEntries(
     names.map((name) => {
-      const cells = operations.map((operation) => [operation, summarize(perRound[name]![operation]!)]);
+      const cells = operations.map((operation) => [
+        operation,
+        summarize(perRound[name]![operation]!),
+      ]);
       return [name, Object.fromEntries(cells)];
     }),
   );

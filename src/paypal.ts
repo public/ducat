@@ -2,7 +2,8 @@
  * PayPal's amount view for the REST APIs (Orders v2, Payments v2):
  * https://developer.paypal.com/api/rest/reference/currency-codes/, encoded in data/paypal.json.
  * `value` is a decimal string in major units, with at most 15 digits before the point:
- * - HUF, JPY and TWD don't support decimals: "1000", never "1000.00" (ISO 4217 gives HUF and TWD 2);
+ * - HUF, JPY and TWD don't support decimals: "1000", never "1000.00" (ISO 4217 gives HUF and TWD
+ *   2);
  * - every other listed currency has 2 decimals: "10.99".
  * BRL, CNY and MYR are for in-country accounts only; that isn't checked here.
  */
@@ -36,8 +37,12 @@ export function isPayPalCurrency(currency: string): boolean {
   return PAYPAL_EXPONENTS[currency.toUpperCase()] !== undefined;
 }
 
+/** Options for the PayPal amount: how to round when PayPal needs a coarser amount. */
 export interface PayPalAmountOptions {
-  /** How to round when PayPal needs fewer decimals than the value has (default 'unnecessary': throw). */
+  /**
+   * How to round when PayPal needs fewer decimals than the value has (default 'unnecessary':
+   * throw).
+   */
   readonly rounding?: RoundingMode;
 }
 
@@ -50,22 +55,36 @@ export function toPayPalValue(money: Money, options?: PayPalAmountOptions): stri
 
   // "The amount must be a positive number"; zero stays allowed because the same money object is
   // used for breakdown fields such as a zero tax_total. Refunds are positive amounts.
-  const value = toProcessorDecimal('PayPal', money, paypalExponent(money.currency), rounding, 'nonNegative');
+  const value = toProcessorDecimal(
+    'PayPal',
+    money,
+    paypalExponent(money.currency),
+    rounding,
+    'nonNegative',
+  );
 
   const integerDigits = value.replace('-', '').split('.')[0]!;
   if (integerDigits.length > MAX_INTEGER_DIGITS) {
-    throw new RangeError(`${money} is too large for PayPal (at most 15 digits before the decimal point)`);
+    throw new RangeError(
+      `${money} is too large for PayPal (at most 15 digits before the decimal point)`,
+    );
   }
   return value;
 }
 
 /** A PayPal `money` object: `{ currency_code, value }`. */
-export function toPayPal(money: Money, options?: PayPalAmountOptions): { currency_code: string; value: string } {
+export function toPayPal(
+  money: Money,
+  options?: PayPalAmountOptions,
+): { currency_code: string; value: string } {
   return { currency_code: money.currency.toUpperCase(), value: toPayPalValue(money, options) };
 }
 
 /** Reads a PayPal `money` object exactly: fromPayPal({ currency_code: 'USD', value: '230.00' }). */
-export function fromPayPal<C extends CurrencyInput>(amount: { currency_code: C; value: string }): Money<Uppercase<C>> {
+export function fromPayPal<C extends CurrencyInput>(amount: {
+  currency_code: C;
+  value: string;
+}): Money<Uppercase<C>> {
   const code = amount.currency_code.toUpperCase() as Uppercase<C>;
 
   // Validates the currency before parsing, so an unlisted currency is the error reported.

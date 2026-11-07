@@ -7,7 +7,9 @@ import { allocate, fromMinor, money, type Remainder } from '../src/fn.js';
 
 type OracleCase = { amount: string; weights: string[] } & Record<Remainder, string[]>;
 
-const fixture = JSON.parse(readFileSync(new URL('./fixtures/allocate.oracle.json', import.meta.url), 'utf8'));
+const fixture = JSON.parse(
+  readFileSync(new URL('./fixtures/allocate.oracle.json', import.meta.url), 'utf8'),
+);
 const cases: OracleCase[] = fixture.cases;
 const STRATEGIES: Remainder[] = ['largest', 'first', 'last', 'toFirst', 'toLast'];
 

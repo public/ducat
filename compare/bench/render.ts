@@ -23,7 +23,13 @@ interface BenchRun {
 const HIDDEN_LIBRARIES = new Set(['prototype']);
 
 /** decimal arithmetic libraries without a currency concept; not counted as money libraries */
-const DECIMAL_LIBRARIES = new Set(['big.js', 'bignumber.js', 'decimal.js', 'decimal.js-light', 'Prisma.Decimal']);
+const DECIMAL_LIBRARIES = new Set([
+  'big.js',
+  'bignumber.js',
+  'decimal.js',
+  'decimal.js-light',
+  'Prisma.Decimal',
+]);
 
 const RUNTIME_ORDER = ['node', 'bun', 'deno'];
 
