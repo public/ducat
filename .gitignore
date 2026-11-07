@@ -17,3 +17,4 @@ test/vectors/dectest/
 
 # Lean build output
 proofs/.lake/
+test/.doctest/

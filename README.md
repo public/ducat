@@ -15,14 +15,14 @@ import '@ducatjs/money/convert';
 import '@ducatjs/money/format'; // or import '@ducatjs/money/all' for everything
 
 const price = money('19.99', 'EUR'); // Money<'EUR'>
-const total = price.add(money('5.01', 'EUR')); // 25.00 EUR
-total.multiply('1.075'); // 26.88 EUR (26.875 rounds half away from zero by default)
-total.multiply('1.075', 'halfEven'); // 26.88 EUR (any of 10 modes, or 'unnecessary' to throw)
-money('100', 'EUR').allocate([1, 1, 1]); // 33.34, 33.33, 33.33 (sums to 100.00, always)
-money('12', 'GBP').extractTax(20); // { net: 10.00, tax: 2.00, gross: 12.00 }
-total.convert('JPY', '162.457'); // 4061 JPY
-total.format('de-DE'); // "25,00 €"
-price.add(money('1', 'USD')); // compile error, and a runtime error if types are erased
+const total = price.add(money('5.01', 'EUR')); // → 25.00 EUR
+total.multiply('1.075'); // → 26.88 EUR (26.875 rounds half away from zero by default)
+total.multiply('1.075', 'halfEven'); // → 26.88 EUR (any of 9 modes, or 'unnecessary' to throw)
+money('100', 'EUR').allocate([1, 1, 1]); // → [33.34 EUR, 33.33 EUR, 33.33 EUR] (sums to 100.00, always)
+money('12', 'GBP').extractTax(20); // → { net: 10.00 GBP, tax: 2.00 GBP, gross: 12.00 GBP }
+total.convert('JPY', '162.457'); // → 4061 JPY
+total.format('de-DE'); // → '25,00 €'
+price.add(money('1', 'USD')); // compile error, and throws if types are erased
 ```
 
 Operations are methods on `Money`. For pipelines or code that prefers plain functions, `@ducatjs/money/fn` has each of them as a function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`). The core (`@ducatjs/money`) holds construction, arithmetic, rounding, comparison and serialisation; everything else is an opt-in module, so a bundle only pays for what it imports (see [Modules](#modules)).
@@ -146,18 +146,22 @@ Importing a module (`import '@ducatjs/money/allocate'`, or any named import from
 Your own module can add methods the same way:
 
 ```ts
-import { extendMoney, type Money } from '@ducatjs/money';
+import { extendMoney, money, type Money } from '@ducatjs/money';
 
 declare module '@ducatjs/money' {
   interface Money<C extends string> {
     half(): Money<C>;
   }
 }
-extendMoney({
-  half(this: Money) {
-    return this.divide(2);
+extendMoney(
+  {
+    half(this: Money) {
+      return this.divide(2);
+    },
   },
-});
+  { owner: 'my-app/half' },
+);
+money('10', 'EUR').half(); // → 5.00 EUR
 ```
 
 `extendMoney` refuses names Money already has (its own methods, or ones another module added) and the names every object inherits, so two modules can't silently fight over a name. Pass `{ owner: 'your-package/module' }` so that a second copy of the same module (hot reload, two installed copies) replaces its own methods instead of throwing.
@@ -247,6 +251,7 @@ The sections below list each operation with its plain-function signature, as `@d
 `@ducatjs/money/convert` converts at exact rates and rounds once, at the end. A rate is a `Rate`, an exact rational with the pair in its type, so converting the wrong currency is a compile error. Inverses and chains of rates are exact too: nothing is rounded until an amount is converted.
 
 ```ts
+import { money } from '@ducatjs/money';
 import { exchangeRate } from '@ducatjs/money/convert';
 
 const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
@@ -254,8 +259,9 @@ const eurUsd = exchangeRate('EUR', 'USD', '1.1165', {
   asOf: '2026-11-06',
   type: 'reference',
 });
-eurUsd.convert(money('100', 'EUR'), 'halfEven'); // 111.65 USD
-eurUsd.inverse().toString(); // '2000/2233': exact, not 0.8956...
+const usdJpy = exchangeRate('USD', 'JPY', '158.33');
+eurUsd.convert(money('100', 'EUR'), 'halfEven'); // → 111.65 USD
+eurUsd.inverse().toString(); // → '2000/2233': exact, not 0.8956...
 eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedFrom`
 eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
 ```
@@ -264,13 +270,16 @@ Write rates as decimal strings, with every digit the source published. A JS numb
 
 **Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published.
 
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const xml90Days = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
+
 ```ts
+import { money } from '@ducatjs/money';
 import { snapshotsFrom, via } from '@ducatjs/money/convert';
 import { parseEcbXml } from '@ducatjs/money/convert/ecb';
 
 const history = snapshotsFrom(parseEcbXml(xml90Days));
 const fx = via('EUR', await history.at('2026-11-08')); // a Sunday: Friday's table
-money('100', 'USD').convert('JPY', fx, 'halfEven'); // 15833 JPY, through EUR, rounded once
+money('100', 'USD').convert('JPY', fx, 'halfEven'); // → 15833 JPY, through EUR, rounded once
 ```
 
 **Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`: the daily, 90-day and full-history XML and CSV files) and one opt-in fetcher (`@ducatjs/money/convert/fetch`, which uses the platform `fetch` and has a 30-second default timeout). Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
@@ -278,8 +287,13 @@ money('100', 'USD').convert('JPY', fx, 'halfEven'); // 15833 JPY, through EUR, r
 **Exact intermediates and residuals.** `@ducatjs/money/exact` adds `ExactMoney`, a rational amount for chained calculations that should round once at the end. In `@ducatjs/money/convert`, `convertDetailed()` also returns what rounding cost, so a ledger can book it:
 
 ```ts
+import { money } from '@ducatjs/money';
+import { convertDetailed, exchangeRate } from '@ducatjs/money/convert';
+
+const eurUsd = exchangeRate('EUR', 'USD', '1.1165');
 const { value, residual } = convertDetailed(money('0.07', 'EUR'), eurUsd, 'halfEven');
-// value 0.08 USD; residual -369/200000 USD; value + residual is the exact conversion
+value; // → 0.08 USD
+residual; // → -369/200000 USD (value + residual is the exact conversion)
 ```
 
 **Totals in several currencies.** `bag(...amounts)` keeps per-currency totals, and `bag.total('EUR', fx, 'halfEven')` converts every entry exactly, sums and rounds once. To order amounts in different currencies, `comparator(fx, { base: 'USD' })` compares them through one base currency. With one rate per currency the order is consistent. Pairwise rates are not: with bid/ask or slightly inconsistent mid rates, A < B < C < A can happen, and `Array#sort` then gives engine-dependent results. `sortByValue(list, fx, { base })` looks every rate up before it reorders anything.
@@ -291,13 +305,13 @@ const { value, residual } = convertDetailed(money('0.07', 'EUR'), eurUsd, 'halfE
 ```ts
 import { fixed, fromScaled } from '@ducatjs/money/fixed';
 
-const unitPrice = fixed('0.0425'); // scale 4
-const total = unitPrice.multiply(1200); // 51.0000, exact
-const perDay = fixed('100.00').divide(3, 'halfEven'); // 33.33: rounded once, to this value's scale
-fixed('1.5').add('0.25'); // 1.75: mixed scales align to the larger one
-fixed('2.5').round('halfEven'); // 2: round() defaults to scale 0
-fromScaled(12345, 3).toString(); // '12.345'
-JSON.stringify({ unitPrice }); // '{"unitPrice":"0.0425"}'
+const unitPrice = fixed('0.0425'); // → 0.0425 (scale 4)
+const total = unitPrice.multiply(1200); // → 51.0000, exact
+const perDay = fixed('100.00').divide(3, 'halfEven'); // → 33.33: rounded once, to this value's scale
+fixed('1.5').add('0.25'); // → 1.75: mixed scales align to the larger one
+fixed('2.5').round('halfEven'); // → 2: round() defaults to scale 0
+fromScaled(12345, 3).toString(); // → '12.345'
+JSON.stringify({ unitPrice }); // → '{"unitPrice":"0.0425"}'
 ```
 
 Input is strict in the same way as `money()`. A string keeps its own scale. A number is read at its shortest decimal form, and only when that has at most 15 significant digits, which a double always holds faithfully. So `fixed(0.1 + 0.2)` throws instead of becoming 0.30000000000000004: pass the decimal as a string, or give `{ scale, rounding }`. With a `scale`, input that has more decimals throws unless `rounding` is also given.
@@ -309,6 +323,7 @@ To convert, `money.toFixedPoint()` gives the exact amount at the money's scale, 
 ### Payment processors: the amount you send
 
 ```ts
+import { money } from '@ducatjs/money';
 import { toStripe, toStripeAmount, fromStripe } from '@ducatjs/money/stripe';
 import { toAdyen, fromAdyen } from '@ducatjs/money/adyen';
 import { toCheckout, fromCheckout } from '@ducatjs/money/checkout';
@@ -316,18 +331,18 @@ import { toPayPal, fromPayPal } from '@ducatjs/money/paypal';
 import { toBraintree, fromBraintree } from '@ducatjs/money/braintree';
 import { toKlarna, fromKlarna } from '@ducatjs/money/klarna';
 
-toStripe(money('10.99', 'USD')); // { amount: 1099, currency: 'usd' }
-toStripeAmount(money('5', 'ISK')); // 500     (Stripe: two-decimal value ending in 00)
+toStripe(money('10.99', 'USD')); // → { amount: 1099, currency: 'usd' }
+toStripeAmount(money('5', 'ISK')); // → 500     (Stripe: two-decimal value ending in 00)
 toStripeAmount(money('10.45', 'HUF'), { payout: true }); // throws: payouts must be whole HUF
-toStripeAmount(money('5.124', 'KWD'), { rounding: 'halfEven' }); // 5120 (last digit must be 0)
-toAdyen(money('15000', 'IDR')); // { value: 15000, currency: 'IDR' }  (Adyen: IDR has 0 decimals)
-toAdyen(money('5000', 'CLP')); // { value: 500000, ... }            (Adyen: CLP has 2 decimals)
-toCheckout(money('5000', 'CLP')); // { amount: 500000, currency: 'CLP' } (Checkout.com: 2 decimals, must end in 00)
+toStripeAmount(money('5.124', 'KWD'), { rounding: 'halfEven' }); // → 5120 (last digit must be 0)
+toAdyen(money('15000', 'IDR')); // → { value: 15000, currency: 'IDR' }  (Adyen: IDR has 0 decimals)
+toAdyen(money('5000', 'CLP')); // → { value: 500000, currency: 'CLP' } (Adyen: CLP has 2 decimals)
+toCheckout(money('5000', 'CLP')); // → { amount: 500000, currency: 'CLP' } (Checkout.com: 2 decimals, must end in 00)
 toCheckout(money('1.001', 'BHD')); // throws: Checkout.com needs the last digit 0
-toPayPal(money('10.99', 'USD')); // { currency_code: 'USD', value: '10.99' }  (PayPal: exact decimal string)
-toPayPal(money('1000', 'HUF')); // { currency_code: 'HUF', value: '1000' }  (PayPal: HUF takes no decimals)
-toBraintree(money('5000', 'LAK')); // '5000'  (Braintree: LAK is zero-decimal; the merchant account sets the currency)
-toKlarna(money('1000', 'HUF')); // 100000  (Klarna: ISO minor units, so HUF in fillér)
+toPayPal(money('10.99', 'USD')); // → { currency_code: 'USD', value: '10.99' }  (PayPal: exact decimal string)
+toPayPal(money('1000', 'HUF')); // → { currency_code: 'HUF', value: '1000' }  (PayPal: HUF takes no decimals)
+toBraintree(money('5000', 'LAK')); // → '5000'  (Braintree: LAK is zero-decimal; the merchant account sets the currency)
+toKlarna(money('1000', 'HUF')); // → 100000  (Klarna: ISO minor units, so HUF in fillér)
 ```
 
 The same 1000 units of each currency on the wire (from `test/processors.test.ts`):
@@ -360,6 +375,8 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 - `fromDecimal` rejects values with more decimals than the currency allows (e.g. `12.3456` in NUMERIC(19,4) for EUR) unless you pass `{ scale }` or `{ rounding }`. Trailing zeros are fine.
 
 Prisma client extension (from `examples/prisma`, which runs end to end against SQLite):
+
+<!-- doctest: skip (needs a database; examples/prisma runs it) -->
 
 ```ts
 const db = new PrismaClient().$extends({
