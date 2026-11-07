@@ -5,6 +5,7 @@ import { adyenExponent, fromAdyen, toAdyen, ADYEN_EXPONENTS } from '../src/adyen
 import { toCheckoutAmount } from '../src/checkout.js';
 import { toPayPalValue } from '../src/paypal.js';
 import { toBraintree } from '../src/braintree.js';
+import { toKlarna } from '../src/klarna.js';
 
 describe('Stripe', () => {
   it('standard and zero-decimal currencies', () => {
@@ -78,33 +79,37 @@ describe('Adyen', () => {
 const orDash = <T>(f: () => T): T | '-' => {
   try {
     return f();
-  } catch (e) {
-    if (e instanceof RangeError && /not a .* currency|not in .* table/.test(e.message)) return '-';
-    throw e;
+  } catch (error) {
+    const isUnsupported = error instanceof RangeError && /not a .* currency|not in .* table/.test(error.message);
+    if (isUnsupported) {
+      return '-';
+    }
+    throw error;
   }
 };
 
 describe('same amount, different wire values', () => {
   it('1000 units on every processor', () => {
-    const rows = (['USD', 'JPY', 'ISK', 'IDR', 'CLP', 'KWD', 'HUF'] as const).map((c) => {
-      const m = fromMinor(10 ** (ISO_EXPONENTS[c] + 3), c);
+    const rows = (['USD', 'JPY', 'ISK', 'IDR', 'CLP', 'KWD', 'HUF'] as const).map((code) => {
+      const thousandUnits = fromMinor(10 ** (ISO_EXPONENTS[code] + 3), code);
       return [
-        c,
-        toStripeAmount(m),
-        toAdyen(m).value,
-        toCheckoutAmount(m),
-        orDash(() => toPayPalValue(m)),
-        orDash(() => toBraintree(m)),
+        code,
+        toStripeAmount(thousandUnits),
+        toAdyen(thousandUnits).value,
+        toCheckoutAmount(thousandUnits),
+        orDash(() => toPayPalValue(thousandUnits)),
+        orDash(() => toBraintree(thousandUnits)),
+        orDash(() => toKlarna(thousandUnits)),
       ];
     });
     expect(rows).toEqual([
-      ['USD', 100000, 100000, 100000, '1000.00', '1000.00'],
-      ['JPY', 1000, 1000, 1000, '1000', '1000'],
-      ['ISK', 100000, 100000, 1000, '-', '1000'],
-      ['IDR', 100000, 1000, 100000, '-', '1000.00'],
-      ['CLP', 1000, 100000, 100000, '-', '1000'],
-      ['KWD', 1000000, 1000000, 1000000, '-', '-'],
-      ['HUF', 100000, 100000, 100000, '1000', '1000.00'],
+      ['USD', 100000, 100000, 100000, '1000.00', '1000.00', 100000],
+      ['JPY', 1000, 1000, 1000, '1000', '1000', '-'],
+      ['ISK', 100000, 100000, 1000, '-', '1000', '-'],
+      ['IDR', 100000, 1000, 100000, '-', '1000.00', '-'],
+      ['CLP', 1000, 100000, 100000, '-', '1000', '-'],
+      ['KWD', 1000000, 1000000, 1000000, '-', '-', '-'],
+      ['HUF', 100000, 100000, 100000, '1000', '1000.00', 100000],
     ]);
   });
 });

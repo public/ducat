@@ -37,6 +37,10 @@
       "types": "./dist/braintree.d.ts",
       "default": "./dist/braintree.js"
     },
+    "./klarna": {
+      "types": "./dist/klarna.d.ts",
+      "default": "./dist/klarna.js"
+    },
     "./prisma": {
       "types": "./dist/prisma.d.ts",
       "default": "./dist/prisma.js"
