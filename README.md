@@ -302,7 +302,7 @@ Processor differences encoded:
 
 ## Tests
 
-`pnpm test` runs vitest: 171 tests in 9 files.
+`pnpm test` runs vitest: 192 tests in 11 files.
 
 - Unit tests use real-world vectors:
   - the `java.math.RoundingMode` table for all modes
