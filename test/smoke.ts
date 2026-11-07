@@ -1,6 +1,6 @@
 // Engine smoke test: no test framework, bundled by scripts/smoke-runtimes.mjs and run on every engine
 // (Node 18+, Deno, Bun, SpiderMonkey and JavaScriptCore shells) to catch engine-specific behaviour.
-import * as M from '../src/index.ts';
+import * as M from '../src/plugins/all.ts';
 import { toStripeAmount } from '../src/stripe.ts';
 import { toAdyen } from '../src/adyen.ts';
 import { toCheckoutAmount } from '../src/checkout.ts';
