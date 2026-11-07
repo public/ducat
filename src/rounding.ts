@@ -27,6 +27,10 @@ export type RoundingMode =
   // throw RoundingError if the result is inexact (the default for parsing and processor amounts)
   | 'unnecessary';
 
+/**
+ * Familiar names for the rounding modes (HalfUp, HalfEven, Bankers, ...), mapped to the mode
+ * strings.
+ */
 export const Rounding = {
   HalfEven: 'halfEven',
   Bankers: 'halfEven',
@@ -70,7 +74,7 @@ export function divideAndRound(dividend: number, divisor: number, mode: Rounding
   }
 
   let quotient = Math.trunc(dividend / divisor);
-  // exact: |quotient * divisor| <= |dividend| + divisor <= MAX
+  // exact: |quotient * divisor| <= |dividend| + divisor <= MAX_SAFE_MINOR
   let remainder = dividend - quotient * divisor;
 
   // The float quotient can be off by one ulp; fix it so the remainder has the dividend's sign and
@@ -104,7 +108,7 @@ export function divideAndRound(dividend: number, divisor: number, mode: Rounding
 /**
  * dividend / divisor rounded with `mode`, for divisor > 0n. The bigint kernel is generated from the
  * Lean proofs in proofs/Ducat/Rounding.lean (`src/generated/kernel.ts`), and so is the mode switch
- * `divRound` uses.
+ * `divideAndRound` uses.
  */
 export function divideAndRoundBigint(
   dividend: bigint,

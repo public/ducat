@@ -2,48 +2,55 @@
 
 ## Setup
 
-ducat uses [pnpm](https://pnpm.io) (the version is pinned in `package.json`'s `packageManager` field; `corepack enable`
-gives you the right one) and Node 24 or later.
+ducat uses [pnpm](https://pnpm.io) (the version is pinned in `package.json`'s `packageManager`
+field; `corepack enable` gives you the right one) and Node 24 or later.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm check        # lint, format check, type checks, size budgets, tests
 ```
 
-Other scripts: `pnpm test`, `pnpm typecheck`, `pnpm size` (`node scripts/size.mjs --report` prints sizes without failing),
-`pnpm gen` and `pnpm gen:check` (the generated currency tables), `pnpm bench` and `pnpm bench:vitest`,
-`pnpm test:runtimes` (Bun, Deno and the engine shells).
+Other scripts: `pnpm test`, `pnpm typecheck`, `pnpm size` (`node scripts/size.mjs --report` prints
+sizes without failing), `pnpm gen` (the currency tables), `pnpm gen:check` (checks the currency
+tables, and that `src/generated/kernel.ts` matches its Lean sources), `pnpm bench` and `pnpm
+bench:vitest`, `pnpm test:runtimes` (Bun, Deno and the engine shells).
 
 ## What a change needs
 
 - `pnpm check` passes.
 - **No behaviour change without a test**, and no correctness trade-off for speed or size.
-- **No speed regression.** Run the benchmarks before and after for anything on a hot path (construction, parsing,
-  arithmetic, rounding, formatting). CodSpeed runs on every pull request.
-- **No size regression beyond the budget.** `scripts/size-budgets.json` holds a gzip budget for every package export and a
-  few representative snippets. A new export needs a budget; raising one needs a reason in the pull request.
-- Currency data comes from the snapshots in `data/` through `scripts/gen-currencies.mjs`; never edit `src/generated/` by
-  hand.
+- **No speed regression.** Run the benchmarks before and after for anything on a hot path
+  (construction, parsing, arithmetic, rounding, formatting). CodSpeed runs on every pull request.
+- **No size regression beyond the budget.** `scripts/size-budgets.json` holds a gzip budget for
+  every package export and a few representative snippets. A new export needs a budget; raising one
+  needs a reason in the pull request.
+- Never edit `src/generated/` by hand. The currency tables come from the snapshots in `data/`
+  through `pnpm gen`; `src/generated/kernel.ts` is printed from the Lean proofs in `proofs/` by
+  `pnpm gen:kernel`, which needs the Lean toolchain.
 
 ## Code style
 
-The code is meant to be read by people. The minifier renames everything, so readable code costs nothing in bundle size.
+The code is meant to be read by people. The minifier renames everything, so readable code costs
+nothing in bundle size.
 
-- **Descriptive names.** Single letters only for loop indices (`i`, `j`, `k`) and type parameters (`C`, `T`). Prefer
-  `money` and `other`, `sum`, `quotient`, `remainder` to `a`, `b`, `x`, `r`. Name helpers for what they do:
-  `normalizeMinor`, `multiplyByRatio`, `divideAndRound`.
-- **One statement per line.** No `const x = a, y = b;`, braces on every `if`, and no nested ternaries.
-- **Blank lines between logical steps**, for example validation, then the fast path, then the slow path.
-- **Comments say why**, for example why a fast path is exact or why a check is needed. Every exported function, class,
-  type and constant has a JSDoc comment.
-- **Line width 100** (`printWidth` in `.oxfmtrc.json`). `pnpm fmt` formats, and `pnpm lint` enforces `curly`,
-  `no-nested-ternary` and identifier length in `src/` and `scripts/`.
-- **Speed and size are not traded for style.** Keep the hot-path structure: no extra allocations, no `Math.abs` where two
-  comparisons will do, no imported constants inside tight loops (V8 reads an imported binding through an extra
-  indirection). Check with the benchmarks.
+- **Descriptive names.** Single letters only for loop indices (`i`, `j`, `k`) and type parameters
+  (`C`, `T`). Prefer `money` and `other`, `sum`, `quotient`, `remainder` to `a`, `b`, `x`, `r`. Name
+  helpers for what they do: `normalizeMinor`, `multiplyByRatio`, `divideAndRound`.
+- **One statement per line.** No `const x = a, y = b;`, braces on every `if`, and no nested
+  ternaries.
+- **Blank lines between logical steps**, for example validation, then the fast path, then the slow
+  path.
+- **Comments say why**, for example why a fast path is exact or why a check is needed. Every
+  exported function, class, type and constant has a JSDoc comment.
+- **Line width 100** (`printWidth` in `.oxfmtrc.json`). `pnpm fmt` formats, and `pnpm lint` enforces
+  `curly`, `no-nested-ternary` and identifier length in `src/` and `scripts/`.
+- **Speed and size are not traded for style.** Keep the hot-path structure: no extra allocations, no
+  `Math.abs` where two comparisons will do, no imported constants inside tight loops (V8 reads an
+  imported binding through an extra indirection). Check with the benchmarks.
 - **Generated code follows the same rules**, and goes through the formatter.
 
 ## Pull requests
 
-Keep them small and focused, with a description that says what changes and why, and the before and after numbers for
-anything that touches speed or size. Product decisions are recorded as plain prose in the README's Decisions section.
+Keep them small and focused, with a description that says what changes and why, and the before and
+after numbers for anything that touches speed or size. Product decisions are recorded as plain prose
+in the README's Decisions section.

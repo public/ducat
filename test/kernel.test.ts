@@ -26,7 +26,7 @@ function kernelOutcome(dividend: bigint, divisor: bigint, mode: RoundingMode): O
   }
 }
 
-/** `divRound` on JS numbers, which takes the number fast path whenever the inputs allow it. */
+/** `divideAndRound` on JS numbers, which takes the number fast path whenever the inputs allow it. */
 function numberPathOutcome(dividend: number, divisor: number, mode: RoundingMode): Outcome {
   try {
     return BigInt(divideAndRound(dividend, divisor, mode));

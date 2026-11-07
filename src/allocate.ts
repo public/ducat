@@ -24,6 +24,7 @@ const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
  */
 export type Remainder = 'largest' | 'first' | 'last' | 'toFirst' | 'toLast';
 
+/** Options for `allocate` and `split`: where the indivisible remainder goes. */
 export interface AllocateOptions {
   readonly remainder?: Remainder;
 }
@@ -240,6 +241,10 @@ export function split<C extends string>(
   return allocate(money, weights, { remainder: options?.remainder ?? 'first' });
 }
 
+/**
+ * Options for `instalments`: where the remainder goes, and an optional unit every regular
+ * instalment is a multiple of.
+ */
 export interface InstalmentOptions<C extends string> {
   /** Where the remainder goes: default 'toFirst' (first instalment absorbs it). */
   readonly remainder?: Exclude<Remainder, 'largest'>;
@@ -291,6 +296,7 @@ export function instalments<C extends string>(
   return parts.map((part) => make(total.currency, neg ? -part : part, scale));
 }
 
+/** One tranche of a `schedule`: a fixed amount, a (capped) percentage, or the rest. */
 export type Tranche<C extends string> =
   | { readonly amount: Money<C> }
   | { readonly percent: Weight; readonly cap?: Money<C> }

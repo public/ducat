@@ -51,11 +51,11 @@ export function extractTax<C extends string>(
   percent: Factor,
   rounding: RoundingMode = DEFAULT_ROUNDING,
 ): TaxBreakdown<C> {
-  const percentRatio = ratio(percent);
+  const percentAsRatio = ratio(percent);
   // 1 / (1 + p/100) = 100 den / (100 den + num)
   const net = multiplyByRatio(
     gross,
-    ratio(100n * percentRatio.den, 100n * percentRatio.den + percentRatio.num),
+    ratio(100n * percentAsRatio.den, 100n * percentAsRatio.den + percentAsRatio.num),
     rounding,
   );
   return { net, tax: subtract(gross, net), gross };

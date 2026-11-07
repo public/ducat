@@ -1,17 +1,22 @@
 #!/usr/bin/env node
-// The files printed from the Lean proofs in proofs/: src/generated/kernel.ts             the proved
-// rounding kernels (proofs/Gen.lean, formatted with oxfmt) test/fixtures/allocate.oracle.json  the
-// proved allocation model evaluated on generated cases (proofs/Oracle.lean)
+// The files printed from the Lean proofs in proofs/:
+//   src/generated/kernel.ts             the proved rounding kernels (proofs/Gen.lean,
+//                                       formatted with oxfmt)
+//   test/fixtures/allocate.oracle.json  the proved allocation model evaluated on generated
+//                                       cases (proofs/Oracle.lean)
 //
-// node scripts/gen-kernel.mjs           build the proofs and regenerate both files       (pnpm
-// gen:kernel) node scripts/gen-kernel.mjs --check   build the proofs and fail if either file
-// differs (pnpm gen:kernel:check) node scripts/gen-kernel.mjs --verify  without Lean: fail if a
-// proof uses `sorry` (or `axiom`, `native_decide`, ...), or if either file was edited
-//                                         by hand or not regenerated after a change to proofs/   (part of gen:check)
+//   node scripts/gen-kernel.mjs           build the proofs and regenerate both files
+//                                         (pnpm gen:kernel)
+//   node scripts/gen-kernel.mjs --check   build the proofs and fail if either file differs
+//                                         (pnpm gen:kernel:check)
+//   node scripts/gen-kernel.mjs --verify  without Lean: fail if a proof uses `sorry` (or
+//                                         `axiom`, `native_decide`, ...), or if either file
+//                                         was edited by hand or not regenerated after a
+//                                         change to proofs/ (part of gen:check)
 //
 // --verify works from a stamp in each file: the SHA-256 of the Lean sources it was generated from,
-// and of its own content. Regenerating needs the Lean toolchain (elan) and the Mathlib cache (`cd
-// proofs && lake exe cache get`).
+// and of its own content. Regenerating needs the Lean toolchain (elan) and the Mathlib cache
+// (`cd proofs && lake exe cache get`).
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';

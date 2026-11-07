@@ -664,8 +664,9 @@ export function equals(money: Money, other: Money): boolean {
     return false;
   }
   if (money.scale === other.scale) {
+    // == compares number and bigint exactly
     return money.minor == other.minor;
-  } // == compares number and bigint exactly
+  }
   return compare(money, other) === 0;
 }
 
@@ -693,12 +694,12 @@ export const isPositive = (money: Money): boolean => money.minor > 0;
 /** Whether the amount is less than zero. */
 export const isNegative = (money: Money): boolean => money.minor < 0;
 /** 1, 0 or -1 for positive, zero and negative amounts. */
-export function sign(money: Money): -1 | 0 | 1 {
+export const sign = (money: Money): -1 | 0 | 1 => {
   if (money.minor > 0) {
     return 1;
   }
   return money.minor < 0 ? -1 : 0;
-}
+};
 
 /** The smallest of the amounts (same currency); the first one wins ties. */
 export function min<C extends string>(first: Money<C>, ...rest: Money<NoInfer<C>>[]): Money<C> {

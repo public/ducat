@@ -29,7 +29,7 @@ import {
   type RoundingMode,
 } from './rounding.js';
 
-const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 
 // A double carries 15 significant decimal digits faithfully (DBL_DIG): a number with no more than
 // that is the decimal its author wrote. 0.1 + 0.2 reads back as 0.30000000000000004 (17 digits), so
@@ -155,7 +155,7 @@ export class Fixed {
       typeof value === 'number'
     ) {
       const product = value * factor;
-      if (product <= MAX_SAFE && product >= -MAX_SAFE) {
+      if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
         return make(product + 0, this.scale);
       }
     }
@@ -363,7 +363,7 @@ function multiplyByRatio(
     rate.d === rate.d
   ) {
     const product = value * rate.n;
-    if (product <= MAX_SAFE && product >= -MAX_SAFE) {
+    if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
       return make(divideAndRound(product, rate.d, rounding), scale);
     }
   }
@@ -391,7 +391,7 @@ function addAligned(first: Fixed, second: Fixed, sign: 1 | -1): Fixed {
     first.scale === second.scale
   ) {
     const sum = sign === 1 ? firstValue + secondValue : firstValue - secondValue;
-    if (sum <= MAX_SAFE && sum >= -MAX_SAFE) {
+    if (sum <= MAX_SAFE_MINOR && sum >= -MAX_SAFE_MINOR) {
       return make(sum + 0, first.scale);
     }
   }

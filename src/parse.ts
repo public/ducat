@@ -79,8 +79,8 @@ export function parse<C extends CurrencyInput>(
 ): Money<C> {
   const { group, decimal } = symbols(locale, currency);
   const chars = Array.from(input);
-  let first = -1,
-    last = -1;
+  let first = -1;
+  let last = -1;
   for (let i = 0; i < chars.length; i++) {
     if (asciiDigit(chars[i]!.codePointAt(0)!) >= 0) {
       if (first < 0) {

@@ -22,6 +22,7 @@ export interface Ratio {
 export type Factor = number | bigint | string | Ratio;
 
 const POW10N: bigint[] = [];
+/** 10^exponent as a bigint, cached. */
 export function pow10n(exponent: number): bigint {
   return (POW10N[exponent] ??= 10n ** BigInt(exponent));
 }
@@ -30,6 +31,9 @@ export const POW10 = [
   1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
 ] as const;
 
+/**
+ * A bigint as a number when it is a safe integer, else unchanged: the representation Money keeps.
+ */
 export const normalizeMinor = (value: bigint): number | bigint =>
   value <= MAXN && value >= -MAXN ? Number(value) : value;
 
@@ -62,10 +66,10 @@ export function parsePlainDecimal(
         scale++;
       }
       if (!big) {
+        // 15 digits always fit exactly in a double; beyond that use BigInt
         if (digitsSeen > 15) {
           big = true;
-        } // 15 digits always fit exactly; beyond that use BigInt
-        else {
+        } else {
           acc = acc * 10 + (code - 48);
         }
       }

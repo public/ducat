@@ -4,10 +4,10 @@ import { toDecimal, type Money } from './money.js';
 const cache = new Map<string, Intl.NumberFormat>();
 // one-entry memo in front of the Map: formatting in a loop is almost always the same
 // locale/currency
-let lastLocale: string | undefined,
-  lastCurrency = '',
-  lastScale = -1,
-  lastF: Intl.NumberFormat | undefined;
+let lastLocale: string | undefined;
+let lastCurrency = '';
+let lastScale = -1;
+let lastFormatter: Intl.NumberFormat | undefined;
 
 let stringInput: boolean | undefined;
 /** ES2023 Intl.NumberFormat v3 formats decimal strings exactly; older engines convert to Number. */
@@ -32,12 +32,12 @@ function formatter(
 ): Intl.NumberFormat {
   if (
     options === undefined &&
-    lastF !== undefined &&
+    lastFormatter !== undefined &&
     locale === lastLocale &&
     money.currency === lastCurrency &&
     money.scale === lastScale
   ) {
-    return lastF;
+    return lastFormatter;
   }
   const key = options === undefined ? `${locale}|${money.currency}|${money.scale}` : null;
   let numberFormat = key === null ? undefined : cache.get(key);
@@ -62,7 +62,7 @@ function formatter(
     lastLocale = locale;
     lastCurrency = money.currency;
     lastScale = money.scale;
-    lastF = numberFormat;
+    lastFormatter = numberFormat;
   }
   return numberFormat;
 }

@@ -30,9 +30,10 @@ export function parseIsoXml(xml) {
   for (const match of xml.matchAll(/<CcyNtry>([\s\S]*?)<\/CcyNtry>/g)) {
     const body = match[1];
     const code = /<Ccy>([A-Z]{3})<\/Ccy>/.exec(body)?.[1];
+    // e.g. ANTARCTICA: no universal currency
     if (!code) {
       continue;
-    } // e.g. ANTARCTICA: no universal currency
+    }
     const units = /<CcyMnrUnts>([^<]+)<\/CcyMnrUnts>/.exec(body)?.[1];
     const numeric = /<CcyNbr>(\d+)<\/CcyNbr>/.exec(body)?.[1];
     const name = /<CcyNm[^>]*>([^<]+)<\/CcyNm>/.exec(body)?.[1];
@@ -161,17 +162,17 @@ function generate() {
     const processorData = JSON.parse(read(`data/${file}.json`));
     const rules = {};
     for (const code of processorData.currencies.toSorted()) {
-      let entry = processorData.exponents?.[code] ?? processorData.defaultExponent;
-      if (entry === 'iso') {
-        entry = iso[code];
+      let exponent = processorData.exponents?.[code] ?? processorData.defaultExponent;
+      if (exponent === 'iso') {
+        exponent = iso[code];
       }
-      if (typeof entry !== 'number') {
+      if (typeof exponent !== 'number') {
         throw new Error(`${file}: no exponent for ${code}`);
       }
       const multiple = processorData.multiples?.[code] ?? 1;
       rules[code] = processorData.multiples
-        ? [entry, multiple, ...extra.map((k) => processorData[k]?.[code] ?? multiple)]
-        : entry;
+        ? [exponent, multiple, ...extra.map((k) => processorData[k]?.[code] ?? multiple)]
+        : exponent;
     }
     const tuple = [
       'exponent: number',
@@ -190,11 +191,11 @@ function generate() {
   const cashData = JSON.parse(read('data/cash-rounding.json'));
   const rules = cashData.rules.map((rule) => {
     const exp = iso[rule.currency];
-    const [i, fraction = ''] = rule.increment.split('.');
+    const [whole, fraction = ''] = rule.increment.split('.');
     if (fraction.length > exp) {
       throw new Error(`cash increment ${rule.increment} finer than ${rule.currency} exponent`);
     }
-    const minor = Number(i + fraction.padEnd(exp, '0'));
+    const minor = Number(whole + fraction.padEnd(exp, '0'));
     return {
       currency: rule.currency,
       increment: minor,
