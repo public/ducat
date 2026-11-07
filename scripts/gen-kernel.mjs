@@ -2,12 +2,13 @@
 // The files printed from the Lean proofs in proofs/:
 //   src/generated/kernel.ts             the proved rounding kernels (proofs/Gen.lean,
 //                                       formatted with oxfmt)
-//   test/fixtures/allocate.oracle.json  the proved allocation model evaluated on generated
-//                                       cases (proofs/Oracle.lean)
+//   test/fixtures/<model>.oracle.json   each proved model (allocate, instalments, chunk,
+//                                       schedule, increment) evaluated on generated cases
+//                                       (proofs/Oracle.lean <model>)
 //
-//   node scripts/gen-kernel.mjs           build the proofs and regenerate both files
+//   node scripts/gen-kernel.mjs           build the proofs and regenerate all of them
 //                                         (pnpm gen:kernel)
-//   node scripts/gen-kernel.mjs --check   build the proofs and fail if either file differs
+//   node scripts/gen-kernel.mjs --check   build the proofs and fail if any differs
 //                                         (pnpm gen:kernel:check)
 //   node scripts/gen-kernel.mjs --verify  without Lean: fail if a proof uses `sorry` (or
 //                                         `axiom`, `native_decide`, ...), or if either file
@@ -29,7 +30,9 @@ const proofsDir = join(root, 'proofs');
 const mode = process.argv[2] ?? '--write';
 
 const KERNEL_FILE = 'src/generated/kernel.ts';
-const ORACLE_FILE = 'test/fixtures/allocate.oracle.json';
+// one fixture per proved model that the TypeScript is checked against (proofs/Oracle.lean <model>)
+const ORACLE_MODELS = ['allocate', 'instalments', 'chunk', 'schedule', 'increment'];
+const oracleFile = (model) => `test/fixtures/${model}.oracle.json`;
 
 const sha256 = (text) => createHash('sha256').update(text).digest('hex');
 
@@ -187,13 +190,24 @@ function regenerate() {
   checkAxioms(run);
 
   const sources = leanSourcesHash();
-  return {
+  const files = {
     [KERNEL_FILE]: stampKernel(
       formatTypeScript(run(['env', 'lean', '--run', 'Gen.lean'])),
       sources,
     ),
-    [ORACLE_FILE]: stampOracle(run(['env', 'lean', '--run', 'Oracle.lean']), sources),
   };
+  // one Oracle run writes every model's cases, so Mathlib is loaded once for all of them
+  const oracleDir = mkdtempSync(join(tmpdir(), 'ducat-oracle-'));
+  try {
+    run(['env', 'lean', '--run', 'Oracle.lean', oracleDir]);
+    for (const model of ORACLE_MODELS) {
+      const cases = readFileSync(join(oracleDir, `${model}.json`), 'utf8');
+      files[oracleFile(model)] = stampOracle(cases, sources);
+    }
+  } finally {
+    rmSync(oracleDir, { recursive: true, force: true });
+  }
+  return files;
 }
 
 const unsound = findUnsound();
@@ -205,7 +219,7 @@ if (unsound.length > 0) {
 if (mode === '--verify') {
   const sources = leanSourcesHash();
   let ok = true;
-  for (const file of [KERNEL_FILE, ORACLE_FILE]) {
+  for (const file of [KERNEL_FILE, ...ORACLE_MODELS.map(oracleFile)]) {
     const stamp = readStamp(file, readFileSync(join(root, file), 'utf8'));
     if (!stamp || stamp.contentHash !== sha256(stamp.content)) {
       console.error(`${file} was edited by hand: run \`pnpm gen:kernel\``);
