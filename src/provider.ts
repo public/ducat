@@ -81,7 +81,8 @@ export function rateOf<From extends string, To extends string>(
 export function identity(): RateProvider {
   return {
     rate(from, to) {
-      if (from !== to) {
+      // Compared as strings: From and To are independent type parameters.
+      if ((from as string) !== to) {
         return undefined;
       }
       return exchangeRate(from, to, 1n);
@@ -185,7 +186,7 @@ export function via(base: string, provider: RateProvider): RateProvider {
 
   return {
     rate(from, to, query) {
-      if (from === to) {
+      if ((from as string) === to) {
         return undefined;
       }
       if (from === base || to === base) {
