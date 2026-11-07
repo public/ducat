@@ -193,7 +193,11 @@ export function subtract<C extends string>(a: Money<C>, b: Money<NoInfer<C>>): M
 }
 
 /** Sum of a list. An empty list needs `currency` (and returns zero). */
-export function sum<C extends string>(items: readonly Money<C>[], currency?: NoInfer<C>): Money<C> {
+type IsUnion<T, U = T> = T extends unknown ? ([U] extends [T] ? false : true) : never;
+/** Rejects arrays whose element type mixes several literal currencies, e.g. (Money<'EUR'> | Money<'USD'>)[]. */
+type SingleCurrency<C extends string> = true extends IsUnion<C> ? { readonly 'mixed currencies are not allowed': C } : unknown;
+
+export function sum<C extends string>(items: readonly Money<C>[] & SingleCurrency<C>, currency?: NoInfer<C>): Money<C> {
   const n = items.length;
   if (n === 0) {
     if (currency === undefined) throw new RangeError('sum() of an empty list needs a currency');
