@@ -13,7 +13,12 @@ are allocated as the mirror image, as in the TypeScript, so they need no theorem
   leftover is less than one unit.
 * `chunk_le`, `chunk_full`, `chunk_last_pos`: no chunk exceeds `max`, every chunk but the last is
   exactly `max`, and the last is positive (unless the total is zero, which gives `[0]`).
-* `sched_pct_near`: an uncapped percentage tranche is less than one unit from its exact share.
+* `sched_shares_near`: the percentage shares `schedule` computes are each less than one unit from their
+  exact share (that they reach the right tranches is checked by the oracle, not proved).
+
+`inst_multiple`, half of `inst_near`, and `sched_sum` hold by the construction of the models, as net + tax =
+gross does for tax: they restate how the TypeScript builds its result, so the oracle comparison is what
+ties them to the code.
 
 `Oracle.lean` evaluates these models on generated cases, and the tests check the TypeScript against
 them.
@@ -283,9 +288,11 @@ theorem sched_sum (t hundred : ℤ) (ts : List Tranche) (xs : List ℤ) (h : sch
     rw [h0]; push_cast; linarith
   · rw [h0]; push_cast; ring
 
-/-- An uncapped percentage share is less than one unit from its exact share `t * w / hundred`
-(Hamilton's method over the percentage weights and the remainder to 100). -/
-theorem sched_pct_near (t hundred : ℤ) (ts : List Tranche) (ht : 0 ≤ t) (hw : ∀ w ∈ weights ts, 0 ≤ w)
+/-- The percentage shares `pctParts` that `schedule` computes, before capping, are each less than one unit
+from their exact share `t * w / hundred` (Hamilton's method over the percentage weights and the remainder
+to 100). That `fill` hands them to the right tranches, and applies the caps, is checked by the oracle
+cases, not proved. -/
+theorem sched_shares_near (t hundred : ℤ) (ts : List Tranche) (ht : 0 ≤ t) (hw : ∀ w ∈ weights ts, 0 ≤ w)
     (hle : (weights ts).sum ≤ hundred) (hh : 0 < hundred) (k : Fin (weights ts ++ [hundred - (weights ts).sum]).length) :
     let ws := weights ts ++ [hundred - (weights ts).sum]
     let part := allocS .largest t (fun i : Fin ws.length => ws[i]) k

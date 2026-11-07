@@ -73,8 +73,17 @@ def runInst (s : InstMode) (t u : Int) (c : Nat) : List Int :=
   let parts := (List.finRange c).map (inst s (t.natAbs : Int) u c)
   if t < 0 then parts.map (- ·) else parts
 
-/-- A number in `[0, 2^bits)` from the state, and the next state. -/
+/-- A number in `[0, bound)` from the state, and the next state. -/
 def draw (st : Nat) (bound : Nat) : Nat × Nat := let n := lcg st; (n / 2 ^ 20 % bound, n)
+
+/-- Magnitudes for case `k`: one in three small, one near 2^53 (either side), one around 10^20, so both the
+number and the bigint paths of the TypeScript are compared. -/
+def magnitude (k small : Nat) (st : Nat) : Nat × Nat :=
+  let (v, st) := draw st small
+  match k % 3 with
+  | 0 => (v, st)
+  | 1 => (2 ^ 53 - 500 + v % 1000, st)
+  | _ => (10 ^ 20 + v, st)
 
 def instalmentCases : IO Unit := do
   IO.println "["
@@ -82,7 +91,7 @@ def instalmentCases : IO Unit := do
   for k in [0:n] do
     let (c, st) := draw (k + 7) 12
     let (u, st) := draw st 1000
-    let (mag, st) := draw st 10000000
+    let (mag, st) := magnitude k 10000000 st
     let (sign, _) := draw st 4
     let t : Int := if sign == 0 then -Int.ofNat mag else Int.ofNat mag
     let modes := [InstMode.first, .last, .toFirst, .toLast]
@@ -95,9 +104,13 @@ def chunkCases : IO Unit := do
   IO.println "["
   let n := 1200
   for k in [0:n] do
-    let (m, st) := draw (k + 11) 5000
-    -- up to 40 chunks per case: every branch of `chunk` without a megabyte of fixture
-    let (t, _) := draw st ((m + 1) * 40 + 1)
+    let (m0, st) := draw (k + 11) 5000
+    -- large maxima (10^15 and up) push the totals past 2^53, so the bigint path is compared too
+    let m := if k % 3 == 2 then 10 ^ 15 + m0 else m0
+    -- total = count * max + part, with count ≤ 40: every branch of `chunk`, without a megabyte of fixture
+    let (count, st) := draw st 41
+    let (part, _) := draw st (m + 1)
+    let t := count * m + part
     let tt : Int := if k % 10 == 0 then 0 else Int.ofNat t
     let sep := if k + 1 == n then "" else ","
     IO.println s!"\{\"total\":\"{tt}\",\"max\":\"{m + 1}\",\"chunks\":{jsonInts (chunk tt (Int.ofNat (m + 1)))}}{sep}"
@@ -115,7 +128,7 @@ def scheduleCases : IO Unit := do
   let n := 1500
   for k in [0:n] do
     let (len, st0) := draw (k + 13) 5
-    let (mag, st0) := draw st0 1000000
+    let (mag, st0) := magnitude k 1000000 st0
     let t : Int := Int.ofNat mag
     let mut st := st0
     let mut ts : List Tranche := []
@@ -145,7 +158,7 @@ def incrementCases : IO Unit := do
   let n := 1500
   for k in [0:n] do
     let (stepIx, st) := draw (k + 17) 8
-    let (mag, st) := draw st 100000000
+    let (mag, st) := magnitude k 100000000 st
     let (sign, _) := draw st 2
     let step : Int := [1, 2, 5, 10, 25, 50, 100, 500][stepIx]!
     let x : Int := if sign == 0 then -Int.ofNat mag else Int.ofNat mag

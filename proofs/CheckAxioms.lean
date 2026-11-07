@@ -28,7 +28,7 @@ unless they are only Lean's standard three: `propext`, `Classical.choice` and `Q
 #print axioms Ducat.Sched.chunk_full
 #print axioms Ducat.Sched.chunk_last_pos
 #print axioms Ducat.Sched.sched_sum
-#print axioms Ducat.Sched.sched_pct_near
+#print axioms Ducat.Sched.sched_shares_near
 #print axioms Ducat.increment_multiple
 #print axioms Ducat.increment_near
 #print axioms Ducat.increment_half

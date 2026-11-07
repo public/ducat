@@ -465,14 +465,14 @@ The model takes an amount `x ≥ 0` and non-negative weights with a positive tot
 For a non-negative total; negative totals are the mirror image, as in `allocate`.
 
 - `inst_sum`: the instalments add up to the total, for every remainder mode.
-- `inst_multiple`: with a `unit`, every instalment except the one that takes the leftover is a whole number of units. `inst_near`: with `'first'`/`'last'`, those instalments are the regular amount or one unit more, and the leftover is less than one unit.
+- `inst_multiple`: with a `unit`, every instalment except the one that takes the leftover is a whole number of units. `inst_near`: with `'first'`/`'last'`, those instalments are the regular amount or one unit more (both hold by how the model builds the instalments), and the leftover is less than one unit.
 - `chunk_sum`, `chunk_le`, `chunk_full`, `chunk_last_pos`: the chunks add up to the total, none exceeds `max`, every chunk but the last is exactly `max`, and the last is positive (a zero total gives a single zero).
-- `sched_sum`: whenever `schedule` succeeds, its tranches add up to the total. It fails exactly where the model says it must: two rest tranches, percentages over 100, tranches exceeding the total, or a leftover with no rest tranche (the oracle cases include each).
-- `sched_pct_near`: an uncapped percentage tranche is less than one unit from its exact share.
+- `sched_sum`: whenever `schedule` succeeds, its tranches add up to the total. This holds by construction, since the rest tranche takes whatever is left, as in the TypeScript. The oracle cases include each way it must fail: two rest tranches, percentages over 100, tranches exceeding the total, and a leftover with no rest tranche.
+- `sched_shares_near`: the percentage shares that `schedule` computes, before capping, are each less than one unit from their exact share. That they reach the right tranches, with caps applied, is checked by the oracle cases, not proved.
 
-### Cash rounding: proved over the kernel (`proofs/Ducat/Cash.lean`)
+### Cash rounding: proved model (`proofs/Ducat/Cash.lean`)
 
-`roundToIncrement` (and so `cashRound`) is one kernel division times the increment.
+The model of `roundToIncrement` (and so of `cashRound`) is one kernel division times the increment. The TypeScript also aligns scales and, for safe integers, takes the number path. The oracle cases compare it with the model on both paths.
 
 - `increment_multiple`: the result is a whole number of increments.
 - `increment_near`, `increment_half`: it is less than one increment from the amount in every mode, and at most half an increment in the half modes.
@@ -499,7 +499,7 @@ These are stated over the proved kernel (`divRound`):
 
   These are covered by unit vectors and by property tests against decimal.js at 200 significant digits (`test/oracle.test.ts`).
 
-- **The TypeScript `instalments`, `chunk`, `schedule` and `roundToIncrement`**, compared with their models' oracle fixtures, including the cases where `schedule` must throw.
+- **The TypeScript `instalments`, `chunk`, `schedule` and `roundToIncrement`**, compared with their models' oracle fixtures, on both the number and bigint paths, including the cases where `schedule` must throw.
 - `split` without a unit is `allocate` with equal weights. Decimal parsing, `Intl` formatting and parsing, and the processor and database adapters are tested, not proved.
 
 ## Tests
