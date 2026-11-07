@@ -24,7 +24,10 @@ const eur = (minor: string): Money<'EUR'> => fromMinor(BigInt(minor), 'EUR');
 const minors = (parts: Money<string>[]): string[] => parts.map((part) => String(part.minor));
 
 type InstalmentMode = 'first' | 'last' | 'toFirst' | 'toLast';
-type InstalmentCase = { total: string; count: number; unit: string } & Record<InstalmentMode, string[]>;
+type InstalmentCase = { total: string; count: number; unit: string } & Record<
+  InstalmentMode,
+  string[]
+>;
 type ChunkCase = { total: string; max: string; chunks: string[] };
 type TrancheCase = { amount: string } | { percent: string; cap?: string } | { rest: true };
 type ScheduleCase = { total: string; tranches: TrancheCase[]; result: string[] | null };
@@ -44,7 +47,9 @@ describe('instalments, chunk, schedule and roundToIncrement match the proved Lea
         const actual = minors(parts).join();
         const expected = oracleCase[mode].join();
         if (actual !== expected) {
-          mismatches.push(`${oracleCase.total} x${oracleCase.count} unit ${oracleCase.unit} ${mode}: ${actual}`);
+          mismatches.push(
+            `${oracleCase.total} x${oracleCase.count} unit ${oracleCase.unit} ${mode}: ${actual}`,
+          );
         }
       }
     }
@@ -91,7 +96,9 @@ describe('instalments, chunk, schedule and roundToIncrement match the proved Lea
       }
       const expected = oracleCase.result === null ? 'throws' : oracleCase.result.join();
       if (actual !== expected) {
-        mismatches.push(`${oracleCase.total} ${JSON.stringify(oracleCase.tranches)}: ${actual}, expected ${expected}`);
+        mismatches.push(
+          `${oracleCase.total} ${JSON.stringify(oracleCase.tranches)}: ${actual}, expected ${expected}`,
+        );
       }
     }
     expect(mismatches.slice(0, 5)).toEqual([]);
@@ -117,7 +124,9 @@ describe('instalments, chunk, schedule and roundToIncrement match the proved Lea
       for (const mode of modes) {
         let actual: string | null;
         try {
-          actual = String(roundToIncrement(eur(oracleCase.amount), eur(oracleCase.step), mode).minor);
+          actual = String(
+            roundToIncrement(eur(oracleCase.amount), eur(oracleCase.step), mode).minor,
+          );
         } catch (error) {
           expect(error).toBeInstanceOf(RoundingError);
           actual = null;

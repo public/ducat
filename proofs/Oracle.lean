@@ -96,7 +96,8 @@ def chunkCases : IO Unit := do
   let n := 1200
   for k in [0:n] do
     let (m, st) := draw (k + 11) 5000
-    let (t, _) := draw st 200000
+    -- up to 40 chunks per case: every branch of `chunk` without a megabyte of fixture
+    let (t, _) := draw st ((m + 1) * 40 + 1)
     let tt : Int := if k % 10 == 0 then 0 else Int.ofNat t
     let sep := if k + 1 == n then "" else ","
     IO.println s!"\{\"total\":\"{tt}\",\"max\":\"{m + 1}\",\"chunks\":{jsonInts (chunk tt (Int.ofNat (m + 1)))}}{sep}"
