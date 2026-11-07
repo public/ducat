@@ -106,7 +106,7 @@ const positiveFactorArb = fc
   .tuple(fc.bigInt({ min: 1n, max: 10n ** 12n }), fc.integer({ min: 0, max: 8 }))
   .map(([units, scale]) => decimalString(units, scale));
 
-/** a tax or discount percentage: 0 to 100 with up to 3 decimals */
+/** a tax or discount percentage: 0 to 100,000 units with up to 3 decimals, so 0 % to 100,000 % */
 const percentArb = fc
   .tuple(fc.bigInt({ min: 0n, max: 100_000n }), fc.integer({ min: 0, max: 3 }))
   .map(([units, scale]) => decimalString(units, scale));

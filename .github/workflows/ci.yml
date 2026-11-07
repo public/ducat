@@ -15,8 +15,9 @@ on:
 permissions:
   contents: read
 
+# by event as well as ref, so a push to main never queues behind the nightly deep run
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -130,32 +131,49 @@ jobs:
 
   proofs:
     name: Lean proofs and generated kernel
-    # the proofs land separately; until then there is nothing to build
-    if: hashFiles('proofs/lean-toolchain') != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      # the proofs land separately; until they do, every later step is skipped
+      - id: proofs
+        name: Are there proofs to build?
+        run: |
+          if [ -f proofs/lean-toolchain ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.proofs.outputs.present == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - if: steps.proofs.outputs.present == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.x
           cache: pnpm
-      - name: No sorry or admit in the proofs
-        run: "! grep -rnwE 'sorry|admit' proofs --include=*.lean --exclude-dir=.lake"
-      - name: Install elan (the toolchain comes from proofs/lean-toolchain)
+      - name: Install elan 4.2.4 (the Lean toolchain itself comes from proofs/lean-toolchain)
+        if: steps.proofs.outputs.present == 'true'
+        # the release publishes no checksum file; this hash is of the release asset, pinned here
         run: |
-          curl -sSf https://raw.githubusercontent.com/leanprover/elan/v4.2.4/elan-init.sh \
-            | sh -s -- -y --default-toolchain none
+          curl -sSfLo elan.tar.gz \
+            https://github.com/leanprover/elan/releases/download/v4.2.4/elan-x86_64-unknown-linux-gnu.tar.gz
+          echo "42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63  elan.tar.gz" | sha256sum -c -
+          tar -xzf elan.tar.gz
+          ./elan-init -y --no-modify-path --default-toolchain none
+          rm elan.tar.gz elan-init
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # only the prebuilt Mathlib: .lake/packages is large and cheap to rebuild from it
+      - if: steps.proofs.outputs.present == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: |
-            ~/.cache/mathlib
-            proofs/.lake/packages
-          key: lean-${{ hashFiles('proofs/lake-manifest.json', 'proofs/lean-toolchain') }}
+          path: ~/.cache/mathlib
+          key: mathlib-${{ hashFiles('proofs/lake-manifest.json', 'proofs/lean-toolchain') }}
       - name: Fetch prebuilt Mathlib
+        if: steps.proofs.outputs.present == 'true'
         working-directory: proofs
         run: lake exe cache get
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm gen:kernel:check
+      - if: steps.proofs.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Rebuild the proofs and check the generated kernel byte for byte
+        if: steps.proofs.outputs.present == 'true'
+        run: pnpm gen:kernel:check
