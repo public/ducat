@@ -69,6 +69,14 @@
       "types": "./dist/plugins/adyen.d.ts",
       "default": "./dist/plugins/adyen.js"
     },
+    "./stripe-fx": {
+      "types": "./dist/stripe-fx.d.ts",
+      "default": "./dist/stripe-fx.js"
+    },
+    "./adyen-fx": {
+      "types": "./dist/adyen-fx.d.ts",
+      "default": "./dist/adyen-fx.js"
+    },
     "./prisma": {
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"
