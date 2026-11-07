@@ -6,3 +6,6 @@ examples/prisma/generated/
 *.db
 *.db-journal
 .claude/
+
+# Lean build output
+proofs/.lake/

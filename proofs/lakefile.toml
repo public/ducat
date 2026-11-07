@@ -1,0 +1,16 @@
+name = "ducat-proofs"
+version = "0.1.0"
+defaultTargets = ["Ducat", "gen"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.35.0"
+
+[[lean_lib]]
+name = "Ducat"
+
+# `lake exe gen` prints the verified kernels as TypeScript (src/generated/kernel.ts)
+[[lean_exe]]
+name = "gen"
+root = "Gen"
