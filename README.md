@@ -82,20 +82,24 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                    | adds to `Money`                                                    | also exports                                            |
-| ------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
-| `@ducatjs/money`          | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents |
-| `@ducatjs/money/allocate` | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                              |
-| `@ducatjs/money/tax`      | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                |
-| `@ducatjs/money/convert`  | `convert`                                                          | `convert`, `exchangeRate`                               |
-| `@ducatjs/money/cash`     | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                      |
-| `@ducatjs/money/format`   | `format`, `formatToParts`                                          | the same                                                |
-| `@ducatjs/money/parse`    | nothing                                                            | `parse`                                                 |
-| `@ducatjs/money/stripe`   | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…               |
-| `@ducatjs/money/adyen`    | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                 |
-| `@ducatjs/money/prisma`   | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers              |
-| `@ducatjs/money/all`      | everything above                                                   | everything                                              |
-| `@ducatjs/money/fn`       | nothing                                                            | every free function, from every module                  |
+| import                     | adds to `Money`                                                    | also exports                                            |
+| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
+| `@ducatjs/money`           | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents |
+| `@ducatjs/money/allocate`  | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                              |
+| `@ducatjs/money/tax`       | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                |
+| `@ducatjs/money/convert`   | `convert`                                                          | `convert`, `exchangeRate`                               |
+| `@ducatjs/money/cash`      | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                      |
+| `@ducatjs/money/format`    | `format`, `formatToParts`                                          | the same                                                |
+| `@ducatjs/money/parse`     | nothing                                                            | `parse`                                                 |
+| `@ducatjs/money/stripe`    | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…               |
+| `@ducatjs/money/adyen`     | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                 |
+| `@ducatjs/money/checkout`  | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…           |
+| `@ducatjs/money/paypal`    | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…               |
+| `@ducatjs/money/braintree` | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…         |
+| `@ducatjs/money/klarna`    | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…               |
+| `@ducatjs/money/prisma`    | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers              |
+| `@ducatjs/money/all`       | everything above                                                   | everything                                              |
+| `@ducatjs/money/fn`        | nothing                                                            | every free function, from every module                  |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that wants no prototype changes, or function-level tree-shaking (a module's methods keep all of its functions in a bundle), can use the free functions from `@ducatjs/money/fn` instead.
 
@@ -203,6 +207,10 @@ The sections below list each function with its free-function signature; the meth
 ```ts
 import { toStripe, toStripeAmount, fromStripe } from '@ducatjs/money/stripe';
 import { toAdyen, fromAdyen } from '@ducatjs/money/adyen';
+import { toCheckout, fromCheckout } from '@ducatjs/money/checkout';
+import { toPayPal, fromPayPal } from '@ducatjs/money/paypal';
+import { toBraintree, fromBraintree } from '@ducatjs/money/braintree';
+import { toKlarna, fromKlarna } from '@ducatjs/money/klarna';
 
 toStripe(money('10.99', 'USD')); // { amount: 1099, currency: 'usd' }
 toStripeAmount(money('5', 'ISK')); // 500     (Stripe: two-decimal value ending in 00)
@@ -210,20 +218,29 @@ toStripeAmount(money('10.45', 'HUF'), { payout: true }); // throws: payouts must
 toStripeAmount(money('5.124', 'KWD'), { rounding: 'halfEven' }); // 5120 (last digit must be 0)
 toAdyen(money('15000', 'IDR')); // { value: 15000, currency: 'IDR' }  (Adyen: IDR has 0 decimals)
 toAdyen(money('5000', 'CLP')); // { value: 500000, ... }            (Adyen: CLP has 2 decimals)
+toCheckout(money('5000', 'CLP')); // { amount: 500000, currency: 'CLP' } (Checkout.com: 2 decimals, must end in 00)
+toCheckout(money('1.001', 'BHD')); // throws: Checkout.com needs the last digit 0
+toPayPal(money('10.99', 'USD')); // { currency_code: 'USD', value: '10.99' }  (PayPal: exact decimal string)
+toPayPal(money('1000', 'HUF')); // { currency_code: 'HUF', value: '1000' }  (PayPal: HUF takes no decimals)
+toBraintree(money('5000', 'LAK')); // '5000'  (Braintree: LAK is zero-decimal; the merchant account sets the currency)
+toKlarna(money('1000', 'HUF')); // 100000  (Klarna: ISO minor units, so HUF in fillér)
 ```
 
 The same 1000 units of each currency on the wire (from `test/processors.test.ts`):
 
-|     | ISO exp | `toStripeAmount` | `toAdyen().value` |
-| --- | ------- | ---------------: | ----------------: |
-| USD | 2       |           100000 |            100000 |
-| JPY | 0       |             1000 |              1000 |
-| ISK | 0       |           100000 |            100000 |
-| IDR | 2       |           100000 |              1000 |
-| CLP | 0       |             1000 |            100000 |
-| KWD | 3       |          1000000 |           1000000 |
+|     | ISO exp | `toStripeAmount` | `toAdyen().value` | `toCheckoutAmount` | `toPayPalValue` | `toBraintree` | `toKlarna` |
+| --- | ------- | ---------------: | ----------------: | -----------------: | --------------: | ------------: | ---------: |
+| USD | 2       |           100000 |            100000 |             100000 |       "1000.00" |     "1000.00" |     100000 |
+| JPY | 0       |             1000 |              1000 |               1000 |          "1000" |        "1000" |          - |
+| ISK | 0       |           100000 |            100000 |               1000 |               - |        "1000" |          - |
+| IDR | 2       |           100000 |              1000 |             100000 |               - |     "1000.00" |          - |
+| CLP | 0       |             1000 |            100000 |             100000 |               - |        "1000" |          - |
+| KWD | 3       |          1000000 |           1000000 |            1000000 |               - |             - |          - |
+| HUF | 2       |           100000 |            100000 |             100000 |          "1000" |     "1000.00" |     100000 |
 
-When the processor needs less precision than the value has, the conversion throws unless you pass a rounding mode. This happens for IDR or CVE on Adyen, MGA on Stripe, Stripe's HUF/TWD payouts and three-decimal currencies. `fromStripe` and `fromAdyen` return the value at its ISO scale when that is exact, and otherwise keep the processor's extra precision instead of rounding it away.
+When the processor needs less precision than the value has, the conversion throws unless you pass a rounding mode. This happens for IDR or CVE on Adyen, MGA on Stripe, Stripe's HUF/TWD payouts, CLP payments on Checkout.com, HUF/TWD on PayPal, LAK on Braintree and three-decimal currencies on Stripe and Checkout.com. PayPal and Braintree amounts are decimal strings, built from the exact value and never through a float. `fromStripe`, `fromAdyen`, `fromCheckout`, `fromPayPal`, `fromBraintree` and `fromKlarna` return the value at its ISO scale when that is exact, and otherwise keep the processor's extra precision instead of rounding it away.
+
+Signs follow each processor's docs and are checked after rounding. Checkout.com (a card verification) and PayPal (breakdown fields) take zero, Braintree doesn't ("Amount must be greater than zero"), and none of the three takes negative amounts: refunds are sent as positive amounts. Klarna takes both, because its order lines document negative amounts for discounts ("Negative when type is discount").
 
 ### Databases
 
@@ -261,12 +278,16 @@ await db.order.create({
 
 ## Currency data: source, generation, verification
 
-| file                        | source                                                                                                                                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `data/iso4217-list-one.xml` | ISO 4217 List One from SIX (the maintenance agency), published **2026-09-17**. It has 178 codes with minor units, plus N.A. codes such as XAU and XDR, which are excluded as non-monetary. |
-| `data/stripe.json`          | https://docs.stripe.com/currencies, retrieved 2026-11-07, with verbatim quotes for every special case                                                                                      |
-| `data/adyen.json`           | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                          |
-| `data/cash-rounding.json`   | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                  |
+| file                        | source                                                                                                                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/iso4217-list-one.xml` | ISO 4217 List One from SIX (the maintenance agency), published **2026-09-17**. It has 178 codes with minor units, plus N.A. codes such as XAU and XDR, which are excluded as non-monetary.                    |
+| `data/stripe.json`          | https://docs.stripe.com/currencies, retrieved 2026-11-07, with verbatim quotes for every special case                                                                                                         |
+| `data/adyen.json`           | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                                             |
+| `data/checkout.json`        | https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value, the currency-codes page and the API reference, retrieved 2026-11-07, with verbatim quotes                                     |
+| `data/paypal.json`          | https://developer.paypal.com/api/rest/reference/currency-codes/, the other currency-codes page and the Orders v2 schema, retrieved 2026-11-07, with verbatim quotes                                           |
+| `data/braintree.json`       | https://developer.paypal.com/braintree/docs/reference/general/currencies, the transaction.sale reference, the validation-error list and the GraphQL `Amount` type, retrieved 2026-11-07, with verbatim quotes |
+| `data/klarna.json`          | https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/, the purchase-countries page and the Payments API reference, retrieved 2026-11-07, with verbatim quotes                |
+| `data/cash-rounding.json`   | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                                     |
 
 - `pnpm gen` (`scripts/gen-currencies.mjs`) turns these into `src/generated/*.ts`.
 - `pnpm gen:check` fails if the generated files are stale. It also runs inside the test suite.
@@ -285,18 +306,26 @@ Recent ISO changes that are already encoded:
 
 Processor differences encoded:
 
-|                     | ISO       | Stripe                                                                       | Adyen         |
-| ------------------- | --------- | ---------------------------------------------------------------------------- | ------------- |
-| ISK                 | 0         | 2, amount must be a multiple of 100                                          | 2             |
-| UGX                 | 0         | 2, amount must be a multiple of 100 (confirmed, see [Decisions](#decisions)) | 0             |
-| CLP                 | 0         | 0                                                                            | **2**         |
-| IDR                 | 2         | 2                                                                            | **0**         |
-| CVE                 | 2         | 2                                                                            | **0**         |
-| MGA                 | 2         | **0**                                                                        | not supported |
-| HUF, TWD            | 2         | 2 for charges; payouts must be a multiple of 100                             | 2             |
-| BHD JOD KWD OMR TND | 3         | 3, last digit must be 0 (UAE accounts only)                                  | 3             |
-| ANG, STD            | withdrawn | still listed (2)                                                             | n/a           |
-| CNH, VEF            | not ISO   | n/a                                                                          | listed (2)    |
+|                     | ISO       | Stripe                                                                       | Adyen         | Checkout.com                                       | PayPal                                 | Braintree                                  | Klarna                               |
+| ------------------- | --------- | ---------------------------------------------------------------------------- | ------------- | -------------------------------------------------- | -------------------------------------- | ------------------------------------------ | ------------------------------------ |
+| ISK                 | 0         | 2, amount must be a multiple of 100                                          | 2             | 0                                                  | n/a                                    | 0                                          | n/a                                  |
+| UGX                 | 0         | 2, amount must be a multiple of 100 (confirmed, see [Decisions](#decisions)) | 0             | 0                                                  | n/a                                    | 0                                          | n/a                                  |
+| CLP                 | 0         | 0                                                                            | **2**         | **2**, payments must be a multiple of 100          | n/a                                    | 0                                          | n/a                                  |
+| IDR                 | 2         | 2                                                                            | **0**         | 2                                                  | n/a                                    | 2                                          | n/a                                  |
+| CVE                 | 2         | 2                                                                            | **0**         | 2                                                  | n/a                                    | 2                                          | n/a                                  |
+| MGA                 | 2         | **0**                                                                        | not supported | 2                                                  | n/a                                    | n/a                                        | n/a                                  |
+| HUF, TWD            | 2         | 2 for charges; payouts must be a multiple of 100                             | 2             | 2                                                  | **0**, no decimals allowed             | 2                                          | HUF 2 (TWD n/a)                      |
+| BHD JOD KWD OMR TND | 3         | 3, last digit must be 0 (UAE accounts only)                                  | 3             | 3, last digit must be 0                            | n/a                                    | n/a                                        | n/a                                  |
+| IQD, LYD            | 3         | not supported                                                                | 3             | 3, last digit must be 0                            | n/a                                    | n/a                                        | n/a                                  |
+| RUB                 | 2         | 2                                                                            | 2             | n/a                                                | 2 (one of its two currency pages only) | 2                                          | n/a                                  |
+| LAK                 | 2         | 2                                                                            | 2             | 2                                                  | n/a                                    | **0**                                      | n/a                                  |
+| HRK LTL ZMK ZWD     | withdrawn | n/a                                                                          | n/a           | n/a                                                | n/a                                    | still listed (2)                           | n/a                                  |
+| amount format       |           | integer                                                                      | integer       | integer                                            | decimal string                         | decimal string, no sign, no currency field | integer; negative for discount lines |
+| ANG, STD            | withdrawn | still listed (2)                                                             | n/a           | n/a                                                | n/a                                    | STD still listed (2)                       | n/a                                  |
+| SLL                 | withdrawn | n/a                                                                          | n/a           | still listed (2)                                   | n/a                                    | still listed (2)                           | n/a                                  |
+| CNH, VEF            | not ISO   | n/a                                                                          | listed (2)    | n/a                                                | n/a                                    | n/a                                        | n/a                                  |
+| XDR                 | N.A.      | n/a                                                                          | n/a           | listed (2)                                         | n/a                                    | n/a                                        | n/a                                  |
+| amount limits       |           |                                                                              |               | docs: > 0, ≤ 9 digits; API schema: 0 to 9999999999 | ≤ 15 digits before the point           | > 0; maximum set by the processor          | order ≥ 0; order line ≤ 200000000    |
 
 ---
 
@@ -371,7 +400,7 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
 - **Withdrawn and non-ISO codes** go in an opt-in `@ducatjs/money/historic` table (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…), with withdrawal dates.
-- **Processors:** Stripe and Adyen now; Checkout.com, PayPal, Braintree and Klarna views to come.
+- **Processors:** Stripe, Adyen, Checkout.com, PayPal, Braintree and Klarna, each an opt-in entry point (`@ducatjs/money/<processor>`).
 - **Test matrix:** real Postgres, MySQL and SQLite for the DB helpers; real browsers (Chromium, Firefox, WebKit via Playwright) alongside Node, Bun, Deno and the engine shells.
 
 ## What's missing (honest list)
@@ -379,8 +408,12 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **Stripe three-decimal rule.** The "last digit must be 0" rule comes from a June 2024 archived copy of Stripe's page. The live page no longer has that section (it is marked unverified in `data/stripe.json`).
 - **Cash-rounding rules.** Some are backed only by secondary sources (`verified: false`): CHF, DKK, AUD, NZD, ILS, MYR, SGD, FI/IE/IT/SK/LT EUR and several others. `includeUnverified: false` turns them off.
   - Per-jurisdiction tie rules are all `halfExpand`. Singapore's "round down in the customer's favour" practice and USD's state-by-state post-penny rules aren't modelled.
-- **Processor coverage.** Stripe and Adyen are the only processors covered. There is no Checkout.com, PayPal, Braintree or Klarna view yet, and no Adyen Terminal API (it uses major units). There is no per-account-country Stripe currency availability; the table is the union of all countries.
-- **Withdrawn and non-ISO codes** (ANG, STD, CNH, VEF) aren't in the core registry. Stripe/Adyen list them, so `defineCurrency` is needed to hold them. There is no historical ISO data (validity dates).
+- **Checkout.com currency list.** The currency-codes page calls itself the "major currencies we support"; `toCheckout` refuses anything not on it. Its amount limits (the docs say greater than zero and at most nine digits, the API schema allows 0 for card verification and up to ten digits) aren't enforced.
+- **PayPal.** Its two currency pages disagree: the REST reference page lists RUB and the other doesn't (`toPayPal` accepts RUB). The docs don't say whether a zero fraction such as `"100.00"` counts as a decimal for HUF, JPY or TWD, so `toPayPal` always sends whole numbers for them. BRL, CNY and MYR work for in-country accounts only, and that isn't checked. The schema allows a minus sign and the text says amounts are positive; the sign isn't checked either.
+- **Braintree.** The currencies page gives only the zero-decimal list, so every other currency is assumed to take its ISO decimals, and the withdrawn codes it still lists (HRK, LTL, SLL, STD, ZMK, ZWD) are assumed to take 2. The GraphQL `Amount` type allows three decimals and the REST reference says `x.xx`; `toBraintree` sends the currency's own decimals, which both accept. Which currencies an account can use depends on its setup, and that isn't checked.
+- **Klarna.** Amounts follow ISO 4217 minor units, as its docs say, but no Klarna page gives a HUF example, so HUF in fillér is unconfirmed. Each purchase country has one currency, and the country/currency pairing isn't checked. Only the Payments API schema was read; captures and refunds are assumed to use the same units. `toKlarna` returns a bare integer because Klarna sends the currency once per order (`purchase_currency`), not per amount. Klarna's `tax_rate` (a percentage with two implicit decimals, 2000 = 20%) has no helper.
+- **Processor coverage.** Stripe, Adyen, Checkout.com, PayPal (REST APIs), Braintree and Klarna are covered. There is no Adyen Terminal API (it uses major units). There is no per-account-country Stripe currency availability; the table is the union of all countries.
+- **Withdrawn and non-ISO codes** (ANG, STD, CNH, VEF, SLL, XDR, HRK, LTL, ZMK, ZWD) aren't in the core registry. Stripe, Adyen, Checkout.com and Braintree list them, so `defineCurrency` is needed to hold them. There is no historical ISO data (validity dates).
 - **Formatting gaps:**
   - No pluggable formatter for engines without Intl.
   - `parse` is lenient about group sizes (it accepts `1,23,4.00` in en-US). It also doesn't check the currency symbol in the text against the `currency` argument.

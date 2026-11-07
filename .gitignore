@@ -11,3 +11,4 @@ reports/
 .stryker-tmp/
 test-results/
 playwright-report/
+test/vectors/dectest/
