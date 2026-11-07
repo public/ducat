@@ -14,3 +14,6 @@ reports/
 test-results/
 playwright-report/
 test/vectors/dectest/
+
+# Lean build output
+proofs/.lake/
