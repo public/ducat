@@ -118,15 +118,15 @@ export type AdyenSettlementRow = Readonly<Record<string, string | undefined>>;
 
 /**
  * The rate in a settlement details report row: "The exchange rate used for converting the gross
- * amount into the net amount", Gross Currency → Net Currency (1 when they are the same). The decimal
- * string is kept exactly. `asOf` comes from Creation Date, which Adyen gives in local time, with
- * the zone in the TimeZone column. Pass `{ timeZone: 'Europe/Amsterdam' }` (the account's IANA zone)
- * to read it correctly all year. Without it, an unambiguous abbreviation (CET, PST, ...) or offset
- * (+01:00) is taken literally: Adyen's documentation doesn't say whether the column switches to CEST
- * in summer, and if it doesn't, a literal CET is an hour off then. Any other label gives the local
- * day, which can be a day off from UTC. `undefined` when the row has no rate. For externally
- * settled payments Adyen lists its reference rate, not the acquirer's, so check those with
- * impliedRate().
+ * amount into the net amount", Gross Currency → Net Currency (1 when they are the same). The
+ * decimal string is kept exactly. `asOf` comes from Creation Date, which Adyen gives in local time,
+ * with the zone in the TimeZone column. Pass `{ timeZone: 'Europe/Amsterdam' }` (the account's IANA
+ * zone) to read it correctly all year. Without it, an unambiguous abbreviation (CET, PST, ...) or
+ * offset (+01:00) is taken literally: Adyen's documentation doesn't say whether the column switches
+ * to CEST in summer, and if it doesn't, a literal CET is an hour off then. Any other label gives
+ * the local day, which can be a day off from UTC. `undefined` when the row has no rate. For
+ * externally settled payments Adyen lists its reference rate, not the acquirer's, so check those
+ * with impliedRate().
  */
 export function adyenRate(row: AdyenSettlementRow, options?: AdyenRateOptions): Rate | undefined {
   const gross = row['Gross Currency'];
