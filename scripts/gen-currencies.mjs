@@ -54,13 +54,20 @@ const obj = (o) =>
     .join('\n') +
   '\n}';
 
+// Further processors: `extra` lists per-context multiple overrides; without `multiples` in the data
+// file the table is just exponents.
 const PROCESSORS = [
-  [
-    'checkout',
-    'CHECKOUT_RULES',
-    ['standaloneMultiples'],
-    'Checkout.com currencies: [API exponent, payment amount multiple, Standalone API (authentication) multiple]. CLP is two-decimal with a multiple of 100; three-decimal currencies need a multiple of 10.',
-  ],
+  {
+    file: 'checkout',
+    name: 'CHECKOUT_RULES',
+    extra: ['standaloneMultiples'],
+    doc: 'Checkout.com currencies: [API exponent, payment amount multiple, Standalone API (authentication) multiple]. CLP is two-decimal with a multiple of 100; three-decimal currencies need a multiple of 10.',
+  },
+  {
+    file: 'paypal',
+    name: 'PAYPAL_EXPONENTS',
+    doc: 'PayPal decimals per currency (`value` is a decimal string). HUF, JPY and TWD take none.',
+  },
 ];
 
 function generate() {
@@ -120,8 +127,8 @@ function generate() {
     `\n/** Adyen minor-unit exponents (Adyen's table is authoritative where it differs from ISO: CLP, CVE, IDR, ISK). */\n` +
     `export const ADYEN_EXPONENTS: Readonly<Record<string, number>> = ${obj(a.exponents)};\n`;
 
-  // Further processors share one data shape: [API exponent, amount multiple, ...context multiples]
-  for (const [file, name, extra, doc] of PROCESSORS) {
+  // [API exponent, amount multiple, ...context multiples] when the data has multiples, else the exponent
+  for (const { file, name, extra = [], doc } of PROCESSORS) {
     const d = JSON.parse(read(`data/${file}.json`));
     const rules = {};
     for (const code of d.currencies.toSorted()) {
@@ -129,17 +136,18 @@ function generate() {
       if (e === 'iso') e = iso[code];
       if (typeof e !== 'number') throw new Error(`${file}: no exponent for ${code}`);
       const m = d.multiples?.[code] ?? 1;
-      rules[code] = [e, m, ...extra.map((k) => d[k]?.[code] ?? m)];
+      rules[code] = d.multiples ? [e, m, ...extra.map((k) => d[k]?.[code] ?? m)] : e;
     }
     const tuple = [
       'exponent: number',
       'multiple: number',
       ...extra.map((k) => `${k.replace(/Multiples$/, '')}Multiple: number`),
     ];
+    const type = d.multiples ? `readonly [${tuple.join(', ')}]` : 'number';
     out[`${file}.ts`] =
       header(`data/${file}.json (${Object.values(d.sources)[0].url}, retrieved ${d.retrieved})`) +
       `\n/** ${doc} */\n` +
-      `export const ${name}: Readonly<Record<string, readonly [${tuple.join(', ')}]>> = ${obj(rules)};\n`;
+      `export const ${name}: Readonly<Record<string, ${type}>> = ${obj(rules)};\n`;
   }
 
   const c = JSON.parse(read('data/cash-rounding.json'));
