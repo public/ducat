@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.svg" width="128" height="128" alt="ducat"></p>
+
 # ducat
 
 An exact, fast, typed Money type for TypeScript. It has zero runtime dependencies and runs on Node, Bun, Deno and browsers.
