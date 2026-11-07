@@ -9,3 +9,4 @@ examples/prisma/generated/
 .wt/
 compare/out/
 compare/node_modules/
+test/vectors/dectest/

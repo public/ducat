@@ -45,6 +45,18 @@
       "types": "./dist/plugins/convert.d.ts",
       "default": "./dist/plugins/convert.js"
     },
+    "./convert/ecb": {
+      "types": "./dist/ecb.d.ts",
+      "default": "./dist/ecb.js"
+    },
+    "./convert/fetch": {
+      "types": "./dist/fetch.d.ts",
+      "default": "./dist/fetch.js"
+    },
+    "./exact": {
+      "types": "./dist/plugins/exact.d.ts",
+      "default": "./dist/plugins/exact.js"
+    },
     "./cash": {
       "types": "./dist/plugins/cash.d.ts",
       "default": "./dist/plugins/cash.js"
@@ -65,6 +77,30 @@
       "types": "./dist/plugins/adyen.d.ts",
       "default": "./dist/plugins/adyen.js"
     },
+    "./checkout": {
+      "types": "./dist/plugins/checkout.d.ts",
+      "default": "./dist/plugins/checkout.js"
+    },
+    "./paypal": {
+      "types": "./dist/plugins/paypal.d.ts",
+      "default": "./dist/plugins/paypal.js"
+    },
+    "./braintree": {
+      "types": "./dist/plugins/braintree.d.ts",
+      "default": "./dist/plugins/braintree.js"
+    },
+    "./klarna": {
+      "types": "./dist/plugins/klarna.d.ts",
+      "default": "./dist/plugins/klarna.js"
+    },
+    "./stripe-fx": {
+      "types": "./dist/stripe-fx.d.ts",
+      "default": "./dist/stripe-fx.js"
+    },
+    "./adyen-fx": {
+      "types": "./dist/adyen-fx.d.ts",
+      "default": "./dist/adyen-fx.js"
+    },
     "./prisma": {
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"
@@ -83,6 +119,8 @@
     "compare": "pnpm --dir compare battery && pnpm --dir compare tables",
     "compare:check": "pnpm --dir compare battery:check && pnpm --dir compare tables:check",
     "tables": "pnpm --dir compare tables",
+    "fetch:dectest": "node scripts/fetch-dectest.mjs",
+    "vectors:check": "python3 scripts/gen-pydecimal-vectors.py --check",
     "test:runtimes": "node scripts/smoke-runtimes.mjs",
     "gen": "node scripts/gen-currencies.mjs",
     "gen:check": "node scripts/gen-currencies.mjs --check",

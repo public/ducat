@@ -36,6 +36,8 @@ jobs:
       - run: pnpm fmt:check
       - run: pnpm typecheck
       - run: pnpm gen:check
+      - name: Python decimal reference vectors are up to date
+        run: pnpm vectors:check
       - run: pnpm run --if-present size
 
   node:
@@ -53,7 +55,10 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm fetch:dectest
       - run: pnpm test
+        env:
+          DUCAT_REQUIRE_DECTEST: '1'
 
   runtimes:
     name: Bun, Deno and engine shells
@@ -92,8 +97,10 @@ jobs:
           node-version: 24.x
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm fetch:dectest
       - run: pnpm test:deep
         env:
+          DUCAT_REQUIRE_DECTEST: '1'
           DUCAT_SEED: ${{ inputs.seed }}
 
   compare:
