@@ -11,6 +11,7 @@ export {
   isRate,
   multiplyByRatioAtScale,
   Rate,
+  RateExpiredError,
   rateFromJSON,
   type ConvertOptions,
   type RateInfo,
@@ -58,7 +59,12 @@ export function convert(
 
   // The bare-rate form converts directly, without building a Rate, to keep it allocation-light.
   const to = rateOrTarget;
-  const rate = ratio(roundingOrRate as Factor);
+  let rate = ratio(roundingOrRate as Factor);
+  if (typeof roundingOrRate === 'object') {
+    // A hand-made Ratio object is passed through by ratio(); rebuild it so it is reduced and its
+    // number fields match its bigints. Strings and numbers are already normalised (and cached).
+    rate = ratio(rate.num, rate.den);
+  }
   if (rate.num <= 0n) {
     throw new RangeError('Exchange rate must be positive');
   }
