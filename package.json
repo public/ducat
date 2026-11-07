@@ -65,6 +65,10 @@
       "types": "./dist/plugins/adyen.d.ts",
       "default": "./dist/plugins/adyen.js"
     },
+    "./checkout": {
+      "types": "./dist/plugins/checkout.d.ts",
+      "default": "./dist/plugins/checkout.js"
+    },
     "./prisma": {
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"

@@ -93,6 +93,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/parse`    | nothing                                                            | `parse`                                                 |
 | `@ducatjs/money/stripe`   | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…               |
 | `@ducatjs/money/adyen`    | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                 |
+| `@ducatjs/money/checkout` | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…           |
 | `@ducatjs/money/prisma`   | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers              |
 | `@ducatjs/money/all`      | everything above                                                   | everything                                              |
 | `@ducatjs/money/fn`       | nothing                                                            | every free function, from every module                  |
@@ -203,6 +204,7 @@ The sections below list each function with its free-function signature; the meth
 ```ts
 import { toStripe, toStripeAmount, fromStripe } from '@ducatjs/money/stripe';
 import { toAdyen, fromAdyen } from '@ducatjs/money/adyen';
+import { toCheckout, fromCheckout } from '@ducatjs/money/checkout';
 
 toStripe(money('10.99', 'USD')); // { amount: 1099, currency: 'usd' }
 toStripeAmount(money('5', 'ISK')); // 500     (Stripe: two-decimal value ending in 00)
@@ -210,20 +212,24 @@ toStripeAmount(money('10.45', 'HUF'), { payout: true }); // throws: payouts must
 toStripeAmount(money('5.124', 'KWD'), { rounding: 'halfEven' }); // 5120 (last digit must be 0)
 toAdyen(money('15000', 'IDR')); // { value: 15000, currency: 'IDR' }  (Adyen: IDR has 0 decimals)
 toAdyen(money('5000', 'CLP')); // { value: 500000, ... }            (Adyen: CLP has 2 decimals)
+toCheckout(money('5000', 'CLP')); // { amount: 500000, currency: 'CLP' } (Checkout.com: 2 decimals, must end in 00)
+toCheckout(money('1.001', 'BHD')); // throws: Checkout.com needs the last digit 0
 ```
 
 The same 1000 units of each currency on the wire (from `test/processors.test.ts`):
 
-|     | ISO exp | `toStripeAmount` | `toAdyen().value` |
-| --- | ------- | ---------------: | ----------------: |
-| USD | 2       |           100000 |            100000 |
-| JPY | 0       |             1000 |              1000 |
-| ISK | 0       |           100000 |            100000 |
-| IDR | 2       |           100000 |              1000 |
-| CLP | 0       |             1000 |            100000 |
-| KWD | 3       |          1000000 |           1000000 |
+|     | ISO exp | `toStripeAmount` | `toAdyen().value` | `toCheckoutAmount` |
+| --- | ------- | ---------------: | ----------------: | -----------------: |
+| USD | 2       |           100000 |            100000 |             100000 |
+| JPY | 0       |             1000 |              1000 |               1000 |
+| ISK | 0       |           100000 |            100000 |               1000 |
+| IDR | 2       |           100000 |              1000 |             100000 |
+| CLP | 0       |             1000 |            100000 |             100000 |
+| KWD | 3       |          1000000 |           1000000 |            1000000 |
 
-When the processor needs less precision than the value has, the conversion throws unless you pass a rounding mode. This happens for IDR or CVE on Adyen, MGA on Stripe, Stripe's HUF/TWD payouts and three-decimal currencies. `fromStripe` and `fromAdyen` return the value at its ISO scale when that is exact, and otherwise keep the processor's extra precision instead of rounding it away.
+When the processor needs less precision than the value has, the conversion throws unless you pass a rounding mode. This happens for IDR or CVE on Adyen, MGA on Stripe, Stripe's HUF/TWD payouts, CLP payments on Checkout.com and three-decimal currencies on Stripe and Checkout.com. `fromStripe`, `fromAdyen` and `fromCheckout` return the value at its ISO scale when that is exact, and otherwise keep the processor's extra precision instead of rounding it away.
+
+Signs follow each processor's docs and are checked after rounding. Checkout.com takes zero (a card verification) but not negative amounts; refunds are sent as positive amounts.
 
 ### Databases
 
@@ -266,6 +272,7 @@ await db.order.create({
 | `data/iso4217-list-one.xml` | ISO 4217 List One from SIX (the maintenance agency), published **2026-09-17**. It has 178 codes with minor units, plus N.A. codes such as XAU and XDR, which are excluded as non-monetary. |
 | `data/stripe.json`          | https://docs.stripe.com/currencies, retrieved 2026-11-07, with verbatim quotes for every special case                                                                                      |
 | `data/adyen.json`           | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                          |
+| `data/checkout.json`        | https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value, the currency-codes page and the API reference, retrieved 2026-11-07, with verbatim quotes                  |
 | `data/cash-rounding.json`   | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                  |
 
 - `pnpm gen` (`scripts/gen-currencies.mjs`) turns these into `src/generated/*.ts`.
@@ -285,18 +292,22 @@ Recent ISO changes that are already encoded:
 
 Processor differences encoded:
 
-|                     | ISO       | Stripe                                                                       | Adyen         |
-| ------------------- | --------- | ---------------------------------------------------------------------------- | ------------- |
-| ISK                 | 0         | 2, amount must be a multiple of 100                                          | 2             |
-| UGX                 | 0         | 2, amount must be a multiple of 100 (confirmed, see [Decisions](#decisions)) | 0             |
-| CLP                 | 0         | 0                                                                            | **2**         |
-| IDR                 | 2         | 2                                                                            | **0**         |
-| CVE                 | 2         | 2                                                                            | **0**         |
-| MGA                 | 2         | **0**                                                                        | not supported |
-| HUF, TWD            | 2         | 2 for charges; payouts must be a multiple of 100                             | 2             |
-| BHD JOD KWD OMR TND | 3         | 3, last digit must be 0 (UAE accounts only)                                  | 3             |
-| ANG, STD            | withdrawn | still listed (2)                                                             | n/a           |
-| CNH, VEF            | not ISO   | n/a                                                                          | listed (2)    |
+|                     | ISO       | Stripe                                                                       | Adyen         | Checkout.com                                       |
+| ------------------- | --------- | ---------------------------------------------------------------------------- | ------------- | -------------------------------------------------- |
+| ISK                 | 0         | 2, amount must be a multiple of 100                                          | 2             | 0                                                  |
+| UGX                 | 0         | 2, amount must be a multiple of 100 (confirmed, see [Decisions](#decisions)) | 0             | 0                                                  |
+| CLP                 | 0         | 0                                                                            | **2**         | **2**, payments must be a multiple of 100          |
+| IDR                 | 2         | 2                                                                            | **0**         | 2                                                  |
+| CVE                 | 2         | 2                                                                            | **0**         | 2                                                  |
+| MGA                 | 2         | **0**                                                                        | not supported | 2                                                  |
+| HUF, TWD            | 2         | 2 for charges; payouts must be a multiple of 100                             | 2             | 2                                                  |
+| BHD JOD KWD OMR TND | 3         | 3, last digit must be 0 (UAE accounts only)                                  | 3             | 3, last digit must be 0                            |
+| IQD, LYD            | 3         | not supported                                                                | 3             | 3, last digit must be 0                            |
+| ANG, STD            | withdrawn | still listed (2)                                                             | n/a           | n/a                                                |
+| SLL                 | withdrawn | n/a                                                                          | n/a           | still listed (2)                                   |
+| CNH, VEF            | not ISO   | n/a                                                                          | listed (2)    | n/a                                                |
+| XDR                 | N.A.      | n/a                                                                          | n/a           | listed (2)                                         |
+| amount limits       |           |                                                                              |               | docs: > 0, ≤ 9 digits; API schema: 0 to 9999999999 |
 
 ---
 
@@ -379,8 +390,9 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **Stripe three-decimal rule.** The "last digit must be 0" rule comes from a June 2024 archived copy of Stripe's page. The live page no longer has that section (it is marked unverified in `data/stripe.json`).
 - **Cash-rounding rules.** Some are backed only by secondary sources (`verified: false`): CHF, DKK, AUD, NZD, ILS, MYR, SGD, FI/IE/IT/SK/LT EUR and several others. `includeUnverified: false` turns them off.
   - Per-jurisdiction tie rules are all `halfExpand`. Singapore's "round down in the customer's favour" practice and USD's state-by-state post-penny rules aren't modelled.
-- **Processor coverage.** Stripe and Adyen are the only processors covered. There is no Checkout.com, PayPal, Braintree or Klarna view yet, and no Adyen Terminal API (it uses major units). There is no per-account-country Stripe currency availability; the table is the union of all countries.
-- **Withdrawn and non-ISO codes** (ANG, STD, CNH, VEF) aren't in the core registry. Stripe/Adyen list them, so `defineCurrency` is needed to hold them. There is no historical ISO data (validity dates).
+- **Checkout.com currency list.** The currency-codes page calls itself the "major currencies we support"; `toCheckout` refuses anything not on it. Its amount limits (the docs say greater than zero and at most nine digits, the API schema allows 0 for card verification and up to ten digits) aren't enforced.
+- **Processor coverage.** Stripe, Adyen and Checkout.com are covered. There is no PayPal, Braintree or Klarna view yet, and no Adyen Terminal API (it uses major units). There is no per-account-country Stripe currency availability; the table is the union of all countries.
+- **Withdrawn and non-ISO codes** (ANG, STD, CNH, VEF, SLL, XDR) aren't in the core registry. Stripe, Adyen and Checkout.com list them, so `defineCurrency` is needed to hold them. There is no historical ISO data (validity dates).
 - **Formatting gaps:**
   - No pluggable formatter for engines without Intl.
   - `parse` is lenient about group sizes (it accepts `1,23,4.00` in en-US). It also doesn't check the currency symbol in the text against the `currency` argument.
