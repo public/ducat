@@ -6,3 +6,7 @@ examples/prisma/generated/
 *.db
 *.db-journal
 .claude/
+reports/
+.stryker-tmp/
+test-results/
+playwright-report/
