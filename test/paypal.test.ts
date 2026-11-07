@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { add, money, multiply, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
+import { add, money, multiply, toDecimal, RoundingError, currencyExponent } from '../src/index.js';
 import {
   fromPayPal,
   isPayPalCurrency,
@@ -29,7 +29,7 @@ describe('PayPal', () => {
     expect(toPayPalValue(money('250', 'TWD'))).toBe('250');
     expect(() => toPayPalValue(money('1000.50', 'HUF'))).toThrow(RoundingError);
     expect(toPayPalValue(money('1000.50', 'HUF'), { rounding: 'halfEven' })).toBe('1000');
-    expect(toPayPalValue(money('1000.50', 'TWD'), { rounding: 'ceiling' })).toBe('1001');
+    expect(toPayPalValue(money('1000.50', 'TWD'), { rounding: 'ceil' })).toBe('1001');
     for (const code of ['HUF', 'JPY', 'TWD']) {
       expect(paypalExponent(code)).toBe(0);
     }
@@ -81,7 +81,7 @@ describe('PayPal', () => {
   it('the table matches the documented list', () => {
     expect(Object.keys(PAYPAL_EXPONENTS)).toHaveLength(25);
     for (const [code, exponent] of Object.entries(PAYPAL_EXPONENTS)) {
-      const expected = ['HUF', 'JPY', 'TWD'].includes(code) ? 0 : ISO_EXPONENTS[code];
+      const expected = ['HUF', 'JPY', 'TWD'].includes(code) ? 0 : currencyExponent(code);
       expect(exponent).toBe(expected);
     }
     expect(new Set(Object.values(PAYPAL_EXPONENTS))).toEqual(new Set([0, 2]));
