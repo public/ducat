@@ -38,6 +38,11 @@ describe('Money methods', () => {
       'parse',
       'cashRule',
       'exchangeRate',
+      // fixed-point constructors; Money#toFixedPoint covers moneyToFixed
+      'fixed',
+      'fromScaled',
+      'isFixed',
+      'moneyToFixed',
       // rate constructors and the conversion kernel, which work on rates rather than an amount
       'impliedRate',
       'isRate',

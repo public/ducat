@@ -1,6 +1,7 @@
 // Exact decimal-string handling. No floating point is used on amounts: numbers given as factors are
 // converted through their shortest round-trip decimal representation (String(x)), never multiplied.
 
+/** The largest minor-unit count held as a number (2^53 - 1); larger values are bigints. */
 const MAX = Number.MAX_SAFE_INTEGER;
 const MAXN = BigInt(MAX);
 
@@ -59,6 +60,7 @@ export function parsePlainDecimal(s: string): { digits: number | bigint; scale: 
     } else return null;
   }
   if (digitsSeen === 0 || scale === 0) return null; // "", "-", "12."
+  if (scale > MAX_DECIMAL_SCALE) return null; // parseDecimal reports it
   if (scale < 0) scale = 0;
   if (big) {
     const raw = s.slice(start).replace('.', '');
@@ -70,13 +72,24 @@ export function parsePlainDecimal(s: string): { digits: number | bigint; scale: 
 
 const EXP_RE = /^([+-]?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/;
 
+/**
+ * The largest exponent and number of fraction digits a decimal string may have. Far beyond any real
+ * amount or rate, and it keeps input such as "1e999999999" from building enormous powers of ten.
+ */
+export const MAX_DECIMAL_SCALE = 1000;
+
 /** Parses a decimal string, allowing exponent notation ("1e-7", as produced by String(1e-7)). */
 export function parseDecimal(s: string): { digits: bigint; scale: number } {
   const m = EXP_RE.exec(s.trim());
   if (!m) throw new SyntaxError(`Invalid decimal string "${s}"`);
   const [, sign, int, frac = '', exp = '0'] = m;
+  const exponent = Number(exp);
+  let scale = frac.length - exponent;
+  if (!(Math.abs(exponent) <= MAX_DECIMAL_SCALE) || scale > MAX_DECIMAL_SCALE) {
+    // The input itself is not quoted: it may be huge.
+    throw new RangeError(`Decimal string exponent or fraction digits beyond ${MAX_DECIMAL_SCALE}`);
+  }
   let digits = BigInt(int! + frac);
-  let scale = frac.length - Number(exp);
   if (scale < 0) {
     digits *= pow10n(-scale);
     scale = 0;
@@ -161,25 +174,10 @@ export function ratioToDecimal(r: Ratio): string | null {
   return formatScaled(r.num * (pow10n(scale) / r.den), scale);
 }
 
+// Zero padding for the fraction digits, built once: indexing it is faster than padStart.
+const ZPAD = Array.from({ length: 16 }, (_, length) => '0'.repeat(length));
+
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
-const ZPAD = [
-  '',
-  '0',
-  '00',
-  '000',
-  '0000',
-  '00000',
-  '000000',
-  '0000000',
-  '00000000',
-  '000000000',
-  '0000000000',
-  '00000000000',
-  '000000000000',
-  '0000000000000',
-  '00000000000000',
-  '000000000000000',
-];
 export function formatScaled(v: number | bigint, scale: number): string {
   if (typeof v === 'number' && scale <= 15) {
     if (scale === 0) return String(v);
