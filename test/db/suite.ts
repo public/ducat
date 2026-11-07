@@ -62,8 +62,17 @@ export interface SuiteOptions {
   readonly extraTests?: (database: () => DatabaseAdapter) => void;
 }
 
+// CI sets DUCAT_REQUIRE_DB=1, so a lost connection URL fails the job instead of skipping it
+const isDatabaseRequired = process.env.DUCAT_REQUIRE_DB === '1';
+
 export function databaseSuite(name: string, options: SuiteOptions): void {
   const { enabled, connect, extraTests } = options;
+
+  describe(`${name}: configuration`, () => {
+    it.skipIf(enabled || !isDatabaseRequired)('has a server URL', () => {
+      expect(enabled).toBe(true);
+    });
+  });
 
   describe.skipIf(!enabled)(`${name}: SQL helpers against a real database`, () => {
     let database: DatabaseAdapter;
@@ -118,6 +127,7 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
       const narrowField = decimalMoneyField('n19', { currencyField: 'currency' });
       const wideField = decimalMoneyField('n38', { currencyField: 'currency' });
       const rows = await database.query(`SELECT n19, n38, currency FROM ${tableName('decimal')} ORDER BY id`);
+      expect(rows).toHaveLength(AMOUNTS.length);
 
       for (const [index, row] of rows.entries()) {
         const [expected] = AMOUNTS[index]!;
@@ -163,6 +173,7 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
 
       // JSON and JSONB columns come back parsed; SQLite TEXT comes back as the string
       const rows = await database.query(`SELECT doc FROM ${tableName('json')} ORDER BY id`);
+      expect(rows).toHaveLength(AMOUNTS.length);
       const readBack = rows.map((row: Row) => fromJSON(row.doc as never));
       expect(readBack.map(String)).toEqual(amounts.map(String));
     });

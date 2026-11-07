@@ -1,13 +1,15 @@
 // Playwright: bundles page.ts and runs it in Chromium, Firefox and WebKit (playwright.config.ts).
 import { expect, test } from '@playwright/test';
 import { buildSync } from 'esbuild';
+import { fileURLToPath } from 'node:url';
 import type { PageResult } from './page.js';
 
 const seed = process.env.DUCAT_SEED ? Number(process.env.DUCAT_SEED) : 42;
 const numRuns = Number(process.env.DUCAT_BROWSER_RUNS ?? 300);
+const MINIMUM_PASSED_CHECKS = 10;
 
 const bundle = buildSync({
-  entryPoints: [new URL('./page.ts', import.meta.url).pathname],
+  entryPoints: [fileURLToPath(new URL('./page.ts', import.meta.url))],
   bundle: true,
   format: 'iife',
   globalName: 'ducatPage',
@@ -33,5 +35,6 @@ test('suite subset and Intl behaviour in the page', async ({ page }, testInfo) =
     description: `${result.userAgent}; Intl exact on strings: ${result.intlFormatsStringsExactly}; seed ${seed}`,
   });
   expect(result.failures).toEqual([]);
-  expect(result.passed).toBeGreaterThan(10);
+  // the fixed checks and properties in page.ts; fewer means some did not run
+  expect(result.passed).toBeGreaterThanOrEqual(MINIMUM_PASSED_CHECKS);
 });

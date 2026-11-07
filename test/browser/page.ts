@@ -50,7 +50,7 @@ function assertEqual(actual: unknown, expected: unknown): void {
 
 /** Normalizes the narrow and ordinary no-break spaces engines use as group separators. */
 function withPlainSpaces(text: string): string {
-  return text.replace(/[  ]/g, ' ');
+  return text.replace(/[\u00a0\u202f]/g, ' ');
 }
 
 function euro(decimal: string): ducat.Money {
