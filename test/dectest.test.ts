@@ -102,6 +102,20 @@ function moneyAtScale(value: DecimalNumber, scale: number): Money {
   return money(toPlainString(value, scale), 'EUR', { scale });
 }
 
+/** The line without its "--" comment; a "--" inside a quoted operand such as '--1' is kept. */
+function withoutComment(line: string): string {
+  let isQuoted = false;
+  for (let index = 0; index < line.length; index++) {
+    const character = line[index];
+    if (character === "'" || character === '"') {
+      isQuoted = !isQuoted;
+    } else if (!isQuoted && character === '-' && line[index + 1] === '-') {
+      return line.slice(0, index);
+    }
+  }
+  return line;
+}
+
 function removeQuotes(text: string): string {
   return text.replace(/^'|'$/g, '');
 }
@@ -127,7 +141,7 @@ function loadCases(fileName: string): { cases: TestCase[]; skippedCount: number 
 
   const text = readFileSync(join(VECTOR_DIRECTORY, fileName), 'utf8');
   for (const rawLine of text.split('\n')) {
-    const line = rawLine.replace(/--.*$/, '').trim();
+    const line = withoutComment(rawLine).trim();
     if (!line) {
       continue;
     }
@@ -244,6 +258,16 @@ function describeOutcome(run: () => Money): string {
 
 // the files fetch:dectest downloads; each describe is skipped until it has been run
 const VECTOR_FILES = ['add.decTest', 'divide.decTest', 'multiply.decTest', 'quantize.decTest', 'rounding.decTest'];
+
+// CI sets DUCAT_REQUIRE_DECTEST=1, so a failed or forgotten fetch fails instead of skipping
+const isRequired = process.env.DUCAT_REQUIRE_DECTEST === '1';
+
+describe('decTest files', () => {
+  it.skipIf(!isRequired)('are all fetched', () => {
+    const missing = VECTOR_FILES.filter((fileName) => !existsSync(join(VECTOR_DIRECTORY, fileName)));
+    expect(missing).toEqual([]);
+  });
+});
 
 for (const fileName of VECTOR_FILES) {
   const isFetched = existsSync(join(VECTOR_DIRECTORY, fileName));

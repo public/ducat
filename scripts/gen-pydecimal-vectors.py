@@ -54,6 +54,11 @@ def round_to_scale(value: Decimal, scale: int, mode: str) -> Decimal:
     return value.quantize(step, rounding=rounding)
 
 
+def plain(value: Decimal) -> str:
+    """fixed-point notation always: str() can produce scientific notation such as 1E+3"""
+    return format(value, "f")
+
+
 def minor_units(value: Decimal, scale: int) -> str:
     return str(int(value.scaleb(scale)))
 
@@ -76,14 +81,14 @@ def make_case(rng: random.Random, operation: str) -> dict:
     if operation == "multiply":
         factor = random_decimal(-(10**12), 10**12, 8)
         product = round_to_scale(amount * factor, exponent, mode)
-        case |= {"factor": str(factor), "want": minor_units(product, exponent)}
+        case |= {"factor": plain(factor), "want": minor_units(product, exponent)}
 
     elif operation == "divide":
         divisor = random_decimal(-(10**9), 10**9, 6)
         if divisor == 0:
             divisor = Decimal("1.5")
         quotient = round_to_scale(amount / divisor, exponent, mode)
-        case |= {"divisor": str(divisor), "want": minor_units(quotient, exponent)}
+        case |= {"divisor": plain(divisor), "want": minor_units(quotient, exponent)}
 
     elif operation == "toScale":
         # mostly rounding down to fewer decimals, sometimes exact rescaling up
@@ -98,7 +103,7 @@ def make_case(rng: random.Random, operation: str) -> dict:
         target, target_exponent = rng.choice(CURRENCIES)
         rate = random_decimal(1, 10**10, 8)
         converted = round_to_scale(amount * rate, target_exponent, mode)
-        case |= {"to": target, "rate": str(rate), "want": minor_units(converted, target_exponent)}
+        case |= {"to": target, "rate": plain(rate), "want": minor_units(converted, target_exponent)}
 
     else:
         # percentages: occasionally up to 100000 %, mostly 0 to 100 % with 3 decimals
