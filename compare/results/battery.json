@@ -1,0 +1,4199 @@
+{
+ "libraries": [
+  "ducat",
+  "dinero.js 2.0.2",
+  "dinero.js 2.0.2 bigint",
+  "dinero.js 1.9.1",
+  "currency.js 2.0.4",
+  "js-money 0.6.3",
+  "ts-money 0.4.8",
+  "@screeny05/ts-money 1.2.0",
+  "money-math 2.6.3",
+  "monetra 2.3.0",
+  "bigint-money 2.0.1",
+  "big.js 7.0.1",
+  "bignumber.js 11.1.5",
+  "decimal.js 10.6.0",
+  "decimal.js-light 2.5.1",
+  "Prisma.Decimal 7.10.1"
+ ],
+ "vectors": [
+  {
+   "id": "exp-JPY",
+   "group": "currency",
+   "description": "library knows JPY has 0 decimals"
+  },
+  {
+   "id": "exp-KWD",
+   "group": "currency",
+   "description": "library knows KWD has 3 decimals"
+  },
+  {
+   "id": "exp-CLF",
+   "group": "currency",
+   "description": "library knows CLF has 4 decimals"
+  },
+  {
+   "id": "exp-ISK",
+   "group": "currency",
+   "description": "library knows ISK has 0 decimals (ISO)"
+  },
+  {
+   "id": "jpy-1000",
+   "group": "currency",
+   "description": "1000 JPY round-trips as \"1000\""
+  },
+  {
+   "id": "jpy-frac",
+   "group": "currency",
+   "description": "\"1000.5\" JPY is rejected (not silently rounded)"
+  },
+  {
+   "id": "kwd-1.234",
+   "group": "currency",
+   "description": "\"1.234\" KWD = 1234 fils, round-trips"
+  },
+  {
+   "id": "kwd-split3",
+   "group": "currency",
+   "description": "1.000 KWD split 3 → 0.334, 0.333, 0.333"
+  },
+  {
+   "id": "jpy-split3",
+   "group": "currency",
+   "description": "100 JPY split 3 → 34, 33, 33"
+  },
+  {
+   "id": "split3",
+   "group": "allocation",
+   "description": "100.00 EUR split 3 → 33.34, 33.33, 33.33"
+  },
+  {
+   "id": "split3-neg",
+   "group": "allocation",
+   "description": "-100.00 EUR split 3 → -33.34, -33.33, -33.33"
+  },
+  {
+   "id": "split-cent",
+   "group": "allocation",
+   "description": "0.01 EUR split 3 → 0.01, 0, 0"
+  },
+  {
+   "id": "alloc-zero-w",
+   "group": "allocation",
+   "description": "10.00 EUR by [1,0,1] → 5, 0, 5 (zero weight gets nothing)"
+  },
+  {
+   "id": "alloc-fuzz",
+   "group": "allocation",
+   "description": "2,000 seeded random allocations: parts sum to the whole, each within 1 unit of its share"
+  },
+  {
+   "id": "vat-12",
+   "group": "tax",
+   "description": "VAT 20% extracted from 12.00 GBP: net 10.00 (gross ÷ 1.2)"
+  },
+  {
+   "id": "vat-9.99-even",
+   "group": "tax",
+   "description": "HMRC 9.99 GBP ÷ 1.2 = 8.325 → half-even 8.32"
+  },
+  {
+   "id": "vat-9.99-up",
+   "group": "tax",
+   "description": "HMRC 9.99 GBP ÷ 1.2 = 8.325 → half-up 8.33"
+  },
+  {
+   "id": "vat-119",
+   "group": "tax",
+   "description": "German 19%: 119.00 EUR ÷ 1.19 → net 100.00"
+  },
+  {
+   "id": "half-even",
+   "group": "rounding",
+   "description": "0.25 × 0.5 = 0.125 → half-even 0.12"
+  },
+  {
+   "id": "half-up",
+   "group": "rounding",
+   "description": "0.25 × 0.5 = 0.125 → half-up 0.13"
+  },
+  {
+   "id": "half-up-neg",
+   "group": "rounding",
+   "description": "-0.25 × 0.5 = -0.125 → half-up (away from 0) -0.13"
+  },
+  {
+   "id": "half-even-neg",
+   "group": "rounding",
+   "description": "-0.25 × 0.5 = -0.125 → half-even -0.12"
+  },
+  {
+   "id": "float-mul-1.15",
+   "group": "rounding",
+   "description": "0.50 × 1.15 = 0.575 → half-up 0.58 (float gives 57.49999999999999)"
+  },
+  {
+   "id": "float-mul-0.7",
+   "group": "rounding",
+   "description": "0.45 × 0.7 = 0.315 → half-up 0.32 (float gives 31.499999999999996)"
+  },
+  {
+   "id": "float-mul-1.1",
+   "group": "rounding",
+   "description": "1.15 × 1.1 = 1.265 → half-even 1.26 (float gives 126.50000000000001)"
+  },
+  {
+   "id": "fx-jpy",
+   "group": "rounding",
+   "description": "100.00 EUR → JPY at 162.457 → 16246 (half-up)"
+  },
+  {
+   "id": "fx-float",
+   "group": "rounding",
+   "description": "1.15 EUR → USD at 1.1 → 1.26 (half-even; float gives 1.27)"
+  },
+  {
+   "id": "big-2^53+1",
+   "group": "large",
+   "description": "90071992547409.93 EUR (2^53+1 cents) round-trips"
+  },
+  {
+   "id": "big-add",
+   "group": "large",
+   "description": "90071992547409.92 + 0.01 = 90071992547409.93"
+  },
+  {
+   "id": "gdp",
+   "group": "large",
+   "description": "world GDP: 125000000000000.00 USD + 0.01 = …000.01"
+  },
+  {
+   "id": "gdp-split3",
+   "group": "large",
+   "description": "world GDP 125000000000000.00 USD split 3 sums to the whole"
+  },
+  {
+   "id": "bigint-max",
+   "group": "large",
+   "description": "92233720368547758.07 EUR (BIGINT max cents) round-trips"
+  },
+  {
+   "id": "neg-add",
+   "group": "negative",
+   "description": "-5.00 + 2.50 = -2.50"
+  },
+  {
+   "id": "neg-sub",
+   "group": "negative",
+   "description": "2.50 − 5.00 = -2.50"
+  },
+  {
+   "id": "neg-small",
+   "group": "negative",
+   "description": "-0.05 round-trips as \"-0.05\""
+  },
+  {
+   "id": "float-in",
+   "group": "float",
+   "description": "money(0.1 + 0.2) is rejected, not stored (0.30000000000000004 has 17 decimals)"
+  },
+  {
+   "id": "dec-add",
+   "group": "float",
+   "description": "0.10 + 0.20 = 0.30 exactly"
+  },
+  {
+   "id": "float-1.005",
+   "group": "float",
+   "description": "money(1.005) is rejected, or kept exactly: as the decimal 1.005 (its shortest form) or as the double 1.00499999999999989…"
+  },
+  {
+   "id": "mix-add",
+   "group": "mismatch",
+   "description": "EUR + USD throws"
+  },
+  {
+   "id": "mix-cmp",
+   "group": "mismatch",
+   "description": "compare(EUR, USD) throws"
+  },
+  {
+   "id": "mix-eq",
+   "group": "mismatch",
+   "description": "equals(1 EUR, 1 USD) is false"
+  }
+ ],
+ "rows": [
+  {
+   "library": "ducat",
+   "id": "exp-JPY",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "ducat",
+   "id": "exp-KWD",
+   "outcome": "pass",
+   "got": "3"
+  },
+  {
+   "library": "ducat",
+   "id": "exp-CLF",
+   "outcome": "pass",
+   "got": "4"
+  },
+  {
+   "library": "ducat",
+   "id": "exp-ISK",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "ducat",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "ducat",
+   "id": "jpy-frac",
+   "outcome": "pass",
+   "got": "throws RoundingError: 1000.5 has more than 0 decimal places for JPY; pass { rounding } or { scale }"
+  },
+  {
+   "library": "ducat",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "ducat",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "ducat",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "ducat",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "ducat",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.34 -33.33 -33.33"
+  },
+  {
+   "library": "ducat",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "ducat",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "ducat",
+   "id": "alloc-fuzz",
+   "outcome": "pass",
+   "got": "0 bad"
+  },
+  {
+   "library": "ducat",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "ducat",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "ducat",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "ducat",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "ducat",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "ducat",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "ducat",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "ducat",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "ducat",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "ducat",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "ducat",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "ducat",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "ducat",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "ducat",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "ducat",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "ducat",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "ducat",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "ducat",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "ducat",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "ducat",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "ducat",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "ducat",
+   "id": "float-in",
+   "outcome": "pass",
+   "got": "throws RoundingError: 0.30000000000000004 has more than 2 decimal places for EUR; pass { rounding } or"
+  },
+  {
+   "library": "ducat",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "ducat",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "throws RoundingError: 1.005 has more than 2 decimal places for EUR; pass { rounding } or { scale }"
+  },
+  {
+   "library": "ducat",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws CurrencyMismatchError: Currency mismatch: EUR vs USD"
+  },
+  {
+   "library": "ducat",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws CurrencyMismatchError: Currency mismatch: EUR vs USD"
+  },
+  {
+   "library": "ducat",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "exp-JPY",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "exp-KWD",
+   "outcome": "pass",
+   "got": "3"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "exp-CLF",
+   "outcome": "pass",
+   "got": "4"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "exp-ISK",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "jpy-frac",
+   "outcome": "lossy",
+   "got": "1000.5",
+   "note": "kept at a finer scale than the currency (allowed by design)"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.34 -33.33 -33.33"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "alloc-fuzz",
+   "outcome": "pass",
+   "got": "0 bad"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "vat-12",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "vat-9.99-even",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "vat-9.99-up",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "vat-119",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "big-2^53+1",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "big-add",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "gdp",
+   "outcome": "fail",
+   "got": "125000000000000"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "bigint-max",
+   "outcome": "fail",
+   "got": "92233720368547760.08"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "float-in",
+   "outcome": "unsupported",
+   "got": "no fromFloat"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "float-1.005",
+   "outcome": "unsupported",
+   "got": "no fromFloat"
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws Error: [Dinero.js] Objects must have the same currency."
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws Error: [Dinero.js] Objects must have the same currency."
+  },
+  {
+   "library": "dinero.js 2.0.2",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "exp-JPY",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "exp-KWD",
+   "outcome": "pass",
+   "got": "3"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "exp-CLF",
+   "outcome": "pass",
+   "got": "4"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "exp-ISK",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "jpy-frac",
+   "outcome": "lossy",
+   "got": "1000.5",
+   "note": "kept at a finer scale than the currency (allowed by design)"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.34 -33.33 -33.33"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "alloc-fuzz",
+   "outcome": "pass",
+   "got": "0 bad"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "vat-12",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "vat-9.99-even",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "vat-9.99-up",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "vat-119",
+   "outcome": "unsupported",
+   "got": "no divide"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "float-in",
+   "outcome": "unsupported",
+   "got": "no fromFloat"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "float-1.005",
+   "outcome": "unsupported",
+   "got": "no fromFloat"
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws Error: [Dinero.js] Objects must have the same currency."
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws Error: [Dinero.js] Objects must have the same currency."
+  },
+  {
+   "library": "dinero.js 2.0.2 bigint",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "no fromDecimal"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.33 -33.33 -33.34"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "alloc-fuzz",
+   "outcome": "pass",
+   "got": "0 bad"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "big-2^53+1",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "big-add",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "gdp",
+   "outcome": "fail",
+   "got": "125000000000000"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "bigint-max",
+   "outcome": "fail",
+   "got": "92233720368547758.08"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "float-in",
+   "outcome": "unsupported",
+   "got": "no fromFloat"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "float-1.005",
+   "outcome": "unsupported",
+   "got": "no fromFloat"
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws TypeError: You must provide a Dinero instance with the same currency."
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws TypeError: You must provide a Dinero instance with the same currency."
+  },
+  {
+   "library": "dinero.js 1.9.1",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "jpy-frac",
+   "outcome": "fail",
+   "got": "1001"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.34 -33.33 -33.33"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "vat-12",
+   "outcome": "unsupported",
+   "got": "no rounding modes"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "vat-9.99-even",
+   "outcome": "unsupported",
+   "got": "no rounding modes"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "vat-119",
+   "outcome": "unsupported",
+   "got": "no rounding modes"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "half-even",
+   "outcome": "unsupported",
+   "got": "no rounding modes"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "half-up-neg",
+   "outcome": "fail",
+   "got": "-0.12"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "half-even-neg",
+   "outcome": "unsupported",
+   "got": "no rounding modes"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "float-mul-1.1",
+   "outcome": "unsupported",
+   "got": "no rounding modes"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "big-2^53+1",
+   "outcome": "fail",
+   "got": "90071992547409.94"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "big-add",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "gdp",
+   "outcome": "fail",
+   "got": "125000000000000"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "bigint-max",
+   "outcome": "fail",
+   "got": "92233720368547760"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "float-in",
+   "outcome": "lossy",
+   "got": "0.3",
+   "note": "silently rounded to 0.30"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "float-1.005",
+   "outcome": "lossy",
+   "got": "1.01",
+   "note": "silently rounded"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "mix-add",
+   "outcome": "fail",
+   "got": "no currency on values: added",
+   "note": "by design"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "mix-cmp",
+   "outcome": "fail",
+   "got": "no currency on values",
+   "note": "by design"
+  },
+  {
+   "library": "currency.js 2.0.4",
+   "id": "mix-eq",
+   "outcome": "fail",
+   "got": "true (no currency)",
+   "note": "by design"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "exp-JPY",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "exp-KWD",
+   "outcome": "pass",
+   "got": "3"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no CLF in currency table"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "exp-ISK",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "jpy-frac",
+   "outcome": "pass",
+   "got": "throws Error: The currency JPY supports only 0 decimal digits"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.33 -33.33 -33.34"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "alloc-fuzz",
+   "outcome": "pass",
+   "got": "0 bad"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "float-mul-1.15",
+   "outcome": "fail",
+   "got": "0.57"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "float-mul-0.7",
+   "outcome": "fail",
+   "got": "0.31"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "float-mul-1.1",
+   "outcome": "error",
+   "got": "TypeError: Amount must be an integer"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "big-2^53+1",
+   "outcome": "fail",
+   "got": "90071992547409.94"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "big-add",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "gdp",
+   "outcome": "fail",
+   "got": "125000000000000"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "bigint-max",
+   "outcome": "fail",
+   "got": "92233720368547760"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "float-in",
+   "outcome": "pass",
+   "got": "throws Error: The currency EUR supports only 2 decimal digits"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "throws Error: The currency EUR supports only 2 decimal digits"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws Error: Different currencies"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws Error: Different currencies"
+  },
+  {
+   "library": "js-money 0.6.3",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "exp-JPY",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "exp-KWD",
+   "outcome": "pass",
+   "got": "3"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no CLF in currency table"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "exp-ISK",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "jpy-frac",
+   "outcome": "pass",
+   "got": "throws Error: The currency JPY supports only 0 decimal digits"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.33 -33.33 -33.34"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "alloc-fuzz",
+   "outcome": "pass",
+   "got": "0 bad"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "float-mul-1.15",
+   "outcome": "fail",
+   "got": "0.57"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "float-mul-0.7",
+   "outcome": "fail",
+   "got": "0.31"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "float-mul-1.1",
+   "outcome": "fail",
+   "got": "1.27"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "big-2^53+1",
+   "outcome": "fail",
+   "got": "90071992547409.94"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "big-add",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "gdp",
+   "outcome": "fail",
+   "got": "125000000000000"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "bigint-max",
+   "outcome": "fail",
+   "got": "92233720368547760"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "float-in",
+   "outcome": "pass",
+   "got": "throws Error: The currency EUR supports only 2 decimal digits"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "throws Error: The currency EUR supports only 2 decimal digits"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws Error: Different currencies"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws Error: Different currencies"
+  },
+  {
+   "library": "ts-money 0.4.8",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "exp-JPY",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "exp-KWD",
+   "outcome": "pass",
+   "got": "3"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "exp-CLF",
+   "outcome": "pass",
+   "got": "4"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "exp-ISK",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "jpy-frac",
+   "outcome": "pass",
+   "got": "throws Error: The currency JPY supports only 0 decimal digits"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.33 -33.33 -33.34"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "split-cent",
+   "outcome": "error",
+   "got": "TypeError: Cannot read properties of undefined (reading 'amount')"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "alloc-fuzz",
+   "outcome": "pass",
+   "got": "0 bad"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "float-mul-1.15",
+   "outcome": "fail",
+   "got": "0.57"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "float-mul-0.7",
+   "outcome": "fail",
+   "got": "0.31"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "float-mul-1.1",
+   "outcome": "fail",
+   "got": "1.27"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "big-2^53+1",
+   "outcome": "fail",
+   "got": "90071992547409.94"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "big-add",
+   "outcome": "fail",
+   "got": "90071992547409.92"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "gdp",
+   "outcome": "fail",
+   "got": "125000000000000"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "bigint-max",
+   "outcome": "fail",
+   "got": "92233720368547760"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "float-in",
+   "outcome": "pass",
+   "got": "throws Error: The currency EUR supports only 2 decimal digits"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "throws Error: The currency EUR supports only 2 decimal digits"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws Error: Different currencies"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws Error: Different currencies"
+  },
+  {
+   "library": "@screeny05/ts-money 1.2.0",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "jpy-1000",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "2-decimal amounts only"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "kwd-1.234",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "kwd-split3",
+   "outcome": "unsupported",
+   "got": "2-decimal amounts only"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "jpy-split3",
+   "outcome": "unsupported",
+   "got": "2-decimal amounts only"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "split3-neg",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "split-cent",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "vat-12",
+   "outcome": "unsupported",
+   "got": "fixed half-up"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "vat-9.99-even",
+   "outcome": "unsupported",
+   "got": "fixed half-up"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "vat-119",
+   "outcome": "unsupported",
+   "got": "fixed half-up"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "half-even",
+   "outcome": "unsupported",
+   "got": "fixed half-up"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "half-up-neg",
+   "outcome": "fail",
+   "got": "-0.11"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "half-even-neg",
+   "outcome": "unsupported",
+   "got": "fixed half-up"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "float-mul-1.1",
+   "outcome": "unsupported",
+   "got": "fixed half-up"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "gdp-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "float-in",
+   "outcome": "lossy",
+   "got": "0.3",
+   "note": "silently rounded to 0.30"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "float-1.005",
+   "outcome": "lossy",
+   "got": "1.01",
+   "note": "silently rounded"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "mix-add",
+   "outcome": "fail",
+   "got": "no currency on values: added",
+   "note": "by design"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "mix-cmp",
+   "outcome": "fail",
+   "got": "no currency on values",
+   "note": "by design"
+  },
+  {
+   "library": "money-math 2.6.3",
+   "id": "mix-eq",
+   "outcome": "fail",
+   "got": "true (no currency)",
+   "note": "by design"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "exp-JPY",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "exp-KWD",
+   "outcome": "pass",
+   "got": "3"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "exp-CLF",
+   "outcome": "fail",
+   "got": "not in table (Currency 'CLF' not found in registry.)"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "exp-ISK",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "jpy-1000",
+   "outcome": "pass",
+   "got": "1000"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "jpy-frac",
+   "outcome": "pass",
+   "got": "throws L: Precision 1 exceeds currency decimals 0"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "kwd-1.234",
+   "outcome": "pass",
+   "got": "1.234"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "split3-neg",
+   "outcome": "fail",
+   "got": "-33.33 -33.33 -33.33"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "alloc-zero-w",
+   "outcome": "pass",
+   "got": "5 0 5"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "alloc-fuzz",
+   "outcome": "fail",
+   "got": "256 bad, e.g. -13765449c by [110,3,20,713] -> -17898.33 -488.13 -3254.24 -116013.77"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "float-in",
+   "outcome": "lossy",
+   "got": "0.3",
+   "note": "silently rounded to 0.30"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "float-1.005",
+   "outcome": "lossy",
+   "got": "1",
+   "note": "silently rounded"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws b: Currency mismatch: expected EUR, received USD.\n💡 Tip: Use a Converter to conver"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws b: Currency mismatch: expected EUR, received USD.\n💡 Tip: Use a Converter to conver"
+  },
+  {
+   "library": "monetra 2.3.0",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "false"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "jpy-1000",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "no currency exponents"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "kwd-1.234",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "kwd-split3",
+   "outcome": "pass",
+   "got": "0.334 0.333 0.333"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "jpy-split3",
+   "outcome": "pass",
+   "got": "34 33 33"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "split3",
+   "outcome": "pass",
+   "got": "33.34 33.33 33.33"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "split3-neg",
+   "outcome": "pass",
+   "got": "-33.34 -33.33 -33.33"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "split-cent",
+   "outcome": "pass",
+   "got": "0.01 0 0"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "fx-jpy",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "fx-float",
+   "outcome": "unsupported",
+   "got": "no convert"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "gdp-split3",
+   "outcome": "pass",
+   "got": "41666666666666.67 41666666666666.67 41666666666666.66"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "float-in",
+   "outcome": "pass",
+   "got": "throws UnsafeIntegerError: The number 0.30000000000000004 is not a \"safe\" integer. It must be converted bef"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "throws UnsafeIntegerError: The number 1.005 is not a \"safe\" integer. It must be converted before passing it"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "mix-add",
+   "outcome": "pass",
+   "got": "throws IncompatibleCurrencyError: You cannot add Money from different currencies. Convert first"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "mix-cmp",
+   "outcome": "pass",
+   "got": "throws IncompatibleCurrencyError: You cannot compare different currencies."
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "mix-eq",
+   "outcome": "pass",
+   "got": "throws IncompatibleCurrencyError: You cannot compare different currencies."
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "jpy-1000",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "no currency exponents"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "kwd-1.234",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "kwd-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "jpy-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "split3-neg",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "split-cent",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "gdp-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "float-in",
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "1.005"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "mix-add",
+   "outcome": "fail",
+   "got": "no currency on values: added",
+   "note": "by design"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "mix-cmp",
+   "outcome": "fail",
+   "got": "no currency on values",
+   "note": "by design"
+  },
+  {
+   "library": "big.js 7.0.1",
+   "id": "mix-eq",
+   "outcome": "fail",
+   "got": "true (no currency)",
+   "note": "by design"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "jpy-1000",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "no currency exponents"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "kwd-1.234",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "kwd-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "jpy-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "split3-neg",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "split-cent",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "gdp-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "float-in",
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "1.005"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "mix-add",
+   "outcome": "fail",
+   "got": "no currency on values: added",
+   "note": "by design"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "mix-cmp",
+   "outcome": "fail",
+   "got": "no currency on values",
+   "note": "by design"
+  },
+  {
+   "library": "bignumber.js 11.1.5",
+   "id": "mix-eq",
+   "outcome": "fail",
+   "got": "true (no currency)",
+   "note": "by design"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "jpy-1000",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "no currency exponents"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "kwd-1.234",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "kwd-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "jpy-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "split3-neg",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "split-cent",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "gdp-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "float-in",
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "1.005"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "mix-add",
+   "outcome": "fail",
+   "got": "no currency on values: added",
+   "note": "by design"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "mix-cmp",
+   "outcome": "fail",
+   "got": "no currency on values",
+   "note": "by design"
+  },
+  {
+   "library": "decimal.js 10.6.0",
+   "id": "mix-eq",
+   "outcome": "fail",
+   "got": "true (no currency)",
+   "note": "by design"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "jpy-1000",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "no currency exponents"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "kwd-1.234",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "kwd-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "jpy-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "split3-neg",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "split-cent",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "gdp-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "float-in",
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "1.005"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "mix-add",
+   "outcome": "fail",
+   "got": "no currency on values: added",
+   "note": "by design"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "mix-cmp",
+   "outcome": "fail",
+   "got": "no currency on values",
+   "note": "by design"
+  },
+  {
+   "library": "decimal.js-light 2.5.1",
+   "id": "mix-eq",
+   "outcome": "fail",
+   "got": "true (no currency)",
+   "note": "by design"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "exp-JPY",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "exp-KWD",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "exp-CLF",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "exp-ISK",
+   "outcome": "unsupported",
+   "got": "no exponent"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "jpy-1000",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "jpy-frac",
+   "outcome": "unsupported",
+   "got": "no currency exponents"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "kwd-1.234",
+   "outcome": "unsupported",
+   "got": "no fromMinor"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "kwd-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "jpy-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "split3-neg",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "split-cent",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "alloc-zero-w",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "alloc-fuzz",
+   "outcome": "unsupported",
+   "got": "no allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "vat-12",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "vat-9.99-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "vat-9.99-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "vat-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "half-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "half-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "half-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "half-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "fx-jpy",
+   "outcome": "pass",
+   "got": "16246"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "fx-float",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "gdp",
+   "outcome": "pass",
+   "got": "125000000000000.01"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "gdp-split3",
+   "outcome": "unsupported",
+   "got": "no split or allocate"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "neg-add",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "neg-sub",
+   "outcome": "pass",
+   "got": "-2.5"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "float-in",
+   "outcome": "fail",
+   "got": "0.30000000000000004",
+   "note": "accepted, keeping the float's error"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "float-1.005",
+   "outcome": "pass",
+   "got": "1.005"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "mix-add",
+   "outcome": "fail",
+   "got": "no currency on values: added",
+   "note": "by design"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "mix-cmp",
+   "outcome": "fail",
+   "got": "no currency on values",
+   "note": "by design"
+  },
+  {
+   "library": "Prisma.Decimal 7.10.1",
+   "id": "mix-eq",
+   "outcome": "fail",
+   "got": "true (no currency)",
+   "note": "by design"
+  }
+ ]
+}
