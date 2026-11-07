@@ -18,8 +18,11 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  convert(this: Money, to: string, rate: Factor, rounding?: RoundingMode, options?: ConvertOptions) {
-    return convert(this, to, rate, rounding, options);
+extendMoney(
+  {
+    convert(this: Money, to: string, rate: Factor, rounding?: RoundingMode, options?: ConvertOptions) {
+      return convert(this, to, rate, rounding, options);
+    },
   },
-});
+  { owner: '@ducatjs/money/convert' },
+);
