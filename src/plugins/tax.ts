@@ -19,17 +19,20 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  percentage(this: Money, percent: Factor, rounding?: RoundingMode) {
-    return percentage(this, percent, rounding);
+extendMoney(
+  {
+    percentage(this: Money, percent: Factor, rounding?: RoundingMode) {
+      return percentage(this, percent, rounding);
+    },
+    discount(this: Money, percent: Factor, rounding?: RoundingMode) {
+      return discount(this, percent, rounding);
+    },
+    addTax(this: Money, percent: Factor, rounding?: RoundingMode) {
+      return addTax(this, percent, rounding);
+    },
+    extractTax(this: Money, percent: Factor, rounding?: RoundingMode) {
+      return extractTax(this, percent, rounding);
+    },
   },
-  discount(this: Money, percent: Factor, rounding?: RoundingMode) {
-    return discount(this, percent, rounding);
-  },
-  addTax(this: Money, percent: Factor, rounding?: RoundingMode) {
-    return addTax(this, percent, rounding);
-  },
-  extractTax(this: Money, percent: Factor, rounding?: RoundingMode) {
-    return extractTax(this, percent, rounding);
-  },
-});
+  { owner: '@ducatjs/money/tax' },
+);

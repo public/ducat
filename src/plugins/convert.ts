@@ -25,8 +25,11 @@ declare module '../money.js' {
   }
 }
 
-extendMoney({
-  convert(this: Money, ...args: [never, never?, never?, never?]) {
-    return (convert as (money: Money, ...rest: unknown[]) => Money)(this, ...args);
+extendMoney(
+  {
+    convert(this: Money, ...args: [never, never?, never?, never?]) {
+      return (convert as (money: Money, ...rest: unknown[]) => Money)(this, ...args);
+    },
   },
-});
+  { owner: '@ducatjs/money/convert' },
+);

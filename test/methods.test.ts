@@ -40,6 +40,18 @@ describe('Money methods', () => {
       'currencyExponent',
       'defineCurrency',
       'isCurrency',
+      'extendMoney',
+      // processor and database helpers that take codes, amounts or columns rather than a Money
+      'isStripeCurrency',
+      'stripeExponent',
+      'fromStripe',
+      'isAdyenCurrency',
+      'adyenExponent',
+      'fromAdyen',
+      'fromDecimal',
+      'minorMoneyField',
+      'decimalMoneyField',
+      'toMinorColumns',
     ]);
     const fns = Object.entries(M)
       .filter(([k, v]) => typeof v === 'function' && /^[a-z]/.test(k) && !notMethods.has(k))
