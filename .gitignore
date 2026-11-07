@@ -1,0 +1,7 @@
+node_modules/
+dist/
+bench/out/
+examples/prisma/node_modules/
+examples/prisma/generated/
+*.db
+*.db-journal

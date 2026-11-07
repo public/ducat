@@ -1,0 +1,399 @@
+{
+  "retrieved": "2026-11-07",
+  "note": "Smallest cash increment where it differs from the ISO minor unit. 'verified': false means only secondary sources (press, Wikipedia) were found; treat as a default you should confirm.",
+  "rules": [
+    {
+      "currency": "CHF",
+      "increment": "0.05",
+      "scope": "cash (practice; card/electronic to 0.01)",
+      "countries": [
+        "CH",
+        "LI"
+      ],
+      "source": "https://www.snb.ch/en/the-snb/mandates-goals/cash/coins",
+      "note": "1-centime coin withdrawn 1 Jan 2007; 5 centimes is the smallest coin. No statutory rounding rule found; rounding to 0.05 is market practice.",
+      "verified": false
+    },
+    {
+      "currency": "SEK",
+      "increment": "1.00",
+      "scope": "cash only",
+      "countries": [
+        "SE"
+      ],
+      "source": "https://archive.riksbank.se/en/Web-archive/Published/Notices/2009/50-ore-coin-to-be-abolished-in-2010/index.html",
+      "note": "50-öre coin ceased to be legal tender 30 Sep 2010. Riksbank: card payments not affected; cash rounded to nearest krona (1-49 öre down, 50-99 up). Öre remains an accounting unit.",
+      "verified": true
+    },
+    {
+      "currency": "DKK",
+      "increment": "0.50",
+      "scope": "cash only",
+      "countries": [
+        "DK",
+        "GL",
+        "FO"
+      ],
+      "source": "https://lex.dk/afrunding",
+      "note": "Since 1 Oct 2008 (25-øre coin withdrawn). 1-24 øre down, 25-49 up to 50, 51-74 down to 50, 75-99 up. Card payments exact. Danmarks Nationalbank primary page not retrieved (URL 404); secondary sources only. Greenland/Faroe applicability assumed.",
+      "verified": false
+    },
+    {
+      "currency": "NOK",
+      "increment": "1.00",
+      "scope": "cash only",
+      "countries": [
+        "NO",
+        "SJ",
+        "BV"
+      ],
+      "source": "https://www.norges-bank.no/en/news-events/news/Circulars/2011/Regulation-relating-to-withdrawal-of-50-ore-coins-as-legal-tender/",
+      "note": "From 1 May 2012 (50-øre coin withdrawn): øre 1-49 rounded down, 50-99 rounded up, in final settlement of cash transactions.",
+      "verified": true
+    },
+    {
+      "currency": "CAD",
+      "increment": "0.05",
+      "scope": "cash only",
+      "countries": [
+        "CA"
+      ],
+      "source": "https://www.canada.ca/en/revenue-agency/services/forms-publications/publications/gi-131/phasing-penny.html",
+      "note": "Since 4 Feb 2013. CRA GI-131: cash totals rounded to nearest 5 cents; cheque and electronic (card) payments still to the cent; GST computed before rounding. Penny remains legal tender. (Page content seen via search summary; direct fetch returned 404.)",
+      "verified": true
+    },
+    {
+      "currency": "AUD",
+      "increment": "0.05",
+      "scope": "cash only",
+      "countries": [
+        "AU",
+        "CX",
+        "CC",
+        "NF",
+        "NR",
+        "KI",
+        "TV",
+        "HM"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "1c/2c coins withdrawn Feb 1992; cash totals ending 1,2,6,7 down, 3,4,8,9 up. Electronic not usually rounded. No primary RBA/ACCC page fetched; applicability to other AUD-using territories assumed.",
+      "verified": false
+    },
+    {
+      "currency": "NZD",
+      "increment": "0.10",
+      "scope": "cash only",
+      "countries": [
+        "NZ",
+        "CK",
+        "NU",
+        "PN",
+        "TK"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "5c coin demonetised 1 Nov 2006 (1c/2c in 1990). Rounding of total of cash transactions only; treatment of 5c is at retailer discretion (RBNZ advised rounding down). Primary RBNZ page (newcoins.govt.nz) is dead; secondary sources only.",
+      "verified": false
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only (mandatory for in-person cash; optional for other methods; not allowed for distance sales)",
+      "countries": [
+        "BE"
+      ],
+      "source": "https://economie.fgov.be/en/themes/sales/mandatory-rounding-cash",
+      "note": "Since 1 Dec 2019. Verbatim: \"The rounding obligation applies to all cash payments.\" \"For other payment methods, you are free to decide whether or not to apply rounding.\" \"Rounding is not permitted for distance sales (e.g. via internet).\"",
+      "verified": true
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only (permitted, must be signposted)",
+      "countries": [
+        "NL"
+      ],
+      "source": "https://www.rijksoverheid.nl/documenten/vraag-en-antwoord/betalingsverkeer/mogen-winkeliers-betalingen-afronden-op-0-eurocent-of-5-eurocent",
+      "note": "Since Sept 2004. Rijksoverheid: shops may round the cash total to 0 or 5 cent if clearly indicated; card payments exact. Voluntary, not mandatory.",
+      "verified": true
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only (statutory)",
+      "countries": [
+        "FI"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2000/890",
+      "note": "Act 890/2000 on rounding of euro payments; in force since euro cash introduction 2002. 1c/2c remain legal tender. Statute not fetched directly (cited via Wikipedia).",
+      "verified": false
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only (voluntary)",
+      "countries": [
+        "IE"
+      ],
+      "source": "https://www.irishtimes.com/news/ireland/irish-news/coin-rounding-begins-as-use-of-1-cent-2-cent-coins-reduced-1.2408459",
+      "note": "National rounding since 28 Oct 2015 (Central Bank of Ireland scheme). Applies to total bill paid in cash; card payments unaffected; voluntary for customer and retailer; 1c/2c remain legal tender. Press source, not CBI primary page.",
+      "verified": false
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only (voluntary practice)",
+      "countries": [
+        "IT"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "Italy stopped minting 1c/2c from 1 Jan 2018 (DL 50/2017 art. 13-quater). Some sellers round cash to 0.05; no general mandatory rule.",
+      "verified": false
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only",
+      "countries": [
+        "SK"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "From 1 July 2022 per Wikipedia (1c/2c removed from general circulation). Legal basis/mandatory status not confirmed from NBS or Slovak law.",
+      "verified": false
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only, at physical point of sale",
+      "countries": [
+        "EE"
+      ],
+      "source": "https://www.eestipank.ee/en/press/rounding-rule-will-start-apply-payments-cash-new-year-27122024",
+      "note": "Since 1 Jan 2025. Eesti Pank: final price of a basket paid in cash at a physical point of sale rounded to nearest five cents. 1c/2c remain legal tender.",
+      "verified": true
+    },
+    {
+      "currency": "EUR",
+      "increment": "0.05",
+      "scope": "cash only",
+      "countries": [
+        "LT"
+      ],
+      "source": "https://www.baltictimes.com/lithuania_starts_rounding_off_cash_payments_to_phase_out_1__2_cent_coins",
+      "note": "Since 1 May 2025. Ending 1,2,6,7 down; 3,4,8,9 up. Not applied to non-cash payments, currency exchange, cash transfers, deposits/withdrawals. Press source.",
+      "verified": false
+    },
+    {
+      "currency": "HUF",
+      "increment": "5",
+      "scope": "cash only (statutory)",
+      "countries": [
+        "HU"
+      ],
+      "source": "https://njt.jog.gov.hu/jogszabaly/2008-3-00-00",
+      "note": "Act III of 2008; 1 and 2 Ft coins withdrawn 1 Mar 2008. Cash total not ending in 0 or 5 Ft rounded per the act (1-2 down to 0, 3-4 up to 5, 6-7 down to 5, 8-9 up to 10). Card/transfer to 1 Ft. Note fillér (0.01) is still ISO minor unit but unused.",
+      "verified": true
+    },
+    {
+      "currency": "CZK",
+      "increment": "1.00",
+      "scope": "cash only",
+      "countries": [
+        "CZ"
+      ],
+      "source": "https://www.cnb.cz/en/faq/How-to-round-after-the-withdrawal-of-50-heller-coins",
+      "note": "50-heller coins invalid from 31 Aug 2008. Consumer Protection Act 634/1992 art. 3(c): cash total rounded to nearest valid denomination (whole koruna). Non-cash payments unaffected; prices may still be shown in hellers.",
+      "verified": true
+    },
+    {
+      "currency": "ILS",
+      "increment": "0.10",
+      "scope": "cash only",
+      "countries": [
+        "IL",
+        "PS"
+      ],
+      "source": "https://boi.org.il/en/communication-and-publications/press-releases/the-bank-of-israel-asks-the-government-to-approve-abolishing-the-5-agorot-coin-as-legal-tender/",
+      "note": "5-agorot coin withdrawn from circulation 1 Jan 2008; cash totals rounded to nearest 10 agorot (1-4 down, 5-9 up); non-cash to 1 agora. Sources conflict on formal legal-tender status of the 5 agorot coin (a 2020 BoI release asks to abolish it).",
+      "verified": false
+    },
+    {
+      "currency": "MYR",
+      "increment": "0.05",
+      "scope": "over-the-counter payments (originally cash and non-cash per 2007 announcement; current practice cash only)",
+      "countries": [
+        "MY"
+      ],
+      "source": "https://www.bnm.gov.my/-/introduction-of-a-rounding-mechanism-for-over-the-counter-payments",
+      "note": "Since 1 Apr 2008. Total bill: ending 1,2,6,7 sen down; 3,4,8,9 up. Not applicable to online transactions. Scope conflict: 2007 statement covers cash and non-cash OTC; later sources say cash only.",
+      "verified": false
+    },
+    {
+      "currency": "SGD",
+      "increment": "0.05",
+      "scope": "cash (informal practice; always rounded down per Wikipedia)",
+      "countries": [
+        "SG"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "1-cent coin no longer produced (still legal tender). No MAS rounding rule found; treat as optional retailer practice.",
+      "verified": false
+    },
+    {
+      "currency": "RON",
+      "increment": "0.05",
+      "scope": "cash (practice)",
+      "countries": [
+        "RO"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "1 ban coins legal tender but rare.",
+      "verified": false
+    },
+    {
+      "currency": "XPF",
+      "increment": "5",
+      "scope": "cash only",
+      "countries": [
+        "PF",
+        "NC",
+        "WF"
+      ],
+      "source": "https://www.ieom.fr/nouvelles-pieces/",
+      "note": "1 and 2 franc coins ceased legal tender 30 Nov 2022; rounding does not apply to non-cash transactions. Cited via Wikipedia.",
+      "verified": false
+    },
+    {
+      "currency": "BSD",
+      "increment": "0.05",
+      "scope": "cash",
+      "countries": [
+        "BS"
+      ],
+      "source": "https://www.centralbankbahamas.com/download/075913500.pdf",
+      "note": "One cent coins ceased to be legal tender 2021; cash rounded to nearest 5 cents. Cited via Wikipedia.",
+      "verified": false
+    },
+    {
+      "currency": "TTD",
+      "increment": "0.05",
+      "scope": "cash",
+      "countries": [
+        "TT"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "1c lost legal tender 2018.",
+      "verified": false
+    },
+    {
+      "currency": "ZAR",
+      "increment": "0.10",
+      "scope": "cash (practice)",
+      "countries": [
+        "ZA"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "5c production stopped 2012 but coins remain legal tender; prices rounded to 10c in practice.",
+      "verified": false
+    },
+    {
+      "currency": "HKD",
+      "increment": "0.10",
+      "scope": "cash (practice)",
+      "countries": [
+        "HK"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "5-cent coin eliminated 1989; smallest coin 10 cents.",
+      "verified": false
+    },
+    {
+      "currency": "UAH",
+      "increment": "0.10",
+      "scope": "cash",
+      "countries": [
+        "UA"
+      ],
+      "source": "https://www.bank.gov.ua/news/all/natsionalniy-bank-uporyadkovuye-nominalniy-ryad-banknot-i-monet-grivni",
+      "note": "From 1 Oct 2019, 1/2/5 kopiyka coins withdrawn; cash rounded to nearest 10 kopiyok. Cited via Wikipedia.",
+      "verified": false
+    },
+    {
+      "currency": "CLP",
+      "increment": "10",
+      "scope": "cash only",
+      "countries": [
+        "CL"
+      ],
+      "source": "https://www.dgac.gob.cl/monedas-de-1-y-5-pesos-pasaran-a-la-historia-ley-n-20-956-ministerio-de-hacienda/",
+      "note": "Ley 20.956, since 1 Nov 2017: cash totals ending 1-5 rounded down, 6-9 up, to nearest 10 pesos. Cited via Wikipedia.",
+      "verified": false
+    },
+    {
+      "currency": "PEN",
+      "increment": "0.10",
+      "scope": "cash (practice)",
+      "countries": [
+        "PE"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "5-céntimo coin discontinued 2019.",
+      "verified": false
+    },
+    {
+      "currency": "THB",
+      "increment": "0.25",
+      "scope": "cash (practice)",
+      "countries": [
+        "TH"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "Coins below 25 satang not issued for general circulation.",
+      "verified": false
+    },
+    {
+      "currency": "AED",
+      "increment": "0.25",
+      "scope": "cash (practice)",
+      "countries": [
+        "AE"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "25 fils smallest coin in general circulation; 1/5/10 fils rarely seen. Wikipedia lists AED under both 0.05 and 0.25 sections; inconsistent.",
+      "verified": false
+    },
+    {
+      "currency": "INR",
+      "increment": "1.00",
+      "scope": "cash (practice)",
+      "countries": [
+        "IN"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "25 paise and lower demonetised 2011 (0.50 rounding); 50 paise seldom seen since ~2019, so whole-rupee rounding in practice.",
+      "verified": false
+    },
+    {
+      "currency": "JMD",
+      "increment": "1.00",
+      "scope": "cash",
+      "countries": [
+        "JM"
+      ],
+      "source": "https://jis.gov.jm/information/get-the-facts/demonetisation-of-coins/",
+      "note": "Coins below 1 dollar demonetised 15 Feb 2018.",
+      "verified": false
+    },
+    {
+      "currency": "USD",
+      "increment": "0.05",
+      "scope": "cash (permitted, not required; varies by state)",
+      "countries": [
+        "US"
+      ],
+      "source": "https://en.wikipedia.org/wiki/Cash_rounding",
+      "note": "Penny production for circulation ended Nov 2025; businesses may round cash to nearest 5c or in customer's favour; state laws vary. Not a uniform rule; do not apply by default.",
+      "verified": false
+    }
+  ]
+}
