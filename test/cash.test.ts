@@ -76,3 +76,62 @@ describe('cash rounding', () => {
     for (const r of CASH_RULES) expect(Number.isInteger(r.increment) && r.increment > 0).toBe(true);
   });
 });
+
+describe('cashRule lookup', () => {
+  // The linear scan cashRule used before it indexed the table by currency, kept as the reference.
+  function scanReference(currency: string, country?: string) {
+    let found: (typeof CASH_RULES)[number] | undefined;
+    for (const rule of CASH_RULES) {
+      if (rule.currency !== currency) {
+        continue;
+      }
+      if (country !== undefined) {
+        if (rule.countries.includes(country)) {
+          return rule;
+        }
+      } else if (currency !== 'EUR') {
+        found ??= rule;
+      }
+    }
+    return found;
+  }
+
+  it('agrees with a full scan for every currency and country, including codes with no rule', () => {
+    const currencies = [
+      ...new Set(CASH_RULES.map((rule) => rule.currency)),
+      'GBP',
+      'JPY',
+      'XXX',
+      'toString',
+      '',
+    ];
+    const countries = [
+      undefined,
+      ...new Set(CASH_RULES.flatMap((rule) => rule.countries)),
+      'DE',
+      'GB',
+      'ZZ',
+    ];
+    const mismatches: string[] = [];
+    for (const currency of currencies) {
+      for (const country of countries) {
+        if (cashRule(currency, country) !== scanReference(currency, country)) {
+          mismatches.push(`${currency}/${country}`);
+        }
+      }
+    }
+    expect(mismatches).toEqual([]);
+  });
+
+  it('has no rule for currencies without cash rounding, or for EUR without a country', () => {
+    expect(cashRule('GBP')).toBeUndefined();
+    expect(cashRule('JPY')).toBeUndefined();
+    expect(cashRule('toString')).toBeUndefined();
+    expect(cashRule('EUR')).toBeUndefined();
+    expect(cashRule('EUR', 'DE')).toBeUndefined();
+    expect(cashRule('CHF', 'DE')).toBeUndefined();
+    expect(cashRule('EUR', 'NL')?.countries).toEqual(['NL']);
+    expect(toDecimal(cashRound(money('1.03', 'GBP')))).toBe('1.03');
+    expect(toDecimal(cashRound(money('1.03', 'EUR')))).toBe('1.03');
+  });
+});
