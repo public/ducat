@@ -37,11 +37,11 @@ Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may c
 
 A `Money<C>` has three readonly fields:
 
-| field                     | meaning                                                                                                                                                                                   |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `currency: C`             | ISO 4217 code (or a code registered with `defineCurrency`). It is a type parameter, so `Money<'EUR'>` and `Money<'USD'>` don't mix.                                                       |
+| field                     | meaning                                                                                                                                                                                                                                                                |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `currency: C`             | ISO 4217 code (or a code registered with `defineCurrency`). It is a type parameter, so `Money<'EUR'>` and `Money<'USD'>` don't mix.                                                                                                                                    |
 | `minor: number \| bigint` | Integer count of 10^-scale units. It is a **number whenever it is a safe integer** (absolute value ≤ 2^53−1) and a **bigint only beyond that**. The invariant is enforced everywhere, so ordinary amounts never allocate a bigint and huge amounts never lose a digit. |
-| `scale: number`           | Decimal places. Defaults to the currency's ISO exponent (EUR 2, JPY 0, KWD 3, CLF 4). It can be larger for sub-minor precision (unit prices, FX intermediates). `round()` brings it back. |
+| `scale: number`           | Decimal places. Defaults to the currency's ISO exponent (EUR 2, JPY 0, KWD 3, CLF 4). It can be larger for sub-minor precision (unit prices, FX intermediates). `round()` brings it back.                                                                              |
 
 Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](bench/RESULTS.md)):
 
