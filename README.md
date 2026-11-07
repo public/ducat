@@ -82,24 +82,29 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                     | adds to `Money`                                                    | also exports                                            |
-| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
-| `@ducatjs/money`           | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents |
-| `@ducatjs/money/allocate`  | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                              |
-| `@ducatjs/money/tax`       | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                |
-| `@ducatjs/money/convert`   | `convert`                                                          | `convert`, `exchangeRate`                               |
-| `@ducatjs/money/cash`      | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                      |
-| `@ducatjs/money/format`    | `format`, `formatToParts`                                          | the same                                                |
-| `@ducatjs/money/parse`     | nothing                                                            | `parse`                                                 |
-| `@ducatjs/money/stripe`    | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…               |
-| `@ducatjs/money/adyen`     | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                 |
-| `@ducatjs/money/checkout`  | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…           |
-| `@ducatjs/money/paypal`    | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…               |
-| `@ducatjs/money/braintree` | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…         |
-| `@ducatjs/money/klarna`    | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…               |
-| `@ducatjs/money/prisma`    | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers              |
-| `@ducatjs/money/all`       | everything above                                                   | everything                                              |
-| `@ducatjs/money/fn`        | nothing                                                            | every free function, from every module                  |
+| import                      | adds to `Money`                                                    | also exports                                              |
+| --------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- |
+| `@ducatjs/money`            | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents   |
+| `@ducatjs/money/allocate`   | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                                |
+| `@ducatjs/money/tax`        | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                  |
+| `@ducatjs/money/convert`    | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…           |
+| `@ducatjs/money/exact`      | `exact`                                                            | `ExactMoney`, `sumExact`                                  |
+| `.../convert/ecb`           | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                              |
+| `.../convert/fetch`         | nothing                                                            | `fetchEcb` (the only module that uses the network)        |
+| `.../stripe-fx`, `adyen-fx` | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`            |
+| `@ducatjs/money/cash`       | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                        |
+| `@ducatjs/money/format`     | `format`, `formatToParts`                                          | the same                                                  |
+| `@ducatjs/money/parse`      | nothing                                                            | `parse`                                                   |
+| `@ducatjs/money/stripe`     | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                 |
+| `@ducatjs/money/adyen`      | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                   |
+| `@ducatjs/money/checkout`   | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…             |
+| `@ducatjs/money/paypal`     | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                 |
+| `@ducatjs/money/braintree`  | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…           |
+| `@ducatjs/money/klarna`     | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                 |
+| `@ducatjs/money/prisma`     | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                |
+| `@ducatjs/money/fixed`      | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed` |
+| `@ducatjs/money/all`        | everything above                                                   | everything                                                |
+| `@ducatjs/money/fn`         | nothing                                                            | every free function, from every module                    |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that wants no prototype changes, or function-level tree-shaking (a module's methods keep all of its functions in a bundle), can use the free functions from `@ducatjs/money/fn` instead.
 
@@ -137,7 +142,7 @@ The sections below list each function with its free-function signature; the meth
 - `round(m, rounding, scale = ISO exponent)`, `toScale(m, scale, rounding?)`
 - `percentage(m, percent, rounding?)`, `discount(price, percent, rounding?)`
 - `addTax(net, percent, rounding?)` and `extractTax(gross, percent, rounding?)` both return `{ net, tax, gross }`, and net + tax is always exactly gross.
-- `convert(m, to, rate, rounding?, { scale? })`, `exchangeRate(from, to, rate)` returns `.convert(m, rounding)` and `.inverse()`. Rates are decimal strings: `'1.0832'`.
+- `convert(m, to, rate, rounding?, { scale? })` at a decimal-string rate, or `convert(m, exchangeRate(...), rounding?)`. See [Currency conversion](#currency-conversion).
 
 **Compare**
 
@@ -201,6 +206,66 @@ The sections below list each function with its free-function signature; the meth
 
 - `currencyExponent(code)`, `isCurrency(code)`, `ISO_EXPONENTS`, `ISO_4217_PUBLISHED`
 - `defineCurrency('BTC', 8)` adds a non-ISO code. To also get it in the `CurrencyCode` type, augment `interface CustomCurrencies`.
+
+### Currency conversion
+
+`@ducatjs/money/convert` converts at exact rates and rounds once, at the end. A rate is a `Rate`, an exact rational with the pair in its type, so converting the wrong currency is a compile error. Inverses and chains of rates are exact too: nothing is rounded until an amount is converted.
+
+```ts
+import { exchangeRate } from '@ducatjs/money/convert';
+
+const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06', type: 'reference' });
+eurUsd.convert(money('100', 'EUR'), 'halfEven'); // 111.65 USD
+eurUsd.inverse().toString(); // '2000/2233': exact, not 0.8956...
+eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedFrom`
+eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
+```
+
+Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate carries optional metadata: `source`, `asOf`, `validUntil` and `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
+
+**Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published.
+
+```ts
+import { snapshotsFrom, via } from '@ducatjs/money/convert';
+import { parseEcbXml } from '@ducatjs/money/convert/ecb';
+
+const history = snapshotsFrom(parseEcbXml(xml90Days));
+const fx = via('EUR', await history.at('2026-11-08')); // a Sunday: Friday's table
+money('100', 'USD').convert('JPY', fx, 'halfEven'); // 15833 JPY, through EUR, rounded once
+```
+
+**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`: the daily, 90-day and full-history XML and CSV files) and one opt-in fetcher (`@ducatjs/money/convert/fetch`, which uses the platform `fetch` and has a 30-second default timeout). Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+
+**Exact intermediates and residuals.** `@ducatjs/money/exact` adds `ExactMoney`, a rational amount for chained calculations that should round once at the end. In `@ducatjs/money/convert`, `convertDetailed()` also returns what rounding cost, so a ledger can book it:
+
+```ts
+const { value, residual } = convertDetailed(money('0.07', 'EUR'), eurUsd, 'halfEven');
+// value 0.08 USD; residual -369/200000 USD; value + residual is the exact conversion
+```
+
+**Totals in several currencies.** `bag(...amounts)` keeps per-currency totals, and `bag.total('EUR', fx, 'halfEven')` converts every entry exactly, sums and rounds once. To order amounts in different currencies, `comparator(fx, { base: 'USD' })` compares them through one base currency. With one rate per currency the order is consistent. Pairwise rates are not: with bid/ask or slightly inconsistent mid rates, A < B < C < A can happen, and `Array#sort` then gives engine-dependent results. `sortByValue(list, fx, { base })` looks every rate up before it reorders anything.
+
+### Fixed-point decimals
+
+`@ducatjs/money/fixed` gives the engine under Money its own type: `Fixed`, an exact decimal without a currency. It is an integer and a scale, the count of decimal places, so `fixed('12.345')` is 12345 at scale 3. The integer is a JS number while it is a safe integer and a bigint beyond, as for Money, so everyday values stay fast and very large ones stay exact. Use it for quantities, unit prices with more decimals than the currency, rates, and intermediate values that are not money yet.
+
+```ts
+import { fixed, fromScaled } from '@ducatjs/money/fixed';
+
+const unitPrice = fixed('0.0425'); // scale 4
+const total = unitPrice.multiply(1200); // 51.0000, exact
+const perDay = fixed('100.00').divide(3, 'halfEven'); // 33.33: rounded once, to this value's scale
+fixed('1.5').add('0.25'); // 1.75: mixed scales align to the larger one
+fixed('2.5').round('halfEven'); // 2: round() defaults to scale 0
+fromScaled(12345, 3).toString(); // '12.345'
+JSON.stringify({ unitPrice }); // '{"unitPrice":"0.0425"}'
+```
+
+Input is strict in the same way as `money()`. A string keeps its own scale. A number is read at its shortest decimal form, and only when that has at most 15 significant digits, which a double always holds faithfully. So `fixed(0.1 + 0.2)` throws instead of becoming 0.30000000000000004: pass the decimal as a string, or give `{ scale, rounding }`. With a `scale`, input that has more decimals throws unless `rounding` is also given.
+
+Arithmetic follows Money's rules. `add`, `subtract` and `compare` align to the larger scale exactly. `multiply` and `divide` take exact factors (integers, decimal strings, bigints, `ratio()` or another `Fixed`) and round once, with `'halfExpand'` by default. The result keeps this value's scale unless you pass another: `fixed('9.990').divide('1.2', 'halfEven', { scale: 2 })` is 8.32. Pass the scale instead of calling `toScale` afterwards, which would round twice. `toScale` and `round` take any of the ten rounding modes, including `'unnecessary'`, which throws if digits would be lost.
+
+To convert, `money.toFixedPoint()` gives the exact amount at the money's scale, and `fixedValue.toMoney('EUR')` makes Money at the currency's exponent. That conversion throws RoundingError when it would drop digits, unless a rounding mode is passed: `fixed('1.005').toMoney('EUR', 'halfEven')` is 1.00 EUR.
 
 ### Payment processors: the amount you send
 
@@ -407,6 +472,9 @@ These are stated over the proved kernel (`divRound`):
 - `pnpm test:runtimes` runs:
   - the **full suite on Node 22, Bun 1.4 (via `bun test`) and Deno 2.9**: all pass
   - a bundled smoke test on Node 22, Node 18, Bun, Deno and the **SpiderMonkey and JavaScriptCore shells** (installed with jsvu): all pass. On Node 18, `format()` of amounts above 2^53 is lossy (no Intl string input).
+- `pnpm test:db` runs the SQL helpers against real databases: SQLite through Node's built-in `node:sqlite`, and Postgres and MySQL when `DUCAT_PG_URL` and `DUCAT_MYSQL_URL` point at a server (CI runs both as service containers, and sets `DUCAT_REQUIRE_DB=1` so a missing URL fails instead of skipping). It covers BIGINT minor units beyond 2^53 and at the BIGINT limits, `NUMERIC(19,4)` and `NUMERIC(38,4)` columns, Money as JSON/JSONB, values a column rounded silently (rejected on read), NaN and Infinity, and driver defaults that lose precision.
+- `pnpm test:browser` runs a smoke and property subset in Chromium, Firefox and WebKit through Playwright, including `parse(format())` round trips in 18 locales; `DUCAT_BROWSER_RUNS` sets the cases per property (default 300) and `DUCAT_SEED` the seed.
+- `pnpm test:mutation` runs Stryker over `src/` with property counts capped; CI runs it nightly and keeps the report.
 
 ## Benchmarks (indicative only)
 
@@ -427,10 +495,10 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - On arithmetic, this library is 10–100x faster than dinero.js and the decimal libraries on every engine.
 - It is on par with currency.js and ts-money on compare and format, but those two use floats.
 - `format` is dominated by Intl itself (about 0.7–1.5 µs on every engine).
-- Bundle size (esbuild, minified + gzip):
-  - `money, add, multiply, toDecimal` alone: **3.1 kB**, of which about 1.3 kB is the ISO table
-  - the whole library: **9.0 kB**
-  - the same snippet with dinero.js (EUR only): 1.7 kB
+- Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.6 kB**, of which about 0.55 kB is the ISO table
+  - the core entry point: 4.6 kB; everything (`@ducatjs/money/all`): 10.9 kB
+  - the same snippet with dinero.js (EUR only): 1.9 kB
 
 ---
 
@@ -448,6 +516,7 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - **The package is `@ducatjs/money`** (the brand and repo stay ducat). npm's name-similarity rule blocks the unscoped `ducat`, and the npm org `ducat` was taken, so it lives under the `ducatjs` org; one package, with opt-in subpath modules. The ducat was the Venetian gold trade coin, used across Europe for about 600 years.
 - **Methods on `Money`**, because free functions alone are awkward to use: `price.add(fee).multiply('1.075').split(3)`. Each method is the free function of the same name, and the free functions stay exported. Operands are `Money` only, never bare numbers (monetra's `add(5)` means 5 minor units, a trap we avoid).
 - **The core is small; everything else is an opt-in module that installs methods.** Methods on one class pull every feature into every bundle, so `Money` carries only the core, and `@ducatjs/money/allocate`, `/tax`, `/format`… add their methods when imported (types through `declare module` augmentation, as dayjs plugins do). The cost is that installed methods are global at run time. `@ducatjs/money/fn` offers the same functions without touching the prototype, for function-level tree-shaking.
+- **Correctness and features come before bundle size.** The core keeps the currency table, the comparison methods, bigint support and exact string parsing; everything else is an opt-in module, and size budgets in CI stop either from growing.
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.

@@ -49,7 +49,19 @@ const MAX = Number.MAX_SAFE_INTEGER;
  * `twiceRem` is 2*|remainder| (non-zero), `d` the divisor, `odd` whether |truncated quotient| is odd.
  */
 function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint, odd: boolean, neg: boolean): boolean {
+  // twiceRem === d is an exact tie; otherwise the half modes round to the nearest. Both operands are
+  // numbers (divRound) or both bigints (divRoundBig), so === and the comparisons below are exact.
   switch (mode) {
+    case 'halfExpand':
+      return twiceRem >= d;
+    case 'halfEven':
+      return twiceRem === d ? odd : twiceRem > d;
+    case 'halfTrunc':
+      return twiceRem > d;
+    case 'halfCeil':
+      return twiceRem === d ? !neg : twiceRem > d;
+    case 'halfFloor':
+      return twiceRem === d ? neg : twiceRem > d;
     case 'trunc':
       return false;
     case 'expand':
@@ -60,30 +72,6 @@ function away(mode: RoundingMode, twiceRem: number | bigint, d: number | bigint,
       return neg;
     case 'unnecessary':
       throw new RoundingError('Rounding necessary: the result is not exact; pass a rounding mode');
-  }
-  if (twiceRem !== d) {
-    // number vs number or bigint vs bigint; mixed comparison is exact in JS anyway
-    if (
-      mode === 'halfEven' ||
-      mode === 'halfExpand' ||
-      mode === 'halfTrunc' ||
-      mode === 'halfCeil' ||
-      mode === 'halfFloor'
-    )
-      return twiceRem > d;
-    throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
-  }
-  switch (mode) {
-    case 'halfEven':
-      return odd;
-    case 'halfExpand':
-      return true;
-    case 'halfTrunc':
-      return false;
-    case 'halfCeil':
-      return !neg;
-    case 'halfFloor':
-      return neg;
   }
   throw new RangeError(`Unknown rounding mode "${String(mode)}"`);
 }
