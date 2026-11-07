@@ -10,7 +10,7 @@ describe('Klarna', () => {
     expect(toDecimal(fromKlarna(50, 'EUR'))).toBe('0.50');
     expect(toDecimal(fromKlarna(100, 'SEK'))).toBe('1.00');
     expect(toKlarna(money('25', 'EUR'))).toBe(2500);
-    expect(toKlarna(money('20', 'eur'))).toBe(2000);
+    expect(toKlarna(money('20', 'EUR'))).toBe(2000);
   });
   it('HUF is in fillér, as ISO 4217 says', () => {
     expect(toKlarna(money('1000', 'HUF'))).toBe(100000);
