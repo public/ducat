@@ -11,6 +11,9 @@
 //   data/stripe.json           curated from https://docs.stripe.com/currencies
 //   data/adyen.json            curated from https://docs.adyen.com/development-resources/currency-codes
 //   data/cash-rounding.json    curated cash-rounding rules with sources
+//   data/<processor>.json      one file per further processor (checkout, ...), same shape:
+//                              currencies, defaultExponent (a number or "iso"), exponents and
+//                              multiples overrides, quoted sources with retrieval dates
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,6 +53,15 @@ const obj = (o) =>
     .map(([k, v]) => `  ${k}: ${JSON.stringify(v)},`)
     .join('\n') +
   '\n}';
+
+const PROCESSORS = [
+  [
+    'checkout',
+    'CHECKOUT_RULES',
+    ['standaloneMultiples'],
+    'Checkout.com currencies: [API exponent, payment amount multiple, Standalone API (authentication) multiple]. CLP is two-decimal with a multiple of 100; three-decimal currencies need a multiple of 10.',
+  ],
+];
 
 function generate() {
   const { published, entries } = parseIsoXml(read('data/iso4217-list-one.xml'));
@@ -107,6 +119,28 @@ function generate() {
     header('data/adyen.json (' + a.source + ', retrieved ' + a.retrieved + ')') +
     `\n/** Adyen minor-unit exponents (Adyen's table is authoritative where it differs from ISO: CLP, CVE, IDR, ISK). */\n` +
     `export const ADYEN_EXPONENTS: Readonly<Record<string, number>> = ${obj(a.exponents)};\n`;
+
+  // Further processors share one data shape: [API exponent, amount multiple, ...context multiples]
+  for (const [file, name, extra, doc] of PROCESSORS) {
+    const d = JSON.parse(read(`data/${file}.json`));
+    const rules = {};
+    for (const code of d.currencies.toSorted()) {
+      let e = d.exponents?.[code] ?? d.defaultExponent;
+      if (e === 'iso') e = iso[code];
+      if (typeof e !== 'number') throw new Error(`${file}: no exponent for ${code}`);
+      const m = d.multiples?.[code] ?? 1;
+      rules[code] = [e, m, ...extra.map((k) => d[k]?.[code] ?? m)];
+    }
+    const tuple = [
+      'exponent: number',
+      'multiple: number',
+      ...extra.map((k) => `${k.replace(/Multiples$/, '')}Multiple: number`),
+    ];
+    out[`${file}.ts`] =
+      header(`data/${file}.json (${Object.values(d.sources)[0].url}, retrieved ${d.retrieved})`) +
+      `\n/** ${doc} */\n` +
+      `export const ${name}: Readonly<Record<string, readonly [${tuple.join(', ')}]>> = ${obj(rules)};\n`;
+  }
 
   const c = JSON.parse(read('data/cash-rounding.json'));
   const rules = c.rules.map((r) => {

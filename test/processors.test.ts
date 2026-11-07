@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fromMinor, money, toDecimal, RoundingError, ISO_EXPONENTS } from '../src/index.js';
 import { fromStripe, stripeExponent, toStripe, toStripeAmount, STRIPE_RULES } from '../src/stripe.js';
 import { adyenExponent, fromAdyen, toAdyen, ADYEN_EXPONENTS } from '../src/adyen.js';
+import { toCheckoutAmount } from '../src/checkout.js';
 
 describe('Stripe', () => {
   it('standard and zero-decimal currencies', () => {
@@ -68,18 +69,22 @@ describe('Adyen', () => {
     expect(diff.sort()).toEqual(['CLP', 'CVE', 'IDR', 'ISK']);
     expect(adyenExponent('KWD')).toBe(3);
   });
-  it('same amount, different wire values', () => {
+});
+
+// The README's cross-processor table: the same 1000 major units on each processor's wire
+describe('same amount, different wire values', () => {
+  it('1000 units on every processor', () => {
     const rows = (['USD', 'JPY', 'ISK', 'IDR', 'CLP', 'KWD'] as const).map((c) => {
-      const m = fromMinor(10 ** (ISO_EXPONENTS[c] + 3), c); // 1000 major units
-      return [c, toStripeAmount(m), toAdyen(m).value];
+      const m = fromMinor(10 ** (ISO_EXPONENTS[c] + 3), c);
+      return [c, toStripeAmount(m), toAdyen(m).value, toCheckoutAmount(m)];
     });
     expect(rows).toEqual([
-      ['USD', 100000, 100000],
-      ['JPY', 1000, 1000],
-      ['ISK', 100000, 100000],
-      ['IDR', 100000, 1000],
-      ['CLP', 1000, 100000],
-      ['KWD', 1000000, 1000000],
+      ['USD', 100000, 100000, 100000],
+      ['JPY', 1000, 1000, 1000],
+      ['ISK', 100000, 100000, 1000],
+      ['IDR', 100000, 1000, 100000],
+      ['CLP', 1000, 100000, 100000],
+      ['KWD', 1000000, 1000000, 1000000],
     ]);
   });
 });

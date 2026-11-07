@@ -25,6 +25,10 @@
       "types": "./dist/adyen.d.ts",
       "default": "./dist/adyen.js"
     },
+    "./checkout": {
+      "types": "./dist/checkout.d.ts",
+      "default": "./dist/checkout.js"
+    },
     "./prisma": {
       "types": "./dist/prisma.d.ts",
       "default": "./dist/prisma.js"
