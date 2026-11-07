@@ -60,6 +60,11 @@
    "description": "90071992547409.93 (2^53+1 hundredths) round-trips"
   },
   {
+   "id": "add-trailing-zeros",
+   "group": "arithmetic",
+   "description": "1.00 + 80.19 = 81.19 (the first operand has trailing zeros)"
+  },
+  {
    "id": "big-add",
    "group": "large",
    "description": "90071992547409.92 + 0.01 = 90071992547409.93"
@@ -205,6 +210,12 @@
    "id": "big-2^53+1",
    "outcome": "pass",
    "got": "90071992547409.93"
+  },
+  {
+   "library": "ducat Money",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
   },
   {
    "library": "ducat Money",
@@ -370,6 +381,12 @@
   },
   {
    "library": "dnum 2.18.1",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
+  },
+  {
+   "library": "dnum 2.18.1",
    "id": "big-add",
    "outcome": "pass",
    "got": "90071992547409.93"
@@ -529,6 +546,12 @@
    "id": "big-2^53+1",
    "outcome": "pass",
    "got": "90071992547409.93"
+  },
+  {
+   "library": "ethers FixedNumber 6.17.0",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
   },
   {
    "library": "ethers FixedNumber 6.17.0",
@@ -694,6 +717,12 @@
   },
   {
    "library": "js-big-decimal 2.2.0",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
+  },
+  {
+   "library": "js-big-decimal 2.2.0",
    "id": "big-add",
    "outcome": "pass",
    "got": "90071992547409.93"
@@ -856,6 +885,12 @@
   },
   {
    "library": "bigdecimal.js 1.7.2",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
+  },
+  {
+   "library": "bigdecimal.js 1.7.2",
    "id": "big-add",
    "outcome": "pass",
    "got": "90071992547409.93"
@@ -1018,6 +1053,12 @@
   },
   {
    "library": "@formatjs/bigdecimal 0.2.10",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
+  },
+  {
+   "library": "@formatjs/bigdecimal 0.2.10",
    "id": "big-add",
    "outcome": "pass",
    "got": "90071992547409.93"
@@ -1177,6 +1218,12 @@
    "id": "big-2^53+1",
    "outcome": "pass",
    "got": "90071992547409.93"
+  },
+  {
+   "library": "bigint-money 2.0.1",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
   },
   {
    "library": "bigint-money 2.0.1",
