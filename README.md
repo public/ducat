@@ -263,9 +263,9 @@ await db.order.create({
 | `data/adyen.json`           | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                          |
 | `data/cash-rounding.json`   | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                  |
 
-- `npm run gen` (`scripts/gen-currencies.mjs`) turns these into `src/generated/*.ts`.
-- `npm run gen:check` fails if the generated files are stale. It also runs inside the test suite.
-- `npm run gen:fetch` downloads the live SIX list and diffs it against the snapshot (no differences on 2026-11-07).
+- `pnpm gen` (`scripts/gen-currencies.mjs`) turns these into `src/generated/*.ts`.
+- `pnpm gen:check` fails if the generated files are stale. It also runs inside the test suite.
+- `pnpm gen:fetch` downloads the live SIX list and diffs it against the snapshot (no differences on 2026-11-07).
 - Tests assert every ISO exponent against the published list of non-2 exponents:
   - 0: BIF CLP DJF GNF ISK JPY KMF KRW PYG RWF UGX UYI VND VUV XAF XOF XPF
   - 3: BHD IQD JOD KWD LYD OMR TND
@@ -297,7 +297,7 @@ Processor differences encoded:
 
 ## Tests
 
-`npm test` runs vitest: 171 tests in 9 files.
+`pnpm test` runs vitest: 171 tests in 9 files.
 
 - Unit tests use real-world vectors:
   - the `java.math.RoundingMode` table for all modes
@@ -317,14 +317,14 @@ Processor differences encoded:
   - instalment sums, tax breakdowns that add up
   - `parse(format(x))` across 12 locales
   - the Intl hand-off being bit-identical
-- `npm run typecheck` compiles `test/types.ts`. Its `@ts-expect-error` lines prove that currency mismatch, readonly fields and unknown rounding modes are compile errors.
-- `npm run test:runtimes` runs:
+- `pnpm typecheck` compiles `test/types.ts`. Its `@ts-expect-error` lines prove that currency mismatch, readonly fields and unknown rounding modes are compile errors.
+- `pnpm test:runtimes` runs:
   - the **full suite on Node 22, Bun 1.4 (via `bun test`) and Deno 2.9**: all pass
   - a bundled smoke test on Node 22, Node 18, Bun, Deno and the **SpiderMonkey and JavaScriptCore shells** (installed with jsvu): all pass. On Node 18, `format()` of amounts above 2^53 is lossy (no Intl string input).
 
 ## Benchmarks (indicative only)
 
-> These were run on a shared, noisy 4-vCPU Broadwell VPS. Runs are deliberately short, and run-to-run variation is ±20–30%, sometimes 2x. Use them to compare designs and libraries by order of magnitude, not as absolute numbers. To reproduce: `npm run bench` (writes `bench/RESULTS.md`).
+> These were run on a shared, noisy 4-vCPU Broadwell VPS. Runs are deliberately short, and run-to-run variation is ±20–30%, sometimes 2x. Use them to compare designs and libraries by order of magnitude, not as absolute numbers. To reproduce: `pnpm bench` (writes `bench/RESULTS.md`).
 
 ns per operation, this lib vs the fastest and slowest alternatives (full tables for all 7 libraries × 5 engines are in [bench/RESULTS.md](bench/RESULTS.md)):
 
