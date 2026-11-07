@@ -1,0 +1,17 @@
+{
+  "source": "https://docs.stripe.com/api/balance_transactions/object",
+  "retrieved": "2026-11-07",
+  "quotes": {
+    "exchange_rate": "If applicable, this transaction uses an exchange rate. If money converts from currency A to currency B, then the `amount` in currency A, multiplied by the `exchange_rate`, equals the `amount` in currency B. For example, if you charge a customer 10.00 EUR, the PaymentIntent's `amount` is `1000` and `currency` is `eur`. If this converts to 12.34 USD in your Stripe account, the BalanceTransaction's `amount` is `1234`, its `currency` is `usd`, and the `exchange_rate` is `1.234`.",
+    "amount": "Gross amount of this transaction (in the smallest currency unit). A positive value represents funds charged to another party, and a negative value represents funds sent to another party.",
+    "currency": "Three-letter ISO currency code, in lowercase. Must be a supported currency.",
+    "created": "Time at which the object was created. Measured in seconds since the Unix epoch."
+  },
+  "notes": [
+    "exchange_rate is a nullable JSON number; null when no conversion happened.",
+    "No rounding rule for conversions is documented on this page or on https://docs.stripe.com/currencies/conversions."
+  ],
+  "vectors": [
+    { "charge": { "amount": 1000, "currency": "eur" }, "balanceTransaction": { "amount": 1234, "currency": "usd", "exchange_rate": 1.234 } }
+  ]
+}

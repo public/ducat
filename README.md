@@ -82,25 +82,29 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                     | adds to `Money`                                                    | also exports                                              |
-| -------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- |
-| `@ducatjs/money`           | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents   |
-| `@ducatjs/money/allocate`  | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                                |
-| `@ducatjs/money/tax`       | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                  |
-| `@ducatjs/money/convert`   | `convert`                                                          | `convert`, `exchangeRate`                                 |
-| `@ducatjs/money/cash`      | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                        |
-| `@ducatjs/money/format`    | `format`, `formatToParts`                                          | the same                                                  |
-| `@ducatjs/money/parse`     | nothing                                                            | `parse`                                                   |
-| `@ducatjs/money/stripe`    | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                 |
-| `@ducatjs/money/adyen`     | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                   |
-| `@ducatjs/money/checkout`  | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…             |
-| `@ducatjs/money/paypal`    | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                 |
-| `@ducatjs/money/braintree` | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…           |
-| `@ducatjs/money/klarna`    | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                 |
-| `@ducatjs/money/prisma`    | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                |
-| `@ducatjs/money/fixed`     | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed` |
-| `@ducatjs/money/all`       | everything above                                                   | everything                                                |
-| `@ducatjs/money/fn`        | nothing                                                            | every free function, from every module                    |
+| import                      | adds to `Money`                                                    | also exports                                              |
+| --------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- |
+| `@ducatjs/money`            | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, the free functions, ISO exponents   |
+| `@ducatjs/money/allocate`   | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as free functions                                |
+| `@ducatjs/money/tax`        | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                  |
+| `@ducatjs/money/convert`    | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…           |
+| `@ducatjs/money/exact`      | `exact`                                                            | `ExactMoney`, `sumExact`                                  |
+| `.../convert/ecb`           | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                              |
+| `.../convert/fetch`         | nothing                                                            | `fetchEcb` (the only module that uses the network)        |
+| `.../stripe-fx`, `adyen-fx` | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`            |
+| `@ducatjs/money/cash`       | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                        |
+| `@ducatjs/money/format`     | `format`, `formatToParts`                                          | the same                                                  |
+| `@ducatjs/money/parse`      | nothing                                                            | `parse`                                                   |
+| `@ducatjs/money/stripe`     | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                 |
+| `@ducatjs/money/adyen`      | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                   |
+| `@ducatjs/money/checkout`   | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…             |
+| `@ducatjs/money/paypal`     | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                 |
+| `@ducatjs/money/braintree`  | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…           |
+| `@ducatjs/money/klarna`     | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                 |
+| `@ducatjs/money/prisma`     | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                |
+| `@ducatjs/money/fixed`      | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed` |
+| `@ducatjs/money/all`        | everything above                                                   | everything                                                |
+| `@ducatjs/money/fn`         | nothing                                                            | every free function, from every module                    |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that wants no prototype changes, or function-level tree-shaking (a module's methods keep all of its functions in a bundle), can use the free functions from `@ducatjs/money/fn` instead.
 
@@ -138,7 +142,7 @@ The sections below list each function with its free-function signature; the meth
 - `round(m, rounding, scale = ISO exponent)`, `toScale(m, scale, rounding?)`
 - `percentage(m, percent, rounding?)`, `discount(price, percent, rounding?)`
 - `addTax(net, percent, rounding?)` and `extractTax(gross, percent, rounding?)` both return `{ net, tax, gross }`, and net + tax is always exactly gross.
-- `convert(m, to, rate, rounding?, { scale? })`, `exchangeRate(from, to, rate)` returns `.convert(m, rounding)` and `.inverse()`. Rates are decimal strings: `'1.0832'`.
+- `convert(m, to, rate, rounding?, { scale? })` at a decimal-string rate, or `convert(m, exchangeRate(...), rounding?)`. See [Currency conversion](#currency-conversion).
 
 **Compare**
 
@@ -202,6 +206,44 @@ The sections below list each function with its free-function signature; the meth
 
 - `currencyExponent(code)`, `isCurrency(code)`, `ISO_EXPONENTS`, `ISO_4217_PUBLISHED`
 - `defineCurrency('BTC', 8)` adds a non-ISO code. To also get it in the `CurrencyCode` type, augment `interface CustomCurrencies`.
+
+### Currency conversion
+
+`@ducatjs/money/convert` converts at exact rates and rounds once, at the end. A rate is a `Rate`, an exact rational with the pair in its type, so converting the wrong currency is a compile error. Inverses and chains of rates are exact too: nothing is rounded until an amount is converted.
+
+```ts
+import { exchangeRate } from '@ducatjs/money/convert';
+
+const eurUsd = exchangeRate('EUR', 'USD', '1.1165', { source: 'ECB', asOf: '2026-11-06', type: 'reference' });
+eurUsd.convert(money('100', 'EUR'), 'halfEven'); // 111.65 USD
+eurUsd.inverse().toString(); // '2000/2233': exact, not 0.8956...
+eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedFrom`
+eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
+```
+
+Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate carries optional metadata: `source`, `asOf`, `validUntil` and `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
+
+**Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published.
+
+```ts
+import { snapshotsFrom, via } from '@ducatjs/money/convert';
+import { parseEcbXml } from '@ducatjs/money/convert/ecb';
+
+const history = snapshotsFrom(parseEcbXml(xml90Days));
+const fx = via('EUR', await history.at('2026-11-08')); // a Sunday: Friday's table
+money('100', 'USD').convert('JPY', fx, 'halfEven'); // 15833 JPY, through EUR, rounded once
+```
+
+**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`: the daily, 90-day and full-history XML and CSV files) and one opt-in fetcher (`@ducatjs/money/convert/fetch`, which uses the platform `fetch` and has a 30-second default timeout). Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+
+**Exact intermediates and residuals.** `@ducatjs/money/exact` adds `ExactMoney`, a rational amount for chained calculations that should round once at the end. In `@ducatjs/money/convert`, `convertDetailed()` also returns what rounding cost, so a ledger can book it:
+
+```ts
+const { value, residual } = convertDetailed(money('0.07', 'EUR'), eurUsd, 'halfEven');
+// value 0.08 USD; residual -369/200000 USD; value + residual is the exact conversion
+```
+
+**Totals in several currencies.** `bag(...amounts)` keeps per-currency totals, and `bag.total('EUR', fx, 'halfEven')` converts every entry exactly, sums and rounds once. To order amounts in different currencies, `comparator(fx, { base: 'USD' })` compares them through one base currency. With one rate per currency the order is consistent. Pairwise rates are not: with bid/ask or slightly inconsistent mid rates, A < B < C < A can happen, and `Array#sort` then gives engine-dependent results. `sortByValue(list, fx, { base })` looks every rate up before it reorders anything.
 
 ### Fixed-point decimals
 

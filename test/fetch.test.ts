@@ -25,8 +25,8 @@ describe('fetchEcb', () => {
   it('fetches and parses, with an injected fetch', async () => {
     const seen: unknown[] = [];
     const signal = new AbortController().signal;
-    const [t] = await fetchEcb({ fetch: fake(200, daily, seen), signal, timeout: 0 });
-    expect(t?.rate('EUR', 'USD')?.toString()).toBe('1.1165');
+    const [latest] = await fetchEcb({ fetch: fake(200, daily, seen), signal, timeout: 0 });
+    expect(latest?.rate('EUR', 'USD')?.toString()).toBe('1.1165');
     expect(seen).toEqual([[ECB_URLS.daily, { headers: { accept: 'application/xml' }, signal }]]);
     await fetchEcb({ fetch: fake(200, daily, seen), history: '90d' });
     expect((seen[1] as string[])[0]).toBe(ECB_URLS['90d']);
@@ -60,8 +60,8 @@ describe('fetchEcb', () => {
     const dir = new URL('../src/', import.meta.url);
     const importers = readdirSync(dir, { recursive: true })
       .map(String)
-      .filter((f) => f.endsWith('.ts') && f !== 'fetch.ts')
-      .filter((f) => IMPORTS_FETCH.test(readFileSync(new URL(f, dir), 'utf8')));
+      .filter((file) => file.endsWith('.ts') && file !== 'fetch.ts')
+      .filter((file) => IMPORTS_FETCH.test(readFileSync(new URL(file, dir), 'utf8')));
     expect(importers).toEqual([]);
     for (const line of [
       `import { fetchEcb } from './fetch.js';`,
