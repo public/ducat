@@ -137,7 +137,7 @@ function generate() {
     ` * of its codes, followed by the exponent when it is not 2.\n */\n` +
     `const PACKED = ${JSON.stringify(packed)};\n\n` +
     `/** ISO 4217 minor-unit exponent for every active code that has one. */\n` +
-    `export const ISO_EXPONENTS: Readonly<Record<IsoCurrencyCode, number>> = /* @__PURE__ */ unpackIsoExponents(PACKED);\n\n` +
+    `export const ISO_EXPONENTS: Readonly<Record<IsoCurrencyCode, number>> = /* @__PURE__ */ unpackIsoExponents(PACKED) as Record<\n  IsoCurrencyCode,\n  number\n>;\n\n` +
     UNPACK_SOURCE +
     `\n\n/** Active codes whose minor unit is "N.A." (precious metals, SDR, testing): not monetary, not in ISO_EXPONENTS. */\n` +
     `export const ISO_NON_MONETARY = ${JSON.stringify(nonMonetary)} as const;\n`;

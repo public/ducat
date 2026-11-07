@@ -179,7 +179,10 @@ export type IsoCurrencyCode =
 const PACKED = "EDFNLLMDOARSUDWGZN AMBDDTHD3IF0MDNDOBOVRLSDTNWPYNZD ADDFHEHFHWLF4LP0NYOPOURCUPVEZK JF0KKOPZD GPRNTBUR JDKP BPELHSIPMDNF0TQYD KDNLTGUF DRLSNRQD3RRSK0 MDOD3PY0 ESGSHRMF0PWRW0WD3YDZT AKBPKRRDSLYD3 ADDLGAKDMKNTOPRUURVRWKXNXVYRZN ADGNIOOKPRZD MR3 ABENGKHPKRLNYG0 AR ONSDUBWF0 ARBDCRDGEKGDHPLEOSRDSPTNVCYPZL HBJSMTND3OPRYTDWDZS AHGX0SDSNYI0YUYW4ZS EDESND0UV0 ST ADAF0CDCGOF0PF0 ER ARMWWG";
 
 /** ISO 4217 minor-unit exponent for every active code that has one. */
-export const ISO_EXPONENTS: Readonly<Record<IsoCurrencyCode, number>> = /* @__PURE__ */ unpackIsoExponents(PACKED);
+export const ISO_EXPONENTS: Readonly<Record<IsoCurrencyCode, number>> = /* @__PURE__ */ unpackIsoExponents(PACKED) as Record<
+  IsoCurrencyCode,
+  number
+>;
 
 function unpackIsoExponents(packed: string): Record<string, number> {
   const exponents: Record<string, number> = {};
