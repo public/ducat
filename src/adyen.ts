@@ -12,7 +12,9 @@ export { ADYEN_EXPONENTS };
 
 function exponent(currency: string): number {
   const found = ADYEN_EXPONENTS[currency];
-  if (found === undefined) {
+  // typeof, not !== undefined: the table is a plain object, so 'toString' or 'constructor' would
+  // otherwise find an inherited method instead of failing.
+  if (typeof found !== 'number') {
     throw new RangeError(`${currency} is not in Adyen's currency table`);
   }
   return found;
@@ -20,7 +22,7 @@ function exponent(currency: string): number {
 
 /** Whether Adyen lists the currency (its table, not ISO 4217). */
 export const isAdyenCurrency = (currency: string): boolean =>
-  ADYEN_EXPONENTS[currency] !== undefined;
+  typeof ADYEN_EXPONENTS[currency] === 'number';
 /** The exponent Adyen's API uses for a currency (CLP 2, ISK 2, IDR 0, CVE 0 differ from ISO). */
 export const adyenExponent = exponent;
 
