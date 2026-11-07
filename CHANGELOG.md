@@ -7,6 +7,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
+  (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
+  `assertCurrency` throws `CurrencyMismatchError` for another currency.
+
 ## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
