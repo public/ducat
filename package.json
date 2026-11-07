@@ -79,6 +79,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json",
     "test": "vitest run",
+    "test:deep": "DUCAT_DEEP=1 vitest run",
     "test:runtimes": "node scripts/smoke-runtimes.mjs",
     "gen": "node scripts/gen-currencies.mjs",
     "gen:check": "node scripts/gen-currencies.mjs --check",
