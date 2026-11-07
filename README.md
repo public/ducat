@@ -341,10 +341,10 @@ ns per operation, this lib vs the fastest and slowest alternatives (full tables 
 - On arithmetic, this library is 10–100x faster than dinero.js and the decimal libraries on every engine.
 - It is on par with currency.js and ts-money on compare and format, but those two use floats.
 - `format` is dominated by Intl itself (about 0.7–1.5 µs on every engine).
-- Bundle size (esbuild, minified + gzip):
-  - `money, add, multiply, toDecimal` alone: **3.1 kB**, of which about 1.3 kB is the ISO table
-  - the whole library: **9.0 kB**
-  - the same snippet with dinero.js (EUR only): 1.7 kB
+- Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.6 kB**, of which about 0.55 kB is the ISO table
+  - the core entry point: 4.6 kB; everything (`@ducatjs/money/all`): 10.9 kB
+  - the same snippet with dinero.js (EUR only): 1.9 kB
 
 ---
 
