@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { money } from '../src/fn.js';
 import { adyenRate } from '../src/adyen-fx.js';
 import { impliedRate } from '../src/rate.js';
@@ -80,6 +80,55 @@ describe('processor rates', () => {
       '2026-10-25T02:30:00.000Z',
     );
     expect(() => asOf('2026-11-06 12:00:00', undefined, 'Mars/Olympus')).toThrow(RangeError);
+  });
+
+  describe('Adyen account time zones', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const row = (created: string) => ({
+      'Gross Currency': 'USD',
+      'Net Currency': 'EUR',
+      'Exchange Rate': '0.92',
+      'Creation Date': created,
+    });
+
+    it('builds one formatter per zone, however many rows', () => {
+      const RealDateTimeFormat = Intl.DateTimeFormat;
+      const zones: string[] = [];
+      const CountingDateTimeFormat = function (
+        locales?: string | string[],
+        options?: Intl.DateTimeFormatOptions,
+      ) {
+        zones.push(String(options?.timeZone));
+        return new RealDateTimeFormat(locales, options);
+      };
+      vi.stubGlobal('Intl', { ...Intl, DateTimeFormat: CountingDateTimeFormat });
+
+      for (let day = 10; day < 30; day++) {
+        const options = { timeZone: 'Asia/Kolkata' };
+        expect(adyenRate(row(`2026-03-${day} 12:00:00`), options)?.asOf).toBe(
+          `2026-03-${day}T06:30:00.000Z`,
+        );
+      }
+      expect(zones).toEqual(['Asia/Kolkata']);
+    });
+
+    it('stays correct when more zones are used than are cached', () => {
+      const zones = Intl.supportedValuesOf('timeZone').slice(0, 100);
+      for (const round of [0, 1]) {
+        for (const timeZone of zones) {
+          const asOf = adyenRate(row('2026-07-06 12:00:00'), { timeZone })?.asOf;
+          const back = new Intl.DateTimeFormat('sv-SE', {
+            timeZone,
+            dateStyle: 'short',
+            timeStyle: 'medium',
+          }).format(new Date(asOf!));
+          expect([round, timeZone, back]).toEqual([round, timeZone, '2026-07-06 12:00:00']);
+        }
+      }
+    });
   });
 
   it('impliedRate is the exact settled ÷ presented, refunds included', () => {

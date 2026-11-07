@@ -7,6 +7,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Changed
+
+- `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
+  building one for every row, which makes it about 20 times faster.
+
 ## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
