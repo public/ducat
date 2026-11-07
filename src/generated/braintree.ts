@@ -136,5 +136,5 @@ export const BRAINTREE_EXPONENTS: Readonly<Record<string, number>> = {
   YER: 2,
   ZAR: 2,
   ZMK: 2,
-  ZWD: 0,
+  ZWD: 2,
 };

@@ -19,6 +19,9 @@ const VALUE_PATTERN = /^((-?[0-9]+)|(-?([0-9]+)?[.][0-9]+))$/;
 /** PayPal allows at most 15 digits before the decimal point. */
 const MAX_INTEGER_DIGITS = 15;
 
+/** The `value` field's maxLength in the Orders v2 schema. */
+const MAX_VALUE_LENGTH = 32;
+
 /** The number of decimals PayPal takes for a currency (JPY, HUF, TWD 0; the others 2). */
 export function paypalExponent(currency: string): number {
   const exponent = PAYPAL_EXPONENTS[currency.toUpperCase()];
@@ -38,10 +41,16 @@ export interface PayPalAmountOptions {
   readonly rounding?: RoundingMode;
 }
 
-/** The exact `value` string: toPayPalValue(money('10.99', 'USD')) === '10.99', HUF 1000 -> '1000'. */
+/**
+ * The exact `value` string: toPayPalValue(money('10.99', 'USD')) === '10.99', HUF 1000 -> '1000'.
+ * Throws a RangeError for negative amounts (refunds are sent as positive amounts).
+ */
 export function toPayPalValue(money: Money, options?: PayPalAmountOptions): string {
   const rounding = options?.rounding ?? 'unnecessary';
-  const value = toProcessorDecimal('PayPal', money, paypalExponent(money.currency), rounding);
+
+  // "The amount must be a positive number"; zero stays allowed because the same money object is
+  // used for breakdown fields such as a zero tax_total. Refunds are positive amounts.
+  const value = toProcessorDecimal('PayPal', money, paypalExponent(money.currency), rounding, 'nonNegative');
 
   const integerDigits = value.replace('-', '').split('.')[0]!;
   if (integerDigits.length > MAX_INTEGER_DIGITS) {
@@ -61,5 +70,5 @@ export function fromPayPal<C extends CurrencyInput>(amount: { currency_code: C; 
 
   // Validates the currency before parsing, so an unlisted currency is the error reported.
   paypalExponent(code);
-  return fromProcessorDecimal('PayPal', amount.value, code, VALUE_PATTERN);
+  return fromProcessorDecimal('PayPal', amount.value, code, VALUE_PATTERN, MAX_VALUE_LENGTH);
 }

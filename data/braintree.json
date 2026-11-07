@@ -7,7 +7,7 @@
       "url": "https://developer.paypal.com/braintree/docs/reference/general/currencies",
       "quotes": [
         "The following currency types are supported in the Braintree API. Available currencies will differ depending on your account setup and the country your company is located in.",
-        "Zero-decimal currencies are marked with an asterisk.",
+        "*Zero-decimal currencies are marked with an asterisk.",
         "BGN is no longer supported for authorization or settlement. Use EUR for all transactions involving Bulgaria."
       ]
     },
@@ -61,7 +61,7 @@
     "XOF": 0,
     "XPF": 0,
     "ZMK": 2,
-    "ZWD": 0
+    "ZWD": 2
   },
   "currencies": [
     "AED",
@@ -200,15 +200,15 @@
     "ZWD"
   ],
   "notes": [
-    "The amount is a decimal string in major units: '10.00', or '10' for a zero-decimal currency. Negative amounts are an error, refunds and credits included.",
-    "Zero-decimal: the 16 ISO 0-decimal currencies listed, plus LAK (ISO 2) and ZWD (withdrawn). CLP, ISK and UGX are 0 as in ISO, unlike Adyen (CLP 2, ISK 2) and Stripe (ISK, UGX x100).",
+    "The amount is a decimal string in major units: '10.00', or '10' for a zero-decimal currency. Zero and negative amounts are errors (81531, 81501), refunds and credits included.",
+    "Zero-decimal (17 marked with an asterisk): the 16 ISO 0-decimal currencies listed, plus LAK (ISO 2). CLP, ISK and UGX are 0 as in ISO, unlike Adyen (CLP 2, ISK 2) and Stripe (ISK, UGX x100).",
     "No ISO three-decimal currency (BHD, IQD, JOD, KWD, LYD, OMR, TND) is listed.",
-    "Withdrawn codes still listed: HRK, LTL, SLL, STD, ZMK (2 decimals; the page marks none of them zero-decimal) and ZWD (marked zero-decimal).",
+    "Withdrawn codes still listed: HRK, LTL, SLL, STD, ZMK and ZWD. The page marks none of them zero-decimal, so they are taken as 2.",
     "The GraphQL Amount scalar allows three decimals; the REST sale page says x.xx. toBraintree emits the currency's decimals, which both accept."
   ],
   "unverified": [
     {
-      "claim": "Withdrawn codes HRK, LTL, SLL, STD and ZMK take 2 decimals (the page only says which currencies are zero-decimal).",
+      "claim": "Withdrawn codes HRK, LTL, SLL, STD, ZMK and ZWD take 2 decimals (the page only says which currencies are zero-decimal).",
       "verified": false
     },
     {

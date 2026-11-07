@@ -17,7 +17,6 @@
     },
     "currencies": {
       "url": "https://www.checkout.com/docs/developer-resources/codes/currency-codes",
-      "lastUpdated": "2026-05-06",
       "quotes": [
         "The following table lists the three-letter ISO 4217 code for each of the major currencies we support."
       ]
