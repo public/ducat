@@ -5,9 +5,14 @@ import { extendMoney, money, type Money } from '../src/index.js';
 const proto = Object.getPrototypeOf(money('1', 'EUR')) as Record<string, unknown>;
 
 describe('opt-in modules', () => {
-  it('the core alone has only the core methods', () => {
-    for (const name of ['allocate', 'split', 'addTax', 'convert', 'cashRound', 'format', 'toStripe', 'toAdyen'])
-      expect(name in proto, name).toBe(false);
+  it.each(['allocate', 'split', 'addTax', 'convert', 'cashRound', 'format', 'toStripe', 'toAdyen'])(
+    'the core alone has no %s method',
+    (name) => {
+      expect(name in proto).toBe(false);
+    },
+  );
+
+  it('the core has its own methods', () => {
     expect(typeof proto.add).toBe('function');
   });
 
@@ -23,7 +28,7 @@ describe('opt-in modules', () => {
 
   it('every module installs what it declares', async () => {
     await import('../src/plugins/all.js');
-    for (const name of [
+    const expected = [
       'allocate',
       'split',
       'instalments',
@@ -42,8 +47,9 @@ describe('opt-in modules', () => {
       'toStripeAmount',
       'toAdyen',
       'toDecimalValue',
-    ])
-      expect(typeof proto[name], name).toBe('function');
+    ];
+    const missing = expected.filter((name) => typeof proto[name] !== 'function');
+    expect(missing).toEqual([]);
   });
 
   it('extendMoney: re-installing the same function is a no-op, a different one throws', () => {
