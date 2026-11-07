@@ -22,6 +22,22 @@ export interface RateInfo {
 export interface ConvertOptions {
   /** Result scale (default: the target currency's exponent). */
   readonly scale?: number;
+  /**
+   * Throw RateExpiredError when the rate has a `validUntil` that has passed (by the system clock).
+   * Off by default: ducat reads no clock unless asked to.
+   */
+  readonly strictValidity?: boolean;
+}
+
+/** Thrown by a strict-validity conversion with a rate past its `validUntil`. */
+export class RateExpiredError extends RangeError {
+  readonly validUntil: string;
+
+  constructor(from: string, to: string, validUntil: string) {
+    super(`Exchange rate ${from}→${to} expired at ${validUntil}`);
+    this.name = 'RateExpiredError';
+    this.validUntil = validUntil;
+  }
 }
 
 /** The JSON form of a Rate: the exact decimal string, or "num/den" when it doesn't terminate. */
@@ -42,11 +58,22 @@ type LooseInfo = { readonly [Key in keyof RateInfo]?: RateInfo[Key] | undefined 
 
 const OPPOSITE_SIDE: Record<string, RateType> = { bid: 'ask', ask: 'bid' };
 
-function toIsoString(time: string | Date): string {
-  if (time instanceof Date) {
-    return time.toISOString();
+const ISO_DATE = /^\d{4}-\d\d-\d\d$/;
+
+/**
+ * @internal
+ * A date stays as given ('2026-11-06'); an instant becomes UTC ISO ('2026-11-06T15:00:00.000Z'), so
+ * that times with different offsets compare correctly as strings.
+ */
+export function toIsoString(time: string | Date): string {
+  if (typeof time === 'string' && ISO_DATE.test(time)) {
+    return time;
   }
-  return time;
+  const date = time instanceof Date ? time : new Date(time);
+  if (Number.isNaN(date.getTime())) {
+    throw new RangeError(`Invalid date or time ${String(time)}`);
+  }
+  return date.toISOString();
 }
 
 /** The earlier of two ISO-8601 strings (one format compares lexicographically); undefined = no limit. */
@@ -119,12 +146,15 @@ export class Rate<From extends string = string, To extends string = string> {
 
   /** @internal use exchangeRate() */
   constructor(from: From, to: To, rate: Ratio, info?: RateInfo, derivedFrom?: readonly Rate[]) {
-    if (rate.num <= 0n) {
+    // Rebuilt so that a hand-made Ratio object is reduced, has a positive denominator, and has
+    // number fields that match its bigints (the fast path relies on them).
+    const normalized = ratio(rate.num, rate.den);
+    if (normalized.num <= 0n) {
       throw new RangeError('Exchange rate must be positive');
     }
     this.from = from;
     this.to = to;
-    this.ratio = rate;
+    this.ratio = normalized;
 
     // Only defined fields are assigned, so rates compare and serialise without undefined keys.
     const writable = this as { -readonly [Key in keyof Rate]?: unknown };
@@ -209,10 +239,28 @@ export class Rate<From extends string = string, To extends string = string> {
     return json;
   }
 
+  /** Whether `validUntil` has passed at `now` (default: the system clock). A date is valid all day (UTC). */
+  isExpired(now: string | Date = new Date()): boolean {
+    if (this.validUntil === undefined) {
+      return false;
+    }
+    let instant = toIsoString(now);
+    if (ISO_DATE.test(instant)) {
+      instant = `${instant}T00:00:00.000Z`;
+    }
+    if (ISO_DATE.test(this.validUntil)) {
+      return instant.slice(0, 10) > this.validUntil;
+    }
+    return instant > this.validUntil;
+  }
+
   /** Converts `money`, rounding once to the target currency's exponent (or `options.scale`). */
   convert(money: Money<From>, rounding: RoundingMode = DEFAULT_ROUNDING, options?: ConvertOptions): Money<To> {
     if (money.currency !== this.from) {
       throw new CurrencyMismatchError(this.from, money.currency);
+    }
+    if (options?.strictValidity === true && this.validUntil !== undefined && this.isExpired()) {
+      throw new RateExpiredError(this.from, this.to, this.validUntil);
     }
     const scale = options?.scale ?? currencyExponent(this.to);
     const minor = multiplyByRatioAtScale(money.minor, this.ratio, scale - money.scale, rounding);
