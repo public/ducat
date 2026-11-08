@@ -1,6 +1,7 @@
 // Network fetchers for published reference rates, using the platform fetch. Opt-in: nothing else in
 // the library imports this module, so core and @ducatjs/money/convert never touch the
 // network. You decide when to call it and how to cache.
+import { parseBankOfCanadaJson } from './boc.js';
 import { parseEcbXml } from './ecb.js';
 import type { RateTable } from './provider.js';
 
@@ -73,24 +74,7 @@ export class FetchRatesError extends Error {
  */
 export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> {
   const url = ECB_URLS[options?.history ?? 'daily'];
-  const fetchFunction = options?.fetch ?? (globalThis as { fetch?: Fetch }).fetch;
-  if (fetchFunction === undefined) {
-    throw new TypeError('No fetch available: pass options.fetch');
-  }
-
-  const init: { signal?: AbortSignalLike; headers: Record<string, string> } = {
-    headers: { accept: 'application/xml' },
-  };
-  const signal = requestSignal(options?.signal, options?.timeout ?? DEFAULT_TIMEOUT_MS);
-  if (signal !== undefined) {
-    init.signal = signal;
-  }
-  const response = await fetchFunction(url, init);
-  if (!response.ok) {
-    throw new FetchRatesError(url, response.status);
-  }
-
-  const body = await response.text();
+  const body = await getText(url, 'application/xml', options);
   try {
     return parseEcbXml(body);
   } catch (error) {
@@ -124,4 +108,81 @@ function requestSignal(
     return signal;
   }
   return statics.any([signal, timeoutSignal]);
+}
+
+/** GETs `url` as text, with the timeout and signal handling every fetcher here shares. */
+async function getText(
+  url: string,
+  accept: string,
+  options: Omit<FetchEcbOptions, 'history'> | undefined,
+): Promise<string> {
+  const fetchFunction = options?.fetch ?? (globalThis as { fetch?: Fetch }).fetch;
+  if (fetchFunction === undefined) {
+    throw new TypeError('No fetch available: pass options.fetch');
+  }
+  const init: { signal?: AbortSignalLike; headers: Record<string, string> } = {
+    headers: { accept },
+  };
+  const signal = requestSignal(options?.signal, options?.timeout ?? DEFAULT_TIMEOUT_MS);
+  if (signal !== undefined) {
+    init.signal = signal;
+  }
+  const response = await fetchFunction(url, init);
+  if (!response.ok) {
+    throw new FetchRatesError(url, response.status);
+  }
+  return response.text();
+}
+
+/** A UTC day for a request, or RangeError. */
+function requestDay(time: string | Date, name: string): string {
+  const day = (typeof time === 'string' ? time : time.toISOString()).slice(0, 10);
+  if (!/^\d{4}-\d\d-\d\d$/.test(day) || Number.isNaN(Date.parse(day))) {
+    throw new RangeError(`${name} must be a date, got ${String(time)}`);
+  }
+  return day;
+}
+
+/** The Bank of Canada's Valet API for its daily exchange rates (no key; CORS-enabled). */
+export const BANK_OF_CANADA_URL =
+  'https://www.bankofcanada.ca/valet/observations/group/FX_RATES_DAILY/json';
+
+/** Options for fetching Bank of Canada rates. */
+export interface FetchBankOfCanadaOptions extends Omit<FetchEcbOptions, 'history'> {
+  /** The first day (2017-01-03 at the earliest). Default: only the latest published day. */
+  readonly start?: string | Date;
+  /** The last day (default: the latest published). */
+  readonly end?: string | Date;
+}
+
+/**
+ * Fetches the Bank of Canada's daily exchange rates from its Valet API and parses them with
+ * parseBankOfCanadaJson: CAD-based tables, newest first. Without `start`, only the latest day.
+ * The Bank asks you not to exceed its (unpublished) request limits, and its rates are "released
+ * for statistical and analytical purposes only", not for transactions.
+ *
+ *     const [latest] = await fetchBankOfCanada();
+ *     const year = await fetchBankOfCanada({ start: '2026-01-01' });
+ */
+export async function fetchBankOfCanada(options?: FetchBankOfCanadaOptions): Promise<RateTable[]> {
+  let query = '?recent=1';
+  if (options?.start !== undefined) {
+    query = `?start_date=${requestDay(options.start, 'start')}`;
+    if (options.end !== undefined) {
+      query += `&end_date=${requestDay(options.end, 'end')}`;
+    }
+  } else if (options?.end !== undefined) {
+    throw new RangeError('end needs a start');
+  }
+  const url = `${BANK_OF_CANADA_URL}${query}`;
+  const body = await getText(url, 'application/json', options);
+  try {
+    return parseBankOfCanadaJson(body);
+  } catch (error) {
+    // An error page or a captive portal is the usual cause, so say where the bad file came from.
+    if (error instanceof SyntaxError) {
+      throw new SyntaxError(`${error.message} (from ${url})`, { cause: error });
+    }
+    throw error;
+  }
 }
