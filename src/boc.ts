@@ -3,10 +3,9 @@
 // @ducatjs/money/convert/fetch. Rates are kept exactly as published.
 import { quotedTable } from './history.js';
 import type { RateTable } from './provider.js';
-import { readRateCell } from './rate-text.js';
+import { addDayRate, isCalendarDay, newestFirst, readRateCell } from './rate-text.js';
 
 const SERIES = /^FX([A-Z]{3})CAD$/;
-const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
 const ZERO = /^0+(?:\.0+)?$/;
 
 // The Bank publishes "once each business day by 16:30 (ET)". One formatter for the zone, built on
@@ -28,16 +27,6 @@ function publishedBy(day: string): string {
   }
   const utcMs = Date.parse(`${day}T16:30:00Z`) - Number(offset[1]) * 3_600_000;
   return new Date(utcMs).toISOString();
-}
-
-/** Whether `text` is a real calendar day in ISO form ('2026-02-30' is not). */
-function isCalendarDay(text: string): boolean {
-  const match = ISO_DAY.exec(text);
-  if (match === null) {
-    return false;
-  }
-  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-  return date.toISOString().slice(0, 10) === text;
 }
 
 function notValet(why: string): never {
@@ -98,11 +87,6 @@ export function parseBankOfCanadaJson(json: string, options?: BankOfCanadaOption
     if (typeof day !== 'string' || !isCalendarDay(day)) {
       notValet(`bad date ${JSON.stringify(day)}`);
     }
-    let rates = days.get(day);
-    if (rates === undefined) {
-      rates = {};
-      days.set(day, rates);
-    }
 
     for (const [series, cell] of Object.entries(observation)) {
       if (series === 'd') {
@@ -121,16 +105,14 @@ export function parseBankOfCanadaJson(json: string, options?: BankOfCanadaOption
       if (rate !== null && ZERO.test(rate)) {
         throw new SyntaxError(`A zero rate for ${where}`);
       }
-      // The same series twice on one day is a repeat or a contradiction; never pick one.
-      const earlier = rates[currency];
-      if (earlier !== undefined && earlier !== rate) {
-        throw new SyntaxError(`Two different values for ${where}: ${earlier} and ${rate}`);
-      }
-      rates[currency] = rate;
+      addDayRate(days, day, currency, rate);
     }
     // Valet leaves out a series without a value that day.
     for (const series of expected) {
-      rates[SERIES.exec(series)![1]!] ??= null;
+      const currency = SERIES.exec(series)![1]!;
+      if (days.get(day)?.[currency] === undefined) {
+        addDayRate(days, day, currency, null);
+      }
     }
   }
 
@@ -150,5 +132,5 @@ export function parseBankOfCanadaJson(json: string, options?: BankOfCanadaOption
       quotedTable({ ...info, ...(availableAt === undefined ? {} : { availableAt }), rates }),
     );
   }
-  return tables.sort((table, other) => other.asOf!.localeCompare(table.asOf!));
+  return newestFirst(tables);
 }
