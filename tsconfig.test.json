@@ -9,6 +9,7 @@
   "include": ["src", "test", "bench"],
   "exclude": [
     "test/core-only",
+    "test/plugin-types",
     "test/browser",
     "src/drizzle",
     "test/db/drizzle.test.ts",
