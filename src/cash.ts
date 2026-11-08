@@ -10,6 +10,7 @@ import {
 import { roundingPolicy } from './policy.js';
 import { divideAndRound, divideAndRoundBigint, type RoundingMode } from './rounding.js';
 import { currencyExponent } from './currency.js';
+import { formatScaled } from './decimal.js';
 
 /**
  * Rounds to a multiple of `increment` (same currency): roundToIncrement(CHF 10.03, CHF 0.05) = CHF
@@ -178,6 +179,31 @@ export function currencyDigits(currency: string, options?: CurrencyDigitsOptions
     return 0;
   }
   return exponent;
+}
+
+/** Options for `cashUnit`. */
+export interface CashUnitOptions {
+  /** The country (ISO 3166 alpha-2), which EUR needs. */
+  readonly country?: string;
+  /** Whether to use rules backed only by secondary sources (default true). */
+  readonly includeUnverified?: boolean;
+}
+
+/**
+ * The smallest cash step, in major units, as an exact decimal string without trailing zeros: the smallest coin in use
+ * where the cash rules know one. `cashUnit('CHF')` is '0.05', `cashUnit('SEK')` is '1',
+ * `cashUnit('EUR', { country: 'NL' })` is '0.05'. A currency without a cash rule (or EUR without a
+ * country that has one) gives its minor unit, '0.01' for GBP. Throws for unknown codes, like
+ * `currencyExponent`.
+ */
+export function cashUnit(currency: string, options?: CashUnitOptions): string {
+  const exponent = currencyExponent(currency);
+  const rule = cashRule(currency, options?.country);
+  if (!rule || (options?.includeUnverified === false && !rule.verified)) {
+    return formatScaled(1, exponent);
+  }
+  // without trailing zeros: SEK's step is 100 öre, '1' rather than '1.00'
+  return formatScaled(rule.increment, exponent).replace(/\.0+$|(\.\d*?)0+$/, '$1');
 }
 
 export { CASH_RULES, type CashRule };
