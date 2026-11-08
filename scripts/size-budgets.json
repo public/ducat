@@ -5,14 +5,16 @@
     "@ducatjs/money/tax": 4.02,
     "@ducatjs/money/convert": 7.36,
     "@ducatjs/money/convert/ecb": 7.45,
-    "@ducatjs/money/convert/fetch": 8.32,
+    "@ducatjs/money/convert/fetch": 9.53,
+    "@ducatjs/money/convert/fed": 7.12,
     "@ducatjs/money/convert/history": 6.35,
+    "@ducatjs/money/convert/boc": 6.7,
     "@ducatjs/money/exact": 4.28,
     "@ducatjs/money/policy": 4.1,
     "@ducatjs/money/cash": 6.29,
     "@ducatjs/money/format": 4.17,
     "@ducatjs/money/fixed": 5.37,
-    "@ducatjs/money/parse": 4.81,
+    "@ducatjs/money/parse": 5.94,
     "@ducatjs/money/stripe": 5.02,
     "@ducatjs/money/adyen": 4.5,
     "@ducatjs/money/checkout": 5.0,
@@ -28,6 +30,10 @@
     "@ducatjs/money/zod": 4.72,
     "@ducatjs/money/valibot": 4.73,
     "@ducatjs/money/pg": 6.1,
+    "@ducatjs/money/testing": 5.07,
+    "@ducatjs/money/testing/vitest": 5.1,
+    "@ducatjs/money/testing/jest": 5.17,
+    "@ducatjs/money/testing/arbitraries": 4.67,
     "@ducatjs/money/kysely": 6.45
   },
   "aggregateCeilings": {
@@ -54,6 +60,10 @@
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",
       "gzipped": 5.22
+    },
+    "parse: parse alone, without detection": {
+      "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 \u20ac', 'EUR', 'de-DE').toString());",
+      "gzipped": 4.84
     }
   }
 }

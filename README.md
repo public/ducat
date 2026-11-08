@@ -129,12 +129,14 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                       |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                |
 | `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                  |
-| `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange` (the only module with network I/O) |
+| `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                        |
+| `.../convert/fed`                   | nothing                                                            | `parseFedH10Csv` (parser only)                                 |
+| `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O) |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`…                            |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                       |
-| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                        |
+| `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                          |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                      |
 | `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                        |
 | `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                  |
@@ -148,7 +150,10 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
 | `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)       |
 | `@ducatjs/money/valibot`            | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Valibot, an optional peer)   |
-| `@ducatjs/money/all`                | the methods of every module above                                  | everything except the database and schema entries              |
+| `@ducatjs/money/testing`            | nothing                                                            | matchers, value equality, snapshot serializer                  |
+| `.../testing/vitest`, `/jest`       | nothing (installs on `expect`)                                     | the same, set up in one import                                 |
+| `.../testing/arbitraries`           | nothing                                                            | `arbMoney`, `arbCurrency` (fast-check)                         |
+| `@ducatjs/money/all`                | the methods of every module above                                  | everything except the database, schema and testing entries     |
 | `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules          |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that must not change any prototype (a library built on ducat, for example) can use the plain functions from `@ducatjs/money/fn` instead.
@@ -296,7 +301,26 @@ assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws
   - NBSP and narrow NBSP, Swiss `’`
   - Arabic-Indic, Persian, Devanagari and Thai digits
   - accounting parentheses and U+2212 minus
-- The currency always comes from the argument and is never guessed from the text. A `parse(format(x)) == x` property test runs across 14 locales.
+- `parse` takes the currency from its argument and never guesses it from the text. A `parse(format(x)) == x` property test runs across 14 locales.
+- `parseMoney(text, locale, { hint?, symbols?, currencies?, lenient?, scale?, rounding? })` detects the currency from the text, and like the rest of ducat it never guesses.
+  - It reads ISO codes and symbols that mean exactly one currency, either in the locale (from `Intl.NumberFormat`) or in English (`US$`, `CA$`, `A$`). Then it reads the number as `parse` does.
+  - A symbol several currencies share (`$`, `kr`, and also `£` and `¥`, which other currencies use as narrow symbols) needs a `hint`, or your own `symbols` map such as `{ $: 'CAD' }`. This holds even where the locale "owns" it: `$` in en-CA is usually CAD, but a Canadian text can mean USD.
+  - It throws when a currency in the text contradicts the `hint`, when the text names two currencies, and when text around the number isn't a currency (`"about 100 USD"`).
+  - It also throws for a locale the runtime has no Intl data for, instead of quietly using another locale's separators and symbols, and for group separators in the wrong places for the locale (`1,234,567`; `12,34,567` in en-IN).
+  - `lenient: true` accepts any grouping, and a bare number when a `hint` is given. It never makes the currency a guess.
+  - `currencies` limits what is detected, and can include codes registered with `defineCurrency`.
+
+```ts
+import { parseMoney } from '@ducatjs/money/parse';
+
+parseMoney('CHF 1’234.50', 'de-CH'); // → 1234.50 CHF
+parseMoney('1.234,50 €', 'de-DE'); // → 1234.50 EUR
+parseMoney('$5.00', 'en-CA'); // throws (CAD, USD, AUD...: pass a hint)
+parseMoney('$5.00', 'en-CA', { hint: 'CAD' }); // → 5.00 CAD
+parseMoney('$5.00', 'en-CA', { symbols: { $: 'CAD' } }); // → 5.00 CAD
+parseMoney('€5.00', 'en-IE', { hint: 'USD' }); // throws
+parseMoney('12.34', 'en', { hint: 'EUR', lenient: true }); // → 12.34 EUR
+```
 
 **Serialise**
 
@@ -401,7 +425,7 @@ nok.rate('NOK', 'JPY')?.quote; // → { rate: '6.50', per: 100, inverted: true }
 nok.missing; // → ['ISK']
 ```
 
-**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. There are two opt-in fetchers in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. The opt-in fetchers are in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. The Bank of Canada's daily rates come from its Valet API (`parseBankOfCanadaJson` in `@ducatjs/money/convert/boc`, and `fetchBankOfCanada()`, also keyless and CORS-enabled). The Bank quotes CAD per unit of each currency, so the tables hold exact inverses with the published quote kept, and its rates carry `availableAt` 16:30 Toronto time, when it says it publishes them. It quotes four decimals (up to six for small rates), so a small rate has only about four significant digits: JPY `0.008760`, KRW `0.000929`, and IDR `0.000082` with two. The inverse of such a rate is exact, but no more precise than the quote, so for those currencies prefer a source that quotes them the other way round. The Federal Reserve's H.10 rates (noon buying rates in New York, certified for US customs, daily since 1971) have a parser only, `parseFedH10Csv` in `@ducatjs/money/convert/fed`, for the CSV from the Board's Data Download Program (release H10, series in columns, with labels). H.10 quotes currency per USD except AUD, EUR, NZD and GBP, which it quotes as USD per unit; those four are stored as exact inverses with the published quote kept, so every table is USD → currency. Holidays are rows of `ND` and are left out. The Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule out a fetcher in ducat, so download the CSV yourself. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
 
 <!-- doctest: setup import { readFileSync } from 'node:fs'; const sdmxCsv = readFileSync('test/fixtures/ecb-sdmx/exr-d-full.csv', 'utf8'); -->
 
@@ -413,6 +437,26 @@ import { rateHistory } from '@ducatjs/money/convert/history';
 const history = rateHistory(parseEcbSdmxCsv(sdmxCsv));
 history.rate('EUR', 'ISK', { asOf: '2026-01-06' })?.toString(); // → '147.20' (the API sends 147.2)
 history.rate('EUR', 'USD', { asOf: '2025-12-26' })?.asOf; // → '2025-12-24' (Christmas)
+```
+
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const valetJson = readFileSync('test/fixtures/boc/fx-rates-daily.json', 'utf8'); -->
+
+```ts
+import { parseBankOfCanadaJson } from '@ducatjs/money/convert/boc';
+
+const [latest] = parseBankOfCanadaJson(valetJson); // what fetchBankOfCanada() parses
+latest?.rate('CAD', 'USD')?.inverse().toString(); // → '1.3789' (CAD per USD, as published)
+latest?.availableAt; // → '2026-01-06T21:30:00.000Z' (16:30 in Toronto)
+```
+
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const h10Csv = readFileSync('test/fixtures/fed/h10-daily.csv', 'utf8'); -->
+
+```ts
+import { parseFedH10Csv } from '@ducatjs/money/convert/fed';
+
+const [latest] = parseFedH10Csv(h10Csv); // a DDP download of H.10
+latest?.rate('USD', 'JPY')?.toString(); // → '156.7000' (yen per USD, as published)
+latest?.rate('USD', 'EUR')?.inverse().toString(); // → '1.1689' (USD per euro, as published)
 ```
 
 **Exact intermediates and residuals.** `@ducatjs/money/exact` adds `ExactMoney`, a rational amount for chained calculations that should round once at the end. In `@ducatjs/money/convert`, `convertDetailed()` also returns what rounding cost, so a ledger can book it:
@@ -784,6 +828,67 @@ These are stated over the proved kernel (`divRound`):
 
 - **The TypeScript `instalments`, `chunk`, `schedule` and `roundToIncrement`**, compared with their models' oracle fixtures, on both the number and bigint paths, including the cases where `schedule` must throw.
 - `split` without a unit is `allocate` with equal weights. Decimal parsing, `Intl` formatting and parsing, and the processor and database adapters are tested, not proved.
+
+## Testing your code
+
+`@ducatjs/money/testing` makes Money pleasant to test with Vitest and Jest. One import in a setup file is enough:
+
+<!-- doctest: skip (a setup-file import, shown for its setup) -->
+
+```ts
+import '@ducatjs/money/testing/vitest'; // or '@ducatjs/money/testing/jest', or installMoneyMatchers(expect)
+```
+
+- **Value equality.** `toEqual`, `toStrictEqual` and nested structures compare Money by value: 1.0 EUR at scale 1 equals 1.00 EUR, and number and bigint minor units compare as equal.
+- **Readable output.** Snapshots and failure diffs show `12.34 EUR`, and `console.log` shows `Money(12.34 EUR)`.
+- **Matchers**, whose failures read "expected 12.35 EUR to be 12.34 EUR":
+  - `toBeMoney(amount, currency)` and `toHaveCurrency(code)`;
+  - `toBeGreaterThanMoney`, `toBeGreaterThanOrEqualMoney`, `toBeLessThanMoney` and `toBeLessThanOrEqualMoney`;
+  - `toSumTo(total)`, which checks that a list of parts sums exactly to a total, for allocation and instalment tests.
+- **Arbitraries** in `@ducatjs/money/testing/arbitraries`, for fast-check property tests. `arbMoney({ currency?, min?, max?, scale? })` and `arbCurrency({ exponents?, all? })` cover minor units beyond 2^53, currencies with exponents 0, 3 and 4, and scales above the currency's exponent.
+
+<!-- doctest: skip (needs a test runner) -->
+
+```ts
+import fc from 'fast-check';
+import { arbMoney } from '@ducatjs/money/testing/arbitraries';
+
+test('a split always sums to its total', () => {
+  fc.assert(fc.property(arbMoney(), (total) => expect(total.split(3)).toSumTo(total)));
+});
+```
+
+Vitest's types come with the import. For Jest, add the matchers to Jest's `Matchers` in a declaration file, in the form your Jest types use. ducat doesn't do this itself: augmenting Jest's global namespace clashes with Vitest's `Assertion` type (TS2320) in a project that has both.
+
+With `@types/jest` (the global `jest` namespace):
+
+<!-- doctest: skip (a declaration file for Jest projects; type-checked in test/jest-types) -->
+
+```ts
+import type { MoneyMatchers } from '@ducatjs/money/testing';
+declare global {
+  namespace jest {
+    interface Matchers<R> extends MoneyMatchers<R> {}
+  }
+}
+```
+
+With `@jest/globals` (Jest's `expect` package, which must be resolvable from your project, so under pnpm add `expect` as a dev dependency):
+
+<!-- doctest: skip (a declaration file for Jest projects) -->
+
+```ts
+import type { MoneyMatchers } from '@ducatjs/money/testing';
+declare module 'expect' {
+  interface Matchers<R> extends MoneyMatchers<R> {}
+}
+```
+
+Under `bun test`, `installMoneyMatchers(expect)` installs the matchers and the inspect hook. Bun supports neither custom equality testers nor snapshot serializers yet, so `toEqual` compares Money field by field there and snapshots show the fields; use `toBeMoney` instead.
+
+Value equality relies on `isMoney`, so a Money from a second installed copy of ducat is compared field by field, like any other object.
+
+Vitest and fast-check are optional peer dependencies, used only by these entries. Nothing in the core changes, so production bundles are unaffected.
 
 ## Tests
 

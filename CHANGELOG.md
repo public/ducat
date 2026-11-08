@@ -9,11 +9,28 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `parseMoney(text, locale, options)` in `/parse` parses `"CHF 1’234.50"` or `"USD 100"` and
+  detects the currency from ISO codes and the locale's `Intl` symbols. It never guesses: a shared
+  symbol such as `$` needs a `hint` or a `symbols` map, a contradicting hint, a locale without
+  Intl data and bad grouping throw, and `lenient: true` relaxes only the grouping (and reads a
+  bare number in the hint).
+- `@ducatjs/money/testing` for Vitest and Jest: value equality for `toEqual` (any scale, number
+  or bigint), a snapshot serializer and inspect hook (`12.34 EUR`), and the matchers
+  `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
+  `toSumTo`. `/testing/vitest` and `/testing/jest` set it all up in one import, and
+  `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
+- **Federal Reserve H.10:** `parseFedH10Csv` in the new `@ducatjs/money/convert/fed` reads the
+  Board's daily rates (CSV from its Data Download Program) into USD tables, with the four currencies
+  H.10 quotes as USD per unit inverted exactly and `ND` holidays left out. Parser only.
 - `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
   `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
   currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
   without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
   and Valibot 1 are optional peer dependencies.
+- **Bank of Canada:** `parseBankOfCanadaJson` in the new `@ducatjs/money/convert/boc` reads the
+  Valet API's daily rates into CAD tables (exact inverses of the published CAD-per-unit quotes,
+  with `availableAt` 16:30 Toronto time), and `fetchBankOfCanada({ start, end })` in
+  `@ducatjs/money/convert/fetch` fetches them.
 - **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
   rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
   reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,

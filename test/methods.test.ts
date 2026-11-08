@@ -46,6 +46,7 @@ describe('Money methods', () => {
       'sum',
       'ratio',
       'parse',
+      'parseMoney',
       'cashRule',
       'exchangeRate',
       // fixed-point constructors; Money#toFixedPoint covers moneyToFixed
@@ -79,9 +80,11 @@ describe('Money methods', () => {
       'comparator',
       'sortByValue',
       'sumByCurrency',
-      // ECB file parsers
+      // rate source parsers
       'parseEcbXml',
       'parseEcbCsv',
+      'parseBankOfCanadaJson',
+      'parseFedH10Csv',
       'parseEcbSdmxCsv',
       'parseEcbSdmxDecimals',
       // processor rates, read from processor records rather than a Money

@@ -1,3 +1,4 @@
+import { ISO_EXPONENTS, ISO_NON_MONETARY } from './currency.js';
 import { money, type CurrencyInput, type Money, type MoneyOptions } from './money.js';
 
 interface Symbols {
@@ -141,4 +142,289 @@ export function parse<C extends CurrencyInput>(
     }
   }
   return money((neg ? '-' : '') + out, currency, options);
+}
+
+/** Options for `parseMoney`. */
+export interface ParseMoneyOptions<C extends string = string> extends MoneyOptions {
+  /**
+   * The expected currency. It settles a symbol several currencies share (`$`, `kr`, `£`, `¥`), and
+   * a text naming another currency is an error. With `lenient`, a bare number is read in it.
+   */
+  readonly hint?: C;
+  /**
+   * Your own meanings for symbols, which win over the locale's: `{ $: 'CAD' }` for a shop that only
+   * prices in Canadian dollars.
+   */
+  readonly symbols?: Readonly<Record<string, C>>;
+  /** The currencies to detect (default: every ISO 4217 currency). Others are not recognised. */
+  readonly currencies?: readonly C[];
+  /**
+   * Accept group separators in any positions (as `parse` does), and a bare number when a `hint`
+   * is given. It never makes the currency a guess.
+   */
+  readonly lenient?: boolean;
+}
+
+const symbolTables = new Map<string, Map<string, Set<string>>>();
+const groupSizeCache = new Map<string, [number, number]>();
+const supportedLocales = new Map<string, boolean>();
+
+/** Strips what surrounds a symbol in formatted output: spaces, no-break spaces and bidi marks. */
+const normalizeSymbol = (text: string) => text.replace(/[\s\p{Z}\p{Cf}]/gu, '');
+
+function currencySymbol(
+  locale: string,
+  currency: string,
+  display: 'symbol' | 'narrowSymbol',
+): string | undefined {
+  try {
+    const parts = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: display,
+    }).formatToParts(1);
+    const value = parts.find((part) => part.type === 'currency')?.value;
+    return value === undefined ? undefined : normalizeSymbol(value);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Language and region of a locale tag, the part Intl must have data for. */
+function languageAndRegion(tag: string): string {
+  const parsed = new Intl.Locale(tag);
+  return `${parsed.language}-${parsed.region ?? ''}`;
+}
+
+/**
+ * Throws unless Intl has data for the locale's language and region. Intl silently falls back to
+ * another locale (an unsupported tag, or a runtime with reduced ICU data), and that locale's
+ * separators and symbols would then decide the amount and the currency.
+ */
+function requireLocaleData(input: string, locale: string): void {
+  let isSupported = supportedLocales.get(locale);
+  if (isSupported === undefined) {
+    const resolved = new Intl.NumberFormat(locale).resolvedOptions().locale;
+    isSupported = languageAndRegion(resolved) === languageAndRegion(locale);
+    if (supportedLocales.size >= 64) {
+      supportedLocales.clear();
+    }
+    supportedLocales.set(locale, isSupported);
+  }
+  if (!isSupported) {
+    throw new RangeError(
+      `Cannot parse "${input}": this runtime has no Intl data for the locale ${locale}`,
+    );
+  }
+}
+
+/**
+ * symbol → every currency it can mean in one locale (symbol and narrow symbol), from Intl's own
+ * data, so it follows the runtime's CLDR version. Built on first use, cached per locale (at most
+ * 16), and narrowed by a `currencies` option rather than rebuilt.
+ */
+function symbolTable(locale: string): Map<string, Set<string>> {
+  let table = symbolTables.get(locale);
+  if (table !== undefined) {
+    return table;
+  }
+  table = new Map();
+  for (const currency of defaultCandidates()) {
+    for (const display of ['symbol', 'narrowSymbol'] as const) {
+      const symbol = currencySymbol(locale, currency, display);
+      // A symbol that is just the code is handled as a code.
+      if (symbol !== undefined && symbol !== currency) {
+        let meanings = table.get(symbol);
+        if (meanings === undefined) {
+          meanings = new Set();
+          table.set(symbol, meanings);
+        }
+        meanings.add(currency);
+      }
+    }
+  }
+  if (symbolTables.size >= 16) {
+    symbolTables.clear();
+  }
+  symbolTables.set(locale, table);
+  return table;
+}
+
+/** Where the English symbols come from: en has CA$, A$ and the like, en-CA has US$. */
+const ENGLISH_SYMBOL_LOCALES = ['en', 'en-CA'];
+
+let isoCodes: string[] | undefined;
+
+/** Every ISO 4217 currency that money is counted in (not gold, test or fund codes). */
+function defaultCandidates(): string[] {
+  isoCodes ??= Object.keys(ISO_EXPONENTS).filter(
+    (code) => !(ISO_NON_MONETARY as readonly string[]).includes(code),
+  );
+  return isoCodes;
+}
+
+/** The currencies one piece of affix text can mean; an empty list if it isn't a currency. */
+function meaningsOf(
+  piece: string,
+  locale: string,
+  candidates: ReadonlySet<string> | undefined,
+  symbols: Readonly<Record<string, string>> | undefined,
+): string[] {
+  const isCandidate = (code: string) =>
+    candidates === undefined ? defaultCandidates().includes(code) : candidates.has(code);
+  if (/^[A-Z]{3}$/.test(piece) && isCandidate(piece)) {
+    return [piece];
+  }
+  if (symbols !== undefined && Object.hasOwn(symbols, piece)) {
+    return [symbols[piece]!];
+  }
+  // The locale's own symbols first, then English ones (US$, CA$, A$...), which many texts use.
+  for (const source of [locale, ...ENGLISH_SYMBOL_LOCALES]) {
+    const found = symbolTable(source).get(piece);
+    const meanings = found === undefined ? [] : [...found].filter(isCandidate);
+    if (meanings.length > 0) {
+      return meanings.sort();
+    }
+  }
+  return [];
+}
+
+/** Group sizes the locale formats this currency with: [3, 3] for en-US, [3, 2] for en-IN. */
+function groupSizes(locale: string, currency: string): [number, number] {
+  const key = `${locale}|${currency}`;
+  let sizes = groupSizeCache.get(key);
+  if (sizes === undefined) {
+    const parts = separatorParts(locale, currency);
+    const integers = parts
+      .filter((part) => part.type === 'integer')
+      .map((part) => part.value.length);
+    // 1234567.5 formats as 1|234|567 (sizes 3, 3) or 12|34|567 (3, 2)
+    const primary = integers[integers.length - 1] ?? 3;
+    const secondary = integers.length >= 3 ? integers[integers.length - 2]! : primary;
+    sizes = [primary, secondary];
+    if (groupSizeCache.size >= 256) {
+      groupSizeCache.clear();
+    }
+    groupSizeCache.set(key, sizes);
+  }
+  return sizes;
+}
+
+/** Throws unless the integer part's groups follow the locale's sizes (when it has any groups). */
+function checkGroups(input: string, integerPart: string, sizes: [number, number]): void {
+  // the caller has turned every separator into a comma
+  const groups = integerPart.split(',');
+  if (groups.length <= 1) {
+    return;
+  }
+  const [primary, secondary] = sizes;
+  const lastIndex = groups.length - 1;
+  const isValid = groups.every((group, i) => {
+    if (i === lastIndex) {
+      return group.length === primary;
+    }
+    if (i === 0) {
+      return group.length >= 1 && group.length <= secondary;
+    }
+    return group.length === secondary;
+  });
+  if (!isValid) {
+    throw new SyntaxError(`Cannot parse "${input}": group separators in the wrong places`);
+  }
+}
+
+/**
+ * Parses a formatted amount and detects its currency from the text: `parseMoney('CHF 1’234.50',
+ * 'de-CH')`, `parseMoney('1.234,50 €', 'de-DE')`. Like the rest of ducat it never guesses:
+ *
+ * - it reads ISO codes (uppercase, among `currencies`) and symbols that mean one currency in the
+ *   locale (or in English: US$, CA$, A$);
+ * - a symbol several currencies share (`$`, `kr`, `£`, `¥`) needs a `hint` or a `symbols` entry;
+ * - a currency other than the `hint`, two different currencies, or text that isn't a currency
+ *   throws;
+ * - so does a locale this runtime has no Intl data for, and group separators in the wrong places
+ *   (`lenient: true` accepts those, and a bare number when a `hint` is given).
+ *
+ * The number is read as `parse` reads it, with the detected currency's separators.
+ */
+export function parseMoney<C extends string = string>(
+  input: string,
+  locale: string,
+  options?: ParseMoneyOptions<C>,
+): Money<C> {
+  const hint = options?.hint;
+  const lenient = options?.lenient === true;
+  const candidates =
+    options?.currencies === undefined ? undefined : new Set<string>(options.currencies);
+  requireLocaleData(input, locale);
+
+  // The text around the number: everything before the first digit and after the last.
+  const chars = Array.from(input);
+  let first = -1;
+  let last = -1;
+  for (let i = 0; i < chars.length; i++) {
+    if (asciiDigit(chars[i]!.codePointAt(0)!) >= 0) {
+      if (first < 0) {
+        first = i;
+      }
+      last = i;
+    }
+  }
+  if (first < 0) {
+    throw new SyntaxError(`Cannot parse "${input}": no digits`);
+  }
+  const affix = `${chars.slice(0, first).join('')} ${chars.slice(last + 1).join('')}`;
+
+  // Each piece of the affix must be a sign or a currency, and every currency must agree. A lone
+  // separator next to the number (".50 USD") belongs to the number, which parse reads.
+  let detected: string | undefined;
+  const pieces = affix
+    .split(/[\s\p{Z}\p{Cf}()+\-−]+/u)
+    .filter((piece) => piece !== '' && !/^[.,٫]$/u.test(piece));
+  for (const piece of pieces) {
+    const meanings = meaningsOf(piece, locale, candidates, options?.symbols);
+    let currency: string;
+    if (meanings.length === 1) {
+      currency = meanings[0]!;
+    } else if (meanings.length === 0) {
+      throw new SyntaxError(`Cannot parse "${input}": "${piece}" is not a currency`);
+    } else if (hint !== undefined && meanings.includes(hint)) {
+      currency = hint;
+    } else {
+      throw new SyntaxError(
+        `Cannot parse "${input}": "${piece}" could be ${meanings.join(', ')}; pass a hint or symbols`,
+      );
+    }
+    if (detected !== undefined && detected !== currency) {
+      throw new SyntaxError(`Cannot parse "${input}": both ${detected} and ${currency}`);
+    }
+    detected = currency;
+  }
+
+  if (detected === undefined) {
+    if (hint === undefined || !lenient) {
+      throw new SyntaxError(
+        `Cannot parse "${input}": no currency in the text` +
+          (hint === undefined ? '' : '; pass lenient: true to read a bare number in the hint'),
+      );
+    }
+    detected = hint;
+  } else if (hint !== undefined && detected !== hint) {
+    // a text that names another currency than expected is never a correct parse
+    throw new SyntaxError(`Cannot parse "${input}": ${detected}, expected ${hint}`);
+  }
+
+  if (!lenient) {
+    const { decimal } = symbols(locale, detected);
+    const number = chars.slice(first, last + 1).join('');
+    const decimalAt = Math.max(number.indexOf(decimal), number.indexOf('٫'));
+    const integerPart = decimalAt === -1 ? number : number.slice(0, decimalAt);
+    const asciiInteger = Array.from(integerPart, (ch) => {
+      const digit = asciiDigit(ch.codePointAt(0)!);
+      return digit >= 0 ? String(digit) : ',';
+    }).join('');
+    checkGroups(input, asciiInteger, groupSizes(locale, detected));
+  }
+
+  return parse(input, detected as C, locale, options);
 }

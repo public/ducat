@@ -8,6 +8,7 @@ import { toCheckoutAmount } from '../src/checkout.ts';
 import { toPayPalValue } from '../src/paypal.ts';
 import { toBraintree } from '../src/braintree.ts';
 import { toKlarna } from '../src/klarna.ts';
+import { parseMoney } from '../src/parse.ts';
 import { log, runtimeName } from '../bench/harness.ts';
 
 let failures = 0,
@@ -37,6 +38,11 @@ eq(M.instalments(eur('100'), 6).map(d)[0], '16.70', 'instalments');
 eq(d(M.extractTax(M.money('12', 'GBP'), 20, 'halfEven').net), '10.00', 'VAT');
 eq(d(M.convert(eur('100'), 'JPY', '162.457', 'halfEven')), '16246', 'convert');
 eq(d(M.cashRound(M.money('10.03', 'CHF'))), '10.05', 'cash CHF');
+// currency detection reads Intl's symbols, whose data differs between engines
+eq(d(parseMoney('CHF 1234.50', 'de-CH')), '1234.50', 'parseMoney code');
+eq(parseMoney('1.234,50 €', 'de-DE').currency, 'EUR', 'parseMoney symbol');
+eq(parseMoney('$5.00', 'en-US', { hint: 'CAD' }).currency, 'CAD', 'parseMoney hint');
+eq(parseMoney('USD 5', 'en').currency, 'USD', 'parseMoney en');
 eq(toStripeAmount(M.money('5', 'ISK')), 500, 'stripe ISK');
 eq(toAdyen(M.money('15000', 'IDR')).value, 15000, 'adyen IDR');
 eq(toCheckoutAmount(M.money('5000', 'CLP')), 500000, 'checkout CLP');
