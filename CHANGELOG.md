@@ -24,6 +24,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
+- **node-postgres support** in `@ducatjs/money/pg`: `exactTypes(pg.types)` parses BIGINT as bigint
+  and NUMERIC (and their arrays) as exact strings, rejecting `NaN` and `Infinity`. `moneyTypeSql()`
+  creates a `(amount, currency)` composite type with a currency-checked `sum` aggregate, read and
+  written as Money. `toNumeric` refuses values a `NUMERIC(p, s)` column would round silently. See
+  [node-postgres](README.md#node-postgres).
 
 ### Changed
 

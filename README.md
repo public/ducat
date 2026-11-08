@@ -120,30 +120,31 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                              | adds to `Money`                                                    | also exports                                                   |
-| ----------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
-| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents |
-| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                    |
-| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                       |
-| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                |
-| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                       |
-| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                   |
-| `.../convert/fetch`                 | nothing                                                            | `fetchEcb` (the only module that uses the network)             |
-| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
-| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                             |
-| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                       |
-| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                        |
-| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                      |
-| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                        |
-| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                  |
-| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                      |
-| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                |
-| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
-| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
-| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
-| `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
-| `@ducatjs/money/all`                | everything above                                                   | everything                                                     |
-| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules          |
+| import                              | adds to `Money`                                                    | also exports                                                           |
+| ----------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents         |
+| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                            |
+| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                               |
+| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                        |
+| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                               |
+| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                           |
+| `.../convert/fetch`                 | nothing                                                            | `fetchEcb` (the only module that uses the network)                     |
+| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                         |
+| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                                     |
+| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                               |
+| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                                |
+| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                              |
+| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                                |
+| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                          |
+| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                              |
+| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                        |
+| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                              |
+| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                             |
+| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns              |
+| `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes` parsers, the composite type's `moneyTypeSql`, `toNumeric` |
+| `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`              |
+| `@ducatjs/money/all`                | everything above                                                   | everything                                                             |
+| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules                  |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that must not change any prototype (a library built on ducat, for example) can use the plain functions from `@ducatjs/money/fn` instead.
 
@@ -433,6 +434,41 @@ await db.order.create({
 ```
 
 `src/prisma.ts` does not import `@prisma/client`. It types Decimal structurally, as `{ toFixed(): string }`, so it also works with decimal.js and big.js. `examples/prisma/typecheck.ts` checks the helpers against Prisma's generated extension types.
+
+#### node-postgres
+
+`@ducatjs/money/pg` keeps every amount node-postgres reads exact. It doesn't import `pg`; you pass `pg.types` in.
+
+- **`exactTypes(pg.types)`** gives type parsers that return BIGINT as a bigint and NUMERIC as its exact string, rejecting `NaN` and `Infinity`. Arrays of both are parsed the same way: pg's default parses `numeric[]` as floats. Other types keep pg's parsers.
+- **A composite type**, `(amount numeric, currency text)`. `moneyTypeSql()` returns its DDL plus a `sum` aggregate that throws on mixed currencies. With the type's OIDs, `exactTypes` reads it (and its arrays) as Money, keeping the scale it was stored at. `toMoneyComposite(m)` writes it.
+- **`toNumeric(m, { precision, scale })`** gives the decimal for a `NUMERIC(p, s)` parameter, or throws where Postgres would change the value. Postgres rounds extra decimals silently on insert, which is why the guard exists.
+
+<!-- doctest: skip (needs a Postgres server; test/db/pg-types.test.ts runs the same steps) -->
+
+```ts
+import pg from 'pg';
+import { money } from '@ducatjs/money';
+import {
+  exactTypes,
+  moneyTypeOids,
+  moneyTypeSql,
+  toMoneyComposite,
+  toNumeric,
+} from '@ducatjs/money/pg';
+
+const setup = new pg.Client();
+await setup.connect();
+for (const statement of moneyTypeSql()) await setup.query(statement); // once, in a migration
+const oids = await moneyTypeOids(setup);
+
+const client = new pg.Client({ types: exactTypes(pg.types, { money: oids }) });
+await client.connect();
+await client.query('INSERT INTO items (price) VALUES ($1::ducat_money)', [
+  toMoneyComposite(money('12.34', 'EUR')),
+]);
+(await client.query('SELECT sum(price) AS total FROM items')).rows[0].total; // Money
+toNumeric(money('1.23456', 'EUR', { scale: 5 }), { precision: 19, scale: 4 }); // throws
+```
 
 #### Drizzle
 
