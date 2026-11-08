@@ -14,11 +14,12 @@ import {
   type Tranche,
   type Weight,
 } from '../allocate.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 
 export * from '../allocate.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /** Splits by weights; the parts always sum to this. */
     allocate(weights: readonly Weight[], options?: AllocateOptions): Money<C>[];

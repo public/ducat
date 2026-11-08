@@ -1,11 +1,12 @@
 /** `@ducatjs/money/adyen`: Adyen's minor-unit view. Importing this module adds `toAdyen`. */
 import { toAdyen } from '../adyen.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 import type { RoundingMode } from '../rounding.js';
 
 export * from '../adyen.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /**
      * Adyen `amount` object: `money('15000', 'IDR').toAdyen()` is `{ value: 15000, currency: 'IDR'
