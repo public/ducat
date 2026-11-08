@@ -132,7 +132,7 @@ describe('parseBankOfCanadaJson', () => {
           { d: '2026-11-06', FXUSDCAD: { v: '1.37' } },
         ]),
       ),
-    ).toThrow(/Two different values for FXUSDCAD on 2026-11-06/);
+    ).toThrow(/Two different values for USD on 2026-11-06/);
     expect(() => parseBankOfCanadaJson(observations([{ d: '2026-02-30' }]))).toThrow(SyntaxError);
     expect(() =>
       parseBankOfCanadaJson(observations([{ d: '2026-11-06', FXUSDCAD: { v: '0.0000' } }])),

@@ -431,7 +431,7 @@ export function convertWithPolicy<To extends string>(
 ): Money<To> {
   // Two scales would leave it unclear which one the result has.
   if (options?.scale !== undefined) {
-    throw new TypeError('A rounding policy sets the scale; leave options.scale out');
+    throw new TypeError('options.scale with a rounding policy');
   }
   return roundWithPolicy(make(to, money.minor, money.scale), rate, policy);
 }

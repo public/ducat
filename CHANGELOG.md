@@ -22,6 +22,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
   `toSumTo`. `/testing/vitest` and `/testing/jest` set it all up in one import, and
   `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
+- **Sterling sources:** `parseHmrcMonthlyCsv` in the new `@ducatjs/money/convert/hmrc` reads
+  HMRC's monthly exchange rates (customs and VAT, Open Government Licence) into GBP tables valid
+  for their month, available from the penultimate Thursday before. `parseBankOfEnglandCsv` in the
+  new `@ducatjs/money/convert/boe` reads the Bank of England's daily spot rates from its database
+  CSV, putting back the stripped zeros. Parsers only; the Bank's spot rates may be third-party
+  data, so ducat ships none.
 - **Federal Reserve H.10:** `parseFedH10Csv` in the new `@ducatjs/money/convert/fed` reads the
   Board's daily rates (CSV from its Data Download Program) into USD tables, with the four currencies
   H.10 quotes as USD per unit inverted exactly and `ND` holidays left out. Parser only.
@@ -62,6 +68,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
+- **Kysely helpers** in `@ducatjs/money/kysely`: `moneyHelpers(dialect)` gives `selectMoney`
+  and `selectDecimalMoney`, which select Money as a self-describing JSON value; `compareMoney`, which
+  compares currency and amount together; and `sumMoney`, which throws across currencies.
+  `setMoney` and `setDecimalMoney` give the columns for writes. `MoneyResultPlugin` converts only
+  the marked values, wherever they appear (unions, CTEs, nested JSON, streams, `CamelCasePlugin`),
+  so a raw column is never typed as Money. `kysely` is an optional peer dependency. See
+  [Kysely](README.md#kysely).
 - **ECB Data Portal:** `parseEcbSdmxCsv` (and `parseEcbSdmxDecimals`) in
   `@ducatjs/money/convert/ecb` read the SDMX-CSV of the daily euro reference rates, any range back
   to 1999, with the published digits rebuilt from each series' `DECIMALS`.
@@ -95,6 +108,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `divide` is about 3 to 14 times faster for ordinary amounts (number minor units, a divisor such as `3`,
   `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
   are unchanged: the same proved rounding kernel is used.
+
+### Fixed
+
+- `multiply(zero, -1)` (and `Fixed#multiply`) returned `-0` minor units, which broke
+  `Object.is`-based equality such as Vitest's `toBe`. Every operation now returns `0`.
 
 ## [0.1.0] - 2026-11-07
 

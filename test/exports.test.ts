@@ -117,13 +117,13 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only /drizzle, /zod, /valibot and the /testing helpers reach their peer libraries', async () => {
+  it('only /drizzle, /zod, /valibot, /kysely and the /testing helpers reach their peer libraries', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
       actual[key] = [...packageImportsOf(join(ROOT, source))];
       expected[key] = key.startsWith('./drizzle/') ? [`drizzle-orm/${key.slice(10)}-core`] : [];
-      if (key === './zod' || key === './valibot') {
+      if (key === './zod' || key === './valibot' || key === './kysely') {
         expected[key] = [key.slice(2)];
       }
     }
@@ -140,6 +140,14 @@ describe('package entries', () => {
       './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/pg': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/mysql': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
+      './kysely': [
+        'DEFAULT_DECIMAL_SIZE',
+        'MoneyResultPlugin',
+        'fixed',
+        'moneyHelpers',
+        'setDecimalMoney',
+        'setMoney',
+      ],
       './pg': [
         'DEFAULT_DECIMAL_SIZE',
         'MONEY_TYPE_NAME',

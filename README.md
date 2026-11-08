@@ -131,6 +131,8 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                  |
 | `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                        |
 | `.../convert/fed`                   | nothing                                                            | `parseFedH10Csv` (parser only)                                 |
+| `.../convert/boe`                   | nothing                                                            | `parseBankOfEnglandCsv` (parser only)                          |
+| `.../convert/hmrc`                  | nothing                                                            | `parseHmrcMonthlyCsv` (parser only)                            |
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O) |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
@@ -145,6 +147,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
 | `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
 | `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
+| `@ducatjs/money/kysely`             | nothing                                                            | `moneyHelpers`, `setMoney`, `MoneyResultPlugin`                |
 | `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O       |
 | `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
 | `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)       |
@@ -433,7 +436,7 @@ nok.rate('NOK', 'JPY')?.quote; // → { rate: '6.50', per: 100, inverted: true }
 nok.missing; // → ['ISK']
 ```
 
-**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. The opt-in fetchers are in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. The Bank of Canada's daily rates come from its Valet API (`parseBankOfCanadaJson` in `@ducatjs/money/convert/boc`, and `fetchBankOfCanada()`, also keyless and CORS-enabled). The Bank quotes CAD per unit of each currency, so the tables hold exact inverses with the published quote kept, and its rates carry `availableAt` 16:30 Toronto time, when it says it publishes them. It quotes four decimals (up to six for small rates), so a small rate has only about four significant digits: JPY `0.008760`, KRW `0.000929`, and IDR `0.000082` with two. The inverse of such a rate is exact, but no more precise than the quote, so for those currencies prefer a source that quotes them the other way round. The Federal Reserve's H.10 rates (noon buying rates in New York, certified for US customs, daily since 1971) have a parser only, `parseFedH10Csv` in `@ducatjs/money/convert/fed`, for the CSV from the Board's Data Download Program (release H10, series in columns, with labels). H.10 quotes currency per USD except AUD, EUR, NZD and GBP, which it quotes as USD per unit; those four are stored as exact inverses with the published quote kept, so every table is USD → currency. Holidays are rows of `ND` and are left out. The Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule out a fetcher in ducat, so download the CSV yourself. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. The opt-in fetchers are in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. The Bank of Canada's daily rates come from its Valet API (`parseBankOfCanadaJson` in `@ducatjs/money/convert/boc`, and `fetchBankOfCanada()`, also keyless and CORS-enabled). The Bank quotes CAD per unit of each currency, so the tables hold exact inverses with the published quote kept, and its rates carry `availableAt` 16:30 Toronto time, when it says it publishes them. It quotes four decimals (up to six for small rates), so a small rate has only about four significant digits: JPY `0.008760`, KRW `0.000929`, and IDR `0.000082` with two. The inverse of such a rate is exact, but no more precise than the quote, so for those currencies prefer a source that quotes them the other way round. The Federal Reserve's H.10 rates (noon buying rates in New York, certified for US customs, daily since 1971) have a parser only, `parseFedH10Csv` in `@ducatjs/money/convert/fed`, for the CSV from the Board's Data Download Program (release H10, series in columns, with labels). H.10 quotes currency per USD except AUD, EUR, NZD and GBP, which it quotes as USD per unit; those four are stored as exact inverses with the published quote kept, so every table is USD → currency. Holidays are rows of `ND` and are left out. The Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule out a fetcher in ducat, so download the CSV yourself. For sterling there are two parsers. HMRC's monthly exchange rates (`parseHmrcMonthlyCsv` in `@ducatjs/money/convert/hmrc`) are the UK's rates for customs and VAT, under the Open Government Licence. Each month's table is valid for that month (`asOf` the 1st, `validUntil` the last day) and is available from the penultimate Thursday of the month before, when HMRC publishes it. The Bank of England's daily spot rates (`parseBankOfEnglandCsv` in `@ducatjs/money/convert/boe`) come from CSV downloaded from its database. The Bank's legal page excludes "selected exchange rate data and series" from its Open Government Licence as third-party data, and its spot rates may come from LSEG, whose content can't be redistributed without consent. So ducat ships no Bank of England data and no fetcher: check your own right to use the files you parse. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
 
 <!-- doctest: setup import { readFileSync } from 'node:fs'; const sdmxCsv = readFileSync('test/fixtures/ecb-sdmx/exr-d-full.csv', 'utf8'); -->
 
@@ -465,6 +468,17 @@ import { parseFedH10Csv } from '@ducatjs/money/convert/fed';
 const [latest] = parseFedH10Csv(h10Csv); // a DDP download of H.10
 latest?.rate('USD', 'JPY')?.toString(); // → '156.7000' (yen per USD, as published)
 latest?.rate('USD', 'EUR')?.inverse().toString(); // → '1.1689' (USD per euro, as published)
+```
+
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const hmrcCsv = readFileSync('test/fixtures/hmrc/monthly_csv_2026-11.csv', 'utf8'); -->
+
+```ts
+import { rateHistory } from '@ducatjs/money/convert/history';
+import { parseHmrcMonthlyCsv } from '@ducatjs/money/convert/hmrc';
+
+const hmrc = rateHistory(parseHmrcMonthlyCsv(hmrcCsv)); // monthly_csv_2026-11.csv
+hmrc.rate('GBP', 'EUR', { asOf: '2026-11-27' })?.toString(); // → '1.1930' (valid all November)
+hmrc.rate('GBP', 'EUR', { asOf: '2026-12-01' }); // → undefined (December has its own file)
 ```
 
 **Exact intermediates and residuals.** `@ducatjs/money/exact` adds `ExactMoney`, a rational amount for chained calculations that should round once at the end. In `@ducatjs/money/convert`, `convertDetailed()` also returns what rounding cost, so a ledger can book it:
@@ -582,6 +596,54 @@ await db.order.create({
 ```
 
 `src/prisma.ts` does not import `@prisma/client`. It types Decimal structurally, as `{ toFixed(): string }`, so it also works with decimal.js and big.js. `examples/prisma/typecheck.ts` checks the helpers against Prisma's generated extension types.
+
+#### Kysely
+
+`@ducatjs/money/kysely` keeps Money exact in Kysely without the plugin having to understand your queries. A money value is selected as a JSON object built in SQL, which carries a marker, the amount as exact text, and the currency. `MoneyResultPlugin` turns exactly those objects into Money, wherever they appear: unions, CTEs, subqueries, nested `jsonArrayFrom` rows, every `stream()` chunk, and with `CamelCasePlugin`. A raw column keeps its driver type and is never typed as Money.
+
+```ts
+import Database from 'better-sqlite3';
+import { Kysely, SqliteDialect } from 'kysely';
+import { money } from '@ducatjs/money';
+import {
+  moneyHelpers,
+  MoneyResultPlugin,
+  setMoney,
+  type MinorUnitsColumn,
+} from '@ducatjs/money/kysely';
+
+interface Schema {
+  payments: { id: number; amount_minor: MinorUnitsColumn; currency: string };
+}
+
+const client = new Database(':memory:');
+client.defaultSafeIntegers(true); // integers as bigint, exact beyond 2^53
+client.exec('CREATE TABLE payments (id INTEGER, amount_minor INTEGER, currency TEXT)');
+const db = new Kysely<Schema>({
+  dialect: new SqliteDialect({ database: client }),
+  plugins: [new MoneyResultPlugin()],
+});
+const { selectMoney, compareMoney, sumMoney } = moneyHelpers('sqlite');
+
+const fee = money('1.234', 'KWD');
+await db
+  .insertInto('payments')
+  .values({ id: 1, ...setMoney(fee, 'amount_minor', 'currency') })
+  .execute();
+const row = await db
+  .selectFrom('payments')
+  .select((eb) => selectMoney(eb, 'amount_minor', 'currency').as('fee'))
+  .where((eb) => compareMoney(eb, 'amount_minor', 'currency', '>=', money('1', 'KWD')))
+  .executeTakeFirstOrThrow();
+row.fee; // → 1.234 KWD
+```
+
+- **Reads:** `selectMoney(eb, amount, currency)` for minor units and `selectDecimalMoney` for a NUMERIC/DECIMAL (SQLite TEXT) column. The currency comes from a column, or from `fixed('EUR')`, which types the result `Money<'EUR'>`. A nullable amount column gives `Money | null`.
+- **Writes:** `setMoney(m, 'amount_minor', 'currency')` and `setDecimalMoney` return the column values for `values()`, `set()` and upserts. The amount is an exact string, and with `fixed()` Money in another currency is a compile error and throws. `setDecimalMoney` and `compareDecimalMoney` take the column's size (`{ precision, scale }`, NUMERIC(19,4) by default) and throw where the column would round or clamp the value.
+- **Filters:** `compareMoney(eb, amount, currency, op, m)` (`=`, `<>`, `<`, `<=`, `>`, `>=`) compares currency and amount together, so 5 USD never matches 500 JPY. Parameters are cast exactly; MySQL would otherwise compare a string with a BIGINT or DECIMAL as doubles. SQL's three-valued logic applies: a row with a NULL currency or amount matches no comparison, `<>` included. There is no `in`-list form; combine comparisons with `eb.or`.
+- **Sums:** `sumMoney` and `sumDecimalMoney` give Money, or null over no rows. Rows in more than one currency, or an amount without a currency, make the result throw, so group by the currency column to sum per currency.
+- `moneyHelpers(dialect)` builds these for `'postgres'`, `'mysql'` or `'sqlite'`, which differ in their JSON and cast syntax. On SQLite, decimals are TEXT: `sumDecimalMoney` and ordering comparisons on them throw, and `=` and `<>` compare the text, so they only match values written with `setDecimalMoney` (`'5.0'` is not `'5.00'`). Compare and sum minor units instead. On Postgres the values are `jsonb`, so `UNION`, `DISTINCT` and `GROUP BY` work on them.
+- Plugin order: for nested JSON that SQLite returns as text, put `ParseJSONResultsPlugin` before `MoneyResultPlugin`. Markers carry a random nonce chosen when the module loads, and the plugin converts only objects with exactly the marker's keys and this process's nonce. So data that merely looks like a marker, in a JSON or text column, stays as it is, and the nonce never appears in results. `min`, `max` and `coalesce` over a money expression aren't supported: they would compare the JSON objects. `kysely` is an optional peer dependency.
 
 #### node-postgres
 

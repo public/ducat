@@ -65,7 +65,7 @@ const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
  */
 export function divideAndRound(dividend: number, divisor: number, mode: RoundingMode): number {
   if (divisor === 1) {
-    return dividend;
+    return dividend + 0; // + 0 normalises -0 (0 * -1 from a caller)
   }
   // Beyond MAX_SAFE_MINOR the product quotient * divisor below could round, so take the bigint
   // path.

@@ -84,6 +84,8 @@ describe('Money methods', () => {
       'parseEcbXml',
       'parseEcbCsv',
       'parseBankOfCanadaJson',
+      'parseBankOfEnglandCsv',
+      'parseHmrcMonthlyCsv',
       'parseFedH10Csv',
       'parseEcbSdmxCsv',
       'parseEcbSdmxDecimals',
