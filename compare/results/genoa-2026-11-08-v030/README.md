@@ -1,4 +1,4 @@
-# Benchmark results: AMD EPYC Genoa, ducat 0.3.0, 2026-11-08
+# Benchmark results: AMD EPYC Genoa, ducat at f927311 (the unreleased 0.3 line), 2026-11-08
 
 Raw output of the money benchmark (`compare/bench/bench.ts`) and the fixed-point benchmark
 (`compare/fixed/bench.ts`), one runtime per run, run back to back on the same machine against ducat

@@ -7,17 +7,6 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-11-08
-
-Finance, pricing and currency data. New opt-in entries: `/finance` (day counts, interest, loan
-schedules, Excel's NPV and IRR, proration), `/pricing` (price endings and tiered pricing), `/math`,
-`/currencies` and `/territories` (ISO numeric codes, Intl names and symbols, CLDR territory
-currencies), `/crypto`, `/wire` (google.type.Money, ISO 20022 amounts) and `/words` (amounts in
-words in seven languages). Two changes can break existing code, both listed under **Changed**:
-`@ducatjs/money/fixed` no longer loads Money, so converting between Fixed and Money now needs
-`@ducatjs/money/fixed/money`; and arithmetic with an operand that isn't Money throws a
-`TypeError` instead of a `CurrencyMismatchError`.
-
 ### Added
 
 - `@ducatjs/money/words`: amounts in words (`amountInWords`, cheque-style "and 45/100" by default,
@@ -297,8 +286,7 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/public/ducat/compare/v0.2.1...v0.3.0
+[Unreleased]: https://github.com/public/ducat/compare/v0.2.1...HEAD
 [0.2.1]: https://github.com/public/ducat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/public/ducat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/public/ducat/releases/tag/v0.1.0

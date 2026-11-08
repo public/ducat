@@ -9,4 +9,4 @@
 | format | 376 (fastest other: **currency.js 364**; dinero.js 2 1.1 µs) | 265 (fastest other: **currency.js 253**; dinero.js 2 1.1 µs) | 400 (fastest other: **currency.js 387**; dinero.js 2 1.0 µs) |
 | compare | **7.07** (fastest other: currency.js 7.60; dinero.js 2 182) | 7.90 (fastest other: **currency.js 6.51**; dinero.js 2 283) | **6.70** (fastest other: @screeny05/ts-money 7.26; dinero.js 2 176) |
 
-Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on ducat 0.3.0 (commit f927311). Lower is better; the faster of ducat and the fastest other money library is in bold.
+Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on unreleased ducat at commit f927311 (the 0.3 line). Lower is better; the faster of ducat and the fastest other money library is in bold.
