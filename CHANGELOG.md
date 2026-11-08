@@ -9,6 +9,24 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
+  `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
+  currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
+  without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
+  and Valibot 1 are optional peer dependencies.
+- **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
+  rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
+  reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,
+  `percentage`, `discount`, `addTax`, `extractTax`). The result is rounded once, straight to the
+  policy's scale and increment; for the tax functions that is the gross (`addTax`), the net
+  (`extractTax`) or the discounted price (`discount`). A policy is also a function that rounds an
+  amount. `assertScale(money, policy)` checks that an amount is already rounded to a policy.
+- **A scale column for minor units:** `toMinorColumns(m, 'amountMinor', 'currency', { scale:
+  'amountScale' })` and `minorMoneyField(..., { scale: 'amountScale' })` store and read each
+  amount's scale next to its minor units, so any scale round-trips and stored amounts keep their
+  meaning if an exponent changes. A bundled ISO 4217 exponent change is now documented as
+  breaking: listed under Changed, and shipped only in a minor version before 1.0 and a major version
+  from 1.0. See [Databases](README.md#databases).
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
   (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
   `assertCurrency` throws `CurrencyMismatchError` for another currency.
@@ -24,16 +42,46 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
-- **Kysely plugin** in `@ducatjs/money/kysely`: declare `MoneyColumn<'EUR'>` columns, configure
-  `MoneyPlugin` with how each is stored (`moneyMinor`, with a fixed currency or a currency column;
-  `moneyDecimal`; `moneyJson`), and selects return `Money` while inserts, updates and comparisons
-  take it. The configuration is checked against the database type. `kysely` is an optional peer
-  dependency. See [Kysely](README.md#kysely).
+- **Kysely helpers** in `@ducatjs/money/kysely`: `moneyHelpers(dialect)` gives `selectMoney`
+  and `selectDecimalMoney`, which select Money as a self-describing JSON value; `compareMoney`, which
+  compares currency and amount together; and `sumMoney`, which throws across currencies.
+  `setMoney` and `setDecimalMoney` give the columns for writes. `MoneyResultPlugin` converts only
+  the marked values, wherever they appear (unions, CTEs, nested JSON, streams, `CamelCasePlugin`),
+  so a raw column is never typed as Money. `kysely` is an optional peer dependency. See
+  [Kysely](README.md#kysely).
+- **ECB Data Portal:** `parseEcbSdmxCsv` (and `parseEcbSdmxDecimals`) in
+  `@ducatjs/money/convert/ecb` read the SDMX-CSV of the daily euro reference rates, any range back
+  to 1999, with the published digits rebuilt from each series' `DECIMALS`.
+  `fetchEcbRange({ start, end, currencies })` in `@ducatjs/money/convert/fetch` fetches a range
+  from it.
+- **Historical rates.** In `@ducatjs/money/convert`: `availableAt` on rates and tables (a lookup
+  before publication gets nothing, `Rate#isAvailable`), `Rate#quote` with the published digits,
+  `null` for missing values with the table's `missing` list, and `validUntil` periods on tables.
+  In the new opt-in `@ducatjs/money/convert/history`: `quotedTable` and `rateFromQuote` for rates
+  published the other way round, per 100 units or with stripped zeros (`per`, `inverted`,
+  `decimals`), and `rateHistory()` over a date range, whose `lookup()` reports why it fell back.
+- **node-postgres support** in `@ducatjs/money/pg`: `exactTypes(pg.types)` parses BIGINT as bigint
+  and NUMERIC (and their arrays) as exact strings, rejecting `NaN` and `Infinity`. `moneyTypeSql()`
+  creates a `(amount, currency)` composite type with a currency-checked `sum` aggregate, read and
+  written as Money. `toNumeric` refuses values a `NUMERIC(p, s)` column would round silently. See
+  [node-postgres](README.md#node-postgres).
 
 ### Changed
 
 - `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
   building one for every row, which makes it about 20 times faster.
+- **Visible change:** `Rate#toString()` (and so `toJSON().rate`) prints a decimal-string rate
+  with the digits it was given, and `rateFromJSON` keeps them: `exchangeRate('EUR', 'HUF',
+  '363.90').toString()` is `'363.90'`, not `'363.9'`. The value is unchanged.
+- `rateTable` lookups with an `asOf` after a rate's `validUntil` now return nothing.
+- `parseEcbCsv` lists `N/A` and blank cells in the table's `missing`, and throws on a cell that
+  isn't a rate instead of passing it on.
+
+### Changed
+
+- `divide` is about 3 to 14 times faster for ordinary amounts (number minor units, a divisor such as `3`,
+  `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
+  are unchanged: the same proved rounding kernel is used.
 
 ## [0.1.0] - 2026-11-07
 

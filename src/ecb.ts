@@ -1,6 +1,7 @@
 // Offline parsers for the ECB euro foreign exchange reference rates (eurofxref). No I/O: fetch or
 // read the files yourself, or use ducat/convert/fetch. Rates are kept exactly as published.
 import { rateTable, type RateTable } from './provider.js';
+import { readRateCell, withDecimals } from './rate-text.js';
 
 const MONTHS = [
   'january',
@@ -28,7 +29,7 @@ const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
  * a regular concertation between central banks, and published for information only. They are not a
  * market mid-rate that anyone deals at.
  */
-function ecbTable(asOf: string, rates: Record<string, string>): RateTable {
+function ecbTable(asOf: string, rates: Record<string, string | null>): RateTable {
   return rateTable({ base: 'EUR', asOf, source: 'ECB', type: 'reference', rates });
 }
 
@@ -130,8 +131,8 @@ function isoDay(text: string): string {
 
 /**
  * Parses eurofxref.csv or eurofxref-hist.csv (from the ECB's zips) the way parseEcbXml does.
- * 'N/A' and blank cells (currencies not quoted that day) are skipped, and a day with no rates at
- * all is left out, so a lookback goes on to the day before.
+ * 'N/A' and blank cells (currencies not quoted that day) are listed in the table's `missing`, and a
+ * day with no rates at all is left out, so a lookback goes on to the day before.
  */
 export function parseEcbCsv(csv: string): RateTable[] {
   const lines = withoutByteOrderMark(csv)
@@ -145,16 +146,257 @@ export function parseEcbCsv(csv: string): RateTable[] {
   const tables: RateTable[] = [];
   for (const line of lines.slice(1)) {
     const cells = line.split(',').map((cell) => cell.trim());
-    const rates: Record<string, string> = {};
+    const day = isoDay(cells[0]!);
+    const rates: Record<string, string | null> = {};
+    let quoted = 0;
     for (let i = 1; i < columns.length; i++) {
       const currency = columns[i];
-      const rate = cells[i];
-      if (currency && rate && rate !== 'N/A') {
-        rates[currency] = rate;
+      if (!currency) {
+        continue;
+      }
+      const rate = readRateCell(cells[i] ?? '', `${currency} on ${day}`);
+      rates[currency] = rate;
+      if (rate !== null) {
+        quoted++;
       }
     }
-    const day = isoDay(cells[0]!);
-    if (Object.keys(rates).length > 0) {
+    if (quoted > 0) {
+      tables.push(ecbTable(day, rates));
+    }
+  }
+  return newestFirst(tables);
+}
+
+/**
+ * The records of a CSV file, RFC 4180 style: a cell may be quoted ("a, b", with "" for a quote),
+ * and a quote anywhere else, or one left open, is a SyntaxError, so a stray quote can't swallow
+ * the lines after it. Blank lines are skipped.
+ */
+function csvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  // 'start' of a cell, inside an unquoted one, inside quotes, or just after the closing quote
+  let state: 'start' | 'plain' | 'quoted' | 'closed' = 'start';
+  const endRow = () => {
+    row.push(cell);
+    if (row.length > 1 || row[0]!.trim() !== '') {
+      rows.push(row);
+    }
+    row = [];
+    cell = '';
+    state = 'start';
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]!;
+    if (state === 'quoted') {
+      if (char !== '"') {
+        cell += char;
+      } else if (text[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else {
+        state = 'closed';
+      }
+      continue;
+    }
+    if (char === ',') {
+      row.push(cell);
+      cell = '';
+      state = 'start';
+    } else if (char === '\n') {
+      endRow();
+    } else if (char === '\r' && text[i + 1] === '\n') {
+      continue;
+    } else if (char === '"' && state === 'start') {
+      state = 'quoted';
+    } else if (char === '"' || state === 'closed') {
+      throw new SyntaxError(
+        `Malformed CSV: unexpected ${JSON.stringify(char)} on line ${rows.length + 1}`,
+      );
+    } else {
+      cell += char;
+      state = 'plain';
+    }
+  }
+  if (state === 'quoted') {
+    throw new SyntaxError('Malformed CSV: a quoted cell is never closed');
+  }
+  if (cell !== '' || row.length > 0) {
+    endRow();
+  }
+  return rows;
+}
+
+// Series whose DECIMALS attribute says more than the ECB has ever published for them. Evidence:
+// eurofxref-daily.xml publishes THB to 3 decimals (37.459 on 2026-11-06) while DECIMALS says 4,
+// and eurofxref-hist.xml (1999 to 2026) never has more than 4 for LTL, whose DECIMALS says 5.
+// Padding to the attribute would invent a digit. A cap only limits padding: a value published
+// with more digits keeps them all (withDecimals never drops digits).
+const PUBLISHED_DECIMALS: Readonly<Record<string, number>> = { THB: 3, LTL: 4 };
+
+/** Options for parseEcbSdmxCsv. */
+export interface EcbSdmxOptions {
+  /**
+   * The decimals each currency is published with, for a file without the DECIMALS column (as
+   * fetched with `detail=dataonly`). A DECIMALS column in the file takes precedence.
+   */
+  readonly decimals?: Readonly<Record<string, number>>;
+}
+
+/** A DECIMALS cell as a number of decimals, or SyntaxError. */
+function readDecimals(text: string, where: string): number {
+  if (!/^\d{1,2}$/.test(text) || Number(text) > 30) {
+    throw new SyntaxError(`Malformed DECIMALS ${JSON.stringify(text)} (${where})`);
+  }
+  return Number(text);
+}
+
+/** A series' stated decimals, capped at what the ECB actually publishes for it. */
+function statedDecimals(currency: string, text: string): number {
+  const stated = readDecimals(text, currency);
+  const published = PUBLISHED_DECIMALS[currency];
+  if (published !== undefined && published < stated) {
+    return published;
+  }
+  return stated;
+}
+
+/** The records of an SDMX-CSV file after its header, each with as many cells as the header. */
+function sdmxRecords(csv: string): { header: string[]; rows: string[][] } {
+  const [header, ...rows] = csvRows(withoutByteOrderMark(csv));
+  if (header === undefined) {
+    throw new SyntaxError('Not an ECB SDMX-CSV file: it is empty');
+  }
+  for (const cells of rows) {
+    if (cells.length !== header.length) {
+      throw new SyntaxError(
+        `Malformed ECB SDMX-CSV row: ${cells.length} cells, the header has ${header.length}`,
+      );
+    }
+  }
+  return { header, rows };
+}
+
+/** The columns of an SDMX-CSV file, by name, or SyntaxError when a required one is missing. */
+function sdmxColumns(header: readonly string[], required: readonly string[]): Map<string, number> {
+  const columns = new Map(header.map((name, i) => [name.trim(), i] as const));
+  for (const name of required) {
+    if (!columns.has(name)) {
+      throw new SyntaxError(`Not an ECB SDMX-CSV file: no ${name} column`);
+    }
+  }
+  return columns;
+}
+
+/**
+ * The DECIMALS of each series in an ECB SDMX-CSV file: the data file itself with full detail, or
+ * the series file the API returns with `detail=nodata`.
+ */
+export function parseEcbSdmxDecimals(csv: string): Record<string, number> {
+  const { header, rows } = sdmxRecords(csv);
+  const columns = sdmxColumns(header, ['CURRENCY', 'DECIMALS']);
+  const decimals: Record<string, number> = {};
+  for (const cells of rows) {
+    const currency = cells[columns.get('CURRENCY')!]!.trim();
+    decimals[currency] = statedDecimals(currency, cells[columns.get('DECIMALS')!]!.trim());
+  }
+  return decimals;
+}
+
+/** The value of an optional column, or undefined when the file doesn't have it. */
+function optionalCell(cells: readonly string[], columns: Map<string, number>, name: string) {
+  const index = columns.get(name);
+  if (index === undefined) {
+    return undefined;
+  }
+  return cells[index]?.trim();
+}
+
+/**
+ * Parses the ECB Data Portal's SDMX-CSV (`format=csvdata`) for the daily euro reference rates
+ * (dataflow EXR, key `D.<currencies>.EUR.SP00.A`) into one EUR-based table per day, newest first,
+ * like parseEcbXml. Any date range back to 1999 comes in one file.
+ *
+ * The API strips trailing zeros ('136.8' for the published 136.80), so the published digits are
+ * rebuilt from each series' DECIMALS attribute: in the file with full detail, or from `decimals`
+ * (see parseEcbSdmxDecimals) for a `detail=dataonly` file. Two series overstate it (THB and LTL),
+ * and are padded only to the decimals the ECB actually published. Without DECIMALS, the digits
+ * stay as the file gives them; the values are exact either way. An empty or `NaN` value is a missing value.
+ * A row for another frequency, rate type or base currency, or with a UNIT_MULT other than 0,
+ * throws SyntaxError rather than being read as a daily rate. Discontinued series simply end, so
+ * the tables of their last days include them.
+ *
+ * No `availableAt` is set, as with parseEcbXml: the API gives no publication time, and the ECB
+ * publishes at about 16:00 CET. So a backtest that asks for 10:00 CET on a day still gets that
+ * day's rate; ask for the day before if that matters.
+ *
+ *     const tables = parseEcbSdmxCsv(await (await fetch(url)).text());
+ *     const history = rateHistory(tables); // from @ducatjs/money/convert/history
+ */
+export function parseEcbSdmxCsv(csv: string, options?: EcbSdmxOptions): RateTable[] {
+  const { header, rows } = sdmxRecords(csv);
+  const columns = sdmxColumns(header, ['CURRENCY', 'CURRENCY_DENOM', 'TIME_PERIOD', 'OBS_VALUE']);
+  const at = (cells: readonly string[], name: string): string =>
+    cells[columns.get(name)!]?.trim() ?? '';
+
+  const days = new Map<string, Record<string, string | null>>();
+  for (const cells of rows) {
+    const currency = at(cells, 'CURRENCY');
+    const day = at(cells, 'TIME_PERIOD');
+    const where = `${currency} on ${day}`;
+    const unexpected =
+      at(cells, 'CURRENCY_DENOM') !== 'EUR' ||
+      (optionalCell(cells, columns, 'FREQ') ?? 'D') !== 'D' ||
+      (optionalCell(cells, columns, 'EXR_TYPE') ?? 'SP00') !== 'SP00' ||
+      (optionalCell(cells, columns, 'EXR_SUFFIX') ?? 'A') !== 'A';
+    if (unexpected) {
+      throw new SyntaxError(`Not a daily EUR reference rate: ${cells.join(',')}`);
+    }
+    if (!/^[A-Z]{3}$/.test(currency) || !ISO_DAY.test(day)) {
+      throw new SyntaxError(`Malformed ECB SDMX-CSV row: ${cells.join(',')}`);
+    }
+    const multiplier = optionalCell(cells, columns, 'UNIT_MULT');
+    if (multiplier !== undefined && multiplier !== '' && multiplier !== '0') {
+      throw new SyntaxError(`Unsupported UNIT_MULT ${multiplier} (${where})`);
+    }
+
+    const value = at(cells, 'OBS_VALUE');
+    let rate = readRateCell(value, where);
+    if (rate !== null) {
+      // The file's own DECIMALS, capped like parseEcbSdmxDecimals; else the caller's, as given.
+      const stated = optionalCell(cells, columns, 'DECIMALS');
+      let decimals = options?.decimals?.[currency];
+      if (stated !== undefined && stated !== '') {
+        decimals = statedDecimals(currency, stated);
+      }
+      if (decimals !== undefined) {
+        rate = withDecimals(rate, decimals);
+      }
+    }
+
+    const isoDay = calendarDay(
+      Number(day.slice(0, 4)),
+      Number(day.slice(5, 7)),
+      Number(day.slice(8)),
+    );
+    let rates = days.get(isoDay);
+    if (rates === undefined) {
+      rates = {};
+      days.set(isoDay, rates);
+    }
+    // The same currency twice on one day is either a repeat or a contradiction; never pick one.
+    const earlier = rates[currency];
+    if (earlier !== undefined && earlier !== rate) {
+      throw new SyntaxError(`Two different values for ${where}: ${earlier} and ${rate}`);
+    }
+    rates[currency] = rate;
+  }
+
+  const tables: RateTable[] = [];
+  for (const [day, rates] of days) {
+    if (Object.values(rates).some((rate) => rate !== null)) {
       tables.push(ecbTable(day, rates));
     }
   }

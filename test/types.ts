@@ -2,6 +2,8 @@
 import '../src/plugins/all.js';
 import {
   add,
+  isoPolicy,
+  round,
   assertCurrency,
   isMoneyIn,
   allocate,
@@ -13,6 +15,10 @@ import {
   sum,
   type Money,
 } from '../src/fn.js';
+import { z as zodLibrary } from 'zod';
+import * as valibotLibrary from 'valibot';
+import { moneySchema as zodMoney } from '../src/zod.js';
+import { moneySchema as valibotMoney } from '../src/valibot.js';
 
 const eur = money('1', 'EUR');
 const usd = money('1', 'USD');
@@ -68,6 +74,16 @@ eur.multiply('1.1', 'halfUp');
 void viaMethod;
 void chained;
 
+// --- rounding policies go where rounding modes go
+const policyRounded: Money<'EUR'> = eur.multiply('1.075', isoPolicy).round(isoPolicy);
+round(eur, isoPolicy);
+const mapped: Money<'EUR'>[] = [eur, eur].map(isoPolicy);
+// @ts-expect-error a policy fixes its own scale, so round() takes no scale with it
+round(eur, isoPolicy, 2);
+// @ts-expect-error nor does the method
+eur.round(isoPolicy, 2);
+void policyRounded;
+void mapped;
 // --- narrowing a runtime currency to a literal one
 declare const unknownCurrency: Money<string>;
 // @ts-expect-error a Money<string> is not known to be a Money<'EUR'>
@@ -93,3 +109,44 @@ const withString: string = eur.with((value) => value.toDecimal());
 eur.with((value: Money<'USD'>) => value);
 void withResult;
 void withString;
+
+// --- schema outputs are typed by the allowed currencies
+const zodEur: Money<'EUR'> = zodLibrary.parse(zodMoney({ currency: 'EUR' }), {});
+// @ts-expect-error a schema for EUR does not produce USD
+const zodUsd: Money<'USD'> = zodLibrary.parse(zodMoney({ currency: 'EUR' }), {});
+const valibotEither: Money<'EUR'> | Money<'USD'> = valibotLibrary.parse(
+  valibotMoney({ currency: ['EUR', 'USD'] }),
+  {},
+);
+const anyCurrency = zodLibrary.parse(zodMoney(), {});
+// exactly Money<string>: assignable both ways
+const anyCurrencyIsString: Money<string> = anyCurrency;
+// @ts-expect-error a schema without currencies does not claim a literal one
+const anyCurrencyIsEur: Money<'EUR'> = anyCurrency;
+const zodEither: Money<'EUR'> | Money<'USD'> = zodLibrary.parse(
+  zodMoney({ currency: ['EUR', 'USD'] }),
+  {},
+);
+// @ts-expect-error not a single-currency Money
+const zodEitherIsEur: Money<'EUR'> = zodLibrary.parse(zodMoney({ currency: ['EUR', 'USD'] }), {});
+const valibotEur: Money<'EUR'> = valibotLibrary.parse(valibotMoney({ currency: 'EUR' }), {});
+// @ts-expect-error a Valibot schema for EUR does not produce USD
+const valibotUsd: Money<'USD'> = valibotLibrary.parse(valibotMoney({ currency: 'EUR' }), {});
+const encoded: { amount: string; currency: string } = zodLibrary.encode(
+  zodMoney({ currency: 'EUR' }),
+  zodEur,
+);
+void anyCurrencyIsString;
+void anyCurrencyIsEur;
+void zodEither;
+void zodEitherIsEur;
+void valibotEur;
+void valibotUsd;
+void encoded;
+void zodEur;
+void zodUsd;
+void valibotEither;
+void anyCurrency;
+// --- a policy is an operation for with()
+const withPolicy: Money<'EUR'> = eur.with(isoPolicy);
+void withPolicy;

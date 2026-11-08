@@ -50,21 +50,24 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 
 - **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
   units, float traps and negative allocations.
-- **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing, add, multiply
-  and allocate on Node, Bun and Deno, and on toDecimal and compare on Node and Deno. Against the fastest other money
-  library the margin ranges from about 1.03× (compare on Node: 8.10 against 8.38 ns) to about 9× (allocate: 54 against
-  bigint-money's 490 ns). Against dinero.js 2 it ranges from 1.5× (creating and parsing) to about 29× (multiply on
-  Bun).
-- **Where it isn't fastest:** formatting on Node (currency.js, formatting a float, and dinero.js 1) and on Bun
-  (currency.js), and on Bun comparisons and toDecimal, where libraries working on plain numbers are slightly faster.
+- **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing, add, multiply,
+  allocate and toDecimal on Node, Bun and Deno, and on compare on Node and Deno. Against the fastest other money library
+  the margin ranges from about 1.07× (compare on Node: 7.39 against 7.91 ns) to about 8.7× (allocate on Node: 48
+  against bigint-money's 415 ns). Against dinero.js 2 it ranges from 1.6× (creating on Node) to about 30× (add on
+  Bun). dinero.js 2 measured unexpectedly slow on Deno in this run (up to 6× slower than in the previous one, while
+  every other library got faster), so its Deno numbers are left out of this range.
+- **Where it isn't fastest:** formatting on Node and Deno, where currency.js (formatting a float) is 8% and 2% faster
+  (on Bun, ducat and dinero.js 1 are level, 269 against 272 ns). On Bun, libraries that compare plain numbers are
+  faster at compare (currency.js 6.9 against 10.6 ns).
 - **Fixed-point decimals:** ducat is not the fastest fixed-point library. bigdecimal.js is faster on parse, multiply
-  and divide, js-big-decimal on parse and `toString` (and ethers on `toString` too); see
+  and divide, js-big-decimal on parse and `toString`, @formatjs/bigdecimal on parse on Node and Deno, and ethers on
+  `toString`; see
   [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
-- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on the 0.1.0 release candidate under Node 24.22.2, Bun
-  1.4.4 and Deno 2.9.8; sizes are gzipped KiB.
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat 0.1.0 (commit 69d7fe9) under Node 24.22.2,
+  Bun 1.4.4 and Deno 2.9.8; sizes are gzipped KiB.
 
 ## Design
 
@@ -117,31 +120,36 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                              | adds to `Money`                                                    | also exports                                                            |
-| ----------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents          |
-| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                             |
-| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                                |
-| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                         |
-| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                                |
-| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                            |
-| `.../convert/fetch`                 | nothing                                                            | `fetchEcb` (the only module that uses the network)                      |
-| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                          |
-| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                                      |
-| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                                |
-| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                                 |
-| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                               |
-| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                                 |
-| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                           |
-| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                               |
-| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                         |
-| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                               |
-| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                              |
-| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns               |
-| `@ducatjs/money/kysely`             | nothing                                                            | `MoneyPlugin`, `MoneyColumn`, `moneyMinor`, `moneyDecimal`, `moneyJson` |
-| `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`               |
-| `@ducatjs/money/all`                | everything above                                                   | everything                                                              |
-| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules                   |
+| import                              | adds to `Money`                                                    | also exports                                                   |
+| ----------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents |
+| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                    |
+| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                       |
+| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                |
+| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                       |
+| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                |
+| `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                  |
+| `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange` (the only module with network I/O) |
+| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
+| `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
+| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`…                            |
+| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                       |
+| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                        |
+| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                      |
+| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                        |
+| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                  |
+| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                      |
+| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                |
+| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
+| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
+| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
+| `@ducatjs/money/kysely`             | nothing                                                            | `moneyHelpers`, `setMoney`, `MoneyResultPlugin`                |
+| `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O       |
+| `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
+| `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)       |
+| `@ducatjs/money/valibot`            | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Valibot, an optional peer)   |
+| `@ducatjs/money/all`                | the methods of every module above                                  | everything except the database and schema entries              |
+| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules          |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that must not change any prototype (a library built on ducat, for example) can use the plain functions from `@ducatjs/money/fn` instead.
 
@@ -248,6 +256,28 @@ one.identical(money('1', 'EUR', { scale: 1 })); // → false
 | `Floor`                | `'floor'`       | always toward −∞                                   |
 | `Unnecessary`          | `'unnecessary'` | throws `RoundingError` if rounding would be needed |
 
+**Rounding policies** (`@ducatjs/money/policy`). A policy bundles a scale, an increment and a mode ("CHF cash", "4 decimals, half even") into one value that goes wherever a rounding mode goes: `multiply`, `divide`, `round`, `percentage`, `discount`, `addTax`, `extractTax`. The result is rounded once, straight to the policy, so it never rounds twice through the amount's own scale. A policy is also a function that rounds an amount, so `amounts.map(policy)` and `m.with(policy)` work.
+
+- `roundingPolicy({ scale?, increment?, rounding?, currency? })`. The scale defaults to the currency's exponent, the increment (counted in 10^-scale units) to 1, and the mode to `'halfExpand'`. With `currency`, the policy refuses amounts in other currencies.
+- `isoPolicy`: the currency's exponent, half up.
+- `cashPolicy(currency, { country?, rounding?, includeUnverified? })`, from `@ducatjs/money/cash`, is the cash-rounding rule as a policy, for that currency only. It throws when no rule applies. Unlike `cashRound`, which keeps a larger scale (10.034 CHF gives 10.050), a policy always returns its own scale (10.05).
+- `assertScale(m, policy)` throws a `RangeError` unless `m` is already at the policy's scale and on its increment, for example before an amount is booked.
+- The tax functions apply a policy to the amount they compute: the **gross** for `addTax` (the amount charged), the **net** for `extractTax`, and the **discounted price** for `discount`. The other part is the exact difference, so net + tax is still exactly gross. With a plain rounding mode, `addTax` and `discount` round the tax and the discount amount, as before.
+
+Policies are passed explicitly, never stored on amounts or set globally. Only policies built by this copy of the package are accepted. A lookalike function, or a policy from a second installed copy of ducat, throws a `TypeError`, just as `isMoney` rejects the other copy's Money.
+
+```ts
+import { money } from '@ducatjs/money';
+import { assertScale, isoPolicy, roundingPolicy } from '@ducatjs/money/policy';
+import { cashPolicy } from '@ducatjs/money/cash';
+
+money('10.00', 'CHF').multiply('1.077', cashPolicy('CHF')); // → 10.75 CHF
+const unitPrice = roundingPolicy({ scale: 4, rounding: 'halfEven' });
+money('10.00', 'EUR').divide(3, unitPrice); // → 3.3333 EUR
+[money('1.234', 'EUR', { scale: 3 })].map(isoPolicy); // → [1.23 EUR]
+assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws
+```
+
 **Cash rounding**
 
 - `cashRound(m, { country?, rounding?, includeUnverified? })` uses the table in `data/cash-rounding.json`:
@@ -275,6 +305,31 @@ one.identical(money('1', 'EUR', { scale: 1 })); // → false
 - `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
 
+**Validate at API boundaries.** `@ducatjs/money/zod` and `@ducatjs/money/valibot` turn the JSON form into Money inside your request schemas. They accept exactly what `toJSON` writes:
+
+- an exact decimal string (no exponent, plus sign, spaces or grouping) with at most 50 digits (`maxDigits`) and no more decimals than the scale;
+- a known currency, or one of `{ currency }`.
+
+The scale is the schema's, not the input's: the currency's exponent, or `{ scale }`. Shorter amounts are padded (`"1.5"` EUR is 1.50 EUR). `{ rounding }` accepts more decimals, as in `money()`. Errors are issues on the `amount` or `currency` path, and keys other than those two are dropped. Bad options throw when the schema is built. The Zod schema is a codec, so `z.encode(schema, price)` writes the JSON back. With Valibot, which has no codecs, use `price.toJSON()`. `moneyJSONSchema` checks the same things but keeps the JSON. Zod (4) and Valibot (1) are optional peer dependencies; no other entry imports them.
+
+```ts
+import { z } from 'zod';
+import { money } from '@ducatjs/money';
+import { moneySchema } from '@ducatjs/money/zod';
+
+const Order = z.object({ total: moneySchema({ currency: ['EUR', 'USD'] }) });
+Order.parse({ total: { amount: '12.34', currency: 'EUR' } }).total; // → 12.34 EUR
+Order.parse({ total: { amount: '12.345', currency: 'EUR' } }); // throws
+z.encode(moneySchema(), money('9.99', 'USD')); // → { amount: '9.99', currency: 'USD' }
+```
+
+```ts
+import * as v from 'valibot';
+import { moneySchema } from '@ducatjs/money/valibot';
+
+v.parse(moneySchema({ currency: 'JPY' }), { amount: '1000', currency: 'JPY' }); // → 1000 JPY
+```
+
 **Currencies**
 
 - `currencyExponent(code)`, `isCurrency(code)`, `ISO_EXPONENTS`, `ISO_4217_PUBLISHED`
@@ -300,9 +355,9 @@ eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedF
 eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
 ```
 
-Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate carries optional metadata: `source`, `asOf`, `validUntil` and `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
+Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate keeps the digits it was given: `exchangeRate('EUR', 'HUF', '363.90').toString()` is `'363.90'`. A rate carries optional metadata: `source`, `asOf`, `availableAt` (when it was published), `validUntil`, `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...) and `quote` (how the source published it). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
 
-**Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published.
+**Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published, unless it has an `availableAt`.
 
 <!-- doctest: setup import { readFileSync } from 'node:fs'; const xml90Days = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
 
@@ -316,7 +371,49 @@ const fx = via('EUR', await history.at('2026-11-08')); // a Sunday: Friday's tab
 money('100', 'USD').convert('JPY', fx, 'halfEven'); // → 15833 JPY, through EUR, rounded once
 ```
 
-**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`: the daily, 90-day and full-history XML and CSV files) and one opt-in fetcher (`@ducatjs/money/convert/fetch`, which uses the platform `fetch` and has a 30-second default timeout). Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+**Historical rates.** A lookup for a past date should see only what was known then, in the form the source published it. Publication times and missing values work in `@ducatjs/money/convert` itself; quoted tables and ranges are in the opt-in `@ducatjs/money/convert/history`, so converting at rates you already hold doesn't pay for them.
+
+- **Publication time.** `availableAt` on a rate or a table hides it from lookups before then, so a query for 09:00 on a publication day gets the day before. A date query covers the whole day.
+- **How a rate was quoted.** Many central banks quote the other way round (CAD per USD) or per 100 units (NOK per 100 JPY). `quotedTable({ base, inverted: true, rates })` and per-entry `{ rate, per, inverted }` store the exact rate in the table's direction and keep the published quote. `{ rate, decimals }` rebuilds the trailing zeros a feed strips (`'1.175'` with 4 decimals is `'1.1750'`).
+- **Missing values.** `null` in a table's `rates` marks a currency the source listed without a value (a holiday, `ND`, `N/A`). The table lists it in `missing`, and every parser reads those markers the same way.
+- **Periods.** A table with `validUntil` (a monthly rate, say) answers any day up to that date and nothing after it.
+- **Ranges.** `rateHistory(tables)` answers synchronously from a date range loaded in one call. Each pair falls back on its own (a currency missing on a holiday comes from the day before), up to `lookback` days (default 4), and `lookup()` says why it fell back: `noTable`, `notYetAvailable`, `expired`, `missing` or `notQuoted`. A table with a `validUntil` answers its whole period whatever the lookback. `snapshots()` skips tables not yet published, too.
+
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const ecbXml = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
+
+```ts
+import { parseEcbXml } from '@ducatjs/money/convert/ecb';
+import { quotedTable, rateHistory } from '@ducatjs/money/convert/history';
+
+const history = rateHistory(parseEcbXml(ecbXml)); // e.g. eurofxref-hist-90d.xml
+const sunday = history.lookup('EUR', 'USD', { asOf: '2026-11-08' });
+sunday.rate?.asOf; // → '2026-11-06'
+sunday.skipped.map((fallback) => fallback.day); // → ['2026-11-08', '2026-11-07']
+sunday.skipped[0]?.reason; // → 'noTable' (a weekend: no table that day)
+
+const nok = quotedTable({
+  base: 'NOK',
+  asOf: '2026-11-06',
+  rates: { JPY: { rate: '6.50', per: 100, inverted: true }, ISK: null },
+});
+nok.rate('NOK', 'JPY')?.inverse().toString(); // → '0.065'
+nok.rate('NOK', 'JPY')?.quote; // → { rate: '6.50', per: 100, inverted: true }
+nok.missing; // → ['ISK']
+```
+
+**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. There are two opt-in fetchers in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const sdmxCsv = readFileSync('test/fixtures/ecb-sdmx/exr-d-full.csv', 'utf8'); -->
+
+```ts
+import { parseEcbSdmxCsv } from '@ducatjs/money/convert/ecb';
+import { rateHistory } from '@ducatjs/money/convert/history';
+
+// what fetchEcbRange({ start: '2025-12-22', end: '2026-01-06' }) parses
+const history = rateHistory(parseEcbSdmxCsv(sdmxCsv));
+history.rate('EUR', 'ISK', { asOf: '2026-01-06' })?.toString(); // → '147.20' (the API sends 147.2)
+history.rate('EUR', 'USD', { asOf: '2025-12-26' })?.asOf; // → '2025-12-24' (Christmas)
+```
 
 **Exact intermediates and residuals.** `@ducatjs/money/exact` adds `ExactMoney`, a rational amount for chained calculations that should round once at the end. In `@ducatjs/money/convert`, `convertDetailed()` also returns what rounding cost, so a ledger can book it:
 
@@ -406,6 +503,8 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 - BIGINT holds ±9.2·10^18 minor units, which is 92 quadrillion EUR. Postgres's `money` type is locale-dependent; don't use it.
 - Choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 - Prisma maps `BigInt` to JS `bigint`. The helpers accept it, and `fromMinor` normalises it back to a number when it is safe.
+- **A scale column** makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below). To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
+- **Exponent changes.** Minor units stored without a scale are read at the currency's exponent in the installed version of ducat, so a changed exponent would silently change what old rows mean: 1234 stored as 12.34 would read as 1.234 or 123.4. So an exponent change is a breaking change (see [Decisions](#decisions)), listed under **Changed** in the changelog with the currencies affected. Before upgrading across one, migrate the affected rows, or store a scale column (or a decimal) so the question never arises. Custom currencies keep the exponent given to `defineCurrency`.
 - `fromDecimal` rejects values with more decimals than the currency allows (e.g. `12.3456` in NUMERIC(19,4) for EUR) unless you pass `{ scale }` or `{ rounding }`. Trailing zeros are fine.
 
 Prisma client extension (from `examples/prisma`, which runs end to end against SQLite):
@@ -431,6 +530,89 @@ await db.order.create({
 ```
 
 `src/prisma.ts` does not import `@prisma/client`. It types Decimal structurally, as `{ toFixed(): string }`, so it also works with decimal.js and big.js. `examples/prisma/typecheck.ts` checks the helpers against Prisma's generated extension types.
+
+#### Kysely
+
+`@ducatjs/money/kysely` keeps Money exact in Kysely without the plugin having to understand your queries. A money value is selected as a JSON object built in SQL, which carries a marker, the amount as exact text, and the currency. `MoneyResultPlugin` turns exactly those objects into Money, wherever they appear: unions, CTEs, subqueries, nested `jsonArrayFrom` rows, every `stream()` chunk, and with `CamelCasePlugin`. A raw column keeps its driver type and is never typed as Money.
+
+```ts
+import Database from 'better-sqlite3';
+import { Kysely, SqliteDialect } from 'kysely';
+import { money } from '@ducatjs/money';
+import {
+  moneyHelpers,
+  MoneyResultPlugin,
+  setMoney,
+  type MinorUnitsColumn,
+} from '@ducatjs/money/kysely';
+
+interface Schema {
+  payments: { id: number; amount_minor: MinorUnitsColumn; currency: string };
+}
+
+const client = new Database(':memory:');
+client.defaultSafeIntegers(true); // integers as bigint, exact beyond 2^53
+client.exec('CREATE TABLE payments (id INTEGER, amount_minor INTEGER, currency TEXT)');
+const db = new Kysely<Schema>({
+  dialect: new SqliteDialect({ database: client }),
+  plugins: [new MoneyResultPlugin()],
+});
+const { selectMoney, compareMoney, sumMoney } = moneyHelpers('sqlite');
+
+const fee = money('1.234', 'KWD');
+await db
+  .insertInto('payments')
+  .values({ id: 1, ...setMoney(fee, 'amount_minor', 'currency') })
+  .execute();
+const row = await db
+  .selectFrom('payments')
+  .select((eb) => selectMoney(eb, 'amount_minor', 'currency').as('fee'))
+  .where((eb) => compareMoney(eb, 'amount_minor', 'currency', '>=', money('1', 'KWD')))
+  .executeTakeFirstOrThrow();
+row.fee; // → 1.234 KWD
+```
+
+- **Reads:** `selectMoney(eb, amount, currency)` for minor units and `selectDecimalMoney` for a NUMERIC/DECIMAL (SQLite TEXT) column. The currency comes from a column, or from `fixed('EUR')`, which types the result `Money<'EUR'>`. A nullable amount column gives `Money | null`.
+- **Writes:** `setMoney(m, 'amount_minor', 'currency')` and `setDecimalMoney` return the column values for `values()`, `set()` and upserts. The amount is an exact string, and with `fixed()` Money in another currency is a compile error and throws.
+- **Filters:** `compareMoney(eb, amount, currency, op, m)` (`=`, `<>`, `<`, `<=`, `>`, `>=`) compares currency and amount together, so 5 USD never matches 500 JPY. Parameters are cast exactly; MySQL would otherwise compare a string with a BIGINT or DECIMAL as doubles.
+- **Sums:** `sumMoney` and `sumDecimalMoney` give Money, or null over no rows. Rows in more than one currency, or an amount without a currency, make the result throw, so group by the currency column to sum per currency.
+- `moneyHelpers(dialect)` builds these for `'postgres'`, `'mysql'` or `'sqlite'`, which differ in their JSON and cast syntax. On SQLite, decimals are TEXT: `sumDecimalMoney` and ordering comparisons on them throw (compare and sum minor units instead).
+- Plugin order: for nested JSON that SQLite returns as text, put `ParseJSONResultsPlugin` before `MoneyResultPlugin`. A JSON value in your own data with a `"$ducat"` key would be read as money, and its fields are validated strictly. `min`, `max` and `coalesce` over a money expression aren't supported: they would compare the JSON objects. `kysely` is an optional peer dependency.
+
+#### node-postgres
+
+`@ducatjs/money/pg` keeps every amount node-postgres reads exact. It doesn't import `pg`; you pass `pg.types` in.
+
+- **`exactTypes(pg.types)`** gives type parsers that return BIGINT as a bigint and NUMERIC as its exact string, rejecting `NaN` and `Infinity`. Arrays of both are parsed the same way: pg's default parses `numeric[]` as floats. Other types keep pg's parsers. **The bigint applies to every BIGINT on that client**, `count(*)` and bigserial ids included, and `JSON.stringify` throws on a bigint. To keep pg's exact strings, pass `{ int8: 'string' }`, or give the money parsers their own pool.
+- **A composite type**, `(amount numeric, currency text)`. `moneyTypeSql()` returns its DDL plus a `sum` aggregate that throws on mixed currencies. With the type's OIDs, `exactTypes` reads it (and its arrays) as Money, keeping the scale it was stored at. `toMoneyComposite(m)` writes it. Run the DDL once, in a migration: it isn't idempotent. A schema-qualified name (`moneyTypeSql('billing.amount')`) puts the type, its function and the aggregate in that schema. OIDs are looked up once, so after recreating the type, or with one type per tenant schema, pass the new OIDs; a type `exactTypes` doesn't know comes back as pg's raw text. A value with a NULL field, `(,EUR)`, throws when read and makes `sum` raise.
+- **`toNumeric(m, { precision, scale })`** gives the decimal for a `NUMERIC(p, s)` parameter, or throws where Postgres would change the value. Postgres rounds extra decimals silently on insert, which is why the guard exists.
+
+<!-- doctest: skip (needs a Postgres server; test/db/pg-types.test.ts runs the same steps) -->
+
+```ts
+import pg from 'pg';
+import { money } from '@ducatjs/money';
+import {
+  exactTypes,
+  moneyTypeOids,
+  moneyTypeSql,
+  toMoneyComposite,
+  toNumeric,
+} from '@ducatjs/money/pg';
+
+const setup = new pg.Client();
+await setup.connect();
+for (const statement of moneyTypeSql()) await setup.query(statement); // once, in a migration
+const oids = await moneyTypeOids(setup);
+
+const client = new pg.Client({ types: exactTypes(pg.types, { money: oids }) });
+await client.connect();
+await client.query('INSERT INTO items (price) VALUES ($1::ducat_money)', [
+  toMoneyComposite(money('12.34', 'EUR')),
+]);
+(await client.query('SELECT sum(price) AS total FROM items')).rows[0].total; // Money
+toNumeric(money('1.23456', 'EUR', { scale: 5 }), { precision: 19, scale: 4 }); // throws
+```
 
 #### Drizzle
 
@@ -475,47 +657,6 @@ The columns check what the types can't: writing another currency, a value at a s
 - **Relational queries** (`db.query...findMany({ with: ... })`) return nested rows through JSON, where Postgres and MySQL turn NUMERIC and BIGINT values into JSON numbers. A nested `moneyDecimal` column then throws, and so does a nested `moneyMinor` beyond 2^53 minor units, rather than return a rounded amount. Top-level columns are not affected. For nested money, use `moneyJson`, or a join with `select`.
 - **SQLite decimals are TEXT**, so in SQL they compare and sort as text (`'10.00' < '9.00'`), and `sum()` over them is a REAL. Use `moneyMinor` for columns you sort, compare or add up in SQL. For the same reason `/drizzle/sqlite`'s `moneyDecimal` takes no column size.
 
-#### Kysely
-
-`@ducatjs/money/kysely` has a plugin, so Kysely works with `Money` directly. You type a column as `MoneyColumn<'EUR'>` in the database interface and say how it is stored. Selects then return `Money`, while inserts, updates and comparisons take it. The configuration is checked against the database type: every `MoneyColumn` needs an entry, and a fixed-currency column needs a spec in its own currency.
-
-```ts
-import Database from 'better-sqlite3';
-import { Kysely, SqliteDialect } from 'kysely';
-import { money } from '@ducatjs/money';
-import { moneyMinor, MoneyPlugin, type MoneyColumn } from '@ducatjs/money/kysely';
-
-interface Schema {
-  payments: { id: number; amount_minor: MoneyColumn; currency: string };
-}
-
-const client = new Database(':memory:');
-client.defaultSafeIntegers(true); // integers as bigint, exact beyond 2^53
-client.exec('CREATE TABLE payments (id INTEGER, amount_minor INTEGER, currency TEXT)');
-const db = new Kysely<Schema>({
-  dialect: new SqliteDialect({ database: client }),
-  plugins: [
-    new MoneyPlugin<Schema>({
-      // minor units, with the currency taken from another column of the row
-      payments: { amount_minor: moneyMinor({ currencyColumn: 'currency' }) },
-    }),
-  ],
-});
-
-const fee = money('1.234', 'KWD');
-await db.insertInto('payments').values({ id: 1, amount_minor: fee, currency: 'KWD' }).execute();
-const query = db.selectFrom('payments as p').select(['p.amount_minor as paid', 'p.currency']);
-(await query.executeTakeFirstOrThrow()).paid; // → 1.234 KWD
-```
-
-| spec                                                                            | stores                                | for                           |
-| ------------------------------------------------------------------------------- | ------------------------------------- | ----------------------------- |
-| `moneyMinor('EUR')`, `moneyMinor({ currencyColumn })`                           | integer minor units, sent as strings  | BIGINT (SQLite INTEGER)       |
-| `moneyDecimal('EUR', { precision, scale })`, `moneyDecimal({ currencyColumn })` | the exact decimal                     | NUMERIC/DECIMAL (SQLite TEXT) |
-| `moneyJson()`, `moneyJson('EUR')`                                               | `{"amount":"12.34","currency":"EUR"}` | JSON, JSONB, TEXT             |
-
-The plugin reads each query's tree, so it follows aliases, qualified names, joins, subqueries in `from`, CTEs and `returning`. A column with a `currencyColumn` must be selected together with that column, and an insert whose currency column disagrees with the Money throws. The column checks are the same as Drizzle's: wrong currency, wrong scale, out of range and lossy driver values all throw. Some places can't be mapped, and the plugin throws there rather than let a raw value pass as `Money`. One is a money column inside a subquery in the select list (`jsonArrayFrom`, whose rows come back as JSON); a scalar subquery returning one fixed-currency column is fine. The other is a Money value bound where no money column says how to store it (inside a function call, for example). Aggregates such as `sum()` keep Kysely's own types. `kysely` is an optional peer dependency, and the entry imports only its types.
-
 ---
 
 ## Currency data: source, generation, verification
@@ -539,6 +680,8 @@ The plugin reads each query's tree, so it follows aliases, qualified names, join
   - 3: BHD IQD JOD KWD LYD OMR TND
   - 4: CLF UYW
 - Tests also check the Adyen differences, the consistency of every Stripe rule, and that `format()` shows ISO digits for every code on every engine.
+
+A change to an ISO exponent in this data is a breaking change, because it changes what stored minor units mean (see [Decisions](#decisions) and [Databases](#databases)).
 
 Recent ISO changes that are already encoded:
 
@@ -703,6 +846,8 @@ These are stated over the proved kernel (`divRound`):
 - **The core is small; everything else is an opt-in module that installs methods.** Methods on one class pull every feature into every bundle, so `Money` carries only the core, and `@ducatjs/money/allocate`, `/tax`, `/format`… add their methods when imported (types through `declare module` augmentation, as dayjs plugins do). The cost is that installed methods are global at run time. `@ducatjs/money/fn` offers the same functions without touching the prototype, for function-level tree-shaking.
 - **Correctness and features come before bundle size.** The core keeps the currency table, the comparison methods, bigint support and exact string parsing; everything else is an opt-in module, and size budgets in CI stop either from growing.
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
+- **Rounding policies are explicit values.** A policy (scale, increment and mode) is passed to each operation that rounds, the way a rounding mode is. It is never attached to an amount or installed as a global default: a stored or global policy would make the same expression round differently depending on where a value came from or what ran earlier, which is the kind of action at a distance a money library should rule out.
+- **A bundled ISO 4217 exponent change is breaking:** it is listed under **Changed**, and ships only in a minor version before 1.0 and a major version from 1.0. Minor units stored without a scale are read at the installed exponent, so such a change silently changes what stored rows mean.
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
 - **Withdrawn and non-ISO codes** (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…) stay out of the core registry. An opt-in table of them with withdrawal dates is planned for a later release; until then, register any you need with `defineCurrency`.

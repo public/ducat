@@ -93,10 +93,7 @@ function packageImportsOf(file: string, seen = new Set<string>()): Set<string> {
   }
   seen.add(file);
   // without comments, whose examples import the package itself
-  // and without type-only imports, which the compiler erases
-  const text = readFileSync(file, 'utf8')
-    .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-    .replace(/import\s+type\s[^;]*;/g, '');
+  const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
   for (const match of text.matchAll(/(?:from|import)\s*\(?\s*'([^']+)'/g)) {
     const specifier = match[1]!;
     if (specifier.startsWith('.')) {
@@ -120,24 +117,40 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only the /drizzle entries import drizzle-orm at run time, and no entry imports anything else', async () => {
+  it('only /drizzle, /zod, /valibot and /kysely reach their peer libraries; nothing else imports any', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
       actual[key] = [...packageImportsOf(join(ROOT, source))];
       expected[key] = key.startsWith('./drizzle/') ? [`drizzle-orm/${key.slice(10)}-core`] : [];
+      if (key === './zod' || key === './valibot' || key === './kysely') {
+        expected[key] = [key.slice(2)];
+      }
     }
     expect(actual).toEqual(expected);
   });
 
-  it('the database entries export their API, and none re-exports the SQL helpers', async () => {
+  it('every /drizzle dialect exports its column types, and none re-exports the SQL helpers', async () => {
     const internal = new Set(Object.keys(await import('../src/sql.js')));
     const expectedNames: Record<string, string[]> = {
       // SQLite stores decimals as TEXT, so its entry has no column size to export
       './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/pg': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/mysql': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
-      './kysely': ['MoneyPlugin', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
+      './kysely': ['MoneyResultPlugin', 'fixed', 'moneyHelpers', 'setDecimalMoney', 'setMoney'],
+      './pg': [
+        'DEFAULT_DECIMAL_SIZE',
+        'MONEY_TYPE_NAME',
+        'exactTypes',
+        'moneyTypeOids',
+        'moneyTypeSql',
+        'parseArray',
+        'parseBigInt',
+        'parseMoneyComposite',
+        'parseNumeric',
+        'toMoneyComposite',
+        'toNumeric',
+      ],
     };
     const drizzleNames: Record<string, string[]> = {};
     const leaked: Record<string, string[]> = {};
@@ -156,5 +169,26 @@ describe('package entries', () => {
     }
     expect(drizzleNames).toEqual(expectedNames);
     expect(leaked).toEqual({});
+  });
+});
+
+describe('schema entries', () => {
+  it('/zod and /valibot export the same schema functions', async () => {
+    const zod = await import('../src/zod.js');
+    const valibot = await import('../src/valibot.js');
+    expect(Object.keys(zod).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
+    expect(Object.keys(valibot).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
+  });
+});
+
+describe('policy entry', () => {
+  it('/policy has the policy constructors and check, and the root entry does not', async () => {
+    const policy = await import('../src/policy.js');
+    expect(Object.keys(policy).sort()).toEqual(['assertScale', 'isoPolicy', 'roundingPolicy']);
+    for (const name of Object.keys(policy)) {
+      expect(Object.keys(root)).not.toContain(name);
+      expect(Object.keys(fn)).toContain(name);
+      expect(Object.keys(all)).toContain(name);
+    }
   });
 });
