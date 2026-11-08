@@ -2,6 +2,7 @@ import {
   divideAndRoundBigint as provedDivideAndRoundBigint,
   roundTruncatedQuotient,
 } from './generated/kernel.js';
+import type { Ratio } from './decimal.js';
 import { RoundingError } from './rounding-error.js';
 
 /**
@@ -57,6 +58,38 @@ export const DEFAULT_ROUNDING: RoundingMode = 'halfExpand';
 export { RoundingError };
 
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
+
+/**
+ * @internal `value / divisor` rounded with `mode`, for a safe-integer `value` and a reduced ratio
+ * (`ratio()` makes its denominator positive): the number fast path of Fixed's divide, at the value's
+ * own scale. Money's divide inlines the same steps, since a call there costs it about 4% on its
+ * benchmark; test/divide.test.ts checks both against the proved kernel. It is `value × denominator / numerator`,
+ * rounded once by `divideAndRound`, which is the same fraction the inverse ratio would give, without
+ * building that ratio (bigint arithmetic and a gcd). Returns NaN when the number path doesn't apply,
+ * so the caller takes the bigint path:
+ * - a part that is NaN marks one that isn't a safe integer (`Ratio.n` and `Ratio.d`);
+ * - `value` and `denominator` are safe integers, so a float product beyond 2^53 - 1 can't round
+ *   back into the safe range, and the bound check rejects every inexact product.
+ */
+export function divideSafeByRatio(value: number, divisor: Ratio, mode: RoundingMode): number {
+  const numerator = divisor.n;
+  const denominator = divisor.d;
+  // `x !== x` is true only for NaN
+  if (numerator !== numerator || denominator !== denominator) {
+    return NaN;
+  }
+  let dividend = value * denominator;
+  if (!(dividend <= MAX_SAFE_MINOR && dividend >= -MAX_SAFE_MINOR)) {
+    return NaN;
+  }
+  // divideAndRound needs a positive divisor: (−p)/(−n) is the same quotient
+  let positiveDivisor = numerator;
+  if (numerator < 0) {
+    dividend = 0 - dividend;
+    positiveDivisor = 0 - numerator;
+  }
+  return divideAndRound(dividend, positiveDivisor, mode);
+}
 
 /**
  * dividend / divisor rounded with `mode`, for safe-integer dividends and divisor > 0. Exact: the
