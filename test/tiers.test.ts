@@ -175,6 +175,19 @@ describe('tieredPrice properties', () => {
   const modes = fc.constantFrom('graduated', 'volume' as const);
   const roundings = fc.constantFrom('halfEven', 'halfExpand', 'floor', 'ceil' as const);
 
+  it('a line can be a whole cent off its exact charge, and the lines still sum to the total', () => {
+    const price = tieredPrice(2, {
+      mode: 'graduated',
+      tiers: [
+        { upTo: 1, unitAmount: money('746.295', 'EUR', { scale: 3 }) },
+        { upTo: 'inf', unitAmount: money('0', 'EUR'), flatAmount: money('762.19', 'EUR') },
+      ],
+      rounding: 'halfEven',
+    });
+    expect(price.lines.map((line) => line.amount.toDecimal())).toEqual(['746.30', '762.18']);
+    expect(price.total.toDecimal()).toBe('1508.48');
+  });
+
   it('the lines sum to the total, and the exact lines sum to the exact total', () => {
     fc.assert(
       fc.property(
@@ -187,11 +200,14 @@ describe('tieredPrice properties', () => {
           expect(sum(price.lines.map((line) => line.amount)).toMinor()).toBe(price.total.toMinor());
           expect(sumExact(price.lines.map((line) => line.exact)).equals(price.exact)).toBe(true);
           expect(price.total.toMinor()).toBe(price.exact.round(rounding).toMinor());
-          // every line is within one cent of its exact charge (the running total's rounding)
+          // every line is within one cent of its exact charge: a line is the difference of two
+          // rounded running totals, each off by at most half a cent under a half mode, so a line
+          // can be off by a whole cent (746.295 + 762.19, halfEven: 746.30, then 762.18), and by
+          // less than one under floor or ceil
           for (const line of price.lines) {
             const gap = line.exact.subtract(exact(line.amount));
-            expect(gap.compare(exact(fromMinor(1, 'EUR'))) < 0).toBe(true);
-            expect(gap.compare(exact(fromMinor(-1, 'EUR'))) > 0).toBe(true);
+            expect(gap.compare(exact(fromMinor(1, 'EUR'))) <= 0).toBe(true);
+            expect(gap.compare(exact(fromMinor(-1, 'EUR'))) >= 0).toBe(true);
           }
         },
       ),
