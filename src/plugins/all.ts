@@ -30,6 +30,7 @@ export {
   toMinor,
   toMinorNumber,
 } from '../money.js';
+export { roundingPolicy, isoPolicy, assertScale, type RoundingPolicyOptions } from '../policy.js';
 export * from './allocate.js';
 export * from './tax.js';
 export * from './convert.js';
