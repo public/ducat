@@ -14,6 +14,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   16:00 CET (Frankfurt time, summer time included), or a function of the day for the caller's
   own, so historical lookups can't use a rate before it was published. Without it nothing
   changes.
+- `@ducatjs/money/pricing`: `priceEnding`, retail price endings ("charm pricing"). A rule allows
+  the prices `ending + k × step` (.99, .95, 9.90 in steps of 10, the nearest 5) and moves an amount
+  to one of them by a rounding mode (up by default, down, or to the nearest), exactly.
 - `@ducatjs/money/math`: `average` (the exact sum divided by the count, rounded once), `ratioOf`
   (the exact share of one amount in another, as a `Ratio`), `divideToIntegral` and `remainder`
   (truncating division between amounts, with `m = divisor × count + remainder` exactly) and
