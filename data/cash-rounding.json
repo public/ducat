@@ -1,6 +1,6 @@
 {
   "retrieved": "2026-11-07",
-  "note": "Smallest cash increment where it differs from the ISO minor unit. 'verified': false means only secondary sources (press, Wikipedia) were found; treat as a default you should confirm.",
+  "note": "Smallest cash increment where it differs from the ISO minor unit. 'verified': false means only secondary sources (press, Wikipedia) were found; treat as a default you should confirm. Rules added later carry their own 'retrieved' date. A rule's optional 'rounding' is the tie rule its source prescribes (default halfExpand).",
   "rules": [
     {
       "currency": "CHF",
@@ -394,6 +394,127 @@
       "source": "https://en.wikipedia.org/wiki/Cash_rounding",
       "note": "Penny production for circulation ended Nov 2025; businesses may round cash to nearest 5c or in customer's favour; state laws vary. Not a uniform rule; do not apply by default.",
       "verified": false
+    },
+    {
+      "currency": "AMD",
+      "increment": "10",
+      "scope": "cash (practice)",
+      "countries": [
+        "AM"
+      ],
+      "source": "https://old.cba.am/en/SitePages/nccracoinscirculated.aspx",
+      "note": "The Central Bank of Armenia lists 10, 20, 50, 100, 200 and 500 dram coins as circulating; the luma and 1, 3 and 5 dram coins are on its 'coins not circulated' page (https://old.cba.am/en/SitePages/nccracoinsnotcirculated.aspx). No statutory rounding rule found. CLDR has whole dram.",
+      "verified": true,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "CRC",
+      "increment": "10",
+      "scope": "cash (practice)",
+      "countries": [
+        "CR"
+      ],
+      "source": "https://www.bccr.fi.cr/cr/es/noticias/listado-de-noticias/2026/monedas-de-5-10-y-25-del-diseno-anterior-dejaran-de-funcionar-como-medio-de-pago-el-1-de-julio-del-2.html",
+      "note": "Banco Central de Costa Rica: from 1 July 2026 the old 5, 10 and 25 colón coins 'perderán su valor como medio de pago', and the new 10 colón coin is 'la denominación más pequeña del nuevo cono monetario'; 1 and 5 colón coins are listed as out of circulation (https://www.bccr.fi.cr/monedas-y-billetes/monedas-fuera-de-circulacion.html). No statutory rounding rule found. CLDR has whole colones.",
+      "verified": true,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "GYD",
+      "increment": "1.00",
+      "scope": "cash",
+      "countries": [
+        "GY"
+      ],
+      "source": "https://bankofguyana.org.gy/bog/images/communications/press_release/Notice%20to%20stop%20minting%20one%20dollar%20coin.pdf",
+      "note": "No cent coins in use; the 1 dollar coin is still legal tender though no longer minted. This Bank of Guyana notice (seen only through search results; the site blocks automated reads) says that where the 1 dollar coin is not available merchants 'may round payments to the nearest five dollar'.",
+      "verified": false,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "MNT",
+      "increment": "1.00",
+      "scope": "cash",
+      "countries": [
+        "MN"
+      ],
+      "source": "https://www.mongolbank.mn/en/p/1416",
+      "note": "Bank of Mongolia: banknotes in circulation for payments go down to 1 tögrög; möngö are not in use.",
+      "verified": true,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "MRU",
+      "increment": "0.20",
+      "scope": "cash",
+      "countries": [
+        "MR"
+      ],
+      "source": "https://cridem.org/media/documents/bcm-presentation-gr-2017.pdf",
+      "note": "The smallest coin is the 1/5 ouguiya (khoums), per a 2017 Banque Centrale de Mauritanie presentation hosted by a third party (seen only in search results); bcm.mr has no denomination list. Matches CLDR (cashRounding 20).",
+      "verified": false,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "PKR",
+      "increment": "1.00",
+      "scope": "cash",
+      "countries": [
+        "PK"
+      ],
+      "source": "https://www.sbp.org.pk/press/2014/Coins-15-Sep-2014.pdf",
+      "note": "State Bank of Pakistan: the paisa coins 'will cease to be legal tender on October 1, 2014'; the smallest coin is Re 1. No rounding rule found.",
+      "verified": true,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "RSD",
+      "increment": "1.00",
+      "scope": "cash (statutory)",
+      "countries": [
+        "RS"
+      ],
+      "source": "https://www.nbs.rs/export/sites/NBS_site/documents/propisi/propisi-trz/opticaj_povlacenje_50_para.pdf",
+      "rounding": "halfTrunc",
+      "note": "National Bank of Serbia, decision of 27 Sep 2007: the 50 para coin ceases to be legal tender from 1 January 2008, and final cash totals are rounded 'од 1 паре до 50 пара – на 0 пара; од 51 паре до 99 пара – на 1 динар' (1 to 50 para down, 51 to 99 para up): ties go down, so the rule's rounding is halfTrunc.",
+      "verified": true,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "TZS",
+      "increment": "50",
+      "scope": "cash (practice)",
+      "countries": [
+        "TZ"
+      ],
+      "source": "https://www.bot.go.tz/Publications/Regular/Quarterly%20statistical%20Bulletin/en/2025090409030924.pdf",
+      "note": "The 50 shilling coin is the smallest issued now; a Bank of Tanzania bulletin (June 2025, Table 3.5) still lists 5 to 50 senti coins as in circulation, so the legal minimum is unconfirmed. CLDR has whole shillings.",
+      "verified": false,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "TWD",
+      "increment": "1.00",
+      "scope": "cash (practice)",
+      "countries": [
+        "TW"
+      ],
+      "source": "https://www.cbc.gov.tw/tw/cp-769-26060-37841-1.html",
+      "note": "Central Bank of the Republic of China (Taiwan): the commonly used coins are 1, 5, 10, 20 and 50 dollars; the 0.5 dollar coin is still listed as circulating (https://www.cbc.gov.tw/public/data/issue/money/a1/t04.htm) but rarely used.",
+      "verified": true,
+      "retrieved": "2026-11-08"
+    },
+    {
+      "currency": "UZS",
+      "increment": "50",
+      "scope": "cash (practice)",
+      "countries": [
+        "UZ"
+      ],
+      "source": "https://cbu.uz/en/banknotes-coins/coins/",
+      "note": "Central Bank of Uzbekistan: the tiyin and the 1 to 25 sum coins 'was in circulation until March 1, 2020'; the smallest circulating coin is 50 sum (2018 series). No rounding rule found. CLDR has whole sum.",
+      "verified": true,
+      "retrieved": "2026-11-08"
     }
   ]
 }

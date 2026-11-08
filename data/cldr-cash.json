@@ -1,0 +1,101 @@
+{
+  "source": "https://raw.githubusercontent.com/unicode-org/cldr/release-49/common/supplemental/supplementalData.xml",
+  "note": "CLDR <currencyData> fractions with a cash rule. cashDigits is the number of decimals cash amounts show, and cashRounding (0 means 1) the step in units of the last of them: CHF cashDigits 2, cashRounding 5 is CHF 0.05.",
+  "currencies": {
+    "AMD": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "CAD": {
+      "digits": 2,
+      "cashDigits": 2,
+      "cashRounding": 5
+    },
+    "CHF": {
+      "digits": 2,
+      "cashDigits": 2,
+      "cashRounding": 5
+    },
+    "CRC": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "CZK": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "DKK": {
+      "digits": 2,
+      "cashDigits": 2,
+      "cashRounding": 50
+    },
+    "GYD": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "HUF": {
+      "digits": 0,
+      "cashDigits": 0,
+      "cashRounding": 5
+    },
+    "MNT": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "MRU": {
+      "digits": 2,
+      "cashDigits": 2,
+      "cashRounding": 20
+    },
+    "MUR": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "NOK": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "PKR": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "RSD": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "SEK": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "TWD": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "TZS": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "UZS": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    },
+    "VEF": {
+      "digits": 2,
+      "cashDigits": 0,
+      "cashRounding": 0
+    }
+  }
+}

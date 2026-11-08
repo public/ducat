@@ -228,6 +228,11 @@ function generate() {
       throw new Error(`cash increment ${rule.increment} finer than ${rule.currency} exponent`);
     }
     const minor = Number(whole + fraction.padEnd(exp, '0'));
+    // the tie rule the source prescribes, only where it isn't the default halfExpand (RSD)
+    const TIE_RULES = ['halfExpand', 'halfTrunc', 'halfEven'];
+    if (rule.rounding !== undefined && !TIE_RULES.includes(rule.rounding)) {
+      throw new Error(`cash rule for ${rule.currency}: unknown rounding ${rule.rounding}`);
+    }
     return {
       currency: rule.currency,
       increment: minor,
@@ -235,11 +240,12 @@ function generate() {
       scope: rule.scope,
       verified: rule.verified,
       source: rule.source,
+      ...(rule.rounding === undefined ? {} : { rounding: rule.rounding }),
     };
   });
   out['cash.ts'] =
     header('data/cash-rounding.json') +
-    `\nexport interface CashRule {\n  readonly currency: string;\n  /** Smallest cash step, in ISO minor units. */\n  readonly increment: number;\n  readonly countries: readonly string[];\n  readonly scope: string;\n  /** false: only secondary sources were found. */\n  readonly verified: boolean;\n  readonly source: string;\n}\n\n` +
+    `\nexport interface CashRule {\n  readonly currency: string;\n  /** Smallest cash step, in ISO minor units. */\n  readonly increment: number;\n  readonly countries: readonly string[];\n  readonly scope: string;\n  /** false: only secondary sources were found. */\n  readonly verified: boolean;\n  readonly source: string;\n  /** The tie rule the source prescribes, where it isn't halfExpand. */\n  readonly rounding?: import('../rounding.js').RoundingMode;\n}\n\n` +
     `export const CASH_RULES: readonly CashRule[] = ${JSON.stringify(rules, null, 2)};\n`;
   // Withdrawn ISO codes (exponents from data/historic.json, the rest from List Three) and non-ISO
   // codes
