@@ -26,7 +26,8 @@
     "@ducatjs/money/drizzle/mysql": 4.93,
     "@ducatjs/money/drizzle/sqlite": 4.78,
     "@ducatjs/money/zod": 4.72,
-    "@ducatjs/money/valibot": 4.73
+    "@ducatjs/money/valibot": 4.73,
+    "@ducatjs/money/pg": 6.1
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 30,

@@ -47,6 +47,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   In the new opt-in `@ducatjs/money/convert/history`: `quotedTable` and `rateFromQuote` for rates
   published the other way round, per 100 units or with stripped zeros (`per`, `inverted`,
   `decimals`), and `rateHistory()` over a date range, whose `lookup()` reports why it fell back.
+- **node-postgres support** in `@ducatjs/money/pg`: `exactTypes(pg.types)` parses BIGINT as bigint
+  and NUMERIC (and their arrays) as exact strings, rejecting `NaN` and `Infinity`. `moneyTypeSql()`
+  creates a `(amount, currency)` composite type with a currency-checked `sum` aggregate, read and
+  written as Money. `toNumeric` refuses values a `NUMERIC(p, s)` column would round silently. See
+  [node-postgres](README.md#node-postgres).
 
 ### Changed
 
