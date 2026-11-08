@@ -98,6 +98,10 @@
       "types": "./dist/policy.d.ts",
       "default": "./dist/policy.js"
     },
+    "./pricing": {
+      "types": "./dist/pricing.d.ts",
+      "default": "./dist/pricing.js"
+    },
     "./cash": {
       "types": "./dist/plugins/cash.d.ts",
       "default": "./dist/plugins/cash.js"

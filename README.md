@@ -152,6 +152,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)   |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                   |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
+| `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (charm pricing: .99, .95, 9.90, the nearest 5)     |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
 | `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `presentValue`…        |
@@ -244,13 +245,13 @@ money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
 
 ```ts
 import { money } from '@ducatjs/money';
-import { average, divideToIntegral, ratioOf, remainder, trimScale } from '@ducatjs/money/math';
+import { average } from '@ducatjs/money/math';
 
 average([money('10', 'EUR'), money('10', 'EUR'), money('10.01', 'EUR')]); // → 10.00 EUR
-ratioOf(money('25', 'EUR'), money('100', 'EUR')); // → { num: 1n, den: 4n, n: 1, d: 4 }
-divideToIntegral(money('9.99', 'EUR'), money('2.50', 'EUR')); // → 3
-remainder(money('9.99', 'EUR'), money('2.50', 'EUR')); // → 2.49 EUR
-trimScale(money('1.2300', 'EUR', { scale: 4 })); // → 1.23 EUR
+money('25', 'EUR').ratioOf(money('100', 'EUR')); // → { num: 1n, den: 4n, n: 1, d: 4 }
+money('9.99', 'EUR').divideToIntegral(money('2.50', 'EUR')); // → 3
+money('9.99', 'EUR').remainder(money('2.50', 'EUR')); // → 2.49 EUR
+money('1.2300', 'EUR', { scale: 4 }).trimScale(); // → 1.23 EUR
 ```
 
 **Compare**
@@ -293,6 +294,20 @@ one.identical(money('1', 'EUR', { scale: 1 })); // → false
 | `Ceil`                 | `'ceil'`        | always toward +∞                                   |
 | `Floor`                | `'floor'`       | always toward −∞                                   |
 | `Unnecessary`          | `'unnecessary'` | throws `RoundingError` if rounding would be needed |
+
+**Price endings** (`@ducatjs/money/pricing`). `priceEnding({ ending, step?, rounding? })` builds a rule that moves a computed price to a retail ending: the allowed prices are `ending + k × step` (step 1 by default), and `rounding` picks one: `'ceil'` (the default) the next one up, `'floor'` the next one down, `'halfCeil'` the nearest. The rule is a function, so `price.with(rule)` and `prices.map(rule)` work, and the result is exact, at the price's scale.
+
+```ts
+import { money } from '@ducatjs/money';
+import { priceEnding } from '@ducatjs/money/pricing';
+
+const charm = priceEnding({ ending: '0.99' });
+money('23.41', 'EUR').with(charm); // → 23.99 EUR
+money('23.41', 'EUR').with(priceEnding({ ending: '9.90', step: 10 })); // → 29.90 EUR
+money('22.50', 'EUR').with(priceEnding({ ending: 0, step: 5, rounding: 'halfCeil' })); // → 25.00 EUR
+money('1234', 'JPY').with(priceEnding({ ending: 80, step: 100 })); // → 1280 JPY
+money('100', 'JPY').with(charm); // throws RangeError: JPY has no cents
+```
 
 **Rounding policies** (`@ducatjs/money/policy`). A policy bundles a scale, an increment and a mode ("CHF cash", "4 decimals, half even") into one value that goes wherever a rounding mode goes: `multiply`, `divide`, `round`, `percentage`, `discount`, `addTax`, `extractTax`. The result is rounded once, straight to the policy, so it never rounds twice through the amount's own scale. A policy is also a function that rounds an amount, so `amounts.map(policy)` and `m.with(policy)` work.
 

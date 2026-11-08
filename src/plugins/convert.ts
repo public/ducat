@@ -4,14 +4,15 @@
  */
 import { convert } from '../convert.js';
 import type { Factor } from '../decimal.js';
-import { extendMoney, type CurrencyInput, type Money, type RoundingInput } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney, type CurrencyInput, type RoundingInput } from '../money.js';
 import type { ProviderConvertOptions } from '../convert.js';
 import type { RateProvider } from '../provider.js';
 import type { ConvertOptions, Rate } from '../rate.js';
 
 export * from '../convert.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /** Converts at a Rate, rounding once: `eur.convert(eurUsd, 'halfEven')`. */
     convert<To extends string>(

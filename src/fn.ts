@@ -69,6 +69,7 @@ export {
 } from './currency.js';
 export * from './allocate.js';
 export * from './tax.js';
+export * from './pricing.js';
 export * from './math.js';
 export * from './convert.js';
 export * from './exact.js';

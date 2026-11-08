@@ -4,11 +4,12 @@
  */
 import type { Ratio } from '../decimal.js';
 import { divideToIntegral, ratioOf, remainder, trimScale } from '../math.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 
 export * from '../math.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /** The exact ratio this / other, e.g. `part.ratioOf(total)` */
     ratioOf(other: Money<C>): Ratio;

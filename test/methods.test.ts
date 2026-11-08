@@ -40,6 +40,8 @@ describe('Money methods', () => {
       'roundingPolicy',
       'cashPolicy',
       'isoPolicy',
+      // a price-ending rule constructor, like roundingPolicy
+      'priceEnding',
       'assertScale',
       'isMoneyIn',
       'assertCurrency',
