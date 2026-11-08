@@ -65,23 +65,23 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 - **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
   units, float traps and negative allocations.
 - **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing a decimal string
-  (`money('12.34', 'EUR')`), add, multiply, allocate and toDecimal on Node, Bun and Deno, and on compare on Node and Deno. Against the fastest other money library
-  the margin ranges from about 1.05× (compare on Node: 7.31 against 7.65 ns) to about 9.5× (allocate on Node: 46
-  against bigint-money's 437 ns). Against dinero.js 2, on the operations where ducat is fastest, it ranges from 1.4× (creating on
-  Deno) to about 28× (multiply on Bun).
-- **Where it isn't fastest:** formatting on Bun and Deno, where currency.js (formatting a float) is 3% faster (on Node,
-  ducat and currency.js are level, 380 against 381 ns, and so are ducat and dinero.js 1 on Bun). On Bun, libraries that
-  compare plain numbers are faster at compare (currency.js 6.4 against 9.8 ns).
-- **Fixed-point decimals:** ducat's `Fixed` is the fastest fixed-point library on parsing a decimal string (`fixed('12.34')`)
-  and multiply on every runtime,
-  and ahead of every other library on compare everywhere and on add on Node and Deno. bigdecimal.js is faster at
-  dividing a `Fixed` on every runtime, though `Money` divides faster than either, and at add on Bun (11.9 against 12.3
-  ns). js-big-decimal and ethers are faster on `toString` everywhere; see
+  (`money('12.34', 'EUR')`), add, multiply, allocate and toDecimal on Node, Bun and Deno, and on compare on Node and
+  Deno. Against the fastest other money library the margin ranges from about 1.08× (compare on Node and Deno: 7.07
+  against currency.js's 7.60 ns on Node) to about 8.6× (allocate on Node: 48 against bigint-money's 409 ns). Against
+  dinero.js 2, on the operations where ducat is fastest, it ranges from 1.4× (creating on Deno) to about 29× (add on
+  Bun).
+- **Where it isn't fastest:** formatting, where currency.js (formatting a float) is 3% faster on Node and Deno and 5%
+  faster on Bun (ducat and dinero.js 1 are level everywhere). On Bun, libraries that compare plain numbers are faster
+  at compare (currency.js 6.5, js-money and ts-money 7.5 against 7.9 ns).
+- **Fixed-point decimals:** ducat's `Fixed` is the fastest fixed-point library on parsing a decimal string
+  (`fixed('12.34')`), multiply, divide and compare on every runtime, and on add on Node and Deno (on Bun it is level
+  with bigdecimal.js, 11.8 ns each). It divides by 3 in 28, 27 and 24 ns on Node, Bun and Deno, against bigdecimal.js's
+  57, 35 and 46. js-big-decimal and ethers are faster on `toString` everywhere; see
   [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
-- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat 0.2.0 (commit 7c9455a) under Node 24.22.2,
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat 0.3.0 (commit f927311) under Node 24.22.2,
   Bun 1.4.4 and Deno 2.9.8; sizes are gzipped KiB. Differences within 2.5% are called level.
 
 ## Design
@@ -1185,7 +1185,8 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
   ±20–30%.
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
   - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.0 KiB**, of which about 0.55 KiB is the ISO table
-  - the core entry point: 4.9 KiB; everything (`@ducatjs/money/all`): 27.6 KiB
+  - the core entry point: 4.9 KiB; everything (`@ducatjs/money/all`): 50.1 KiB
+  - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.3 KiB
   - the same snippet with dinero.js (EUR only): 1.8 KiB
 
 ---
