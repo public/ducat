@@ -21,8 +21,6 @@ export interface DatabaseAdapter {
     json: string;
     text: string;
   };
-  /** whether a decimal column rounds to its declared scale (Postgres and MySQL; not SQLite TEXT) */
-  readonly roundsToColumnScale: boolean;
   /** the bind placeholder for the 1-based parameter `position` */
   placeholder(position: number): string;
   execute(sql: string): Promise<void>;
@@ -65,6 +63,12 @@ function tableName(suffix: string): string {
 export interface SuiteOptions {
   /** false skips the suite, e.g. when no server URL is configured */
   readonly enabled: boolean;
+  /**
+   * whether a decimal column rounds to its declared scale (Postgres and MySQL; not SQLite TEXT).
+   * An option rather than an adapter field so the test can be skipped when it is defined: Bun's
+   * test context has no `skip()`.
+   */
+  readonly roundsToColumnScale: boolean;
   readonly connect: () => Promise<DatabaseAdapter>;
   readonly extraTests?: (database: () => DatabaseAdapter) => void;
 }
@@ -73,7 +77,7 @@ export interface SuiteOptions {
 const isDatabaseRequired = process.env.DUCAT_REQUIRE_DB === '1';
 
 export function databaseSuite(name: string, options: SuiteOptions): void {
-  const { enabled, connect, extraTests } = options;
+  const { enabled, roundsToColumnScale, connect, extraTests } = options;
 
   describe(`${name}: configuration`, () => {
     it.skipIf(enabled || !isDatabaseRequired)('has a server URL', () => {
@@ -200,24 +204,23 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
       }
     });
 
-    it('a value the column rounded silently is rejected on read, not rounded again', async (context) => {
-      if (!database.roundsToColumnScale) {
-        context.skip();
-      }
+    it.skipIf(!roundsToColumnScale)(
+      'a value the column rounded silently is rejected on read, not rounded again',
+      async () => {
+        // NUMERIC(19,4) stores 1.23456 EUR as 1.2346: more decimals than EUR has
+        await database.execute(`DELETE FROM ${tableName('decimal')}`);
+        const insert = `INSERT INTO ${tableName('decimal')} (id, n19, currency) VALUES (1, ${database.placeholder(1)}, 'EUR')`;
+        await database.run(insert, ['1.23456']);
 
-      // NUMERIC(19,4) stores 1.23456 EUR as 1.2346: more decimals than EUR has
-      await database.execute(`DELETE FROM ${tableName('decimal')}`);
-      const insert = `INSERT INTO ${tableName('decimal')} (id, n19, currency) VALUES (1, ${database.placeholder(1)}, 'EUR')`;
-      await database.run(insert, ['1.23456']);
+        const [row] = await database.query(`SELECT n19 FROM ${tableName('decimal')}`);
+        const stored = String(row!.n19);
+        expect(stored).toMatch(/^1\.2346/);
+        expect(() => fromDecimal(stored, 'EUR')).toThrow(/more than 2 decimal places/);
 
-      const [row] = await database.query(`SELECT n19 FROM ${tableName('decimal')}`);
-      const stored = String(row!.n19);
-      expect(stored).toMatch(/^1\.2346/);
-      expect(() => fromDecimal(stored, 'EUR')).toThrow(/more than 2 decimal places/);
-
-      // still readable exactly at the column's own scale
-      expect(toDecimal(fromDecimal(stored, 'EUR', { scale: 4 }))).toBe('1.2346');
-    });
+        // still readable exactly at the column's own scale
+        expect(toDecimal(fromDecimal(stored, 'EUR', { scale: 4 }))).toBe('1.2346');
+      },
+    );
 
     it('Money as JSON round-trips, with the amount as a string so no precision is lost', async () => {
       await database.execute(`DELETE FROM ${tableName('json')}`);

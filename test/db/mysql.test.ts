@@ -42,7 +42,6 @@ async function connectToMysql(): Promise<DatabaseAdapter> {
       json: 'JSON',
       text: 'VARCHAR(8)',
     },
-    roundsToColumnScale: true,
     placeholder: () => '?',
     execute: async (sql) => {
       await connection.query(sql);
@@ -61,6 +60,7 @@ async function connectToMysql(): Promise<DatabaseAdapter> {
 // skipped unless DUCAT_MYSQL_URL points at a server
 databaseSuite('MySQL', {
   enabled: connectionUrl !== '',
+  roundsToColumnScale: true,
   connect: connectToMysql,
   extraTests: () => {
     it('BIGINT read as a plain number (the driver default) is rejected beyond 2^53', async () => {

@@ -33,7 +33,6 @@ async function connectToPostgres(): Promise<DatabaseAdapter> {
       json: 'JSONB',
       text: 'TEXT',
     },
-    roundsToColumnScale: true,
     placeholder: (position) => `$${position}`,
     execute: async (sql) => {
       await client.query(sql);
@@ -52,6 +51,7 @@ async function connectToPostgres(): Promise<DatabaseAdapter> {
 // skipped unless DUCAT_PG_URL points at a server
 databaseSuite('Postgres', {
   enabled: Boolean(connectionString),
+  roundsToColumnScale: true,
   connect: connectToPostgres,
   extraTests: (database) => {
     it("NUMERIC 'NaN' and 'Infinity' are rejected on read", async () => {

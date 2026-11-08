@@ -192,7 +192,8 @@ describe('Drizzle on SQLite (better-sqlite3)', () => {
       where: eq(sqliteOrders.id, 2),
       with: { payments: true },
     });
-    await expect(huge).rejects.toThrow(/safe integer/);
+    // a Drizzle query is a lazy thenable, not a Promise; Bun's `rejects` needs a real Promise
+    await expect((async () => await huge)()).rejects.toThrow(/safe integer/);
   });
 
   it('filters by a Money value through the column mapping', async () => {
@@ -296,7 +297,8 @@ describe('Drizzle on Postgres (node-postgres)', () => {
         where: eq(pgOrders.id, 2),
         with: { payments: { columns: { amount: true } } },
       });
-      await expect(huge).rejects.toThrow(/safe integer/);
+      // a Drizzle query is a lazy thenable, not a Promise; Bun's `rejects` needs a real Promise
+      await expect((async () => await huge)()).rejects.toThrow(/safe integer/);
     });
 
     it('sums in SQL and reads the result back as Money', async () => {
@@ -392,7 +394,8 @@ describe('Drizzle on MySQL (mysql2)', () => {
           .select({ total: mysqlOrders.total })
           .from(mysqlOrders)
           .where(eq(mysqlOrders.id, 5));
-        await expect(huge).rejects.toThrow(/safe integer/);
+        // a Drizzle query is a lazy thenable, not a Promise; Bun's `rejects` needs a real Promise
+        await expect((async () => await huge)()).rejects.toThrow(/safe integer/);
       } finally {
         await defaults.end();
       }

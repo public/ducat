@@ -18,15 +18,19 @@ function isAvailable(bin) {
   return existsSync(bin);
 }
 
-// bun test ignores vitest's include and also matches *.spec.ts (browser tests) and test/db/, so it
-// gets the unit test files by name
-const unitTestFiles = readdirSync('test')
-  .filter((name) => name.endsWith('.test.ts'))
-  .map((name) => `./test/${name}`);
+// bun test ignores vitest's include and also matches *.spec.ts (browser tests), so it gets the
+// test files by name: the unit tests and the database tests (SQLite runs in memory; Postgres and
+// MySQL skip without a server URL)
+const testFilesIn = (directory) =>
+  readdirSync(directory)
+    .filter((name) => name.endsWith('.test.ts'))
+    .map((name) => `./${directory}/${name}`);
+const unitTestFiles = testFilesIn('test');
+const databaseTestFiles = testFilesIn('test/db');
 
 const suites = [
   ['node', process.execPath, ['node_modules/vitest/vitest.mjs', 'run']],
-  ['bun', BUN, ['test', ...unitTestFiles]],
+  ['bun', BUN, ['test', ...unitTestFiles, ...databaseTestFiles]],
   ['deno', DENO, ['run', '-A', 'node_modules/vitest/vitest.mjs', 'run']],
 ];
 for (const [name, bin, args] of suites) {
