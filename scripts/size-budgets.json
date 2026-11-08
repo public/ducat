@@ -6,6 +6,7 @@
     "@ducatjs/money/convert": 7.36,
     "@ducatjs/money/convert/ecb": 7.45,
     "@ducatjs/money/convert/fetch": 9.53,
+    "@ducatjs/money/convert/fed": 7.12,
     "@ducatjs/money/convert/history": 6.35,
     "@ducatjs/money/convert/boc": 6.7,
     "@ducatjs/money/exact": 4.28,

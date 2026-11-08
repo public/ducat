@@ -19,6 +19,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
   `toSumTo`. `/testing/vitest` and `/testing/jest` set it all up in one import, and
   `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
+- **Federal Reserve H.10:** `parseFedH10Csv` in the new `@ducatjs/money/convert/fed` reads the
+  Board's daily rates (CSV from its Data Download Program) into USD tables, with the four currencies
+  H.10 quotes as USD per unit inverted exactly and `ND` holidays left out. Parser only.
 - `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
   `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
   currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it

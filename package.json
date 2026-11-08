@@ -62,6 +62,10 @@
       "types": "./dist/boc.d.ts",
       "default": "./dist/boc.js"
     },
+    "./convert/fed": {
+      "types": "./dist/fed.d.ts",
+      "default": "./dist/fed.js"
+    },
     "./convert/fetch": {
       "types": "./dist/fetch.d.ts",
       "default": "./dist/fetch.js"
