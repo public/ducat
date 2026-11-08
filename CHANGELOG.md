@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
+  `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
+  currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
+  without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
+  and Valibot 1 are optional peer dependencies.
 - **Bank of Canada:** `parseBankOfCanadaJson` in the new `@ducatjs/money/convert/boc` reads the
   Valet API's daily rates into CAD tables (exact inverses of the published CAD-per-unit quotes,
   with `availableAt` 16:30 Toronto time), and `fetchBankOfCanada({ start, end })` in
@@ -57,6 +62,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `rateTable` lookups with an `asOf` after a rate's `validUntil` now return nothing.
 - `parseEcbCsv` lists `N/A` and blank cells in the table's `missing`, and throws on a cell that
   isn't a rate instead of passing it on.
+
+### Changed
+
+- `divide` is about 3 to 14 times faster for ordinary amounts (number minor units, a divisor such as `3`,
+  `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
+  are unchanged: the same proved rounding kernel is used.
 
 ## [0.1.0] - 2026-11-07
 
