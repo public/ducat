@@ -38,6 +38,8 @@ const ROOT_FUNCTIONS = [
   'fromJSON',
   'sum',
   'isMoney',
+  'isMoneyIn',
+  'assertCurrency',
   'ratio',
   'extendMoney',
 ];

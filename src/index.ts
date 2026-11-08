@@ -11,6 +11,8 @@ export {
   zero,
   fromJSON,
   isMoney,
+  isMoneyIn,
+  assertCurrency,
   extendMoney,
   type ExtendMoneyOptions,
   sum,

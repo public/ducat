@@ -2,6 +2,8 @@
 import '../src/plugins/all.js';
 import {
   add,
+  assertCurrency,
+  isMoneyIn,
   allocate,
   compare,
   convert,
@@ -65,3 +67,22 @@ dyn.add(fromMinor(1, 'USD' as string)); // erased types: checked at runtime inst
 eur.multiply('1.1', 'halfUp');
 void viaMethod;
 void chained;
+
+// --- narrowing a runtime currency to a literal one
+declare const unknownCurrency: Money<string>;
+// @ts-expect-error a Money<string> is not known to be a Money<'EUR'>
+const notYet: Money<'EUR'> = unknownCurrency;
+if (isMoneyIn(unknownCurrency, 'EUR')) {
+  const narrowed: Money<'EUR'> = unknownCurrency;
+  void narrowed;
+}
+declare const fromUnknown: unknown;
+if (isMoneyIn(fromUnknown, 'USD')) {
+  const narrowedUnknown: Money<'USD'> = fromUnknown;
+  void narrowedUnknown;
+}
+declare const asserted: Money<string>;
+assertCurrency(asserted, 'EUR');
+const afterAssert: Money<'EUR'> = asserted.add(eur);
+void notYet;
+void afterAssert;
