@@ -48,7 +48,7 @@ export function historicCurrency(code: string): HistoricCurrency | undefined {
   if (!Object.hasOwn(table, code)) {
     return undefined;
   }
-  return { code: code as HistoricCurrencyCode, ...table[code] };
+  return { code: code as HistoricCurrencyCode, ...table[code]! };
 }
 
 /** Every entry of the table, by code. */
