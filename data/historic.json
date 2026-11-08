@@ -1,0 +1,78 @@
+{
+  "description": "Withdrawn ISO 4217 codes and non-ISO codes for @ducatjs/money/historic. Codes, names and withdrawal dates come from ISO 4217 List Three (data/iso4217-list-three.xml). List Three has no minor units, so each exponent here is the one ISO 4217 gave the code while it was current. Only codes whose exponent is sourced are included.",
+  "sources": {
+    "listThree": {
+      "url": "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-three.xml",
+      "published": "2026-01-01",
+      "retrieved": "2026-11-08"
+    },
+    "exponents": {
+      "url": "https://github.com/openjdk/jdk/blob/master/src/java.base/share/data/currency/CurrencyData.properties",
+      "note": "OpenJDK's currency data (dataVersion 180) keeps the ISO 4217 minor units of withdrawn codes; codes it lists as minorUndefined (XFO, XFU) are not monetary and are left out",
+      "retrieved": "2026-11-08"
+    }
+  },
+  "exponents": {
+    "ADP": 0,
+    "AFA": 2,
+    "ANG": 2,
+    "ATS": 2,
+    "AYM": 2,
+    "AZM": 2,
+    "BEF": 0,
+    "BGL": 2,
+    "BGN": 2,
+    "BYB": 0,
+    "BYR": 0,
+    "CSD": 2,
+    "CUC": 2,
+    "CYP": 2,
+    "DEM": 2,
+    "EEK": 2,
+    "ESP": 0,
+    "FIM": 2,
+    "FRF": 2,
+    "GHC": 2,
+    "GRD": 0,
+    "GWP": 2,
+    "HRK": 2,
+    "IEP": 2,
+    "ITL": 0,
+    "LTL": 2,
+    "LUF": 0,
+    "LVL": 2,
+    "MGF": 0,
+    "MRO": 2,
+    "MTL": 2,
+    "MZM": 2,
+    "NLG": 2,
+    "PTE": 0,
+    "ROL": 0,
+    "RUR": 2,
+    "SDD": 2,
+    "SIT": 2,
+    "SKK": 2,
+    "SLL": 2,
+    "SRG": 2,
+    "STD": 2,
+    "TMM": 2,
+    "TPE": 0,
+    "TRL": 0,
+    "USS": 2,
+    "VEB": 2,
+    "VEF": 2,
+    "YUM": 2,
+    "ZMK": 2,
+    "ZWD": 2,
+    "ZWL": 2,
+    "ZWN": 2,
+    "ZWR": 2
+  },
+  "nonIso": {
+    "CNH": {
+      "name": "Chinese Yuan Renminbi (offshore)",
+      "exponent": 2,
+      "note": "the offshore renminbi traded in Hong Kong; not an ISO 4217 code, listed by Adyen"
+    }
+  }
+}
