@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/testing` for Vitest and Jest: value equality for `toEqual` (any scale, number
+  or bigint), a snapshot serializer and inspect hook (`12.34 EUR`), and the matchers
+  `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
+  `toSumTo`. `/testing/vitest` and `/testing/jest` set it all up in one import, and
+  `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
 - `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
   `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
   currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it

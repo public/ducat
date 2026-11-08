@@ -117,7 +117,7 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only /drizzle, /zod and /valibot reach their peer libraries; nothing else imports any', async () => {
+  it('only /drizzle, /zod, /valibot and the /testing helpers reach their peer libraries', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
@@ -127,6 +127,9 @@ describe('package entries', () => {
         expected[key] = [key.slice(2)];
       }
     }
+    // the test helpers reach only their own test libraries
+    expected['./testing/vitest'] = ['vitest'];
+    expected['./testing/arbitraries'] = ['fast-check'];
     expect(actual).toEqual(expected);
   });
 
@@ -154,6 +157,10 @@ describe('package entries', () => {
     const drizzleNames: Record<string, string[]> = {};
     const leaked: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
+      // the Jest setup entry installs on Jest's global expect when imported, so it can't load here
+      if (key === './testing/jest') {
+        continue;
+      }
       // a computed path, so the type checker doesn't load drizzle-orm into this project
       const names = Object.keys(await import(pathToFileURL(join(ROOT, source)).href));
       if (key in expectedNames) {
@@ -188,6 +195,30 @@ describe('policy entry', () => {
       expect(Object.keys(root)).not.toContain(name);
       expect(Object.keys(fn)).toContain(name);
       expect(Object.keys(all)).toContain(name);
+    }
+  });
+});
+
+describe('testing entries', () => {
+  it('only the setup entries are listed as having side effects', () => {
+    const sideEffects = (
+      JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
+        sideEffects: string[];
+      }
+    ).sideEffects;
+    for (const name of ['vitest', 'jest']) {
+      expect(sideEffects).toContain(`./dist/testing/${name}.js`);
+      expect(sideEffects).toContain(`./src/testing/${name}.ts`);
+    }
+    expect(sideEffects.filter((path) => path.includes('testing/index'))).toEqual([]);
+    expect(sideEffects.filter((path) => path.includes('arbitraries'))).toEqual([]);
+  });
+
+  it('none is part of /fn or /all', async () => {
+    const testing = await import('../src/testing/index.js');
+    for (const name of Object.keys(testing)) {
+      expect(Object.keys(fn)).not.toContain(name);
+      expect(Object.keys(all)).not.toContain(name);
     }
   });
 });

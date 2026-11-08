@@ -23,7 +23,11 @@
   "type": "module",
   "sideEffects": [
     "./dist/plugins/*.js",
-    "./src/plugins/*.ts"
+    "./src/plugins/*.ts",
+    "./dist/testing/vitest.js",
+    "./dist/testing/jest.js",
+    "./src/testing/vitest.ts",
+    "./src/testing/jest.ts"
   ],
   "exports": {
     ".": {
@@ -146,6 +150,22 @@
       "types": "./dist/pg.d.ts",
       "default": "./dist/pg.js"
     },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    },
+    "./testing/vitest": {
+      "types": "./dist/testing/vitest.d.ts",
+      "default": "./dist/testing/vitest.js"
+    },
+    "./testing/jest": {
+      "types": "./dist/testing/jest.d.ts",
+      "default": "./dist/testing/jest.js"
+    },
+    "./testing/arbitraries": {
+      "types": "./dist/testing/arbitraries.d.ts",
+      "default": "./dist/testing/arbitraries.js"
+    },
     "./all": {
       "types": "./dist/plugins/all.d.ts",
       "default": "./dist/plugins/all.js"
@@ -154,7 +174,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.drizzle.json",
-    "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json && tsc -p test/jest-types/tsconfig.json",
     "test": "vitest run",
     "test:deep": "DUCAT_DEEP=1 vitest run",
     "compare": "pnpm --dir compare battery && pnpm --dir compare tables",
@@ -209,14 +229,22 @@
   },
   "peerDependencies": {
     "drizzle-orm": ">=0.45.0 <1",
+    "fast-check": "^4.0.0",
     "valibot": "^1.0.0",
+    "vitest": ">=3.2.0 <5",
     "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "drizzle-orm": {
       "optional": true
     },
+    "fast-check": {
+      "optional": true
+    },
     "valibot": {
+      "optional": true
+    },
+    "vitest": {
       "optional": true
     },
     "zod": {
