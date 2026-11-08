@@ -14,7 +14,6 @@ import {
   DEFAULT_ROUNDING,
   divideAndRound,
   divideAndRoundBigint,
-  Rounding,
   RoundingError,
   type RoundingMode,
 } from './rounding.js';
@@ -35,10 +34,10 @@ export interface MoneyJSON<C extends string = string> {
 
 /**
  * A reusable rounding rule: a scale, an increment at that scale and a rounding mode, such as "CHF
- * cash" (scale 2, increment 5, half up) or "4 decimals, half even". Build one with
- * `roundingPolicy()` (or `cashPolicy()` from `@ducatjs/money/cash`) and pass it wherever a rounding
- * mode is accepted: `m.multiply('1.075', policy)`, `m.round(policy)`. A policy is also a function
- * that rounds an amount, so `m.with(policy)` and `amounts.map(policy)` work too.
+ * cash" (scale 2, increment 5, half up) or "4 decimals, half even". Build one with `roundingPolicy()`
+ * from `@ducatjs/money/policy` (or `cashPolicy()` from `@ducatjs/money/cash`) and pass it wherever
+ * a rounding mode is accepted: `m.multiply('1.075', policy)`, `m.round(policy)`. A policy is also
+ * a function that rounds an amount, so `m.with(policy)` and `amounts.map(policy)` work too.
  *
  * Policies are plain values passed explicitly; they are never stored on amounts or set globally.
  */
@@ -53,22 +52,15 @@ export interface RoundingPolicy {
   readonly rounding: RoundingMode;
   /** The one currency the policy is for, if any; other currencies throw `CurrencyMismatchError`. */
   readonly currency: string | undefined;
+  /**
+   * @internal money × factor, rounded once to this policy. The core calls this for every
+   * operation given a policy, so the policy code stays out of bundles that never build one.
+   */
+  readonly roundProduct: <C extends string>(money: Money<C>, factor: Ratio) => Money<C>;
 }
 
 /** What rounding parameters accept: a mode such as `'halfEven'`, or a `RoundingPolicy`. */
 export type RoundingInput = RoundingMode | RoundingPolicy;
-
-/** Options for `roundingPolicy`. Every field is optional. */
-export interface RoundingPolicyOptions {
-  /** Decimal places of the result (default: the currency's ISO exponent). */
-  readonly scale?: number;
-  /** A positive safe integer count of 10^-scale units to round to (default 1). */
-  readonly increment?: number;
-  /** The rounding mode (default 'halfExpand'). */
-  readonly rounding?: RoundingMode;
-  /** Restrict the policy to one currency. */
-  readonly currency?: string;
-}
 
 /** Thrown when two amounts in different currencies are combined. */
 export class CurrencyMismatchError extends TypeError {
@@ -158,7 +150,7 @@ class Money<C extends string = string> {
   round(rounding: RoundingMode, scale?: number): Money<C>;
   round(policy: RoundingPolicy): Money<C>;
   round(rounding: RoundingInput, scale?: number): Money<C> {
-    return round(this, rounding as RoundingMode, scale);
+    return typeof rounding === 'function' ? rounding(this) : round(this, rounding, scale);
   }
   /** Changes the scale; decreasing it rounds (default 'halfExpand'). */
   toScale(scale: number, rounding?: RoundingMode): Money<C> {
@@ -659,7 +651,7 @@ export function multiplyByRatio<C extends string>(
   scale = money.scale,
 ): Money<C> {
   if (typeof rounding === 'function') {
-    return multiplyByRatioWithPolicy(money, factor, rounding);
+    return rounding.roundProduct(money, factor);
   }
   const minor = money.minor;
   if (
@@ -682,90 +674,6 @@ export function multiplyByRatio<C extends string>(
     denominator *= pow10n(money.scale - scale);
   }
   return make(money.currency, divideAndRoundBigint(numerator, denominator, rounding), scale);
-}
-
-function multiplyByRatioWithPolicy<C extends string>(
-  money: Money<C>,
-  factor: Ratio,
-  policy: RoundingPolicy,
-): Money<C> {
-  if (policy.currency !== undefined && policy.currency !== money.currency) {
-    throw new CurrencyMismatchError(policy.currency, money.currency);
-  }
-  const scale = policy.scale ?? currencyExponent(money.currency);
-  const increment = policy.increment;
-  if (increment === 1) {
-    return multiplyByRatio(money, factor, policy.rounding, scale);
-  }
-
-  // Count whole increments: m * factor / increment, rounded once at the policy's scale, then
-  // multiplied back. Rounding the count is rounding to the nearest multiple of the increment.
-  const steps = multiplyByRatio(
-    money,
-    ratio(factor.num, factor.den * BigInt(increment)),
-    policy.rounding,
-    scale,
-  );
-  return multiply(steps, increment);
-}
-
-/**
- * Builds a reusable rounding policy (see `RoundingPolicy`):
- *
- *     const fourHalfEven = roundingPolicy({ scale: 4, rounding: 'halfEven' })
- *     const toFiveCents = roundingPolicy({ increment: 5 })   // 0.05 in a 2-decimal currency
- */
-export function roundingPolicy(options: RoundingPolicyOptions = {}): RoundingPolicy {
-  const scale = options.scale;
-  const increment = options.increment ?? 1;
-  const rounding = options.rounding ?? DEFAULT_ROUNDING;
-
-  // Checked once here, so applying the policy needs no checks.
-  if (scale !== undefined && !(Number.isSafeInteger(scale) && scale >= 0)) {
-    throw new RangeError(`Invalid scale ${scale}`);
-  }
-  if (!(Number.isSafeInteger(increment) && increment >= 1)) {
-    throw new RangeError(`Invalid increment ${increment}; it must be a positive integer`);
-  }
-  if (!Object.values(Rounding).includes(rounding)) {
-    throw new RangeError(`Invalid rounding mode ${String(rounding)}`);
-  }
-
-  const policy = <C extends string>(money: Money<C>): Money<C> =>
-    multiplyByRatioWithPolicy(money, ONE, policy as RoundingPolicy);
-  return Object.freeze(
-    Object.assign(policy, { scale, increment, rounding, currency: options.currency }),
-  );
-}
-
-const ONE = ratio(1);
-
-/**
- * Rounding to the currency's ISO exponent, half up: the policy most amounts should end with.
- * `assertScale(m, isoPolicy)` checks an amount is already there.
- */
-export const isoPolicy: RoundingPolicy = /* @__PURE__ */ roundingPolicy();
-
-/**
- * Throws a RangeError unless `money` is exactly what `policy` produces: at the policy's scale and a
- * multiple of its increment (and in its currency, if it has one). Use it where an amount must
- * already be rounded, such as before booking or sending it to a processor.
- */
-export function assertScale(money: Money, policy: RoundingPolicy): void {
-  if (policy.currency !== undefined && policy.currency !== money.currency) {
-    throw new CurrencyMismatchError(policy.currency, money.currency);
-  }
-  const scale = policy.scale ?? currencyExponent(money.currency);
-  if (money.scale !== scale) {
-    throw new RangeError(`${money} has scale ${money.scale}, expected ${scale}`);
-  }
-  const minor = money.minor;
-  const increment = policy.increment;
-  const isMultiple =
-    typeof minor === 'number' ? minor % increment === 0 : minor % BigInt(increment) === 0n;
-  if (!isMultiple) {
-    throw new RangeError(`${money} is not a multiple of ${increment} at scale ${scale}`);
-  }
 }
 
 /** m / divisor, rounded to m's scale (default 'halfExpand'), or with a rounding policy. */
@@ -798,7 +706,7 @@ export function round<C extends string>(
   scale?: number,
 ): Money<C> {
   if (typeof rounding === 'function') {
-    return multiplyByRatioWithPolicy(money, ONE, rounding);
+    return rounding(money);
   }
   return toScale(money, scale ?? currencyExponent(money.currency), rounding);
 }

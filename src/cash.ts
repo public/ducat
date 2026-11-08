@@ -2,12 +2,12 @@ import { CASH_RULES, type CashRule } from './generated/cash.js';
 import {
   CurrencyMismatchError,
   make,
-  roundingPolicy,
   scaleUp,
   toScale,
   type Money,
   type RoundingPolicy,
 } from './money.js';
+import { roundingPolicy } from './policy.js';
 import { divideAndRound, divideAndRoundBigint, type RoundingMode } from './rounding.js';
 import { currencyExponent } from './currency.js';
 

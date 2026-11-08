@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { runs } from './fc-config.js';
+import { divideAndRoundBigint } from '../src/generated/kernel.js';
 import {
   addTax,
   assertScale,
+  discount,
+  extractTax,
+  percentage,
+  ratio,
+  type RoundingPolicy,
   cashPolicy,
   CurrencyMismatchError,
   divide,
@@ -32,6 +38,58 @@ const MODES: RoundingMode[] = [
 ];
 
 const show = (value: Money) => `${value.toString()} @${value.scale}`;
+
+const policies = fc
+  .record({
+    policyScale: fc.integer({ min: 0, max: 6 }),
+    increment: fc.constantFrom(1, 2, 5, 10, 25, 50, 100, 7),
+    mode: fc.constantFrom(...MODES),
+  })
+  .map((parts) => ({
+    ...parts,
+    policy: roundingPolicy({
+      scale: parts.policyScale,
+      increment: parts.increment,
+      rounding: parts.mode,
+    }),
+  }));
+
+const factors = fc.oneof(
+  fc.constantFrom('1.075', '0.3', '-2.5', '1/3', '-22/7', '7', '0'),
+  fc.integer({ min: -1000, max: 1000 }),
+  fc.bigInt({ min: -(10n ** 20n), max: 10n ** 20n }),
+);
+
+/**
+ * minor·10^-scale × num/den rounded to `increment` units at `policyScale`, straight through the
+ * proved bigint kernel: an implementation independent of the policy code.
+ */
+function reference(
+  minor: bigint,
+  scale: number,
+  num: bigint,
+  den: bigint,
+  policyScale: number,
+  increment: number,
+  mode: RoundingMode,
+): Money {
+  let dividend = minor * num;
+  let divisor = den * BigInt(increment);
+  if (policyScale > scale) {
+    dividend *= 10n ** BigInt(policyScale - scale);
+  } else {
+    divisor *= 10n ** BigInt(scale - policyScale);
+  }
+  if (divisor < 0n) {
+    dividend = -dividend;
+    divisor = -divisor;
+  }
+  return fromMinor(
+    divideAndRoundBigint(dividend, divisor, mode) * BigInt(increment),
+    'EUR',
+    policyScale,
+  );
+}
 
 describe('roundingPolicy', () => {
   it('rounds to its scale, increment and mode', () => {
@@ -62,33 +120,110 @@ describe('roundingPolicy', () => {
     ]);
   });
 
-  it('rounds once: multiply with a policy is the exact product rounded by the policy', () => {
+  it('multiply and divide match an independent bigint reference (property)', () => {
     fc.assert(
       fc.property(
         fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n }),
-        fc.integer({ min: 0, max: 4 }),
-        fc.integer({ min: -100_000, max: 100_000 }),
-        fc.integer({ min: 0, max: 6 }),
-        fc.integer({ min: 0, max: 6 }),
-        fc.constantFrom(1, 2, 5, 10, 25, 50, 100),
-        fc.constantFrom(...MODES),
-        (minor, scale, factorDigits, factorScale, policyScale, increment, mode) => {
+        fc.integer({ min: 0, max: 5 }),
+        factors,
+        policies,
+        (minor, scale, factor, { policy, policyScale, increment, mode }) => {
           const amount = fromMinor(minor, 'EUR', scale);
-          const factor = (factorDigits / 10 ** factorScale).toFixed(factorScale);
-          const policy = roundingPolicy({ scale: policyScale, increment, rounding: mode });
-
-          const exactProduct = multiply(
-            toScale(amount, scale + factorScale),
-            factor,
-            'unnecessary',
+          const asRatio = ratio(factor);
+          const product = multiply(amount, factor, policy);
+          expect(show(product)).toBe(
+            show(reference(minor, scale, asRatio.num, asRatio.den, policyScale, increment, mode)),
           );
-          const viaPolicy = multiply(amount, factor, policy);
-          expect(show(viaPolicy)).toBe(show(policy(exactProduct)));
-          assertScale(viaPolicy, policy);
-          return true;
+          if (asRatio.num !== 0n) {
+            const quotient = divide(amount, factor, policy);
+            expect(show(quotient)).toBe(
+              show(reference(minor, scale, asRatio.den, asRatio.num, policyScale, increment, mode)),
+            );
+          }
+        },
+      ),
+      { numRuns: runs(500) },
+    );
+  });
+
+  it('every operation lands on the policy’s scale and increment (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n }),
+        fc.integer({ min: 0, max: 5 }),
+        fc.constantFrom('7.7', '20', '8.1', '12.5', '0', '33.333', '-5'),
+        policies,
+        (minor, scale, percent, { policy }) => {
+          const amount = fromMinor(minor, 'EUR', scale);
+          const results = [
+            round(amount, policy),
+            multiply(amount, '1.075', policy),
+            multiply(amount, 3, policy),
+            divide(amount, 3, policy),
+            percentage(amount, percent, policy),
+            discount(amount, percent, policy),
+            addTax(amount, percent, policy).gross,
+            extractTax(amount, percent, policy).net,
+          ];
+          for (const result of results) {
+            assertScale(result, policy);
+          }
         },
       ),
       { numRuns: runs(400) },
+    );
+  });
+
+  it('is idempotent (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(10n ** 22n), max: 10n ** 22n }),
+        fc.integer({ min: 0, max: 8 }),
+        policies,
+        (minor, scale, { policy }) => {
+          const once = policy(fromMinor(minor, 'EUR', scale));
+          expect(show(policy(once))).toBe(show(once));
+        },
+      ),
+      { numRuns: runs(300) },
+    );
+  });
+
+  it('keeps the tax parts exact (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(10n ** 18n), max: 10n ** 18n }),
+        fc.integer({ min: 0, max: 4 }),
+        fc.constantFrom('7.7', '20', '8.1', '12.5', '0', '33.333'),
+        policies,
+        (minor, scale, percent, { policy, policyScale, increment, mode }) => {
+          const amount = fromMinor(minor, 'EUR', scale);
+          const percentRatio = ratio(percent);
+          const added = addTax(amount, percent, policy);
+          expect(added.net.add(added.tax).equals(added.gross)).toBe(true);
+          const grossRatio = ratio(
+            100n * percentRatio.den + percentRatio.num,
+            100n * percentRatio.den,
+          );
+          expect(show(added.gross)).toBe(
+            show(
+              reference(minor, scale, grossRatio.num, grossRatio.den, policyScale, increment, mode),
+            ),
+          );
+          const extracted = extractTax(amount, percent, policy);
+          expect(extracted.net.add(extracted.tax).equals(amount)).toBe(true);
+          const priceRatio = ratio(
+            100n * percentRatio.den - percentRatio.num,
+            100n * percentRatio.den,
+          );
+          expect(show(discount(amount, percent, policy))).toBe(
+            show(
+              reference(minor, scale, priceRatio.num, priceRatio.den, policyScale, increment, mode),
+            ),
+          );
+        },
+      ),
+      { numRuns: runs(300) },
     );
   });
 
@@ -96,16 +231,22 @@ describe('roundingPolicy', () => {
     fc.assert(
       fc.property(
         fc.bigInt({ min: -(10n ** 20n), max: 10n ** 20n }),
-        fc.integer({ min: 2, max: 6 }),
+        fc.integer({ min: 3, max: 6 }),
         fc.constantFrom(1, 5, 10, 50),
         fc.constantFrom(...MODES),
         (minor, scale, increment, mode) => {
           const amount = fromMinor(minor, 'EUR', scale);
-          const policy = roundingPolicy({ scale: 2, increment, rounding: mode });
-          const expected = toScale(roundToIncrement(amount, fromMinor(increment, 'EUR'), mode), 2);
-          expect(show(round(amount, policy))).toBe(show(expected));
-          if (increment === 1) {
-            expect(show(round(amount, policy))).toBe(show(round(amount, mode, 2)));
+          for (const policyScale of [0, 1, 2, 3, scale]) {
+            if (policyScale > scale) {
+              continue;
+            }
+            const policy = roundingPolicy({ scale: policyScale, increment, rounding: mode });
+            const step = fromMinor(increment, 'EUR', policyScale);
+            const expected = toScale(roundToIncrement(amount, step, mode), policyScale);
+            expect(show(round(amount, policy))).toBe(show(expected));
+            if (increment === 1) {
+              expect(show(round(amount, policy))).toBe(show(round(amount, mode, policyScale)));
+            }
           }
         },
       ),
@@ -155,6 +296,23 @@ describe('roundingPolicy', () => {
     expect(show(money('10.00', 'CHF').multiply('1.077', 'unnecessary').with(cash))).toBe(
       '10.75 CHF @2',
     );
+  });
+
+  it('never takes the integer fast path of multiply or divide', () => {
+    const fourDecimals = roundingPolicy({ scale: 4 });
+    expect(show(divide(money('10', 'EUR'), 4, fourDecimals))).toBe('2.5000 EUR @4');
+    expect(show(divide(money('10', 'EUR'), 3, fourDecimals))).toBe('3.3333 EUR @4');
+    expect(show(multiply(money('10', 'EUR'), 2, fourDecimals))).toBe('20.0000 EUR @4');
+  });
+
+  it('only accepts policies built by roundingPolicy, not any function', () => {
+    const lookalike = Object.assign((value: Money) => value, {
+      scale: 2,
+      increment: 1,
+      rounding: 'halfEven' as const,
+      currency: undefined,
+    }) as unknown as RoundingPolicy;
+    expect(() => multiply(money('1', 'EUR'), '1.5', lookalike)).toThrow(TypeError);
   });
 
   it('works as a function over lists', () => {
@@ -217,6 +375,13 @@ describe('cashPolicy', () => {
     expect(() => cashPolicy('CHF')(money('1', 'EUR'))).toThrow(CurrencyMismatchError);
     expect(() => multiply(money('1', 'EUR'), 2, cashPolicy('CHF'))).toThrow(CurrencyMismatchError);
     expect(() => assertScale(money('1', 'EUR'), cashPolicy('CHF'))).toThrow(CurrencyMismatchError);
+  });
+
+  it('always returns the currency’s scale, where cashRound keeps a larger one', async () => {
+    const { cashRound } = await import('../src/cash.js');
+    const fine = money('10.034', 'CHF', { scale: 3 });
+    expect(show(cashPolicy('CHF')(fine))).toBe('10.05 CHF @2');
+    expect(show(cashRound(fine))).toBe('10.050 CHF @3');
   });
 
   it('agrees with cashRound (property)', async () => {

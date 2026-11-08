@@ -46,11 +46,7 @@ export {
   toMinor,
   toMinorNumber,
   CurrencyMismatchError,
-  roundingPolicy,
-  isoPolicy,
-  assertScale,
   type RoundingPolicy,
-  type RoundingPolicyOptions,
   type RoundingInput,
   type Money,
   type MoneyJSON,
@@ -79,6 +75,7 @@ export * from './ecb.js';
 export * from './stripe-fx.js';
 export * from './adyen-fx.js';
 export * from './cash.js';
+export { roundingPolicy, isoPolicy, assertScale, type RoundingPolicyOptions } from './policy.js';
 export * from './format.js';
 export * from './parse.js';
 export * from './stripe.js';

@@ -127,6 +127,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/ecb`           | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                   |
 | `.../convert/fetch`         | nothing                                                            | `fetchEcb` (the only module that uses the network)             |
 | `.../stripe-fx`, `adyen-fx` | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
+| `@ducatjs/money/policy`     | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
 | `@ducatjs/money/cash`       | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                             |
 | `@ducatjs/money/format`     | `format`, `formatToParts`                                          | the same                                                       |
 | `@ducatjs/money/parse`      | nothing                                                            | `parse`                                                        |
@@ -246,17 +247,19 @@ one.identical(money('1', 'EUR', { scale: 1 })); // → false
 | `Floor`                | `'floor'`       | always toward −∞                                   |
 | `Unnecessary`          | `'unnecessary'` | throws `RoundingError` if rounding would be needed |
 
-**Rounding policies.** A policy bundles a scale, an increment and a mode ("CHF cash", "4 decimals, half even") into one value that goes wherever a rounding mode goes: `multiply`, `divide`, `round`, `percentage`, `discount`, `addTax`, `extractTax`. The result is rounded once, straight to the policy, so there's no double rounding through the currency's scale. A policy is also a function that rounds an amount, so `amounts.map(policy)` and `m.with(policy)` work.
+**Rounding policies** (`@ducatjs/money/policy`). A policy bundles a scale, an increment and a mode ("CHF cash", "4 decimals, half even") into one value that goes wherever a rounding mode goes: `multiply`, `divide`, `round`, `percentage`, `discount`, `addTax`, `extractTax`. The result is rounded once, straight to the policy, so it never rounds twice through the amount's own scale. A policy is also a function that rounds an amount, so `amounts.map(policy)` and `m.with(policy)` work.
 
-- `roundingPolicy({ scale?, increment?, rounding?, currency? })`: the scale defaults to the currency's exponent, the increment (in 10^-scale units) to 1 and the mode to `'halfExpand'`. With `currency`, the policy refuses amounts in other currencies.
+- `roundingPolicy({ scale?, increment?, rounding?, currency? })`. The scale defaults to the currency's exponent, the increment (counted in 10^-scale units) to 1, and the mode to `'halfExpand'`. With `currency`, the policy refuses amounts in other currencies.
 - `isoPolicy`: the currency's exponent, half up.
-- `cashPolicy(currency, { country?, rounding?, includeUnverified? })` from `@ducatjs/money/cash`: the cash-rounding rule as a policy, for that currency only. It throws when no rule applies.
-- `assertScale(m, policy)` throws a `RangeError` unless `m` is already at the policy's scale and on its increment, for example before booking an amount.
+- `cashPolicy(currency, { country?, rounding?, includeUnverified? })`, from `@ducatjs/money/cash`, is the cash-rounding rule as a policy, for that currency only. It throws when no rule applies. Unlike `cashRound`, which keeps a larger scale (10.034 CHF gives 10.050), a policy always returns its own scale (10.05).
+- `assertScale(m, policy)` throws a `RangeError` unless `m` is already at the policy's scale and on its increment, for example before an amount is booked.
+- The tax functions apply a policy to the amount they compute: the **gross** for `addTax` (the amount charged), the **net** for `extractTax`, and the **discounted price** for `discount`. The other part is the exact difference, so net + tax is still exactly gross. With a plain rounding mode, `addTax` and `discount` round the tax and the discount amount, as before.
 
 Policies are passed explicitly, never stored on amounts or set globally.
 
 ```ts
-import { assertScale, isoPolicy, money, roundingPolicy } from '@ducatjs/money';
+import { money } from '@ducatjs/money';
+import { assertScale, isoPolicy, roundingPolicy } from '@ducatjs/money/policy';
 import { cashPolicy } from '@ducatjs/money/cash';
 
 money('10.00', 'CHF').multiply('1.077', cashPolicy('CHF')); // → 10.75 CHF

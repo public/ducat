@@ -45,9 +45,6 @@ const ROOT_FUNCTIONS = [
   'assertCurrency',
   'ratio',
   'extendMoney',
-  'roundingPolicy',
-  'isoPolicy',
-  'assertScale',
 ];
 
 describe('export surface', () => {
@@ -64,6 +61,18 @@ describe('export surface', () => {
         (name) => !names.includes(name),
       );
       expect(missing).toEqual([]);
+    }
+  });
+});
+
+describe('policy entry', () => {
+  it('/policy has the policy constructors and check, and the root entry does not', async () => {
+    const policy = await import('../src/policy.js');
+    expect(Object.keys(policy).sort()).toEqual(['assertScale', 'isoPolicy', 'roundingPolicy']);
+    for (const name of Object.keys(policy)) {
+      expect(Object.keys(root)).not.toContain(name);
+      expect(Object.keys(fn)).toContain(name);
+      expect(Object.keys(all)).toContain(name);
     }
   });
 });
