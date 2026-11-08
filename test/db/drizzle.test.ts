@@ -1,7 +1,7 @@
 // Drizzle ORM columns against real databases: SQLite (better-sqlite3) always, Postgres and MySQL
 // when DUCAT_PG_URL and DUCAT_MYSQL_URL are set (CI runs both as service containers).
 import Database from 'better-sqlite3';
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, eq, relations, sql } from 'drizzle-orm';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
 import { drizzle as drizzleMysql, type MySql2Database } from 'drizzle-orm/mysql2';
 import { int, mysqlTable } from 'drizzle-orm/mysql-core';
@@ -52,6 +52,41 @@ const sqliteOrders = sqliteTable('ducat_drizzle_orders', {
   price: sqliteColumns.moneyDecimal('EUR')('price'),
   refund: sqliteColumns.moneyJson()('refund'),
 });
+
+// payments in the currencies at the ends of the exponent range, for the relational queries
+const pgPayments = pgTable('ducat_drizzle_payments', {
+  id: pgInteger('id').primaryKey(),
+  orderId: pgInteger('order_id').notNull(),
+  amount: pgColumns.moneyMinor('KWD')('amount_minor').notNull(),
+  fee: pgColumns.moneyDecimal('JPY')('fee'),
+});
+const sqlitePayments = sqliteTable('ducat_drizzle_payments', {
+  id: sqliteInteger('id').primaryKey(),
+  orderId: sqliteInteger('order_id').notNull(),
+  amount: sqliteColumns.moneyMinor('KWD')('amount_minor').notNull(),
+  fee: sqliteColumns.moneyDecimal('JPY')('fee'),
+});
+const pgSchema = {
+  orders: pgOrders,
+  payments: pgPayments,
+  orderPayments: relations(pgOrders, ({ many }) => ({ payments: many(pgPayments) })),
+  paymentOrder: relations(pgPayments, ({ one }) => ({
+    order: one(pgOrders, { fields: [pgPayments.orderId], references: [pgOrders.id] }),
+  })),
+};
+const sqliteSchema = {
+  orders: sqliteOrders,
+  payments: sqlitePayments,
+  orderPayments: relations(sqliteOrders, ({ many }) => ({ payments: many(sqlitePayments) })),
+  paymentOrder: relations(sqlitePayments, ({ one }) => ({
+    order: one(sqliteOrders, { fields: [sqlitePayments.orderId], references: [sqliteOrders.id] }),
+  })),
+};
+// 1.234 KWD, and 2^53 + 1 fils, which a JSON number can't hold
+const PAYMENTS = [
+  { id: 1, orderId: 1, amount: money('1.234', 'KWD'), fee: money('100', 'JPY') },
+  { id: 2, orderId: 2, amount: money('9007199254740.993', 'KWD'), fee: null },
+];
 
 type Row = { id: number; total: Money<'EUR'>; price: Money<'EUR'> | null; refund: Money | null };
 
@@ -109,7 +144,7 @@ describe('Drizzle column types', () => {
 
 describe('Drizzle on SQLite (better-sqlite3)', () => {
   let connection: Database.Database;
-  let db: ReturnType<typeof drizzleSqlite>;
+  let db: ReturnType<typeof drizzleSqlite<typeof sqliteSchema>>;
 
   beforeAll(() => {
     connection = new Database(':memory:');
@@ -117,9 +152,11 @@ describe('Drizzle on SQLite (better-sqlite3)', () => {
     connection.defaultSafeIntegers(true);
     connection.exec(
       'CREATE TABLE ducat_drizzle_orders ' +
-        '(id INTEGER PRIMARY KEY, total_minor INTEGER NOT NULL, price TEXT, refund TEXT)',
+        '(id INTEGER PRIMARY KEY, total_minor INTEGER NOT NULL, price TEXT, refund TEXT);' +
+        'CREATE TABLE ducat_drizzle_payments ' +
+        '(id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL, amount_minor INTEGER NOT NULL, fee TEXT)',
     );
-    db = drizzleSqlite({ client: connection });
+    db = drizzleSqlite({ client: connection, schema: sqliteSchema });
   });
 
   afterAll(() => {
@@ -131,6 +168,31 @@ describe('Drizzle on SQLite (better-sqlite3)', () => {
     await db.insert(sqliteOrders).values(rows);
     const readBack = await db.select().from(sqliteOrders).orderBy(asc(sqliteOrders.id));
     expect(show(readBack)).toEqual(show(rows));
+  });
+
+  it('round-trips JPY and KWD, the ends of the exponent range', async () => {
+    await db.insert(sqlitePayments).values(PAYMENTS);
+    const readBack = await db.select().from(sqlitePayments).orderBy(asc(sqlitePayments.id));
+    expect(readBack.map((row) => [String(row.amount), String(row.fee)])).toEqual([
+      ['1.234 KWD', '100 JPY'],
+      ['9007199254740.993 KWD', 'null'],
+    ]);
+  });
+
+  it('relational queries: nested columns come through JSON, so big minor units throw', async () => {
+    // nested rows arrive as JSON: TEXT decimals stay strings, integers become JSON numbers
+    const small = await db.query.orders.findFirst({
+      where: eq(sqliteOrders.id, 1),
+      with: { payments: true },
+    });
+    expect(small!.payments.map((row) => [String(row.amount), String(row.fee)])).toEqual([
+      ['1.234 KWD', '100 JPY'],
+    ]);
+    const huge = db.query.orders.findFirst({
+      where: eq(sqliteOrders.id, 2),
+      with: { payments: true },
+    });
+    await expect(huge).rejects.toThrow(/safe integer/);
   });
 
   it('filters by a Money value through the column mapping', async () => {
@@ -179,7 +241,7 @@ describe('Drizzle on Postgres (node-postgres)', () => {
 
   describe.skipIf(!pgUrl)('against a server', () => {
     let client: pg.Client;
-    let db: NodePgDatabase;
+    let db: NodePgDatabase<typeof pgSchema>;
 
     beforeAll(async () => {
       // the default type parsers: int8 and numeric come back as strings, jsonb parsed
@@ -190,7 +252,12 @@ describe('Drizzle on Postgres (node-postgres)', () => {
         'CREATE TABLE ducat_drizzle_orders ' +
           '(id INTEGER PRIMARY KEY, total_minor BIGINT NOT NULL, price NUMERIC(19,4), refund JSONB)',
       );
-      db = drizzlePg({ client });
+      await client.query('DROP TABLE IF EXISTS ducat_drizzle_payments');
+      await client.query(
+        'CREATE TABLE ducat_drizzle_payments (id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL, ' +
+          'amount_minor BIGINT NOT NULL, fee NUMERIC(19,4))',
+      );
+      db = drizzlePg({ client, schema: pgSchema });
     });
 
     afterAll(async () => {
@@ -202,6 +269,34 @@ describe('Drizzle on Postgres (node-postgres)', () => {
       await db.insert(pgOrders).values(rows);
       const readBack = await db.select().from(pgOrders).orderBy(asc(pgOrders.id));
       expect(show(readBack)).toEqual(show(rows));
+    });
+
+    it('round-trips JPY and KWD, the ends of the exponent range', async () => {
+      await db.insert(pgPayments).values(PAYMENTS);
+      const readBack = await db.select().from(pgPayments).orderBy(asc(pgPayments.id));
+      expect(readBack.map((row) => [String(row.amount), String(row.fee)])).toEqual([
+        ['1.234 KWD', '100 JPY'],
+        ['9007199254740.993 KWD', 'null'],
+      ]);
+    });
+
+    it('relational queries: nested NUMERIC and big BIGINT arrive as JSON numbers and throw', async () => {
+      const small = await db.query.orders.findFirst({
+        where: eq(pgOrders.id, 1),
+        with: { payments: { columns: { amount: true } } },
+      });
+      expect(small!.payments.map((row) => String(row.amount))).toEqual(['1.234 KWD']);
+
+      const withFee = db.query.orders.findFirst({
+        where: eq(pgOrders.id, 1),
+        with: { payments: true },
+      });
+      await expect(withFee).rejects.toThrow(/as strings/);
+      const huge = db.query.orders.findFirst({
+        where: eq(pgOrders.id, 2),
+        with: { payments: { columns: { amount: true } } },
+      });
+      await expect(huge).rejects.toThrow(/safe integer/);
     });
 
     it('sums in SQL and reads the result back as Money', async () => {
@@ -257,6 +352,50 @@ describe('Drizzle on MySQL (mysql2)', () => {
       await db.insert(mysqlOrders).values(rows);
       const readBack = await db.select().from(mysqlOrders).orderBy(asc(mysqlOrders.id));
       expect(show(readBack)).toEqual(show(rows));
+    });
+
+    it('outside strict mode, where MySQL clips a BIGINT, an out-of-range amount still throws', async () => {
+      const lenient = await mysql.createConnection({
+        uri: mysqlUrl!,
+        bigNumberStrings: true,
+        supportBigNumbers: true,
+      });
+      try {
+        await lenient.query("SET SESSION sql_mode = ''");
+        // what the guard prevents: the server stores the limit, with only a warning
+        await lenient.query('INSERT INTO ducat_drizzle_orders (id, total_minor) VALUES (90, 1e22)');
+        const [clipped] = await lenient.query(
+          'SELECT total_minor FROM ducat_drizzle_orders WHERE id = 90',
+        );
+        expect((clipped as { total_minor: string }[])[0]!.total_minor).toBe('9223372036854775807');
+
+        const lenientDb = drizzleMysql({ client: lenient });
+        const insert = lenientDb
+          .insert(mysqlOrders)
+          .values({ id: 91, total: money('1e20', 'EUR') });
+        await expect(insert).rejects.toThrow(/range of a BIGINT/);
+      } finally {
+        await lenient.end();
+      }
+    });
+
+    it("with mysql2's default number BIGINTs, a value beyond 2^53 throws instead of losing digits", async () => {
+      const defaults = await mysql.createConnection({ uri: mysqlUrl! });
+      try {
+        const defaultDb = drizzleMysql({ client: defaults });
+        const small = await defaultDb
+          .select({ total: mysqlOrders.total })
+          .from(mysqlOrders)
+          .where(eq(mysqlOrders.id, 2));
+        expect(String(small[0]!.total)).toBe('12.34 EUR');
+        const huge = defaultDb
+          .select({ total: mysqlOrders.total })
+          .from(mysqlOrders)
+          .where(eq(mysqlOrders.id, 5));
+        await expect(huge).rejects.toThrow(/safe integer/);
+      } finally {
+        await defaults.end();
+      }
     });
   });
 });
