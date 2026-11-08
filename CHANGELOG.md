@@ -10,9 +10,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 ### Added
 
 - `parseMoney(text, locale, options)` in `/parse` parses `"CHF 1’234.50"` or `"USD 100"` and
-  detects the currency from ISO codes and the locale's `Intl` symbols. A shared symbol such as `$`
-  means the locale's own currency or the `hint`. `strict: true` rejects ambiguous symbols without
-  a hint, a currency that contradicts the hint, and bad group sizes.
+  detects the currency from ISO codes and the locale's `Intl` symbols. It never guesses: a shared
+  symbol such as `$` needs a `hint` or a `symbols` map, a contradicting hint, a locale without
+  Intl data and bad grouping throw, and `lenient: true` relaxes only the grouping (and reads a
+  bare number in the hint).
 - **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
   rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
   reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,

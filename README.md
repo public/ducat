@@ -293,20 +293,24 @@ assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws
   - Arabic-Indic, Persian, Devanagari and Thai digits
   - accounting parentheses and U+2212 minus
 - `parse` takes the currency from its argument and never guesses it from the text. A `parse(format(x)) == x` property test runs across 14 locales.
-- `parseMoney(text, locale?, { hint?, currencies?, strict?, scale?, rounding? })` detects the currency from the text. It recognises ISO codes, the symbols `Intl.NumberFormat` uses in the locale, and English ones such as `US$` and `CA$`. Then it reads the number as `parse` does.
-  - A symbol that several currencies share means the currency whose own symbol it is in the locale (`$` is USD in en-US and CAD in en-CA), or the `hint`. Text with no currency uses the `hint`.
-  - Text that isn't a currency (`"about 100 USD"`) or that names two currencies throws.
-  - `strict: true` also rejects an ambiguous symbol without a hint and a currency that contradicts the hint, and it checks the locale's group sizes (`1,234,567`; `12,34,567` in en-IN).
-  - `currencies` limits what is detected.
+- `parseMoney(text, locale, { hint?, symbols?, currencies?, lenient?, scale?, rounding? })` detects the currency from the text, and like the rest of ducat it never guesses.
+  - It reads ISO codes and symbols that mean exactly one currency, either in the locale (from `Intl.NumberFormat`) or in English (`US$`, `CA$`, `A$`). Then it reads the number as `parse` does.
+  - A symbol several currencies share (`$`, `kr`, and also `£` and `¥`, which other currencies use as narrow symbols) needs a `hint`, or your own `symbols` map such as `{ $: 'CAD' }`. This holds even where the locale "owns" it: `$` in en-CA is usually CAD, but a Canadian text can mean USD.
+  - It throws when a currency in the text contradicts the `hint`, when the text names two currencies, and when text around the number isn't a currency (`"about 100 USD"`).
+  - It also throws for a locale the runtime has no Intl data for, instead of quietly using another locale's separators and symbols, and for group separators in the wrong places for the locale (`1,234,567`; `12,34,567` in en-IN).
+  - `lenient: true` accepts any grouping, and a bare number when a `hint` is given. It never makes the currency a guess.
+  - `currencies` limits what is detected, and can include codes registered with `defineCurrency`.
 
 ```ts
 import { parseMoney } from '@ducatjs/money/parse';
 
 parseMoney('CHF 1’234.50', 'de-CH'); // → 1234.50 CHF
 parseMoney('1.234,50 €', 'de-DE'); // → 1234.50 EUR
-parseMoney('$5.00', 'en-CA'); // → 5.00 CAD
-parseMoney('$5.00', 'en-US', { strict: true }); // throws
-parseMoney('$5.00', 'en-US', { strict: true, hint: 'USD' }); // → 5.00 USD
+parseMoney('$5.00', 'en-CA'); // throws (CAD, USD, AUD...: pass a hint)
+parseMoney('$5.00', 'en-CA', { hint: 'CAD' }); // → 5.00 CAD
+parseMoney('$5.00', 'en-CA', { symbols: { $: 'CAD' } }); // → 5.00 CAD
+parseMoney('€5.00', 'en-IE', { hint: 'USD' }); // throws
+parseMoney('12.34', 'en', { hint: 'EUR', lenient: true }); // → 12.34 EUR
 ```
 
 **Serialise**

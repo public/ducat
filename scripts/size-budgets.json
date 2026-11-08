@@ -50,6 +50,10 @@
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",
       "gzipped": 5.22
+    },
+    "parse: parse alone, without detection": {
+      "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 €', 'EUR', 'de-DE').toString());",
+      "gzipped": 4.9
     }
   }
 }
