@@ -19,6 +19,7 @@ import {
   toScale,
   type Money,
 } from '../src/fn.js';
+import { ISO_EXPONENTS } from '../src/currency.js';
 import { format } from '../src/format.js';
 
 const minors = (parts: Money[]): (number | bigint)[] => parts.map((part) => part.minor);
@@ -357,13 +358,15 @@ describe('currency data', () => {
     }
   });
 
-  // js-money #37: obsolete codes listed, current ones missing
+  // js-money #37: obsolete codes listed, current ones missing. This checks the bundled ISO table,
+  // not the live registry: under bun test every file shares one process, and the historic table
+  // (@ducatjs/money/historic) may have registered the withdrawn codes already.
   it('knows current codes and not withdrawn ones', () => {
     for (const code of ['ZMW', 'BYN', 'MRU', 'STN', 'VES', 'VED', 'SLE', 'ZWG', 'XPF']) {
-      expect([code, isCurrency(code)]).toEqual([code, true]);
+      expect([code, code in ISO_EXPONENTS, isCurrency(code)]).toEqual([code, true, true]);
     }
     for (const code of ['ZMK', 'BYR', 'VEF', 'LTL', 'LVL', 'EEK', 'MRO', 'STD']) {
-      expect([code, isCurrency(code)]).toEqual([code, false]);
+      expect([code, code in ISO_EXPONENTS]).toEqual([code, false]);
     }
   });
 });
