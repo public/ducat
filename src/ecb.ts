@@ -1,6 +1,7 @@
 // Offline parsers for the ECB euro foreign exchange reference rates (eurofxref). No I/O: fetch or
 // read the files yourself, or use ducat/convert/fetch. Rates are kept exactly as published.
 import { rateTable, type RateTable } from './provider.js';
+import { readRateCell } from './rate-text.js';
 
 const MONTHS = [
   'january',
@@ -28,7 +29,7 @@ const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
  * a regular concertation between central banks, and published for information only. They are not a
  * market mid-rate that anyone deals at.
  */
-function ecbTable(asOf: string, rates: Record<string, string>): RateTable {
+function ecbTable(asOf: string, rates: Record<string, string | null>): RateTable {
   return rateTable({ base: 'EUR', asOf, source: 'ECB', type: 'reference', rates });
 }
 
@@ -130,8 +131,8 @@ function isoDay(text: string): string {
 
 /**
  * Parses eurofxref.csv or eurofxref-hist.csv (from the ECB's zips) the way parseEcbXml does.
- * 'N/A' and blank cells (currencies not quoted that day) are skipped, and a day with no rates at
- * all is left out, so a lookback goes on to the day before.
+ * 'N/A' and blank cells (currencies not quoted that day) are listed in the table's `missing`, and a
+ * day with no rates at all is left out, so a lookback goes on to the day before.
  */
 export function parseEcbCsv(csv: string): RateTable[] {
   const lines = withoutByteOrderMark(csv)
@@ -145,16 +146,21 @@ export function parseEcbCsv(csv: string): RateTable[] {
   const tables: RateTable[] = [];
   for (const line of lines.slice(1)) {
     const cells = line.split(',').map((cell) => cell.trim());
-    const rates: Record<string, string> = {};
+    const day = isoDay(cells[0]!);
+    const rates: Record<string, string | null> = {};
+    let quoted = 0;
     for (let i = 1; i < columns.length; i++) {
       const currency = columns[i];
-      const rate = cells[i];
-      if (currency && rate && rate !== 'N/A') {
-        rates[currency] = rate;
+      if (!currency) {
+        continue;
+      }
+      const rate = readRateCell(cells[i] ?? '', `${currency} on ${day}`);
+      rates[currency] = rate;
+      if (rate !== null) {
+        quoted++;
       }
     }
-    const day = isoDay(cells[0]!);
-    if (Object.keys(rates).length > 0) {
+    if (quoted > 0) {
       tables.push(ecbTable(day, rates));
     }
   }
