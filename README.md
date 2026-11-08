@@ -372,7 +372,6 @@ money('7.53', 'HRK'); // → 7.53 HRK
 money('1936.27', 'ITL', { rounding: 'halfExpand' }); // → 1936 ITL (the lira had no minor unit)
 historicCurrency('HRK')?.withdrawn; // → '2023-01'
 historicCurrency('CNH')?.withdrawn; // → undefined (not an ISO code)
-money('1', 'DEM'); // throws RangeError (not registered)
 ```
 
 To have the codes in the `CurrencyCode` type as well:

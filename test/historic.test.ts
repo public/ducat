@@ -68,18 +68,20 @@ describe('historic currency table', () => {
 });
 
 describe('defineHistoricCurrencies', () => {
+  // Bun runs every test file in one process with one currency registry, so these use codes no
+  // other test file registers (the README examples register HRK and ITL).
   it('registers nothing until called, then lets Money hold the codes', () => {
-    expect(isCurrency('ITL')).toBe(false);
-    expect(() => money('1', 'ITL')).toThrow(RangeError);
+    expect(isCurrency('PTE')).toBe(false);
+    expect(() => money('1', 'PTE')).toThrow(RangeError);
 
-    defineHistoricCurrencies(['ITL', 'HRK']);
-    expect(currencyExponent('ITL')).toBe(0);
-    expect(money('1500', 'ITL').toString()).toBe('1500 ITL');
-    expect(money('7.53', 'HRK').minor).toBe(753);
+    defineHistoricCurrencies(['PTE', 'LVL']);
+    expect(currencyExponent('PTE')).toBe(0);
+    expect(money('200', 'PTE').toString()).toBe('200 PTE');
+    expect(money('7.53', 'LVL').minor).toBe(753);
     // only the codes asked for
     expect(isCurrency('DEM')).toBe(false);
     // again is harmless
-    defineHistoricCurrencies(['HRK']);
+    defineHistoricCurrencies(['LVL']);
   });
 
   it('checks every code before registering any', () => {
