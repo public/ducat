@@ -29,7 +29,6 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 - `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
   building one for every row, which makes it about 20 times faster.
-
 - **Visible change:** `Rate#toString()` (and so `toJSON().rate`) prints a decimal-string rate
   with the digits it was given, and `rateFromJSON` keeps them: `exchangeRate('EUR', 'HUF',
   '363.90').toString()` is `'363.90'`, not `'363.9'`. The value is unchanged.

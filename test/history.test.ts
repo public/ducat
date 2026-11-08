@@ -318,6 +318,48 @@ describe('rateHistory: daily and period tables together', () => {
     expect(yen.skipped).toEqual([{ day: '2026-03-02', reason: 'notQuoted' }]);
   });
 
+  it("a table's own dates apply to ready-made Rate entries", () => {
+    const table = rateTable({
+      base: 'EUR',
+      asOf: '2026-11-06',
+      availableAt: '2026-11-06T15:00:00Z',
+      validUntil: '2026-11-06',
+      rates: { USD: exchangeRate('EUR', 'USD', '1.1165') },
+    });
+    expect(table.rate('EUR', 'USD', { asOf: '2026-11-06T09:00:00Z' })).toBeUndefined();
+    expect(table.rate('EUR', 'USD', { asOf: '2026-11-06T16:00:00Z' })).toBeDefined();
+    expect(table.rate('EUR', 'USD', { asOf: '2026-11-07' })).toBeUndefined();
+    expect(table.rate('EUR', 'USD', { asOf: '2026-11-05' })).toBeUndefined();
+    const fx = via('EUR', table);
+    expect(fx.rate('USD', 'EUR', { asOf: '2026-11-06T09:00:00Z' })).toBeUndefined();
+    // an entry must be base → its key
+    expect(() =>
+      rateTable({ base: 'GBP', rates: { USD: exchangeRate('GBP', 'JPY', '190') } }),
+    ).toThrow(/GBP→USD/);
+    expect(() =>
+      rateTable({ base: 'GBP', rates: { USD: exchangeRate('EUR', 'USD', '1.1') } }),
+    ).toThrow(TypeError);
+  });
+
+  it('reports the empty days before a daily table when a period table could not answer', () => {
+    const unpublishedMonth = rateTable({
+      base: 'GBP',
+      asOf: '2026-06-15',
+      validUntil: '2026-07-14',
+      availableAt: '2026-06-15T12:00:00Z',
+      rates: { USD: '1.2700' },
+    });
+    const daily = rateTable({ base: 'GBP', asOf: '2026-06-13', rates: { USD: '1.2600' } });
+    const found = rateHistory([unpublishedMonth, daily], { lookback: 2 }).lookup('GBP', 'USD', {
+      asOf: '2026-06-15T09:00:00Z',
+    });
+    expect(found.rate?.asOf).toBe('2026-06-13');
+    expect(found.skipped).toEqual([
+      { day: '2026-06-15', reason: 'notYetAvailable' },
+      { day: '2026-06-14', reason: 'noTable' },
+    ]);
+  });
+
   it('a table of ready-made Rates reports the reasons of its rates', () => {
     const table = rateTable({
       base: 'EUR',
@@ -412,18 +454,24 @@ describe('rateHistory: a date range in one call, with reasons', () => {
 
   it('matches a brute-force search over daily and period tables (property)', () => {
     const start = '2026-01-01';
+    const hour = (value: number) => `T${String(value).padStart(2, '0')}:00:00.000Z`;
     const table = fc.record({
       offset: fc.integer({ min: 0, max: 60 }),
       kind: fc.constantFrom('daily', 'daily', 'daily', 'period'),
       length: fc.integer({ min: 0, max: 30 }),
-      published: fc.option(fc.integer({ min: 0, max: 23 })),
+      // the period ends on a date (valid all day) or at an instant
+      endsAt: fc.option(fc.integer({ min: 0, max: 23 })),
+      // published on its day or the next, at an hour, or with no availableAt
+      published: fc.option(
+        fc.tuple(fc.integer({ min: 0, max: 1 }), fc.integer({ min: 0, max: 23 })),
+      ),
       usd: fc.constantFrom('quoted', 'quoted', 'quoted', 'missing', 'absent'),
     });
     fc.assert(
       fc.property(
         fc.array(table, { maxLength: 15 }),
         fc.integer({ min: -2, max: 70 }),
-        fc.integer({ min: 0, max: 23 }),
+        fc.option(fc.integer({ min: 0, max: 23 })),
         fc.integer({ min: 0, max: 6 }),
         (specs, queryOffset, queryHour, lookback) => {
           const built = specs.map((spec, i) => {
@@ -436,11 +484,12 @@ describe('rateHistory: a date range in one call, with reasons', () => {
             }
             let validUntil: string | undefined;
             if (spec.kind === 'period') {
-              validUntil = addDays(asOf, spec.length);
+              const lastDay = addDays(asOf, spec.length);
+              validUntil = spec.endsAt === null ? lastDay : `${lastDay}${hour(spec.endsAt)}`;
             }
             let availableAt: string | undefined;
             if (spec.published !== null) {
-              availableAt = `${asOf}T${String(spec.published).padStart(2, '0')}:00:00.000Z`;
+              availableAt = `${addDays(asOf, spec.published[0])}${hour(spec.published[1])}`;
             }
             return {
               asOf,
@@ -456,27 +505,56 @@ describe('rateHistory: a date range in one call, with reasons', () => {
             };
           });
           const queryDay = addDays(start, queryOffset);
-          const instant = `${queryDay}T${String(queryHour).padStart(2, '0')}:30:00.000Z`;
+          // a date asks for the whole day; an instant for that moment
+          const query = queryHour === null ? queryDay : `${queryDay}${hour(queryHour)}`;
           const found = rateHistory(
             built.map((entry) => entry.table),
             { lookback },
-          ).rate('EUR', 'USD', { asOf: instant });
+          ).lookup('EUR', 'USD', { asOf: query });
 
-          // brute force: every table that applies at the instant, newest first (stable)
+          // brute force, written out without the library's date helpers
+          const published = (availableAt: string | undefined) => {
+            if (availableAt === undefined) {
+              return true;
+            }
+            if (queryHour === null) {
+              return availableAt.slice(0, 10) <= queryDay;
+            }
+            return availableAt <= query;
+          };
+          const stillValid = (validUntil: string | undefined) => {
+            if (validUntil === undefined) {
+              return true;
+            }
+            const instant = queryHour === null ? `${queryDay}T00:00:00.000Z` : query;
+            if (validUntil.length === 10) {
+              return instant.slice(0, 10) <= validUntil;
+            }
+            return instant <= validUntil;
+          };
           const oldest = addDays(queryDay, -lookback);
           const candidates = built
             .map((entry, i) => ({ ...entry, i }))
             .filter((entry) => entry.asOf <= queryDay)
-            .filter((entry) => entry.validUntil === undefined || entry.validUntil >= queryDay)
+            .filter((entry) => stillValid(entry.validUntil))
             .filter((entry) => entry.asOf >= oldest || entry.validUntil !== undefined)
-            .filter((entry) => entry.availableAt === undefined || entry.availableAt <= instant)
+            .filter((entry) => published(entry.availableAt))
             .filter((entry) => entry.table.rate('EUR', 'USD') !== undefined)
             .sort((entry, other) => other.asOf.localeCompare(entry.asOf) || entry.i - other.i);
-          expect(found).toBe(candidates[0]?.table.rate('EUR', 'USD'));
-          // a lookup never sees a rate before it was published or after its period
-          if (found !== undefined) {
-            expect(found.isAvailable(instant)).toBe(true);
-            expect(found.isExpired(instant)).toBe(false);
+          expect(found.rate).toBe(candidates[0]?.table.rate('EUR', 'USD'));
+
+          // the reasons: newest first, inside the window or a table's own day, never a day twice
+          // for "noTable", and never older than the answer
+          const days = found.skipped.map((fallback) => fallback.day);
+          expect([...days].sort().reverse()).toEqual(days);
+          const noTable = found.skipped.filter((fallback) => fallback.reason === 'noTable');
+          expect(new Set(noTable.map((fallback) => fallback.day)).size).toBe(noTable.length);
+          for (const fallback of noTable) {
+            expect(fallback.day >= oldest && fallback.day <= queryDay).toBe(true);
+            expect(built.some((entry) => entry.asOf === fallback.day)).toBe(false);
+          }
+          if (found.rate !== undefined) {
+            expect(days.every((day) => day >= found.rate!.asOf!)).toBe(true);
           }
         },
       ),

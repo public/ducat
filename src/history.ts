@@ -272,9 +272,8 @@ export function rateHistory(
       return { rate: undefined, skipped };
     }
     const lastDay = daysBefore(firstDay, lookback);
-    // The newest day of the lookback window not yet accounted for; undefined once a table valid
-    // for a period covers the rest of the window, since those days aren't missing a table.
-    let expectedDay: string | undefined = firstDay;
+    // The newest day of the lookback window not yet accounted for by a daily table.
+    let expectedDay = firstDay;
 
     for (const { day, table } of dated) {
       if (day > firstDay) {
@@ -291,29 +290,35 @@ export function rateHistory(
         continue;
       }
 
-      if (expectedDay !== undefined) {
-        if (coversPeriod) {
-          expectedDay = undefined;
-        } else {
-          for (let gap = expectedDay; gap > day; gap = daysBefore(gap, 1)) {
-            skipped.push({ day: gap, reason: 'noTable' });
-          }
-          expectedDay = daysBefore(day, 1);
-        }
+      // Days between the last table and this one had no table. A period table that answers
+      // covers them, so for one they count only once it turns out not to answer.
+      // An older period table comes after every day of the window, so all of them are gaps.
+      const inWindow = day >= lastDay;
+      const accountedTo = inWindow ? day : daysBefore(lastDay, 1);
+      const gaps: Fallback[] = [];
+      for (let gap = expectedDay; gap > accountedTo; gap = daysBefore(gap, 1)) {
+        gaps.push({ day: gap, reason: 'noTable' });
+      }
+      if (!coversPeriod) {
+        skipped.push(...gaps);
       }
 
       const reason = passOver(table, from, to, query, periodEnded);
       if (reason === undefined) {
         return { rate: table.rate(from, to, query) as Rate<From, To>, skipped };
       }
+      if (coversPeriod) {
+        skipped.push(...gaps);
+      }
       skipped.push({ day, reason });
+      if (accountedTo <= expectedDay) {
+        expectedDay = inWindow ? daysBefore(day, 1) : accountedTo;
+      }
     }
 
     // Days left in the window without any table at all.
-    if (expectedDay !== undefined) {
-      for (let gap = expectedDay; gap >= lastDay; gap = daysBefore(gap, 1)) {
-        skipped.push({ day: gap, reason: 'noTable' });
-      }
+    for (let gap = expectedDay; gap >= lastDay; gap = daysBefore(gap, 1)) {
+      skipped.push({ day: gap, reason: 'noTable' });
     }
     return { rate: undefined, skipped };
   }

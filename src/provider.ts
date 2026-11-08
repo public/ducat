@@ -149,6 +149,10 @@ export function rateTable(spec: RateTableSpec | readonly Rate[]): RateTable {
       if (entry === null) {
         missing.push(currency);
       } else if (isRate(entry)) {
+        // A ready-made Rate is looked up under its own pair, so it must be the one its key says.
+        if (entry.from !== spec.base || entry.to !== currency) {
+          throw new CurrencyMismatchError(`${spec.base}→${currency}`, `${entry.from}→${entry.to}`);
+        }
         rates.push(entry);
       } else {
         rates.push(exchangeRate(spec.base, currency, entry, spec));
@@ -182,7 +186,9 @@ export function rateTable(spec: RateTableSpec | readonly Rate[]): RateTable {
       if (rate === undefined) {
         return undefined;
       }
-      if (query?.asOf !== undefined && !appliesAt(rate, query.asOf)) {
+      // The table's own dates count too: a ready-made Rate entry doesn't carry them.
+      const asOf = query?.asOf;
+      if (asOf !== undefined && (!appliesAt(rate, asOf) || !appliesAt(header, asOf))) {
         return undefined;
       }
       // The key matched, so the rate's currencies are exactly `from` and `to`.
