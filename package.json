@@ -134,6 +134,14 @@
       "types": "./dist/drizzle/sqlite.d.ts",
       "default": "./dist/drizzle/sqlite.js"
     },
+    "./zod": {
+      "types": "./dist/zod.d.ts",
+      "default": "./dist/zod.js"
+    },
+    "./valibot": {
+      "types": "./dist/valibot.d.ts",
+      "default": "./dist/valibot.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "default": "./dist/testing/index.js"
@@ -158,7 +166,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.drizzle.json",
-    "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json && tsc -p test/jest-types/tsconfig.json",
     "test": "vitest run",
     "test:deep": "DUCAT_DEEP=1 vitest run",
     "compare": "pnpm --dir compare battery && pnpm --dir compare tables",
@@ -207,12 +215,16 @@
     "pg": "8.23.1",
     "ts-money": "^0.4.8",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.12"
+    "valibot": "1.5.0",
+    "vitest": "^4.1.12",
+    "zod": "4.6.7"
   },
   "peerDependencies": {
     "drizzle-orm": ">=0.45.0 <1",
     "fast-check": "^4.0.0",
-    "vitest": ">=3.2.0"
+    "valibot": "^1.0.0",
+    "vitest": ">=3.2.0 <5",
+    "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "drizzle-orm": {
@@ -221,7 +233,13 @@
     "fast-check": {
       "optional": true
     },
+    "valibot": {
+      "optional": true
+    },
     "vitest": {
+      "optional": true
+    },
+    "zod": {
       "optional": true
     }
   },

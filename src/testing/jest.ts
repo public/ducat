@@ -1,5 +1,5 @@
 /**
- * `@ducatjs/money/testing/jest`: one import in a Jest setup file (`setupFilesAfterEach`) installs
+ * `@ducatjs/money/testing/jest`: one import in a Jest setup file (`setupFilesAfterEnv`) installs
  * the money matchers, value equality and the snapshot serializer on Jest's global `expect`. It
  * needs no Jest package of its own. For the types, add `MoneyMatchers` to Jest's `Matchers` in a
  * declaration file (see the README): augmenting Jest's global namespace from here would clash

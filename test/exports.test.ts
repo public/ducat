@@ -117,12 +117,15 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only /drizzle and the /testing helpers reach their peer libraries; nothing else imports any', async () => {
+  it('only /drizzle, /zod, /valibot and the /testing helpers reach their peer libraries', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
       actual[key] = [...packageImportsOf(join(ROOT, source))];
       expected[key] = key.startsWith('./drizzle/') ? [`drizzle-orm/${key.slice(10)}-core`] : [];
+      if (key === './zod' || key === './valibot') {
+        expected[key] = [key.slice(2)];
+      }
     }
     // the test helpers reach only their own test libraries
     expected['./testing/vitest'] = ['vitest'];
@@ -162,6 +165,15 @@ describe('package entries', () => {
   });
 });
 
+describe('schema entries', () => {
+  it('/zod and /valibot export the same schema functions', async () => {
+    const zod = await import('../src/zod.js');
+    const valibot = await import('../src/valibot.js');
+    expect(Object.keys(zod).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
+    expect(Object.keys(valibot).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
+  });
+});
+
 describe('policy entry', () => {
   it('/policy has the policy constructors and check, and the root entry does not', async () => {
     const policy = await import('../src/policy.js');
@@ -175,6 +187,20 @@ describe('policy entry', () => {
 });
 
 describe('testing entries', () => {
+  it('only the setup entries are listed as having side effects', () => {
+    const sideEffects = (
+      JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
+        sideEffects: string[];
+      }
+    ).sideEffects;
+    for (const name of ['vitest', 'jest']) {
+      expect(sideEffects).toContain(`./dist/testing/${name}.js`);
+      expect(sideEffects).toContain(`./src/testing/${name}.ts`);
+    }
+    expect(sideEffects.filter((path) => path.includes('testing/index'))).toEqual([]);
+    expect(sideEffects.filter((path) => path.includes('arbitraries'))).toEqual([]);
+  });
+
   it('none is part of /fn or /all', async () => {
     const testing = await import('../src/testing/index.js');
     for (const name of Object.keys(testing)) {

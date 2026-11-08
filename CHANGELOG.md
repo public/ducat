@@ -14,6 +14,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
   `toSumTo`. `/testing/vitest` and `/testing/jest` set it all up in one import, and
   `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
+- `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
+  `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
+  currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
+  without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
+  and Valibot 1 are optional peer dependencies.
 - **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
   rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
   reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,
@@ -36,6 +41,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
+- **ECB Data Portal:** `parseEcbSdmxCsv` (and `parseEcbSdmxDecimals`) in
+  `@ducatjs/money/convert/ecb` read the SDMX-CSV of the daily euro reference rates, any range back
+  to 1999, with the published digits rebuilt from each series' `DECIMALS`.
+  `fetchEcbRange({ start, end, currencies })` in `@ducatjs/money/convert/fetch` fetches a range
+  from it.
 - **Historical rates.** In `@ducatjs/money/convert`: `availableAt` on rates and tables (a lookup
   before publication gets nothing, `Rate#isAvailable`), `Rate#quote` with the published digits,
   `null` for missing values with the table's `missing` list, and `validUntil` periods on tables.
@@ -53,6 +63,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `rateTable` lookups with an `asOf` after a rate's `validUntil` now return nothing.
 - `parseEcbCsv` lists `N/A` and blank cells in the table's `missing`, and throws on a cell that
   isn't a rate instead of passing it on.
+
+### Changed
+
+- `divide` is about 3 to 14 times faster for ordinary amounts (number minor units, a divisor such as `3`,
+  `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
+  are unchanged: the same proved rounding kernel is used.
 
 ## [0.1.0] - 2026-11-07
 

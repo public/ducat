@@ -5,6 +5,7 @@
  * or `@ducatjs/money/testing/jest`, which do that for you. Nothing here changes production code.
  */
 import { currencyExponent } from '../currency.js';
+import { parseDecimal } from '../decimal.js';
 import { compare, equals, isMoney, money, sum, zero, type Money } from '../money.js';
 
 /** An equality tester, as Vitest and Jest's `expect.addEqualityTesters` take them. */
@@ -17,13 +18,12 @@ export type MoneyEqualityTester = (left: unknown, right: unknown) => boolean | u
  * comparison applies.
  */
 export const moneyEquality: MoneyEqualityTester = (left, right) => {
-  const leftIsMoney = isMoney(left);
-  const rightIsMoney = isMoney(right);
-  if (leftIsMoney && rightIsMoney) {
+  if (isMoney(left) && isMoney(right)) {
     return equals(left, right);
   }
-  // Money against anything else is never equal; two non-Money values are left to the runner.
-  return leftIsMoney || rightIsMoney ? false : undefined;
+  // Anything else, including a Money from a second installed copy of the package (which isMoney
+  // does not recognise), is left to the runner's own field-by-field comparison.
+  return undefined;
 };
 
 /** A snapshot serializer that prints Money as `12.34 EUR` (unquoted, so it isn't a string). */
@@ -63,15 +63,33 @@ export interface MoneyMatchers<R = unknown> {
   toSumTo(total: Money): R;
 }
 
-const show = (value: unknown): string => {
+/**
+ * Prints a received value for a failure message. JSON.stringify would throw on a bigint or a
+ * cycle, and a matcher must fail cleanly, not throw while explaining the failure.
+ */
+function show(value: unknown, seen: Set<unknown> = new Set()): string {
   if (isMoney(value)) {
     return String(value);
   }
-  if (Array.isArray(value)) {
-    return `[${value.map(show).join(', ')}]`;
+  if (typeof value === 'bigint') {
+    return `${value}n`;
   }
-  return typeof value === 'bigint' ? `${value}n` : (JSON.stringify(value) ?? String(value));
-};
+  if (typeof value === 'string') {
+    return JSON.stringify(value);
+  }
+  if (typeof value !== 'object' || value === null) {
+    return String(value);
+  }
+  if (seen.has(value)) {
+    return '[Circular]';
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => show(item, seen)).join(', ')}]`;
+  }
+  const fields = Object.entries(value).map(([key, field]) => `${key}: ${show(field, seen)}`);
+  return `{ ${fields.join(', ')} }`;
+}
 
 function result(
   context: MoneyMatcherContext,
@@ -82,29 +100,42 @@ function result(
 ): MoneyMatcherResult {
   return {
     pass,
-    message: () =>
-      `expected ${show(received)} ${context.isNot ? 'not ' : ''}${expectation}` +
-      (expected === undefined || context.isNot ? '' : `, received ${show(received)}`),
+    message: () => `expected ${show(received)} ${context.isNot ? 'not ' : ''}${expectation}`,
     actual: received,
     expected,
   };
 }
 
+/**
+ * Comparing amounts in different currencies, or something that isn't Money, is a mistake in the
+ * test, so it throws instead of failing; otherwise `.not` would quietly pass on it.
+ */
+function requireComparable(matcher: string, received: unknown, other: unknown): void {
+  if (!isMoney(received) || !isMoney(other)) {
+    throw new TypeError(
+      `${matcher}: expected two Money values, got ${show(received)} and ${show(other)}`,
+    );
+  }
+  if (received.currency !== other.currency) {
+    throw new TypeError(`${matcher}: cannot compare ${received.currency} with ${other.currency}`);
+  }
+}
+
 /** Decimal places in an amount as `money()` takes it, so `toBeMoney` can keep every digit. */
 function decimalsOf(amount: string | number | bigint): number {
-  const text = String(amount);
-  const point = text.indexOf('.');
-  return point === -1 ? 0 : text.length - point - 1;
+  // parseDecimal understands exponent notation ('1.5e-7'), as money() does
+  return typeof amount === 'bigint' ? 0 : parseDecimal(String(amount)).scale;
 }
 
 function comparison(
   name: string,
+  wording: string,
   accepts: (order: -1 | 0 | 1) => boolean,
 ): (this: MoneyMatcherContext, received: unknown, other: Money) => MoneyMatcherResult {
   return function (this: MoneyMatcherContext, received: unknown, other: Money) {
-    const comparable = isMoney(received) && isMoney(other) && received.currency === other.currency;
-    const pass = comparable && accepts(compare(received, other));
-    return result(this, pass, received, `${name} ${show(other)}`);
+    requireComparable(name, received, other);
+    const pass = accepts(compare(received as Money, other));
+    return result(this, pass, received, `${wording} ${show(other)}`);
   };
 }
 
@@ -129,24 +160,39 @@ export const moneyMatchers = {
     const pass = isMoney(received) && received.currency === currency;
     return result(this, pass, received, `to have currency ${currency}`);
   },
-  toBeGreaterThanMoney: comparison('to be greater than', (order) => order > 0),
-  toBeGreaterThanOrEqualMoney: comparison('to be greater than or equal to', (order) => order >= 0),
-  toBeLessThanMoney: comparison('to be less than', (order) => order < 0),
-  toBeLessThanOrEqualMoney: comparison('to be less than or equal to', (order) => order <= 0),
+  toBeGreaterThanMoney: comparison(
+    'toBeGreaterThanMoney',
+    'to be greater than',
+    (order) => order > 0,
+  ),
+  toBeGreaterThanOrEqualMoney: comparison(
+    'toBeGreaterThanOrEqualMoney',
+    'to be greater than or equal to',
+    (order) => order >= 0,
+  ),
+  toBeLessThanMoney: comparison('toBeLessThanMoney', 'to be less than', (order) => order < 0),
+  toBeLessThanOrEqualMoney: comparison(
+    'toBeLessThanOrEqualMoney',
+    'to be less than or equal to',
+    (order) => order <= 0,
+  ),
   toSumTo(this: MoneyMatcherContext, received: unknown, total: Money): MoneyMatcherResult {
-    const parts = Array.isArray(received) ? received : [];
-    const isList =
-      Array.isArray(received) &&
-      isMoney(total) &&
-      parts.every((part) => isMoney(part) && part.currency === total.currency);
-    const partsSum = isList ? sum(parts as Money[], total.currency) : undefined;
-    const pass = partsSum !== undefined && equals(partsSum, total);
-    const sumText = partsSum === undefined ? 'parts in other currencies' : String(partsSum);
+    // Not a list of Money, or parts in another currency, is a mistake in the test: throw.
+    if (!Array.isArray(received) || !isMoney(total)) {
+      throw new TypeError(
+        `toSumTo: expected a list of Money and a Money total, got ${show(received)}`,
+      );
+    }
+    for (const part of received) {
+      requireComparable('toSumTo', part, total);
+    }
+    const partsSum = sum(received as Money[], total.currency);
+    const pass = equals(partsSum, total);
     return {
       pass,
       message: () =>
         `expected ${show(received)} ${this.isNot ? 'not ' : ''}to sum to ${show(total)}` +
-        (this.isNot ? '' : `, but they sum to ${sumText}`),
+        (this.isNot ? '' : `; they sum to ${partsSum}`),
       actual: partsSum,
       expected: total,
     };
@@ -168,7 +214,8 @@ const INSPECT = Symbol.for('nodejs.util.inspect.custom');
 /**
  * Installs everything on a test runner's `expect`: the matchers, value equality and the snapshot
  * serializer. It also gives Money a Node inspect hook, so `console.log(price)` prints
- * `Money(12.34 EUR)`. Safe to call more than once.
+ * `Money(12.34 EUR)`. Safe to call more than once. A runner without `addEqualityTesters` or
+ * `addSnapshotSerializer` (Bun has no equality testers) gets the rest.
  */
 export function installMoneyMatchers(expect: ExpectWithExtensions): void {
   expect.extend(moneyMatchers);

@@ -5,7 +5,7 @@ import '../src/testing/vitest.js';
 import { inspect } from 'node:util';
 import { arbCurrency, arbMoney } from '../src/testing/arbitraries.js';
 import { moneyEquality, moneySerializer } from '../src/testing/index.js';
-import { currencyExponent, fromMinor, money, type Money } from '../src/fn.js';
+import { currencyExponent, defineCurrency, fromMinor, money, type Money } from '../src/fn.js';
 import '../src/plugins/allocate.js';
 
 const SAFE = BigInt(Number.MAX_SAFE_INTEGER);
@@ -32,8 +32,9 @@ describe('value equality in toEqual', () => {
   it('still tells different amounts and currencies apart', () => {
     expect(money('1', 'EUR')).not.toEqual(money('1.01', 'EUR'));
     expect(money('1', 'EUR')).not.toEqual(money('1', 'USD'));
-    expect(money('1', 'EUR')).not.toEqual({ currency: 'EUR', minor: 100, scale: 2 });
     expect(moneyEquality(1, 2)).toBeUndefined();
+    // Money against anything else (a second copy's Money included) is left to the runner
+    expect(moneyEquality(money('1', 'EUR'), { currency: 'EUR' })).toBeUndefined();
   });
 });
 
@@ -55,7 +56,16 @@ describe('readable output', () => {
 
   it('shows amounts in failure messages', () => {
     expect(() => expect(money('12.35', 'EUR')).toBeMoney('12.34', 'EUR')).toThrow(
-      'expected 12.35 EUR to be 12.34 EUR, received 12.35 EUR',
+      'expected 12.35 EUR to be 12.34 EUR',
+    );
+    // values JSON.stringify can't print still give a clean failure
+    expect(() => expect({ minor: 1n }).toBeMoney('1', 'EUR')).toThrow(
+      'expected { minor: 1n } to be 1.00 EUR',
+    );
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() => expect(cyclic).toBeMoney('1', 'EUR')).toThrow(
+      'expected { self: [Circular] } to be 1.00 EUR',
     );
     expect(() => expect(money('1', 'EUR')).not.toBeMoney('1', 'EUR')).toThrow(
       'expected 1.00 EUR not to be 1.00 EUR',
@@ -69,6 +79,7 @@ describe('matchers', () => {
     expect(money('12.340', 'EUR', { scale: 3 })).toBeMoney('12.34', 'EUR');
     expect(money('1.005', 'EUR', { scale: 3 })).toBeMoney('1.005', 'EUR');
     expect(money('12', 'JPY')).toBeMoney(12, 'JPY');
+    expect(money('0.00000015', 'EUR', { scale: 8 })).toBeMoney('1.5e-7', 'EUR');
     expect(fromMinor(10n ** 30n, 'EUR')).toBeMoney(10n ** 28n, 'EUR');
     expect(money('12.34', 'EUR')).not.toBeMoney('12.34', 'USD');
     expect('12.34 EUR').not.toBeMoney('12.34', 'EUR');
@@ -88,8 +99,11 @@ describe('matchers', () => {
     expect(one).toBeLessThanMoney(two);
     expect(one).toBeLessThanOrEqualMoney(one);
     expect(one).not.toBeGreaterThanMoney(two);
-    // a different currency never passes, rather than throwing inside the matcher
-    expect(money('5', 'USD')).not.toBeGreaterThanMoney(one);
+    // a different currency or a non-Money is a mistake in the test: it throws, even under .not
+    expect(() => expect(money('5', 'USD')).not.toBeGreaterThanMoney(one)).toThrow(
+      'cannot compare USD with EUR',
+    );
+    expect(() => expect(5).not.toBeLessThanMoney(one)).toThrow(TypeError);
     expect(() => expect(one).toBeGreaterThanMoney(two)).toThrow(
       'expected 1.00 EUR to be greater than 2.00 EUR',
     );
@@ -99,11 +113,20 @@ describe('matchers', () => {
     const total = money('100', 'EUR');
     expect(total.split(3)).toSumTo(total);
     expect([money('33.33', 'EUR'), money('33.33', 'EUR')]).not.toSumTo(total);
-    expect([money('50', 'EUR'), money('50', 'USD')]).not.toSumTo(total);
     expect([]).not.toSumTo(total);
-    expect(() => expect([money('1', 'EUR')]).toSumTo(money('2', 'EUR'))).toThrow(
-      'expected [1.00 EUR] to sum to 2.00 EUR, but they sum to 1.00 EUR',
+    expect(() => expect([money('50', 'EUR'), money('50', 'USD')]).not.toSumTo(total)).toThrow(
+      TypeError,
     );
+    expect(() => expect('100 EUR').not.toSumTo(total)).toThrow(TypeError);
+    expect(() => expect([money('1', 'EUR')]).toSumTo(money('2', 'EUR'))).toThrow(
+      'expected [1.00 EUR] to sum to 2.00 EUR; they sum to 1.00 EUR',
+    );
+  });
+
+  it('work as asymmetric matchers', () => {
+    expect({ total: money('12.340', 'EUR', { scale: 3 }) }).toEqual({
+      total: expect.toBeMoney('12.34', 'EUR'),
+    });
   });
 
   it('work as properties: every split sums to its total', () => {
@@ -171,6 +194,26 @@ describe('arbitraries', () => {
     expect(() => fc.sample(arbMoney({ currency: 'JPY', min: '0.2', max: '0.8' }), 1)).toThrow(
       RangeError,
     );
+    expect(() => fc.sample(arbMoney({ currency: 'EUR', scale: -1 }), 1)).toThrow(RangeError);
+    expect(() => fc.sample(arbMoney({ currency: 'EUR', scale: 1.5 }), 1)).toThrow(RangeError);
+    const allThree = fc.sample(arbCurrency({ all: true, exponents: [3] }), {
+      numRuns: 200,
+      seed: 3,
+    });
+    expect(allThree.every((code) => currencyExponent(code) === 3)).toBe(true);
+    expect(new Set(allThree).size).toBeGreaterThan(3);
+  });
+
+  it('draw custom currencies when asked', () => {
+    // a code no other test file registers: the registry is global, and Bun shares it
+    defineCurrency('XTV', 6);
+    const codes = fc.sample(arbCurrency({ extra: ['XTV'], exponents: [6] }), {
+      numRuns: 20,
+      seed: 4,
+    });
+    expect(new Set(codes)).toEqual(new Set(['XTV']));
+    const values = fc.sample(arbMoney({ currency: 'XTV' }), { numRuns: 50, seed: 5 });
+    expect(values.every((value) => value.currency === 'XTV' && value.scale >= 6)).toBe(true);
   });
 });
 
@@ -182,11 +225,14 @@ describe('the Jest entry', () => {
       addEqualityTesters: () => undefined,
       addSnapshotSerializer: () => undefined,
     };
-    (globalThis as { expect?: unknown }).expect = fakeExpect;
+    const holder = globalThis as { expect?: unknown };
+    const previous = holder.expect;
+    holder.expect = fakeExpect;
     try {
       await import('../src/testing/jest.js');
     } finally {
-      delete (globalThis as { expect?: unknown }).expect;
+      // restore, not delete: Vitest with globals and bun test have their own global expect
+      holder.expect = previous;
     }
     expect(extended).toContain('toBeMoney');
     expect(extended).toContain('toSumTo');

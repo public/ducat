@@ -6,6 +6,7 @@
  */
 import fc from 'fast-check';
 import { currencyExponent, ISO_EXPONENTS } from '../currency.js';
+import { MAX_DECIMAL_SCALE } from '../decimal.js';
 import { fromMinor, money, type Money } from '../money.js';
 
 /** A mix of exponents: the common two-decimal currencies and every unusual one. */
@@ -17,19 +18,23 @@ export interface ArbCurrencyOptions {
   readonly exponents?: readonly number[];
   /** Draw from every ISO 4217 code instead of the representative mix. */
   readonly all?: boolean;
+  /** More codes to draw from, such as ones registered with `defineCurrency`. */
+  readonly extra?: readonly string[];
 }
 
 /**
  * Currency codes, by default a representative mix of exponents 0, 2, 3 and 4 (JPY, EUR, KWD,
- * CLF...). `{ all: true }` draws from every ISO 4217 code.
+ * CLF...). `{ all: true }` draws from every ISO 4217 code, `extra` adds codes (custom ones from
+ * `defineCurrency`), and `exponents` narrows whichever pool that is.
  */
 export function arbCurrency(options: ArbCurrencyOptions = {}): fc.Arbitrary<string> {
-  const pool = options.all === true ? Object.keys(ISO_EXPONENTS) : DEFAULT_CURRENCIES;
+  const base = options.all === true ? Object.keys(ISO_EXPONENTS) : DEFAULT_CURRENCIES;
+  const pool = [...base, ...(options.extra ?? [])];
   const exponents = options.exponents;
   const codes =
     exponents === undefined
       ? pool
-      : Object.keys(ISO_EXPONENTS).filter((code) => exponents.includes(currencyExponent(code)));
+      : pool.filter((code) => exponents.includes(currencyExponent(code)));
   if (codes.length === 0) {
     throw new RangeError('No currency has the requested exponents');
   }
@@ -108,6 +113,9 @@ export function arbMoney<C extends string = string>(
     }
 
     return scales.chain((scale) => {
+      if (!(Number.isInteger(scale) && scale >= 0 && scale <= MAX_DECIMAL_SCALE)) {
+        throw new RangeError(`Invalid scale ${scale}`);
+      }
       // Bounds in minor units at this scale; a bound between two units rounds inward.
       const min =
         options.min === undefined
