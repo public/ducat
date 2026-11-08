@@ -103,3 +103,18 @@ describe('Prisma / DB helpers', () => {
     }>();
   });
 });
+
+// Values a database driver can hand back; checking them needs no database.
+describe('driver values', () => {
+  it('lossy driver values are rejected: unsafe numbers, strings as minor units, NaN, Infinity', () => {
+    expect(() => fromMinor(2 ** 63, 'EUR')).toThrow(/safe integer/);
+    expect(() => fromMinor('1234' as never, 'EUR')).toThrow(TypeError);
+
+    for (const special of [NaN, Infinity, -Infinity]) {
+      expect(() => fromMinor(special, 'EUR')).toThrow(RangeError);
+    }
+    for (const text of ['NaN', 'Infinity', '-Infinity', 'inf', '']) {
+      expect(() => fromDecimal(text, 'EUR')).toThrow(SyntaxError);
+    }
+  });
+});

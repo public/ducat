@@ -2,7 +2,7 @@
 // SQLite. Each driver file supplies a small adapter; the suite covers the two storage layouts the
 // helpers support (BIGINT minor units + currency, or a DECIMAL/NUMERIC column) and Money as JSON.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { fromJSON, fromMinor, money, type Money } from '../../src/index.js';
+import { fromJSON, money, type Money } from '../../src/index.js';
 import { identical, toDecimal } from '../../src/fn.js';
 import {
   decimalMoneyField,
@@ -236,18 +236,6 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
       expect(rows).toHaveLength(AMOUNTS.length);
       const readBack = rows.map((row: Row) => fromJSON(row.doc as never));
       expect(readBack.map(String)).toEqual(amounts.map(String));
-    });
-
-    it('lossy driver values are rejected: unsafe numbers, strings as minor units, NaN, Infinity', () => {
-      expect(() => fromMinor(2 ** 63, 'EUR')).toThrow(/safe integer/);
-      expect(() => fromMinor('1234' as never, 'EUR')).toThrow(TypeError);
-
-      for (const special of [NaN, Infinity, -Infinity]) {
-        expect(() => fromMinor(special, 'EUR')).toThrow(RangeError);
-      }
-      for (const text of ['NaN', 'Infinity', '-Infinity', 'inf', '']) {
-        expect(() => fromDecimal(text, 'EUR')).toThrow(SyntaxError);
-      }
     });
 
     extraTests?.(() => database);

@@ -70,7 +70,10 @@ export function run(seed: number, numRuns: number): PageResult {
     }
   }
 
-  function checkProperty(description: string, property: fc.IPropertyWithHooks<never>): void {
+  function checkProperty<Values>(
+    description: string,
+    property: fc.IPropertyWithHooks<Values>,
+  ): void {
     check(description, () => fc.assert(property, { seed, numRuns }));
   }
 
@@ -105,7 +108,7 @@ export function run(seed: number, numRuns: number): PageResult {
       const exact = new Decimal(minorUnits.toString()).mul(factor);
       const expected = exact.toDecimalPlaces(0, Decimal.ROUND_HALF_EVEN).toFixed(0);
       assertEqual(product.toMinor().toString(), expected);
-    }) as never,
+    }),
   );
 
   const weightsArb = fc.array(fc.integer({ min: 0, max: 1000 }), { minLength: 1, maxLength: 8 });
@@ -120,7 +123,7 @@ export function run(seed: number, numRuns: number): PageResult {
         const total = parts.reduce((sum, part) => sum + part.toMinor(), 0n);
         assertEqual(total, minorUnits);
       },
-    ) as never,
+    ),
   );
 
   // Intl, per engine: parse() reads back what format() wrote, in every locale. (Comparing format()
@@ -143,7 +146,7 @@ export function run(seed: number, numRuns: number): PageResult {
       const accountingText = ducat.format(amount, locale, { currencySign: 'accounting' });
       const accounting = ducat.parse(accountingText, currency, locale);
       assertEqual(ducat.toDecimal(accounting), expected);
-    }) as never,
+    }),
   );
 
   check('format de-DE', () => {
