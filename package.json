@@ -230,7 +230,7 @@
     "tables": "pnpm --dir compare tables",
     "test:db": "vitest run --config vitest.db.config.ts",
     "test:browser": "playwright test",
-    "test:mutation": "DUCAT_MAX_RUNS=50 stryker run",
+    "test:mutation": "DUCAT_MAX_RUNS=50 DUCAT_MUTATION=1 stryker run",
     "fetch:dectest": "node scripts/fetch-dectest.mjs",
     "vectors:check": "python3 scripts/gen-pydecimal-vectors.py --check && python3 scripts/gen-finance-vectors.py --check",
     "test:runtimes": "node scripts/smoke-runtimes.mjs",

@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { expect, it } from 'vitest';
+import { MUTATION } from './fc-config.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = join(ROOT, 'test', 'plugin-types', 'plugin.ts');
@@ -26,14 +27,18 @@ function errorsIn(files: string[]): string[] {
     });
 }
 
-it('a user plugin merges into Money, with its currency type parameter', () => {
-  expect(errorsIn([PLUGIN])).toEqual([]);
-}, 60_000);
+it.skipIf(MUTATION)(
+  'a user plugin merges into Money, with its currency type parameter',
+  () => {
+    expect(errorsIn([PLUGIN])).toEqual([]);
+  },
+  60_000,
+);
 
 // Every module augments the root entry, as users do. When modules augmented their own source file
 // instead, a module first loaded after a user's augmentation lost its methods (and the user's own
 // methods vanished), depending on the order the type checker read the files.
-it.each([
+it.skipIf(MUTATION).each([
   ['after', [PLUGIN, LATER_PLUGINS]],
   ['before', [LATER_PLUGINS, PLUGIN]],
 ])(

@@ -13,6 +13,12 @@ function readEnv(name: string): string | undefined {
 
 export const DEEP = readEnv('DUCAT_DEEP') === '1';
 
+/**
+ * Set by `pnpm test:mutation`. Stryker runs the suite on instrumented sources, which don't
+ * type-check, so the tests that type-check src/ skip themselves (a type check can't kill a mutant).
+ */
+export const MUTATION = readEnv('DUCAT_MUTATION') === '1';
+
 const DEEP_RUNS = readNumber('DUCAT_DEEP_RUNS', 100_000);
 
 // DUCAT_MAX_RUNS caps every property: mutation testing reruns the suite once per mutant

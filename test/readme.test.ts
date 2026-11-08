@@ -21,6 +21,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { documentedErrorClass, failures } from './doctest.js';
+import { MUTATION } from './fc-config.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'test', '.doctest');
@@ -154,24 +155,30 @@ describe('README.md examples', () => {
     });
   }
 
-  it('the examples type-check', () => {
-    const config = ts.readConfigFile(join(ROOT, 'tsconfig.test.json'), ts.sys.readFile).config;
-    const { options } = ts.parseJsonConfigFileContent(config, ts.sys, ROOT);
-    const program = ts.createProgram(files, { ...options, noEmit: true, skipLibCheck: true });
-    const errors = ts
-      .getPreEmitDiagnostics(program)
-      .filter(
-        (diagnostic) => diagnostic.file === undefined || files.includes(diagnostic.file.fileName),
-      )
-      .map((diagnostic) => {
-        const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-        if (!diagnostic.file || diagnostic.start === undefined) {
-          return message;
-        }
-        const generatedLine = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start).line;
-        const source = diagnostic.file.text.split('\n')[generatedLine]?.trim();
-        return `${relative(ROOT, diagnostic.file.fileName)}:${generatedLine + 1}: ${message}\n  ${source}`;
-      });
-    expect(errors.join('\n\n')).toBe('');
-  }, 60_000);
+  it.skipIf(MUTATION)(
+    'the examples type-check',
+    () => {
+      const config = ts.readConfigFile(join(ROOT, 'tsconfig.test.json'), ts.sys.readFile).config;
+      const { options } = ts.parseJsonConfigFileContent(config, ts.sys, ROOT);
+      const program = ts.createProgram(files, { ...options, noEmit: true, skipLibCheck: true });
+      const errors = ts
+        .getPreEmitDiagnostics(program)
+        .filter(
+          (diagnostic) => diagnostic.file === undefined || files.includes(diagnostic.file.fileName),
+        )
+        .map((diagnostic) => {
+          const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+          if (!diagnostic.file || diagnostic.start === undefined) {
+            return message;
+          }
+          const generatedLine = diagnostic.file.getLineAndCharacterOfPosition(
+            diagnostic.start,
+          ).line;
+          const source = diagnostic.file.text.split('\n')[generatedLine]?.trim();
+          return `${relative(ROOT, diagnostic.file.fileName)}:${generatedLine + 1}: ${message}\n  ${source}`;
+        });
+      expect(errors.join('\n\n')).toBe('');
+    },
+    60_000,
+  );
 });
