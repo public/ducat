@@ -64,7 +64,7 @@ function readScale(value: unknown, column: string): number {
     scale <= MAX_DECIMAL_SCALE;
   if (!isValid) {
     throw new RangeError(
-      `Expected a non-negative integer scale in "${column}", got ${String(value)}`,
+      `Expected an integer scale from 0 to ${MAX_DECIMAL_SCALE} in "${column}", got ${String(value)}`,
     );
   }
   return scale;
