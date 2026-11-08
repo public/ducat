@@ -45,6 +45,8 @@ async function measure(contents) {
     target: 'es2023',
     write: false,
     plugins: [resolveFromSource],
+    // Optional peer dependencies (zod, valibot, ...) are the user's own; only ducat's code counts.
+    external: Object.keys(packageJson.peerDependencies ?? {}),
     logLevel: 'silent',
   });
   const code = result.outputFiles[0].contents;

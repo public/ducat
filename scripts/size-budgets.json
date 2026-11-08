@@ -21,6 +21,8 @@
     "@ducatjs/money/stripe-fx": 5.46,
     "@ducatjs/money/adyen-fx": 5.27,
     "@ducatjs/money/prisma": 4.46,
+    "@ducatjs/money/zod": 4.28,
+    "@ducatjs/money/valibot": 4.34,
     "@ducatjs/money/all": 19.32
   },
   "snippets": {
