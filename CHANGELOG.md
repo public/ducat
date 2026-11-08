@@ -17,6 +17,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   after the augmentation, and the augmentation's own methods, were missing from `Money`. Every
   module now augments the root entry, as users do.
   0.1.0 has the same problem; upgrade to 0.2.1 to fix it.
+- NOTICE now credits the Unicode CLDR data that `data/cldr-cash.json` ships, with the Unicode
+  License v3 it is used under.
 
 ## [0.2.0] - 2026-11-08
 
