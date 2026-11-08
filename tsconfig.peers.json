@@ -1,0 +1,15 @@
+{
+  // The entries built against optional peer dependencies: zod, valibot, vitest and fast-check. Their
+  // declarations use web platform types (URL, Blob, AbortSignal, WebSocket), so this project adds the
+  // DOM library that the dependency-free base build leaves out, and skips checking those
+  // declarations, which aren't ours (as tsconfig.drizzle.json does). Our own code is still checked.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "lib": ["ES2023", "ESNext.Intl", "DOM"], "skipLibCheck": true },
+  "include": [
+    "src/zod.ts",
+    "src/valibot.ts",
+    "src/testing/vitest.ts",
+    "src/testing/arbitraries.ts"
+  ],
+  "exclude": []
+}

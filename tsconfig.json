@@ -18,7 +18,15 @@
     "types": []
   },
   "include": ["src"],
-  // built by tsconfig.drizzle.json (skipLibCheck for drizzle-orm's declarations) and
-  // tsconfig.kysely.json (the DOM library for kysely's)
-  "exclude": ["src/drizzle", "src/kysely.ts"]
+  // built by tsconfig.drizzle.json (skipLibCheck for drizzle-orm's declarations),
+  // tsconfig.kysely.json (the DOM library for kysely's) and tsconfig.peers.json (the entries built
+  // against the optional peers zod, valibot, vitest and fast-check)
+  "exclude": [
+    "src/drizzle",
+    "src/kysely.ts",
+    "src/zod.ts",
+    "src/valibot.ts",
+    "src/testing/vitest.ts",
+    "src/testing/arbitraries.ts"
+  ]
 }

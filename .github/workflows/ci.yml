@@ -35,6 +35,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm fmt:check
       - run: pnpm typecheck
+      # the release workflow builds with these tsconfigs, so a build error must fail here first
+      - run: pnpm build
       - run: pnpm gen:check
       - name: Python decimal reference vectors are up to date
         run: pnpm vectors:check
