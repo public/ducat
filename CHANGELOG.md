@@ -21,7 +21,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
 - **Sterling sources:** `parseHmrcMonthlyCsv` in the new `@ducatjs/money/convert/hmrc` reads
   HMRC's monthly exchange rates (customs and VAT, Open Government Licence) into GBP tables valid
-  for their month, available from the penultimate Thursday before. `parseBankOfEnglandCsv` in the
+  for their month, available from the end of the day HMRC publishes them. `parseBankOfEnglandCsv` in the
   new `@ducatjs/money/convert/boe` reads the Bank of England's daily spot rates from its database
   CSV, putting back the stripped zeros. Parsers only; the Bank's spot rates may be third-party
   data, so ducat ships none.
