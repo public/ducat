@@ -16,7 +16,7 @@
     "@ducatjs/money/exact": 0.47,
     "@ducatjs/money/policy": 0.4,
     "@ducatjs/money/pricing": 1.75,
-    "@ducatjs/money/cash": 3.06,
+    "@ducatjs/money/cash": 3.1,
     "@ducatjs/money/format": 0.39,
     "@ducatjs/money/fixed": 1.27,
     "@ducatjs/money/fixed/money": 1.42,
@@ -43,11 +43,13 @@
     "@ducatjs/money/kysely": 2.22,
     "@ducatjs/money/historic": 1.28,
     "@ducatjs/money/crypto": 0.76,
+    "@ducatjs/money/currencies": 1.5,
+    "@ducatjs/money/territories": 4.7,
     "@ducatjs/money/finance": 5.4
   },
   "aggregateCeilings": {
-    "@ducatjs/money/fn": 40,
-    "@ducatjs/money/all": 40
+    "@ducatjs/money/fn": 50,
+    "@ducatjs/money/all": 50
   },
   "snippets": {
     "fixed: Fixed alone, without Money": {

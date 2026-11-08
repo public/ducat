@@ -54,6 +54,15 @@ describe('Money methods', () => {
       'cashRule',
       // takes a currency code, not an amount
       'currencyDigits',
+      // currency metadata: lookups by code, not by amount
+      'cashUnit',
+      'numericCode',
+      'currencyFromNumeric',
+      'minorUnit',
+      'currencyName',
+      'currencySymbol',
+      'territoryCurrencies',
+      'currencyTerritories',
       // the historic currency table: lookups and registration by code, not by amount
       'historicCurrency',
       // the crypto table: lookups and registration by code; base-unit conversions stay functions,

@@ -12,7 +12,7 @@ import { money } from '@ducatjs/money';
 import '@ducatjs/money/allocate'; // opt-in modules add their methods to Money
 import '@ducatjs/money/tax';
 import '@ducatjs/money/convert';
-import '@ducatjs/money/format'; // or import '@ducatjs/money/all' for everything
+import '@ducatjs/money/format'; // or import '@ducatjs/money/all' for everything except the integrations that need optional peers
 
 const price = money('19.99', 'EUR'); // Money<'EUR'>
 const total = price.add(money('5.01', 'EUR')); // → 25.00 EUR
@@ -156,6 +156,8 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
 | `@ducatjs/money/crypto`             | nothing                                                            | `defineCryptoCurrencies`, `toBaseUnits`, `fromBaseUnits`         |
+| `@ducatjs/money/currencies`         | nothing                                                            | numeric codes, `minorUnit`, `currencyName`, `currencySymbol`     |
+| `@ducatjs/money/territories`        | nothing                                                            | `territoryCurrencies`, `currencyTerritories` (CLDR)              |
 | `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
@@ -446,6 +448,26 @@ toBaseUnits(money('0.00000001', 'BTC')); // → 1n
 fromBaseUnits('1500000000000000000', 'ETH'); // → 1.500000000000000000 ETH
 money('0.1', 'ETH').add(money('0.2', 'ETH')).toDecimal(); // → '0.300000000000000000'
 fromBaseUnits('1e18', 'ETH'); // throws SyntaxError
+```
+
+**Currency metadata** (`@ducatjs/money/currencies`). ISO 4217 numeric codes both ways (`numericCode`, `currencyFromNumeric`), for card networks, ISO 8583 and ISO 20022 messages; `minorUnit(code)`, the size of the minor unit; and names and symbols per locale (`currencyName`, `currencySymbol`). Names and symbols come from the runtime's `Intl`, not a bundled table, so they follow its CLDR version. The smallest coin is `cashUnit(code, { country? })` in `@ducatjs/money/cash`, from the cash rules. Which currencies a territory uses, and since when, is in `@ducatjs/money/territories` (`territoryCurrencies`, `currencyTerritories`, from CLDR). It is a separate entry because the table is most of its 4.6 kB gzipped.
+
+```ts
+import { cashUnit } from '@ducatjs/money/cash';
+import {
+  currencyFromNumeric,
+  currencySymbol,
+  minorUnit,
+  numericCode,
+} from '@ducatjs/money/currencies';
+import { territoryCurrencies } from '@ducatjs/money/territories';
+
+numericCode('EUR'); // → '978'
+currencyFromNumeric(8); // → 'ALL'
+minorUnit('KWD'); // → '0.001'
+currencySymbol('USD', 'en-CA'); // → 'US$'
+cashUnit('CHF'); // → '0.05'
+territoryCurrencies('DE', { on: '2001-06-01' }).map((use) => use.currency); // → ['EUR', 'DEM']
 ```
 
 ### Interest, loans, NPV and proration
@@ -884,17 +906,18 @@ The columns check what the types can't: writing another currency, a value at a s
 
 ## Currency data: source, generation, verification
 
-| file                        | source                                                                                                                                                                                                        |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/iso4217-list-one.xml` | ISO 4217 List One from SIX (the maintenance agency), published **2026-09-17**. It has 178 codes with minor units, plus N.A. codes such as XAU and XDR, which are excluded as non-monetary.                    |
-| `data/stripe.json`          | https://docs.stripe.com/currencies, retrieved 2026-11-07, with verbatim quotes for every special case                                                                                                         |
-| `data/adyen.json`           | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                                             |
-| `data/checkout.json`        | https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value, the currency-codes page and the API reference, retrieved 2026-11-07, with verbatim quotes                                     |
-| `data/paypal.json`          | https://developer.paypal.com/api/rest/reference/currency-codes/, the other currency-codes page and the Orders v2 schema, retrieved 2026-11-07, with verbatim quotes                                           |
-| `data/braintree.json`       | https://developer.paypal.com/braintree/docs/reference/general/currencies, the transaction.sale reference, the validation-error list and the GraphQL `Amount` type, retrieved 2026-11-07, with verbatim quotes |
-| `data/klarna.json`          | https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/, the purchase-countries page and the Payments API reference, retrieved 2026-11-07, with verbatim quotes                |
-| `data/cash-rounding.json`   | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                                     |
-| `data/cldr-cash.json`       | CLDR release 49 `supplementalData.xml` cash digits and rounding, the second source for the cash rules (`scripts/fetch-cldr-cash.mjs` refreshes it)                                                            |
+| file                         | source                                                                                                                                                                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/iso4217-list-one.xml`  | ISO 4217 List One from SIX (the maintenance agency), published **2026-09-17**. It has 178 codes with minor units, plus N.A. codes such as XAU and XDR, which are excluded as non-monetary. The numeric codes in `@ducatjs/money/currencies` come from it too. |
+| `data/stripe.json`           | https://docs.stripe.com/currencies, retrieved 2026-11-07, with verbatim quotes for every special case                                                                                                                                                         |
+| `data/adyen.json`            | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                                                                                             |
+| `data/checkout.json`         | https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value, the currency-codes page and the API reference, retrieved 2026-11-07, with verbatim quotes                                                                                     |
+| `data/paypal.json`           | https://developer.paypal.com/api/rest/reference/currency-codes/, the other currency-codes page and the Orders v2 schema, retrieved 2026-11-07, with verbatim quotes                                                                                           |
+| `data/braintree.json`        | https://developer.paypal.com/braintree/docs/reference/general/currencies, the transaction.sale reference, the validation-error list and the GraphQL `Amount` type, retrieved 2026-11-07, with verbatim quotes                                                 |
+| `data/klarna.json`           | https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/, the purchase-countries page and the Payments API reference, retrieved 2026-11-07, with verbatim quotes                                                                |
+| `data/cash-rounding.json`    | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                                                                                     |
+| `data/cldr-cash.json`        | CLDR release 49 `supplementalData.xml` cash digits and rounding, the second source for the cash rules (`scripts/fetch-cldr-cash.mjs` refreshes it)                                                                                                            |
+| `data/cldr-territories.json` | CLDR release 49 `supplementalData.xml` currencies per territory, with their first and last days (`scripts/fetch-cldr-territories.mjs` refreshes it)                                                                                                           |
 
 - `pnpm gen` (`scripts/gen-currencies.mjs`) turns these into `src/generated/*.ts`.
 - `pnpm gen:check` fails if the generated files are stale. It also runs inside the test suite.
