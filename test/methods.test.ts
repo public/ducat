@@ -82,6 +82,7 @@ describe('Money methods', () => {
       // ECB file parsers
       'parseEcbXml',
       'parseEcbCsv',
+      'parseFedH10Csv',
       'parseEcbSdmxCsv',
       'parseEcbSdmxDecimals',
       // processor rates, read from processor records rather than a Money

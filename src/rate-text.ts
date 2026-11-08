@@ -42,3 +42,66 @@ export function withDecimals(text: string, decimals: number): string {
   const fraction = point === -1 ? '' : text.slice(point + 1);
   return `${integerPart}.${fraction.padEnd(decimals, '0')}`;
 }
+
+/**
+ * @internal
+ * The records of a CSV file, RFC 4180 style: a cell may be quoted ("a, b", with "" for a quote),
+ * and a quote anywhere else, or one left open, is a SyntaxError, so a stray quote can't swallow
+ * the lines after it. Blank lines are skipped.
+ */
+export function csvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  // 'start' of a cell, inside an unquoted one, inside quotes, or just after the closing quote
+  let state: 'start' | 'plain' | 'quoted' | 'closed' = 'start';
+  const endRow = () => {
+    row.push(cell);
+    if (row.length > 1 || row[0]!.trim() !== '') {
+      rows.push(row);
+    }
+    row = [];
+    cell = '';
+    state = 'start';
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]!;
+    if (state === 'quoted') {
+      if (char !== '"') {
+        cell += char;
+      } else if (text[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else {
+        state = 'closed';
+      }
+      continue;
+    }
+    if (char === ',') {
+      row.push(cell);
+      cell = '';
+      state = 'start';
+    } else if (char === '\n') {
+      endRow();
+    } else if (char === '\r' && text[i + 1] === '\n') {
+      continue;
+    } else if (char === '"' && state === 'start') {
+      state = 'quoted';
+    } else if (char === '"' || state === 'closed') {
+      throw new SyntaxError(
+        `Malformed CSV: unexpected ${JSON.stringify(char)} on line ${rows.length + 1}`,
+      );
+    } else {
+      cell += char;
+      state = 'plain';
+    }
+  }
+  if (state === 'quoted') {
+    throw new SyntaxError('Malformed CSV: a quoted cell is never closed');
+  }
+  if (cell !== '' || row.length > 0) {
+    endRow();
+  }
+  return rows;
+}

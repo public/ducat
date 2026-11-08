@@ -1,7 +1,7 @@
 // Offline parsers for the ECB euro foreign exchange reference rates (eurofxref). No I/O: fetch or
 // read the files yourself, or use ducat/convert/fetch. Rates are kept exactly as published.
 import { rateTable, type RateTable } from './provider.js';
-import { readRateCell, withDecimals } from './rate-text.js';
+import { csvRows, readRateCell, withDecimals } from './rate-text.js';
 
 const MONTHS = [
   'january',
@@ -165,68 +165,6 @@ export function parseEcbCsv(csv: string): RateTable[] {
     }
   }
   return newestFirst(tables);
-}
-
-/**
- * The records of a CSV file, RFC 4180 style: a cell may be quoted ("a, b", with "" for a quote),
- * and a quote anywhere else, or one left open, is a SyntaxError, so a stray quote can't swallow
- * the lines after it. Blank lines are skipped.
- */
-function csvRows(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = '';
-  // 'start' of a cell, inside an unquoted one, inside quotes, or just after the closing quote
-  let state: 'start' | 'plain' | 'quoted' | 'closed' = 'start';
-  const endRow = () => {
-    row.push(cell);
-    if (row.length > 1 || row[0]!.trim() !== '') {
-      rows.push(row);
-    }
-    row = [];
-    cell = '';
-    state = 'start';
-  };
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i]!;
-    if (state === 'quoted') {
-      if (char !== '"') {
-        cell += char;
-      } else if (text[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else {
-        state = 'closed';
-      }
-      continue;
-    }
-    if (char === ',') {
-      row.push(cell);
-      cell = '';
-      state = 'start';
-    } else if (char === '\n') {
-      endRow();
-    } else if (char === '\r' && text[i + 1] === '\n') {
-      continue;
-    } else if (char === '"' && state === 'start') {
-      state = 'quoted';
-    } else if (char === '"' || state === 'closed') {
-      throw new SyntaxError(
-        `Malformed CSV: unexpected ${JSON.stringify(char)} on line ${rows.length + 1}`,
-      );
-    } else {
-      cell += char;
-      state = 'plain';
-    }
-  }
-  if (state === 'quoted') {
-    throw new SyntaxError('Malformed CSV: a quoted cell is never closed');
-  }
-  if (cell !== '' || row.length > 0) {
-    endRow();
-  }
-  return rows;
 }
 
 // Series whose DECIMALS attribute says more than the ECB has ever published for them. Evidence:

@@ -36,6 +36,7 @@ export * from './tax.js';
 export * from './convert.js';
 export * from './exact.js';
 export * from '../ecb.js';
+export * from '../fed.js';
 export * from '../history.js';
 export * from '../stripe-fx.js';
 export * from '../adyen-fx.js';
