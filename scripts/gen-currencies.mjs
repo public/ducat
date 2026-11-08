@@ -12,6 +12,7 @@
 //   data/adyen.json            curated from https://docs.adyen.com/development-resources/currency-codes
 //   data/cash-rounding.json    curated cash-rounding rules with sources
 //   data/iso4217-list-three.xml  ISO 4217 List Three (withdrawn codes), SIX Group
+//   data/cldr-territories.json   CLDR currencyData regions (scripts/fetch-cldr-territories.mjs)
 //   data/historic.json         the withdrawn codes to include, with their ISO exponents, and
 //                              non-ISO codes
 //   data/<processor>.json      one file per further processor (checkout, ...), same shape:
@@ -283,6 +284,41 @@ function generate() {
     `/**\n * Withdrawn ISO 4217 codes (with \`numeric\` and \`withdrawn\`, the year and month ISO lists) and\n` +
     ` * non-ISO codes (without them), each with the exponent ISO gave it while it was current.\n */\n` +
     `export const HISTORIC_CURRENCY_TABLE = ${obj(historicSorted)} as const;\n`;
+
+  // ISO 4217 numeric codes, three digits as published ('008' for ALL), for every active code
+  const numeric = {};
+  for (const entry of [...entries.values()].sort((left, right) =>
+    left.code < right.code ? -1 : 1,
+  )) {
+    if (entry.numeric !== undefined) {
+      numeric[entry.code] = entry.numeric;
+    }
+  }
+  out['iso4217-numeric.ts'] =
+    header('data/iso4217-list-one.xml') +
+    `\n/** ISO 4217 numeric code of every active code, three digits as published (${Object.keys(numeric).length} codes). */\n` +
+    `export const ISO_NUMERIC_CODES: Readonly<Record<string, string>> = ${obj(numeric)};\n`;
+
+  // CLDR territories: [currency, first day or null, last day or null, false when not legal tender]
+  const territoryData = JSON.parse(read('data/cldr-territories.json'));
+  const territories = {};
+  for (const [region, uses] of Object.entries(territoryData.regions)) {
+    territories[region] = uses.map((use) => {
+      const tuple = [use.currency, use.from ?? null, use.to ?? null];
+      if (use.tender === false) {
+        tuple.push(false);
+      }
+      while (tuple.length > 1 && tuple.at(-1) === null) {
+        tuple.pop();
+      }
+      return tuple;
+    });
+  }
+  out['territories.ts'] =
+    header('data/cldr-territories.json (' + territoryData.source + ')') +
+    `\n/**\n * The currencies each territory has used, newest first (CLDR): [code, first day, last day,\n` +
+    ` * legal tender]. A missing or null day is one CLDR doesn't give; a missing tender flag means true.\n */\n` +
+    `export const CLDR_TERRITORY_CURRENCIES: Readonly<\n  Record<string, readonly (readonly [string, (string | null)?, (string | null)?, boolean?])[]>\n> = ${obj(territories)};\n`;
 
   return { out, entries, published };
 }

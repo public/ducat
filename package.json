@@ -70,6 +70,14 @@
       "types": "./dist/fed.d.ts",
       "default": "./dist/fed.js"
     },
+    "./currencies": {
+      "types": "./dist/currencies.d.ts",
+      "default": "./dist/currencies.js"
+    },
+    "./territories": {
+      "types": "./dist/territories.d.ts",
+      "default": "./dist/territories.js"
+    },
     "./historic": {
       "types": "./dist/historic.d.ts",
       "default": "./dist/historic.js"
