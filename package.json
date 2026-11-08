@@ -70,6 +70,38 @@
       "types": "./dist/fed.d.ts",
       "default": "./dist/fed.js"
     },
+    "./words": {
+      "types": "./dist/words.d.ts",
+      "default": "./dist/words.js"
+    },
+    "./words/de": {
+      "types": "./dist/words/de.d.ts",
+      "default": "./dist/words/de.js"
+    },
+    "./words/en": {
+      "types": "./dist/words/en.d.ts",
+      "default": "./dist/words/en.js"
+    },
+    "./words/es": {
+      "types": "./dist/words/es.d.ts",
+      "default": "./dist/words/es.js"
+    },
+    "./words/fr": {
+      "types": "./dist/words/fr.d.ts",
+      "default": "./dist/words/fr.js"
+    },
+    "./words/it": {
+      "types": "./dist/words/it.d.ts",
+      "default": "./dist/words/it.js"
+    },
+    "./words/nl": {
+      "types": "./dist/words/nl.d.ts",
+      "default": "./dist/words/nl.js"
+    },
+    "./words/pt": {
+      "types": "./dist/words/pt.d.ts",
+      "default": "./dist/words/pt.js"
+    },
     "./wire": {
       "types": "./dist/wire.d.ts",
       "default": "./dist/wire.js"

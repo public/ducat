@@ -9,6 +9,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/words`: amounts in words (`amountInWords`, cheque-style "and 45/100" by default,
+  or with the minor unit's names) and whole numbers in words (`spellOut`, any of a language's rule
+  sets: cardinals by gender, ordinals, and financial sets where CLDR has them). An interpreter for
+  CLDR's rule-based number formats, checked against ICU 4C 79.1 on 2808 vectors, loads no Money.
+  The languages are their own entries, from CLDR 49 with a `--check`: `/words/en`, `/de`, `/fr`,
+  `/es`, `/it`, `/pt` and `/nl`. Currency names and "and" come from `Intl`.
 - `@ducatjs/money/wire`: wire formats, exact both ways and strict on input. `google.type.Money`
   (`toGoogleMoney`, `fromGoogleMoney`: int64 units, nanos with the same sign); ISO 20022 amounts
   (`toIso20022Amount`, `fromIso20022Amount`: at most 5 decimals and 18 digits, non-negative,

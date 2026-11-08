@@ -63,6 +63,11 @@ describe('Money methods', () => {
       'currencySymbol',
       'territoryCurrencies',
       // wire formats: readers take the format, and the writers stay functions, like the readers
+      // words: numbers and rule sets, and amountInWords, which stays a function so /words loads no
+      // Money
+      'spellOut',
+      'ruleSets',
+      'amountInWords',
       'toGoogleMoney',
       'fromGoogleMoney',
       'toIso20022Amount',
