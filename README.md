@@ -308,7 +308,7 @@ assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws RangeErro
   - NBSP and narrow NBSP, Swiss `’`
   - Arabic-Indic, Persian, Devanagari and Thai digits
   - accounting parentheses and U+2212 minus
-- `parse` takes the currency from its argument and never guesses it from the text. A `parse(format(x)) == x` property test runs across 14 locales.
+- `parse` takes the currency from its argument and never guesses it from the text. Group separators must be where the locale puts them, because a misplaced one is usually another locale's decimal separator: `parse('78.00', 'EUR', 'de-DE')` throws instead of becoming 7800.00 (`{ lenient: true }` accepts them anywhere). A `parse(format(x)) == x` property test runs across 14 locales.
 - `parseMoney(text, locale, { hint?, symbols?, currencies?, lenient?, scale?, rounding? })` detects the currency from the text, and like the rest of ducat it never guesses.
   - It reads ISO codes and symbols that mean exactly one currency, either in the locale (from `Intl.NumberFormat`) or in English (`US$`, `CA$`, `A$`). Then it reads the number as `parse` does.
   - A symbol several currencies share (`$`, `kr`, and also `£` and `¥`, which other currencies use as narrow symbols) needs a `hint`, or your own `symbols` map such as `{ $: 'CAD' }`. This holds even where the locale "owns" it: `$` in en-CA is usually CAD, but a Canadian text can mean USD.

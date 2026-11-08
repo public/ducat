@@ -29,12 +29,17 @@ function symbols(locale: string | undefined, currency: string): Symbols {
   return found;
 }
 
-function separatorParts(locale: string | undefined, currency: string): Intl.NumberFormatPart[] {
+function separatorParts(
+  locale: string | undefined,
+  currency: string,
+  currencySign: 'standard' | 'accounting' = 'standard',
+): Intl.NumberFormatPart[] {
   try {
     // Two fraction digits even for JPY and the like, so the decimal separator always appears.
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
+      currencySign,
       useGrouping: true,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -84,12 +89,16 @@ function asciiDigit(cp: number): number {
  * the text). A minus sign (ASCII or U+2212) or accounting parentheses anywhere in the affixes make
  * it negative. Inside the number only digits, the locale's group separator (before the decimal
  * separator) and one decimal separator are allowed.
+ *
+ * Group separators must be where the locale puts them (`1.234,50` in de-DE, `1,23,456.78` in
+ * en-IN), because a misplaced one is usually a decimal separator from another locale: `78.00` in
+ * de-DE throws instead of becoming 7800.00. Pass `{ lenient: true }` to accept them anywhere.
  */
 export function parse<C extends CurrencyInput>(
   input: string,
   currency: C,
   locale?: string,
-  options?: MoneyOptions,
+  options?: ParseOptions,
 ): Money<C> {
   const { group, decimal } = symbols(locale, currency);
   const chars = Array.from(input);
@@ -120,11 +129,16 @@ export function parse<C extends CurrencyInput>(
     ch === '٬';
   let out = prefix.endsWith(decimal) ? '0.' : '';
   let seenDecimal = out !== '';
+  // the integer digits with a comma for every group separator, to check the group sizes
+  let groupedInteger = '';
   for (let i = first; i <= last; i++) {
     const ch = chars[i]!;
     const digit = asciiDigit(ch.codePointAt(0)!);
     if (digit >= 0) {
       out += digit;
+      if (!seenDecimal) {
+        groupedInteger += digit;
+      }
     } else if (ch === decimal || ch === '٫') {
       if (seenDecimal) {
         throw new SyntaxError(`Cannot parse "${input}": more than one decimal separator`);
@@ -137,11 +151,22 @@ export function parse<C extends CurrencyInput>(
           `Cannot parse "${input}": group separator after the decimal separator`,
         );
       }
+      groupedInteger += ',';
     } else {
       throw new SyntaxError(`Cannot parse "${input}": unexpected "${ch}"`);
     }
   }
-  return money((neg ? '-' : '') + out, currency, options);
+  if (options?.lenient !== true) {
+    checkGroups(input, groupedInteger, groupSizes(locale, currency));
+  }
+  const { lenient: _lenient, ...moneyOptions } = options ?? {};
+  return money((neg ? '-' : '') + out, currency, moneyOptions);
+}
+
+/** Options for `parse`. */
+export interface ParseOptions extends MoneyOptions {
+  /** Accept group separators in any position, as before 0.2 (`1.5` in de-DE is then 15.00). */
+  readonly lenient?: boolean;
 }
 
 /** Options for `parseMoney`. */
@@ -159,14 +184,17 @@ export interface ParseMoneyOptions<C extends string = string> extends MoneyOptio
   /** The currencies to detect (default: every ISO 4217 currency). Others are not recognised. */
   readonly currencies?: readonly C[];
   /**
-   * Accept group separators in any positions (as `parse` does), and a bare number when a `hint`
+   * Accept group separators in any positions (as `parse` does with `lenient`), and a bare number when a `hint`
    * is given. It never makes the currency a guess.
    */
   readonly lenient?: boolean;
 }
 
 const symbolTables = new Map<string, Map<string, Set<string>>>();
-const groupSizeCache = new Map<string, [number, number]>();
+const groupSizeCache = new Map<string, GroupSizes[]>();
+
+/** The size of the last group, and of the groups before it: [3, 3] for 1,234,567, [3, 2] for 12,34,567. */
+type GroupSizes = readonly [number, number];
 const supportedLocales = new Map<string, boolean>();
 
 /** Strips what surrounds a symbol in formatted output: spaces, no-break spaces and bidi marks. */
@@ -290,18 +318,21 @@ function meaningsOf(
 }
 
 /** Group sizes the locale formats this currency with: [3, 3] for en-US, [3, 2] for en-IN. */
-function groupSizes(locale: string, currency: string): [number, number] {
-  const key = `${locale}|${currency}`;
+/**
+ * The group sizes the locale formats this currency with, in its standard and its accounting
+ * format: they can differ (en-IN writes JP¥1,00,000, but (JP¥100,000) in accounting style).
+ */
+function groupSizes(locale: string | undefined, currency: string): readonly GroupSizes[] {
+  const key = `${locale ?? ''}|${currency}`;
   let sizes = groupSizeCache.get(key);
   if (sizes === undefined) {
-    const parts = separatorParts(locale, currency);
-    const integers = parts
-      .filter((part) => part.type === 'integer')
-      .map((part) => part.value.length);
-    // 1234567.5 formats as 1|234|567 (sizes 3, 3) or 12|34|567 (3, 2)
-    const primary = integers[integers.length - 1] ?? 3;
-    const secondary = integers.length >= 3 ? integers[integers.length - 2]! : primary;
-    sizes = [primary, secondary];
+    sizes = [];
+    for (const currencySign of ['standard', 'accounting'] as const) {
+      const found = sizesOf(separatorParts(locale, currency, currencySign));
+      if (!sizes.some((known) => known[0] === found[0] && known[1] === found[1])) {
+        sizes.push(found);
+      }
+    }
     if (groupSizeCache.size >= 256) {
       groupSizeCache.clear();
     }
@@ -310,25 +341,33 @@ function groupSizes(locale: string, currency: string): [number, number] {
   return sizes;
 }
 
-/** Throws unless the integer part's groups follow the locale's sizes (when it has any groups). */
-function checkGroups(input: string, integerPart: string, sizes: [number, number]): void {
+function sizesOf(parts: Intl.NumberFormatPart[]): GroupSizes {
+  const integers = parts.filter((part) => part.type === 'integer').map((part) => part.value.length);
+  // 1234567.5 formats as 1|234|567 (sizes 3, 3) or 12|34|567 (3, 2)
+  const primary = integers[integers.length - 1] ?? 3;
+  const secondary = integers.length >= 3 ? integers[integers.length - 2]! : primary;
+  return [primary, secondary];
+}
+
+/** Throws unless the integer part's groups follow one of the locale's sizes (when it has groups). */
+function checkGroups(input: string, integerPart: string, allSizes: readonly GroupSizes[]): void {
   // the caller has turned every separator into a comma
   const groups = integerPart.split(',');
   if (groups.length <= 1) {
     return;
   }
-  const [primary, secondary] = sizes;
   const lastIndex = groups.length - 1;
-  const isValid = groups.every((group, i) => {
-    if (i === lastIndex) {
-      return group.length === primary;
-    }
-    if (i === 0) {
-      return group.length >= 1 && group.length <= secondary;
-    }
-    return group.length === secondary;
-  });
-  if (!isValid) {
+  const fits = ([primary, secondary]: GroupSizes) =>
+    groups.every((group, i) => {
+      if (i === lastIndex) {
+        return group.length === primary;
+      }
+      if (i === 0) {
+        return group.length >= 1 && group.length <= secondary;
+      }
+      return group.length === secondary;
+    });
+  if (!allSizes.some(fits)) {
     throw new SyntaxError(`Cannot parse "${input}": group separators in the wrong places`);
   }
 }
