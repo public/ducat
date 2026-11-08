@@ -118,17 +118,25 @@ export function decimalToDriver(
   const decimal = toDecimal(money);
 
   if (size !== undefined) {
-    const integerPart = decimal.replace('-', '').split('.')[0]!;
-    // "0.12" has no integer digits: NUMERIC(4,4) holds it
-    const integerDigits = integerPart === '0' ? 0 : integerPart.length;
-    if (integerDigits > size.precision - size.scale) {
-      throw new RangeError(
-        `${money} does not fit NUMERIC(${size.precision},${size.scale}), which holds ` +
-          `${size.precision - size.scale} integer digits`,
-      );
-    }
+    checkIntegerDigits(money, decimal, size);
   }
   return decimal;
+}
+
+/**
+ * Throws if the decimal (the money's `toDecimal`) has more integer digits than a column of this
+ * size holds: Postgres rejects it, and MySQL outside strict mode clamps it.
+ */
+export function checkIntegerDigits(money: Money, decimal: string, size: DecimalColumnSize): void {
+  const integerPart = decimal.replace('-', '').split('.')[0]!;
+  // "0.12" has no integer digits: NUMERIC(4,4) holds it
+  const integerDigits = integerPart === '0' ? 0 : integerPart.length;
+  if (integerDigits > size.precision - size.scale) {
+    throw new RangeError(
+      `${money} does not fit NUMERIC(${size.precision},${size.scale}), which holds ` +
+        `${size.precision - size.scale} integer digits`,
+    );
+  }
 }
 
 /**
