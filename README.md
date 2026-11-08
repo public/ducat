@@ -50,21 +50,22 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 
 - **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
   units, float traps and negative allocations.
-- **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing, add, multiply
-  and allocate on Node, Bun and Deno, and on toDecimal and compare on Node and Deno. Against the fastest other money
-  library the margin ranges from about 1.03× (compare on Node: 8.10 against 8.38 ns) to about 9× (allocate: 54 against
-  bigint-money's 490 ns). Against dinero.js 2 it ranges from 1.5× (creating and parsing) to about 29× (multiply on
-  Bun).
-- **Where it isn't fastest:** formatting on Node (currency.js, formatting a float, and dinero.js 1) and on Bun
-  (currency.js), and on Bun comparisons and toDecimal, where libraries working on plain numbers are slightly faster.
+- **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing, add, multiply,
+  allocate and toDecimal on Node, Bun and Deno, and on compare on Node and Deno. Against the fastest other money library
+  the margin ranges from about 1.07× (compare on Node: 7.39 against 7.91 ns) to about 8.7× (allocate on Node: 48
+  against bigint-money's 415 ns). Against dinero.js 2 it ranges from 1.6× (creating on Node) to about 58× (multiply on
+  Deno).
+- **Where it isn't fastest:** formatting on Node and Deno, where currency.js (formatting a float) is 8% and 2% faster;
+  on Bun, formatting is level with dinero.js 1 (269 against 272 ns). On Bun, libraries that compare plain numbers are
+  faster at compare (currency.js 6.9 against 10.6 ns).
 - **Fixed-point decimals:** ducat is not the fastest fixed-point library. bigdecimal.js is faster on parse, multiply
   and divide, js-big-decimal on parse and `toString` (and ethers on `toString` too); see
   [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
-- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on the 0.1.0 release candidate under Node 24.22.2, Bun
-  1.4.4 and Deno 2.9.8; sizes are gzipped KiB.
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat 0.1.0 (commit 69d7fe9) under Node 24.22.2,
+  Bun 1.4.4 and Deno 2.9.8; sizes are gzipped KiB.
 
 ## Design
 
