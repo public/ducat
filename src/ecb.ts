@@ -50,9 +50,7 @@ export function checkAvailableAt(availableAt: unknown): void {
     typeof availableAt !== 'boolean' &&
     typeof availableAt !== 'function'
   ) {
-    throw new TypeError(
-      `availableAt must be true, false or a function of the day, got ${availableAt === null ? 'null' : typeof availableAt}`,
-    );
+    throw new TypeError(`availableAt must be a boolean or a function, got ${typeof availableAt}`);
   }
 }
 

@@ -96,9 +96,9 @@ describe('ECB availableAt', () => {
     ['a string', 'true', 'string'],
     ['a Date', new Date('2026-01-01'), 'object'],
     ['a number', 1, 'number'],
-    ['null', null, 'null'],
+    ['null', null, 'object'],
   ])('rejects %s, even on a file with no days', (_name, value, kind) => {
-    const message = `availableAt must be true, false or a function of the day, got ${kind}`;
+    const message = `availableAt must be a boolean or a function, got ${kind}`;
     const options = { availableAt: value as never };
     expect(() => parseEcbXml(fixture('ecb/eurofxref-daily.xml'), options)).toThrow(TypeError);
     expect(() => parseEcbXml(envelope(), options)).toThrow(message);
@@ -116,7 +116,7 @@ describe('ECB availableAt', () => {
     await expect(fetchEcb({ fetch: counting, availableAt })).rejects.toThrow(TypeError);
     await expect(
       fetchEcbRange({ start: '2026-01-01', fetch: counting, availableAt }),
-    ).rejects.toThrow('availableAt must be true, false or a function of the day, got string');
+    ).rejects.toThrow('availableAt must be a boolean or a function, got string');
     expect(requests).toBe(0);
   });
 });
