@@ -93,7 +93,10 @@ function packageImportsOf(file: string, seen = new Set<string>()): Set<string> {
   }
   seen.add(file);
   // without comments, whose examples import the package itself
-  const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+  // and without type-only imports, which the compiler erases
+  const text = readFileSync(file, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+    .replace(/import\s+type\s[^;]*;/g, '');
   for (const match of text.matchAll(/(?:from|import)\s*\(?\s*'([^']+)'/g)) {
     const specifier = match[1]!;
     if (specifier.startsWith('.')) {
@@ -117,7 +120,7 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only the /drizzle entries reach drizzle-orm, and no entry imports anything else', async () => {
+  it('only the /drizzle entries import drizzle-orm at run time, and no entry imports anything else', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
@@ -127,13 +130,14 @@ describe('package entries', () => {
     expect(actual).toEqual(expected);
   });
 
-  it('every /drizzle dialect exports its column types, and none re-exports the SQL helpers', async () => {
+  it('the database entries export their API, and none re-exports the SQL helpers', async () => {
     const internal = new Set(Object.keys(await import('../src/sql.js')));
     const expectedNames: Record<string, string[]> = {
       // SQLite stores decimals as TEXT, so its entry has no column size to export
       './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/pg': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/mysql': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
+      './kysely': ['MoneyPlugin', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
     };
     const drizzleNames: Record<string, string[]> = {};
     const leaked: Record<string, string[]> = {};

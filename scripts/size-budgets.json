@@ -24,6 +24,7 @@
     "@ducatjs/money/drizzle/pg": 4.89,
     "@ducatjs/money/drizzle/mysql": 4.89,
     "@ducatjs/money/drizzle/sqlite": 4.74,
+    "@ducatjs/money/kysely": 7.3,
     "@ducatjs/money/all": 19.37
   },
   "snippets": {
