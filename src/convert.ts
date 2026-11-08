@@ -18,6 +18,7 @@ export {
   type ConvertOptions,
   type RateInfo,
   type RateJSON,
+  type RateQuote,
   type RateType,
 } from './rate.js';
 export {

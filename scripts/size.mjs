@@ -3,6 +3,10 @@
 // ESM), gzips each bundle at level 9, and fails if any is over its budget in
 // scripts/size-budgets.json.
 //
+// /fn and /all re-export every module, so a tight budget on them would change with every new
+// module and make every open pull request conflict. They get a loose ceiling instead, which only
+// catches a blow-up; each module's own entry budget is what holds its size.
+//
 //   node scripts/size.mjs            check the budgets
 //   node scripts/size.mjs --report   print the sizes without failing
 import { build } from 'esbuild';
@@ -65,7 +69,8 @@ for (const [exportKey, target] of Object.entries(packageJson.exports)) {
   cases.push({
     name: specifier,
     code: `export * from '${specifier}';`,
-    budget: budgets.entries[specifier],
+    budget: budgets.entries[specifier] ?? budgets.aggregateCeilings[specifier],
+    isCeiling: budgets.entries[specifier] === undefined && specifier in budgets.aggregateCeilings,
   });
 }
 for (const [name, snippet] of Object.entries(budgets.snippets)) {
@@ -87,7 +92,7 @@ for (const testCase of cases) {
     testCase.name,
     kilobytes(minified),
     kilobytes(gzipped),
-    hasBudget ? `${testCase.budget} kB` : 'none',
+    hasBudget ? `${testCase.budget} kB${testCase.isCeiling ? ' (ceiling)' : ''}` : 'none',
     isOver ? 'OVER' : 'ok',
   ]);
 }
