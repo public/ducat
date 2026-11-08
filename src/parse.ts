@@ -156,7 +156,8 @@ export function parse<C extends CurrencyInput>(
       throw new SyntaxError(`Cannot parse "${input}": unexpected "${ch}"`);
     }
   }
-  if (options?.lenient !== true) {
+  // most input has no group separators, so it skips the locale lookup
+  if (options?.lenient !== true && groupedInteger.includes(',')) {
     checkGroups(input, groupedInteger, groupSizes(locale, currency));
   }
   const { lenient: _lenient, ...moneyOptions } = options ?? {};
@@ -317,7 +318,6 @@ function meaningsOf(
   return [];
 }
 
-/** Group sizes the locale formats this currency with: [3, 3] for en-US, [3, 2] for en-IN. */
 /**
  * The group sizes the locale formats this currency with, in its standard and its accounting
  * format: they can differ (en-IN writes JP¥1,00,000, but (JP¥100,000) in accounting style).
