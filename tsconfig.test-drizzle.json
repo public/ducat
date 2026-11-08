@@ -1,0 +1,7 @@
+{
+  // The Drizzle entries and their tests, with skipLibCheck for drizzle-orm (see tsconfig.drizzle.json)
+  "extends": "./tsconfig.test.json",
+  "compilerOptions": { "skipLibCheck": true },
+  "include": ["src/drizzle", "test/db/drizzle.test.ts"],
+  "exclude": []
+}

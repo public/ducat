@@ -9,7 +9,6 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "declaration": true,
     "declarationMap": true,
@@ -18,5 +17,7 @@
     "rootDir": "src",
     "types": []
   },
-  "include": ["src"]
+  "include": ["src"],
+  // built by tsconfig.drizzle.json, which needs skipLibCheck for drizzle-orm's declarations
+  "exclude": ["src/drizzle"]
 }
