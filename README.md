@@ -39,7 +39,7 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 
 | library                            | correct (of 41) | wrong, silently |       bundle (gzip) |
 | ---------------------------------- | --------------: | --------------: | ------------------: |
-| **ducat**                          |          **41** |           **0** |              3.7 kB |
+| **ducat**                          |          **41** |           **0** |              3.8 kB |
 | dinero.js 2 (bigint calculator)    |              34 |               0 |              1.8 kB |
 | monetra                            |              34 |               3 |              4.5 kB |
 | ts-money / js-money                |              31 |           7 / 6 |       30.7 / 8.8 kB |

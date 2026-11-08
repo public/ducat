@@ -139,7 +139,7 @@ and everything (`@ducatjs/money/all`) is about 18.9 kB gzipped.
 | @screeny05/ts-money |       6.0 kB |        2.2 kB |             5.9 kB |              2.2 kB |
 | big.js              |       6.8 kB |        2.9 kB |             6.7 kB |              2.9 kB |
 | dinero.js 1         |      10.1 kB |        3.2 kB |            10.0 kB |              3.2 kB |
-| ducat               |       9.2 kB |        3.7 kB |            12.0 kB |              4.7 kB |
+| ducat               |       9.7 kB |        3.8 kB |            12.0 kB |              4.6 kB |
 | monetra             |      13.7 kB |        4.5 kB |            37.3 kB |             11.2 kB |
 | decimal.js-light    |      13.5 kB |        5.9 kB |            13.5 kB |              5.8 kB |
 | money-math          |      23.1 kB |        8.3 kB |            23.1 kB |              8.3 kB |
@@ -188,7 +188,7 @@ The ducat row here also measures `Money`, not `Fixed`.
 | @formatjs/bigdecimal                      |       8.9 kB |        2.3 kB |             8.9 kB |              2.3 kB |
 | js-big-decimal                            |       9.3 kB |        3.0 kB |             9.2 kB |              3.0 kB |
 | ethers FixedNumber (import from 'ethers') |       8.5 kB |        3.2 kB |           376.4 kB |            140.8 kB |
-| ducat Money                               |       9.2 kB |        3.7 kB |            12.0 kB |              4.7 kB |
+| ducat Money                               |       9.7 kB |        3.8 kB |            12.0 kB |              4.6 kB |
 | bigdecimal.js                             |      45.9 kB |       11.6 kB |            45.9 kB |             11.6 kB |
 
 ### Speed (fixed point)

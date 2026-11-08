@@ -6,7 +6,7 @@
 | @screeny05/ts-money | 6.0 kB | 2.2 kB | 5.9 kB | 2.2 kB |
 | big.js | 6.8 kB | 2.9 kB | 6.7 kB | 2.9 kB |
 | dinero.js 1 | 10.1 kB | 3.2 kB | 10.0 kB | 3.2 kB |
-| ducat | 9.2 kB | 3.7 kB | 12.0 kB | 4.7 kB |
+| ducat | 9.7 kB | 3.8 kB | 12.0 kB | 4.6 kB |
 | monetra | 13.7 kB | 4.5 kB | 37.3 kB | 11.2 kB |
 | decimal.js-light | 13.5 kB | 5.9 kB | 13.5 kB | 5.8 kB |
 | money-math | 23.1 kB | 8.3 kB | 23.1 kB | 8.3 kB |
