@@ -658,15 +658,17 @@ export function divide<C extends string>(
     numerator === numerator &&
     denominator === denominator
   ) {
-    const product = minor * denominator;
-    if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
+    let dividend = minor * denominator;
+    if (dividend <= MAX_SAFE_MINOR && dividend >= -MAX_SAFE_MINOR) {
       // divideAndRound needs a positive divisor: (−p)/(−n) is the same quotient
-      if (numerator > 0) {
-        return new Money(money.currency, divideAndRound(product, numerator, rounding), money.scale);
+      let positiveDivisor = numerator;
+      if (numerator < 0) {
+        dividend = 0 - dividend;
+        positiveDivisor = 0 - numerator;
       }
       return new Money(
         money.currency,
-        divideAndRound(0 - product, 0 - numerator, rounding),
+        divideAndRound(dividend, positiveDivisor, rounding),
         money.scale,
       );
     }

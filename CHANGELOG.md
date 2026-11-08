@@ -7,12 +7,6 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
-### Changed
-
-- `divide` is 3 to 10 times faster for ordinary amounts (number minor units, a divisor such as `3`,
-  `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
-  are unchanged: the same proved rounding kernel is used.
-
 ### Added
 
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
@@ -24,6 +18,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   1.0 EUR and 1.00 EUR as equal).
 - `m.with(operation)` applies a function such as a rounding step or a conversion as one link of a
   method chain.
+
+### Changed
+
+- `divide` is 3 to 10 times faster for ordinary amounts (number minor units, a divisor such as `3`,
+  `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
+  are unchanged: the same proved rounding kernel is used.
 
 ## [0.1.0] - 2026-11-07
 
