@@ -128,9 +128,11 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                |
 | `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                       |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                   |
+| `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                  |
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb` (the only module that uses the network)             |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
-| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                             |
+| `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
+| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`…                            |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                       |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                        |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                      |
@@ -250,6 +252,28 @@ one.identical(money('1', 'EUR', { scale: 1 })); // → false
 | `Floor`                | `'floor'`       | always toward −∞                                   |
 | `Unnecessary`          | `'unnecessary'` | throws `RoundingError` if rounding would be needed |
 
+**Rounding policies** (`@ducatjs/money/policy`). A policy bundles a scale, an increment and a mode ("CHF cash", "4 decimals, half even") into one value that goes wherever a rounding mode goes: `multiply`, `divide`, `round`, `percentage`, `discount`, `addTax`, `extractTax`. The result is rounded once, straight to the policy, so it never rounds twice through the amount's own scale. A policy is also a function that rounds an amount, so `amounts.map(policy)` and `m.with(policy)` work.
+
+- `roundingPolicy({ scale?, increment?, rounding?, currency? })`. The scale defaults to the currency's exponent, the increment (counted in 10^-scale units) to 1, and the mode to `'halfExpand'`. With `currency`, the policy refuses amounts in other currencies.
+- `isoPolicy`: the currency's exponent, half up.
+- `cashPolicy(currency, { country?, rounding?, includeUnverified? })`, from `@ducatjs/money/cash`, is the cash-rounding rule as a policy, for that currency only. It throws when no rule applies. Unlike `cashRound`, which keeps a larger scale (10.034 CHF gives 10.050), a policy always returns its own scale (10.05).
+- `assertScale(m, policy)` throws a `RangeError` unless `m` is already at the policy's scale and on its increment, for example before an amount is booked.
+- The tax functions apply a policy to the amount they compute: the **gross** for `addTax` (the amount charged), the **net** for `extractTax`, and the **discounted price** for `discount`. The other part is the exact difference, so net + tax is still exactly gross. With a plain rounding mode, `addTax` and `discount` round the tax and the discount amount, as before.
+
+Policies are passed explicitly, never stored on amounts or set globally. Only policies built by this copy of the package are accepted. A lookalike function, or a policy from a second installed copy of ducat, throws a `TypeError`, just as `isMoney` rejects the other copy's Money.
+
+```ts
+import { money } from '@ducatjs/money';
+import { assertScale, isoPolicy, roundingPolicy } from '@ducatjs/money/policy';
+import { cashPolicy } from '@ducatjs/money/cash';
+
+money('10.00', 'CHF').multiply('1.077', cashPolicy('CHF')); // → 10.75 CHF
+const unitPrice = roundingPolicy({ scale: 4, rounding: 'halfEven' });
+money('10.00', 'EUR').divide(3, unitPrice); // → 3.3333 EUR
+[money('1.234', 'EUR', { scale: 3 })].map(isoPolicy); // → [1.23 EUR]
+assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws
+```
+
 **Cash rounding**
 
 - `cashRound(m, { country?, rounding?, includeUnverified? })` uses the table in `data/cash-rounding.json`:
@@ -302,9 +326,9 @@ eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedF
 eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
 ```
 
-Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate carries optional metadata: `source`, `asOf`, `validUntil` and `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
+Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate keeps the digits it was given: `exchangeRate('EUR', 'HUF', '363.90').toString()` is `'363.90'`. A rate carries optional metadata: `source`, `asOf`, `availableAt` (when it was published), `validUntil`, `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...) and `quote` (how the source published it). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
 
-**Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published.
+**Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published, unless it has an `availableAt`.
 
 <!-- doctest: setup import { readFileSync } from 'node:fs'; const xml90Days = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
 
@@ -316,6 +340,36 @@ import { parseEcbXml } from '@ducatjs/money/convert/ecb';
 const history = snapshotsFrom(parseEcbXml(xml90Days));
 const fx = via('EUR', await history.at('2026-11-08')); // a Sunday: Friday's table
 money('100', 'USD').convert('JPY', fx, 'halfEven'); // → 15833 JPY, through EUR, rounded once
+```
+
+**Historical rates.** A lookup for a past date should see only what was known then, in the form the source published it. Publication times and missing values work in `@ducatjs/money/convert` itself; quoted tables and ranges are in the opt-in `@ducatjs/money/convert/history`, so converting at rates you already hold doesn't pay for them.
+
+- **Publication time.** `availableAt` on a rate or a table hides it from lookups before then, so a query for 09:00 on a publication day gets the day before. A date query covers the whole day.
+- **How a rate was quoted.** Many central banks quote the other way round (CAD per USD) or per 100 units (NOK per 100 JPY). `quotedTable({ base, inverted: true, rates })` and per-entry `{ rate, per, inverted }` store the exact rate in the table's direction and keep the published quote. `{ rate, decimals }` rebuilds the trailing zeros a feed strips (`'1.175'` with 4 decimals is `'1.1750'`).
+- **Missing values.** `null` in a table's `rates` marks a currency the source listed without a value (a holiday, `ND`, `N/A`). The table lists it in `missing`, and every parser reads those markers the same way.
+- **Periods.** A table with `validUntil` (a monthly rate, say) answers any day up to that date and nothing after it.
+- **Ranges.** `rateHistory(tables)` answers synchronously from a date range loaded in one call. Each pair falls back on its own (a currency missing on a holiday comes from the day before), up to `lookback` days (default 4), and `lookup()` says why it fell back: `noTable`, `notYetAvailable`, `expired`, `missing` or `notQuoted`. A table with a `validUntil` answers its whole period whatever the lookback. `snapshots()` skips tables not yet published, too.
+
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const ecbXml = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
+
+```ts
+import { parseEcbXml } from '@ducatjs/money/convert/ecb';
+import { quotedTable, rateHistory } from '@ducatjs/money/convert/history';
+
+const history = rateHistory(parseEcbXml(ecbXml)); // e.g. eurofxref-hist-90d.xml
+const sunday = history.lookup('EUR', 'USD', { asOf: '2026-11-08' });
+sunday.rate?.asOf; // → '2026-11-06'
+sunday.skipped.map((fallback) => fallback.day); // → ['2026-11-08', '2026-11-07']
+sunday.skipped[0]?.reason; // → 'noTable' (a weekend: no table that day)
+
+const nok = quotedTable({
+  base: 'NOK',
+  asOf: '2026-11-06',
+  rates: { JPY: { rate: '6.50', per: 100, inverted: true }, ISK: null },
+});
+nok.rate('NOK', 'JPY')?.inverse().toString(); // → '0.065'
+nok.rate('NOK', 'JPY')?.quote; // → { rate: '6.50', per: 100, inverted: true }
+nok.missing; // → ['ISK']
 ```
 
 **Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`: the daily, 90-day and full-history XML and CSV files) and one opt-in fetcher (`@ducatjs/money/convert/fetch`, which uses the platform `fetch` and has a 30-second default timeout). Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
@@ -409,7 +463,7 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 - Choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 - Prisma maps `BigInt` to JS `bigint`. The helpers accept it, and `fromMinor` normalises it back to a number when it is safe.
 - **A scale column** makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below). To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
-- **Exponent changes.** Minor units stored without a scale are read at the currency's exponent in the installed version of ducat, so a changed exponent would silently change what old rows mean: 1234 stored as 12.34 would read as 1.234 or 123.4. ducat therefore treats any change to a bundled ISO 4217 exponent as a breaking change. It ships only in a new major version, listed under **Changed** in the changelog with the currencies affected. Before upgrading across one, migrate the affected rows, or store a scale column (or a decimal) so the question never arises. Custom currencies keep the exponent given to `defineCurrency`.
+- **Exponent changes.** Minor units stored without a scale are read at the currency's exponent in the installed version of ducat, so a changed exponent would silently change what old rows mean: 1234 stored as 12.34 would read as 1.234 or 123.4. So an exponent change is a breaking change (see [Decisions](#decisions)), listed under **Changed** in the changelog with the currencies affected. Before upgrading across one, migrate the affected rows, or store a scale column (or a decimal) so the question never arises. Custom currencies keep the exponent given to `defineCurrency`.
 - `fromDecimal` rejects values with more decimals than the currency allows (e.g. `12.3456` in NUMERIC(19,4) for EUR) unless you pass `{ scale }` or `{ rounding }`. Trailing zeros are fine.
 
 Prisma client extension (from `examples/prisma`, which runs end to end against SQLite):
@@ -503,7 +557,7 @@ The columns check what the types can't: writing another currency, a value at a s
   - 4: CLF UYW
 - Tests also check the Adyen differences, the consistency of every Stripe rule, and that `format()` shows ISO digits for every code on every engine.
 
-A change to an ISO exponent in this data is a breaking change and ships only in a major version, because it changes what stored minor units mean (see [Databases](#databases)).
+A change to an ISO exponent in this data is a breaking change, because it changes what stored minor units mean (see [Decisions](#decisions) and [Databases](#databases)).
 
 Recent ISO changes that are already encoded:
 
@@ -668,6 +722,8 @@ These are stated over the proved kernel (`divRound`):
 - **The core is small; everything else is an opt-in module that installs methods.** Methods on one class pull every feature into every bundle, so `Money` carries only the core, and `@ducatjs/money/allocate`, `/tax`, `/format`… add their methods when imported (types through `declare module` augmentation, as dayjs plugins do). The cost is that installed methods are global at run time. `@ducatjs/money/fn` offers the same functions without touching the prototype, for function-level tree-shaking.
 - **Correctness and features come before bundle size.** The core keeps the currency table, the comparison methods, bigint support and exact string parsing; everything else is an opt-in module, and size budgets in CI stop either from growing.
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
+- **Rounding policies are explicit values.** A policy (scale, increment and mode) is passed to each operation that rounds, the way a rounding mode is. It is never attached to an amount or installed as a global default: a stored or global policy would make the same expression round differently depending on where a value came from or what ran earlier, which is the kind of action at a distance a money library should rule out.
+- **A bundled ISO 4217 exponent change is breaking:** it is listed under **Changed**, and ships only in a minor version before 1.0 and a major version from 1.0. Minor units stored without a scale are read at the installed exponent, so such a change silently changes what stored rows mean.
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
 - **Withdrawn and non-ISO codes** (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…) stay out of the core registry. An opt-in table of them with withdrawal dates is planned for a later release; until then, register any you need with `defineCurrency`.

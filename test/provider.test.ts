@@ -38,7 +38,7 @@ describe('providers', () => {
     expect(ecb.rate('EUR', 'USD', { asOf: new Date(Date.UTC(2026, 10, 5, 23)) })).toBeUndefined();
     expect(ecb.rate('EUR', 'USD', { asOf: '2026-11-05' })).toBeUndefined();
     const list = rateTable([exchangeRate('USD', 'CAD', '1.40')]);
-    expect(list.rate('USD', 'CAD')?.toString()).toBe('1.4');
+    expect(list.rate('USD', 'CAD')?.toString()).toBe('1.40');
     expect(list.base).toBeUndefined();
   });
 

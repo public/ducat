@@ -3,7 +3,15 @@
 // async boundary.
 import type { Factor } from './decimal.js';
 import { CurrencyMismatchError } from './money.js';
-import { exchangeRate, isRate, toIsoString, type Rate, type RateInfo } from './rate.js';
+import {
+  exchangeRate,
+  hasEnded,
+  hasStarted,
+  isRate,
+  toIsoString,
+  type Rate,
+  type RateInfo,
+} from './rate.js';
 
 const DAY_MS = 86_400_000;
 
@@ -29,6 +37,12 @@ export interface RateTable extends RateProvider {
   readonly base?: string;
   /** The table's date, when it has one. */
   readonly asOf?: string;
+  /** When the table was published, when that is known. */
+  readonly availableAt?: string;
+  /** The last day (or instant) the table applies to, for a table valid for a period. */
+  readonly validUntil?: string;
+  /** Currencies the source listed without a value (holidays, `ND`, `N/A`). */
+  readonly missing?: readonly string[];
 }
 
 /** Thrown when no provider has a rate for the pair. */
@@ -95,32 +109,67 @@ export function identity(): RateProvider {
   };
 }
 
-/** A one-base table: `rates.USD` is the number of USD per 1 `base`. */
-export interface RateTableSpec extends RateInfo {
+/**
+ * A one-base table: `rates.USD` is the number of USD per 1 `base` (or a base → USD Rate), or null
+ * when the source has no value for the day. For rates published the other way round or per 100
+ * units, see `quotedTable` in `@ducatjs/money/convert/history`.
+ */
+export interface RateTableSpec extends Omit<RateInfo, 'quote'> {
   readonly base: string;
-  readonly rates: Readonly<Record<string, Factor>>;
+  readonly rates: Readonly<Record<string, Factor | Rate | null>>;
 }
 
 /**
  * A fixed table of rates: one base currency against many (ECB style), or a list of Rates. Only the
  * pairs given are answered; wrap it in `reversed()` or `via()` for the others.
  *
- * Lookups are by whole UTC day: a query for a day before a rate's asOf gets nothing, and a query at
- * any time on the rate's own day gets the rate, even before its publication time (the ECB publishes
- * at about 15:00 UTC). If that matters, query with the previous day until the table is published.
+ * A query with an `asOf` gets nothing from a rate that doesn't apply then: one dated after it, one
+ * published (`availableAt`) after it, or one whose `validUntil` has passed. Days are UTC days, and
+ * a date query covers the whole day: without an `availableAt`, a query at any time on the rate's
+ * own day gets the rate, even before the source published it (the ECB publishes at about 15:00
+ * UTC). Give `availableAt` to rule that out.
  *
  *     const ecb = rateTable({ base: 'EUR', source: 'ECB', asOf: '2026-11-06', rates: { USD: '1.1165' } });
  */
 export function rateTable(spec: RateTableSpec | readonly Rate[]): RateTable {
   let rates: Rate[];
-  const header: { base?: string; asOf?: string } = {};
+  const header: {
+    base?: string;
+    asOf?: string;
+    availableAt?: string;
+    validUntil?: string;
+    missing?: string[];
+  } = {};
   if (isRateList(spec)) {
     rates = [...spec];
   } else {
-    rates = Object.entries(spec.rates).map(([to, rate]) => exchangeRate(spec.base, to, rate, spec));
+    rates = [];
+    const missing: string[] = [];
+    for (const [currency, entry] of Object.entries(spec.rates)) {
+      if (entry === null) {
+        missing.push(currency);
+      } else if (isRate(entry)) {
+        // A ready-made Rate is looked up under its own pair, so it must be the one its key says.
+        if (entry.from !== spec.base || entry.to !== currency) {
+          throw new CurrencyMismatchError(`${spec.base}→${currency}`, `${entry.from}→${entry.to}`);
+        }
+        rates.push(entry);
+      } else {
+        rates.push(exchangeRate(spec.base, currency, entry, spec));
+      }
+    }
     header.base = spec.base;
     if (spec.asOf !== undefined) {
       header.asOf = toIsoString(spec.asOf);
+    }
+    if (spec.availableAt !== undefined) {
+      header.availableAt = toIsoString(spec.availableAt);
+    }
+    if (spec.validUntil !== undefined) {
+      header.validUntil = toIsoString(spec.validUntil);
+    }
+    if (missing.length > 0) {
+      header.missing = missing;
     }
   }
 
@@ -137,17 +186,29 @@ export function rateTable(spec: RateTableSpec | readonly Rate[]): RateTable {
       if (rate === undefined) {
         return undefined;
       }
-      const askedBeforeRateExisted =
-        query?.asOf !== undefined &&
-        rate.asOf !== undefined &&
-        dayOf(query.asOf) < dayOf(rate.asOf);
-      if (askedBeforeRateExisted) {
+      // The table's own dates count too: a ready-made Rate entry doesn't carry them.
+      const asOf = query?.asOf;
+      if (asOf !== undefined && (!appliesAt(rate, asOf) || !appliesAt(header, asOf))) {
         return undefined;
       }
       // The key matched, so the rate's currencies are exactly `from` and `to`.
       return rate as Rate<From, To>;
     },
   };
+}
+
+/** Whether a rate (or a table) applies at `at`: dated, published and still valid then. */
+function appliesAt(
+  rate: { readonly asOf?: string; readonly availableAt?: string; readonly validUntil?: string },
+  at: string | Date,
+): boolean {
+  if (rate.asOf !== undefined && dayOf(at) < dayOf(rate.asOf)) {
+    return false;
+  }
+  if (rate.availableAt !== undefined && !hasStarted(rate.availableAt, at)) {
+    return false;
+  }
+  return rate.validUntil === undefined || !hasEnded(rate.validUntil, at);
 }
 
 function isRateList(spec: RateTableSpec | readonly Rate[]): spec is readonly Rate[] {
@@ -235,7 +296,9 @@ export interface Snapshots {
  * undefined when there is none. Days are UTC days. Loaded tables are cached by day. Misses and
  * failures are not cached, so a table that isn't published yet is tried again next time. A loader
  * that throws fails the lookup rather than falling back to an older day, so an outage doesn't
- * silently become a stale rate. The rates carry the day they're from.
+ * silently become a stale rate. The rates carry the day they're from. A table with an
+ * `availableAt` after an instant asked for is passed over, so a lookup at 09:00 on a publication
+ * day gets the day before.
  *
  *     const history = snapshots(async (day) => parseEcbXml(await readFile(`ecb/${day}.xml`, 'utf8'))[0]);
  *     const fx = await history.at('2026-11-08');   // a Sunday: Friday 2026-11-06's table
@@ -298,7 +361,9 @@ export function snapshots(
         // Sequential on purpose: stop at the first day that has a table, without loading older
         // days. oxlint-disable-next-line no-await-in-loop
         const table = await loadDay(day);
-        if (table !== undefined) {
+        // A table not yet published at the instant asked for is passed over like a missing one.
+        const availableAt = (table as Partial<RateTable> | undefined)?.availableAt;
+        if (table !== undefined && (availableAt === undefined || hasStarted(availableAt, asOf))) {
           return table;
         }
       }

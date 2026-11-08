@@ -76,11 +76,15 @@ describe('Prisma / DB helpers', () => {
     });
   });
 
-  it('rejects a scale that is missing, negative or not an integer', () => {
+  it('rejects a scale that is missing, negative, not an integer or beyond 1000', () => {
+    const atLimit = { amountMinor: 1n, currency: 'EUR', amountScale: 1000 };
+    expect(
+      minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' }).compute(atLimit).scale,
+    ).toBe(1000);
     const field = minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' });
-    for (const amountScale of [null, undefined, -1, 1.5, '2', NaN]) {
+    for (const amountScale of [null, undefined, -1, 1.5, '2', NaN, 1001, 10 ** 9, 2n ** 70n]) {
       const row = { amountMinor: 1234n, currency: 'EUR', amountScale } as never;
-      expect(() => field.compute(row)).toThrow(/non-negative integer scale in "amountScale"/);
+      expect(() => field.compute(row)).toThrow(/integer scale from 0 to 1000 in "amountScale"/);
     }
   });
 

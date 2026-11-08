@@ -8,6 +8,7 @@
  *  2. a DECIMAL/NUMERIC column (+ a currency column or constant)
  *     -> decimalMoneyField / toDecimalValue
  */
+import { MAX_DECIMAL_SCALE } from './decimal.js';
 import {
   fromMinor,
   money,
@@ -55,7 +56,13 @@ export interface ScaleColumnOption<S extends string> {
 /** A scale read from a row: a safe, non-negative integer (a SMALLINT or INT column). */
 function readScale(value: unknown, column: string): number {
   const scale = typeof value === 'bigint' ? Number(value) : value;
-  if (typeof scale !== 'number' || !Number.isSafeInteger(scale) || scale < 0) {
+  // capped like parsed decimals: a corrupt row must not make toDecimal build a huge power of ten
+  const isValid =
+    typeof scale === 'number' &&
+    Number.isInteger(scale) &&
+    scale >= 0 &&
+    scale <= MAX_DECIMAL_SCALE;
+  if (!isValid) {
     throw new RangeError(
       `Expected a non-negative integer scale in "${column}", got ${String(value)}`,
     );

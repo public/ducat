@@ -36,6 +36,11 @@ describe('Money methods', () => {
       'zero',
       'fromJSON',
       'isMoney',
+      // rounding policies: a constructor, and a check that throws rather than returning Money
+      'roundingPolicy',
+      'cashPolicy',
+      'isoPolicy',
+      'assertScale',
       'isMoneyIn',
       'assertCurrency',
       'sum',
@@ -52,6 +57,7 @@ describe('Money methods', () => {
       'impliedRate',
       'isRate',
       'rateFromJSON',
+      'rateFromQuote',
       'multiplyByRatioAtScale',
       // rate providers and their combinators
       'rateOf',
@@ -62,6 +68,8 @@ describe('Money methods', () => {
       'via',
       'snapshots',
       'snapshotsFrom',
+      'rateHistory',
+      'quotedTable',
       // exact intermediates: constructors, a batch sum, and a conversion that returns a record
       'convertDetailed',
       'sumExact',
