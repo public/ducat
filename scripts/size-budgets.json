@@ -19,9 +19,9 @@
     "@ducatjs/money/braintree": 4.7,
     "@ducatjs/money/klarna": 4.38,
     "@ducatjs/money/stripe-fx": 5.46,
-    "@ducatjs/money/adyen-fx": 5.27,
+    "@ducatjs/money/adyen-fx": 5.32,
     "@ducatjs/money/prisma": 4.46,
-    "@ducatjs/money/all": 19.32
+    "@ducatjs/money/all": 19.37
   },
   "snippets": {
     "methods: money, add, multiply, toDecimal": {
