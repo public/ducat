@@ -272,13 +272,17 @@ export class Rate<From extends string = string, To extends string = string> {
     if (info?.type !== undefined) {
       writable.type = info.type;
     }
-    if (info?.quote !== undefined) {
-      // A quote that disagrees with the rate would make the audit trail lie, so check it.
-      const quoted = quoteRatio(info.quote);
+    const quote = info?.quote;
+    if (quote !== undefined) {
+      // toString prints a one-for-one quote, so it must be this rate. (rateFromQuote derives a
+      // scaled or inverted rate from its quote, so that one can't disagree.)
+      const direct = quote.per === undefined && quote.inverted !== true;
+      // ratio() caches strings, so for a rate built from the same text this is two lookups.
+      const quoted = direct ? ratio(quote.rate) : normalized;
       if (quoted.num !== normalized.num || quoted.den !== normalized.den) {
-        throw new RangeError(`Quote ${info.quote.rate} doesn't match the rate ${from}→${to}`);
+        throw new RangeError(`Quote ${quote.rate} isn't the rate ${from}→${to}`);
       }
-      writable.quote = info.quote;
+      writable.quote = quote;
     }
     if (derivedFrom !== undefined) {
       writable.derivedFrom = derivedFrom;
@@ -292,7 +296,15 @@ export class Rate<From extends string = string, To extends string = string> {
       type = OPPOSITE_SIDE[type] ?? type;
     }
     const reciprocal = ratio(this.ratio.den, this.ratio.num);
-    return new Rate(this.to, this.from, reciprocal, timingOf(this, type), [this]);
+    let info = timingOf(this, type);
+    // The published number reads the other way round now, so the inverse of a quoted rate keeps
+    // its digits too: the inverse of CAD→USD quoted as 1.3650 inverted prints '1.3650'.
+    const quote = this.quote;
+    if (quote !== undefined) {
+      const { inverted, ...rest } = quote;
+      info = { ...info, quote: inverted === true ? rest : { ...rest, inverted: true } };
+    }
+    return new Rate(this.to, this.from, reciprocal, info, [this]);
   }
 
   /**
@@ -447,38 +459,26 @@ function timingOf(input: Rate, type?: RateType): RateInfo {
   return timing(input.asOf, input.availableAt, input.validUntil, type);
 }
 
-const PLAIN_DECIMAL = /^\d+(?:\.\d+)?$/;
-
-/** The exact rate a quote stands for, in the Rate's own direction. */
-function quoteRatio(quote: RateQuote): Ratio {
-  if (!PLAIN_DECIMAL.test(quote.rate)) {
-    throw new RangeError(`A quote is a plain decimal string, got ${quote.rate}`);
-  }
-  const per = quote.per ?? 1;
-  if (!Number.isSafeInteger(per) || per < 1) {
-    throw new RangeError(`A quote's per is a positive integer, got ${per}`);
-  }
-  const published = ratio(quote.rate);
-  if (quote.inverted === true) {
-    return ratio(published.den * BigInt(per), published.num);
-  }
-  return ratio(published.num, published.den * BigInt(per));
-}
+// A published decimal whose canonical form drops digits: trailing fraction zeros only. Leading
+// zeros ('01.50') aren't published digits, so those are left to the canonical form.
+const PUBLISHED_DECIMAL = /^(?:0|[1-9]\d*)\.\d*0$/;
 
 /**
- * A Rate from a published quote: `per` units and the direction are applied exactly, and the quote
- * is kept on the Rate.
- *
- *     rateFromQuote('JPY', 'NOK', { rate: '6.50', per: 100 })        // JPY→NOK 0.065
- *     rateFromQuote('USD', 'EUR', { rate: '1.1650', inverted: true }) // USD→EUR 200/233
+ * Keeps the published digits of `text` on a Rate just built from it, when its canonical form would
+ * drop some ('1.1650' prints as '1.165'). Assigned directly: the quote is the rate's own text, so
+ * there is nothing to check, and building a rate inline stays cheap.
  */
-export function rateFromQuote<From extends CurrencyInput, To extends CurrencyInput>(
-  from: From,
-  to: To,
-  quote: RateQuote,
-  info?: Omit<RateInfo, 'quote'>,
-): Rate<From, To> {
-  return new Rate(from, to, quoteRatio(quote), { ...info, quote });
+function keepDigits<R extends Rate>(rate: R, text: Factor): R {
+  // Only a last character of '0' can be dropped, so most rates are settled by one comparison.
+  const dropsDigits =
+    typeof text === 'string' &&
+    text.charCodeAt(text.length - 1) === 48 &&
+    rate.quote === undefined &&
+    PUBLISHED_DECIMAL.test(text);
+  if (dropsDigits) {
+    (rate as { quote?: RateQuote }).quote = { rate: text };
+  }
+  return rate;
 }
 
 /**
@@ -496,31 +496,14 @@ export function exchangeRate<From extends CurrencyInput, To extends CurrencyInpu
   rate: Factor,
   info?: RateInfo,
 ): Rate<From, To> {
-  const exact = ratio(rate);
-  // A decimal string is a published rate: keep its digits when the canonical form would drop
-  // some ('1.1650' would print as '1.165').
-  const keepsDigits =
-    typeof rate === 'string' &&
-    info?.quote === undefined &&
-    PLAIN_DECIMAL.test(rate) &&
-    ratioToDecimal(exact) !== rate;
-  if (keepsDigits) {
-    return new Rate(from, to, exact, { ...info, quote: { rate } });
-  }
-  return new Rate(from, to, exact, info);
+  return keepDigits(new Rate(from, to, ratio(rate), info), rate);
 }
 
 /** Rebuilds a Rate, with its audit chain, from `rate.toJSON()`. */
 export function rateFromJSON(json: RateJSON): Rate {
   const derivedFrom = json.derivedFrom?.map(rateFromJSON);
-  const info = infoOf(json);
-  if (info.quote === undefined && PLAIN_DECIMAL.test(json.rate)) {
-    const exact = ratio(json.rate);
-    if (ratioToDecimal(exact) !== json.rate) {
-      info.quote = { rate: json.rate };
-    }
-  }
-  return new Rate(json.from, json.to, ratio(json.rate), info, derivedFrom);
+  const rate = new Rate(json.from, json.to, ratio(json.rate), infoOf(json), derivedFrom);
+  return keepDigits(rate, json.rate);
 }
 
 /** Whether `value` is a Rate. */

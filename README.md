@@ -122,9 +122,10 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money`            | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents |
 | `@ducatjs/money/allocate`   | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                    |
 | `@ducatjs/money/tax`        | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                       |
-| `@ducatjs/money/convert`    | `convert`                                                          | `exchangeRate`, providers, `rateHistory`, `bag`, `comparator`… |
+| `@ducatjs/money/convert`    | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                |
 | `@ducatjs/money/exact`      | `exact`                                                            | `ExactMoney`, `sumExact`                                       |
 | `.../convert/ecb`           | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                   |
+| `.../convert/history`       | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                  |
 | `.../convert/fetch`         | nothing                                                            | `fetchEcb` (the only module that uses the network)             |
 | `.../stripe-fx`, `adyen-fx` | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
 | `@ducatjs/money/cash`       | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                             |
@@ -266,7 +267,7 @@ eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedF
 eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
 ```
 
-Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate keeps the digits it was given: `exchangeRate('EUR', 'HUF', '363.90').toString()` is `'363.90'`. A rate carries optional metadata: `source`, `asOf`, `availableAt` (when it was published), `validUntil`, `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...) and `quote` (how the source published it). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
+Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate keeps the digits it was given: `exchangeRate('EUR', 'HUF', '363.90').toString()` is `'363.90'`. A rate carries optional metadata: `source`, `asOf`, `availableAt` (when it was published), `validUntil`, `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...) and `quote` (how the source published it). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
 
 **Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published.
 
@@ -282,27 +283,27 @@ const fx = via('EUR', await history.at('2026-11-08')); // a Sunday: Friday's tab
 money('100', 'USD').convert('JPY', fx, 'halfEven'); // → 15833 JPY, through EUR, rounded once
 ```
 
-**Historical rates.** A lookup for a past date should see only what was known then, in the form the source published it.
+**Historical rates.** A lookup for a past date should see only what was known then, in the form the source published it. Publication times and missing values work in `@ducatjs/money/convert` itself; quoted tables and ranges are in the opt-in `@ducatjs/money/convert/history`, so converting at rates you already hold doesn't pay for them.
 
 - **Publication time.** `availableAt` on a rate or a table hides it from lookups before then, so a query for 09:00 on a publication day gets the day before. A date query covers the whole day.
-- **How a rate was quoted.** Many central banks quote the other way round (CAD per USD) or per 100 units (NOK per 100 JPY). `rateTable({ base, inverted: true, rates })` and per-entry `{ rate, per, inverted }` store the exact rate in the table's direction and keep the published quote. `{ rate, decimals }` rebuilds the trailing zeros a feed strips (`'1.175'` with 4 decimals is `'1.1750'`).
+- **How a rate was quoted.** Many central banks quote the other way round (CAD per USD) or per 100 units (NOK per 100 JPY). `quotedTable({ base, inverted: true, rates })` and per-entry `{ rate, per, inverted }` store the exact rate in the table's direction and keep the published quote. `{ rate, decimals }` rebuilds the trailing zeros a feed strips (`'1.175'` with 4 decimals is `'1.1750'`).
 - **Missing values.** `null` in a table's `rates` marks a currency the source listed without a value (a holiday, `ND`, `N/A`). The table lists it in `missing`, and every parser reads those markers the same way.
 - **Periods.** A table with `validUntil` (a monthly rate, say) answers any day up to that date and nothing after it.
-- **Ranges.** `rateHistory(tables)` answers synchronously from a date range loaded in one call. Each pair falls back on its own (a currency missing on a holiday comes from the day before), up to `lookback` days (default 4), and `lookup()` says why it fell back. `snapshots().lookup()` does the same for tables loaded day by day.
+- **Ranges.** `rateHistory(tables)` answers synchronously from a date range loaded in one call. Each pair falls back on its own (a currency missing on a holiday comes from the day before), up to `lookback` days (default 4), and `lookup()` says why it fell back: `noTable`, `notYetAvailable`, `expired`, `missing` or `notQuoted`. A table with a `validUntil` answers its whole period whatever the lookback. `snapshots()` skips tables not yet published, too.
 
-<!-- doctest: setup import { readFileSync } from 'node:fs'; const xml90Days = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const ecbXml = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
 
 ```ts
-import { rateHistory, rateTable } from '@ducatjs/money/convert';
 import { parseEcbXml } from '@ducatjs/money/convert/ecb';
+import { quotedTable, rateHistory } from '@ducatjs/money/convert/history';
 
-const history = rateHistory(parseEcbXml(xml90Days));
+const history = rateHistory(parseEcbXml(ecbXml)); // e.g. eurofxref-hist-90d.xml
 const sunday = history.lookup('EUR', 'USD', { asOf: '2026-11-08' });
 sunday.rate?.asOf; // → '2026-11-06'
 sunday.skipped.map((fallback) => fallback.day); // → ['2026-11-08', '2026-11-07']
 sunday.skipped[0]?.reason; // → 'noTable' (a weekend: no table that day)
 
-const nok = rateTable({
+const nok = quotedTable({
   base: 'NOK',
   asOf: '2026-11-06',
   rates: { JPY: { rate: '6.50', per: 100, inverted: true }, ISK: null },

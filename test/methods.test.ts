@@ -62,6 +62,7 @@ describe('Money methods', () => {
       'snapshots',
       'snapshotsFrom',
       'rateHistory',
+      'quotedTable',
       // exact intermediates: constructors, a batch sum, and a conversion that returns a record
       'convertDetailed',
       'sumExact',

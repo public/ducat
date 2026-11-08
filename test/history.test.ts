@@ -3,15 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { convert } from '../src/convert.js';
 import { money } from '../src/fn.js';
 import { parseEcbCsv } from '../src/ecb.js';
-import {
-  rateHistory,
-  rateTable,
-  snapshots,
-  snapshotsFrom,
-  via,
-  type RateTable,
-} from '../src/provider.js';
-import { exchangeRate, rateFromJSON, rateFromQuote, type RateJSON } from '../src/rate.js';
+import { quotedTable, rateFromQuote, rateHistory } from '../src/history.js';
+import { rateTable, snapshots, snapshotsFrom, via, type RateTable } from '../src/provider.js';
+import { exchangeRate, rateFromJSON, type RateJSON } from '../src/rate.js';
 import { readRateCell, withDecimals } from '../src/rate-text.js';
 
 const DAY_MS = 86_400_000;
@@ -57,19 +51,15 @@ describe('publication time (availableAt)', () => {
   it('snapshots pass over a table not yet published at the instant asked for', async () => {
     const thursday = ecbDay('2026-11-05', { USD: '1.1100' }, '2026-11-05T15:00:00Z');
     const history = snapshotsFrom([published, thursday]);
-    const early = await history.lookup('2026-11-06T09:00:00Z');
-    expect(early.day).toBe('2026-11-05');
-    expect(early.skipped).toEqual([{ day: '2026-11-06', reason: 'notYetAvailable' }]);
-    expect(early.table.rate('EUR', 'USD')?.toString()).toBe('1.1100');
-    const late = await history.lookup('2026-11-06T16:00:00Z');
-    expect([late.day, late.skipped]).toEqual(['2026-11-06', []]);
     expect(await history.at('2026-11-06T09:00:00Z')).toBe(thursday);
+    expect(await history.at('2026-11-06T16:00:00Z')).toBe(published);
+    expect(await history.at('2026-11-06')).toBe(published);
   });
 });
 
 describe('quote direction and per-unit quotes', () => {
   it('an inverted table stores exact inverses and keeps the published quote', () => {
-    const boc = rateTable({
+    const boc = quotedTable({
       base: 'CAD',
       source: 'BoC',
       asOf: '2026-11-06',
@@ -85,7 +75,7 @@ describe('quote direction and per-unit quotes', () => {
   });
 
   it('per-100 quotes, and mixed directions in one table', () => {
-    const nok = rateTable({
+    const nok = quotedTable({
       base: 'NOK',
       asOf: '2026-11-06',
       rates: {
@@ -97,7 +87,7 @@ describe('quote direction and per-unit quotes', () => {
     expect(nok.rate('NOK', 'JPY')?.toString()).toBe('200/13'); // 100 / 6.5
     expect(nok.rate('NOK', 'JPY')?.inverse().toString()).toBe('0.065');
     expect(nok.rate('NOK', 'JPY')?.quote).toEqual({ rate: '6.50', per: 100, inverted: true });
-    expect(nok.rate('NOK', 'XAU')?.quote).toBeUndefined();
+    expect(nok.rate('NOK', 'XAU')?.quote).toEqual({ rate: '0.0000037' });
     expect(convert(money('1000', 'JPY'), 'NOK', via('NOK', nok), 'halfEven').toDecimal()).toBe(
       '65.00',
     );
@@ -110,9 +100,27 @@ describe('quote direction and per-unit quotes', () => {
     expect(() => rateFromQuote('EUR', 'USD', { rate: '1', per: 0 })).toThrow(RangeError);
     expect(() => rateFromQuote('EUR', 'USD', { rate: '1', per: 1.5 })).toThrow(RangeError);
     expect(() => exchangeRate('EUR', 'USD', '1.2', { quote: { rate: '1.3' } })).toThrow(RangeError);
-    expect(() =>
-      rateTable({ base: 'EUR', rates: { USD: { rate: 1.165, inverted: true } } }),
-    ).toThrow(TypeError);
+    expect(() => quotedTable({ base: 'EUR', rates: { USD: '1,165' } })).toThrow(RangeError);
+    // rateTable takes ready-made Rates too, as long as they are base → currency
+    const table = rateTable({
+      base: 'EUR',
+      rates: { USD: rateFromQuote('EUR', 'USD', { rate: '1.10' }) },
+    });
+    expect(table.rate('EUR', 'USD')?.toString()).toBe('1.10');
+  });
+
+  it('the inverse of a quoted rate keeps the published digits', () => {
+    const boc = quotedTable({ base: 'CAD', inverted: true, rates: { USD: '1.3650' } });
+    const usdCad = boc.rate('CAD', 'USD')!.inverse();
+    expect(usdCad.toString()).toBe('1.3650');
+    expect(usdCad.inverse().quote).toEqual({ rate: '1.3650', inverted: true });
+    const perHundred = rateFromQuote('JPY', 'NOK', { rate: '6.50', per: 100 });
+    expect(perHundred.inverse().quote).toEqual({ rate: '6.50', per: 100, inverted: true });
+    expect(perHundred.inverse().inverse().toString()).toBe('0.065');
+    expect(rateFromQuote('EUR', 'USD', { rate: '1.10', per: 1, inverted: false }).quote).toEqual({
+      rate: '1.10',
+    });
+    expect(rateFromQuote('EUR', 'USD', { rate: '1.10', per: 1 }).toString()).toBe('1.10');
   });
 
   it('per and inverted quotes are exact (property)', () => {
@@ -161,13 +169,16 @@ describe('published digits', () => {
     const back = rateFromJSON(huf.toJSON());
     expect([back.toString(), back.availableAt]).toEqual(['363.90', '2026-11-06']);
     expect(exchangeRate('EUR', 'USD', '1.1165').quote).toBeUndefined(); // nothing extra to keep
+    expect(exchangeRate('EUR', 'USD', '2.0').toString()).toBe('2.0');
+    expect(exchangeRate('EUR', 'USD', '01.50').toString()).toBe('1.5'); // not a published form
+    expect(exchangeRate('EUR', 'USD', '150').quote).toBeUndefined();
     expect(exchangeRate('EUR', 'HUF', '363.90').ratio).toEqual(
       exchangeRate('EUR', 'HUF', '363.9').ratio,
     );
   });
 
   it('decimals rebuild the digits a feed stripped', () => {
-    const table = rateTable({
+    const table = quotedTable({
       base: 'EUR',
       rates: { USD: { rate: '1.175', decimals: 4 }, JPY: { rate: '148', decimals: 2 } },
     });
@@ -249,6 +260,8 @@ describe('tables valid for a period', () => {
     const hmrc = rateHistory([october, november], { lookback: 0 });
     expect(hmrc.rate('GBP', 'USD', { asOf: '2026-11-29' })?.toString()).toBe('1.3207');
     expect(hmrc.rate('GBP', 'USD', { asOf: '2026-10-15' })?.toString()).toBe('1.3012');
+    // the month's table is the table for every day in it: nothing was passed over
+    expect(hmrc.lookup('GBP', 'USD', { asOf: '2026-10-15' }).skipped).toEqual([]);
     const december = hmrc.lookup('GBP', 'USD', { asOf: '2026-12-02' });
     expect(december.rate).toBeUndefined();
     expect(december.skipped).toEqual([{ day: '2026-12-02', reason: 'noTable' }]);
@@ -269,6 +282,64 @@ describe('tables valid for a period', () => {
         { day: '2026-11-29', reason: 'noTable' },
       ],
     });
+  });
+});
+
+describe('rateHistory: daily and period tables together', () => {
+  const annual = rateTable({
+    base: 'GBP',
+    asOf: '2026-01-01',
+    validUntil: '2026-12-31',
+    rates: { USD: '1.2500', JPY: '190.00' },
+  });
+  const daily = rateTable({ base: 'GBP', asOf: '2026-03-02', rates: { USD: '1.2600' } });
+  const expiredMonth = rateTable({
+    base: 'GBP',
+    asOf: '2026-05-01',
+    validUntil: '2026-05-31',
+    rates: { USD: '1.2700' },
+  });
+  const history = rateHistory([annual, daily, expiredMonth]);
+
+  it('an older period table still covers a day after newer tables are out of range', () => {
+    const june = history.lookup('GBP', 'USD', { asOf: '2026-06-15' });
+    expect(june.rate?.toString()).toBe('1.2500');
+    expect(june.skipped).toEqual([]);
+    // a daily table in the lookback wins over the period table: it is newer
+    const march = history.lookup('GBP', 'USD', { asOf: '2026-03-04' });
+    expect(march.rate?.toString()).toBe('1.2600');
+    expect(march.skipped).toEqual([
+      { day: '2026-03-04', reason: 'noTable' },
+      { day: '2026-03-03', reason: 'noTable' },
+    ]);
+    // the daily table lacks JPY, so the year's table answers
+    const yen = history.lookup('GBP', 'JPY', { asOf: '2026-03-02' });
+    expect(yen.rate?.toString()).toBe('190.00');
+    expect(yen.skipped).toEqual([{ day: '2026-03-02', reason: 'notQuoted' }]);
+  });
+
+  it('a table of ready-made Rates reports the reasons of its rates', () => {
+    const table = rateTable({
+      base: 'EUR',
+      asOf: '2026-11-06',
+      rates: {
+        USD: exchangeRate('EUR', 'USD', '1.1165', {
+          asOf: '2026-11-06',
+          availableAt: '2026-11-06T15:00:00Z',
+        }),
+        JPY: exchangeRate('EUR', 'JPY', '176.77', {
+          asOf: '2026-11-06',
+          validUntil: '2026-11-06T12:00:00Z',
+        }),
+      },
+    });
+    const history = rateHistory([table], { lookback: 0 });
+    expect(history.lookup('EUR', 'USD', { asOf: '2026-11-06T09:00:00Z' }).skipped).toEqual([
+      { day: '2026-11-06', reason: 'notYetAvailable' },
+    ]);
+    expect(history.lookup('EUR', 'JPY', { asOf: '2026-11-06T13:00:00Z' }).skipped).toEqual([
+      { day: '2026-11-06', reason: 'expired' },
+    ]);
   });
 });
 
@@ -339,6 +410,79 @@ describe('rateHistory: a date range in one call, with reasons', () => {
     expect(eur.toDecimal()).toBe('100.00');
   });
 
+  it('matches a brute-force search over daily and period tables (property)', () => {
+    const start = '2026-01-01';
+    const table = fc.record({
+      offset: fc.integer({ min: 0, max: 60 }),
+      kind: fc.constantFrom('daily', 'daily', 'daily', 'period'),
+      length: fc.integer({ min: 0, max: 30 }),
+      published: fc.option(fc.integer({ min: 0, max: 23 })),
+      usd: fc.constantFrom('quoted', 'quoted', 'quoted', 'missing', 'absent'),
+    });
+    fc.assert(
+      fc.property(
+        fc.array(table, { maxLength: 15 }),
+        fc.integer({ min: -2, max: 70 }),
+        fc.integer({ min: 0, max: 23 }),
+        fc.integer({ min: 0, max: 6 }),
+        (specs, queryOffset, queryHour, lookback) => {
+          const built = specs.map((spec, i) => {
+            const asOf = addDays(start, spec.offset);
+            const rates: Record<string, string | null> = { JPY: '170.00' };
+            if (spec.usd === 'quoted') {
+              rates['USD'] = `1.${String(i).padStart(4, '0')}`;
+            } else if (spec.usd === 'missing') {
+              rates['USD'] = null;
+            }
+            let validUntil: string | undefined;
+            if (spec.kind === 'period') {
+              validUntil = addDays(asOf, spec.length);
+            }
+            let availableAt: string | undefined;
+            if (spec.published !== null) {
+              availableAt = `${asOf}T${String(spec.published).padStart(2, '0')}:00:00.000Z`;
+            }
+            return {
+              asOf,
+              validUntil,
+              availableAt,
+              table: rateTable({
+                base: 'EUR',
+                asOf,
+                ...(validUntil === undefined ? {} : { validUntil }),
+                ...(availableAt === undefined ? {} : { availableAt }),
+                rates,
+              }),
+            };
+          });
+          const queryDay = addDays(start, queryOffset);
+          const instant = `${queryDay}T${String(queryHour).padStart(2, '0')}:30:00.000Z`;
+          const found = rateHistory(
+            built.map((entry) => entry.table),
+            { lookback },
+          ).rate('EUR', 'USD', { asOf: instant });
+
+          // brute force: every table that applies at the instant, newest first (stable)
+          const oldest = addDays(queryDay, -lookback);
+          const candidates = built
+            .map((entry, i) => ({ ...entry, i }))
+            .filter((entry) => entry.asOf <= queryDay)
+            .filter((entry) => entry.validUntil === undefined || entry.validUntil >= queryDay)
+            .filter((entry) => entry.asOf >= oldest || entry.validUntil !== undefined)
+            .filter((entry) => entry.availableAt === undefined || entry.availableAt <= instant)
+            .filter((entry) => entry.table.rate('EUR', 'USD') !== undefined)
+            .sort((entry, other) => other.asOf.localeCompare(entry.asOf) || entry.i - other.i);
+          expect(found).toBe(candidates[0]?.table.rate('EUR', 'USD'));
+          // a lookup never sees a rate before it was published or after its period
+          if (found !== undefined) {
+            expect(found.isAvailable(instant)).toBe(true);
+            expect(found.isExpired(instant)).toBe(false);
+          }
+        },
+      ),
+    );
+  });
+
   it('matches a day-by-day search (property)', () => {
     const start = '2026-01-01';
     const days = fc.uniqueArray(fc.integer({ min: 0, max: 40 }), { maxLength: 20 });
@@ -372,20 +516,5 @@ describe('rateHistory: a date range in one call, with reasons', () => {
         },
       ),
     );
-  });
-});
-
-describe('snapshots report why they fell back', () => {
-  it('lists the days without a table', async () => {
-    const history = snapshots(async (day) =>
-      day === '2026-11-06' ? ecbDay(day, { USD: '1.1165' }) : undefined,
-    );
-    const found = await history.lookup('2026-11-08');
-    expect(found.day).toBe('2026-11-06');
-    expect(found.skipped).toEqual([
-      { day: '2026-11-08', reason: 'noTable' },
-      { day: '2026-11-07', reason: 'noTable' },
-    ]);
-    await expect(history.lookup('2026-11-20')).rejects.toThrow(/2026-11-20/);
   });
 });

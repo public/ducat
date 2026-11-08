@@ -9,15 +9,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
-- **Historical rates** in `@ducatjs/money/convert`: `availableAt` on rates and tables (a lookup
-  before publication gets nothing), quotes kept as published (`Rate#quote`, `rateFromQuote`, and
-  `per`, `inverted` and `decimals` in `rateTable`), `null` for missing values with the table's
-  `missing` list, tables valid for a period through `validUntil`, `rateHistory()` over a date
-  range, and `lookup()` on it and on `snapshots()` reporting why a lookup fell back.
+- **Historical rates.** In `@ducatjs/money/convert`: `availableAt` on rates and tables (a lookup
+  before publication gets nothing, `Rate#isAvailable`), `Rate#quote` with the published digits,
+  `null` for missing values with the table's `missing` list, and `validUntil` periods on tables.
+  In the new opt-in `@ducatjs/money/convert/history`: `quotedTable` and `rateFromQuote` for rates
+  published the other way round, per 100 units or with stripped zeros (`per`, `inverted`,
+  `decimals`), and `rateHistory()` over a date range, whose `lookup()` reports why it fell back.
 
 ### Changed
 
-- A decimal-string rate prints with the digits it was given: `exchangeRate('EUR', 'HUF',
+- **Visible change:** `Rate#toString()` (and so `toJSON().rate`) prints a decimal-string rate
+  with the digits it was given, and `rateFromJSON` keeps them: `exchangeRate('EUR', 'HUF',
   '363.90').toString()` is `'363.90'`, not `'363.9'`. The value is unchanged.
 - `rateTable` lookups with an `asOf` after a rate's `validUntil` now return nothing.
 - `parseEcbCsv` lists `N/A` and blank cells in the table's `missing`, and throws on a cell that
