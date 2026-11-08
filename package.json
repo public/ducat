@@ -230,6 +230,7 @@
     "oxfmt": "0.77.0",
     "oxlint": "1.92.0",
     "pg": "8.23.1",
+    "pg-cursor": "2.22.1",
     "ts-money": "^0.4.8",
     "typescript": "^5.9.3",
     "valibot": "1.5.0",

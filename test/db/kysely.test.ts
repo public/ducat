@@ -3,6 +3,7 @@
 import { MysqlDialect, PostgresDialect } from 'kysely';
 import { createPool } from 'mysql2';
 import pg from 'pg';
+import Cursor from 'pg-cursor';
 import { describe, expect, it } from 'vitest';
 import { kyselyScenario } from '../kysely-scenario.js';
 
@@ -19,7 +20,9 @@ describe('Kysely database configuration', () => {
 kyselyScenario('Postgres (node-postgres)', Boolean(pgUrl), {
   dialect: 'postgres',
   // node-postgres defaults: int8 and numeric as strings, json parsed
-  makeDialect: () => new PostgresDialect({ pool: new pg.Pool({ connectionString: pgUrl }) }),
+  // pg-cursor gives stream() real server-side chunks
+  makeDialect: () =>
+    new PostgresDialect({ pool: new pg.Pool({ connectionString: pgUrl }), cursor: Cursor }),
   ddl: [
     'CREATE TABLE ducat_kysely_payments (id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL, ' +
       'amount_minor BIGINT NOT NULL, currency CHAR(3))',
@@ -27,7 +30,7 @@ kyselyScenario('Postgres (node-postgres)', Boolean(pgUrl), {
       'price NUMERIC(19,4))',
     'CREATE TABLE ducat_kysely_ledger (id INTEGER PRIMARY KEY, amount_minor BIGINT, currency CHAR(3))',
   ],
-  canStream: false,
+  canStream: true,
 });
 
 kyselyScenario('MySQL (mysql2)', Boolean(mysqlUrl), {
