@@ -3,12 +3,13 @@
  * methods below.
  */
 import type { Factor } from '../decimal.js';
-import { extendMoney, type Money, type RoundingInput } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney, type RoundingInput } from '../money.js';
 import { addTax, discount, extractTax, percentage, type TaxBreakdown } from '../tax.js';
 
 export * from '../tax.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /** `percent`% of this, e.g. `price.percentage(15, 'halfEven')` */
     percentage(percent: Factor, rounding?: RoundingInput): Money<C>;

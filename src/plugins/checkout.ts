@@ -3,11 +3,12 @@
  * and `toCheckoutAmount`.
  */
 import { toCheckout, toCheckoutAmount, type CheckoutAmountOptions } from '../checkout.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 
 export * from '../checkout.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /**
      * The integer `amount` to send to Checkout.com: `money('5000', 'CLP').toCheckoutAmount()` is

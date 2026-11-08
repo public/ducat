@@ -2,12 +2,13 @@
  * `@ducatjs/money/paypal`: PayPal's amount view. Importing this module adds `toPayPal` and
  * `toPayPalValue`.
  */
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 import { toPayPal, toPayPalValue, type PayPalAmountOptions } from '../paypal.js';
 
 export * from '../paypal.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /** The exact `value` string for PayPal: `money('1000', 'HUF').toPayPalValue()` is '1000'. */
     toPayPalValue(options?: PayPalAmountOptions): string;
