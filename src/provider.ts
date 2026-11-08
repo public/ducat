@@ -358,8 +358,8 @@ export function snapshots(
 
       for (let i = 0; i <= lookback; i++) {
         const day = new Date(firstDayMs - i * DAY_MS).toISOString().slice(0, 10);
-        // Sequential on purpose: stop at the first day that has a table, without loading older
-        // days. oxlint-disable-next-line no-await-in-loop
+        // Sequential on purpose: stop at the first day that has a table, without loading older days.
+        // oxlint-disable-next-line no-await-in-loop
         const table = await loadDay(day);
         // A table not yet published at the instant asked for is passed over like a missing one.
         const availableAt = (table as Partial<RateTable> | undefined)?.availableAt;

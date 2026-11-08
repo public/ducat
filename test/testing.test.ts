@@ -146,7 +146,7 @@ describe('types', () => {
   it('the matchers are typed on expect', () => {
     expect(money('1', 'EUR')).toBeMoney('1', 'EUR');
     // @ts-expect-error toBeMoney needs a currency
-    expect(() => expect(money('1', 'EUR')).toBeMoney('1')).toThrow();
+    expect(() => expect(money('1', 'EUR')).toBeMoney('1')).toThrow(/Unknown currency/);
   });
 });
 

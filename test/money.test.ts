@@ -67,22 +67,22 @@ describe('construction', () => {
     expect(money(12.34, 'EUR').minor).toBe(1234);
     expect(money(1e-7, 'EUR', { scale: 7 }).minor).toBe(1);
     expect(() => money(0.1 + 0.2, 'EUR')).toThrow(RoundingError); // 0.30000000000000004 is not silently 0.30
-    expect(() => money(NaN, 'EUR')).toThrow();
+    expect(() => money(NaN, 'EUR')).toThrow(/Invalid amount NaN/);
   });
   it('rejects malformed input', () => {
     for (const bad of ['', '-', '1.', '.5', '1,5', '1..2', 'abc', '1 2', '0x10', 'Infinity'])
-      expect(() => eur(bad)).toThrow();
+      expect(() => eur(bad)).toThrow(SyntaxError);
   });
   it('rejects unknown currencies but accepts registered ones', () => {
     expect(() => money('1', 'XYZ')).toThrow(/Unknown currency/);
     defineCurrency('BTC', 8);
     expect(money('0.00000001', 'BTC').minor).toBe(1);
-    expect(() => defineCurrency('EUR', 3)).toThrow();
+    expect(() => defineCurrency('EUR', 3)).toThrow(/cannot be redefined/);
     expect(() => money('1', 'toString')).toThrow(/Unknown currency/);
   });
   it('fromMinor requires safe integers', () => {
     expect(fromMinor(1234, 'EUR').toString()).toBe('12.34 EUR');
-    expect(() => fromMinor(1.5, 'EUR')).toThrow();
+    expect(() => fromMinor(1.5, 'EUR')).toThrow(/safe integer/);
     expect(() => fromMinor(2 ** 53, 'EUR')).toThrow(/bigint/);
     expect(fromMinor(2n ** 64n, 'EUR').minor).toBe(2n ** 64n);
     expect(fromMinor(5n, 'EUR').minor).toBe(5); // normalised back to a number
@@ -147,7 +147,7 @@ describe('arithmetic', () => {
   it('sum', () => {
     expect(toDecimal(sum([eur('0.10'), eur('0.20'), eur('0.30')]))).toBe('0.60');
     expect(toDecimal(sum([], 'EUR'))).toBe('0.00');
-    expect(() => sum([])).toThrow();
+    expect(() => sum([])).toThrow(/needs a currency/);
     const big = [
       fromMinor(Number.MAX_SAFE_INTEGER, 'EUR'),
       fromMinor(Number.MAX_SAFE_INTEGER, 'EUR'),
@@ -193,7 +193,9 @@ describe('serialisation', () => {
   it('minor units', () => {
     expect(toMinor(eur('12.34'))).toBe(1234n);
     expect(toMinorNumber(eur('12.34'))).toBe(1234);
-    expect(() => toMinorNumber(fromMinor(2n ** 60n, 'EUR'))).toThrow();
+    expect(() => toMinorNumber(fromMinor(2n ** 60n, 'EUR'))).toThrow(
+      /does not fit in a safe integer/,
+    );
   });
 });
 

@@ -1,6 +1,13 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { fromMinor, money, ratio, type Money, type RoundingMode } from '../src/fn.js';
+import {
+  RoundingError,
+  fromMinor,
+  money,
+  ratio,
+  type Money,
+  type RoundingMode,
+} from '../src/fn.js';
 import { divideAndRoundBigint } from '../src/rounding.js';
 import { convert } from '../src/convert.js';
 import {
@@ -71,7 +78,7 @@ describe('Rate', () => {
     expect(() => eurUsd.convert(money('1', 'GBP'))).toThrow(/currency/i);
     expect(() => exchangeRate('EUR', 'USD', '0')).toThrow(RangeError);
     expect(() => exchangeRate('EUR', 'USD', '-1.2')).toThrow(RangeError);
-    expect(() => eurUsd.convert(money('1', 'EUR'), 'unnecessary')).toThrow();
+    expect(() => eurUsd.convert(money('1', 'EUR'), 'unnecessary')).toThrow(RoundingError);
   });
 
   it('keeps every digit of a decimal-string rate, trailing zeros included', () => {

@@ -520,6 +520,10 @@ export function zero<C extends CurrencyInput>(currency: C, scale?: number): Mone
 // ---------------------------------------------------------------------------------------------
 
 function mismatch(money: Money, other: Money): never {
+  // only reached on the error path, so this check costs correct calls nothing
+  if (!((other as unknown) instanceof Money)) {
+    throw new TypeError(`Expected Money, got ${typeof other}`);
+  }
   throw new CurrencyMismatchError(money.currency, other.currency);
 }
 

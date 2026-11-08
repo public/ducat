@@ -143,11 +143,11 @@ describe('parseEcbSdmxCsv', () => {
   });
 
   it('DECIMALS: malformed values throw, the caps apply to stated decimals only', () => {
-    const series = (decimals: string) =>
+    const seriesWith = (decimals: string) =>
       `KEY,FREQ,CURRENCY,DECIMALS\nEXR.D.THB.EUR.SP00.A,D,THB,${decimals}`;
-    expect(parseEcbSdmxDecimals(series('4'))).toEqual({ THB: 3 });
-    expect(() => parseEcbSdmxDecimals(series('x'))).toThrow(/Malformed DECIMALS/);
-    expect(() => parseEcbSdmxDecimals(series('31'))).toThrow(SyntaxError);
+    expect(parseEcbSdmxDecimals(seriesWith('4'))).toEqual({ THB: 3 });
+    expect(() => parseEcbSdmxDecimals(seriesWith('x'))).toThrow(/Malformed DECIMALS/);
+    expect(() => parseEcbSdmxDecimals(seriesWith('31'))).toThrow(SyntaxError);
     expect(() => parseEcbSdmxDecimals('KEY,FREQ,CURRENCY,DECIMALS\nEXR,D,THB')).toThrow(
       SyntaxError,
     );

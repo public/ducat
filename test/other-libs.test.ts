@@ -271,12 +271,16 @@ describe('large values', () => {
 
 describe('parsing is strict', () => {
   // currency.js #184: junk was stripped ("123.sd" became 123.00)
-  it.each(['123.sd', 'a1b2c3', 'abc', '', ' ', '1.2.3', '1e-7', 'NaN', 'Infinity', '1,000'])(
+  it.each(['123.sd', 'a1b2c3', 'abc', '', ' ', '1.2.3', 'NaN', 'Infinity', '1,000'])(
     'money(%j) throws',
     (input) => {
-      expect(() => money(input, 'EUR')).toThrow();
+      expect(() => money(input, 'EUR')).toThrow(SyntaxError);
     },
   );
+
+  it('reads "1e-7" exactly, so it is too precise for EUR rather than junk', () => {
+    expect(() => money('1e-7', 'EUR')).toThrow(/more than 2 decimal places/);
+  });
 
   // currency.js #147, #412: "2.443233038698408e+21" became 2.44
   it('reads exponent notation exactly, or not at all', () => {
@@ -298,7 +302,7 @@ describe('parsing is strict', () => {
 
   // dinero.js 1 #637: currency codes are case-sensitive; ducat rejects lower case outright
   it('rejects a lower-case code instead of treating it as another currency', () => {
-    expect(() => money('1', 'usd')).toThrow();
+    expect(() => money('1', 'usd')).toThrow(/Unknown currency "usd"/);
   });
 });
 

@@ -7,10 +7,21 @@
     "vitest/no-conditional-expect": "off",
     // fc.integer(), fc.property(): fast-check's documented namespace idiom
     "import/no-named-as-default-member": "off",
-    // tightened as the suite asserts specific error classes
-    "vitest/require-to-throw-message": "warn",
-    "vitest/expect-expect": ["warn", { "assertFunctionNames": ["expect", "eq", "fc.assert"] }],
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+    // every toThrow names the error class or message it expects
+    "vitest/require-to-throw-message": "error",
+    "vitest/expect-expect": [
+      "warn",
+      { "assertFunctionNames": ["expect", "expectTypeOf", "eq", "fc.assert"] }
+    ],
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    // `money` and `sum` are the parameter names CONTRIBUTING.md asks for, and shadowing the
+    // factory of the same name inside an operation is the intended reading
+    "no-shadow": ["warn", { "allow": ["money", "sum"] }],
+    // opt-in modules install methods on import: `import '@ducatjs/money/allocate'` is the API
+    "import/no-unassigned-import": [
+      "warn",
+      { "allow": ["**/plugins/*", "**/testing/vitest*", "@ducatjs/money/*"] }
+    ]
   },
   "overrides": [
     {
@@ -29,6 +40,18 @@
             "properties": "never"
           }
         ]
+      }
+    },
+    {
+      // tests, benchmarks and scripts run their steps in order on purpose: one database
+      // connection, one bundle at a time, readable failures
+      "files": ["test/**", "bench/**", "scripts/**", "compare/**"],
+      // and their object building is not a hot path
+      "rules": {
+        "no-await-in-loop": "off",
+        "oxc/no-map-spread": "off",
+        // big.js, bignumber.js and decimal.js document `import Big from 'big.js'`
+        "import/no-named-as-default": "off"
       }
     }
   ],

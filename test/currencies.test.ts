@@ -13,7 +13,9 @@ import {
 
 describe('ISO 4217 table', () => {
   it('generated table is up to date with data/', () => {
-    execFileSync(process.execPath, ['scripts/gen-currencies.mjs', '--check']);
+    expect(() =>
+      execFileSync(process.execPath, ['scripts/gen-currencies.mjs', '--check']),
+    ).not.toThrow();
   });
   it('known exponents', () => {
     expect(ISO_4217_PUBLISHED).toBe('2026-09-17');
@@ -44,8 +46,8 @@ describe('ISO 4217 table', () => {
     }
     expect(currencyExponent('ZWG')).toBe(2);
     expect(currencyExponent('XCG')).toBe(2);
-    expect(() => currencyExponent('HRK')).toThrow(); // withdrawn 2023
-    expect(() => currencyExponent('BGN')).toThrow(); // withdrawn 2026 (Bulgaria joined the euro)
+    expect(() => currencyExponent('HRK')).toThrow(/Unknown currency "HRK"/); // withdrawn 2023
+    expect(() => currencyExponent('BGN')).toThrow(/Unknown currency "BGN"/); // withdrawn 2026 (Bulgaria joined the euro)
     expect(ISO_NON_MONETARY).toContain('XAU');
   });
   it('format() shows ISO digits on every engine, whatever CLDR default the engine has', () => {

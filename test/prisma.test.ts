@@ -3,7 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { Decimal as PrismaDecimal } from '@prisma/client/runtime/library';
 import DecimalJs from 'decimal.js';
 import Big from 'big.js';
-import { fromMinor, identical, money, toDecimal } from '../src/fn.js';
+import { RoundingError, fromMinor, identical, money, toDecimal } from '../src/fn.js';
 import { runs } from './fc-config.js';
 import {
   decimalMoneyField,
@@ -26,7 +26,7 @@ describe('Prisma / DB helpers', () => {
   });
   it('NUMERIC(19,4) style values with trailing zeros are accepted', () => {
     expect(toDecimal(fromDecimal(new PrismaDecimal('12.3400'), 'EUR'))).toBe('12.34');
-    expect(() => fromDecimal(new PrismaDecimal('12.3456'), 'EUR')).toThrow();
+    expect(() => fromDecimal(new PrismaDecimal('12.3456'), 'EUR')).toThrow(RoundingError);
   });
   it('result-extension fields', () => {
     const f = minorMoneyField('totalMinor', 'currency');

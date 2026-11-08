@@ -1,0 +1,3 @@
+#!/bin/sh
+# Conventional Commits subjects (see CONTRIBUTING.md)
+exec sh "$(git rev-parse --show-toplevel)/scripts/check-commit-msg.sh" "$1"

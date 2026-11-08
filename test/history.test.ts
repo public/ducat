@@ -50,10 +50,10 @@ describe('publication time (availableAt)', () => {
 
   it('snapshots pass over a table not yet published at the instant asked for', async () => {
     const thursday = ecbDay('2026-11-05', { USD: '1.1100' }, '2026-11-05T15:00:00Z');
-    const history = snapshotsFrom([published, thursday]);
-    expect(await history.at('2026-11-06T09:00:00Z')).toBe(thursday);
-    expect(await history.at('2026-11-06T16:00:00Z')).toBe(published);
-    expect(await history.at('2026-11-06')).toBe(published);
+    const oneDayHistory = snapshotsFrom([published, thursday]);
+    expect(await oneDayHistory.at('2026-11-06T09:00:00Z')).toBe(thursday);
+    expect(await oneDayHistory.at('2026-11-06T16:00:00Z')).toBe(published);
+    expect(await oneDayHistory.at('2026-11-06')).toBe(published);
   });
 });
 
@@ -299,21 +299,21 @@ describe('rateHistory: daily and period tables together', () => {
     validUntil: '2026-05-31',
     rates: { USD: '1.2700' },
   });
-  const history = rateHistory([annual, daily, expiredMonth]);
+  const tableHistory = rateHistory([annual, daily, expiredMonth]);
 
   it('an older period table still covers a day after newer tables are out of range', () => {
-    const june = history.lookup('GBP', 'USD', { asOf: '2026-06-15' });
+    const june = tableHistory.lookup('GBP', 'USD', { asOf: '2026-06-15' });
     expect(june.rate?.toString()).toBe('1.2500');
     expect(june.skipped).toEqual([]);
     // a daily table in the lookback wins over the period table: it is newer
-    const march = history.lookup('GBP', 'USD', { asOf: '2026-03-04' });
+    const march = tableHistory.lookup('GBP', 'USD', { asOf: '2026-03-04' });
     expect(march.rate?.toString()).toBe('1.2600');
     expect(march.skipped).toEqual([
       { day: '2026-03-04', reason: 'noTable' },
       { day: '2026-03-03', reason: 'noTable' },
     ]);
     // the daily table lacks JPY, so the year's table answers
-    const yen = history.lookup('GBP', 'JPY', { asOf: '2026-03-02' });
+    const yen = tableHistory.lookup('GBP', 'JPY', { asOf: '2026-03-02' });
     expect(yen.rate?.toString()).toBe('190.00');
     expect(yen.skipped).toEqual([{ day: '2026-03-02', reason: 'notQuoted' }]);
   });
@@ -349,10 +349,14 @@ describe('rateHistory: daily and period tables together', () => {
       availableAt: '2026-06-15T12:00:00Z',
       rates: { USD: '1.2700' },
     });
-    const daily = rateTable({ base: 'GBP', asOf: '2026-06-13', rates: { USD: '1.2600' } });
-    const found = rateHistory([unpublishedMonth, daily], { lookback: 2 }).lookup('GBP', 'USD', {
-      asOf: '2026-06-15T09:00:00Z',
-    });
+    const dailyTable = rateTable({ base: 'GBP', asOf: '2026-06-13', rates: { USD: '1.2600' } });
+    const found = rateHistory([unpublishedMonth, dailyTable], { lookback: 2 }).lookup(
+      'GBP',
+      'USD',
+      {
+        asOf: '2026-06-15T09:00:00Z',
+      },
+    );
     expect(found.rate?.asOf).toBe('2026-06-13');
     expect(found.skipped).toEqual([
       { day: '2026-06-15', reason: 'notYetAvailable' },

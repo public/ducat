@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import '../src/plugins/all.js';
 import { fixed, fromScaled, type Fixed } from '../src/fixed.js';
-import { money, roundToIncrement, type RoundingMode } from '../src/fn.js';
+import { RoundingError, money, roundToIncrement, type RoundingMode } from '../src/fn.js';
 
 const MODES: readonly RoundingMode[] = [
   'halfEven',
@@ -168,7 +168,7 @@ describe('division', () => {
   // bignumber.js #347: repeated halving at a fixed scale stops moving; ducat rounds each step,
   // so it does too, and says so: an exact result needs a scale that holds it
   it('throws for an inexact division asked to be exact', () => {
-    expect(() => fixed('0.01').divide(2, 'unnecessary')).toThrow();
+    expect(() => fixed('0.01').divide(2, 'unnecessary')).toThrow(RoundingError);
     expect(fixed('0.01').divide(2, 'unnecessary', { scale: 3 }).toString()).toBe('0.005');
   });
 });
@@ -226,7 +226,7 @@ describe('exact arithmetic at any size', () => {
   it('reads a number at its shortest decimal form, documented', () => {
     expect(fixed(1.005).toString()).toBe('1.005');
     expect(fixed(1.005).toScale(2, 'halfExpand').toString()).toBe('1.01');
-    expect(() => fixed(0.1 + 0.2)).toThrow();
+    expect(() => fixed(0.1 + 0.2)).toThrow(RangeError);
   });
 });
 
@@ -236,8 +236,8 @@ describe('huge exponents are rejected up front', () => {
     '%s throws quickly',
     (text) => {
       const started = performance.now();
-      expect(() => fixed(text)).toThrow();
-      expect(() => money(text, 'EUR')).toThrow();
+      expect(() => fixed(text)).toThrow(/exponent|beyond 1000/);
+      expect(() => money(text, 'EUR')).toThrow(/exponent|beyond 1000/);
       expect(performance.now() - started).toBeLessThan(200);
     },
   );

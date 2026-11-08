@@ -197,7 +197,9 @@ describe('encoding', () => {
       ),
       { numRuns: runs(300) },
     );
-    expect(() => z.encode(zod.moneySchema(), { amount: '1', currency: 'EUR' } as never)).toThrow();
+    expect(() => z.encode(zod.moneySchema(), { amount: '1', currency: 'EUR' } as never)).toThrow(
+      z.ZodError,
+    );
   });
 
   it('Valibot reads back what toJSON writes', () => {
