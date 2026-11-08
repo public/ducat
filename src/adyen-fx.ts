@@ -55,9 +55,20 @@ function offsetMinutes(zone: string): number | undefined {
   return numeric[1] === '-' ? -total : total;
 }
 
-/** The offset of an IANA time zone at a UTC instant, in minutes. */
-function ianaOffsetMinutes(timeZone: string, utcMs: number): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
+// Building an Intl.DateTimeFormat is far slower than using one, and a report has thousands of rows
+// in one zone, so keep one formatter per zone. The bound stops a stream of distinct zone names
+// (case variants are accepted by Intl) from growing the cache without limit.
+const MAX_CACHED_FORMATTERS = 32;
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/** The cached wall-clock formatter for an IANA time zone. */
+function wallClockFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = formatters.get(timeZone);
+  if (formatter !== undefined) {
+    return formatter;
+  }
+
+  formatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
     hourCycle: 'h23',
     year: 'numeric',
@@ -66,7 +77,17 @@ function ianaOffsetMinutes(timeZone: string, utcMs: number): number {
     hour: 'numeric',
     minute: 'numeric',
     second: 'numeric',
-  }).formatToParts(new Date(utcMs));
+  });
+  if (formatters.size >= MAX_CACHED_FORMATTERS) {
+    formatters.clear();
+  }
+  formatters.set(timeZone, formatter);
+  return formatter;
+}
+
+/** The offset of an IANA time zone at a UTC instant, in minutes. */
+function ianaOffsetMinutes(timeZone: string, utcMs: number): number {
+  const parts = wallClockFormatter(timeZone).formatToParts(new Date(utcMs));
   const field = (type: string): number => Number(parts.find((part) => part.type === type)!.value);
   const wallClockAsUtc = Date.UTC(
     field('year'),

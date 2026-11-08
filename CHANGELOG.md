@@ -18,6 +18,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   1.0 EUR and 1.00 EUR as equal).
 - `m.with(operation)` applies a function such as a rounding step or a conversion as one link of a
   method chain.
+- **Drizzle ORM column types** in `@ducatjs/money/drizzle/pg`, `/drizzle/mysql` and
+  `/drizzle/sqlite`: `moneyMinor('EUR')` (BIGINT minor units), `moneyDecimal('EUR')` (NUMERIC) and
+  `moneyJson()` (JSON), so selects return `Money` and inserts take it, with the currency in the
+  column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
+  that may have lost digits. `drizzle-orm` is an optional peer dependency.
+  See [Drizzle](README.md#drizzle).
+
+### Changed
+
+- `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
+  building one for every row, which makes it about 20 times faster.
 
 ### Changed
 

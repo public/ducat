@@ -2,6 +2,7 @@ packages:
   - compare
 allowBuilds:
   '@prisma/client': false
+  better-sqlite3: true
   esbuild: true
 minimumReleaseAgeExclude:
   - '@codspeed/core@6.1.1'
