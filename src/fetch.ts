@@ -1,6 +1,7 @@
 // Network fetchers for published reference rates, using the platform fetch. Opt-in: nothing else in
 // the library imports this module, so core and @ducatjs/money/convert never touch the
 // network. You decide when to call it and how to cache.
+import { parseBankOfCanadaJson } from './boc.js';
 import { parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml } from './ecb.js';
 import type { RateTable } from './provider.js';
 
@@ -257,4 +258,49 @@ export async function fetchEcbRange(options: FetchEcbRangeOptions): Promise<Rate
   }
   const decimals = parsedFrom(seriesUrl, () => parseEcbSdmxDecimals(series));
   return parsedFrom(dataUrl, () => parseEcbSdmxCsv(data, { decimals }));
+}
+
+/** The Bank of Canada's Valet API for its daily exchange rates (no key; CORS-enabled). */
+export const BANK_OF_CANADA_URL =
+  'https://www.bankofcanada.ca/valet/observations/group/FX_RATES_DAILY/json';
+
+/** Options for fetching Bank of Canada rates. */
+export interface FetchBankOfCanadaOptions extends Omit<FetchEcbOptions, 'history'> {
+  /** The first day (2017-01-03 at the earliest). Default: only the latest published day. */
+  readonly start?: string | Date;
+  /** The last day (default: the latest published). Needs a `start`. */
+  readonly end?: string | Date;
+}
+
+/**
+ * Fetches the Bank of Canada's daily exchange rates from its Valet API and parses them with
+ * parseBankOfCanadaJson: CAD-based tables, newest first. Without `start`, only the latest day;
+ * without `end`, up to the latest. A range with no business days in it gives [].
+ * The Bank asks users to keep within its request limits, which it doesn't publish, and its rates
+ * are "released for statistical and analytical purposes only", not for transactions.
+ *
+ *     const [latest] = await fetchBankOfCanada();
+ *     const year = await fetchBankOfCanada({ start: '2026-01-01' });
+ */
+export async function fetchBankOfCanada(options?: FetchBankOfCanadaOptions): Promise<RateTable[]> {
+  let query = '?recent=1';
+  if (options?.start !== undefined) {
+    const start = requestDay(options.start, 'start');
+    if (start < '2017-01-03') {
+      throw new RangeError(`Valet's daily rates start on 2017-01-03, not ${start}`);
+    }
+    query = `?start_date=${start}`;
+    if (options.end !== undefined) {
+      const end = requestDay(options.end, 'end');
+      if (end < start) {
+        throw new RangeError(`end ${end} is before start ${start}`);
+      }
+      query += `&end_date=${end}`;
+    }
+  } else if (options?.end !== undefined) {
+    throw new RangeError('end needs a start');
+  }
+  const url = `${BANK_OF_CANADA_URL}${query}`;
+  const body = await getText(url, 'application/json', options);
+  return parsedFrom(url, () => parseBankOfCanadaJson(body));
 }

@@ -54,6 +54,10 @@
       "types": "./dist/history.d.ts",
       "default": "./dist/history.js"
     },
+    "./convert/boc": {
+      "types": "./dist/boc.d.ts",
+      "default": "./dist/boc.js"
+    },
     "./convert/fetch": {
       "types": "./dist/fetch.d.ts",
       "default": "./dist/fetch.js"

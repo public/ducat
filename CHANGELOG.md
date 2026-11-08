@@ -14,6 +14,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
   without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
   and Valibot 1 are optional peer dependencies.
+- **Bank of Canada:** `parseBankOfCanadaJson` in the new `@ducatjs/money/convert/boc` reads the
+  Valet API's daily rates into CAD tables (exact inverses of the published CAD-per-unit quotes,
+  with `availableAt` 16:30 Toronto time), and `fetchBankOfCanada({ start, end })` in
+  `@ducatjs/money/convert/fetch` fetches them.
 - **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
   rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
   reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,
