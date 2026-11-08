@@ -82,6 +82,8 @@ describe('Money methods', () => {
       // ECB file parsers
       'parseEcbXml',
       'parseEcbCsv',
+      'parseEcbSdmxCsv',
+      'parseEcbSdmxDecimals',
       // processor rates, read from processor records rather than a Money
       'stripeRate',
       'stripeImpliedRate',
