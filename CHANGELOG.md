@@ -24,6 +24,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
+- **Kysely plugin** in `@ducatjs/money/kysely`: declare `MoneyColumn<'EUR'>` columns, configure
+  `MoneyPlugin` with how each is stored (`moneyMinor`, with a fixed currency or a currency column;
+  `moneyDecimal`; `moneyJson`), and selects return `Money` while inserts, updates and comparisons
+  take it. The configuration is checked against the database type. `kysely` is an optional peer
+  dependency. See [Kysely](README.md#kysely).
 
 ### Changed
 

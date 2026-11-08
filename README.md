@@ -117,30 +117,31 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                              | adds to `Money`                                                    | also exports                                                   |
-| ----------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
-| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents |
-| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                    |
-| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                       |
-| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                |
-| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                       |
-| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                   |
-| `.../convert/fetch`                 | nothing                                                            | `fetchEcb` (the only module that uses the network)             |
-| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
-| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                             |
-| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                       |
-| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                        |
-| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                      |
-| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                        |
-| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                  |
-| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                      |
-| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                |
-| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
-| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
-| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
-| `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
-| `@ducatjs/money/all`                | everything above                                                   | everything                                                     |
-| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules          |
+| import                              | adds to `Money`                                                    | also exports                                                            |
+| ----------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents          |
+| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                             |
+| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                                |
+| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                         |
+| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                                |
+| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                            |
+| `.../convert/fetch`                 | nothing                                                            | `fetchEcb` (the only module that uses the network)                      |
+| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                          |
+| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                                      |
+| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                                |
+| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                                 |
+| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                               |
+| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                                 |
+| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                           |
+| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                               |
+| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                         |
+| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                               |
+| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                              |
+| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns               |
+| `@ducatjs/money/kysely`             | nothing                                                            | `MoneyPlugin`, `MoneyColumn`, `moneyMinor`, `moneyDecimal`, `moneyJson` |
+| `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`               |
+| `@ducatjs/money/all`                | everything above                                                   | everything                                                              |
+| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules                   |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that must not change any prototype (a library built on ducat, for example) can use the plain functions from `@ducatjs/money/fn` instead.
 
@@ -473,6 +474,47 @@ The columns check what the types can't: writing another currency, a value at a s
 - **Currency per row:** a Drizzle column can't read a sibling column, so there is no "minor units plus a currency column" type. Use `moneyJson()`, which stores the currency in each value, or select both columns and build the Money with `fromMinor(row.amountMinor, row.currency)`.
 - **Relational queries** (`db.query...findMany({ with: ... })`) return nested rows through JSON, where Postgres and MySQL turn NUMERIC and BIGINT values into JSON numbers. A nested `moneyDecimal` column then throws, and so does a nested `moneyMinor` beyond 2^53 minor units, rather than return a rounded amount. Top-level columns are not affected. For nested money, use `moneyJson`, or a join with `select`.
 - **SQLite decimals are TEXT**, so in SQL they compare and sort as text (`'10.00' < '9.00'`), and `sum()` over them is a REAL. Use `moneyMinor` for columns you sort, compare or add up in SQL. For the same reason `/drizzle/sqlite`'s `moneyDecimal` takes no column size.
+
+#### Kysely
+
+`@ducatjs/money/kysely` has a plugin, so Kysely works with `Money` directly. You type a column as `MoneyColumn<'EUR'>` in the database interface and say how it is stored. Selects then return `Money`, while inserts, updates and comparisons take it. The configuration is checked against the database type: every `MoneyColumn` needs an entry, and a fixed-currency column needs a spec in its own currency.
+
+```ts
+import Database from 'better-sqlite3';
+import { Kysely, SqliteDialect } from 'kysely';
+import { money } from '@ducatjs/money';
+import { moneyMinor, MoneyPlugin, type MoneyColumn } from '@ducatjs/money/kysely';
+
+interface Schema {
+  payments: { id: number; amount_minor: MoneyColumn; currency: string };
+}
+
+const client = new Database(':memory:');
+client.defaultSafeIntegers(true); // integers as bigint, exact beyond 2^53
+client.exec('CREATE TABLE payments (id INTEGER, amount_minor INTEGER, currency TEXT)');
+const db = new Kysely<Schema>({
+  dialect: new SqliteDialect({ database: client }),
+  plugins: [
+    new MoneyPlugin<Schema>({
+      // minor units, with the currency taken from another column of the row
+      payments: { amount_minor: moneyMinor({ currencyColumn: 'currency' }) },
+    }),
+  ],
+});
+
+const fee = money('1.234', 'KWD');
+await db.insertInto('payments').values({ id: 1, amount_minor: fee, currency: 'KWD' }).execute();
+const query = db.selectFrom('payments as p').select(['p.amount_minor as paid', 'p.currency']);
+(await query.executeTakeFirstOrThrow()).paid; // → 1.234 KWD
+```
+
+| spec                                                                            | stores                                | for                           |
+| ------------------------------------------------------------------------------- | ------------------------------------- | ----------------------------- |
+| `moneyMinor('EUR')`, `moneyMinor({ currencyColumn })`                           | integer minor units, sent as strings  | BIGINT (SQLite INTEGER)       |
+| `moneyDecimal('EUR', { precision, scale })`, `moneyDecimal({ currencyColumn })` | the exact decimal                     | NUMERIC/DECIMAL (SQLite TEXT) |
+| `moneyJson()`, `moneyJson('EUR')`                                               | `{"amount":"12.34","currency":"EUR"}` | JSON, JSONB, TEXT             |
+
+The plugin reads each query's tree, so it follows aliases, qualified names, joins, subqueries in `from`, CTEs and `returning`. A column with a `currencyColumn` must be selected together with that column, and an insert whose currency column disagrees with the Money throws. The column checks are the same as Drizzle's: wrong currency, wrong scale, out of range and lossy driver values all throw. Some places can't be mapped, and the plugin throws there rather than let a raw value pass as `Money`. One is a money column inside a subquery in the select list (`jsonArrayFrom`, whose rows come back as JSON); a scalar subquery returning one fixed-currency column is fine. The other is a Money value bound where no money column says how to store it (inside a function call, for example). Aggregates such as `sum()` keep Kysely's own types. `kysely` is an optional peer dependency, and the entry imports only its types.
 
 ---
 
