@@ -566,8 +566,8 @@ These are stated over the proved kernel (`divRound`):
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
   ±20–30%.
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
-  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.7 kB**, of which about 0.55 kB is the ISO table
-  - the core entry point: 4.7 kB; everything (`@ducatjs/money/all`): 19.0 kB
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.9 kB**, of which about 0.55 kB is the ISO table
+  - the core entry point: 4.7 kB; everything (`@ducatjs/money/all`): 19.1 kB
   - the same snippet with dinero.js (EUR only): 1.9 kB
 
 ---
