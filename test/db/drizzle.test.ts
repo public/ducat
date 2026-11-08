@@ -3,15 +3,15 @@
 import Database from 'better-sqlite3';
 import { asc, eq, sql } from 'drizzle-orm';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
-import { drizzle as drizzleMysql } from 'drizzle-orm/mysql2';
+import { drizzle as drizzleMysql, type MySql2Database } from 'drizzle-orm/mysql2';
 import { int, mysqlTable } from 'drizzle-orm/mysql-core';
-import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
+import { drizzle as drizzlePg, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { integer as pgInteger, pgTable } from 'drizzle-orm/pg-core';
 import { integer as sqliteInteger, sqliteTable } from 'drizzle-orm/sqlite-core';
 import mysql from 'mysql2/promise';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, expectTypeOf, it } from 'vitest';
-import { CurrencyMismatchError, money, type Money } from '../../src/index.js';
+import { CurrencyMismatchError, money, type CurrencyInput, type Money } from '../../src/index.js';
 import * as mysqlColumns from '../../src/drizzle/mysql.js';
 import * as pgColumns from '../../src/drizzle/pg.js';
 import * as sqliteColumns from '../../src/drizzle/sqlite.js';
@@ -93,7 +93,7 @@ describe('Drizzle column types', () => {
     type Selected = typeof pgOrders.$inferSelect;
     type Inserted = typeof pgOrders.$inferInsert;
     expectTypeOf<Selected['total']>().toEqualTypeOf<Money<'EUR'>>();
-    expectTypeOf<Selected['refund']>().toEqualTypeOf<Money | null>();
+    expectTypeOf<Selected['refund']>().toEqualTypeOf<Money<CurrencyInput> | null>();
     expectTypeOf(money('1', 'EUR')).toExtend<Inserted['total']>();
     expectTypeOf(money('1', 'USD')).not.toExtend<Inserted['total']>();
     expectTypeOf<(typeof sqliteOrders.$inferSelect)['total']>().toEqualTypeOf<Money<'EUR'>>();
@@ -179,7 +179,7 @@ describe('Drizzle on Postgres (node-postgres)', () => {
 
   describe.skipIf(!pgUrl)('against a server', () => {
     let client: pg.Client;
-    let db: ReturnType<typeof drizzlePg>;
+    let db: NodePgDatabase;
 
     beforeAll(async () => {
       // the default type parsers: int8 and numeric come back as strings, jsonb parsed
@@ -230,7 +230,7 @@ describe('Drizzle on MySQL (mysql2)', () => {
 
   describe.skipIf(!mysqlUrl)('against a server', () => {
     let connection: mysql.Connection;
-    let db: ReturnType<typeof drizzleMysql>;
+    let db: MySql2Database;
 
     beforeAll(async () => {
       // BIGINT as strings: mysql2's default number loses digits beyond 2^53
