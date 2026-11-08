@@ -66,6 +66,10 @@
       "types": "./dist/fed.d.ts",
       "default": "./dist/fed.js"
     },
+    "./historic": {
+      "types": "./dist/historic.d.ts",
+      "default": "./dist/historic.js"
+    },
     "./convert/boe": {
       "types": "./dist/boe.d.ts",
       "default": "./dist/boe.js"

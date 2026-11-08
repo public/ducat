@@ -11,6 +11,9 @@
 //   data/stripe.json           curated from https://docs.stripe.com/currencies
 //   data/adyen.json            curated from https://docs.adyen.com/development-resources/currency-codes
 //   data/cash-rounding.json    curated cash-rounding rules with sources
+//   data/iso4217-list-three.xml  ISO 4217 List Three (withdrawn codes), SIX Group
+//   data/historic.json         the withdrawn codes to include, with their ISO exponents, and
+//                              non-ISO codes
 //   data/<processor>.json      one file per further processor (checkout, ...), same shape:
 //                              currencies, defaultExponent (a number or "iso"), exponents and
 //                              multiples overrides, quoted sources with retrieval dates
@@ -23,6 +26,35 @@ const read = (path) => readFileSync(join(root, path), 'utf8');
 const args = new Set(process.argv.slice(2));
 const SIX_URL =
   'https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml';
+
+/** ISO 4217 List Three: code -> { name, numeric, withdrawn } at the code's last withdrawal. */
+export function parseIsoHistoricXml(xml) {
+  const published = /Pblshd="([^"]+)"/.exec(xml)?.[1];
+  const entries = new Map();
+  for (const match of xml.matchAll(/<HstrcCcyNtry>([\s\S]*?)<\/HstrcCcyNtry>/g)) {
+    const body = match[1];
+    const code = /<Ccy>([A-Z]{3})<\/Ccy>/.exec(body)?.[1];
+    if (!code) {
+      continue;
+    }
+    // a month, or a range such as "1990-07 to 1990-09" or "1989 to 1990": the code was gone by the
+    // end of it
+    const text = /<WthdrwlDt>([^<]+)<\/WthdrwlDt>/.exec(body)?.[1] ?? '';
+    const dates = text.match(/\b\d{4}(?:-\d{2}\b)?/g) ?? [];
+    const withdrawn = dates.toSorted().at(-1);
+    if (withdrawn === undefined) {
+      throw new Error(`List Three: no withdrawal date for ${code}`);
+    }
+    const name = /<CcyNm[^>]*>([^<]+)<\/CcyNm>/.exec(body)?.[1].trim();
+    const numeric = /<CcyNbr>(\d+)<\/CcyNbr>/.exec(body)?.[1];
+    // a code withdrawn country by country (ANG, HRK) counts from its last withdrawal
+    const previous = entries.get(code);
+    if (previous === undefined || previous.withdrawn < withdrawn) {
+      entries.set(code, { code, name, numeric, withdrawn });
+    }
+  }
+  return { published, entries };
+}
 
 export function parseIsoXml(xml) {
   const published = /Pblshd="([^"]+)"/.exec(xml)?.[1];
@@ -209,6 +241,43 @@ function generate() {
     header('data/cash-rounding.json') +
     `\nexport interface CashRule {\n  readonly currency: string;\n  /** Smallest cash step, in ISO minor units. */\n  readonly increment: number;\n  readonly countries: readonly string[];\n  readonly scope: string;\n  /** false: only secondary sources were found. */\n  readonly verified: boolean;\n  readonly source: string;\n}\n\n` +
     `export const CASH_RULES: readonly CashRule[] = ${JSON.stringify(rules, null, 2)};\n`;
+  // Withdrawn ISO codes (exponents from data/historic.json, the rest from List Three) and non-ISO
+  // codes
+  const historicData = JSON.parse(read('data/historic.json'));
+  const listThree = parseIsoHistoricXml(read('data/iso4217-list-three.xml'));
+  const historic = {};
+  for (const [code, exponent] of Object.entries(historicData.exponents)) {
+    const entry = listThree.entries.get(code);
+    if (entry === undefined) {
+      throw new Error(`data/historic.json: ${code} is not in ISO 4217 List Three`);
+    }
+    if (code in iso || nonMonetary.includes(code)) {
+      throw new Error(`data/historic.json: ${code} is a current ISO 4217 code`);
+    }
+    historic[code] = {
+      name: entry.name,
+      numeric: entry.numeric,
+      exponent,
+      withdrawn: entry.withdrawn,
+    };
+  }
+  for (const [code, entry] of Object.entries(historicData.nonIso)) {
+    if (code in iso || listThree.entries.has(code)) {
+      throw new Error(`data/historic.json: ${code} is an ISO 4217 code`);
+    }
+    historic[code] = { name: entry.name, exponent: entry.exponent };
+  }
+  const historicSorted = Object.fromEntries(
+    Object.entries(historic).toSorted(([left], [right]) => (left < right ? -1 : 1)),
+  );
+  out['historic.ts'] =
+    header('data/iso4217-list-three.xml and data/historic.json') +
+    `\n/** Publication date of the ISO 4217 List Three snapshot. */\n` +
+    `export const ISO_4217_LIST_THREE_PUBLISHED = ${JSON.stringify(listThree.published)};\n\n` +
+    `/**\n * Withdrawn ISO 4217 codes (with \`numeric\` and \`withdrawn\`, the year and month ISO lists) and\n` +
+    ` * non-ISO codes (without them), each with the exponent ISO gave it while it was current.\n */\n` +
+    `export const HISTORIC_CURRENCY_TABLE = ${obj(historicSorted)} as const;\n`;
+
   return { out, entries, published };
 }
 

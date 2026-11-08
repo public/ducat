@@ -9,6 +9,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/historic`: an opt-in table of 54 withdrawn ISO 4217 codes (HRK, BGN, ANG, STD,
+  SLL, ZWL, CUC, VEF, the euro's predecessors and more) and the offshore yuan CNH, each with the
+  exponent ISO gave it while it was current and, from ISO 4217 List Three, the month it was
+  withdrawn. `defineHistoricCurrencies(codes?)` registers them so Money can hold old records and
+  processor listings; `historicCurrency(code)` and `historicCurrencies()` read the table, and
+  `HistoricCurrencies` adds the codes to the `CurrencyCode` type.
 - `convert`, `convertDetailed`, `Rate#convert` and `Money#convert` accept a rounding policy wherever
   they accept a rounding mode: the result lands on the policy's scale and increment (and its
   currency is checked against the target), and `convertDetailed`'s residual stays exact.

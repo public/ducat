@@ -48,6 +48,10 @@ describe('Money methods', () => {
       'parse',
       'parseMoney',
       'cashRule',
+      // the historic currency table: lookups and registration by code, not by amount
+      'historicCurrency',
+      'historicCurrencies',
+      'defineHistoricCurrencies',
       'exchangeRate',
       // fixed-point constructors; Money#toFixedPoint covers moneyToFixed
       'fixed',
