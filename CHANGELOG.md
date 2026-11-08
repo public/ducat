@@ -15,6 +15,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   withdrawn. `defineHistoricCurrencies(codes?)` registers them so Money can hold old records and
   processor listings; `historicCurrency(code)` and `historicCurrencies()` read the table, and
   `HistoricCurrencies` adds the codes to the `CurrencyCode` type.
+- Cash-rounding rules for AMD and CRC (10), UZS and TZS (50), RSD, PKR, MNT, GYD and TWD (1)
+  and MRU (0.20), each checked against the national central bank's own pages (GYD, MRU and TZS
+  rest on secondary sources and are marked unverified). CLDR's cash data is now a second source,
+  with a test that fails when the two disagree unless the difference is listed with its reason.
+- `currencyDigits(code, { usage: 'cash' })` in `/cash`: the decimals a cash amount is shown with
+  (0 for SEK, 2 for CHF and DKK); without `usage: 'cash'`, the ISO exponent.
+- A cash rule can carry its source's tie rule: Serbia rounds a 50 para tie down, so
+  `cashRound(money('10.50', 'RSD'))` is `10.00 RSD`. An explicit `rounding` still wins.
 - `convert`, `convertDetailed`, `Rate#convert` and `Money#convert` accept a rounding policy wherever
   they accept a rounding mode: the result lands on the policy's scale and increment (and its
   currency is checked against the target), and `convertDetailed`'s residual stays exact.

@@ -135,3 +135,20 @@ describe('cashRule lookup', () => {
     expect(toDecimal(cashRound(money('1.03', 'EUR')))).toBe('1.03');
   });
 });
+
+describe('rules added from CLDR, checked against national sources', () => {
+  it('round to the smallest circulating coin', () => {
+    expect(cr('1234.56', 'AMD')).toBe('1230.00');
+    expect(cr('1235.00', 'AMD')).toBe('1240.00');
+    expect(cr('12345.67', 'UZS')).toBe('12350.00');
+    expect(cr('10.50', 'PKR')).toBe('11.00');
+    expect(cr('10.10', 'MRU')).toBe('10.20');
+  });
+  it('Serbia rounds a 50 para tie down, as the NBS decision says', () => {
+    expect(cr('10.50', 'RSD')).toBe('10.00');
+    expect(cr('10.51', 'RSD')).toBe('11.00');
+    expect(cr('-10.50', 'RSD')).toBe('-10.00');
+    // an explicit mode still wins
+    expect(toDecimal(cashRound(money('10.50', 'RSD'), { rounding: 'halfExpand' }))).toBe('11.00');
+  });
+});

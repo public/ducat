@@ -117,7 +117,7 @@ export function cashRound<C extends string>(money: Money<C>, options?: CashRound
     return money;
   }
   const inc = make(money.currency, rule.increment, currencyExponent(money.currency));
-  return roundToIncrement(money, inc, options?.rounding ?? 'halfExpand');
+  return roundToIncrement(money, inc, options?.rounding ?? rule.rounding ?? 'halfExpand');
 }
 
 /**
@@ -135,9 +135,49 @@ export function cashPolicy(currency: string, options?: CashRoundOptions): Roundi
   return roundingPolicy({
     scale: currencyExponent(currency),
     increment: rule.increment,
-    rounding: options?.rounding ?? 'halfExpand',
+    rounding: options?.rounding ?? rule.rounding ?? 'halfExpand',
     currency,
   });
+}
+
+/** Options for `currencyDigits`. */
+export interface CurrencyDigitsOptions {
+  /** 'standard' (the default): the ISO 4217 exponent. 'cash': the decimals of a cash amount. */
+  readonly usage?: 'standard' | 'cash';
+  /** For cash: the country (ISO 3166 alpha-2), which EUR needs. */
+  readonly country?: string;
+  /** For cash: whether to use rules backed only by secondary sources (default true). */
+  readonly includeUnverified?: boolean;
+}
+
+/**
+ * The number of decimals a currency's amounts are shown with: its ISO 4217 exponent, or with
+ * `{ usage: 'cash' }`, the decimals of a cash amount (what CLDR calls `cashDigits`): none when cash
+ * is rounded to whole units, the exponent otherwise.
+ *
+ *     currencyDigits('SEK')                       // 2
+ *     currencyDigits('SEK', { usage: 'cash' })    // 0: cash is rounded to whole kronor
+ *     currencyDigits('CHF', { usage: 'cash' })    // 2: CHF 0.05 still needs two decimals
+ *
+ * A currency without a cash rule (or EUR without a country that has one) takes its exponent.
+ * Throws for unknown codes, like `currencyExponent`.
+ */
+export function currencyDigits(currency: string, options?: CurrencyDigitsOptions): number {
+  const exponent = currencyExponent(currency);
+  if (options?.usage !== 'cash') {
+    return exponent;
+  }
+  const rule = cashRule(currency, options.country);
+  if (!rule || (options.includeUnverified === false && !rule.verified)) {
+    return exponent;
+  }
+
+  // Cash amounts show no decimals once the step is whole units (SEK 1, HUF 5, UZS 50), and the
+  // currency's usual decimals otherwise: DKK 0.50 is shown as 10.50, not 10.5, as in CLDR.
+  if (rule.increment % 10 ** exponent === 0) {
+    return 0;
+  }
+  return exponent;
 }
 
 export { CASH_RULES, type CashRule };

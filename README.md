@@ -136,7 +136,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)   |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                   |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
-| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`…                              |
+| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
@@ -291,7 +291,11 @@ assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws RangeErro
 - `cashRound(m, { country?, rounding?, includeUnverified? })` uses the table in `data/cash-rounding.json`:
   - CHF 0.05, SEK and NOK 1.00, DKK 0.50, CAD and AUD 0.05, NZD 0.10
   - HUF 5, CZK 1, CLP 10, ILS 0.10, MYR 0.05
+  - AMD and CRC 10, UZS and TZS 50, RSD, PKR, MNT and TWD 1, MRU 0.20
   - EUR 0.05 in BE, NL, FI, IE, IT, SK, EE and LT, and more.
+- A rule follows its source's tie rule: Serbia rounds a 50 para tie down (`10.50 RSD` to `10.00`), every other rule rounds ties away from zero. A `rounding` option overrides it.
+- CLDR's cash data is a second source (`data/cldr-cash.json`). A test fails when the table and CLDR disagree, except for the differences listed with the national source that settles them: CLDR rounds AMD, CRC, TZS and UZS cash to whole units, but their smallest coins are 10, 10, 50 and 50.
+- `currencyDigits(code, { usage: 'cash', country? })` gives the decimals a cash amount is shown with: `currencyDigits('SEK', { usage: 'cash' })` is 0, CHF and DKK stay at 2. Without `usage: 'cash'` it is the ISO exponent.
 - Call it **only for cash tenders**: card payments are never rounded in any of these jurisdictions.
 - For EUR it needs the `country`, because there is no euro-wide rule.
 - `roundToIncrement(m, increment, rounding = 'halfExpand')` and `cashRule(currency, country?)` are also exported.
@@ -760,6 +764,7 @@ The columns check what the types can't: writing another currency, a value at a s
 | `data/braintree.json`       | https://developer.paypal.com/braintree/docs/reference/general/currencies, the transaction.sale reference, the validation-error list and the GraphQL `Amount` type, retrieved 2026-11-07, with verbatim quotes |
 | `data/klarna.json`          | https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/, the purchase-countries page and the Payments API reference, retrieved 2026-11-07, with verbatim quotes                |
 | `data/cash-rounding.json`   | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                                     |
+| `data/cldr-cash.json`       | CLDR release 49 `supplementalData.xml` cash digits and rounding, the second source for the cash rules (`scripts/fetch-cldr-cash.mjs` refreshes it)                                                            |
 
 - `pnpm gen` (`scripts/gen-currencies.mjs`) turns these into `src/generated/*.ts`.
 - `pnpm gen:check` fails if the generated files are stale. It also runs inside the test suite.
@@ -1008,8 +1013,8 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 ## What's missing (honest list)
 
 - **Stripe three-decimal rule.** The "last digit must be 0" rule comes from a June 2024 archived copy of Stripe's page. The live page no longer has that section (it is marked unverified in `data/stripe.json`).
-- **Cash-rounding rules.** Some are backed only by secondary sources (`verified: false`): CHF, DKK, AUD, NZD, ILS, MYR, SGD, FI/IE/IT/SK/LT EUR and several others. `includeUnverified: false` turns them off.
-  - Per-jurisdiction tie rules are all `halfExpand`. Singapore's "round down in the customer's favour" practice and USD's state-by-state post-penny rules aren't modelled.
+- **Cash-rounding rules.** Some are backed only by secondary sources (`verified: false`): CHF, DKK, AUD, NZD, ILS, MYR, SGD, FI/IE/IT/SK/LT EUR, GYD, MRU, TZS and several others. MUR has no rule: CLDR says whole rupees, but the Bank of Mauritius doesn't list its coins, and secondary sources say 5 cent coins still circulate. `includeUnverified: false` turns them off.
+  - Tie rules are `halfExpand` except Serbia's (ties down). Singapore's "round down in the customer's favour" practice and USD's state-by-state post-penny rules aren't modelled.
 - **Checkout.com currency list.** The currency-codes page calls itself the "major currencies we support"; `toCheckout` refuses anything not on it. Its amount limits (the docs say greater than zero and at most nine digits, the API schema allows 0 for card verification and up to ten digits) aren't enforced.
 - **PayPal.** Its two currency pages disagree: the REST reference page lists RUB and the other doesn't (`toPayPal` accepts RUB). The docs don't say whether a zero fraction such as `"100.00"` counts as a decimal for HUF, JPY or TWD, so `toPayPal` always sends whole numbers for them. BRL, CNY and MYR work for in-country accounts only, and that isn't checked. The schema allows a minus sign and the text says amounts are positive; the sign isn't checked either.
 - **Braintree.** The currencies page gives only the zero-decimal list, so every other currency is assumed to take its ISO decimals, and the withdrawn codes it still lists (HRK, LTL, SLL, STD, ZMK, ZWD) are assumed to take 2. The GraphQL `Amount` type allows three decimals and the REST reference says `x.xx`; `toBraintree` sends the currency's own decimals, which both accept. Which currencies an account can use depends on its setup, and that isn't checked.

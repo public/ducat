@@ -10,6 +10,8 @@ export interface CashRule {
   /** false: only secondary sources were found. */
   readonly verified: boolean;
   readonly source: string;
+  /** The tie rule the source prescribes, where it isn't halfExpand. */
+  readonly rounding?: import('../rounding.js').RoundingMode;
 }
 
 export const CASH_RULES: readonly CashRule[] = [
@@ -371,5 +373,106 @@ export const CASH_RULES: readonly CashRule[] = [
     "scope": "cash (permitted, not required; varies by state)",
     "verified": false,
     "source": "https://en.wikipedia.org/wiki/Cash_rounding"
+  },
+  {
+    "currency": "AMD",
+    "increment": 1000,
+    "countries": [
+      "AM"
+    ],
+    "scope": "cash (practice)",
+    "verified": true,
+    "source": "https://old.cba.am/en/SitePages/nccracoinscirculated.aspx"
+  },
+  {
+    "currency": "CRC",
+    "increment": 1000,
+    "countries": [
+      "CR"
+    ],
+    "scope": "cash (practice)",
+    "verified": true,
+    "source": "https://www.bccr.fi.cr/cr/es/noticias/listado-de-noticias/2026/monedas-de-5-10-y-25-del-diseno-anterior-dejaran-de-funcionar-como-medio-de-pago-el-1-de-julio-del-2.html"
+  },
+  {
+    "currency": "GYD",
+    "increment": 100,
+    "countries": [
+      "GY"
+    ],
+    "scope": "cash",
+    "verified": false,
+    "source": "https://bankofguyana.org.gy/bog/images/communications/press_release/Notice%20to%20stop%20minting%20one%20dollar%20coin.pdf"
+  },
+  {
+    "currency": "MNT",
+    "increment": 100,
+    "countries": [
+      "MN"
+    ],
+    "scope": "cash",
+    "verified": true,
+    "source": "https://www.mongolbank.mn/en/p/1416"
+  },
+  {
+    "currency": "MRU",
+    "increment": 20,
+    "countries": [
+      "MR"
+    ],
+    "scope": "cash",
+    "verified": false,
+    "source": "https://cridem.org/media/documents/bcm-presentation-gr-2017.pdf"
+  },
+  {
+    "currency": "PKR",
+    "increment": 100,
+    "countries": [
+      "PK"
+    ],
+    "scope": "cash",
+    "verified": true,
+    "source": "https://www.sbp.org.pk/press/2014/Coins-15-Sep-2014.pdf"
+  },
+  {
+    "currency": "RSD",
+    "increment": 100,
+    "countries": [
+      "RS"
+    ],
+    "scope": "cash (statutory)",
+    "verified": true,
+    "source": "https://www.nbs.rs/export/sites/NBS_site/documents/propisi/propisi-trz/opticaj_povlacenje_50_para.pdf",
+    "rounding": "halfTrunc"
+  },
+  {
+    "currency": "TZS",
+    "increment": 5000,
+    "countries": [
+      "TZ"
+    ],
+    "scope": "cash (practice)",
+    "verified": false,
+    "source": "https://www.bot.go.tz/Publications/Regular/Quarterly%20statistical%20Bulletin/en/2025090409030924.pdf"
+  },
+  {
+    "currency": "TWD",
+    "increment": 100,
+    "countries": [
+      "TW"
+    ],
+    "scope": "cash (practice)",
+    "verified": true,
+    "source": "https://www.cbc.gov.tw/tw/cp-769-26060-37841-1.html"
+  },
+  {
+    "currency": "UZS",
+    "increment": 5000,
+    "countries": [
+      "UZ"
+    ],
+    "scope": "cash (practice)",
+    "verified": true,
+    "source": "https://cbu.uz/en/banknotes-coins/coins/"
   }
 ];
