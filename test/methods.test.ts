@@ -80,9 +80,12 @@ describe('Money methods', () => {
       'comparator',
       'sortByValue',
       'sumByCurrency',
-      // ECB file parsers
+      // rate source parsers
       'parseEcbXml',
       'parseEcbCsv',
+      'parseBankOfCanadaJson',
+      'parseEcbSdmxCsv',
+      'parseEcbSdmxDecimals',
       // processor rates, read from processor records rather than a Money
       'stripeRate',
       'stripeImpliedRate',

@@ -117,12 +117,15 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only the /drizzle entries reach drizzle-orm, and no entry imports anything else', async () => {
+  it('only /drizzle, /zod and /valibot reach their peer libraries; nothing else imports any', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
       actual[key] = [...packageImportsOf(join(ROOT, source))];
       expected[key] = key.startsWith('./drizzle/') ? [`drizzle-orm/${key.slice(10)}-core`] : [];
+      if (key === './zod' || key === './valibot') {
+        expected[key] = [key.slice(2)];
+      }
     }
     expect(actual).toEqual(expected);
   });
@@ -134,6 +137,19 @@ describe('package entries', () => {
       './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/pg': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/mysql': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
+      './pg': [
+        'DEFAULT_DECIMAL_SIZE',
+        'MONEY_TYPE_NAME',
+        'exactTypes',
+        'moneyTypeOids',
+        'moneyTypeSql',
+        'parseArray',
+        'parseBigInt',
+        'parseMoneyComposite',
+        'parseNumeric',
+        'toMoneyComposite',
+        'toNumeric',
+      ],
     };
     const drizzleNames: Record<string, string[]> = {};
     const leaked: Record<string, string[]> = {};
@@ -152,6 +168,15 @@ describe('package entries', () => {
     }
     expect(drizzleNames).toEqual(expectedNames);
     expect(leaked).toEqual({});
+  });
+});
+
+describe('schema entries', () => {
+  it('/zod and /valibot export the same schema functions', async () => {
+    const zod = await import('../src/zod.js');
+    const valibot = await import('../src/valibot.js');
+    expect(Object.keys(zod).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
+    expect(Object.keys(valibot).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
   });
 });
 

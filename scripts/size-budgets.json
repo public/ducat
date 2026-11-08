@@ -4,15 +4,16 @@
     "@ducatjs/money/allocate": 5.34,
     "@ducatjs/money/tax": 4.02,
     "@ducatjs/money/convert": 7.36,
-    "@ducatjs/money/convert/ecb": 6.3,
-    "@ducatjs/money/convert/fetch": 6.48,
+    "@ducatjs/money/convert/ecb": 7.45,
+    "@ducatjs/money/convert/fetch": 9.53,
     "@ducatjs/money/convert/history": 6.35,
+    "@ducatjs/money/convert/boc": 6.7,
     "@ducatjs/money/exact": 4.28,
     "@ducatjs/money/policy": 4.1,
     "@ducatjs/money/cash": 6.29,
     "@ducatjs/money/format": 4.17,
     "@ducatjs/money/fixed": 5.37,
-    "@ducatjs/money/parse": 5.7,
+    "@ducatjs/money/parse": 5.94,
     "@ducatjs/money/stripe": 5.02,
     "@ducatjs/money/adyen": 4.5,
     "@ducatjs/money/checkout": 5.0,
@@ -21,10 +22,13 @@
     "@ducatjs/money/klarna": 4.48,
     "@ducatjs/money/stripe-fx": 5.9,
     "@ducatjs/money/adyen-fx": 5.75,
-    "@ducatjs/money/prisma": 4.56,
+    "@ducatjs/money/prisma": 4.71,
     "@ducatjs/money/drizzle/pg": 4.93,
     "@ducatjs/money/drizzle/mysql": 4.93,
-    "@ducatjs/money/drizzle/sqlite": 4.78
+    "@ducatjs/money/drizzle/sqlite": 4.78,
+    "@ducatjs/money/zod": 4.72,
+    "@ducatjs/money/valibot": 4.73,
+    "@ducatjs/money/pg": 6.1
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 30,
@@ -53,7 +57,7 @@
     },
     "parse: parse alone, without detection": {
       "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 €', 'EUR', 'de-DE').toString());",
-      "gzipped": 4.9
+      "gzipped": 4.84
     }
   }
 }
