@@ -100,6 +100,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
   are unchanged: the same proved rounding kernel is used.
 
+### Fixed
+
+- `multiply(zero, -1)` (and `Fixed#multiply`) returned `-0` minor units, which broke
+  `Object.is`-based equality such as Vitest's `toBe`. Every operation now returns `0`.
+
 ## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
