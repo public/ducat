@@ -65,3 +65,11 @@ dyn.add(fromMinor(1, 'USD' as string)); // erased types: checked at runtime inst
 eur.multiply('1.1', 'halfUp');
 void viaMethod;
 void chained;
+
+// --- with() keeps the operation's result type
+const withResult: Money<'EUR'> = eur.with((value) => value.negate());
+const withString: string = eur.with((value) => value.toDecimal());
+// @ts-expect-error the operation receives a Money<'EUR'>, not a Money<'USD'>
+eur.with((value: Money<'USD'>) => value);
+void withResult;
+void withString;

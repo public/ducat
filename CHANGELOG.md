@@ -7,6 +7,15 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `majorPart` and `minorPart` split an amount at the decimal point (`12` and `34` for 12.34 EUR),
+  truncating toward zero and keeping the sign.
+- `identical(a, b)`: equal value, currency _and_ scale, for round-trip tests (`equals` treats
+  1.0 EUR and 1.00 EUR as equal).
+- `m.with(operation)` applies a function such as a rounding step or a conversion as one link of a
+  method chain.
+
 ## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
