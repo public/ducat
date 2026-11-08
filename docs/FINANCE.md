@@ -54,7 +54,9 @@ interest(
   - `ACT/360`, `ACT/365F` (Fixed);
   - `ACT/ACT ISDA` (days in leap and non-leap years apportioned separately);
   - `30/360` (Bond Basis, §4.16(f)), `30E/360` (Eurobond, §4.16(g)) and `30E/360 ISDA`
-    (§4.16(h)), which needs the termination date, as an option.
+    (§4.16(h)), which keeps the last day of February only on the termination date: when the end
+    date is the last day of February the caller must say whether it is with `maturity: true` or
+    `false`, and it throws without the option, since the two readings differ by up to two days.
 - Later, not in the first version: `ACT/ACT ICMA` (needs the coupon schedule and frequency),
   `ACT/365L`, `BUS/252` (needs a holiday calendar). There are no business-day calendars or
   holiday adjustments in this module. A caller with adjusted dates passes them in.
@@ -112,20 +114,36 @@ plan.totalInterest; // exact sum of the interest column
 ### 3. NPV and IRR
 
 ```ts
+presentValue(
+  '0.08',
+  [money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')],
+  'halfEven',
+);
+// 17.63 EUR: Σ CFₜ / (1 + r)ᵗ from t = 0, exact, rounded once
 npv(
   '0.08',
   [money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')],
   'halfEven',
 );
-// 17.63 EUR: Σ CFₜ / (1 + r)ᵗ, exact, rounded once
+// 16.32 EUR: Excel's NPV, the first flow at the end of period 1
 irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')], {
   digits: 8,
 });
 // { rate: '0.08896339', lower: '0.08896339', upper: '0.08896340' }
 ```
 
-- `npv(rate, flows, rounding)`: flows at integer periods 0, 1, 2…, exact, rounded once.
-  `npvExact` returns the `ExactMoney`.
+- `npv(rate, flows, rounding)` is Excel's NPV: flows at the ends of periods 1, 2…, so the first
+  is discounted once, exact and rounded once (it matches Excel to the cent). Like Excel, an
+  initial outlay at period 0 goes outside: `flows[0] + npv(rate, rest)`. `npvExact` returns the
+  `ExactMoney`.
+- `presentValue(rate, flows, rounding)` and `presentValueExact` are the textbook form, flows at
+  periods 0, 1, 2…, with the first undiscounted.
+- `irr` is Excel's IRR (its first value is at period 0, the same root as `presentValue`). The
+  rate is exact to `digits` places, floored. Where Excel guesses, it throws instead: no sign
+  change (Excel's #NUM!), several sign changes without a `bracket` (which replaces Excel's
+  `guess`; Excel returns whichever root its Newton iteration finds), and an IRR within
+  10^−digits of −1. A bracket's NPV signs are taken at the exact rates given, and the IRR
+  returned is inside it.
 - `irr(flows, { digits, bracket? })`: the IRR is a polynomial root, irrational in general, so it
   is computed to `digits` decimal places by bisection in exact rational arithmetic, with no floats
   and no Newton steps that can diverge. The result guarantees that NPV changes sign between `lower`
@@ -184,7 +202,9 @@ splitPeriod(money('30', 'EUR'), {
     day-count tests;
   - annuity payments and schedules checked against the CFPB amortisation examples and against
     spreadsheet `PMT`/`IPMT`/`PPMT` values where these agree to the cent;
-  - `NPV` and `IRR` checked against spreadsheet values at their stated precision.
+  - `npv` and `irr` checked against Microsoft's documented NPV and IRR examples, and against a
+    few hundred LibreOffice Calc results (`scripts/gen-calc-vectors.py`): NPV at 15 significant
+    digits or within Calc's double rounding, IRR within Excel's stated 0.00001 percent.
 - Property tests for every invariant above, with an exact oracle (Python `fractions`, like the
   existing `pydecimal` vectors) for the schedules.
 - Lean, when it pays: the schedule's reconciliation (principal sums to the loan, the balance ends
@@ -195,13 +215,24 @@ splitPeriod(money('30', 'EUR'), {
 The review took the recommendation on every fork:
 
 1. **Dates:** strings and `{ year, month, day }` only (so `Temporal.PlainDate` too); no `Date`.
-2. **IRR:** exact bisection to a stated number of digits, with guard-digit midpoints and a
-   guaranteed bracket.
+2. **IRR:** exact bisection to a stated number of digits, on the grid of `digits`-place
+   decimals (no guard digits are needed), with a guaranteed bracket.
 3. **XNPV and XIRR:** not in the first version; v0.4.0, with a proven error bound.
 4. **Schedule residual:** the last payment by default, `'lastInterest'` as an option.
 5. **Day-count interest inside schedules** (`interestBasis`): the second version; the row type
    reserves the fields.
 6. **Methods on Money:** none.
+7. **Excel names mean Excel's semantics** (v0.3.0). A function named after an Excel function
+   gives Excel's value, compared at Excel's 15 significant digits, since this module is exact
+   where Excel uses doubles; it may throw where Excel guesses (`irr`), but never returns a
+   different value. Anything with other semantics gets another name. So `npv` is Excel's NPV,
+   the first flow at the end of period 1, and the period-0 form the design first had is
+   `presentValue`. The tests check both against Microsoft's documented examples and against
+   LibreOffice Calc. `yearFraction`, `amortise`, `interest` and `prorate` aren't Excel names
+   and follow ISDA and lender practice; `yearFraction` is not YEARFRAC, and a schedule's
+   payments are positive and its interest is rounded every period, unlike PMT, IPMT and PPMT.
+   No other Excel-named function (YEARFRAC, PMT, DAYS360…) is added without matching Excel
+   exactly.
 
 ## Design forks (as reviewed)
 

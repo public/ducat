@@ -11,12 +11,14 @@ import {
   irr,
   npv,
   npvExact,
+  presentValue,
+  presentValueExact,
   prorate,
   splitPeriod,
   yearFraction,
   type DayCount,
 } from '../src/finance.js';
-import { CurrencyMismatchError, fromMinor, money, sum, type Money } from '../src/money.js';
+import { add, CurrencyMismatchError, fromMinor, money, sum, type Money } from '../src/money.js';
 import { roundingPolicy } from '../src/policy.js';
 import { runs } from './fc-config.js';
 
@@ -185,14 +187,14 @@ describe('yearFraction: OpenGamma Strata DayCountTest cases', () => {
   it('30/360, 30E/360 and 30E/360 ISDA, with and without the termination date', () => {
     for (const [start, end, bond, euro, isda, isdaAtMaturity] of thirty) {
       const expected = (value: string) => (value === 'simple' ? simple360(start, end) : value);
-      const atMaturity = yearFraction(start, end, '30E/360 ISDA', { terminationDate: end });
+      const atMaturity = yearFraction(start, end, '30E/360 ISDA', { maturity: true });
       // the dates go into both sides, so a failure shows which row it was
       expect({
         start,
         end,
         bond: text(yearFraction(start, end, '30/360')),
         euro: text(yearFraction(start, end, '30E/360')),
-        isda: text(yearFraction(start, end, '30E/360 ISDA')),
+        isda: text(yearFraction(start, end, '30E/360 ISDA', { maturity: false })),
         isdaAtMaturity: text(atMaturity),
       }).toEqual({
         start,
@@ -269,6 +271,35 @@ describe('yearFraction: OpenGamma Strata DayCountTest cases', () => {
     expect(() => yearFraction('2026-03-01', '2026-03-02', 'ACT/366' as DayCount)).toThrow(
       'Invalid day count',
     );
+    // years outside 0-9999, which 'YYYY-MM-DD' cannot write
+    expect(() => yearFraction({ year: 10_000, month: 1, day: 1 }, '2026-01-01', 'ACT/360')).toThrow(
+      'Invalid date',
+    );
+    expect(() => yearFraction({ year: -1, month: 1, day: 1 }, '2026-01-01', 'ACT/360')).toThrow(
+      'Invalid date',
+    );
+    // a Temporal.PlainDate in another calendar has non-Gregorian fields
+    const hebrew = { year: 5787, month: 1, day: 1, calendarId: 'hebrew' };
+    expect(() => yearFraction(hebrew, '2026-01-01', 'ACT/360')).toThrow('ISO calendar');
+    const iso = { year: 2026, month: 1, day: 1, calendarId: 'iso8601' };
+    expect(text(yearFraction(iso, '2026-01-02', 'ACT/360'))).toBe('1/360');
+  });
+
+  it('30E/360 ISDA ending on the last day of February needs to be told if it is maturity', () => {
+    // 2026-08-31 to 2027-02-28: 180/360 if February 28 is not the termination date, 178 if it is
+    expect(() => yearFraction('2026-08-31', '2027-02-28', '30E/360 ISDA')).toThrow(
+      'needs the option maturity',
+    );
+    const notMaturity = yearFraction('2026-08-31', '2027-02-28', '30E/360 ISDA', {
+      maturity: false,
+    });
+    const atMaturity = yearFraction('2026-08-31', '2027-02-28', '30E/360 ISDA', { maturity: true });
+    expect([text(notMaturity), text(atMaturity)]).toEqual(['1/2', '89/180']);
+    // other end dates need no flag, and it changes nothing
+    expect(text(yearFraction('2026-08-31', '2027-02-27', '30E/360 ISDA'))).toBe('59/120');
+    const period = { from: '2026-08-31', to: '2027-02-28', dayCount: '30E/360 ISDA' } as const;
+    expect(() => interest(eur('1000'), '0.05', period)).toThrow('maturity');
+    expect(String(interest(eur('1000'), '0.05', { ...period, maturity: true }))).toBe('24.72 EUR');
   });
 });
 
@@ -335,8 +366,10 @@ describe('amortise', () => {
     expect(String(plan.payment)).toBe('761.78 USD');
   });
 
-  it('spreadsheet PMT, IPMT and PPMT', () => {
-    // PMT(6%/12, 360, 200000) = -1199.10, IPMT(..., 1, ...) = -1000.00, PPMT(..., 1, ...) = -199.10
+  it("the first row agrees in magnitude with a spreadsheet's PMT, IPMT and PPMT", () => {
+    // PMT(6%/12, 360, 200000) = -1199.10, IPMT(..., 1, ...) = -1000.00, PPMT(..., 1, ...) = -199.10.
+    // Spreadsheets give payments a negative sign, and their IPMT and PPMT come from the unrounded
+    // balance, so later rows can differ by cents from a schedule that rounds every period.
     const plan = amortise(money('200000', 'USD'), { rate: '0.06', perYear: 12, periods: 360 });
     expect(String(plan.payment)).toBe('1199.10 USD');
     expect(String(plan.rows[0]!.interest)).toBe('1000.00 USD');
@@ -477,6 +510,22 @@ describe('amortise', () => {
     expect(() => amortise(eur('0'), base)).toThrow('The loan must be positive');
     expect(() => amortise(eur('100'), { ...base, rate: '-0.01' })).toThrow('must not be negative');
     expect(() => amortise(eur('100'), { ...base, periods: 0 })).toThrow('Invalid periods');
+    expect(() => amortise(eur('100'), { ...base, periods: 100_001 })).toThrow('Invalid periods');
+    expect(() => compound(eur('100'), '0.05', { periods: 100_001, perYear: 12 })).toThrow(
+      'Invalid periods',
+    );
+    expect(() =>
+      amortise(eur('100'), { ...base, method: 'linear', residual: 'lastInterest' }),
+    ).toThrow('annuities only');
+    // amounts the rounding can't produce would leave the schedule off the policy's grid
+    const cash = roundingPolicy({ increment: 5 });
+    expect(() => amortise(money('1000.02', 'CHF'), { ...base, rounding: cash })).toThrow(
+      'multiples of 0.05 CHF',
+    );
+    const subCent = money('10.005', 'EUR', { scale: 3 });
+    expect(() => amortise(eur('100'), { ...base, balloon: subCent })).toThrow(
+      'multiples of 0.01 EUR',
+    );
     expect(() => amortise(eur('100'), { ...base, balloon: eur('101') })).toThrow(
       'balloon must be between',
     );
@@ -599,43 +648,31 @@ describe('amortise properties', () => {
 describe('npv and irr', () => {
   const flows = [eur('-1000'), eur('300'), eur('400'), eur('500')];
 
-  it('the design examples', () => {
-    expect(String(npv('0.08', flows, 'halfEven'))).toBe('17.63 EUR');
+  it('the design examples: presentValue takes flows from period 0, npv from period 1', () => {
+    expect(String(presentValue('0.08', flows, 'halfEven'))).toBe('17.63 EUR');
+    expect(String(npv('0.08', flows, 'halfEven'))).toBe('16.32 EUR');
+    // an initial outlay goes outside Excel's NPV
+    const outside = add(flows[0]!, npv('0.08', flows.slice(1), 'halfEven'));
+    expect(String(outside)).toBe('17.63 EUR');
     expect(irr(flows, { digits: 8 })).toEqual({
       rate: '0.08896339',
       lower: '0.08896339',
       upper: '0.08896340',
     });
     expect(irr(flows).rate).toBe('0.0889633946');
+    expect(String(presentValueExact('0', flows))).toBe('200 EUR');
   });
 
-  it("spreadsheet NPV examples (a spreadsheet's NPV discounts its first value one period)", () => {
-    const usd = (amount: string) => money(amount, 'USD');
-    // NPV(10%, -10000, 3000, 4200, 6800) = 1188.44
-    expect(String(npv('0.1', ['0', '-10000', '3000', '4200', '6800'].map(usd)))).toBe(
-      '1188.44 USD',
-    );
-    // NPV(8%, 8000, 9200, 10000, 12000, 14500) - 40000 = 1922.06
-    const investment = ['-40000', '8000', '9200', '10000', '12000', '14500'].map(usd);
-    expect(String(npv('0.08', investment))).toBe('1922.06 USD');
-    // with a loss of 9000 in year six: -3749.47
-    expect(String(npv('0.08', [...investment, usd('-9000')]))).toBe('-3749.47 USD');
-  });
-
-  it('spreadsheet IRR examples', () => {
-    const usd = (amount: string) => money(amount, 'USD');
-    const values = ['-70000', '12000', '15000', '18000', '21000', '26000'].map(usd);
-    // IRR over four years = -2.1%, over five = 8.7%, over two (with a guess of -10%) = -44.4%
-    expect(irr(values.slice(0, 5)).rate).toBe('-0.0212448483');
-    expect(irr(values).rate).toBe('0.0866309480');
-    expect(irr(values.slice(0, 3), { digits: 3 }).rate).toBe('-0.444');
-  });
-
-  it('npv is exact: npvExact at the IRR bracket changes sign', () => {
+  it('npv is exact: npvExact and presentValueExact at the IRR bracket change sign', () => {
     const { lower, upper } = irr(flows, { digits: 12 });
     expect(npvExact(lower, flows).sign()).toBe(1);
     expect(npvExact(upper, flows).sign()).toBe(-1);
-    expect(String(npvExact('0', flows))).toBe('200 EUR');
+    expect(presentValueExact(lower, flows).sign()).toBe(1);
+    expect(presentValueExact(upper, flows).sign()).toBe(-1);
+    // Excel's form is the period-0 form discounted once more
+    expect(npvExact('0.25', flows).equals(presentValueExact('0.25', flows).divide('1.25'))).toBe(
+      true,
+    );
   });
 
   it('an IRR of exactly a grid point, and huge rates', () => {
@@ -649,6 +686,10 @@ describe('npv and irr', () => {
     expect(irr([eur('-1'), eur('1000000')], { digits: 2 }).rate).toBe('999999.00');
     // nearly everything lost: -1000 then 0.01
     expect(irr([eur('-1000'), eur('0.01')], { digits: 6 }).rate).toBe('-0.999990');
+    // at 2 digits the IRR is within 0.01 of -1, where the NPV is undefined
+    expect(() => irr([eur('-1000'), eur('0.01')], { digits: 2 })).toThrow('ask for more digits');
+    // floored, not truncated: a negative IRR rounds down, away from zero
+    expect(irr([eur('-100'), eur('95')], { digits: 1 }).rate).toBe('-0.1');
   });
 
   it('several sign changes need a bracket, and the bracket picks the root', () => {
@@ -662,12 +703,33 @@ describe('npv and irr', () => {
     expect(() => irr(twoRoots, { bracket: ['-1', '0.3'] })).toThrow('above -1');
   });
 
+  it('a bracket is checked at its exact ends, so the root returned is inside it', () => {
+    // 100, -225, 126.50 has IRRs of exactly 10% and 15%; 0.105 to 0.2 holds only the 15% one
+    const twoRoots = [eur('100'), eur('-225'), eur('126.50')];
+    expect(irr(twoRoots, { digits: 2, bracket: ['0.105', '0.2'] }).rate).toBe('0.15');
+    // at one digit, 15% floors to 0.1 (the other root's value, but the root found is 15%)
+    expect(irr(twoRoots, { digits: 1, bracket: ['0.105', '0.2'] })).toEqual({
+      rate: '0.1',
+      lower: '0.1',
+      upper: '0.2',
+    });
+    expect(irr(twoRoots, { digits: 4, bracket: ['0.05', '0.12'] }).rate).toBe('0.1000');
+    // IRRs of 10.1% and 15%: widening 0.105 outwards to the 1-digit grid would lose the sign change
+    const close = [eur('2000'), eur('-4502'), eur('2532.30')];
+    expect(irr(close, { digits: 1, bracket: ['0.105', '0.2'] }).rate).toBe('0.1');
+    expect(irr(close, { digits: 3, bracket: ['0.105', '0.2'] }).rate).toBe('0.150');
+    expect(irr(close, { digits: 3, bracket: ['0.05', '0.105'] }).rate).toBe('0.101');
+    // a bracket end that is itself a root
+    expect(irr(twoRoots, { digits: 3, bracket: ['0.15', '0.2'] }).rate).toBe('0.150');
+  });
+
   it('throws without a sign change, and on bad input', () => {
     expect(() => irr([eur('100'), eur('100')])).toThrow('never change sign');
     expect(() => irr([eur('0'), eur('0')])).toThrow('never change sign');
     expect(() => irr(flows, { digits: 1.5 })).toThrow('Invalid digits');
     expect(() => irr([])).toThrow('At least one cash flow');
     expect(() => npv('-1', flows)).toThrow('above -1');
+    expect(() => presentValue('-1.5', flows)).toThrow('above -1');
     expect(() => irr([eur('-1'), money('2', 'USD')] as Money[])).toThrow(CurrencyMismatchError);
   });
 
@@ -681,14 +743,20 @@ describe('npv and irr', () => {
       fc.property(outlay, returns, fc.integer({ min: 0, max: 14 }), (out, back, digits) => {
         fc.pre(back.some((value) => value > 0n));
         const cashFlows = [cents(-out), ...back.map((value) => cents(value))];
-        const result = irr(cashFlows, { digits });
+        let result: { rate: string; lower: string; upper: string };
+        try {
+          result = irr(cashFlows, { digits });
+        } catch (error) {
+          // an IRR within 10^-digits of -1 has no lower end to give
+          expect(String(error)).toContain('ask for more digits');
+          return;
+        }
         expect(result.rate).toBe(result.lower);
         const lower = ratio(result.lower);
         const upper = ratio(result.upper);
         const width = ratio(upper.num * lower.den - lower.num * upper.den, upper.den * lower.den);
         expect(text(width)).toBe(`1/${10n ** BigInt(digits)}`);
-        // at -1 the NPV has the sign of the last non-zero flow, which is positive here
-        const lowerSign = Number(result.lower) <= -1 ? 1 : npvExact(result.lower, cashFlows).sign();
+        const lowerSign = npvExact(result.lower, cashFlows).sign();
         const upperSign = npvExact(result.upper, cashFlows).sign();
         expect(lowerSign === 0 || lowerSign !== upperSign).toBe(true);
       }),

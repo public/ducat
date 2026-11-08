@@ -10,6 +10,7 @@ Deterministic: the same seed always writes the same file. Regenerate with
     python3 scripts/gen-finance-vectors.py
 and check that nothing changed with --check.
 """
+import calendar
 import datetime
 import json
 import random
@@ -73,7 +74,7 @@ def days_in_year(year: int) -> int:
     return (datetime.date(year + 1, 1, 1) - datetime.date(year, 1, 1)).days
 
 
-def year_fraction(start: datetime.date, end: datetime.date, convention: str, termination=None) -> Fraction:
+def year_fraction(start: datetime.date, end: datetime.date, convention: str, maturity=None) -> Fraction:
     days = end.toordinal() - start.toordinal()
     if convention == "ACT/360":
         return Fraction(days, 360)
@@ -100,8 +101,13 @@ def year_fraction(start: datetime.date, end: datetime.date, convention: str, ter
     elif convention == "30E/360 ISDA":
         if d1 == 31 or is_last_of_february(start):
             d1 = 30
-        if d2 == 31 or (is_last_of_february(end) and end != termination):
+        if d2 == 31:
             d2 = 30
+        if is_last_of_february(end):
+            if maturity is None:
+                raise ValueError("needs maturity")
+            if not maturity:
+                d2 = 30
     else:
         raise ValueError(convention)
     return Fraction(360 * (end.year - start.year) + 30 * (end.month - start.month) + (d2 - d1), 360)
@@ -137,12 +143,17 @@ def year_fraction_cases(rng: random.Random) -> list:
                 if end < start:
                     start, end = end, start
             case = {"start": start.isoformat(), "end": end.isoformat(), "convention": convention}
-            termination = None
-            if convention == "30E/360 ISDA" and rng.random() < 0.5:
-                termination = end
-                case["terminationDate"] = end.isoformat()
-            value = year_fraction(start, end, convention, termination)
-            case["want"] = f"{value.numerator}/{value.denominator}"
+            maturity = None
+            if convention == "30E/360 ISDA":
+                # the flag is drawn here, on its own: true, false or (sometimes) left out
+                maturity = rng.choice([True, False, None, True, False])
+                if maturity is not None:
+                    case["maturity"] = maturity
+            try:
+                value = year_fraction(start, end, convention, maturity)
+                case["want"] = f"{value.numerator}/{value.denominator}"
+            except ValueError:
+                case["want"] = "throws"
             cases.append(case)
     return cases
 
@@ -157,9 +168,9 @@ def interest_cases(rng: random.Random) -> list:
         end = start + datetime.timedelta(days=rng.randint(0, 800))
         convention = rng.choice(CONVENTIONS)
         mode = rng.choice(MODES)
-        exact = Fraction(principal, 10**exponent) * Fraction(rate) * year_fraction(start, end, convention)
-        cases.append(
-            {
+        maturity = rng.choice([True, False]) if convention == "30E/360 ISDA" else None
+        exact = Fraction(principal, 10**exponent) * Fraction(rate) * year_fraction(start, end, convention, maturity)
+        case = {
                 "currency": currency,
                 "principal": str(principal),
                 "rate": rate,
@@ -168,8 +179,10 @@ def interest_cases(rng: random.Random) -> list:
                 "dayCount": convention,
                 "mode": mode,
                 "want": str(round_major(exact, exponent, mode)),
-            }
-        )
+        }
+        if maturity is not None:
+            case["maturity"] = maturity
+        cases.append(case)
     return cases
 
 
@@ -281,7 +294,13 @@ def amortise_cases(rng: random.Random) -> list:
 
 
 def present_value(rate: Fraction, flows: list) -> Fraction:
+    """the textbook form: the first flow at period 0, undiscounted"""
     return sum((Fraction(flow) / (1 + rate) ** t for t, flow in enumerate(flows)), Fraction(0))
+
+
+def excel_npv(rate: Fraction, flows: list) -> Fraction:
+    """Excel's NPV: the first flow at the end of period 1"""
+    return sum((Fraction(flow) / (1 + rate) ** (t + 1) for t, flow in enumerate(flows)), Fraction(0))
 
 
 def npv_cases(rng: random.Random) -> list:
@@ -292,14 +311,16 @@ def npv_cases(rng: random.Random) -> list:
         flows = [rng.randint(-10**7, 10**7) for _ in range(count)]
         rate = rng.choice([rate_string(rng), "-" + rate_string(rng, zero_ok=False), "1.5"])
         mode = rng.choice(MODES)
-        exact = present_value(Fraction(rate), flows) / 10**exponent
+        npv = excel_npv(Fraction(rate), flows) / 10**exponent
+        present = present_value(Fraction(rate), flows) / 10**exponent
         cases.append(
             {
                 "currency": currency,
                 "flows": [str(flow) for flow in flows],
                 "rate": rate,
                 "mode": mode,
-                "want": str(round_major(exact, exponent, mode)),
+                "npv": str(round_major(npv, exponent, mode)),
+                "presentValue": str(round_major(present, exponent, mode)),
             }
         )
     return cases
@@ -361,6 +382,104 @@ def irr_cases(rng: random.Random) -> list:
     return cases
 
 
+def bracketed_irr_cases(rng: random.Random) -> list:
+    """flows with two known rational IRRs, and brackets (off the grid) around each"""
+    cases = []
+    for _ in range(80):
+        currency, exponent = rng.choice(CURRENCIES)
+        first = Fraction(rng.randint(-500, 3000), 10000)
+        second = first + Fraction(rng.randint(1, 3000), 10000)
+        g1, g2 = 1 + first, 1 + second
+        # c0·g² + c1·g + c2 = k·(g − g1)(g − g2), scaled so every flow is a whole minor unit
+        k = rng.choice([1, -1]) * rng.randint(1, 1000) * 10**8
+        flows = [k, -k * (g1 + g2), k * g1 * g2]
+        assert all(flow.denominator == 1 for flow in flows)
+        digits = rng.randint(1, 8)
+        unit = 10**digits
+        which = rng.choice([0, 1])
+        root = [first, second][which]
+        gap = second - first
+        # bracket ends strictly between the roots' neighbourhoods, at 6 decimals off the grid
+        if which == 0:
+            low = first - Fraction(rng.randint(1, 1000), 10**4)
+            high = first + gap * Fraction(rng.randint(1, 99), 100)
+        else:
+            low = second - gap * Fraction(rng.randint(1, 99), 100)
+            high = second + Fraction(rng.randint(1, 1000), 10**4)
+        low = max(low, Fraction(-99, 100))
+        to_text = lambda value: f"{value.numerator}/{value.denominator}"
+        lower = (root * unit).numerator // (root * unit).denominator
+        cases.append(
+            {
+                "currency": currency,
+                "flows": [str(int(flow)) for flow in flows],
+                "digits": digits,
+                "bracket": [to_text(low), to_text(high)],
+                "lower": str(lower),
+            }
+        )
+    return cases
+
+
+def proration_cases(rng: random.Random) -> list:
+    cases = []
+    for _ in range(150):
+        currency, exponent = rng.choice(CURRENCIES)
+        price = rng.randint(-10**8, 10**8)
+        start = random_date(rng)
+        length = rng.randint(1, 400)
+        end = start + datetime.timedelta(days=length)
+        points = sorted(rng.sample(range(1, length), min(length - 1, rng.randint(0, 6)))) if length > 1 else []
+        used_start = rng.randint(0, length)
+        used_end = rng.randint(used_start, length)
+        mode = rng.choice(MODES)
+        prorated = round_fraction(Fraction(price * (used_end - used_start), length), mode)
+        # splitPeriod: Hamilton's largest remainder, ties to the earlier piece, by sign of the price
+        weights = [b - a for a, b in zip([0] + points, points + [length])]
+        magnitude = abs(price)
+        shares = [magnitude * w // length for w in weights]
+        remainders = [magnitude * w % length for w in weights]
+        left = magnitude - sum(shares)
+        order = sorted(range(len(weights)), key=lambda i: (-remainders[i], i))
+        for i in order[:left]:
+            shares[i] += 1
+        pieces = [share if price >= 0 else -share for share in shares]
+        day = lambda offset: (start + datetime.timedelta(days=offset)).isoformat()
+        cases.append(
+            {
+                "currency": currency,
+                "price": str(price),
+                "period": [start.isoformat(), end.isoformat()],
+                "used": [day(used_start), day(used_end)],
+                "at": [day(point) for point in points],
+                "mode": mode,
+                "prorate": str(prorated),
+                "split": [str(piece) for piece in pieces],
+            }
+        )
+    return cases
+
+
+def payment_date_cases(rng: random.Random) -> list:
+    """payment dates: monthly steps on the anchor's day, clamped to shorter months, or 7/14 days"""
+    cases = []
+    for _ in range(120):
+        anchor = random_date(rng)
+        per_year = rng.choice([1, 2, 3, 4, 6, 12, 26, 52])
+        count = rng.randint(1, 60)
+        dates = []
+        for i in range(count):
+            if per_year in (26, 52):
+                dates.append(anchor + datetime.timedelta(days=i * (364 // per_year)))
+                continue
+            months = anchor.month - 1 + i * (12 // per_year)
+            year, month = anchor.year + months // 12, months % 12 + 1
+            last = calendar.monthrange(year, month)[1]
+            dates.append(datetime.date(year, month, min(anchor.day, last)))
+        cases.append({"firstPayment": anchor.isoformat(), "perYear": per_year, "count": count, "dates": [d.isoformat() for d in dates]})
+    return cases
+
+
 def main() -> None:
     rng = random.Random(SEED)
     vectors = {
@@ -371,6 +490,9 @@ def main() -> None:
         "amortise": amortise_cases(rng),
         "npv": npv_cases(rng),
         "irr": irr_cases(rng),
+        "irrBracketed": bracketed_irr_cases(rng),
+        "proration": proration_cases(rng),
+        "paymentDates": payment_date_cases(rng),
     }
     text = json.dumps(vectors, indent=1) + "\n"
     if "--check" in sys.argv:

@@ -9,6 +9,9 @@ import {
   interest,
   irr,
   npv,
+  presentValue,
+  prorate,
+  splitPeriod,
   yearFraction,
   type AmortisationMethod,
   type AmortisationResidual,
@@ -22,7 +25,7 @@ interface Vectors {
     start: string;
     end: string;
     convention: DayCount;
-    terminationDate?: string;
+    maturity?: boolean;
     want: string;
   }[];
   interest: {
@@ -32,6 +35,7 @@ interface Vectors {
     from: string;
     to: string;
     dayCount: DayCount;
+    maturity?: boolean;
     mode: RoundingMode;
     want: string;
   }[];
@@ -60,8 +64,33 @@ interface Vectors {
     last: [string, string, string, string];
     checksum: string;
   }[];
-  npv: { currency: string; flows: string[]; rate: string; mode: RoundingMode; want: string }[];
+  npv: {
+    currency: string;
+    flows: string[];
+    rate: string;
+    mode: RoundingMode;
+    npv: string;
+    presentValue: string;
+  }[];
   irr: { currency: string; flows: string[]; digits: number; lower: string }[];
+  irrBracketed: {
+    currency: string;
+    flows: string[];
+    digits: number;
+    bracket: [string, string];
+    lower: string;
+  }[];
+  proration: {
+    currency: string;
+    price: string;
+    period: [string, string];
+    used: [string, string];
+    at: string[];
+    mode: RoundingMode;
+    prorate: string;
+    split: string[];
+  }[];
+  paymentDates: { firstPayment: string; perYear: number; count: number; dates: string[] }[];
 }
 
 const vectors = JSON.parse(
@@ -74,8 +103,15 @@ const minorOf = (value: Money): string => value.toMinor().toString();
 describe('finance matches the Python fractions oracle', () => {
   it('yearFraction', () => {
     const mismatches = vectors.yearFraction.filter((vector) => {
-      const fraction = yearFraction(vector.start, vector.end, vector.convention, vector);
-      return `${fraction.num}/${fraction.den}` !== vector.want;
+      let actual: string;
+      try {
+        const fraction = yearFraction(vector.start, vector.end, vector.convention, vector);
+        actual = `${fraction.num}/${fraction.den}`;
+      } catch (error) {
+        actual =
+          error instanceof RangeError && /maturity/.test(error.message) ? 'throws' : String(error);
+      }
+      return actual !== vector.want;
     });
     expect(vectors.yearFraction.length).toBeGreaterThan(800);
     expect(mismatches).toEqual([]);
@@ -141,7 +177,11 @@ describe('finance matches the Python fractions oracle', () => {
   it('npv', () => {
     const mismatches = vectors.npv.filter((vector) => {
       const flows = vector.flows.map((flow) => amount(flow, vector.currency));
-      return minorOf(npv(vector.rate, flows, vector.mode)) !== vector.want;
+      const actual = [
+        npv(vector.rate, flows, vector.mode),
+        presentValue(vector.rate, flows, vector.mode),
+      ];
+      return actual.map(minorOf).join() !== [vector.npv, vector.presentValue].join();
     });
     expect(mismatches).toEqual([]);
   });
@@ -152,6 +192,43 @@ describe('finance matches the Python fractions oracle', () => {
       const result = irr(flows, { digits: vector.digits });
       const lower = BigInt(result.lower.replace('.', ''));
       return lower !== BigInt(vector.lower) || result.rate !== result.lower;
+    });
+    expect(mismatches).toEqual([]);
+  });
+
+  it('irr with a bracket picks the root inside it, of two known rational roots', () => {
+    const mismatches = vectors.irrBracketed.filter((vector) => {
+      const flows = vector.flows.map((flow) => amount(flow, vector.currency));
+      const result = irr(flows, { digits: vector.digits, bracket: vector.bracket });
+      return BigInt(result.lower.replace('.', '')) !== BigInt(vector.lower);
+    });
+    expect(vectors.irrBracketed.length).toBeGreaterThan(50);
+    expect(mismatches).toEqual([]);
+  });
+
+  it('prorate and splitPeriod', () => {
+    const mismatches = vectors.proration.filter((vector) => {
+      const price = amount(vector.price, vector.currency);
+      const period = { start: vector.period[0], end: vector.period[1] };
+      const used = { start: vector.used[0], end: vector.used[1] };
+      const prorated = prorate(price, { period, used }, vector.mode);
+      const pieces = splitPeriod(price, { period, at: vector.at });
+      return (
+        minorOf(prorated) !== vector.prorate || pieces.map(minorOf).join() !== vector.split.join()
+      );
+    });
+    expect(mismatches).toEqual([]);
+  });
+
+  it('amortise payment dates', () => {
+    const mismatches = vectors.paymentDates.filter((vector) => {
+      const plan = amortise(amount('100000', 'EUR'), {
+        rate: '0',
+        perYear: vector.perYear,
+        periods: vector.count,
+        firstPayment: vector.firstPayment,
+      });
+      return plan.rows.map((row) => row.date).join() !== vector.dates.join();
     });
     expect(mismatches).toEqual([]);
   });

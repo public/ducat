@@ -64,6 +64,8 @@ describe('Money methods', () => {
       'amortise',
       'npv',
       'npvExact',
+      'presentValue',
+      'presentValueExact',
       'irr',
       'prorate',
       'splitPeriod',
