@@ -29,6 +29,20 @@ Operations are methods on `Money`. For pipelines or code that prefers plain func
 
 Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
 
+## Why ducat
+
+Choosing a money library for JavaScript today means choosing which problem to live with.
+
+- **Wrong, to varying degrees.** On the same 41 correctness vectors, no other money library passes more than 34, and most return some wrong answers without an error: multiplying through floats turns 0.50 × 1.15 into 0.57, splitting −100.00 three ways loses a cent, amounts past 2⁵³ minor units drift, and a decimal string from another locale can parse as 100 times the amount. Their issue trackers are full of these bugs, some open for years.
+- **Slow.** The libraries that get the arithmetic right pay for it in speed: dinero.js 2, the most careful of them, is 1.4× to 28× slower than ducat on the operations ducat leads.
+- **Missing features.** Most stop at add, multiply, allocate and format. Exact currency conversion, rounding modes beyond half up, cash rounding, the amounts payment processors expect and database storage are left to you, and that hand-written code is where the bugs come back.
+
+ducat is built to fix all three:
+
+- **Exact, and tested to stay exact.** Amounts are integers of minor units: a JS number while safe, a bigint beyond, so nothing is ever a float. Every operation that can round takes one of nine rounding modes (or `'unnecessary'`, which throws), the rounding kernel is generated from Lean proofs, and allocation is checked against a proved model. It passes all 41 vectors, and the bug classes found in the issue trackers and fix histories of dinero.js, currency.js, js-money, decimal.js, big.js and bignumber.js each have a regression test in ducat's suite.
+- **Fast.** Safe amounts stay on a plain-number fast path, so ducat is the fastest money library measured on creating, parsing, add, multiply, allocate and toDecimal on Node, Bun and Deno ([How it compares](#how-it-compares) has the numbers, and the cases where it isn't fastest).
+- **Complete, but you only pay for what you use.** Conversion with exact rates and their sources, rounding policies, cash rounding, processor amounts (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna), tax, a fixed-point `Fixed`, Intl formatting and strict parsing, and Prisma, Drizzle, Kysely and Postgres helpers are all opt-in modules. The core is 4.9 KiB gzipped.
+
 ---
 
 ## How it compares
