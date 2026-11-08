@@ -12,7 +12,15 @@ import {
   type Factor,
   type Ratio,
 } from './decimal.js';
-import { CurrencyMismatchError, make, type CurrencyInput, type Money } from './money.js';
+import {
+  CurrencyMismatchError,
+  make,
+  roundWithPolicy,
+  type CurrencyInput,
+  type Money,
+  type RoundingInput,
+  type RoundingPolicy,
+} from './money.js';
 import {
   DEFAULT_ROUNDING,
   divideAndRound,
@@ -384,10 +392,13 @@ export class Rate<From extends string = string, To extends string = string> {
     return hasStarted(this.availableAt, at);
   }
 
-  /** Converts `money`, rounding once to the target currency's exponent (or `options.scale`). */
+  /**
+   * Converts `money`, rounding once: with a mode, to the target currency's exponent (or
+   * `options.scale`); with a rounding policy, to the policy's scale and increment.
+   */
   convert(
     money: Money<From>,
-    rounding: RoundingMode = DEFAULT_ROUNDING,
+    rounding: RoundingInput = DEFAULT_ROUNDING,
     options?: ConvertOptions,
   ): Money<To> {
     if (money.currency !== this.from) {
@@ -396,10 +407,33 @@ export class Rate<From extends string = string, To extends string = string> {
     if (options?.strictValidity === true && this.validUntil !== undefined && this.isExpired()) {
       throw new RateExpiredError(this.from, this.to, this.validUntil);
     }
+    if (typeof rounding === 'function') {
+      return convertWithPolicy(money, this.to, this.ratio, rounding, options);
+    }
     const scale = options?.scale ?? currencyExponent(this.to);
     const minor = multiplyByRatioAtScale(money.minor, this.ratio, scale - money.scale, rounding);
     return make(this.to, minor, scale);
   }
+}
+
+/**
+ * @internal
+ * money × rate in `to`, rounded once by a policy. The amount is relabelled `to` at its own scale,
+ * so the policy rounds the product exactly as it would a multiplication in `to`: to its scale
+ * (default `to`'s exponent) and increment, checking its currency against `to`.
+ */
+export function convertWithPolicy<To extends string>(
+  money: Money,
+  to: To,
+  rate: Ratio,
+  policy: RoundingPolicy,
+  options?: ConvertOptions,
+): Money<To> {
+  // Two scales would leave it unclear which one the result has.
+  if (options?.scale !== undefined) {
+    throw new TypeError('options.scale with a rounding policy');
+  }
+  return roundWithPolicy(make(to, money.minor, money.scale), rate, policy);
 }
 
 /** The metadata fields of `info` that are defined (no undefined keys). */
