@@ -7,7 +7,7 @@ Everything in the JavaScript section is reproducible with the harness in `compar
 the same benchmark operations and the same bundle snippet for every library. Library versions are listed below. Where
 another library does something ducat doesn't, or does it better, this document says so.
 
-> **Note.** These numbers were measured on ducat 0.1.0 (commit 69d7fe9) in November 2026. The tables come from
+> **Note.** These numbers were measured on the ducat 0.2.0 release candidate (commit ea9160b) in November 2026. The tables come from
 > `compare/results` (`pnpm tables` writes them to `compare/RESULTS.md`), and this document is updated from them.
 
 ## JavaScript and TypeScript libraries
@@ -98,38 +98,42 @@ float's error (`0.30000000000000004`) instead of being rejected.
 
 ### Speed
 
-One quiet AMD EPYC Genoa machine (Vultr, Frankfurt; kernel 6.8; CPU steal 0.01–0.02%). Each runtime was a separate run
-on the same machine. Each cell is nanoseconds per operation over 1,000 values: the median of 5 rounds, with library
+Quiet AMD EPYC Genoa machines (Vultr, Frankfurt; kernel 6.8; CPU steal 0.02%). Each runtime was a separate run; Node
+and Bun ran on the same machine and Deno on a second one of the same plan. Each cell is nanoseconds per operation over 1,000 values: the median of 5 rounds, with library
 order shuffled each round.
 
-| ns/op     |                                                        node 24.22.2 |                                                             bun 1.4.4 |                                                            deno 2.9.8 |
-| --------- | ------------------------------------------------------------------: | --------------------------------------------------------------------: | --------------------------------------------------------------------: |
-| fromMinor |                          **9.06** (fastest other: dinero.js 2 14.5) |              **9.25** (fastest other: monetra 23.6; dinero.js 2 33.9) |              **8.48** (fastest other: monetra 27.8; dinero.js 2 93.1) |
-| parse     |                          **31.3** (fastest other: dinero.js 2 62.2) |     **35.6** (fastest other: dinero.js 2 bigint 139; dinero.js 2 152) |                             **30.3** (fastest other: dinero.js 2 167) |
-| add       |             **11.9** (fastest other: monetra 14.6; dinero.js 2 187) |               **10.4** (fastest other: monetra 19.9; dinero.js 2 313) |               **9.92** (fastest other: monetra 13.6; dinero.js 2 398) |
-| mulRatio  |  **23.4** (fastest other: @screeny05/ts-money 148; dinero.js 2 470) |   **27.8** (fastest other: @screeny05/ts-money 64.3; dinero.js 2 767) | **19.8** (fastest other: @screeny05/ts-money 162; dinero.js 2 1.2 µs) |
-| allocate3 |      **47.8** (fastest other: bigint-money 415; dinero.js 2 1.2 µs) | **65.5** (fastest other: @screeny05/ts-money 268; dinero.js 2 1.6 µs) |        **42.4** (fastest other: bigint-money 271; dinero.js 2 2.0 µs) |
-| toDecimal | **34.6** (fastest other: @screeny05/ts-money 58.4; dinero.js 2 426) |              **50.0** (fastest other: js-money 76.8; dinero.js 2 570) |              **32.6** (fastest other: ts-money 64.3; dinero.js 2 380) |
-| format    |        411 (fastest other: **currency.js 380**; dinero.js 2 1.1 µs) |          **269** (fastest other: dinero.js 1 272; dinero.js 2 1.2 µs) |          401 (fastest other: **currency.js 393**; dinero.js 2 1.1 µs) |
-| compare   |            **7.39** (fastest other: ts-money 7.91; dinero.js 2 190) |           10.6 (fastest other: **currency.js 6.93**; dinero.js 2 303) |   **6.90** (fastest other: @screeny05/ts-money 7.53; dinero.js 2 181) |
+| ns/op     |                                                       node 24.22.2 |                                                             bun 1.4.4 |                                                            deno 2.9.8 |
+| --------- | -----------------------------------------------------------------: | --------------------------------------------------------------------: | --------------------------------------------------------------------: |
+| fromMinor |                         **9.29** (fastest other: dinero.js 2 14.5) |              **9.22** (fastest other: monetra 24.4; dinero.js 2 35.6) |              **8.42** (fastest other: monetra 26.4; dinero.js 2 86.6) |
+| parse     |                         **30.9** (fastest other: dinero.js 2 62.1) |     **34.8** (fastest other: dinero.js 2 bigint 135; dinero.js 2 150) |                             **29.3** (fastest other: dinero.js 2 134) |
+| add       |            **11.5** (fastest other: monetra 14.6; dinero.js 2 200) |               **11.1** (fastest other: monetra 19.6; dinero.js 2 308) |               **9.44** (fastest other: monetra 12.3; dinero.js 2 321) |
+| mulRatio  | **24.0** (fastest other: @screeny05/ts-money 151; dinero.js 2 497) |   **29.0** (fastest other: @screeny05/ts-money 68.0; dinero.js 2 757) | **20.8** (fastest other: @screeny05/ts-money 155; dinero.js 2 1.1 µs) |
+| allocate3 |     **48.6** (fastest other: bigint-money 457; dinero.js 2 1.3 µs) | **65.4** (fastest other: @screeny05/ts-money 274; dinero.js 2 1.6 µs) |        **41.3** (fastest other: bigint-money 270; dinero.js 2 2.0 µs) |
+| toDecimal |           **34.7** (fastest other: ts-money 58.6; dinero.js 2 429) |              **55.5** (fastest other: ts-money 74.3; dinero.js 2 580) |   **30.6** (fastest other: @screeny05/ts-money 63.5; dinero.js 2 370) |
+| format    |       413 (fastest other: **currency.js 379**; dinero.js 2 1.1 µs) |          **268** (fastest other: currency.js 274; dinero.js 2 1.2 µs) |          398 (fastest other: **currency.js 386**; dinero.js 2 1.0 µs) |
+| compare   |           **7.49** (fastest other: ts-money 8.06; dinero.js 2 202) |           10.3 (fastest other: **currency.js 6.68**; dinero.js 2 324) |   **6.88** (fastest other: @screeny05/ts-money 7.49; dinero.js 2 171) |
 
-Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on ducat 0.1.0 (commit 69d7fe9). Lower is better; the faster of ducat and the fastest other money library is in bold.
+Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on the ducat 0.2.0 release candidate (commit ea9160b). Lower is better; the faster of ducat and the fastest other money library is in bold.
 
 The ducat column measures its methods API. Where ducat is not fastest (every cell where another library measured
 faster):
 
 - **Formatting:** every library spends most of its time inside `Intl.NumberFormat`. currency.js (formatting a float)
-  is faster on Node (380 ns against 411) and on Deno (393 against 401). On Bun, ducat and dinero.js 1 are level (269
-  and 272 ns).
-- **Comparing on Bun:** libraries that compare plain numbers are faster: currency.js 6.9, js-money 7.9, ts-money 8.0,
-  @screeny05/ts-money 8.4 and monetra 8.6 ns, against ducat's 10.6. On Node and Deno ducat is slightly ahead (7.39
-  against ts-money's 7.91, and 6.90 against @screeny05/ts-money's 7.53).
+  and dinero.js 1 are faster on Node (379 and 397 ns against 413), and currency.js on Deno (386 against 398). On Bun,
+  ducat and currency.js are level (268 and 274 ns).
+- **Comparing on Bun:** libraries that compare plain numbers are faster: currency.js 6.7, js-money 8.0, ts-money 8.1,
+  @screeny05/ts-money 8.5 and monetra 8.6 ns, against ducat's 10.3. On Node and Deno ducat is ahead (7.49 against
+  ts-money's 8.06, and 6.88 against @screeny05/ts-money's 7.49).
+
+dinero.js 2 has measured unexpectedly slow on Deno in the last two runs, up to 6× slower than in the 0.1.0
+release-candidate run while every other library got about 10% faster; its Deno cells are shown but not used in the
+README's ranges. The parse row was measured before `parse` started checking where group separators are.
 
 ### Bundle size
 
 The same program in every library (create an amount, add, multiply, print a decimal string), bundled with esbuild and
 minified, then gzipped; sizes in KiB. "Whole package" bundles each library's root entry; for ducat that is the core,
-and everything (`@ducatjs/money/all`) is about 18.9 kB gzipped.
+and everything (`@ducatjs/money/all`) is about 27.6 KiB gzipped.
 
 | library             | program, min | program, gzip | whole package, min | whole package, gzip |
 | ------------------- | -----------: | ------------: | -----------------: | ------------------: |
@@ -139,7 +143,7 @@ and everything (`@ducatjs/money/all`) is about 18.9 kB gzipped.
 | @screeny05/ts-money |       6.0 kB |        2.2 kB |             5.9 kB |              2.2 kB |
 | big.js              |       6.8 kB |        2.9 kB |             6.7 kB |              2.9 kB |
 | dinero.js 1         |      10.1 kB |        3.2 kB |            10.0 kB |              3.2 kB |
-| ducat               |       9.2 kB |        3.7 kB |            12.0 kB |              4.7 kB |
+| ducat               |      10.4 kB |        4.0 kB |            12.9 kB |              4.9 kB |
 | monetra             |      13.7 kB |        4.5 kB |            37.3 kB |             11.2 kB |
 | decimal.js-light    |      13.5 kB |        5.9 kB |            13.5 kB |              5.8 kB |
 | money-math          |      23.1 kB |        8.3 kB |            23.1 kB |              8.3 kB |
@@ -179,7 +183,8 @@ pass every vector they support. The ducat row measures `Money`; a `Fixed` adapte
 
 ### Bundle size (fixed point)
 
-The ducat row here also measures `Money`, not `Fixed`.
+The ducat rows measure the same program with `Money` and with `Fixed`. `Fixed` is larger because it currently loads
+Money's internals and the ISO table too.
 
 | library                                   | program, min | program, gzip | whole package, min | whole package, gzip |
 | ----------------------------------------- | -----------: | ------------: | -----------------: | ------------------: |
@@ -188,7 +193,8 @@ The ducat row here also measures `Money`, not `Fixed`.
 | @formatjs/bigdecimal                      |       8.9 kB |        2.3 kB |             8.9 kB |              2.3 kB |
 | js-big-decimal                            |       9.3 kB |        3.0 kB |             9.2 kB |              3.0 kB |
 | ethers FixedNumber (import from 'ethers') |       8.5 kB |        3.2 kB |           376.4 kB |            140.8 kB |
-| ducat Money                               |       9.2 kB |        3.7 kB |            12.0 kB |              4.7 kB |
+| ducat Money                               |      10.4 kB |        4.0 kB |            12.9 kB |              4.9 kB |
+| ducat Fixed                               |      14.8 kB |        5.2 kB |            15.1 kB |              5.2 kB |
 | bigdecimal.js                             |      45.9 kB |       11.6 kB |            45.9 kB |             11.6 kB |
 
 ### Speed (fixed point)
@@ -198,24 +204,30 @@ shown; Bun and Deno are in `compare/RESULTS.md`.
 
 | ns/op                       |  parse |    add | multiply |  divide | compare | toString |
 | --------------------------- | -----: | -----: | -------: | ------: | ------: | -------: |
-| ducat Money                 |    123 |   9.99 |     80.3 |    68.3 |    7.08 |     30.5 |
-| dnum 2.18.1                 |    323 |   25.1 |      292 |     251 |    21.4 |      264 |
-| ethers FixedNumber 6.17.0   | 2.2 µs | 1.6 µs |   5.7 µs |  5.5 µs |    9.19 |     4.92 |
-| js-big-decimal 2.2.0        |   60.9 | 1.9 µs |   1.5 µs | 36.3 µs |     658 |     4.83 |
-| bigdecimal.js 1.7.2         |   45.7 |   15.1 |     75.6 |    56.9 |    9.09 |     39.9 |
-| @formatjs/bigdecimal 0.2.10 |    122 |   33.7 |      n/a |     n/a |    22.7 |     51.1 |
-| bigint-money 2.0.1          |    542 |   47.8 |   3.0 µs |  2.6 µs |    14.1 |      481 |
+| ducat Money                 |    133 |   10.2 |     78.3 |    29.9 |    7.14 |     31.1 |
+| ducat Fixed                 |   32.0 |   11.5 |     30.1 |    72.3 |    7.71 |     30.9 |
+| dnum 2.18.1                 |    339 |   26.0 |      297 |     253 |    21.5 |      273 |
+| ethers FixedNumber 6.17.0   | 2.3 µs | 1.7 µs |   5.8 µs |  5.5 µs |    9.15 |     5.10 |
+| js-big-decimal 2.2.0        |   63.3 | 1.8 µs |   1.6 µs | 37.7 µs |     671 |     4.90 |
+| bigdecimal.js 1.7.2         |   46.3 |   15.6 |     77.8 |    59.7 |    10.0 |     40.2 |
+| @formatjs/bigdecimal 0.2.10 |    122 |   33.5 |      n/a |     n/a |    24.4 |     52.6 |
+| bigint-money 2.0.1          |    545 |   46.7 |   3.0 µs |  2.8 µs |    14.3 |      508 |
 
-**ducat is not the fastest fixed-point library.** It is fastest on add and compare on every runtime. Every cell where
-another library measured faster:
+**`Fixed` is the fastest fixed-point library on parse and multiply on every runtime**, and ahead of every other
+library on add and compare (on Bun, level with bigdecimal.js on add: 13.4 against 13.3 ns). Every cell where another
+library measured faster than `Fixed`:
 
-- **parse:** bigdecimal.js and js-big-decimal on every runtime (Node 46 and 61 ns against ducat's 123; Bun 31 and 38
-  against 95; Deno 37 and 60 against 132), and @formatjs/bigdecimal on Node (122 against 123, level) and Deno (121 against 132).
-- **multiply:** bigdecimal.js on every runtime (Node 76 against 80 ns; Bun 61 against 75; Deno 60 against 88).
-- **divide by 3:** bigdecimal.js on every runtime (Node 57 against 68 ns; Bun 35 against 148; Deno 47 against 65).
-  ducat's exact division by a non-terminating factor goes through bigint, which is slowest on Bun.
-- **toString:** js-big-decimal and ethers are fastest everywhere (about 1–5 ns), against ducat's 31 on Node and Deno
-  and 58 on Bun.
+- **divide by 3:** bigdecimal.js on every runtime (Node 60 against 72 ns; Bun 39 against 154; Deno 46 against 62).
+  `Money` divides faster than both (Node 30, Bun 27, Deno 25 ns): its integer-divisor fast path is not yet used by
+  `Fixed`.
+- **toString:** js-big-decimal and ethers are fastest everywhere (about 5 ns), against `Fixed`'s 31 on Node and Deno
+  and 81 on Bun.
+
+The `Money` row parses currency amounts, so it also checks the currency's scale: bigdecimal.js and js-big-decimal
+parse faster than it on every runtime (Node 46 and 63 ns against 133), and @formatjs/bigdecimal on Node and Deno (122
+against 133, 115 against 127). bigdecimal.js also multiplies faster than `Money` on Bun (59 against 71 ns) and Deno
+(58 against 83), and they are level on Node (78 and 78). These numbers were measured before `parse` started checking
+where group separators are.
 
 ## Notable money libraries in other languages
 
