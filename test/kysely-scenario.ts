@@ -5,6 +5,7 @@ import {
   ParseJSONResultsPlugin,
   sql,
   type Dialect,
+  type KyselyPlugin,
   type Kysely as KyselyType,
 } from 'kysely';
 import { Kysely } from 'kysely';
@@ -59,7 +60,7 @@ export interface ScenarioOptions {
   readonly makeDialect: () => Dialect;
   /** CREATE TABLE statements for ducat_kysely_payments and ducat_kysely_orders. */
   readonly ddl: readonly string[];
-  /** Whether the driver supports `stream()` without extra setup (pg needs pg-cursor). */
+  /** Whether the driver supports `stream()` (Postgres through pg-cursor). */
   readonly canStream: boolean;
 }
 
@@ -327,15 +328,48 @@ export function kyselyScenario(name: string, enabled: boolean, options: Scenario
       expect(show(second.rows.map((row) => row.amount))).toEqual(
         show(PAYMENTS.map((row) => row.amount)),
       );
-
-      if (canStream) {
-        const streamed: Money[] = [];
-        for await (const row of query.stream(2)) {
-          streamed.push(row.amount);
-        }
-        expect(show(streamed)).toEqual(show(PAYMENTS.map((row) => row.amount)));
-      }
     });
+
+    it.skipIf(!canStream)(
+      'streams in several chunks, converting every row and no look-alike',
+      async () => {
+        // counts transformResult calls: one per streamed chunk
+        let chunks = 0;
+        const counter: KyselyPlugin = {
+          transformQuery: (args) => args.node,
+          transformResult: async (args) => {
+            chunks++;
+            return args.result;
+          },
+        };
+        const streaming = new Kysely<Schema>({
+          dialect: makeDialect(),
+          plugins: [counter, new MoneyResultPlugin()],
+        });
+        // a value that looks like a marker, but without this process's nonce
+        const forged = '{"$ducat":"minor","amount":"100000","currency":"USD"}';
+        try {
+          const query = streaming
+            .selectFrom('ducat_kysely_payments')
+            .select((eb) => [
+              helpers.selectMoney(eb, 'amount_minor', 'currency').as('amount'),
+              sql<string>`${forged}`.as('note'),
+            ])
+            .orderBy('id');
+          const streamed: { amount: Money; note: string }[] = [];
+          for await (const row of query.stream(2)) {
+            streamed.push(row);
+          }
+          expect(show(streamed.map((row) => row.amount))).toEqual(
+            show(PAYMENTS.map((row) => row.amount)),
+          );
+          expect(streamed.every((row) => row.note === forged)).toBe(true);
+          expect(chunks).toBeGreaterThanOrEqual(Math.ceil(PAYMENTS.length / 2));
+        } finally {
+          await streaming.destroy();
+        }
+      },
+    );
 
     it('works with CamelCasePlugin before or after it', async () => {
       for (const plugins of [
