@@ -8,6 +8,7 @@ import {
   ISO_4217_PUBLISHED,
   ISO_EXPONENTS,
   ISO_NON_MONETARY,
+  money,
 } from '../src/fn.js';
 
 describe('ISO 4217 table', () => {
@@ -60,5 +61,20 @@ describe('ISO 4217 table', () => {
       const digits = /\.(\d+)/.exec(s)?.[1]?.length ?? 0;
       expect([c, digits]).toEqual([c, e]);
     }
+  });
+});
+
+describe('currencies that subdivide into five', () => {
+  // MGA and MRU have fifths (iraimbilanja, khoums); exponent 2 holds them exactly
+  it('hold a fifth exactly at their ISO exponent of 2', () => {
+    expect(currencyExponent('MGA')).toBe(2);
+    expect(currencyExponent('MRU')).toBe(2);
+    const khoums = money('0.20', 'MRU');
+    expect(khoums.multiply(5).toDecimal()).toBe('1.00');
+    expect(
+      money('1', 'MRU')
+        .split(5)
+        .map((part) => part.toDecimal()),
+    ).toEqual(['0.20', '0.20', '0.20', '0.20', '0.20']);
   });
 });
