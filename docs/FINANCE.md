@@ -1,6 +1,6 @@
 # `@ducatjs/money/finance`: design
 
-Status: approved design; the module is planned for v0.3.0, and XNPV and XIRR for v0.4.0. Issue #54.
+Status: approved design (#54). The module is planned for v0.3.0 (#135), and XNPV and XIRR for v0.4.0 (#136).
 
 Billing and lending code keeps re-implementing the same few calculations, usually in floats: loan
 and amortisation schedules, interest between two dates under a day-count convention, net present
