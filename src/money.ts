@@ -167,7 +167,27 @@ class Money<C extends string = string> {
     return clamp(this, lo, hi);
   }
 
+  /** Same currency, value and scale: 1.0 EUR is not identical to 1.00 EUR. */
+  identical(other: Money): boolean {
+    return identical(this, other);
+  }
+  /**
+   * Applies `operation` to this amount and returns its result, so a rounding policy or a
+   * conversion reads as one step in a chain: `price.multiply('1.075').with(toCash)`.
+   */
+  with<R>(operation: (money: Money<C>) => R): R {
+    return operation(this);
+  }
+
   // output
+  /** The whole major units, truncated toward zero: 12 for 12.34 EUR, -12 for -12.34 EUR. */
+  majorPart(): number | bigint {
+    return majorPart(this);
+  }
+  /** The rest in 10^-scale units, with the amount's sign: 34 for 12.34 EUR, -34 for -12.34. */
+  minorPart(): number | bigint {
+    return minorPart(this);
+  }
   /** Exact decimal string in major units: "12.34" */
   toDecimal(): string {
     return formatScaled(this.minor, this.scale);
@@ -697,6 +717,17 @@ export function equals(money: Money, other: Money): boolean {
   return compare(money, other) === 0;
 }
 
+/**
+ * Same currency, same value *and* same scale, with number and bigint minor units counted as equal.
+ * `equals` treats 1.0 EUR (scale 1) and 1.00 EUR as equal; `identical` does not. For round-trip
+ * tests, where the scale must survive too.
+ */
+export function identical(money: Money, other: Money): boolean {
+  return (
+    money.currency === other.currency && money.scale === other.scale && money.minor == other.minor
+  );
+}
+
 /** money < other (same currency; any scale). */
 export const lessThan = <C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean =>
   compare(money, other) < 0;
@@ -772,6 +803,35 @@ export function clamp<C extends string>(
  */
 export function toDecimal(money: Money): string {
   return formatScaled(money.minor, money.scale);
+}
+
+/**
+ * The whole major units, truncated toward zero: 12 for 12.34 EUR and -12 for -12.34 EUR. A number
+ * while it is a safe integer, a bigint beyond, like `minor`.
+ */
+export function majorPart(money: Money): number | bigint {
+  const minor = money.minor;
+  if (typeof minor === 'number' && money.scale <= 15) {
+    // Taking the remainder out first leaves an exact multiple, so the division is exact. `+ 0`
+    // turns -0 into 0.
+    const unit = POW10[money.scale]!;
+    return (minor - (minor % unit)) / unit + 0;
+  }
+  // bigint division truncates toward zero, like the fast path
+  return normalizeMinor(toBigInt(minor) / pow10n(money.scale));
+}
+
+/**
+ * What is left after `majorPart`, in 10^-scale units and with the amount's sign: 34 for 12.34
+ * EUR, -34 for -12.34 EUR, 5 for 1.005 EUR at scale 3.
+ */
+export function minorPart(money: Money): number | bigint {
+  const minor = money.minor;
+  if (typeof minor === 'number' && money.scale <= 15) {
+    // % on safe integers is exact and keeps the dividend's sign; `+ 0` turns -0 into 0.
+    return (minor % POW10[money.scale]!) + 0;
+  }
+  return normalizeMinor(toBigInt(minor) % pow10n(money.scale));
 }
 
 /** Minor units as a bigint (always safe; use for BIGINT columns). */

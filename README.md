@@ -183,7 +183,9 @@ if (isMoneyIn(price, 'EUR')) {
   price.add(money('1', 'EUR')); // → 13.34 EUR
 }
 assertCurrency(price, 'EUR'); // now Money<'EUR'>
-assertCurrency(price, 'USD'); // throws
+
+const other = fromJSON({ amount: '1', currency: 'USD' as string });
+assertCurrency(other, 'EUR'); // throws
 ```
 
 **Arithmetic.** All of these are immutable and return new values.
@@ -194,11 +196,28 @@ assertCurrency(price, 'USD'); // throws
 - `percentage(m, percent, rounding?)`, `discount(price, percent, rounding?)`
 - `addTax(net, percent, rounding?)` and `extractTax(gross, percent, rounding?)` both return `{ net, tax, gross }`, and net + tax is always exactly gross.
 - `convert(m, to, rate, rounding?, { scale? })` at a decimal-string rate, or `convert(m, exchangeRate(...), rounding?)`. See [Currency conversion](#currency-conversion).
+- `m.with(operation)` applies a function to the amount and returns its result, so a rounding step or a conversion reads as one link of a chain.
+
+```ts
+import { money, type Money } from '@ducatjs/money';
+
+const toFiveRappen = (value: Money<'CHF'>) => value.divide(5).round('halfExpand').multiply(5);
+money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
+```
 
 **Compare**
 
 - `compare` (returns −1, 0 or 1), `equals`, `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual`
 - `isZero`, `isPositive`, `isNegative`, `sign`, `min`, `max`, `clamp`
+- `identical(a, b)`: like `equals`, but the scale must match too (`1.0` is not identical to `1.00`), for round-trip tests.
+
+```ts
+import { money } from '@ducatjs/money';
+
+const one = money('1', 'EUR');
+one.equals(money('1', 'EUR', { scale: 1 })); // → true
+one.identical(money('1', 'EUR', { scale: 1 })); // → false
+```
 
 **Allocate and split**
 
@@ -251,6 +270,7 @@ assertCurrency(price, 'USD'); // throws
 
 - `toDecimal(m)` gives `"12.34"` for NUMERIC/DECIMAL and wire formats.
 - `toMinor(m)` gives a bigint for BIGINT columns. `toMinorNumber(m)` gives a number and throws if it isn't safe.
+- `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
 
 **Currencies**

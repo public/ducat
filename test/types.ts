@@ -86,3 +86,10 @@ assertCurrency(asserted, 'EUR');
 const afterAssert: Money<'EUR'> = asserted.add(eur);
 void notYet;
 void afterAssert;
+// --- with() keeps the operation's result type
+const withResult: Money<'EUR'> = eur.with((value) => value.negate());
+const withString: string = eur.with((value) => value.toDecimal());
+// @ts-expect-error the operation receives a Money<'EUR'>, not a Money<'USD'>
+eur.with((value: Money<'USD'>) => value);
+void withResult;
+void withString;
