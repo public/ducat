@@ -7,7 +7,7 @@
     "@ducatjs/money/convert/ecb": 7.45,
     "@ducatjs/money/convert/fetch": 9.53,
     "@ducatjs/money/convert/fed": 7.12,
-    "@ducatjs/money/convert/boe": 7.05,
+    "@ducatjs/money/convert/boe": 7.06,
     "@ducatjs/money/convert/hmrc": 6.57,
     "@ducatjs/money/convert/history": 6.35,
     "@ducatjs/money/convert/boc": 6.72,
