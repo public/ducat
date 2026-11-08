@@ -42,23 +42,78 @@ export function toDecimalValue<D>(money: Money, Decimal: new (value: string) => 
 
 type Row<A extends string, V> = { [P in A]: V };
 
+/** Options for `minorMoneyField` and `toMinorColumns`: a column that records each amount's scale. */
+export interface ScaleColumnOption<S extends string> {
+  /**
+   * The integer column holding the number of decimals the minor units are counted in (2 for
+   * cents). With it, any scale round-trips, and stored amounts keep their meaning even if a
+   * currency's exponent changes.
+   */
+  readonly scale: S;
+}
+
+/** A scale read from a row: a safe, non-negative integer (a SMALLINT or INT column). */
+function readScale(value: unknown, column: string): number {
+  const scale = typeof value === 'bigint' ? Number(value) : value;
+  if (typeof scale !== 'number' || !Number.isSafeInteger(scale) || scale < 0) {
+    throw new RangeError(
+      `Expected a non-negative integer scale in "${column}", got ${String(value)}`,
+    );
+  }
+  return scale;
+}
+
 /**
  * A Prisma result-extension field that exposes a Money built from `amount_minor` + `currency`
- * columns:
+ * columns, and optionally a scale column:
  *
  *     const db = new PrismaClient().$extends({
  *       result: { order: { total: minorMoneyField('totalMinor', 'currency') } },
  *     });
  *     (await db.order.findFirstOrThrow()).total   // Money
+ *
+ * Without a scale column the minor units are read at the currency's current exponent.
  */
 export function minorMoneyField<const A extends string, const K extends string>(
   amount: A,
   currency: K,
-) {
+): {
+  needs: { [P in A | K]: true };
+  compute: (row: Row<A, bigint | number> & Row<K, string>) => Money;
+};
+export function minorMoneyField<
+  const A extends string,
+  const K extends string,
+  const S extends string,
+>(
+  amount: A,
+  currency: K,
+  options: ScaleColumnOption<S>,
+): {
+  needs: { [P in A | K | S]: true };
+  compute: (row: Row<A, bigint | number> & Row<K, string> & Row<S, bigint | number>) => Money;
+};
+export function minorMoneyField(
+  amount: string,
+  currency: string,
+  options?: ScaleColumnOption<string>,
+): { needs: Record<string, true>; compute: (row: Record<string, unknown>) => Money } {
+  if (options === undefined) {
+    return {
+      needs: { [amount]: true, [currency]: true },
+      compute: (row) => fromMinor(row[amount] as bigint | number, row[currency] as string),
+    };
+  }
+
+  const scaleColumn = options.scale;
   return {
-    needs: { [amount]: true, [currency]: true } as { [P in A | K]: true },
-    compute: (row: Row<A, bigint | number> & Row<K, string>): Money =>
-      fromMinor(row[amount], row[currency]),
+    needs: { [amount]: true, [currency]: true, [scaleColumn]: true },
+    compute: (row) =>
+      fromMinor(
+        row[amount] as bigint | number,
+        row[currency] as string,
+        readScale(row[scaleColumn], scaleColumn),
+      ),
   };
 }
 
@@ -95,16 +150,35 @@ export function decimalMoneyField(
 
 /**
  * Column values for writes: `data: { ...toMinorColumns(total, 'totalMinor', 'currency') }`.
- * Minor units are a bigint (Prisma BigInt). Throws if the value has a non-standard scale, because
- * the column cannot record it.
+ * Minor units are a bigint (Prisma BigInt). Without a scale column, throws if the value has a
+ * non-standard scale, because the columns cannot record it. With `{ scale: 'amountScale' }`, any
+ * scale is stored, next to the minor units it counts.
  */
 export function toMinorColumns<const A extends string, const K extends string>(
   money: Money,
   amount: A,
   currency: K,
-): Row<A, bigint> & Row<K, string> {
-  return { [amount]: toMinorAtIsoScale(money), [currency]: money.currency } as Row<A, bigint> &
-    Row<K, string>;
+): Row<A, bigint> & Row<K, string>;
+export function toMinorColumns<
+  const A extends string,
+  const K extends string,
+  const S extends string,
+>(
+  money: Money,
+  amount: A,
+  currency: K,
+  options: ScaleColumnOption<S>,
+): Row<A, bigint> & Row<K, string> & Row<S, number>;
+export function toMinorColumns(
+  money: Money,
+  amount: string,
+  currency: string,
+  options?: ScaleColumnOption<string>,
+): Record<string, unknown> {
+  if (options === undefined) {
+    return { [amount]: toMinorAtIsoScale(money), [currency]: money.currency };
+  }
+  return { [amount]: toMinor(money), [currency]: money.currency, [options.scale]: money.scale };
 }
 
 function toMinorAtIsoScale(money: Money): bigint {
