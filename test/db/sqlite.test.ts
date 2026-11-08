@@ -12,7 +12,6 @@ async function connectToSqlite(): Promise<DatabaseAdapter> {
 
   return {
     types: { bigint: 'INTEGER', numeric19: 'TEXT', numeric38: 'TEXT', json: 'TEXT', text: 'TEXT' },
-    roundsToColumnScale: false,
     placeholder: () => '?',
     execute: async (sql) => {
       connection.exec(sql);
@@ -34,6 +33,7 @@ async function connectToSqlite(): Promise<DatabaseAdapter> {
 
 databaseSuite('SQLite', {
   enabled: true,
+  roundsToColumnScale: false,
   connect: connectToSqlite,
   extraTests: (database) => {
     it('NUMERIC affinity is lossy, so decimals belong in TEXT columns', async () => {
