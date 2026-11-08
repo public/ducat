@@ -366,6 +366,9 @@ export function make<C extends string>(
 
 const toBigInt = (minor: number | bigint) => (typeof minor === 'bigint' ? minor : BigInt(minor));
 
+// scaleUp and scaleDown have a copy in src/scale.ts, for Fixed, which must not load this module;
+// test/fixed.test.ts checks that the copies agree.
+
 /** v * 10^e exactly (e >= 0) */
 export function scaleUp(minor: number | bigint, exponent: number): number | bigint {
   if (exponent === 0) {

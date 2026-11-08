@@ -2,7 +2,6 @@
 // an integer (a JS number while it is a safe integer, a bigint beyond) and a scale, the count of
 // decimal places: `fixed('12.345')` is 12345 at scale 3. Arithmetic is exact, and every operation
 // that has to drop digits rounds once, with an explicit or the default mode.
-import { currencyExponent } from './currency.js';
 import {
   formatScaled,
   parseDecimal,
@@ -14,20 +13,13 @@ import {
   type Ratio,
 } from './decimal.js';
 import {
-  fromMinor,
-  scaleDown,
-  scaleUp,
-  toScale as moneyToScale,
-  type CurrencyInput,
-  type Money,
-} from './money.js';
-import {
   DEFAULT_ROUNDING,
   divideAndRound,
   divideAndRoundBigint,
   RoundingError,
   type RoundingMode,
 } from './rounding.js';
+import { scaleDown, scaleUp } from './scale.js';
 
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 
@@ -312,28 +304,6 @@ export class Fixed {
     return { value: this.value, scale: this.scale };
   }
 
-  /**
-   * Money in `currency`, at its exponent. Throws RoundingError when that would drop digits, unless
-   * `rounding` is given: `fixed('1.005').toMoney('EUR', 'halfEven')` is 1.00 EUR.
-   */
-  toMoney<C extends CurrencyInput>(currency: C, rounding: RoundingMode = 'unnecessary'): Money<C> {
-    const exact = fromMinor(this.value, currency, this.scale);
-    const target = currencyExponent(currency);
-    if (target === this.scale) {
-      return exact;
-    }
-    try {
-      return moneyToScale(exact, target, rounding);
-    } catch (error) {
-      if (error instanceof RoundingError) {
-        throw new RoundingError(
-          `${this.toString()} has more than ${target} decimal places for ${currency}; pass a rounding mode`,
-        );
-      }
-      throw error;
-    }
-  }
-
   /** Blocks `a + b`, `a > b` and `+a`: arithmetic and comparison go through the methods. */
   [Symbol.toPrimitive](hint: string): string {
     if (hint === 'string') {
@@ -550,9 +520,4 @@ export function fromScaled(value: number | bigint, scale: number): Fixed {
 /** Whether `value` is a Fixed. */
 export function isFixed(value: unknown): value is Fixed {
   return value instanceof Fixed;
-}
-
-/** The exact Fixed of a Money amount, at the money's scale: `money('12.34', 'EUR')` → 12.34. */
-export function moneyToFixed(money: Money): Fixed {
-  return make(money.minor, money.scale);
 }
