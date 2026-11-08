@@ -135,6 +135,11 @@ describe('ops', () => {
   bench('convert EUR->USD (exchangeRate)', () => {
     for (let i = 0; i < N; i++) sink = eurUsd.convert(eur[i]!, 'halfEven');
   });
+  bench('convert EUR->USD (exchangeRate built inline)', () => {
+    for (let i = 0; i < N; i++) {
+      sink = M.exchangeRate('EUR', 'USD', '1.0830').convert(eur[i]!, 'halfEven');
+    }
+  });
   bench('cashRound CHF', () => {
     for (let i = 0; i < N; i++) sink = M.cashRound(chf[i]!);
   });
