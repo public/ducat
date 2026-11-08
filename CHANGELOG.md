@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- **A scale column for minor units:** `toMinorColumns(m, 'amountMinor', 'currency', { scale:
+  'amountScale' })` and `minorMoneyField(..., { scale: 'amountScale' })` store and read each
+  amount's scale next to its minor units, so any scale round-trips and stored amounts keep their
+  meaning if an exponent changes. A change to a bundled ISO 4217 exponent is now documented as a
+  breaking change, made only in a major version. See [Databases](README.md#databases).
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
   (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
   `assertCurrency` throws `CurrencyMismatchError` for another currency.

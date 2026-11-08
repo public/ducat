@@ -408,6 +408,8 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 - BIGINT holds ±9.2·10^18 minor units, which is 92 quadrillion EUR. Postgres's `money` type is locale-dependent; don't use it.
 - Choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 - Prisma maps `BigInt` to JS `bigint`. The helpers accept it, and `fromMinor` normalises it back to a number when it is safe.
+- **A scale column** makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below). To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
+- **Exponent changes.** Minor units stored without a scale are read at the currency's exponent in the installed version of ducat, so a changed exponent would silently change what old rows mean: 1234 stored as 12.34 would read as 1.234 or 123.4. ducat therefore treats any change to a bundled ISO 4217 exponent as a breaking change. It ships only in a new major version, listed under **Changed** in the changelog with the currencies affected. Before upgrading across one, migrate the affected rows, or store a scale column (or a decimal) so the question never arises. Custom currencies keep the exponent given to `defineCurrency`.
 - `fromDecimal` rejects values with more decimals than the currency allows (e.g. `12.3456` in NUMERIC(19,4) for EUR) unless you pass `{ scale }` or `{ rounding }`. Trailing zeros are fine.
 
 Prisma client extension (from `examples/prisma`, which runs end to end against SQLite):
@@ -500,6 +502,8 @@ The columns check what the types can't: writing another currency, a value at a s
   - 3: BHD IQD JOD KWD LYD OMR TND
   - 4: CLF UYW
 - Tests also check the Adyen differences, the consistency of every Stripe rule, and that `format()` shows ISO digits for every code on every engine.
+
+A change to an ISO exponent in this data is a breaking change and ships only in a major version, because it changes what stored minor units mean (see [Databases](#databases)).
 
 Recent ISO changes that are already encoded:
 
