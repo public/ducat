@@ -158,6 +158,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/crypto`             | nothing                                                            | `defineCryptoCurrencies`, `toBaseUnits`, `fromBaseUnits`         |
 | `@ducatjs/money/currencies`         | nothing                                                            | numeric codes, `minorUnit`, `currencyName`, `currencySymbol`     |
 | `@ducatjs/money/territories`        | nothing                                                            | `territoryCurrencies`, `currencyTerritories` (CLDR)              |
+| `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022 amounts, minor-unit JSON          |
 | `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
@@ -437,7 +438,7 @@ declare module '@ducatjs/money' {
 }
 ```
 
-**Crypto currencies and tokens** (`@ducatjs/money/crypto`). BTC (8 decimals, satoshi), ETH (18, wei), SOL (9, lamport) and common Ethereum tokens (USDC, USDT, DAI, WBTC, EURC, PYUSD) as an opt-in table, registered by `defineCryptoCurrencies`, like the historic codes. Each unit's decimals are read from the source that defines it, pinned to a release or commit (Bitcoin Core's `COIN`, Ethereum mainnet in ethereum-lists/chains, the Solana SDK, and the Uniswap default token list for tokens). A token's decimals belong to its contract, so `cryptoUnit(code)` names the network and the contract. `toBaseUnits(m)` gives the exact count of base units as a bigint, and `fromBaseUnits(count, code)` parses one strictly: digits and an optional minus sign only. Amounts at 18 decimals use Money's bigint path, so they stay exact.
+**Crypto currencies and tokens** (`@ducatjs/money/crypto`). BTC (8 decimals, satoshi), ETH (18, wei), SOL (9, lamport) and common Ethereum tokens (USDC, USDT, DAI, WBTC, EURC, PYUSD) as an opt-in table, registered by `defineCryptoCurrencies`, like the historic codes. Each unit's decimals are read from the source that defines it, pinned to a release or commit (Bitcoin Core's `COIN`, Ethereum mainnet in ethereum-lists/chains, the Solana SDK, and the Uniswap default token list for tokens). A token's decimals belong to its contract on one network: these are Ethereum mainnet's (USDT has 18 on BNB Chain, 6 here), so `cryptoUnit(code)` names the network and the contract. Define another network's tokens with `defineCurrency`, under codes of your own. `toBaseUnits(m)` gives the exact count of base units as a bigint, and `fromBaseUnits(count, code)` parses one strictly: digits and an optional minus sign only. Amounts at 18 decimals use Money's bigint path, so they stay exact.
 
 ```ts
 import { money } from '@ducatjs/money';
@@ -736,6 +737,32 @@ The same 1000 units of each currency on the wire (from `test/processors.test.ts`
 When the processor needs less precision than the value has, the conversion throws unless you pass a rounding mode. This happens for IDR or CVE on Adyen, MGA on Stripe, Stripe's HUF/TWD payouts, CLP payments on Checkout.com, HUF/TWD on PayPal, LAK on Braintree and three-decimal currencies on Stripe and Checkout.com. PayPal and Braintree amounts are decimal strings, built from the exact value and never through a float. `fromStripe`, `fromAdyen`, `fromCheckout`, `fromPayPal`, `fromBraintree` and `fromKlarna` return the value at its ISO scale when that is exact, and otherwise keep the processor's extra precision instead of rounding it away.
 
 Signs follow each processor's docs and are checked after rounding. Checkout.com (a card verification) and PayPal (breakdown fields) take zero, Braintree doesn't ("Amount must be greater than zero"), and none of the three takes negative amounts: refunds are sent as positive amounts. Klarna takes both, because its order lines document negative amounts for discounts ("Negative when type is discount").
+
+### Wire formats
+
+`@ducatjs/money/wire` converts Money to and from formats other systems send, exactly both ways. Every reader checks the format strictly, and every writer throws rather than send a value the format can't hold.
+
+- `toGoogleMoney(m)` and `fromGoogleMoney(value)`: `google.type.Money` in its proto3 JSON form (`currencyCode`, `units` as an int64 string, `nanos` with the same sign), as Google APIs and many gRPC services use. More than 9 decimals, or units beyond int64, don't fit.
+- `toIso20022Amount(m)` and `fromIso20022Amount({ Ccy, value })`: the amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`. It is written with the currency's decimals, as the payment networks' rules (CBPR+, HVPS+) require, whatever the Money's scale. The schema allows at most 5 decimals and 18 digits, and no negative amounts (the direction goes in the credit/debit indicator).
+- `toMinorUnits(m)` and `fromMinorUnits({ value, currency })`: an integer count of ISO 4217 minor units, the JSON several processors and ledgers use. Where a processor's exponents differ from ISO, use its own view (`toAdyen`, `toCheckout`, ...).
+
+The readers return Money at the currency's exponent, and throw a RoundingError for extra decimals unless `{ scale }` or `{ rounding }` says what to do.
+
+```ts
+import { money } from '@ducatjs/money';
+import {
+  fromGoogleMoney,
+  toGoogleMoney,
+  toIso20022Amount,
+  toMinorUnits,
+} from '@ducatjs/money/wire';
+
+toGoogleMoney(money('-1.75', 'EUR')); // → { currencyCode: 'EUR', units: '-1', nanos: -750000000 }
+fromGoogleMoney({ currencyCode: 'USD', units: '12', nanos: 340000000 }); // → 12.34 USD
+toIso20022Amount(money('12.34', 'EUR')); // → { Ccy: 'EUR', value: '12.34' }
+toIso20022Amount(money('-5', 'EUR')); // throws RangeError: use the credit/debit indicator
+toMinorUnits(money('500', 'JPY')); // → { value: 500, currency: 'JPY' }
+```
 
 ### Databases
 
