@@ -7,6 +7,22 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- **Historical rates** in `@ducatjs/money/convert`: `availableAt` on rates and tables (a lookup
+  before publication gets nothing), quotes kept as published (`Rate#quote`, `rateFromQuote`, and
+  `per`, `inverted` and `decimals` in `rateTable`), `null` for missing values with the table's
+  `missing` list, tables valid for a period through `validUntil`, `rateHistory()` over a date
+  range, and `lookup()` on it and on `snapshots()` reporting why a lookup fell back.
+
+### Changed
+
+- A decimal-string rate prints with the digits it was given: `exchangeRate('EUR', 'HUF',
+  '363.90').toString()` is `'363.90'`, not `'363.9'`. The value is unchanged.
+- `rateTable` lookups with an `asOf` after a rate's `validUntil` now return nothing.
+- `parseEcbCsv` lists `N/A` and blank cells in the table's `missing`, and throws on a cell that
+  isn't a rate instead of passing it on.
+
 ## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
