@@ -1,30 +1,30 @@
 {
   "entries": {
-    "@ducatjs/money": 4.93,
-    "@ducatjs/money/allocate": 5.29,
-    "@ducatjs/money/tax": 3.97,
-    "@ducatjs/money/convert": 7.3,
-    "@ducatjs/money/convert/ecb": 6.25,
-    "@ducatjs/money/convert/fetch": 6.43,
-    "@ducatjs/money/convert/history": 6.29,
-    "@ducatjs/money/exact": 4.22,
-    "@ducatjs/money/policy": 4.04,
-    "@ducatjs/money/cash": 6.23,
-    "@ducatjs/money/format": 4.11,
-    "@ducatjs/money/fixed": 5.31,
-    "@ducatjs/money/parse": 4.76,
-    "@ducatjs/money/stripe": 4.96,
-    "@ducatjs/money/adyen": 4.44,
-    "@ducatjs/money/checkout": 4.94,
-    "@ducatjs/money/paypal": 4.88,
-    "@ducatjs/money/braintree": 4.75,
-    "@ducatjs/money/klarna": 4.43,
-    "@ducatjs/money/stripe-fx": 5.84,
-    "@ducatjs/money/adyen-fx": 5.69,
-    "@ducatjs/money/prisma": 4.67,
-    "@ducatjs/money/drizzle/pg": 4.89,
-    "@ducatjs/money/drizzle/mysql": 4.89,
-    "@ducatjs/money/drizzle/sqlite": 4.74
+    "@ducatjs/money": 4.98,
+    "@ducatjs/money/allocate": 5.34,
+    "@ducatjs/money/tax": 4.02,
+    "@ducatjs/money/convert": 7.36,
+    "@ducatjs/money/convert/ecb": 6.3,
+    "@ducatjs/money/convert/fetch": 6.48,
+    "@ducatjs/money/convert/history": 6.35,
+    "@ducatjs/money/exact": 4.28,
+    "@ducatjs/money/policy": 4.1,
+    "@ducatjs/money/cash": 6.29,
+    "@ducatjs/money/format": 4.17,
+    "@ducatjs/money/fixed": 5.37,
+    "@ducatjs/money/parse": 4.81,
+    "@ducatjs/money/stripe": 5.02,
+    "@ducatjs/money/adyen": 4.5,
+    "@ducatjs/money/checkout": 5.0,
+    "@ducatjs/money/paypal": 4.94,
+    "@ducatjs/money/braintree": 4.8,
+    "@ducatjs/money/klarna": 4.48,
+    "@ducatjs/money/stripe-fx": 5.9,
+    "@ducatjs/money/adyen-fx": 5.75,
+    "@ducatjs/money/prisma": 4.71,
+    "@ducatjs/money/drizzle/pg": 4.93,
+    "@ducatjs/money/drizzle/mysql": 4.93,
+    "@ducatjs/money/drizzle/sqlite": 4.78
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 30,
@@ -33,23 +33,23 @@
   "snippets": {
     "methods: money, add, multiply, toDecimal": {
       "code": "import { money } from '@ducatjs/money'; const a = money('1.00', 'EUR'); console.log(a.add(a).multiply('1.075', 'halfEven').toDecimal());",
-      "gzipped": 4.02
+      "gzipped": 4.08
     },
     "functions: money, add, multiply, toDecimal": {
       "code": "import { money, add, multiply, toDecimal } from '@ducatjs/money/fn'; const a = money('1.00', 'EUR'); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
-      "gzipped": 4.02
+      "gzipped": 4.08
     },
     "allocate: split a total three ways": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/allocate'; console.log(money('100', 'EUR').split(3).map(String));",
-      "gzipped": 5.7
+      "gzipped": 5.75
     },
     "format: de-DE": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/format'; console.log(money('1234.5', 'EUR').format('de-DE'));",
-      "gzipped": 4.55
+      "gzipped": 4.61
     },
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",
-      "gzipped": 5.17
+      "gzipped": 5.22
     }
   }
 }
