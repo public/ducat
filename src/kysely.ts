@@ -31,15 +31,21 @@ import {
   type SqlBool,
   type UnknownRow,
 } from 'kysely';
+import { currencyExponent } from './currency.js';
 import { CurrencyMismatchError, type CurrencyInput, type Money } from './money.js';
 import {
   checkCurrency,
+  checkDecimalSize,
   checkIsoScale,
   decimalFromDriver,
+  DEFAULT_DECIMAL_SIZE,
+  type DecimalColumnSize,
   decimalToDriver,
   minorFromDriver,
   minorToDriver,
 } from './sql.js';
+
+export { DEFAULT_DECIMAL_SIZE, type DecimalColumnSize } from './sql.js';
 
 /** The SQL dialects the helpers can build JSON objects and exact casts for. */
 export type MoneyDialect = 'postgres' | 'mysql' | 'sqlite';
@@ -64,6 +70,8 @@ export interface FixedCurrency<C extends string> {
 
 /** Marks a column's currency as fixed: `selectMoney(eb, 'total_minor', fixed('EUR'))`. */
 export function fixed<const C extends CurrencyInput>(currency: C): FixedCurrency<C> {
+  // an unknown code fails here, where the column is described, not on the first query
+  currencyExponent(currency);
   return { fixed: currency };
 }
 
@@ -76,12 +84,23 @@ export type MoneyComparison = '=' | '<>' | '<' | '<=' | '>' | '>=';
 
 const COMPARISONS: ReadonlySet<string> = new Set(['=', '<>', '<', '<=', '>', '>=']);
 
-// The marker key of the JSON objects the helpers build. A user JSON value with this key would be
-// read as money too, so the reader validates every field strictly.
+// The marker key of the JSON objects the helpers build. Its value carries a random nonce chosen
+// when this module loads, so data that merely looks like a marker (a user's JSON column, a text
+// value) is never read as money: forging one needs the nonce, which only appears in query text.
 const MARKER = '$ducat';
-const MARKER_PREFIX = `{"${MARKER}"`;
+const NONCE = Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+  byte.toString(16).padStart(2, '0'),
+).join('');
+const MINOR_MARKER = `${NONCE}:minor`;
+const DECIMAL_MARKER = `${NONCE}:decimal`;
+// nested JSON deeper than this is left as it is, so a hostile document can't exhaust the stack
+const MAX_DEPTH = 64;
 
 type Storage = 'minor' | 'decimal';
+
+function markerFor(storage: Storage): string {
+  return storage === 'minor' ? MINOR_MARKER : DECIMAL_MARKER;
+}
 
 /** `Money<C>`, or `Money<C> | null` when the amount column is nullable. */
 type MoneyFor<Amount, C extends string> = null extends Amount ? Money<C> | null : Money<C>;
@@ -118,26 +137,47 @@ export function setMoney(
   return { [amount]: minorToDriver(money, undefined).toString(), [currency]: money.currency };
 }
 
-/** Like `setMoney`, for a NUMERIC/DECIMAL (SQLite TEXT) amount column: the exact decimal. */
+/**
+ * Like `setMoney`, for a NUMERIC/DECIMAL amount column: the exact decimal. Pass the column's size
+ * (NUMERIC(19,4) by default) so that a value it would round or clamp throws instead. On SQLite,
+ * where decimals are TEXT, the size only limits what is written.
+ */
 export function setDecimalMoney<const A extends string, const K extends string>(
   money: Money,
   amount: A,
   currency: K,
+  size?: DecimalColumnSize,
 ): { [P in A | K]: string };
 export function setDecimalMoney<const A extends string, const C extends string>(
   money: Money<NoInfer<C>>,
   amount: A,
   currency: FixedCurrency<C>,
+  size?: DecimalColumnSize,
 ): { [P in A]: string };
 export function setDecimalMoney(
   money: Money,
   amount: string,
   currency: string | FixedCurrency<string>,
+  size: DecimalColumnSize = DEFAULT_DECIMAL_SIZE,
 ): Record<string, string> {
+  const decimal = decimalForColumn(money, isFixed(currency) ? currency.fixed : undefined, size);
   if (isFixed(currency)) {
-    return { [amount]: decimalToDriver(money, currency.fixed, undefined) };
+    return { [amount]: decimal };
   }
-  return { [amount]: decimalToDriver(money, undefined, undefined), [currency]: money.currency };
+  return { [amount]: decimal, [currency]: money.currency };
+}
+
+/**
+ * The decimal for a NUMERIC(p, s) column, or a throw if the column would round or clamp it: its
+ * scale must hold the currency's exponent, and the value must fit its integer digits.
+ */
+function decimalForColumn(
+  money: Money,
+  currency: string | undefined,
+  size: DecimalColumnSize,
+): string {
+  checkDecimalSize(money.currency, size);
+  return decimalToDriver(money, currency, size);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -167,7 +207,8 @@ const MYSQL_DECIMAL_SCALE = 30;
 
 const DIALECTS: Record<MoneyDialect, DialectSql> = {
   postgres: {
-    jsonObject: jsonObjectWith('json_build_object'),
+    // jsonb, which has equality, so UNION, DISTINCT and GROUP BY work on money values
+    jsonObject: jsonObjectWith('jsonb_build_object'),
     asText: (expression) => sql<string>`cast(${expression} as text)`,
     minorParameter: (minor) => sql`cast(${minor.toString()} as bigint)`,
     decimalParameter: (decimal) => sql`cast(${decimal} as numeric)`,
@@ -252,13 +293,18 @@ export interface MoneyHelpers {
     money: Money,
   ): Expression<SqlBool>;
 
-  /** Like `compareMoney`, for a NUMERIC/DECIMAL amount column. SQLite allows only `=` and `<>`. */
+  /**
+   * Like `compareMoney`, for a NUMERIC/DECIMAL amount column of the given size (NUMERIC(19,4) by
+   * default). SQLite allows only `=` and `<>`, which compare the text, so they match only values
+   * written with `setDecimalMoney`.
+   */
   compareDecimalMoney<DB, TB extends keyof DB>(
     eb: ExpressionBuilder<DB, TB>,
     amount: ReferenceExpression<DB, TB>,
     currency: ReferenceExpression<DB, TB> | FixedCurrency<string>,
     operator: MoneyComparison,
     money: Money,
+    size?: DecimalColumnSize,
   ): Expression<SqlBool>;
 
   /**
@@ -321,7 +367,7 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
   ): RawBuilder<unknown> {
     const amountRef = eb.ref(amount as string);
     const object = dialectSql.jsonObject([
-      [MARKER, sql.lit(storage)],
+      [MARKER, sql.lit(markerFor(storage))],
       ['amount', dialectSql.asText(amountRef)],
       ['currency', currencyExpression(eb, currency)],
     ]);
@@ -336,6 +382,7 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
     currency: AnyCurrency,
     operator: MoneyComparison,
     money: Money,
+    size: DecimalColumnSize = DEFAULT_DECIMAL_SIZE,
   ): Expression<SqlBool> {
     if (!COMPARISONS.has(operator)) {
       throw new RangeError(`Unsupported comparison "${operator}"`);
@@ -354,7 +401,7 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
     if (storage === 'minor') {
       value = dialectSql.minorParameter(minorToDriver(money, undefined));
     } else {
-      value = dialectSql.decimalParameter(decimalToDriver(money, undefined, undefined));
+      value = dialectSql.decimalParameter(decimalForColumn(money, undefined, size));
     }
     const amountCondition = eb(eb.ref(amount as string), operator, value);
 
@@ -379,7 +426,7 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
     }
     const amountRef = eb.ref(amount as string);
     const fields: [string, Expression<unknown>][] = [
-      [MARKER, sql.lit(storage)],
+      [MARKER, sql.lit(markerFor(storage))],
       ['amount', dialectSql.asText(sql`sum(${amountRef})`)],
     ];
 
@@ -387,9 +434,12 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
       fields.push(['currency', sql.lit(currency.fixed)]);
     } else {
       const currencyRef = eb.ref(currency as string);
-      fields.push(['currency', sql`min(${currencyRef})`]);
+      // only rows with an amount count: a row with a NULL amount adds nothing to the sum
+      const currencyOfAmount = sql`case when ${amountRef} is not null then ${currencyRef} end`;
+      fields.push(['currency', sql`min(${currencyOfAmount})`]);
       // more than one currency, or an amount without one: the reader throws
-      const isMixed = sql`count(distinct ${currencyRef}) > 1 or count(${amountRef}) > count(${currencyRef})`;
+      const withoutCurrency = sql`count(case when ${amountRef} is not null and ${currencyRef} is null then 1 end)`;
+      const isMixed = sql`${withoutCurrency} > 0 or count(distinct ${currencyOfAmount}) > 1`;
       fields.push(['mixed', sql`case when ${isMixed} then 1 else 0 end`]);
     }
     const object = dialectSql.jsonObject(fields);
@@ -403,8 +453,8 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
       select('decimal', eb, amount, currency)) as MoneyHelpers['selectDecimalMoney'],
     compareMoney: (eb, amount, currency, operator, money) =>
       compare('minor', eb as AnyBuilder, amount, currency, operator, money),
-    compareDecimalMoney: (eb, amount, currency, operator, money) =>
-      compare('decimal', eb as AnyBuilder, amount, currency, operator, money),
+    compareDecimalMoney: (eb, amount, currency, operator, money, size) =>
+      compare('decimal', eb as AnyBuilder, amount, currency, operator, money, size),
     sumMoney: ((eb: AnyBuilder, amount: AnyReference, currency: AnyCurrency) =>
       sum('minor', eb, amount, currency)) as MoneyHelpers['sumMoney'],
     sumDecimalMoney: ((eb: AnyBuilder, amount: AnyReference, currency: AnyCurrency) =>
@@ -416,26 +466,42 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
 // The result plugin
 // ---------------------------------------------------------------------------------------------
 
+const SELECT_KEYS = ['$ducat', 'amount', 'currency'];
+const SUM_KEYS = ['$ducat', 'amount', 'currency', 'mixed'];
+
+function hasExactly(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  const own = Object.keys(value);
+  return own.length === keys.length && keys.every((key) => Object.hasOwn(value, key));
+}
+
+/**
+ * Whether the object is a marker built by this module: exactly the expected keys, with this
+ * process's nonce. Anything else, however similar, is ordinary data.
+ */
+function isMarker(value: Record<string, unknown>): boolean {
+  const marker = value[MARKER];
+  if (marker !== MINOR_MARKER && marker !== DECIMAL_MARKER) {
+    return false;
+  }
+  return hasExactly(value, SELECT_KEYS) || hasExactly(value, SUM_KEYS);
+}
+
 /** Money from one marker object, validating every field. */
 function moneyFromMarker(marker: Record<string, unknown>): Money {
-  const storage = marker[MARKER];
   const { amount, currency, mixed } = marker;
 
-  if (mixed === true || mixed === 1) {
+  if (mixed === 1 || mixed === true) {
     throw new CurrencyMismatchError('one currency', 'several, or an amount without a currency');
   }
   if (typeof currency !== 'string') {
     throw new TypeError(`A money value needs a currency, got ${String(currency)}`);
   }
-  if (storage === 'minor') {
+  if (marker[MARKER] === MINOR_MARKER) {
     return minorFromDriver(amount, currency);
   }
-  if (storage === 'decimal') {
-    const parsed = decimalFromDriver(amount, currency);
-    checkIsoScale(parsed);
-    return parsed;
-  }
-  throw new TypeError(`Unknown money storage ${String(storage)}`);
+  const parsed = decimalFromDriver(amount, currency);
+  checkIsoScale(parsed);
+  return parsed;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -446,19 +512,34 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
+/** A marker returned as text (SQLite's json_object, MySQL's JSON as a string), or undefined. */
+function markerFromText(text: string): Record<string, unknown> | undefined {
+  // cheap test first: only text carrying this process's nonce can be a marker
+  if (!text.includes(NONCE)) {
+    return undefined;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  return isPlainObject(parsed) && isMarker(parsed) ? parsed : undefined;
+}
+
 /** The value with every money marker in it replaced by Money; other values are left as they are. */
-function convertMarkers(value: unknown): unknown {
-  if (typeof value === 'string') {
-    // SQLite returns json_object() as text
-    if (value.startsWith(MARKER_PREFIX)) {
-      return moneyFromMarker(JSON.parse(value) as Record<string, unknown>);
-    }
+function convertMarkers(value: unknown, depth: number): unknown {
+  if (depth > MAX_DEPTH) {
     return value;
+  }
+  if (typeof value === 'string') {
+    const marker = markerFromText(value);
+    return marker === undefined ? value : moneyFromMarker(marker);
   }
   if (Array.isArray(value)) {
     let changed: unknown[] | undefined;
     for (let i = 0; i < value.length; i++) {
-      const converted = convertMarkers(value[i]);
+      const converted = convertMarkers(value[i], depth + 1);
       if (converted !== value[i]) {
         changed ??= value.slice();
         changed[i] = converted;
@@ -469,14 +550,15 @@ function convertMarkers(value: unknown): unknown {
   if (!isPlainObject(value)) {
     return value;
   }
-  if (MARKER in value) {
+  if (isMarker(value)) {
     return moneyFromMarker(value);
   }
   let changed: Record<string, unknown> | undefined;
   for (const key of Object.keys(value)) {
-    const converted = convertMarkers(value[key]);
+    const converted = convertMarkers(value[key], depth + 1);
     if (converted !== value[key]) {
-      changed ??= Object.assign({}, value);
+      // fromEntries defines own properties, so a "__proto__" key from JSON.parse stays a key
+      changed ??= Object.fromEntries(Object.entries(value));
       changed[key] = converted;
     }
   }
@@ -497,7 +579,7 @@ export class MoneyResultPlugin implements KyselyPlugin {
 
   /** Converts the money values in every row. */
   async transformResult(args: PluginTransformResultArgs): Promise<QueryResult<UnknownRow>> {
-    const rows = convertMarkers(args.result.rows) as UnknownRow[];
+    const rows = convertMarkers(args.result.rows, 0) as UnknownRow[];
     if (rows === args.result.rows) {
       return args.result;
     }

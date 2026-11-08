@@ -32,6 +32,11 @@ export interface Schema {
     amount_minor: MinorUnitsColumn;
     currency: string | null;
   };
+  ducat_kysely_ledger: {
+    id: number;
+    amount_minor: MinorUnitsColumn | null;
+    currency: string | null;
+  };
   ducat_kysely_orders: {
     id: number;
     total_minor: MinorUnitsColumn;
@@ -97,6 +102,7 @@ export function kyselyScenario(name: string, enabled: boolean, options: Scenario
       });
       await db.schema.dropTable('ducat_kysely_payments').ifExists().execute();
       await db.schema.dropTable('ducat_kysely_orders').ifExists().execute();
+      await db.schema.dropTable('ducat_kysely_ledger').ifExists().execute();
       for (const statement of ddl) {
         await sql.raw(statement).execute(db);
       }
@@ -227,6 +233,27 @@ export function kyselyScenario(name: string, enabled: boolean, options: Scenario
         .select((eb) => helpers.sumMoney(eb, 'amount_minor', 'currency').as('total'))
         .where('id', 'in', [1, 2]);
       await expect(mixed.execute()).rejects.toThrow(CurrencyMismatchError);
+
+      // an amount without a currency is refused even when another row has no amount
+      await db
+        .insertInto('ducat_kysely_ledger')
+        .values([
+          { id: 1, amount_minor: '10000', currency: 'USD' },
+          { id: 2, amount_minor: '20000', currency: null },
+          { id: 3, amount_minor: null, currency: 'USD' },
+          { id: 4, amount_minor: '500', currency: 'USD' },
+          { id: 5, amount_minor: null, currency: 'EUR' },
+        ])
+        .execute();
+      const ledgerSum = (ids: number[]) =>
+        db
+          .selectFrom('ducat_kysely_ledger')
+          .select((eb) => helpers.sumMoney(eb, 'amount_minor', 'currency').as('total'))
+          .where('id', 'in', ids)
+          .executeTakeFirstOrThrow();
+      await expect(ledgerSum([1, 2, 3])).rejects.toThrow(CurrencyMismatchError);
+      // a currency with no amount isn't a second currency
+      expect(String((await ledgerSum([1, 3, 4, 5])).total)).toBe('105.00 USD');
 
       const none = await db
         .selectFrom('ducat_kysely_payments')

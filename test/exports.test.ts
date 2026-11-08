@@ -137,7 +137,14 @@ describe('package entries', () => {
       './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/pg': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/mysql': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
-      './kysely': ['MoneyResultPlugin', 'fixed', 'moneyHelpers', 'setDecimalMoney', 'setMoney'],
+      './kysely': [
+        'DEFAULT_DECIMAL_SIZE',
+        'MoneyResultPlugin',
+        'fixed',
+        'moneyHelpers',
+        'setDecimalMoney',
+        'setMoney',
+      ],
       './pg': [
         'DEFAULT_DECIMAL_SIZE',
         'MONEY_TYPE_NAME',

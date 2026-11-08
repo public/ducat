@@ -28,7 +28,7 @@
     "@ducatjs/money/zod": 4.72,
     "@ducatjs/money/valibot": 4.73,
     "@ducatjs/money/pg": 6.1,
-    "@ducatjs/money/kysely": 6.0
+    "@ducatjs/money/kysely": 6.45
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 30,
