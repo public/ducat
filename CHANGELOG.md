@@ -7,6 +7,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-08
+
 ### Fixed
 
 - Types: a program that augments Money itself (`declare module '@ducatjs/money' { interface Money<C
@@ -14,6 +16,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   loses methods. Depending on the order TypeScript read the files, the methods of modules loaded
   after the augmentation, and the augmentation's own methods, were missing from `Money`. Every
   module now augments the root entry, as users do.
+  0.1.0 has the same problem; upgrade to 0.2.1 to fix it.
 
 ## [0.2.0] - 2026-11-08
 
@@ -205,6 +208,7 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/public/ducat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/public/ducat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/public/ducat/releases/tag/v0.1.0
