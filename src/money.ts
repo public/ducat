@@ -648,7 +648,17 @@ export function divide<C extends string>(
 
   // Fast path: m / (n/d) = m·d / n, rounded once by the same kernel the ratio path uses. Building
   // the inverse ratio d/n would cost bigint arithmetic and a gcd on every call; the divisor's own
-  // ratio is cached for small integers and strings. Exact while m·d is a safe integer.
+  // ratio is cached for small integers and strings. Why it is exact:
+  // - makeRatio guarantees d > 0 and n/d in lowest terms, so m·d / n is the same fraction the
+  //   inverse ratio d/n would give, and only n's sign needs handling;
+  // - `x === x` is false only for NaN, which is how a Ratio marks a part that is not a safe
+  //   integer, so both parts are safe integers here;
+  // - m and d are safe integers, so a float product beyond 2^53 - 1 cannot round back down into
+  //   the safe range: the bound check below rejects every inexact product;
+  // - divideAndRound corrects its float quotient exactly (and takes the bigint kernel itself when
+  //   dividend + divisor exceeds the safe range).
+  // A rounding policy (a function, not a mode string) must not take this path: it rounds to its own
+  // scale and increment.
   const minor = money.minor;
   const numerator = divisorRatio.n;
   const denominator = divisorRatio.d;

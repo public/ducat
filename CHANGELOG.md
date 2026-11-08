@@ -21,7 +21,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
-- `divide` is 3 to 10 times faster for ordinary amounts (number minor units, a divisor such as `3`,
+- `divide` is about 3 to 14 times faster for ordinary amounts (number minor units, a divisor such as `3`,
   `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
   are unchanged: the same proved rounding kernel is used.
 
