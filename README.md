@@ -649,7 +649,7 @@ Input is strict in the same way as `money()`. A string keeps its own scale. A nu
 
 Arithmetic follows Money's rules. `add`, `subtract` and `compare` align to the larger scale exactly. `multiply` and `divide` take exact factors (integers, decimal strings, bigints, `ratio()` or another `Fixed`) and round once, with `'halfExpand'` by default. The result keeps this value's scale unless you pass another: `fixed('9.990').divide('1.2', 'halfEven', { scale: 2 })` is 8.32. Pass the scale instead of calling `toScale` afterwards, which would round twice. `toScale` and `round` take any of the ten rounding modes, including `'unnecessary'`, which throws if digits would be lost.
 
-`@ducatjs/money/fixed` doesn't load Money or the currency table, so a program that uses only `Fixed` doesn't carry them. To convert, import `@ducatjs/money/fixed/money` instead: it has everything in `/fixed`, and adds `money.toFixedPoint()`, the exact amount at the money's scale, and `fixedValue.toMoney('EUR')`, Money at the currency's exponent. That conversion throws RoundingError when it would drop digits, unless a rounding mode is passed.
+`@ducatjs/money/fixed` doesn't load Money or the currency table, so a program that uses only `Fixed` doesn't carry them. `toMoney()` needs `import '@ducatjs/money/fixed/money'`: that entry has everything in `/fixed`, and adds `money.toFixedPoint()`, the exact amount at the money's scale, and `fixedValue.toMoney('EUR')`, Money at the currency's exponent. That conversion throws RoundingError when it would drop digits, unless a rounding mode is passed.
 
 ```ts
 import { money } from '@ducatjs/money';

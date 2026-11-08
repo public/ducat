@@ -43,6 +43,8 @@ extendMoney(
 );
 
 // Non-enumerable, like a class method. Loading the module again replaces it with the same function.
+// This is outside extendMoney's owner registry, which is for Money; it's fine while this module is
+// the only one that defines Fixed#toMoney.
 Object.defineProperty(Fixed.prototype, 'toMoney', {
   value: function toMoney(this: Fixed, currency: CurrencyInput, rounding?: RoundingMode) {
     return fixedToMoney(this, currency, rounding);

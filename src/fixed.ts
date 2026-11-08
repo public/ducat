@@ -2,6 +2,9 @@
 // an integer (a JS number while it is a safe integer, a bigint beyond) and a scale, the count of
 // decimal places: `fixed('12.345')` is 12345 at scale 3. Arithmetic is exact, and every operation
 // that has to drop digits rounds once, with an explicit or the default mode.
+//
+// `@ducatjs/money/fixed` points here and loads no Money: `toMoney()` needs
+// `import '@ducatjs/money/fixed/money'` (src/plugins/fixed-money.ts).
 import {
   formatScaled,
   parseDecimal,
@@ -98,6 +101,9 @@ function resultScale(
  * An exact fixed-point decimal: `value / 10^scale`. Immutable. Create one with `fixed()` or
  * `fromScaled()`. Mixed scales work as for Money: add, subtract and compare align to the larger
  * scale exactly, and multiply and divide keep this value's scale.
+ *
+ * `toMoney()` needs `import '@ducatjs/money/fixed/money'`, which also adds `Money#toFixedPoint()`:
+ * `@ducatjs/money/fixed` alone doesn't load Money.
  */
 export class Fixed {
   /** The scaled integer: a number while it is a safe integer, a bigint beyond. */
