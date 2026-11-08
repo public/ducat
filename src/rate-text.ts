@@ -149,3 +149,18 @@ export function addDayRate(
 export function newestFirst<T extends { readonly asOf?: string }>(tables: T[]): T[] {
   return tables.sort((table, other) => other.asOf!.localeCompare(table.asOf!));
 }
+
+/**
+ * @internal Checks an `availableAt` option, which untyped code could pass as anything: a string or a
+ * Date would otherwise be ignored on an empty file and fail obscurely, as "not a function", on the
+ * first day. Called once, before any parsing or fetching.
+ */
+export function checkAvailableAt(availableAt: unknown): void {
+  if (
+    availableAt !== undefined &&
+    typeof availableAt !== 'boolean' &&
+    typeof availableAt !== 'function'
+  ) {
+    throw new TypeError(`availableAt must be a boolean or a function, got ${typeof availableAt}`);
+  }
+}

@@ -1,7 +1,14 @@
 // Offline parsers for the ECB euro foreign exchange reference rates (eurofxref). No I/O: fetch or
 // read the files yourself, or use ducat/convert/fetch. Rates are kept exactly as published.
 import { rateTable, type RateTable } from './provider.js';
-import { addDayRate, csvRows, newestFirst, readRateCell, withDecimals } from './rate-text.js';
+import {
+  addDayRate,
+  checkAvailableAt,
+  csvRows,
+  newestFirst,
+  readRateCell,
+  withDecimals,
+} from './rate-text.js';
 
 const MONTHS = [
   'january',
@@ -37,21 +44,6 @@ export interface EcbOptions {
    * it. Default: none, so a query at any time on the day gets that day's rates.
    */
   readonly availableAt?: EcbAvailableAt;
-}
-
-/**
- * @internal Checks an `availableAt` option, which untyped code could pass as anything: a string or a
- * Date would otherwise be ignored on an empty file and fail obscurely, as "not a function", on the
- * first day. Called once, before any parsing or fetching.
- */
-export function checkAvailableAt(availableAt: unknown): void {
-  if (
-    availableAt !== undefined &&
-    typeof availableAt !== 'boolean' &&
-    typeof availableAt !== 'function'
-  ) {
-    throw new TypeError(`availableAt must be a boolean or a function, got ${typeof availableAt}`);
-  }
 }
 
 // The ECB publishes its rates "at around 16:00 CET" on each TARGET working day. CET here is

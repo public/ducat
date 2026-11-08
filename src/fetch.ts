@@ -2,13 +2,8 @@
 // the library imports this module, so core and @ducatjs/money/convert never touch the
 // network. You decide when to call it and how to cache.
 import { parseBankOfCanadaJson } from './boc.js';
-import {
-  checkAvailableAt,
-  parseEcbSdmxCsv,
-  parseEcbSdmxDecimals,
-  parseEcbXml,
-  type EcbAvailableAt,
-} from './ecb.js';
+import { parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml, type EcbAvailableAt } from './ecb.js';
+import { checkAvailableAt } from './rate-text.js';
 import type { RateTable } from './provider.js';
 
 /**
