@@ -152,9 +152,10 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)   |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                   |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
-| `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (charm pricing: .99, .95, 9.90, the nearest 5)     |
+| `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (.99, .95, the nearest 5), `tieredPrice` (tiers)   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
+| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                        |
@@ -433,6 +434,67 @@ declare module '@ducatjs/money' {
 }
 ```
 
+### Interest, loans, NPV and proration
+
+`@ducatjs/money/finance` has the calculations billing and lending code keeps rewriting in floats, in exact arithmetic: every amount that is paid or booked is rounded once from its exact value, with a rounding mode or a policy. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. The design is in [docs/FINANCE.md](docs/FINANCE.md).
+
+- `yearFraction(start, end, convention)` is an exact `Ratio` under `ACT/360`, `ACT/365F`, `ACT/ACT ISDA`, `30/360` (Bond Basis), `30E/360` or `30E/360 ISDA` (pass `maturity: true` or `false` when the end date is the last day of February), as the 2006 ISDA Definitions §4.16 define them. It isn't Excel's YEARFRAC, whose bases differ (US 30/360, an average year length for actual/actual). `interest` is simple interest over a day count, and `compound` is periodic compounding over a whole number of periods.
+- `amortise(loan, options)` builds an annuity, linear or interest-only schedule. Each period's interest is the balance times `rate / perYear`, rounded; the principal parts sum exactly to the loan and the balance ends at zero, because the rounding residual goes to the last payment (or, with `residual: 'lastInterest'`, to the last interest). It takes a `balloon` and a `firstPayment` date.
+- Functions named after Excel's give Excel's values. `npv(rate, flows)` is Excel's NPV: the first flow is at the end of period 1, so, like Excel, an initial outlay at period 0 goes outside, `flows[0] + npv(rate, rest)`. `discountedSum(rate, flows)` takes flows from period 0. Both are exact and rounded once, so `npv` matches Excel to the cent.
+- `irr(flows, { digits })` is Excel's IRR, exact to `digits` places (floored): it bisects in exact integer arithmetic, the IRR lies between `lower` and `upper`, 10^−digits apart, and `rate` is `lower`. Where Excel guesses, it throws: with no sign change (Excel's #NUM!), and with more than one unless a `bracket` (in place of Excel's `guess`) selects one root.
+- `prorate(price, { period, used })` charges the used part of a period (by the day, or with `unit: 'second'` by the second), and `splitPeriod(price, { period, at })` splits a period's price at plan changes into pieces that sum exactly to it.
+
+```ts
+import { money } from '@ducatjs/money';
+import {
+  amortise,
+  interest,
+  irr,
+  npv,
+  discountedSum,
+  prorate,
+  splitPeriod,
+} from '@ducatjs/money/finance';
+
+const period = { from: '2026-01-15', to: '2026-07-15', dayCount: 'ACT/365F' } as const;
+interest(money('10000', 'EUR'), '0.05', period, 'halfEven'); // → 247.95 EUR
+
+const plan = amortise(money('200000', 'EUR'), { rate: '0.045', perYear: 12, periods: 300 });
+plan.payment; // → 1111.66 EUR
+plan.rows[0]?.interest; // → 750.00 EUR
+plan.rows.at(-1)?.balance; // → 0.00 EUR
+plan.totalInterest; // → 133500.69 EUR
+
+const flows = ['-1000', '300', '400', '500'].map((amount) => money(amount, 'EUR'));
+discountedSum('0.08', flows, 'halfEven'); // → 17.63 EUR
+npv('0.08', flows.slice(1), 'halfEven'); // → 1017.63 EUR (Excel's NPV: add the outlay yourself)
+irr(flows, { digits: 8 }); // → { rate: '0.08896339', lower: '0.08896339', upper: '0.08896340' }
+irr(['-100', '230', '-132'].map((amount) => money(amount, 'EUR'))); // throws RangeError: two IRRs, 10% and 20%
+
+const march = { start: '2026-03-01', end: '2026-04-01' };
+prorate(money('30', 'EUR'), { period: march, used: { start: '2026-03-11', end: '2026-04-01' } }); // → 20.32 EUR
+splitPeriod(money('30', 'EUR'), { period: march, at: ['2026-03-11', '2026-03-20'] }); // → [9.68 EUR, 8.71 EUR, 11.61 EUR]
+```
+
+### Tiered and volume pricing
+
+`tieredPrice(quantity, { mode, tiers })` in `@ducatjs/money/pricing` prices a quantity under tiers in the style of Stripe's: each tier has an inclusive `upTo` (`'inf'` on the last), a `unitAmount` (sub-cent amounts are fine) and a `flatAmount`, either or both. In `'graduated'` mode each tier prices the units that fall in it; in `'volume'` mode the tier the whole quantity falls in prices every unit. Quantity 0 falls in the first tier, so its flat amount is billed, as Stripe does. The arithmetic is exact and the total is rounded once (with a mode or a policy). The breakdown has a line per tier with its exact charge and an `amount` rounded from the running total, so the lines always sum to the total.
+
+```ts
+import { money } from '@ducatjs/money';
+import { tieredPrice } from '@ducatjs/money/pricing';
+
+const tiers = [
+  { upTo: 5, unitAmount: money('5', 'USD'), flatAmount: money('10', 'USD') },
+  { upTo: 10, unitAmount: money('4', 'USD'), flatAmount: money('20', 'USD') },
+  { upTo: 'inf', unitAmount: money('3', 'USD'), flatAmount: money('30', 'USD') },
+] as const;
+tieredPrice(12, { mode: 'graduated', tiers }).total; // → 111.00 USD
+tieredPrice(12, { mode: 'graduated', tiers }).lines.map((line) => line.amount); // → [35.00 USD, 40.00 USD, 36.00 USD]
+tieredPrice(12, { mode: 'volume', tiers }).total; // → 66.00 USD
+tieredPrice(0, { mode: 'volume', tiers }).total; // → 10.00 USD (the first tier's flat amount)
+```
+
 ### Currency conversion
 
 `@ducatjs/money/convert` converts at exact rates and rounds once, at the end. A rate is a `Rate`, an exact rational with the pair in its type, so converting the wrong currency is a compile error. Inverses and chains of rates are exact too: nothing is rounded until an amount is converted.
@@ -508,7 +570,7 @@ nok.rate('NOK', 'JPY')?.quote; // → { rate: '6.50', per: 100, inverted: true }
 nok.missing; // → ['ISK']
 ```
 
-**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. The opt-in fetchers are in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. The Bank of Canada's daily rates come from its Valet API (`parseBankOfCanadaJson` in `@ducatjs/money/convert/boc`, and `fetchBankOfCanada()`, also keyless and CORS-enabled). The Bank quotes CAD per unit of each currency, so the tables hold exact inverses with the published quote kept, and its rates carry `availableAt` 16:30 Toronto time, when it says it publishes them. It quotes four decimals (up to six for small rates), so a small rate has only about four significant digits: JPY `0.008760`, KRW `0.000929`, and IDR `0.000082` with two. The inverse of such a rate is exact, but no more precise than the quote, so for those currencies prefer a source that quotes them the other way round. The Federal Reserve's H.10 rates (noon buying rates in New York, certified for US customs, daily since 1971) have a parser only, `parseFedH10Csv` in `@ducatjs/money/convert/fed`, for the CSV from the Board's Data Download Program (release H10, series in columns, with labels). H.10 quotes currency per USD except AUD, EUR, NZD and GBP, which it quotes as USD per unit; those four are stored as exact inverses with the published quote kept, so every table is USD → currency. Holidays are rows of `ND` and are left out. The Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule out a fetcher in ducat, so download the CSV yourself. For sterling there are two parsers. HMRC's monthly exchange rates (`parseHmrcMonthlyCsv` in `@ducatjs/money/convert/hmrc`) are the UK's rates for customs and VAT, under the Open Government Licence. Each month's table is valid for that month (`asOf` the 1st, `validUntil` the last day) and is available from the end of the Wednesday HMRC publishes it, the day before the penultimate Thursday of the month before (the `publication_date` the trade tariff service's API gives every monthly file). The Bank of England's daily spot rates (`parseBankOfEnglandCsv` in `@ducatjs/money/convert/boe`) come from CSV downloaded from its database. The Bank's legal page excludes "selected exchange rate data and series" from its Open Government Licence as third-party data, and its spot rates may come from LSEG, whose content can't be redistributed without consent. So ducat ships no Bank of England data and no fetcher, and **you must check the licence of every Bank of England series you load** before you use or republish it. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. The opt-in fetchers are in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. Its files give no publication time, so the parsers set no `availableAt` unless asked: pass `availableAt: true` (to the parsers, `fetchEcb` or `fetchEcbRange`) for the documented 16:00 CET, which is Frankfurt time (15:00 UTC in winter, 14:00 in summer), or a function of the day for your own, and a historical lookup at 10:00 that day then gets the day before's rate. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. The Bank of Canada's daily rates come from its Valet API (`parseBankOfCanadaJson` in `@ducatjs/money/convert/boc`, and `fetchBankOfCanada()`, also keyless and CORS-enabled). The Bank quotes CAD per unit of each currency, so the tables hold exact inverses with the published quote kept, and its rates carry `availableAt` 16:30 Toronto time, when it says it publishes them. It quotes four decimals (up to six for small rates), so a small rate has only about four significant digits: JPY `0.008760`, KRW `0.000929`, and IDR `0.000082` with two. The inverse of such a rate is exact, but no more precise than the quote, so for those currencies prefer a source that quotes them the other way round. The Federal Reserve's H.10 rates (noon buying rates in New York, certified for US customs, daily since 1971) have a parser only, `parseFedH10Csv` in `@ducatjs/money/convert/fed`, for the CSV from the Board's Data Download Program (release H10, series in columns, with labels). H.10 quotes currency per USD except AUD, EUR, NZD and GBP, which it quotes as USD per unit; those four are stored as exact inverses with the published quote kept, so every table is USD → currency. Holidays are rows of `ND` and are left out. The Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule out a fetcher in ducat, so download the CSV yourself. For sterling there are two parsers. HMRC's monthly exchange rates (`parseHmrcMonthlyCsv` in `@ducatjs/money/convert/hmrc`) are the UK's rates for customs and VAT, under the Open Government Licence. Each month's table is valid for that month (`asOf` the 1st, `validUntil` the last day) and is available from the end of the Wednesday HMRC publishes it, the day before the penultimate Thursday of the month before (the `publication_date` the trade tariff service's API gives every monthly file). The Bank of England's daily spot rates (`parseBankOfEnglandCsv` in `@ducatjs/money/convert/boe`) come from CSV downloaded from its database. The Bank's legal page excludes "selected exchange rate data and series" from its Open Government Licence as third-party data, and its spot rates may come from LSEG, whose content can't be redistributed without consent. So ducat ships no Bank of England data and no fetcher, and **you must check the licence of every Bank of England series you load** before you use or republish it. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
 
 <!-- doctest: setup import { readFileSync } from 'node:fs'; const sdmxCsv = readFileSync('test/fixtures/ecb-sdmx/exr-d-full.csv', 'utf8'); -->
 

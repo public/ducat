@@ -16,6 +16,7 @@ import {
   DEFAULT_ROUNDING,
   divideAndRound,
   divideAndRoundBigint,
+  divideSafeByRatio,
   RoundingError,
   type RoundingMode,
 } from './rounding.js';
@@ -169,6 +170,17 @@ export class Fixed {
     if (divisorRatio.num === 0n) {
       throw new RangeError('Division by zero');
     }
+
+    // The fast path Money's divide takes: a safe-integer value and a divisor whose ratio parts are
+    // safe integers, at this value's scale, without building the inverse ratio.
+    const value = this.value;
+    if (typeof value === 'number' && scale === this.scale) {
+      const quotient = divideSafeByRatio(value, divisorRatio, rounding);
+      if (quotient === quotient) {
+        return make(quotient, scale);
+      }
+    }
+
     return multiplyByRatio(this, ratio(divisorRatio.den, divisorRatio.num), rounding, scale);
   }
 

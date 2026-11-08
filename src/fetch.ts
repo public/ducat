@@ -2,7 +2,7 @@
 // the library imports this module, so core and @ducatjs/money/convert never touch the
 // network. You decide when to call it and how to cache.
 import { parseBankOfCanadaJson } from './boc.js';
-import { parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml } from './ecb.js';
+import { parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml, type EcbAvailableAt } from './ecb.js';
 import type { RateTable } from './provider.js';
 
 /**
@@ -50,6 +50,11 @@ export interface FetchEcbOptions {
   readonly timeout?: number;
   /** A fetch to use instead of the global one (for proxies, retries or tests). */
   readonly fetch?: Fetch;
+  /**
+   * ECB fetchers only: when each day's rates became available, passed to the parser (`true` for
+   * the ECB's documented 16:00 CET; see `EcbOptions` in `@ducatjs/money/convert/ecb`).
+   */
+  readonly availableAt?: EcbAvailableAt;
 }
 
 /** Thrown when the HTTP request completes without a 2xx status. */
@@ -75,7 +80,9 @@ export class FetchRatesError extends Error {
 export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> {
   const url = ECB_URLS[options?.history ?? 'daily'];
   const body = await getText(url, 'application/xml', options);
-  return parsedFrom(url, () => parseEcbXml(body));
+  const parseOptions =
+    options?.availableAt === undefined ? undefined : { availableAt: options.availableAt };
+  return parsedFrom(url, () => parseEcbXml(body, parseOptions));
 }
 
 /** The caller's signal, a timeout signal, or both combined. */
@@ -257,7 +264,11 @@ export async function fetchEcbRange(options: FetchEcbRangeOptions): Promise<Rate
     return [];
   }
   const decimals = parsedFrom(seriesUrl, () => parseEcbSdmxDecimals(series));
-  return parsedFrom(dataUrl, () => parseEcbSdmxCsv(data, { decimals }));
+  const parseOptions =
+    options.availableAt === undefined
+      ? { decimals }
+      : { decimals, availableAt: options.availableAt };
+  return parsedFrom(dataUrl, () => parseEcbSdmxCsv(data, parseOptions));
 }
 
 /** The Bank of Canada's Valet API for its daily exchange rates (no key; CORS-enabled). */
@@ -265,7 +276,7 @@ export const BANK_OF_CANADA_URL =
   'https://www.bankofcanada.ca/valet/observations/group/FX_RATES_DAILY/json';
 
 /** Options for fetching Bank of Canada rates. */
-export interface FetchBankOfCanadaOptions extends Omit<FetchEcbOptions, 'history'> {
+export interface FetchBankOfCanadaOptions extends Omit<FetchEcbOptions, 'history' | 'availableAt'> {
   /** The first day (2017-01-03 at the earliest). Default: only the latest published day. */
   readonly start?: string | Date;
   /** The last day (default: the latest published). Needs a `start`. */

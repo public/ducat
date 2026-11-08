@@ -1,0 +1,51 @@
+{
+  "comment": "Worked examples from Microsoft's Excel function pages, copied as printed. NPV results are in dollars and IRR results are fractions (the pages print -2.1% as -2.1%; it is stored as -0.021), rounded as the pages show them.",
+  "npv": {
+    "source": "https://support.microsoft.com/en-us/office/npv-function-8672cb67-2576-4d07-b67b-ac28acf2a568",
+    "examples": [
+      {
+        "formula": "=NPV(A2, A3, A4, A5, A6)",
+        "rate": "0.1",
+        "values": ["-10000", "3000", "4200", "6800"],
+        "outside": "0",
+        "result": "1188.44"
+      },
+      {
+        "formula": "=NPV(A2, A4:A8)+A3",
+        "rate": "0.08",
+        "values": ["8000", "9200", "10000", "12000", "14500"],
+        "outside": "-40000",
+        "result": "1922.06"
+      },
+      {
+        "formula": "=NPV(A2, A4:A8, -9000)+A3",
+        "rate": "0.08",
+        "values": ["8000", "9200", "10000", "12000", "14500", "-9000"],
+        "outside": "-40000",
+        "result": "-3749.47"
+      }
+    ]
+  },
+  "irr": {
+    "source": "https://support.microsoft.com/en-us/office/irr-function-64925eaa-9988-495b-b290-3ad0c163c1bc",
+    "accuracy": "0.0000001",
+    "examples": [
+      {
+        "formula": "=IRR(A2:A6)",
+        "values": ["-70000", "12000", "15000", "18000", "21000"],
+        "result": "-0.021"
+      },
+      {
+        "formula": "=IRR(A2:A7)",
+        "values": ["-70000", "12000", "15000", "18000", "21000", "26000"],
+        "result": "0.087"
+      },
+      {
+        "formula": "=IRR(A2:A4,-10%)",
+        "values": ["-70000", "12000", "15000"],
+        "guess": "-0.1",
+        "result": "-0.444"
+      }
+    ]
+  }
+}

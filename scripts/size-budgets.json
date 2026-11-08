@@ -6,8 +6,8 @@
     "@ducatjs/money/tax": 0.25,
     "@ducatjs/money/math": 0.42,
     "@ducatjs/money/convert": 3.62,
-    "@ducatjs/money/convert/ecb": 3.84,
-    "@ducatjs/money/convert/fetch": 5.85,
+    "@ducatjs/money/convert/ecb": 4.1,
+    "@ducatjs/money/convert/fetch": 6.0,
     "@ducatjs/money/convert/fed": 3.52,
     "@ducatjs/money/convert/boe": 3.46,
     "@ducatjs/money/convert/hmrc": 2.99,
@@ -15,11 +15,11 @@
     "@ducatjs/money/convert/boc": 3.1,
     "@ducatjs/money/exact": 0.47,
     "@ducatjs/money/policy": 0.4,
-    "@ducatjs/money/pricing": 0.5,
+    "@ducatjs/money/pricing": 1.75,
     "@ducatjs/money/cash": 3.06,
     "@ducatjs/money/format": 0.39,
-    "@ducatjs/money/fixed": 1.17,
-    "@ducatjs/money/fixed/money": 1.32,
+    "@ducatjs/money/fixed": 1.27,
+    "@ducatjs/money/fixed/money": 1.42,
     "@ducatjs/money/parse": 2.14,
     "@ducatjs/money/stripe": 1.14,
     "@ducatjs/money/adyen": 0.66,
@@ -41,16 +41,17 @@
     "@ducatjs/money/testing/jest": 0.88,
     "@ducatjs/money/testing/arbitraries": 0.57,
     "@ducatjs/money/kysely": 2.22,
-    "@ducatjs/money/historic": 1.28
+    "@ducatjs/money/historic": 1.28,
+    "@ducatjs/money/finance": 5.4
   },
   "aggregateCeilings": {
-    "@ducatjs/money/fn": 30,
-    "@ducatjs/money/all": 30
+    "@ducatjs/money/fn": 40,
+    "@ducatjs/money/all": 40
   },
   "snippets": {
     "fixed: Fixed alone, without Money": {
       "code": "import { fixed } from '@ducatjs/money/fixed'; const a = fixed('1.00'); console.log(a.add(a).multiply('1.075', 'halfExpand').toString());",
-      "gzipped": 3.22
+      "gzipped": 3.3
     },
     "methods: money, add, multiply, toDecimal": {
       "code": "import { money } from '@ducatjs/money'; const a = money('1.00', 'EUR'); console.log(a.add(a).multiply('1.075', 'halfEven').toDecimal());",
