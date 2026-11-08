@@ -7,6 +7,15 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- **Drizzle ORM column types** in `@ducatjs/money/drizzle/pg`, `/drizzle/mysql` and
+  `/drizzle/sqlite`: `moneyMinor('EUR')` (BIGINT minor units), `moneyDecimal('EUR')` (NUMERIC) and
+  `moneyJson()` (JSON), so selects return `Money` and inserts take it, with the currency in the
+  column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
+  that may have lost digits. `drizzle-orm` is an optional peer dependency.
+  See [Drizzle](README.md#drizzle).
+
 ## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
