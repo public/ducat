@@ -265,6 +265,16 @@ jobs:
           ./elan-init -y --no-modify-path --default-toolchain none
           rm elan.tar.gz elan-init
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install the Lean toolchain
+        if: steps.proofs.outputs.present == 'true'
+        # elan would download it on first use with no retry; releases.lean-lang.org has transient outages
+        run: |
+          toolchain="$(cat proofs/lean-toolchain)"
+          for i in 1 2 3 4 5; do
+            elan toolchain install "$toolchain" && exit 0
+            sleep $((20 * i))
+          done
+          exit 1
       # only the prebuilt Mathlib: .lake/packages is large and cheap to rebuild from it
       - if: steps.proofs.outputs.present == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
