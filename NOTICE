@@ -41,6 +41,14 @@ data/cash-rounding.json
   government publications, retrieved 2026-11-07. Each entry records
   its source URL and whether it was verified against a primary source.
 
+data/historic.json
+  Withdrawn codes and names from ISO 4217 List Three, published by SIX
+  Financial Information AG (snapshot 2026-01-01). Minor units taken from
+  OpenJDK's currency data (CurrencyData.properties, dataVersion 180,
+  GPLv2 with the Classpath Exception), as the facts ISO 4217 assigned
+  while each code was current. None was verified against an ISO source
+  directly, since List Three carries no minor units.
+
 data/cldr-cash.json
   Data from the Unicode Common Locale Data Repository (CLDR), release
   49: cash digits and rounding, from https://github.com/unicode-org/cldr.
