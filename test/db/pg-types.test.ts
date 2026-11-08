@@ -60,6 +60,34 @@ describe('node-postgres parsers and the money composite type', () => {
       });
     });
 
+    it('BIGINT limits, nested arrays, and string mode', async () => {
+      const result = await client.query(
+        'SELECT (-9223372036854775808)::bigint AS low, ' +
+          "'{{1.50,2},{NULL,-0.01}}'::numeric[] AS grid",
+      );
+      expect(result.rows[0]).toEqual({
+        low: -9223372036854775808n,
+        grid: [
+          ['1.50', '2'],
+          [null, '-0.01'],
+        ],
+      });
+
+      const strings = new pg.Client({
+        connectionString,
+        types: exactTypes(pg.types, { int8: 'string' }),
+      });
+      await strings.connect();
+      try {
+        const counted = await strings.query(
+          'SELECT count(*) AS n, 9223372036854775807::bigint AS big',
+        );
+        expect(counted.rows[0]).toEqual({ n: '1', big: '9223372036854775807' });
+      } finally {
+        await strings.end();
+      }
+    });
+
     it("rejects NUMERIC 'NaN' and 'Infinity'", async () => {
       for (const special of ['NaN', 'Infinity', '-Infinity']) {
         await expect(client.query(`SELECT '${special}'::numeric AS amount`)).rejects.toThrow(
@@ -94,6 +122,18 @@ describe('node-postgres parsers and the money composite type', () => {
       expect((arrays.rows[0].prices as Money[]).map(String)).toEqual(['12.34 EUR', '7.50 EUR']);
     });
 
+    it('NaN in a composite or a NUMERIC array is rejected on read', async () => {
+      await expect(client.query("SELECT ARRAY[1, 'NaN']::numeric[] AS amounts")).rejects.toThrow(
+        SyntaxError,
+      );
+      await expect(
+        client.query("SELECT ROW('NaN'::numeric, 'EUR')::ducat_money AS price"),
+      ).rejects.toThrow(SyntaxError);
+      await expect(client.query("SELECT ROW(NULL, 'EUR')::ducat_money AS price")).rejects.toThrow(
+        TypeError,
+      );
+    });
+
     it('sum() adds amounts in one currency, and refuses to add two currencies', async () => {
       const euros = await client.query(
         "SELECT sum(price) AS total FROM ducat_pg_items WHERE (price).currency = 'EUR'",
@@ -126,6 +166,30 @@ describe('node-postgres parsers and the money composite type', () => {
       ]);
       const back = await client.query('SELECT n19 FROM ducat_pg_items WHERE id = 101');
       expect(back.rows[0].n19).toBe('123456789012345.6789');
+    });
+
+    it('a schema-qualified type works with an empty search_path', async () => {
+      await client.query('DROP SCHEMA IF EXISTS ducat_billing CASCADE');
+      await client.query('CREATE SCHEMA ducat_billing');
+      for (const statement of moneyTypeSql('ducat_billing.amount')) {
+        await client.query(statement);
+      }
+      const oids = await moneyTypeOids(client, 'ducat_billing.amount');
+      const scoped = new pg.Client({
+        connectionString,
+        types: exactTypes(pg.types, { money: oids }),
+      });
+      await scoped.connect();
+      try {
+        await scoped.query("SET search_path = ''");
+        const result = await scoped.query(
+          "SELECT ducat_billing.sum(price) AS total FROM (VALUES ('(1.234,KWD)'::ducat_billing.amount), " +
+            "('(0.766,KWD)'::ducat_billing.amount)) AS prices (price)",
+        );
+        expect(String(result.rows[0].total)).toBe('2.000 KWD');
+      } finally {
+        await scoped.end();
+      }
     });
   });
 });
