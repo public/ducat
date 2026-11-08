@@ -26,13 +26,39 @@ const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 export type RateType = 'mid' | 'bid' | 'ask' | (string & {});
 
 /**
- * Where a rate came from. `asOf` and `validUntil` are ISO-8601 dates ('2026-11-06') or instants.
+ * How a source published a rate, kept with the Rate for audit and display. The published direction
+ * is `from` → `to`, or `to` → `from` when `inverted`.
+ */
+export interface RateQuote {
+  /** The number exactly as published, trailing zeros included ('136.80'). */
+  readonly rate: string;
+  /**
+   * How many units of the published direction's first currency the number is for: 100 for "NOK
+   * per 100 JPY". Omitted for 1.
+   */
+  readonly per?: number;
+  /** The source quoted `to` → `from`; this Rate is its exact inverse. */
+  readonly inverted?: boolean;
+}
+
+/**
+ * Where a rate came from. `asOf`, `availableAt` and `validUntil` are ISO-8601 dates ('2026-11-06')
+ * or instants.
  */
 export interface RateInfo {
   readonly source?: string;
+  /** The date or time the rate applies to. */
   readonly asOf?: string | Date;
+  /**
+   * When the rate was published. A lookup for an earlier time doesn't get it, so a historical
+   * lookup sees only what was known then. A date means from the start of that UTC day.
+   */
+  readonly availableAt?: string | Date;
+  /** The last date or time the rate applies to. A date is valid all day (UTC). */
   readonly validUntil?: string | Date;
   readonly type?: RateType;
+  /** The rate as the source published it. */
+  readonly quote?: RateQuote;
 }
 
 /** Options for converting an amount. */
@@ -64,12 +90,22 @@ export interface RateJSON {
   rate: string;
   source?: string;
   asOf?: string;
+  availableAt?: string;
   validUntil?: string;
   type?: string;
+  /** Present only when it says more than `rate` does: a `per` or an inverted quote. */
+  quote?: RateQuote;
   derivedFrom?: RateJSON[];
 }
 
-type MutableInfo = { source?: string; asOf?: string; validUntil?: string; type?: RateType };
+type MutableInfo = {
+  source?: string;
+  asOf?: string;
+  availableAt?: string;
+  validUntil?: string;
+  type?: RateType;
+  quote?: RateQuote;
+};
 /** RateInfo that may also hold explicit undefineds (as optional parameters do). */
 type LooseInfo = { readonly [Key in keyof RateInfo]?: RateInfo[Key] | undefined };
 
@@ -91,6 +127,44 @@ export function toIsoString(time: string | Date): string {
     throw new RangeError(`Invalid date or time ${String(time)}`);
   }
   return date.toISOString();
+}
+
+/** A date as the first instant of its UTC day; an instant as it is. */
+function asInstant(time: string): string {
+  return ISO_DATE.test(time) ? `${time}T00:00:00.000Z` : time;
+}
+
+/**
+ * @internal
+ * Whether `time` has come by `at`. A date `at` means the whole of that UTC day, so anything on or
+ * before that day counts; a date `time` means the start of its day.
+ */
+export function hasStarted(time: string, at: string | Date): boolean {
+  const instant = toIsoString(at);
+  if (ISO_DATE.test(instant)) {
+    return time.slice(0, 10) <= instant;
+  }
+  return asInstant(time) <= instant;
+}
+
+/** @internal Whether `validUntil` (a date: valid all day, UTC) has passed at `at`. */
+export function hasEnded(validUntil: string, at: string | Date): boolean {
+  const instant = asInstant(toIsoString(at));
+  if (ISO_DATE.test(validUntil)) {
+    return instant.slice(0, 10) > validUntil;
+  }
+  return instant > validUntil;
+}
+
+/** The later of two ISO-8601 strings; undefined = no constraint. */
+function later(first: string | undefined, second: string | undefined): string | undefined {
+  if (first === undefined) {
+    return second;
+  }
+  if (second === undefined || first >= second) {
+    return first;
+  }
+  return second;
 }
 
 /**
@@ -163,8 +237,10 @@ export class Rate<From extends string = string, To extends string = string> {
   // field semantics would otherwise define them all as undefined.
   declare readonly source?: string;
   declare readonly asOf?: string;
+  declare readonly availableAt?: string;
   declare readonly validUntil?: string;
   declare readonly type?: RateType;
+  declare readonly quote?: RateQuote;
   declare readonly derivedFrom?: readonly Rate[];
 
   /** @internal use exchangeRate() */
@@ -187,11 +263,22 @@ export class Rate<From extends string = string, To extends string = string> {
     if (info?.asOf !== undefined) {
       writable.asOf = toIsoString(info.asOf);
     }
+    if (info?.availableAt !== undefined) {
+      writable.availableAt = toIsoString(info.availableAt);
+    }
     if (info?.validUntil !== undefined) {
       writable.validUntil = toIsoString(info.validUntil);
     }
     if (info?.type !== undefined) {
       writable.type = info.type;
+    }
+    if (info?.quote !== undefined) {
+      // A quote that disagrees with the rate would make the audit trail lie, so check it.
+      const quoted = quoteRatio(info.quote);
+      if (quoted.num !== normalized.num || quoted.den !== normalized.den) {
+        throw new RangeError(`Quote ${info.quote.rate} doesn't match the rate ${from}→${to}`);
+      }
+      writable.quote = info.quote;
     }
     if (derivedFrom !== undefined) {
       writable.derivedFrom = derivedFrom;
@@ -223,9 +310,12 @@ export class Rate<From extends string = string, To extends string = string> {
     if (this.type === next.type) {
       type = this.type;
     }
+    // A composite is known only once both legs are, and is valid only while both are.
     const asOf = earlier(this.asOf, next.asOf);
+    const availableAt = later(this.availableAt, next.availableAt);
     const validUntil = earlier(this.validUntil, next.validUntil);
-    return new Rate(this.from, next.to, product, timing(asOf, validUntil, type), [this, next]);
+    const info = timing(asOf, availableAt, validUntil, type);
+    return new Rate(this.from, next.to, product, info, [this, next]);
   }
 
   /** This rate × (1 + margin), exactly: `withMargin('-0.02')` gives 2% less `to` per `from`. */
@@ -251,14 +341,26 @@ export class Rate<From extends string = string, To extends string = string> {
     return formatScaled(scaled, places);
   }
 
-  /** The exact rate: '1.1165', or '2000/2233' when its decimal expansion doesn't terminate. */
+  /**
+   * The exact rate: '1.1165', or '2000/2233' when its decimal expansion doesn't terminate. A rate
+   * published one unit for one unit keeps the published digits ('136.80').
+   */
   toString(): string {
+    const quote = this.quote;
+    if (quote !== undefined && quote.per === undefined && quote.inverted !== true) {
+      return quote.rate;
+    }
     return ratioToDecimal(this.ratio) ?? `${this.ratio.num}/${this.ratio.den}`;
   }
 
   /** The rate, its metadata and its audit chain as JSON. `rateFromJSON` reverses it. */
   toJSON(): RateJSON {
-    const json: RateJSON = { from: this.from, to: this.to, rate: this.toString(), ...infoOf(this) };
+    const { quote, ...info } = infoOf(this);
+    const json: RateJSON = { from: this.from, to: this.to, rate: this.toString(), ...info };
+    // A direct quote is the `rate` string itself, so only a scaled or inverted one is written.
+    if (quote !== undefined && (quote.per !== undefined || quote.inverted === true)) {
+      json.quote = quote;
+    }
     if (this.derivedFrom !== undefined) {
       json.derivedFrom = this.derivedFrom.map((input) => input.toJSON());
     }
@@ -273,14 +375,18 @@ export class Rate<From extends string = string, To extends string = string> {
     if (this.validUntil === undefined) {
       return false;
     }
-    let instant = toIsoString(now);
-    if (ISO_DATE.test(instant)) {
-      instant = `${instant}T00:00:00.000Z`;
+    return hasEnded(this.validUntil, now);
+  }
+
+  /**
+   * Whether the rate had been published by `at`: always, without an `availableAt`. A date `at`
+   * means by the end of that UTC day.
+   */
+  isAvailable(at: string | Date): boolean {
+    if (this.availableAt === undefined) {
+      return true;
     }
-    if (ISO_DATE.test(this.validUntil)) {
-      return instant.slice(0, 10) > this.validUntil;
-    }
-    return instant > this.validUntil;
+    return hasStarted(this.availableAt, at);
   }
 
   /** Converts `money`, rounding once to the target currency's exponent (or `options.scale`). */
@@ -310,24 +416,69 @@ function infoOf(info: LooseInfo): MutableInfo {
   if (info.asOf !== undefined) {
     defined.asOf = toIsoString(info.asOf);
   }
+  if (info.availableAt !== undefined) {
+    defined.availableAt = toIsoString(info.availableAt);
+  }
   if (info.validUntil !== undefined) {
     defined.validUntil = toIsoString(info.validUntil);
   }
   if (info.type !== undefined) {
     defined.type = info.type;
   }
+  if (info.quote !== undefined) {
+    defined.quote = info.quote;
+  }
   return defined;
 }
 
-function timing(asOf?: string, validUntil?: string, type?: RateType): RateInfo {
-  return infoOf({ asOf, validUntil, type });
+function timing(
+  asOf?: string,
+  availableAt?: string,
+  validUntil?: string,
+  type?: RateType,
+): RateInfo {
+  return infoOf({ asOf, availableAt, validUntil, type });
 }
 
 /**
  * A derived rate keeps the timing of its input; the input's source stays with it, in derivedFrom.
  */
 function timingOf(input: Rate, type?: RateType): RateInfo {
-  return timing(input.asOf, input.validUntil, type);
+  return timing(input.asOf, input.availableAt, input.validUntil, type);
+}
+
+const PLAIN_DECIMAL = /^\d+(?:\.\d+)?$/;
+
+/** The exact rate a quote stands for, in the Rate's own direction. */
+function quoteRatio(quote: RateQuote): Ratio {
+  if (!PLAIN_DECIMAL.test(quote.rate)) {
+    throw new RangeError(`A quote is a plain decimal string, got ${quote.rate}`);
+  }
+  const per = quote.per ?? 1;
+  if (!Number.isSafeInteger(per) || per < 1) {
+    throw new RangeError(`A quote's per is a positive integer, got ${per}`);
+  }
+  const published = ratio(quote.rate);
+  if (quote.inverted === true) {
+    return ratio(published.den * BigInt(per), published.num);
+  }
+  return ratio(published.num, published.den * BigInt(per));
+}
+
+/**
+ * A Rate from a published quote: `per` units and the direction are applied exactly, and the quote
+ * is kept on the Rate.
+ *
+ *     rateFromQuote('JPY', 'NOK', { rate: '6.50', per: 100 })        // JPY→NOK 0.065
+ *     rateFromQuote('USD', 'EUR', { rate: '1.1650', inverted: true }) // USD→EUR 200/233
+ */
+export function rateFromQuote<From extends CurrencyInput, To extends CurrencyInput>(
+  from: From,
+  to: To,
+  quote: RateQuote,
+  info?: Omit<RateInfo, 'quote'>,
+): Rate<From, To> {
+  return new Rate(from, to, quoteRatio(quote), { ...info, quote });
 }
 
 /**
@@ -345,13 +496,31 @@ export function exchangeRate<From extends CurrencyInput, To extends CurrencyInpu
   rate: Factor,
   info?: RateInfo,
 ): Rate<From, To> {
-  return new Rate(from, to, ratio(rate), info);
+  const exact = ratio(rate);
+  // A decimal string is a published rate: keep its digits when the canonical form would drop
+  // some ('1.1650' would print as '1.165').
+  const keepsDigits =
+    typeof rate === 'string' &&
+    info?.quote === undefined &&
+    PLAIN_DECIMAL.test(rate) &&
+    ratioToDecimal(exact) !== rate;
+  if (keepsDigits) {
+    return new Rate(from, to, exact, { ...info, quote: { rate } });
+  }
+  return new Rate(from, to, exact, info);
 }
 
 /** Rebuilds a Rate, with its audit chain, from `rate.toJSON()`. */
 export function rateFromJSON(json: RateJSON): Rate {
   const derivedFrom = json.derivedFrom?.map(rateFromJSON);
-  return new Rate(json.from, json.to, ratio(json.rate), infoOf(json), derivedFrom);
+  const info = infoOf(json);
+  if (info.quote === undefined && PLAIN_DECIMAL.test(json.rate)) {
+    const exact = ratio(json.rate);
+    if (ratioToDecimal(exact) !== json.rate) {
+      info.quote = { rate: json.rate };
+    }
+  }
+  return new Rate(json.from, json.to, ratio(json.rate), info, derivedFrom);
 }
 
 /** Whether `value` is a Rate. */

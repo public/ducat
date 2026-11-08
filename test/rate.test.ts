@@ -75,14 +75,14 @@ describe('Rate', () => {
   });
 
   it('keeps every digit of a decimal-string rate, trailing zeros included', () => {
-    expect(exchangeRate('EUR', 'HUF', '363.90').toString()).toBe('363.9');
+    expect(exchangeRate('EUR', 'HUF', '363.90').toString()).toBe('363.90');
     expect(exchangeRate('EUR', 'IDR', '20208.93').ratio).toMatchObject({
       num: 2020893n,
       den: 100n,
     });
     expect(exchangeRate('EUR', 'USD', 1.234).ratio).toMatchObject({ num: 617n, den: 500n }); // 1234/1000 reduced
     expect(exchangeRate('EUR', 'USD', '1.12345678901234567890').toString()).toBe(
-      '1.1234567890123456789',
+      '1.12345678901234567890',
     );
   });
 

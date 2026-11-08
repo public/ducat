@@ -15,9 +15,11 @@ export {
   Rate,
   RateExpiredError,
   rateFromJSON,
+  rateFromQuote,
   type ConvertOptions,
   type RateInfo,
   type RateJSON,
+  type RateQuote,
   type RateType,
 } from './rate.js';
 export {
@@ -32,6 +34,7 @@ export {
 export {
   chain,
   identity,
+  rateHistory,
   rateOf,
   rateTable,
   RateUnavailableError,
@@ -39,10 +42,17 @@ export {
   snapshots,
   snapshotsFrom,
   via,
+  type Fallback,
+  type FallbackReason,
+  type QuotedRate,
+  type RateHistory,
+  type RateHistoryOptions,
+  type RateLookup,
   type RateProvider,
   type RateQuery,
   type RateTable,
   type RateTableSpec,
+  type SnapshotLookup,
   type SnapshotOptions,
   type Snapshots,
 } from './provider.js';
