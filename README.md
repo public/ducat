@@ -438,6 +438,10 @@ db.insert(orders).values({ id: 2, total: dollar }).run(); // compile error, and 
 
 The columns check what the types can't: writing another currency, a value at a scale other than the currency's, or a value a `numeric(p, s)` column would round or clamp throws. Reading rejects driver values that may have lost digits: a BIGINT beyond 2^53 that the driver returned as a number (use bigint or string mode: `defaultSafeIntegers(true)` in better-sqlite3, `supportBigNumbers` with `bigNumberStrings` in mysql2; node-postgres returns strings already), a DECIMAL returned as a number, and `NaN` or `Infinity`. `drizzle-orm` is an optional peer dependency, imported only by these three entries.
 
+- **Currency per row:** a Drizzle column can't read a sibling column, so there is no "minor units plus a currency column" type. Use `moneyJson()`, which stores the currency in each value, or select both columns and build the Money with `fromMinor(row.amountMinor, row.currency)`.
+- **Relational queries** (`db.query...findMany({ with: ... })`) return nested rows through JSON, where Postgres and MySQL turn NUMERIC and BIGINT values into JSON numbers. A nested `moneyDecimal` column then throws, and so does a nested `moneyMinor` beyond 2^53 minor units, rather than return a rounded amount. Top-level columns are not affected. For nested money, use `moneyJson`, or a join with `select`.
+- **SQLite decimals are TEXT**, so in SQL they compare and sort as text (`'10.00' < '9.00'`), and `sum()` over them is a REAL. Use `moneyMinor` for columns you sort, compare or add up in SQL. For the same reason `/drizzle/sqlite`'s `moneyDecimal` takes no column size.
+
 ---
 
 ## Currency data: source, generation, verification
