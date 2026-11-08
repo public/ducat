@@ -9,6 +9,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- **Bank of Canada:** `parseBankOfCanadaJson` in the new `@ducatjs/money/convert/boc` reads the
+  Valet API's daily rates into CAD tables (exact inverses of the published CAD-per-unit quotes,
+  with `availableAt` 16:30 Toronto time), and `fetchBankOfCanada({ start, end })` in
+  `@ducatjs/money/convert/fetch` fetches them.
 - **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
   rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
   reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,
@@ -31,6 +35,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
+- **ECB Data Portal:** `parseEcbSdmxCsv` (and `parseEcbSdmxDecimals`) in
+  `@ducatjs/money/convert/ecb` read the SDMX-CSV of the daily euro reference rates, any range back
+  to 1999, with the published digits rebuilt from each series' `DECIMALS`.
+  `fetchEcbRange({ start, end, currencies })` in `@ducatjs/money/convert/fetch` fetches a range
+  from it.
 - **Historical rates.** In `@ducatjs/money/convert`: `availableAt` on rates and tables (a lookup
   before publication gets nothing, `Rate#isAvailable`), `Rate#quote` with the published digits,
   `null` for missing values with the table's `missing` list, and `validUntil` periods on tables.

@@ -83,6 +83,8 @@ describe('Money methods', () => {
       'parseEcbXml',
       'parseEcbCsv',
       'parseBankOfCanadaJson',
+      'parseEcbSdmxCsv',
+      'parseEcbSdmxDecimals',
       // processor rates, read from processor records rather than a Money
       'stripeRate',
       'stripeImpliedRate',

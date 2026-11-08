@@ -148,6 +148,12 @@ describe('fetchBankOfCanada', () => {
     await expect(fetchBankOfCanada({ end: '2026-01-01', fetch: fakeValet(seen) })).rejects.toThrow(
       RangeError,
     );
+    await expect(
+      fetchBankOfCanada({ start: '2026-01-02', end: '2026-01-01', fetch: fakeValet(seen) }),
+    ).rejects.toThrow(/before start/);
+    await expect(
+      fetchBankOfCanada({ start: '2026-02-30', fetch: fakeValet(seen) }),
+    ).rejects.toThrow(RangeError);
     expect(seen).toEqual([]);
     await expect(fetchBankOfCanada({ fetch: fakeValet([], 503) })).rejects.toThrow(FetchRatesError);
     await expect(fetchBankOfCanada({ fetch: fakeValet([], 200, '<html/>') })).rejects.toThrow(
