@@ -4,13 +4,14 @@
  * core only hands the work to the policy, so none of this code is in a bundle that never imports
  * this entry (or `cashPolicy` from `@ducatjs/money/cash`).
  */
-import { currencyExponent } from './currency.js';
-import type { Ratio } from './decimal.js';
+import { currencyExponent, isCurrency } from './currency.js';
+import { MAX_DECIMAL_SCALE, type Ratio } from './decimal.js';
 import {
   CurrencyMismatchError,
   multiply,
   multiplyByRatio,
   ratio,
+  ROUND_PRODUCT,
   type Money,
   type RoundingPolicy,
 } from './money.js';
@@ -46,7 +47,10 @@ export function roundingPolicy(options: RoundingPolicyOptions = {}): RoundingPol
   const rounding = options.rounding ?? DEFAULT_ROUNDING;
   const currency = options.currency;
 
-  if (scale !== undefined && !(Number.isSafeInteger(scale) && scale >= 0)) {
+  if (
+    scale !== undefined &&
+    !(Number.isInteger(scale) && scale >= 0 && scale <= MAX_DECIMAL_SCALE)
+  ) {
     throw new RangeError(`Invalid scale ${scale}`);
   }
   if (!(Number.isSafeInteger(increment) && increment >= 1)) {
@@ -54,6 +58,10 @@ export function roundingPolicy(options: RoundingPolicyOptions = {}): RoundingPol
   }
   if (!MODES.has(rounding)) {
     throw new RangeError(`Invalid rounding mode ${String(rounding)}`);
+  }
+  // A typo such as 'chf' would otherwise make a policy that rejects every amount.
+  if (currency !== undefined && !isCurrency(currency)) {
+    throw new RangeError(`Unknown currency ${currency}`);
   }
 
   const incrementAsBigint = BigInt(increment);
@@ -83,7 +91,7 @@ export function roundingPolicy(options: RoundingPolicyOptions = {}): RoundingPol
 
   const policy = <C extends string>(money: Money<C>): Money<C> => roundProduct(money, ONE);
   return Object.freeze(
-    Object.assign(policy, { scale, increment, rounding, currency, roundProduct }),
+    Object.assign(policy, { scale, increment, rounding, currency, [ROUND_PRODUCT]: roundProduct }),
   );
 }
 

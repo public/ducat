@@ -282,6 +282,9 @@ describe('roundingPolicy', () => {
     expect(() => roundingPolicy({ increment: 0 })).toThrow(RangeError);
     expect(() => roundingPolicy({ increment: 2.5 })).toThrow(RangeError);
     expect(() => roundingPolicy({ rounding: 'halfUp' as RoundingMode })).toThrow(RangeError);
+    expect(() => roundingPolicy({ scale: 1001 })).toThrow(RangeError);
+    expect(() => roundingPolicy({ currency: 'chf' })).toThrow(RangeError);
+    expect(roundingPolicy({ currency: 'CHF' }).currency).toBe('CHF');
   });
 
   it('is immutable and stores nothing on the amounts it rounds', () => {
@@ -311,8 +314,35 @@ describe('roundingPolicy', () => {
       increment: 1,
       rounding: 'halfEven' as const,
       currency: undefined,
+      roundProduct: (value: Money) => value,
     }) as unknown as RoundingPolicy;
-    expect(() => multiply(money('1', 'EUR'), '1.5', lookalike)).toThrow(TypeError);
+    const message = TypeError;
+    expect(() => multiply(money('1', 'EUR'), '1.5', lookalike)).toThrow(message);
+    expect(() => divide(money('1', 'EUR'), 3, lookalike)).toThrow(message);
+    expect(() => round(money('1', 'EUR'), lookalike)).toThrow(message);
+    expect(() => money('1', 'EUR').round(lookalike)).toThrow(message);
+    expect(() => addTax(money('1', 'EUR'), 20, lookalike)).toThrow(message);
+    expect(() => discount(money('1', 'EUR'), 20, lookalike)).toThrow(message);
+  });
+
+  it('rounds the tax results as documented (regression cases)', () => {
+    const cash = cashPolicy('CHF');
+    expect(show(discount(money('10.02', 'CHF'), 10, cash))).toBe('9.00 CHF @2');
+    const added = addTax(money('10.03', 'CHF'), '8.1', cash);
+    expect([added.tax, added.gross].map(show)).toEqual(['0.82 CHF @2', '10.85 CHF @2']);
+    // the gross is the input here, and it is off the increment, so the tax is too
+    const extracted = extractTax(money('10.83', 'CHF'), '8.1', cash);
+    expect([extracted.net, extracted.tax].map(show)).toEqual(['10.00 CHF @2', '0.83 CHF @2']);
+  });
+
+  it('puts the extracted tax on the increment only when the gross is, at the policy scale', () => {
+    const cash = cashPolicy('CHF');
+    const onIncrement = extractTax(money('10.85', 'CHF'), '8.1', cash);
+    assertScale(onIncrement.tax, cash);
+    // a gross of 10.850 at scale 3 is on the 0.05 step, but the tax keeps scale 3
+    const atScale3 = extractTax(money('10.850', 'CHF', { scale: 3 }), '8.1', cash);
+    expect(show(atScale3.tax)).toBe('0.800 CHF @3');
+    expect(() => assertScale(atScale3.tax, cash)).toThrow(RangeError);
   });
 
   it('works as a function over lists', () => {

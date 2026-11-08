@@ -53,11 +53,31 @@ export interface RoundingPolicy {
   /** The one currency the policy is for, if any; other currencies throw `CurrencyMismatchError`. */
   readonly currency: string | undefined;
   /**
-   * @internal money × factor, rounded once to this policy. The core calls this for every
-   * operation given a policy, so the policy code stays out of bundles that never build one.
+   * @internal money × factor, rounded once to this policy, under a key only this copy of the
+   * package can build. The core calls it for every operation given a policy, so the policy code
+   * stays out of bundles that never build one.
    */
-  readonly roundProduct: <C extends string>(money: Money<C>, factor: Ratio) => Money<C>;
+  readonly [ROUND_PRODUCT]: <C extends string>(money: Money<C>, factor: Ratio) => Money<C>;
 }
+
+/**
+ * @internal The key a policy's rounding function is stored under. Module-private, so only
+ * `roundingPolicy` from this copy of the package makes values the core accepts as policies: a
+ * lookalike function, or a policy from a second installed copy (whose results would be that copy's
+ * Money), is rejected with a TypeError, as `isMoney` rejects the other copy's Money.
+ */
+export const ROUND_PRODUCT: unique symbol = Symbol();
+
+/**
+ * @internal money × factor rounded by a policy. Anything not built by `roundingPolicy` lacks the
+ * private key, so calling it throws a TypeError; that is the whole check, kept this small because
+ * it is in every bundle.
+ */
+export const roundWithPolicy = <C extends string>(
+  money: Money<C>,
+  factor: Ratio,
+  policy: RoundingPolicy,
+): Money<C> => policy[ROUND_PRODUCT](money, factor);
 
 /** What rounding parameters accept: a mode such as `'halfEven'`, or a `RoundingPolicy`. */
 export type RoundingInput = RoundingMode | RoundingPolicy;
@@ -150,7 +170,8 @@ class Money<C extends string = string> {
   round(rounding: RoundingMode, scale?: number): Money<C>;
   round(policy: RoundingPolicy): Money<C>;
   round(rounding: RoundingInput, scale?: number): Money<C> {
-    return typeof rounding === 'function' ? rounding(this) : round(this, rounding, scale);
+    // the free function handles both; the cast only picks its implementation signature
+    return round(this, rounding as RoundingMode, scale);
   }
   /** Changes the scale; decreasing it rounds (default 'halfExpand'). */
   toScale(scale: number, rounding?: RoundingMode): Money<C> {
@@ -651,7 +672,7 @@ export function multiplyByRatio<C extends string>(
   scale = money.scale,
 ): Money<C> {
   if (typeof rounding === 'function') {
-    return rounding.roundProduct(money, factor);
+    return roundWithPolicy(money, factor, rounding);
   }
   const minor = money.minor;
   if (
@@ -706,7 +727,7 @@ export function round<C extends string>(
   scale?: number,
 ): Money<C> {
   if (typeof rounding === 'function') {
-    return rounding(money);
+    return roundWithPolicy(money, ratio(1), rounding);
   }
   return toScale(money, scale ?? currencyExponent(money.currency), rounding);
 }

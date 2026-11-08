@@ -1,5 +1,12 @@
 import { ratio, type Factor, type Ratio } from './decimal.js';
-import { add, multiplyByRatio, subtract, type Money, type RoundingInput } from './money.js';
+import {
+  add,
+  multiplyByRatio,
+  roundWithPolicy,
+  subtract,
+  type Money,
+  type RoundingInput,
+} from './money.js';
 import { DEFAULT_ROUNDING } from './rounding.js';
 
 const percentRatio = (percent: Factor): Ratio => {
@@ -41,9 +48,10 @@ export function addTax<C extends string>(
   // the policy's increment (CHF 0.05 for cash). Either way the other part is the exact difference.
   if (typeof rounding === 'function') {
     const percentAsRatio = ratio(percent);
-    const gross = rounding.roundProduct(
+    const gross = roundWithPolicy(
       net,
       ratio(100n * percentAsRatio.den + percentAsRatio.num, 100n * percentAsRatio.den),
+      rounding,
     );
     return { net, tax: subtract(gross, net), gross };
   }
@@ -84,9 +92,10 @@ export function discount<C extends string>(
 ): Money<C> {
   if (typeof rounding === 'function') {
     const percentAsRatio = ratio(percent);
-    return rounding.roundProduct(
+    return roundWithPolicy(
       price,
       ratio(100n * percentAsRatio.den - percentAsRatio.num, 100n * percentAsRatio.den),
+      rounding,
     );
   }
   return subtract(price, multiplyByRatio(price, percentRatio(percent), rounding));

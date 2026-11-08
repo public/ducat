@@ -7,5 +7,5 @@
     "allowImportingTsExtensions": true
   },
   "include": ["src", "test", "bench"],
-  "exclude": ["test/core-only", "test/browser"]
+  "exclude": ["test/core-only", "test/browser", "src/drizzle", "test/db/drizzle.test.ts"]
 }
