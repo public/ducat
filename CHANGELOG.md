@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `parseMoney(text, locale, options)` in `/parse` parses `"CHF 1’234.50"` or `"USD 100"` and
+  detects the currency from ISO codes and the locale's `Intl` symbols. It never guesses: a shared
+  symbol such as `$` needs a `hint` or a `symbols` map, a contradicting hint, a locale without
+  Intl data and bad grouping throw, and `lenient: true` relaxes only the grouping (and reads a
+  bare number in the hint).
 - `@ducatjs/money/testing` for Vitest and Jest: value equality for `toEqual` (any scale, number
   or bigint), a snapshot serializer and inspect hook (`12.34 EUR`), and the matchers
   `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
