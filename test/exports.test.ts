@@ -59,3 +59,18 @@ describe('export surface', () => {
     }
   });
 });
+
+describe('database entries', () => {
+  it('every /drizzle dialect exports the same three column types', async () => {
+    const dialects = await Promise.all([
+      import('../src/drizzle/pg.js'),
+      import('../src/drizzle/mysql.js'),
+      import('../src/drizzle/sqlite.js'),
+    ]);
+    for (const dialect of dialects) {
+      for (const name of ['moneyMinor', 'moneyDecimal', 'moneyJson']) {
+        expect(typeof (dialect as Record<string, unknown>)[name]).toBe('function');
+      }
+    }
+  });
+});
