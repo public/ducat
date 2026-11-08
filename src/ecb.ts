@@ -39,6 +39,23 @@ export interface EcbOptions {
   readonly availableAt?: EcbAvailableAt;
 }
 
+/**
+ * @internal Checks an `availableAt` option, which untyped code could pass as anything: a string or a
+ * Date would otherwise be ignored on an empty file and fail obscurely, as "not a function", on the
+ * first day. Called once, before any parsing or fetching.
+ */
+export function checkAvailableAt(availableAt: unknown): void {
+  if (
+    availableAt !== undefined &&
+    typeof availableAt !== 'boolean' &&
+    typeof availableAt !== 'function'
+  ) {
+    throw new TypeError(
+      `availableAt must be true, false or a function of the day, got ${availableAt === null ? 'null' : typeof availableAt}`,
+    );
+  }
+}
+
 // The ECB publishes its rates "at around 16:00 CET" on each TARGET working day. CET here is
 // Frankfurt's local time, summer time included; one formatter gives its offset on any day.
 let frankfurtFormatter: Intl.DateTimeFormat | undefined;
@@ -125,6 +142,7 @@ function ratesOfDay(body: string): Record<string, string> {
  *     const [latest] = parseEcbXml(await readFile('eurofxref-daily.xml', 'utf8'));
  */
 export function parseEcbXml(xml: string, options?: EcbOptions): RateTable[] {
+  checkAvailableAt(options?.availableAt);
   let days = 0;
   const tables: RateTable[] = [];
   for (const [, asOf, body] of withoutByteOrderMark(xml).matchAll(DAY_CUBE)) {
@@ -180,6 +198,7 @@ function isoDay(text: string): string {
  * as in parseEcbXml.
  */
 export function parseEcbCsv(csv: string, options?: EcbOptions): RateTable[] {
+  checkAvailableAt(options?.availableAt);
   const lines = withoutByteOrderMark(csv)
     .split(/\r?\n/)
     .filter((line) => line.trim() !== '');
@@ -319,6 +338,7 @@ function optionalCell(cells: readonly string[], columns: Map<string, number>, na
  *     const history = rateHistory(tables); // from @ducatjs/money/convert/history
  */
 export function parseEcbSdmxCsv(csv: string, options?: EcbSdmxOptions): RateTable[] {
+  checkAvailableAt(options?.availableAt);
   const { header, rows } = sdmxRecords(csv);
   const columns = sdmxColumns(header, ['CURRENCY', 'CURRENCY_DENOM', 'TIME_PERIOD', 'OBS_VALUE']);
   const at = (cells: readonly string[], name: string): string =>
