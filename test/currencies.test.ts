@@ -80,7 +80,8 @@ describe('minor unit and smallest cash step', () => {
 
   it('cashUnit uses the cash rules, and the minor unit without one', () => {
     expect(cashUnit('CHF')).toBe('0.05');
-    expect(cashUnit('SEK')).toBe('1');
+    expect(cashUnit('SEK')).toBe('1.00');
+    expect(cashUnit('DKK')).toBe('0.50');
     expect(cashUnit('EUR', { country: 'NL' })).toBe('0.05');
     expect(cashUnit('EUR')).toBe('0.01');
     // US penny production ended in 2025; that rule is backed only by secondary sources

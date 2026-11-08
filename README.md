@@ -12,7 +12,7 @@ import { money } from '@ducatjs/money';
 import '@ducatjs/money/allocate'; // opt-in modules add their methods to Money
 import '@ducatjs/money/tax';
 import '@ducatjs/money/convert';
-import '@ducatjs/money/format'; // or import '@ducatjs/money/all' for everything
+import '@ducatjs/money/format'; // or import '@ducatjs/money/all' for everything except the integrations that need optional peers
 
 const price = money('19.99', 'EUR'); // Money<'EUR'>
 const total = price.add(money('5.01', 'EUR')); // → 25.00 EUR

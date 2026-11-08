@@ -61,6 +61,8 @@ describe('Money methods', () => {
       'minorUnit',
       'currencyName',
       'currencySymbol',
+      'territoryCurrencies',
+      'currencyTerritories',
       // the historic currency table: lookups and registration by code, not by amount
       'historicCurrency',
       'historicCurrencies',
