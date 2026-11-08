@@ -248,7 +248,8 @@ jobs:
         if: steps.proofs.outputs.present == 'true'
         # the release publishes no checksum file; this hash is of the release asset, pinned here
         run: |
-          curl -sSfLo elan.tar.gz \
+          # GitHub release downloads return 504s for minutes at a time: retry with a long backoff
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 20 -o elan.tar.gz \
             https://github.com/leanprover/elan/releases/download/v4.2.4/elan-x86_64-unknown-linux-gnu.tar.gz
           echo "42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63  elan.tar.gz" | sha256sum -c -
           tar -xzf elan.tar.gz

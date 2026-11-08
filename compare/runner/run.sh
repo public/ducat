@@ -17,7 +17,17 @@ ROUNDS=$(cat rounds.txt)
 fetch_verified() {
   local url=$1 expected_sha256=$2 file=$3
   if [ ! -f "$file" ]; then
-    curl -sSfL --retry 3 -o "$file" "$url"
+    # five tries, 10/20/40/80 s apart: a GitHub 504 must not cost a box hour
+    local attempt
+    for attempt in 1 2 3 4 5; do
+      curl -sSfL -o "$file" "$url" && break
+      rm -f "$file"
+      if [ "$attempt" = 5 ]; then
+        echo "download failed 5 times: $url" >&2
+        exit 4
+      fi
+      sleep $((10 * 2 ** (attempt - 1)))
+    done
   fi
   if ! echo "$expected_sha256  $file" | sha256sum -c --quiet -; then
     echo "sha256 mismatch for $file" >&2
