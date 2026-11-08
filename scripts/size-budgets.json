@@ -29,7 +29,11 @@
     "@ducatjs/money/drizzle/sqlite": 4.78,
     "@ducatjs/money/zod": 4.72,
     "@ducatjs/money/valibot": 4.73,
-    "@ducatjs/money/pg": 6.1
+    "@ducatjs/money/pg": 6.1,
+    "@ducatjs/money/testing": 5.07,
+    "@ducatjs/money/testing/vitest": 5.1,
+    "@ducatjs/money/testing/jest": 5.17,
+    "@ducatjs/money/testing/arbitraries": 4.67
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 30,

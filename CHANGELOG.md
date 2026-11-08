@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/testing` for Vitest and Jest: value equality for `toEqual` (any scale, number
+  or bigint), a snapshot serializer and inspect hook (`12.34 EUR`), and the matchers
+  `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
+  `toSumTo`. `/testing/vitest` and `/testing/jest` set it all up in one import, and
+  `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
 - **Federal Reserve H.10:** `parseFedH10Csv` in the new `@ducatjs/money/convert/fed` reads the
   Board's daily rates (CSV from its Data Download Program) into USD tables, with the four currencies
   H.10 quotes as USD per unit inverted exactly and `ND` holidays left out. Parser only.
