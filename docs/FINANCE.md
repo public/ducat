@@ -1,6 +1,6 @@
 # `@ducatjs/money/finance`: design
 
-Status: design for review, no code yet. Issue #54.
+Status: approved design; the module is planned for v0.3.0, and XNPV and XIRR for v0.4.0. Issue #54.
 
 Billing and lending code keeps re-implementing the same few calculations, usually in floats: loan
 and amortisation schedules, interest between two dates under a day-count convention, net present
@@ -23,7 +23,8 @@ that reconcile to the cent.
   residual from rounding goes to one stated place (the last payment, by default), never into the
   void.
 - **Calendar dates, not instants.** Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }`
-  objects (so `Temporal.PlainDate` works as is). No `Date`: an instant plus a time zone is how
+  objects. A `Temporal.PlainDate` works as is, because it has those three fields; a test checks
+  that wherever the runtime has Temporal. No `Date`: an instant plus a time zone is how
   off-by-one-day interest bugs happen. Day arithmetic is proleptic Gregorian, done in integers.
 - **Opt-in, free functions.** One entry point, `@ducatjs/money/finance`, with functions only (no
   `Money` methods). Every function takes an options object, which suits functions rather than
@@ -34,10 +35,17 @@ that reconcile to the cent.
 ### 1. Day counts and interest
 
 ```ts
-yearFraction('2026-01-15', '2026-07-15', 'ACT/360')            // ratio(181, 360)
-interest(money('10000', 'EUR'), '0.05', {
-  from: '2026-01-15', to: '2026-07-15', dayCount: 'ACT/365F',
-}, 'halfEven')                                                  // 247.95 EUR
+yearFraction('2026-01-15', '2026-07-15', 'ACT/360'); // ratio(181, 360)
+interest(
+  money('10000', 'EUR'),
+  '0.05',
+  {
+    from: '2026-01-15',
+    to: '2026-07-15',
+    dayCount: 'ACT/365F',
+  },
+  'halfEven',
+); // 247.95 EUR
 ```
 
 - `yearFraction(start, end, convention, options?)` returns an exact `Ratio`.
@@ -61,13 +69,15 @@ interest(money('10000', 'EUR'), '0.05', {
 
 ```ts
 const plan = amortise(money('200000', 'EUR'), {
-  rate: '0.045', perYear: 12, periods: 300,     // 4.5% nominal, monthly, 25 years
-  method: 'annuity',                             // or 'linear', 'interestOnly'
-  rounding: 'halfEven',                          // or a policy
+  rate: '0.045',
+  perYear: 12,
+  periods: 300, // 4.5% nominal, monthly, 25 years
+  method: 'annuity', // or 'linear', 'interestOnly'
+  rounding: 'halfEven', // or a policy
 });
-plan.payment                                     // 1111.66 EUR
-plan.rows[0]                                     // { period: 1, payment, interest: 750.00, principal: 361.66, balance: 199638.34 }
-plan.totalInterest                               // exact sum of the interest column
+plan.payment; // 1111.66 EUR
+plan.rows[0]; // { period: 1, payment, interest: 750.00, principal: 361.66, balance: 199638.34 }
+plan.totalInterest; // exact sum of the interest column
 ```
 
 - Methods:
@@ -98,9 +108,15 @@ plan.totalInterest                               // exact sum of the interest co
 ### 3. NPV and IRR
 
 ```ts
-npv('0.08', [money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')], 'halfEven')
+npv(
+  '0.08',
+  [money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')],
+  'halfEven',
+);
 // 17.63 EUR: Σ CFₜ / (1 + r)ᵗ, exact, rounded once
-irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')], { digits: 8 })
+irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')], {
+  digits: 8,
+});
 // { rate: '0.08896339', lower: '0.08896339', upper: '0.08896340' }
 ```
 
@@ -114,24 +130,32 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
   - It throws when the flows have no sign change (no IRR).
   - Flows with more than one sign change can have several IRRs (Descartes), so they throw unless a
     `bracket` with a sign change is given: picking one silently is the classic IRR bug.
-  - Cost: each step evaluates an exact NPV at a rational rate, about `digits × 3.3` steps. That is
-    fine for hundreds of flows and up to about 12 digits, and documented as such.
+  - Each midpoint is kept to a decimal with `digits` plus 4 guard digits, not the exact midpoint,
+    so the bigints stay bounded: the interval still halves and its ends stay decimals.
+  - Cost: about `digits × 3.3` steps, each an exact NPV by Horner's rule. Worst case documented:
+    360 monthly periods at the default `digits: 10` takes 34 steps on integers of about 17,000
+    bits (2 kB). An unoptimised exact-fraction prototype of the same arithmetic took 1.3 s in
+    total; the implementation must beat that by a wide margin, and the benchmark tracks it.
 - `XNPV` and `XIRR` (flows on arbitrary dates) are **not** in the first version: their discount
-  factors `(1 + r)^(days/365)` are fractional powers, so even XNPV isn't exact. It is a design fork
-  (below).
+  factors `(1 + r)^(days/365)` are fractional powers, so even XNPV isn't exact. They are planned
+  for v0.4.0, as results to a stated precision with a proven error bound.
 
 ### 4. Subscription proration
 
 ```ts
-prorate(money('30', 'EUR'), {
-  period: { start: '2026-03-01', end: '2026-04-01' },   // the billing period, end exclusive
-  used: { start: '2026-03-11', end: '2026-04-01' },     // the part being charged or credited
-}, 'halfEven')                                          // 20.32 EUR (21 of 31 days)
+prorate(
+  money('30', 'EUR'),
+  {
+    period: { start: '2026-03-01', end: '2026-04-01' }, // the billing period, end exclusive
+    used: { start: '2026-03-11', end: '2026-04-01' }, // the part being charged or credited
+  },
+  'halfEven',
+); // 20.32 EUR (21 of 31 days)
 
 splitPeriod(money('30', 'EUR'), {
   period: { start: '2026-03-01', end: '2026-04-01' },
-  at: ['2026-03-11', '2026-03-20'],                     // plan changes
-})                                                      // [9.68, 8.71, 11.61]: sums to exactly 30.00
+  at: ['2026-03-11', '2026-03-20'], // plan changes
+}); // [9.68, 8.71, 11.61]: sums to exactly 30.00
 ```
 
 - `prorate(price, { period, used, unit }, rounding)` is `price × days(used) / days(period)`, exact,
@@ -157,7 +181,20 @@ splitPeriod(money('30', 'EUR'), {
 - Lean, when it pays: the schedule's reconciliation (principal sums to the loan, the balance ends
   at zero) fits the existing instalment proofs.
 
-## Design forks
+## Decisions
+
+The review took the recommendation on every fork:
+
+1. **Dates:** strings and `{ year, month, day }` only (so `Temporal.PlainDate` too); no `Date`.
+2. **IRR:** exact bisection to a stated number of digits, with guard-digit midpoints and a
+   guaranteed bracket.
+3. **XNPV and XIRR:** not in the first version; v0.4.0, with a proven error bound.
+4. **Schedule residual:** the last payment by default, `'lastInterest'` as an option.
+5. **Day-count interest inside schedules** (`interestBasis`): the second version; the row type
+   reserves the fields.
+6. **Methods on Money:** none.
+
+## Design forks (as reviewed)
 
 1. **Dates.** I recommend strings and `{ year, month, day }` only. The alternative also accepts
    `Date` as a UTC calendar day, which is convenient but invites time-zone bugs.
