@@ -13,6 +13,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (`toGoogleMoney`, `fromGoogleMoney`: int64 units, nanos with the same sign); ISO 20022 amounts
   (`toIso20022Amount`, `fromIso20022Amount`: at most 5 decimals and 18 digits, non-negative); and
   `{ value, currency }` in ISO 4217 minor units (`toMinorUnits`, `fromMinorUnits`).
+- `@ducatjs/money/crypto`: BTC (8 decimals), ETH (18), SOL (9) and common Ethereum tokens (USDC,
+  USDT, DAI, WBTC, EURC, PYUSD) as an opt-in table, each unit's decimals read from its defining
+  source with a `--check` (`scripts/fetch-crypto-units.mjs`, snapshot `data/crypto-units.json`).
+  `defineCryptoCurrencies` registers them; `toBaseUnits` and `fromBaseUnits` convert to and from
+  satoshi, wei and lamport exactly, with strict parsing.
 - `@ducatjs/money/currencies`: ISO 4217 numeric codes both ways (`numericCode('EUR')` is '978',
   `currencyFromNumeric(8)` is 'ALL'), generated from ISO 4217 List One; `minorUnit`, the size of
   the minor unit; and `currencyName` and `currencySymbol` per locale, from the runtime's `Intl`.

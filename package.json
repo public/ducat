@@ -74,6 +74,10 @@
       "types": "./dist/wire.d.ts",
       "default": "./dist/wire.js"
     },
+    "./crypto": {
+      "types": "./dist/crypto.d.ts",
+      "default": "./dist/crypto.js"
+    },
     "./currencies": {
       "types": "./dist/currencies.d.ts",
       "default": "./dist/currencies.js"
