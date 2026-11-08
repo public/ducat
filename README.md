@@ -794,7 +794,7 @@ declare module 'expect' {
 }
 ```
 
-Under `bun test`, `installMoneyMatchers(expect)` installs the matchers and the snapshot serializer. Bun has no `addEqualityTesters`, so `toEqual` compares Money field by field there; use `toBeMoney` instead.
+Under `bun test`, `installMoneyMatchers(expect)` installs the matchers and the inspect hook. Bun supports neither custom equality testers nor snapshot serializers yet, so `toEqual` compares Money field by field there and snapshots show the fields; use `toBeMoney` instead.
 
 Value equality relies on `isMoney`, so a Money from a second installed copy of ducat is compared field by field, like any other object.
 

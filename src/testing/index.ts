@@ -214,13 +214,23 @@ const INSPECT = Symbol.for('nodejs.util.inspect.custom');
 /**
  * Installs everything on a test runner's `expect`: the matchers, value equality and the snapshot
  * serializer. It also gives Money a Node inspect hook, so `console.log(price)` prints
- * `Money(12.34 EUR)`. Safe to call more than once. A runner without `addEqualityTesters` or
- * `addSnapshotSerializer` (Bun has no equality testers) gets the rest.
+ * `Money(12.34 EUR)`. Safe to call more than once. A runner that lacks `addEqualityTesters` or
+ * `addSnapshotSerializer` (Bun supports neither) gets the matchers and the inspect hook.
  */
 export function installMoneyMatchers(expect: ExpectWithExtensions): void {
   expect.extend(moneyMatchers);
-  expect.addEqualityTesters?.([moneyEquality]);
-  expect.addSnapshotSerializer?.(moneySerializer);
+  // Optional runner features: Bun has no equality testers, and its addSnapshotSerializer throws
+  // "Not implemented". The matchers work without either.
+  try {
+    expect.addEqualityTesters?.([moneyEquality]);
+  } catch {
+    // not supported by this runner
+  }
+  try {
+    expect.addSnapshotSerializer?.(moneySerializer);
+  } catch {
+    // not supported by this runner
+  }
 
   // The inspect hook is the one change to Money itself; only test setups call this function.
   const prototype = Object.getPrototypeOf(zero('EUR')) as object;

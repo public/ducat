@@ -9,8 +9,11 @@ import { currencyExponent, defineCurrency, fromMinor, money, type Money } from '
 import '../src/plugins/allocate.js';
 
 const SAFE = BigInt(Number.MAX_SAFE_INTEGER);
+// Bun's expect has no equality testers or snapshot serializers yet (installMoneyMatchers skips
+// them there), so those tests run under Vitest only.
+const supportsRunnerHooks = !('Bun' in globalThis);
 
-describe('value equality in toEqual', () => {
+describe.skipIf(!supportsRunnerHooks)('value equality in toEqual', () => {
   it('ignores the scale and the number/bigint representation', () => {
     expect(money('1', 'EUR', { scale: 1 })).toEqual(money('1', 'EUR'));
     expect(money('1', 'EUR', { scale: 1 })).toStrictEqual(money('1', 'EUR'));
@@ -39,7 +42,7 @@ describe('value equality in toEqual', () => {
 });
 
 describe('readable output', () => {
-  it('serializes snapshots as the amount and currency', () => {
+  it.skipIf(!supportsRunnerHooks)('serializes snapshots as the amount and currency', () => {
     expect(moneySerializer.test(money('1', 'EUR'))).toBe(true);
     expect(moneySerializer.test({ currency: 'EUR' })).toBe(false);
     expect({ price: money('12.34', 'EUR') }).toMatchInlineSnapshot(`
@@ -191,9 +194,10 @@ describe('arbitraries', () => {
     const codes = fc.sample(arbCurrency({ exponents: [3] }), { numRuns: 100, seed: 2 });
     expect(codes.every((code) => currencyExponent(code) === 3)).toBe(true);
     expect(() => arbCurrency({ exponents: [9] })).toThrow(RangeError);
-    expect(() => fc.sample(arbMoney({ currency: 'JPY', min: '0.2', max: '0.8' }), 1)).toThrow(
-      RangeError,
-    );
+    // at scale 0 there is no whole yen between the bounds (at scale 1 or more there would be)
+    expect(() =>
+      fc.sample(arbMoney({ currency: 'JPY', min: '0.2', max: '0.8', scale: 0 }), 1),
+    ).toThrow(RangeError);
     expect(() => fc.sample(arbMoney({ currency: 'EUR', scale: -1 }), 1)).toThrow(RangeError);
     expect(() => fc.sample(arbMoney({ currency: 'EUR', scale: 1.5 }), 1)).toThrow(RangeError);
     const allThree = fc.sample(arbCurrency({ all: true, exponents: [3] }), {
