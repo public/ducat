@@ -9,6 +9,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/wire`: wire formats, exact both ways and strict on input. `google.type.Money`
+  (`toGoogleMoney`, `fromGoogleMoney`: int64 units, nanos with the same sign); ISO 20022 amounts
+  (`toIso20022Amount`, `fromIso20022Amount`: at most 5 decimals and 18 digits, non-negative); and
+  `{ value, currency }` in ISO 4217 minor units (`toMinorUnits`, `fromMinorUnits`).
 - `@ducatjs/money/currencies`: ISO 4217 numeric codes both ways (`numericCode('EUR')` is '978',
   `currencyFromNumeric(8)` is 'ALL'), generated from ISO 4217 List One; `minorUnit`, the size of
   the minor unit; and `currencyName` and `currencySymbol` per locale, from the runtime's `Intl`.

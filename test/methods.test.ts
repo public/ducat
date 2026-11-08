@@ -62,6 +62,13 @@ describe('Money methods', () => {
       'currencyName',
       'currencySymbol',
       'territoryCurrencies',
+      // wire formats: readers take the format, and the writers stay functions, like the readers
+      'toGoogleMoney',
+      'fromGoogleMoney',
+      'toIso20022Amount',
+      'fromIso20022Amount',
+      'toMinorUnits',
+      'fromMinorUnits',
       'currencyTerritories',
       // the historic currency table: lookups and registration by code, not by amount
       'historicCurrency',
