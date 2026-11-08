@@ -274,7 +274,8 @@ export interface FetchBankOfCanadaOptions extends Omit<FetchEcbOptions, 'history
 
 /**
  * Fetches the Bank of Canada's daily exchange rates from its Valet API and parses them with
- * parseBankOfCanadaJson: CAD-based tables, newest first. Without `start`, only the latest day.
+ * parseBankOfCanadaJson: CAD-based tables, newest first. Without `start`, only the latest day;
+ * without `end`, up to the latest. A range with no business days in it gives [].
  * The Bank asks users to keep within its request limits, which it doesn't publish, and its rates
  * are "released for statistical and analytical purposes only", not for transactions.
  *
@@ -285,6 +286,9 @@ export async function fetchBankOfCanada(options?: FetchBankOfCanadaOptions): Pro
   let query = '?recent=1';
   if (options?.start !== undefined) {
     const start = requestDay(options.start, 'start');
+    if (start < '2017-01-03') {
+      throw new RangeError(`Valet's daily rates start on 2017-01-03, not ${start}`);
+    }
     query = `?start_date=${start}`;
     if (options.end !== undefined) {
       const end = requestDay(options.end, 'end');

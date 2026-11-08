@@ -6,7 +6,8 @@ import type { RateTable } from './provider.js';
 import { readRateCell } from './rate-text.js';
 
 const SERIES = /^FX([A-Z]{3})CAD$/;
-const ISO_DAY = /^\d{4}-\d\d-\d\d$/;
+const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
+const ZERO = /^0+(?:\.0+)?$/;
 
 // The Bank publishes "once each business day by 16:30 (ET)". One formatter for the zone, built on
 // first use, gives the Toronto offset on any day, summer time included.
@@ -22,19 +23,34 @@ function publishedBy(day: string): string {
   const noon = new Date(`${day}T12:00:00Z`);
   const zone = torontoFormatter.formatToParts(noon).find((part) => part.type === 'timeZoneName');
   const offset = /^GMT([+-]\d+)$/.exec(zone?.value ?? '');
-  // Without the zone name, assume EST: in summer that is an hour late, never early.
-  const offsetHours = offset === null ? -5 : Number(offset[1]);
-  const utcMs = Date.parse(`${day}T16:30:00Z`) - offsetHours * 3_600_000;
+  if (offset === null) {
+    throw new RangeError(`Can't tell Toronto's UTC offset on ${day} (${zone?.value})`);
+  }
+  const utcMs = Date.parse(`${day}T16:30:00Z`) - Number(offset[1]) * 3_600_000;
   return new Date(utcMs).toISOString();
 }
 
-interface ValetObservation {
-  readonly d?: unknown;
-  readonly [series: string]: unknown;
+/** Whether `text` is a real calendar day in ISO form ('2026-02-30' is not). */
+function isCalendarDay(text: string): boolean {
+  const match = ISO_DAY.exec(text);
+  if (match === null) {
+    return false;
+  }
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return date.toISOString().slice(0, 10) === text;
 }
 
-function notValet(): never {
-  throw new SyntaxError('Not a Bank of Canada Valet observations file');
+function notValet(why: string): never {
+  throw new SyntaxError(`Not a Bank of Canada Valet daily FX file: ${why}`);
+}
+
+/** Options for parseBankOfCanadaJson. */
+export interface BankOfCanadaOptions {
+  /**
+   * When each day's rates were published, or false for none. Default: 16:30 Toronto time that day,
+   * when the Bank says it publishes them.
+   */
+  readonly availableAt?: false | ((day: string) => string | Date);
 }
 
 /**
@@ -43,9 +59,11 @@ function notValet(): never {
  * newest first. The Bank quotes CAD per unit of each currency (FXUSDCAD 1.3748), so each table
  * holds the exact inverse, CAD → currency, and keeps the published quote: `rate.inverse()` prints
  * '1.3748' again. Rates have `source: 'BoC'`, `type: 'average'` (an average of a day's quotes, not
- * a market rate) and `availableAt` 16:30 Toronto time, when the Bank says it publishes them; a late
- * rate can come later than that. Currencies without a value that day are left out, as the Bank
- * does, and an empty value is a missing one.
+ * a market rate) and `availableAt` 16:30 Toronto time, when the Bank says it publishes them (a late
+ * rate can come later; pass `availableAt` to change it). Valet leaves a series out of a day
+ * without a value, so a series listed in `seriesDetail` but absent on a day, an empty value or a
+ * null one, is in that day's `missing`. Anything but daily `FX…CAD` series (monthly or annual
+ * groups, other data) throws SyntaxError, as do two different values for one series on one day.
  *
  * Precision: the Bank quotes four decimals, up to six for small rates, so a small rate has only
  * about four significant digits (JPY 0.008760, KRW 0.000929, and IDR 0.000082 with two). Its
@@ -55,50 +73,82 @@ function notValet(): never {
  *     const tables = parseBankOfCanadaJson(await (await fetch(url)).text());
  *     tables[0].rate('CAD', 'USD')?.inverse().toString(); // '1.3748'
  */
-export function parseBankOfCanadaJson(json: string): RateTable[] {
-  const parsed: unknown = JSON.parse(json);
-  const observations = (parsed as { observations?: unknown } | null)?.observations;
+export function parseBankOfCanadaJson(json: string, options?: BankOfCanadaOptions): RateTable[] {
+  const parsed = JSON.parse(json) as {
+    observations?: unknown;
+    seriesDetail?: Record<string, unknown>;
+  } | null;
+  const observations = parsed?.observations;
   if (!Array.isArray(observations)) {
-    notValet();
+    notValet('no observations');
+  }
+
+  // The series the file says it has; each must be a daily FX…CAD series.
+  const expected = new Set<string>();
+  for (const series of Object.keys(parsed?.seriesDetail ?? {})) {
+    if (!SERIES.test(series)) {
+      notValet(`series ${series} isn't a daily FX…CAD rate`);
+    }
+    expected.add(series);
+  }
+
+  const days = new Map<string, Record<string, string | null>>();
+  for (const observation of observations as readonly Record<string, unknown>[]) {
+    const day = observation?.['d'];
+    if (typeof day !== 'string' || !isCalendarDay(day)) {
+      notValet(`bad date ${JSON.stringify(day)}`);
+    }
+    let rates = days.get(day);
+    if (rates === undefined) {
+      rates = {};
+      days.set(day, rates);
+    }
+
+    for (const [series, cell] of Object.entries(observation)) {
+      if (series === 'd') {
+        continue;
+      }
+      const currency = SERIES.exec(series)?.[1];
+      if (currency === undefined) {
+        notValet(`series ${series} isn't a daily FX…CAD rate`);
+      }
+      const where = `${series} on ${day}`;
+      const value = (cell as { v?: unknown } | null)?.v;
+      if (value !== null && typeof value !== 'string') {
+        throw new SyntaxError(`Malformed Valet value for ${where}`);
+      }
+      const rate = value === null ? null : readRateCell(value, where);
+      if (rate !== null && ZERO.test(rate)) {
+        throw new SyntaxError(`A zero rate for ${where}`);
+      }
+      // The same series twice on one day is a repeat or a contradiction; never pick one.
+      const earlier = rates[currency];
+      if (earlier !== undefined && earlier !== rate) {
+        throw new SyntaxError(`Two different values for ${where}: ${earlier} and ${rate}`);
+      }
+      rates[currency] = rate;
+    }
+    // Valet leaves out a series without a value that day.
+    for (const series of expected) {
+      rates[SERIES.exec(series)![1]!] ??= null;
+    }
   }
 
   const tables: RateTable[] = [];
-  for (const observation of observations as readonly ValetObservation[]) {
-    const day = observation?.d;
-    if (typeof day !== 'string' || !ISO_DAY.test(day) || Number.isNaN(Date.parse(day))) {
-      notValet();
+  for (const [day, rates] of days) {
+    if (!Object.values(rates).some((rate) => rate !== null)) {
+      continue;
     }
-
-    const rates: Record<string, string | null> = {};
-    let quoted = 0;
-    for (const [series, cell] of Object.entries(observation)) {
-      const currency = SERIES.exec(series)?.[1];
-      if (currency === undefined) {
-        continue;
-      }
-      const value = (cell as { v?: unknown } | null)?.v;
-      if (typeof value !== 'string') {
-        throw new SyntaxError(`Malformed Valet value for ${series} on ${day}`);
-      }
-      const rate = readRateCell(value, `${series} on ${day}`);
-      rates[currency] = rate;
-      if (rate !== null) {
-        quoted++;
-      }
+    let availableAt: string | Date | undefined;
+    if (options?.availableAt === undefined) {
+      availableAt = publishedBy(day);
+    } else if (options.availableAt !== false) {
+      availableAt = options.availableAt(day);
     }
-    if (quoted > 0) {
-      tables.push(
-        quotedTable({
-          base: 'CAD',
-          inverted: true,
-          source: 'BoC',
-          type: 'average',
-          asOf: day,
-          availableAt: publishedBy(day),
-          rates,
-        }),
-      );
-    }
+    const info = { base: 'CAD', inverted: true, source: 'BoC', type: 'average', asOf: day };
+    tables.push(
+      quotedTable({ ...info, ...(availableAt === undefined ? {} : { availableAt }), rates }),
+    );
   }
   return tables.sort((table, other) => other.asOf!.localeCompare(table.asOf!));
 }

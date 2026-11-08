@@ -79,7 +79,7 @@ describe('Money methods', () => {
       'comparator',
       'sortByValue',
       'sumByCurrency',
-      // ECB file parsers
+      // rate source parsers
       'parseEcbXml',
       'parseEcbCsv',
       'parseBankOfCanadaJson',

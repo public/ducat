@@ -42,8 +42,10 @@ describe('parseBankOfCanadaJson', () => {
     // trailing zeros as published
     expect(oldest.rate('CAD', 'JPY')!.inverse().toString()).toBe('0.008760');
     expect(oldest.rate('CAD', 'CHF')!.inverse().toString()).toBe('1.7350');
-    // series that started later aren't in older days
+    // series listed in seriesDetail but absent on a day (MYR, PLN, THB and VND, on every day of
+    // the fixture) are missing that day, not "not quoted"
     expect(oldest.rate('CAD', 'MYR')).toBeUndefined();
+    expect(oldest.missing).toEqual(expect.arrayContaining(['MYR', 'PLN', 'THB', 'VND']));
   });
 
   it('is available from 16:30 Toronto time, summer time included', () => {
@@ -60,6 +62,23 @@ describe('parseBankOfCanadaJson', () => {
       observations([{ d: '2026-03-09', FXUSDCAD: { v: '1.4400' } }]),
     );
     expect(change!.availableAt).toBe('2026-03-09T20:30:00.000Z');
+    // and in autumn: still summer time on Friday 30 October, winter time from 1 November
+    const autumn = parseBankOfCanadaJson(
+      observations([
+        { d: '2026-10-30', FXUSDCAD: { v: '1.3800' } },
+        { d: '2026-11-02', FXUSDCAD: { v: '1.3810' } },
+      ]),
+    );
+    expect(autumn.map((table) => table.availableAt)).toEqual([
+      '2026-11-02T21:30:00.000Z',
+      '2026-10-30T20:30:00.000Z',
+    ]);
+    // a different publication time, or none
+    const july = observations([{ d: '2026-07-06', FXUSDCAD: { v: '1.36' } }]);
+    const [custom] = parseBankOfCanadaJson(july, { availableAt: (day) => `${day}T23:00:00Z` });
+    expect(custom!.availableAt).toBe('2026-07-06T23:00:00.000Z');
+    const [none] = parseBankOfCanadaJson(july, { availableAt: false });
+    expect(none!.availableAt).toBeUndefined();
   });
 
   it('converts both ways through CAD, rounding once', () => {
@@ -81,11 +100,43 @@ describe('parseBankOfCanadaJson', () => {
     expect(parseBankOfCanadaJson(observations([{ d: '2026-11-06', FXUSDCAD: { v: '' } }]))).toEqual(
       [],
     );
-    // non-FX series in the same response are ignored
-    const [mixed] = parseBankOfCanadaJson(
-      observations([{ d: '2026-11-06', FXUSDCAD: { v: '1.3654' }, V39079: { v: '2.25' } }]),
+    // a null value is missing too
+    const [nullValue] = parseBankOfCanadaJson(
+      observations([{ d: '2026-11-06', FXUSDCAD: { v: '1.3654' }, FXEURCAD: { v: null } }]),
     );
-    expect(mixed!.rates.map((rate) => rate.to)).toEqual(['USD']);
+    expect(nullValue!.missing).toEqual(['EUR']);
+    // anything but daily FX…CAD series throws: other data, monthly and annual groups
+    expect(() =>
+      parseBankOfCanadaJson(
+        observations([{ d: '2026-11-06', FXUSDCAD: { v: '1.3654' }, V39079: { v: '2.25' } }]),
+      ),
+    ).toThrow(/V39079/);
+    const monthly = JSON.stringify({
+      seriesDetail: { FXMUSDCAD: {} },
+      observations: [{ d: '2026-10-01', FXMUSDCAD: { v: '1.3800' } }],
+    });
+    expect(() => parseBankOfCanadaJson(monthly)).toThrow(/FXMUSDCAD/);
+    // one day twice: a repeat merges, a contradiction throws
+    const repeated = parseBankOfCanadaJson(
+      observations([
+        { d: '2026-11-06', FXUSDCAD: { v: '1.36' } },
+        { d: '2026-11-06', FXUSDCAD: { v: '1.36' }, FXEURCAD: { v: '1.60' } },
+      ]),
+    );
+    expect(repeated).toHaveLength(1);
+    expect(repeated[0]!.rates).toHaveLength(2);
+    expect(() =>
+      parseBankOfCanadaJson(
+        observations([
+          { d: '2026-11-06', FXUSDCAD: { v: '1.36' } },
+          { d: '2026-11-06', FXUSDCAD: { v: '1.37' } },
+        ]),
+      ),
+    ).toThrow(/Two different values for FXUSDCAD on 2026-11-06/);
+    expect(() => parseBankOfCanadaJson(observations([{ d: '2026-02-30' }]))).toThrow(SyntaxError);
+    expect(() =>
+      parseBankOfCanadaJson(observations([{ d: '2026-11-06', FXUSDCAD: { v: '0.0000' } }])),
+    ).toThrow(/zero rate/);
     expect(() => parseBankOfCanadaJson('<html>')).toThrow(SyntaxError);
     expect(() => parseBankOfCanadaJson('{"error":"x"}')).toThrow(SyntaxError);
     expect(() => parseBankOfCanadaJson(observations([{ d: '06/11/2026' }]))).toThrow(SyntaxError);
@@ -154,6 +205,9 @@ describe('fetchBankOfCanada', () => {
     await expect(
       fetchBankOfCanada({ start: '2026-02-30', fetch: fakeValet(seen) }),
     ).rejects.toThrow(RangeError);
+    await expect(
+      fetchBankOfCanada({ start: '2016-12-30', fetch: fakeValet(seen) }),
+    ).rejects.toThrow(/2017-01-03/);
     expect(seen).toEqual([]);
     await expect(fetchBankOfCanada({ fetch: fakeValet([], 503) })).rejects.toThrow(FetchRatesError);
     await expect(fetchBankOfCanada({ fetch: fakeValet([], 200, '<html/>') })).rejects.toThrow(
