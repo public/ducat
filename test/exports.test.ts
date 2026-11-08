@@ -211,6 +211,14 @@ describe('fixed entry', () => {
     return seen;
   }
 
+  it('/words and its languages reach neither Money nor the currency table', () => {
+    for (const entry of ['src/words.ts', 'src/words/en.ts', 'src/words/de.ts']) {
+      const files = [...sourcesOf(join(ROOT, entry))].map((file) => file.slice(ROOT.length + 1));
+      expect(files).not.toContain('src/money.ts');
+      expect(files).not.toContain('src/currency.ts');
+    }
+  });
+
   it('/fixed reaches neither Money nor the currency table; /fixed/money adds both', () => {
     const relativeNames = (entry: string) =>
       [...sourcesOf(join(ROOT, entry))].map((file) => file.slice(ROOT.length + 1)).sort();

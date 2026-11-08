@@ -159,6 +159,8 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/currencies`         | nothing                                                            | numeric codes, `minorUnit`, `currencyName`, `currencySymbol`     |
 | `@ducatjs/money/territories`        | nothing                                                            | `territoryCurrencies`, `currencyTerritories` (CLDR)              |
 | `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022 amounts, minor-unit JSON          |
+| `@ducatjs/money/words`              | nothing                                                            | `amountInWords`, `spellOut` (CLDR rules, no Money loaded)        |
+| `@ducatjs/money/words/<language>`   | nothing                                                            | `english`, `german`, `french`, `spanish`, `italian`…             |
 | `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
@@ -764,6 +766,28 @@ toIso20022Amount(money('-5', 'EUR')); // throws RangeError: use the credit/debit
 toMinorUnits(money('500', 'JPY')); // → { value: 500, currency: 'JPY' }
 ```
 
+### Amounts in words
+
+`@ducatjs/money/words` writes amounts in words, as cheques, invoices and legal documents need. `Intl` can't spell numbers out, so the words come from CLDR's rule-based number formats (RBNF), the rules ICU uses, through a small interpreter that matches ICU on every test vector. Each language is its own entry, so a bundle carries only the ones it imports: `@ducatjs/money/words/en`, `/de`, `/fr`, `/es`, `/it`, `/pt` and `/nl`, from 0.6 to 1.9 kB each. The currency's name, in the right plural and word order, comes from the runtime's `Intl`, and so do the word for "and" and the digit grouping of numbers the rules write as digits (from 10^18 in most rule sets). A currency code `Intl` can't name (not three letters) throws a `RangeError`.
+
+- `amountInWords(m, language, options?)` writes the whole units, then the minor part as cheques do ("and 45/100"). CLDR has no names for minor units, so pass them to spell the minor part out: `{ minor: { one: 'cent', other: 'cents' } }`.
+- `gender` picks the number's agreement where the language has genders (Spanish "veintiún euros", "veintiuna libras"); CLDR doesn't record a currency's gender, so it's the caller's. `ruleSet` picks any of the language's rule sets.
+- `spellOut(n, language, ruleSet?)` spells a whole number: cardinals, ordinals (`'%spellout-ordinal'`) and the other public sets CLDR has, listed by `ruleSets(language)`. Where it can't give ICU's words it throws a `RangeError` instead: outside ±(2^63 − 1), the range of ICU's rules; for a private (`%%`) rule set; and for the few English ordinals from 10^18 whose suffix ICU takes from the number cut to 32 bits.
+
+```ts
+import { money } from '@ducatjs/money';
+import { amountInWords, spellOut } from '@ducatjs/money/words';
+import { english } from '@ducatjs/money/words/en';
+import { french } from '@ducatjs/money/words/fr';
+
+amountInWords(money('123.45', 'EUR'), english); // → 'one hundred twenty-three euros and 45/100'
+amountInWords(money('21', 'EUR'), french); // → 'vingt-et-un euros et 00/100'
+amountInWords(money('1.01', 'USD'), english, { minor: { one: 'cent', other: 'cents' } }); // → 'one US dollar and one cent'
+spellOut(21, english, '%spellout-ordinal'); // → 'twenty-first'
+```
+
+German, Italian and Dutch words keep CLDR's soft hyphens (U+00AD), which show only where a line breaks. The grammar is CLDR's numbers plus Intl's currency name, so a preposition some languages put after a round million ("un million de yens") isn't added.
+
 ### Databases
 
 | storage                              | Postgres                                                      | MySQL             | SQLite                                                                          | helpers                                                                                |
@@ -933,18 +957,19 @@ The columns check what the types can't: writing another currency, a value at a s
 
 ## Currency data: source, generation, verification
 
-| file                         | source                                                                                                                                                                                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/iso4217-list-one.xml`  | ISO 4217 List One from SIX (the maintenance agency), published **2026-09-17**. It has 178 codes with minor units, plus N.A. codes such as XAU and XDR, which are excluded as non-monetary. The numeric codes in `@ducatjs/money/currencies` come from it too. |
-| `data/stripe.json`           | https://docs.stripe.com/currencies, retrieved 2026-11-07, with verbatim quotes for every special case                                                                                                                                                         |
-| `data/adyen.json`            | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                                                                                             |
-| `data/checkout.json`         | https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value, the currency-codes page and the API reference, retrieved 2026-11-07, with verbatim quotes                                                                                     |
-| `data/paypal.json`           | https://developer.paypal.com/api/rest/reference/currency-codes/, the other currency-codes page and the Orders v2 schema, retrieved 2026-11-07, with verbatim quotes                                                                                           |
-| `data/braintree.json`        | https://developer.paypal.com/braintree/docs/reference/general/currencies, the transaction.sale reference, the validation-error list and the GraphQL `Amount` type, retrieved 2026-11-07, with verbatim quotes                                                 |
-| `data/klarna.json`           | https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/, the purchase-countries page and the Payments API reference, retrieved 2026-11-07, with verbatim quotes                                                                |
-| `data/cash-rounding.json`    | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                                                                                     |
-| `data/cldr-cash.json`        | CLDR release 49 `supplementalData.xml` cash digits and rounding, the second source for the cash rules (`scripts/fetch-cldr-cash.mjs` refreshes it)                                                                                                            |
-| `data/cldr-territories.json` | CLDR release 49 `supplementalData.xml` currencies per territory, with their first and last days (`scripts/fetch-cldr-territories.mjs` refreshes it)                                                                                                           |
+| file                         | source                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `data/iso4217-list-one.xml`  | ISO 4217 List One from SIX (the maintenance agency), published **2026-09-17**. It has 178 codes with minor units, plus N.A. codes such as XAU and XDR, which are excluded as non-monetary. The numeric codes in `@ducatjs/money/currencies` come from it too.                                                                                                                  |
+| `data/stripe.json`           | https://docs.stripe.com/currencies, retrieved 2026-11-07, with verbatim quotes for every special case                                                                                                                                                                                                                                                                          |
+| `data/adyen.json`            | https://docs.adyen.com/development-resources/currency-codes, retrieved 2026-11-07                                                                                                                                                                                                                                                                                              |
+| `data/checkout.json`         | https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value, the currency-codes page and the API reference, retrieved 2026-11-07, with verbatim quotes                                                                                                                                                                                                      |
+| `data/paypal.json`           | https://developer.paypal.com/api/rest/reference/currency-codes/, the other currency-codes page and the Orders v2 schema, retrieved 2026-11-07, with verbatim quotes                                                                                                                                                                                                            |
+| `data/braintree.json`        | https://developer.paypal.com/braintree/docs/reference/general/currencies, the transaction.sale reference, the validation-error list and the GraphQL `Amount` type, retrieved 2026-11-07, with verbatim quotes                                                                                                                                                                  |
+| `data/klarna.json`           | https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/, the purchase-countries page and the Payments API reference, retrieved 2026-11-07, with verbatim quotes                                                                                                                                                                                 |
+| `data/cash-rounding.json`    | Central-bank, statute and government pages per rule. Each entry has a `source` URL and a `verified` flag.                                                                                                                                                                                                                                                                      |
+| `data/cldr-cash.json`        | CLDR release 49 `supplementalData.xml` cash digits and rounding, the second source for the cash rules (`scripts/fetch-cldr-cash.mjs` refreshes it)                                                                                                                                                                                                                             |
+| `data/cldr-territories.json` | CLDR release 49 `supplementalData.xml` currencies per territory, with their first and last days (`scripts/fetch-cldr-territories.mjs` refreshes it)                                                                                                                                                                                                                            |
+| `data/rbnf/<language>.txt`   | CLDR release 49 spell-out rules (RBNF) from the cldr-rbnf package (`scripts/fetch-cldr-rbnf.mjs` refreshes them). `test/vectors/rbnf.json` holds ICU 4C 79.1's output for them, the oracle the interpreter is tested against, and `test/vectors/rbnf-data.json` ICU 4C 74.2's engine run on this text for the other rule sets (`scripts/gen-rbnf-vectors.mjs`, `--from-data`). |
 
 - `pnpm gen` (`scripts/gen-currencies.mjs`) turns these into `src/generated/*.ts`.
 - `pnpm gen:check` fails if the generated files are stale. It also runs inside the test suite.
@@ -1167,6 +1192,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 
 ## Decisions
 
+- **Amounts in words come from CLDR's RBNF rules, not hand-written grammars.** `Intl` has no spell-out, and ECMA-402 doesn't expose ICU's RuleBasedNumberFormat. CLDR's rules are small (about 1 kB gzipped per language), carry every language's agreement and compounding rules, and are the same text ICU runs, so an interpreter can be tested against ICU itself. Each language is its own entry so bundles pay only for what they use. Minor-unit names (cent, centime) and a currency's grammatical gender are in no standard data, so the default is the cheque form ("and 45/100") and both are options the caller supplies.
 - **JSON is a decimal string plus the currency, never minor units**: `{"amount":"12.34","currency":"EUR"}`. Minor units only mean something to a reader who knows the exponent, and the exponent isn't fixed:
   - Processors disagree with ISO. Stripe sends ISK and UGX as two-decimal; Adyen has its own exceptions.
   - ISO exponents change over time.
