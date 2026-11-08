@@ -333,6 +333,20 @@ function generate() {
     ` * legal tender]. A missing or null day is one CLDR doesn't give; a missing tender flag means true.\n */\n` +
     `export const CLDR_TERRITORY_CURRENCIES: Readonly<\n  Record<string, readonly (readonly [string, (string | null)?, (string | null)?, boolean?])[]>\n> = ${obj(territories)};\n`;
 
+  // CLDR spell-out rules, one module per language (comment lines dropped)
+  for (const language of ['en', 'de', 'fr', 'es', 'it', 'pt', 'nl']) {
+    const text = read(`data/rbnf/${language}.txt`);
+    const source = text.split('\n', 1)[0].replace(/^# /, '');
+    const ruleText = text
+      .split('\n')
+      .filter((line) => line.trim() !== '' && !line.startsWith('#'))
+      .join('\n');
+    out[`rbnf-${language}.ts`] =
+      header(`data/rbnf/${language}.txt (${source})`) +
+      `\n/** CLDR's spell-out rules (RBNF) for ${language}. */\n` +
+      `export const RULES = ${JSON.stringify(ruleText)};\n`;
+  }
+
   return { out, entries, published };
 }
 
