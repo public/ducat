@@ -108,6 +108,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Visible change:** `cashRound`, `cashPolicy` and `cashRule` now have rules for AMD, CRC, UZS,
+  TZS, RSD, PKR, MNT, GYD, TWD and MRU. Before, `cashRound` returned these amounts unchanged,
+  `cashPolicy` threw a RangeError (no cash-rounding rule) and `cashRule` returned `undefined`. Cash
+  amounts in these currencies now round to the smallest coin: `cashRound(money('1234.56', 'AMD'))`
+  is `1230.00 AMD`, and RSD ties round down. Pass `includeUnverified: false` to leave out GYD, MRU
+  and TZS, whose rules rest on secondary sources.
 - `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
   building one for every row, which makes it about 20 times faster.
 - **Visible change:** `Rate#toString()` (and so `toJSON().rate`) prints a decimal-string rate
