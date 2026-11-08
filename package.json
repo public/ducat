@@ -70,6 +70,10 @@
       "types": "./dist/fed.d.ts",
       "default": "./dist/fed.js"
     },
+    "./crypto": {
+      "types": "./dist/crypto.d.ts",
+      "default": "./dist/crypto.js"
+    },
     "./currencies": {
       "types": "./dist/currencies.d.ts",
       "default": "./dist/currencies.js"
