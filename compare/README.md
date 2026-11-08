@@ -115,7 +115,8 @@ It runs the money benchmark and then the fixed-point benchmark, and writes `out/
 `out/fixed-bench.json` (one JSON line each: per library and operation, the median, min and max ns
 per operation over rounds) and `out/env.txt` (settings, CPU model, core count, kernel, and the
 SHA-256 of both bundles). Commit them under `results/<machine>-<date>/<runtime>/` with a README describing the
-machine, as in `results/genoa-2026-11-07-rc/` (the earlier pre-release run is in `results/genoa-2026-11-07/`).
+machine, as in `results/genoa-2026-11-08/` (the earlier runs are in `results/genoa-2026-11-07-rc/` and
+`results/genoa-2026-11-07/`).
 
 ## Bundle sizes
 

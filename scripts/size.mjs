@@ -35,6 +35,10 @@ const resolveFromSource = {
   },
 };
 
+// Optional peer dependencies (drizzle-orm, ...) are the user's own: measure only ducat's code.
+const peerDependencies = Object.keys(packageJson.peerDependencies ?? {});
+const external = peerDependencies.flatMap((name) => [name, `${name}/*`]);
+
 async function measure(contents) {
   const result = await build({
     stdin: { contents, resolveDir: root, loader: 'js' },
@@ -45,8 +49,7 @@ async function measure(contents) {
     target: 'es2023',
     write: false,
     plugins: [resolveFromSource],
-    // Optional peer dependencies (zod, valibot, ...) are the user's own; only ducat's code counts.
-    external: Object.keys(packageJson.peerDependencies ?? {}),
+    external,
     logLevel: 'silent',
   });
   const code = result.outputFiles[0].contents;

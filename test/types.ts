@@ -106,7 +106,31 @@ const valibotEither: Money<'EUR'> | Money<'USD'> = valibotLibrary.parse(
   valibotMoney({ currency: ['EUR', 'USD'] }),
   {},
 );
-const anyCurrency: Money = zodLibrary.parse(zodMoney(), {});
+const anyCurrency = zodLibrary.parse(zodMoney(), {});
+// exactly Money<string>: assignable both ways
+const anyCurrencyIsString: Money<string> = anyCurrency;
+// @ts-expect-error a schema without currencies does not claim a literal one
+const anyCurrencyIsEur: Money<'EUR'> = anyCurrency;
+const zodEither: Money<'EUR'> | Money<'USD'> = zodLibrary.parse(
+  zodMoney({ currency: ['EUR', 'USD'] }),
+  {},
+);
+// @ts-expect-error not a single-currency Money
+const zodEitherIsEur: Money<'EUR'> = zodLibrary.parse(zodMoney({ currency: ['EUR', 'USD'] }), {});
+const valibotEur: Money<'EUR'> = valibotLibrary.parse(valibotMoney({ currency: 'EUR' }), {});
+// @ts-expect-error a Valibot schema for EUR does not produce USD
+const valibotUsd: Money<'USD'> = valibotLibrary.parse(valibotMoney({ currency: 'EUR' }), {});
+const encoded: { amount: string; currency: string } = zodLibrary.encode(
+  zodMoney({ currency: 'EUR' }),
+  zodEur,
+);
+void anyCurrencyIsString;
+void anyCurrencyIsEur;
+void zodEither;
+void zodEitherIsEur;
+void valibotEur;
+void valibotUsd;
+void encoded;
 void zodEur;
 void zodUsd;
 void valibotEither;

@@ -1,5 +1,5 @@
 // Markdown for the fixed-point benchmark: one table per runtime from the runner's fixed-bench.json
-// files under a results directory such as compare/results/genoa-2026-11-07-rc/. Pure: reads files,
+// files under a results directory such as compare/results/genoa-2026-11-08/. Pure: reads files,
 // returns a string; compare/tables.ts decides where it goes.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

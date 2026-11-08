@@ -1,6 +1,7 @@
 import { isCurrency } from './currency.js';
+import { MAX_DECIMAL_SCALE } from './decimal.js';
 import { money, type Money, type MoneyJSON } from './money.js';
-import type { RoundingMode } from './rounding.js';
+import { Rounding, type RoundingMode } from './rounding.js';
 
 /** Options for the Zod and Valibot money schemas. */
 export interface MoneySchemaOptions<C extends string = string> {
@@ -16,6 +17,47 @@ export interface MoneySchemaOptions<C extends string = string> {
    * such amounts, as `fromJSON` does.
    */
   readonly rounding?: RoundingMode;
+  /**
+   * The most digits the amount may have, not counting the sign and the decimal point (default
+   * 50). It keeps an oversized request body from building a huge bigint.
+   */
+  readonly maxDigits?: number;
+}
+
+/** The default `maxDigits`: far beyond any real amount, small enough to be cheap to reject. */
+export const DEFAULT_MAX_DIGITS = 50;
+
+const MODES = new Set<unknown>(Object.values(Rounding));
+
+/**
+ * @internal Checks the options when the schema is built, so a mistake there throws at once
+ * instead of turning every input into a validation error.
+ */
+export function checkSchemaOptions(options: MoneySchemaOptions | undefined): void {
+  if (options === undefined) {
+    return;
+  }
+  const allowed = options.currency;
+  const codes = typeof allowed === 'string' || allowed === undefined ? [allowed] : allowed;
+  for (const code of codes) {
+    if (code !== undefined && !isCurrency(code)) {
+      throw new RangeError(`Unknown currency ${String(code)}`);
+    }
+  }
+  const scale = options.scale;
+  if (
+    scale !== undefined &&
+    !(Number.isInteger(scale) && scale >= 0 && scale <= MAX_DECIMAL_SCALE)
+  ) {
+    throw new RangeError(`Invalid scale ${scale}`);
+  }
+  if (options.rounding !== undefined && !MODES.has(options.rounding)) {
+    throw new RangeError(`Invalid rounding mode ${String(options.rounding)}`);
+  }
+  const maxDigits = options.maxDigits;
+  if (maxDigits !== undefined && !(Number.isSafeInteger(maxDigits) && maxDigits >= 1)) {
+    throw new RangeError(`Invalid maxDigits ${maxDigits}`);
+  }
 }
 
 /** The Money type a schema produces: one Money per allowed currency, not a mixed-currency Money. */
@@ -54,14 +96,24 @@ export function readMoneyJSON<C extends string>(
     return { field: 'currency', message: `Expected currency ${expected}, got "${currency}"` };
   }
 
-  if (!DECIMAL.test(json.amount)) {
+  const amount = json.amount;
+  // Checked before the pattern, so a huge string is rejected without scanning it.
+  const maxLength = (options?.maxDigits ?? DEFAULT_MAX_DIGITS) + 2;
+  if (amount.length > maxLength || !DECIMAL.test(amount)) {
     return { field: 'amount', message: 'Expected a decimal string such as "12.34"' };
+  }
+  const digitCount = amount.length - (amount[0] === '-' ? 1 : 0) - (amount.includes('.') ? 1 : 0);
+  if (digitCount > (options?.maxDigits ?? DEFAULT_MAX_DIGITS)) {
+    return {
+      field: 'amount',
+      message: `More than ${options?.maxDigits ?? DEFAULT_MAX_DIGITS} digits`,
+    };
   }
 
   try {
-    return money(json.amount, currency, options);
+    return money(amount, currency, options);
   } catch (error) {
-    // money() reports too many decimals (RoundingError) and bad options (RangeError)
+    // the options are checked up front, so this is too many decimals for the scale
     return { field: 'amount', message: (error as Error).message };
   }
 }

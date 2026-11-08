@@ -3,7 +3,7 @@ import fc from 'fast-check';
 import * as v from 'valibot';
 import { z } from 'zod';
 import { runs } from './fc-config.js';
-import { defineCurrency, fromMinor, money, type Money } from '../src/fn.js';
+import { defineCurrency, fromMinor, money, type Money, type RoundingMode } from '../src/fn.js';
 import * as zod from '../src/zod.js';
 import * as valibot from '../src/valibot.js';
 
@@ -84,8 +84,9 @@ for (const [name, parse] of Object.entries(adapters)) {
       expect(text(parse({ amount: '1', currency: 'USD' }, { currency: ['EUR', 'USD'] }))).toBe(
         '1.00 USD',
       );
-      defineCurrency('XSC', 3);
-      expect(text(parse({ amount: '1', currency: 'XSC' }))).toBe('1.000 XSC');
+      // A code no other test file uses: the registry is global, and Bun shares it across files.
+      defineCurrency('XZV', 3);
+      expect(text(parse({ amount: '1', currency: 'XZV' }))).toBe('1.000 XZV');
     });
 
     it('rejects the wrong shape', () => {
@@ -100,21 +101,55 @@ for (const [name, parse] of Object.entries(adapters)) {
       }
     });
 
+    it('pads shorter amounts to the scale (the scale is the schema’s, not the input’s)', () => {
+      expect(text(parse({ amount: '1.5', currency: 'EUR' }))).toBe('1.50 EUR');
+      expect(text(parse({ amount: '007', currency: 'EUR' }))).toBe('7.00 EUR');
+      expect(text(parse({ amount: '-0', currency: 'EUR' }))).toBe('0.00 EUR');
+      expect(text(parse({ amount: '1.005', currency: 'EUR' }, { scale: 3 }))).toBe('1.005 EUR');
+    });
+
+    it('limits the number of digits', () => {
+      const fifty = '9'.repeat(50);
+      expect(parse({ amount: fifty, currency: 'JPY' }).ok).toBe(true);
+      expect(text(parse({ amount: fifty + '9', currency: 'JPY' }))).toMatch(/^amount: /);
+      expect(text(parse({ amount: '1'.repeat(1_000_000), currency: 'JPY' }))).toMatch(/^amount: /);
+      expect(parse({ amount: '123.45', currency: 'EUR' }, { maxDigits: 5 }).ok).toBe(true);
+      expect(parse({ amount: '-123.45', currency: 'EUR' }, { maxDigits: 4 }).ok).toBe(false);
+    });
+
+    it('never yields Money for a malformed amount or too many decimals (property)', () => {
+      const pattern = /^-?\d+(?:\.\d+)?$/;
+      fc.assert(
+        fc.property(fc.oneof(fc.string(), fc.stringMatching(/^[-+ .,e0-9]{0,12}$/)), (amount) => {
+          const outcome = parse({ amount, currency: 'EUR' });
+          const decimals = amount.split('.')[1]?.length ?? 0;
+          if (!pattern.test(amount) || decimals > 2) {
+            expect(outcome.ok).toBe(false);
+          } else {
+            expect(outcome.ok).toBe(true);
+          }
+        }),
+        { numRuns: runs(500) },
+      );
+    });
+
     it('moneyJSONSchema checks the same things but keeps the JSON', () => {
+      // keys other than amount and currency are dropped
       const outcome = parse({ amount: '12.34', currency: 'EUR', note: 'x' }, undefined, true);
       expect(outcome).toEqual({ ok: true, value: { amount: '12.34', currency: 'EUR' } });
       expect(parse({ amount: '1.005', currency: 'EUR' }, undefined, true).ok).toBe(false);
     });
 
-    it('round-trips every Money through JSON (property)', () => {
+    it('round-trips every Money through JSON, at any scale given to the schema (property)', () => {
       fc.assert(
         fc.property(
           fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n }),
           fc.constantFrom('EUR', 'JPY', 'KWD', 'CLF', 'USD'),
-          (minor, currency) => {
-            const original = fromMinor(minor, currency);
+          fc.option(fc.integer({ min: 0, max: 8 }), { nil: undefined }),
+          (minor, currency, scale) => {
+            const original = fromMinor(minor, currency, scale);
             const wire = JSON.parse(JSON.stringify(original)) as unknown;
-            const outcome = parse(wire);
+            const outcome = parse(wire, scale === undefined ? undefined : { scale });
             expect(outcome.ok).toBe(true);
             const back = (outcome as { value: Money }).value;
             expect(back.equals(original) && back.scale === original.scale).toBe(true);
@@ -125,6 +160,52 @@ for (const [name, parse] of Object.entries(adapters)) {
     });
   });
 }
+
+describe('options', () => {
+  it('are checked when the schema is built', () => {
+    for (const build of [
+      zod.moneySchema,
+      zod.moneyJSONSchema,
+      valibot.moneySchema,
+      valibot.moneyJSONSchema,
+    ]) {
+      expect(() => build({ currency: 'XYZ' })).toThrow(RangeError);
+      expect(() => build({ currency: ['EUR', 'eur'] })).toThrow(RangeError);
+      expect(() => build({ scale: -1 })).toThrow(RangeError);
+      expect(() => build({ scale: 1.5 })).toThrow(RangeError);
+      expect(() => build({ rounding: 'halfUp' as RoundingMode })).toThrow(RangeError);
+      expect(() => build({ maxDigits: 0 })).toThrow(RangeError);
+    }
+  });
+});
+
+describe('encoding', () => {
+  it('Zod encodes Money back to the JSON form, and decoding it gives the same Money (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n }),
+        fc.constantFrom('EUR', 'JPY', 'KWD'),
+        fc.integer({ min: 0, max: 6 }),
+        (minor, currency, scale) => {
+          const schema = zod.moneySchema({ scale });
+          const original = fromMinor(minor, currency, scale);
+          const wire = z.encode(schema, original);
+          expect(wire).toEqual(original.toJSON());
+          const back = z.decode(schema, wire);
+          expect(back.equals(original) && back.scale === original.scale).toBe(true);
+        },
+      ),
+      { numRuns: runs(300) },
+    );
+    expect(() => z.encode(zod.moneySchema(), { amount: '1', currency: 'EUR' } as never)).toThrow();
+  });
+
+  it('Valibot reads back what toJSON writes', () => {
+    const original = money('1.005', 'EUR', { scale: 3 });
+    const back = v.parse(valibot.moneySchema({ scale: 3 }), original.toJSON());
+    expect(back.equals(original) && back.scale === 3).toBe(true);
+  });
+});
 
 describe('the Zod and Valibot entries agree (property)', () => {
   it('on arbitrary amount strings and currencies', () => {

@@ -110,6 +110,18 @@
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"
     },
+    "./drizzle/pg": {
+      "types": "./dist/drizzle/pg.d.ts",
+      "default": "./dist/drizzle/pg.js"
+    },
+    "./drizzle/mysql": {
+      "types": "./dist/drizzle/mysql.d.ts",
+      "default": "./dist/drizzle/mysql.js"
+    },
+    "./drizzle/sqlite": {
+      "types": "./dist/drizzle/sqlite.d.ts",
+      "default": "./dist/drizzle/sqlite.js"
+    },
     "./zod": {
       "types": "./dist/zod.d.ts",
       "default": "./dist/zod.js"
@@ -125,8 +137,8 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.test.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.drizzle.json",
+    "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json",
     "test": "vitest run",
     "test:deep": "DUCAT_DEEP=1 vitest run",
     "compare": "pnpm --dir compare battery && pnpm --dir compare tables",
@@ -157,13 +169,16 @@
     "@prisma/client": "^6.19.3",
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/vitest-runner": "10.1.1",
+    "@types/better-sqlite3": "9.6.0",
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.6.6",
     "@types/pg": "8.23.1",
+    "better-sqlite3": "13.0.3",
     "big.js": "^7.0.1",
     "currency.js": "^2.0.4",
     "decimal.js": "^10.6.0",
     "dinero.js": "^2.0.2",
+    "drizzle-orm": "0.45.4",
     "esbuild": "^0.28.2",
     "fast-check": "^4.10.2",
     "mysql2": "3.24.6",
@@ -177,10 +192,14 @@
     "zod": "4.6.7"
   },
   "peerDependencies": {
+    "drizzle-orm": ">=0.45.0 <1",
     "valibot": "^1.0.0",
     "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
+    "drizzle-orm": {
+      "optional": true
+    },
     "valibot": {
       "optional": true
     },

@@ -6,6 +6,7 @@
 import * as valibot from 'valibot';
 import { isMoney, type Money, type MoneyJSON } from './money.js';
 import {
+  checkSchemaOptions,
   readMoneyJSON,
   type MoneyFor,
   type MoneyIssue,
@@ -35,10 +36,12 @@ function pathTo(json: MoneyJSON, issue: MoneyIssue): [valibot.ObjectPathItem] {
 }
 
 /**
- * Parses `{ amount, currency }` into Money. The amount must be an exact decimal string with no
- * more decimals than the currency allows (unless `rounding` is given), and the currency must be
- * one of `currency` (or any known code). Problems are reported as Valibot issues on `amount` or
- * `currency`.
+ * Parses `{ amount, currency }` into Money, accepting exactly what the Zod entry accepts (see its
+ * `moneySchema`): an exact decimal string with no more decimals than the scale and at most
+ * `maxDigits` digits, padded to the scale, and a listed or known currency. Problems are Valibot
+ * issues on `amount` or `currency`; other keys are dropped. Bad options throw when the schema is
+ * built. Valibot has no codecs, so encode with `money.toJSON()` (or `JSON.stringify`), which this
+ * schema reads back.
  *
  *     const Order = valibot.object({ total: moneySchema({ currency: 'EUR' }) })
  *     v.parse(Order, { total: { amount: '12.34', currency: 'EUR' } }).total   // Money<'EUR'>
@@ -46,6 +49,7 @@ function pathTo(json: MoneyJSON, issue: MoneyIssue): [valibot.ObjectPathItem] {
 export function moneySchema<C extends string = string>(
   options?: MoneySchemaOptions<C>,
 ): MoneySchema<MoneyFor<C>> {
+  checkSchemaOptions(options);
   return valibot.pipe(
     jsonShape,
     valibot.rawTransform<MoneyJSON, MoneyFor<C>>(({ dataset, addIssue, NEVER }) => {
@@ -67,6 +71,7 @@ export function moneySchema<C extends string = string>(
 export function moneyJSONSchema<C extends string = string>(
   options?: MoneySchemaOptions<C>,
 ): MoneySchema<MoneyJSON<C>> {
+  checkSchemaOptions(options);
   return valibot.pipe(
     jsonShape,
     valibot.rawTransform<MoneyJSON, MoneyJSON<C>>(({ dataset, addIssue, NEVER }) => {
