@@ -9,12 +9,26 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
+  (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
+  `assertCurrency` throws `CurrencyMismatchError` for another currency.
+- `majorPart` and `minorPart` split an amount at the decimal point (`12` and `34` for 12.34 EUR),
+  truncating toward zero and keeping the sign.
+- `identical(a, b)`: equal value, currency _and_ scale, for round-trip tests (`equals` treats
+  1.0 EUR and 1.00 EUR as equal).
+- `m.with(operation)` applies a function such as a rounding step or a conversion as one link of a
+  method chain.
 - **Drizzle ORM column types** in `@ducatjs/money/drizzle/pg`, `/drizzle/mysql` and
   `/drizzle/sqlite`: `moneyMinor('EUR')` (BIGINT minor units), `moneyDecimal('EUR')` (NUMERIC) and
   `moneyJson()` (JSON), so selects return `Money` and inserts take it, with the currency in the
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
+
+### Changed
+
+- `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
+  building one for every row, which makes it about 20 times faster.
 
 ## [0.1.0] - 2026-11-07
 
