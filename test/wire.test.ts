@@ -93,19 +93,27 @@ describe('google.type.Money', () => {
 });
 
 describe('ISO 20022 amounts', () => {
-  it('writes the schema decimal', () => {
+  it("writes the schema decimal, with the currency's decimals", () => {
     expect(toIso20022Amount(money('12.34', 'EUR'))).toEqual({ Ccy: 'EUR', value: '12.34' });
     expect(toIso20022Amount(money('1000', 'JPY'))).toEqual({ Ccy: 'JPY', value: '1000' });
     expect(toIso20022Amount(money('1.234', 'KWD')).value).toBe('1.234');
-    expect(toIso20022Amount(money('1.123450', 'EUR', { scale: 6 })).value).toBe('1.12345');
     expect(toIso20022Amount(money('0', 'EUR')).value).toBe('0.00');
+    // the payment networks require the currency's minor unit, whatever the Money's scale
+    expect(toIso20022Amount(money('12.34', 'EUR', { scale: 4 })).value).toBe('12.34');
+    expect(toIso20022Amount(money('1000', 'JPY', { scale: 2 })).value).toBe('1000');
+    expect(toIso20022Amount(money('12', 'EUR', { scale: 0 })).value).toBe('12.00');
+    // other scales only on request
+    expect(
+      toIso20022Amount(money('1.12345', 'EUR', { scale: 5 }), 'unnecessary', { scale: 5 }).value,
+    ).toBe('1.12345');
   });
 
   it('rejects what the schema rejects', () => {
     expect(() => toIso20022Amount(money('-1', 'EUR'))).toThrow(/can't be negative/);
-    expect(() => toIso20022Amount(money('1.123456', 'EUR', { scale: 6 }))).toThrow(RoundingError);
-    expect(toIso20022Amount(money('1.123456', 'EUR', { scale: 6 }), 'halfEven').value).toBe(
-      '1.12346',
+    expect(() => toIso20022Amount(money('1.005', 'EUR', { scale: 3 }))).toThrow(RoundingError);
+    expect(toIso20022Amount(money('1.005', 'EUR', { scale: 3 }), 'halfEven').value).toBe('1.00');
+    expect(() => toIso20022Amount(money('1', 'EUR'), 'unnecessary', { scale: 6 })).toThrow(
+      'ISO 20022 amounts have 0 to 5 decimals, not 6',
     );
     expect(toIso20022Amount(money('9999999999999999.99', 'EUR')).value).toBe('9999999999999999.99');
     // XSD counts digits in the value: trailing fractional zeros don't count
@@ -148,7 +156,9 @@ describe('ISO 20022 amounts', () => {
         fc.integer({ min: 0, max: 5 }),
         (minor, scale) => {
           const amount = fromMinor(minor, 'EUR', scale);
-          const back = fromIso20022Amount(toIso20022Amount(amount), { scale });
+          const back = fromIso20022Amount(toIso20022Amount(amount, 'unnecessary', { scale }), {
+            scale,
+          });
           expect(back.equals(amount)).toBe(true);
         },
       ),

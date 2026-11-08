@@ -189,30 +189,48 @@ function fitsIso20022(integer: string, fraction: string): boolean {
   );
 }
 
+/** Options for `toIso20022Amount`. */
+export interface Iso20022WriteOptions {
+  /**
+   * The number of decimals to write (default: the currency's ISO exponent), at most 5. The payment
+   * networks' rules (CBPR+, HVPS+) require the currency's minor unit, so give another only for
+   * messages that allow it.
+   */
+  readonly scale?: number;
+}
+
 /**
  * Money as an ISO 20022 amount: `toIso20022Amount(money('12.34', 'EUR'))` is `{ Ccy: 'EUR', value:
- * '12.34' }`. The schema types (ActiveOrHistoricCurrencyAndAmount and its kin) allow at most 5
- * decimals and 18 digits, and no negative amounts: the direction is carried elsewhere in the
- * message (a credit/debit indicator). An amount that doesn't fit throws a RangeError, and one with
- * more than 5 decimals a RoundingError unless `rounding` is given. Trailing zeros beyond 5 decimals
- * are dropped.
+ * '12.34' }`. It is written with the currency's decimals, as the payment networks' rules (CBPR+,
+ * HVPS+) require for ActiveCurrencyAndAmount: 12.3400 EUR at scale 4 is written '12.34', and JPY
+ * '1000'. More decimals than that throw a RoundingError unless `rounding` is given. The schema
+ * types allow at most 5 decimals and 18 digits, and no negative amounts: the direction is carried
+ * elsewhere in the message (a credit/debit indicator). An amount that doesn't fit throws a
+ * RangeError.
  */
 export function toIso20022Amount(
   money: Money,
   rounding: RoundingMode = 'unnecessary',
+  options?: Iso20022WriteOptions,
 ): Iso20022Amount {
   if (!CURRENCY_CODE.test(money.currency)) {
     throw new RangeError(`ISO 20022 amounts need an ISO 4217 code, got ${money.currency}`);
   }
-  let amount: Money = money;
-  if (money.scale > ISO_20022_MAX_DECIMALS) {
-    const exact = exactAt(money, ISO_20022_MAX_DECIMALS);
-    if (exact === undefined && rounding === 'unnecessary') {
+  const scale = options?.scale ?? currencyExponent(money.currency);
+  if (!Number.isInteger(scale) || scale < 0 || scale > ISO_20022_MAX_DECIMALS) {
+    throw new RangeError(`ISO 20022 amounts have 0 to 5 decimals, not ${scale}`);
+  }
+
+  let amount: Money;
+  try {
+    amount = toScale(money, scale, rounding);
+  } catch (error) {
+    if (error instanceof RoundingError) {
       throw new RoundingError(
-        `${money.toString()} has more than 5 decimals, the most ISO 20022 amounts hold; pass a rounding mode`,
+        `${money.toString()} has more than ${scale} decimals for an ISO 20022 ${money.currency} amount; pass a rounding mode`,
       );
     }
-    amount = toScale(money, ISO_20022_MAX_DECIMALS, exact === undefined ? rounding : 'unnecessary');
+    throw error;
   }
   if (amount.minor < 0) {
     throw new RangeError(

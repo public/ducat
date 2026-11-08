@@ -743,7 +743,7 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 `@ducatjs/money/wire` converts Money to and from formats other systems send, exactly both ways. Every reader checks the format strictly, and every writer throws rather than send a value the format can't hold.
 
 - `toGoogleMoney(m)` and `fromGoogleMoney(value)`: `google.type.Money` in its proto3 JSON form (`currencyCode`, `units` as an int64 string, `nanos` with the same sign), as Google APIs and many gRPC services use. More than 9 decimals, or units beyond int64, don't fit.
-- `toIso20022Amount(m)` and `fromIso20022Amount({ Ccy, value })`: the amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`. The schema allows at most 5 decimals and 18 digits, and no negative amounts (the direction goes in the credit/debit indicator).
+- `toIso20022Amount(m)` and `fromIso20022Amount({ Ccy, value })`: the amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`. It is written with the currency's decimals, as the payment networks' rules (CBPR+, HVPS+) require, whatever the Money's scale. The schema allows at most 5 decimals and 18 digits, and no negative amounts (the direction goes in the credit/debit indicator).
 - `toMinorUnits(m)` and `fromMinorUnits({ value, currency })`: an integer count of ISO 4217 minor units, the JSON several processors and ledgers use. Where a processor's exponents differ from ISO, use its own view (`toAdyen`, `toCheckout`, ...).
 
 The readers return Money at the currency's exponent, and throw a RoundingError for extra decimals unless `{ scale }` or `{ rounding }` says what to do.
