@@ -19,6 +19,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `m.with(operation)` applies a function such as a rounding step or a conversion as one link of a
   method chain.
 
+### Changed
+
+- Faster, with the same results: locale parsing (`parse`) about 2.6× on de-DE input, division,
+  percentages and tax by a bigint ratio about 2.3–2.7×, and `cashRound` about 2.9× (one lookup
+  per currency instead of a scan of the cash-rule table).
+
 ## [0.1.0] - 2026-11-07
 
 The first release: an exact, fast, typed `Money` type for TypeScript, with zero runtime
