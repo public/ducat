@@ -21,7 +21,7 @@
     "@ducatjs/money/klarna": 4.48,
     "@ducatjs/money/stripe-fx": 5.9,
     "@ducatjs/money/adyen-fx": 5.75,
-    "@ducatjs/money/prisma": 4.56,
+    "@ducatjs/money/prisma": 4.71,
     "@ducatjs/money/drizzle/pg": 4.93,
     "@ducatjs/money/drizzle/mysql": 4.93,
     "@ducatjs/money/drizzle/sqlite": 4.78,

@@ -3,7 +3,7 @@
 // helpers support (BIGINT minor units + currency, or a DECIMAL/NUMERIC column) and Money as JSON.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { fromJSON, fromMinor, money, type Money } from '../../src/index.js';
-import { toDecimal } from '../../src/fn.js';
+import { identical, toDecimal } from '../../src/fn.js';
 import {
   decimalMoneyField,
   fromDecimal,
@@ -123,6 +123,48 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
       );
       const readBack = rows.map((row) => toDecimal(field.compute(row as never)));
       expect(readBack).toEqual(AMOUNTS.map(([decimal]) => decimal));
+    });
+
+    it('a scale column round-trips minor units at any scale, beyond 2^53 too', async () => {
+      const { bigint, text } = database.types;
+      await database.execute(`DROP TABLE IF EXISTS ${tableName('scaled')}`);
+      await database.execute(
+        `CREATE TABLE ${tableName('scaled')} (id INTEGER PRIMARY KEY, amount_minor ${bigint} NOT NULL, ` +
+          `currency ${text} NOT NULL, amount_scale SMALLINT NOT NULL)`,
+      );
+      const amounts = [
+        money('12.34', 'EUR'),
+        money('0.000001', 'EUR', { scale: 6 }),
+        money('1000', 'JPY'),
+        money('1.5', 'JPY', { scale: 1 }),
+        money('1.2345', 'KWD', { scale: 4 }),
+        money('9223372036.854775807', 'EUR', { scale: 9 }),
+      ];
+      const placeholders = [1, 2, 3, 4]
+        .map((position) => database.placeholder(position))
+        .join(', ');
+      const insert =
+        `INSERT INTO ${tableName('scaled')} (id, amount_minor, currency, amount_scale) ` +
+        `VALUES (${placeholders})`;
+
+      for (const [index, amount] of amounts.entries()) {
+        const columns = toMinorColumns(amount, 'amount_minor', 'currency', {
+          scale: 'amount_scale',
+        });
+        await database.run(insert, [
+          index + 1,
+          columns.amount_minor,
+          columns.currency,
+          columns.amount_scale,
+        ]);
+      }
+
+      const field = minorMoneyField('amount_minor', 'currency', { scale: 'amount_scale' });
+      const rows = await database.query(
+        `SELECT amount_minor, currency, amount_scale FROM ${tableName('scaled')} ORDER BY id`,
+      );
+      const readBack = rows.map((row) => field.compute(row as never));
+      expect(readBack.every((amount, index) => identical(amount, amounts[index]!))).toBe(true);
     });
 
     it('NUMERIC(19,4) and NUMERIC(38,4) round-trip at currency scale (trailing zeros accepted)', async () => {

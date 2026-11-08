@@ -21,6 +21,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   policy's scale and increment; for the tax functions that is the gross (`addTax`), the net
   (`extractTax`) or the discounted price (`discount`). A policy is also a function that rounds an
   amount. `assertScale(money, policy)` checks that an amount is already rounded to a policy.
+- **A scale column for minor units:** `toMinorColumns(m, 'amountMinor', 'currency', { scale:
+  'amountScale' })` and `minorMoneyField(..., { scale: 'amountScale' })` store and read each
+  amount's scale next to its minor units, so any scale round-trips and stored amounts keep their
+  meaning if an exponent changes. A bundled ISO 4217 exponent change is now documented as
+  breaking: listed under Changed, and shipped only in a minor version before 1.0 and a major version
+  from 1.0. See [Databases](README.md#databases).
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
   (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
   `assertCurrency` throws `CurrencyMismatchError` for another currency.
