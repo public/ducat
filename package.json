@@ -1,6 +1,6 @@
 {
   "name": "@ducatjs/money",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Exact, fast, typed Money for TypeScript: integer minor units, bigint fallback, Stripe/Adyen views, allocation, cash rounding, Prisma helpers.",
   "homepage": "https://github.com/public/ducat#readme",
   "bugs": {
