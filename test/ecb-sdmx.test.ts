@@ -74,6 +74,9 @@ describe('parseEcbSdmxCsv', () => {
     expect(newer!.rate('EUR', 'THB')?.toString()).toBe('37.459');
     expect(older!.rate('EUR', 'THB')?.toString()).toBe('37.460');
     expect(parseEcbSdmxCsv(csv).at(-1)!.rate('EUR', 'LTL')?.toString()).toBe('3.4528');
+    // if the ECB starts publishing a fourth THB decimal, it shows up instead of being cut off
+    const moreDigits = `${HEADER},DECIMALS\n${row('THB', '2026-11-09', '37.4591')},4`;
+    expect(parseEcbSdmxCsv(moreDigits)[0]!.rate('EUR', 'THB')?.toString()).toBe('37.4591');
   });
 
   it('keeps discontinued series on their own last days', () => {

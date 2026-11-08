@@ -207,9 +207,11 @@ function csvRows(text: string): string[][] {
   return rows.filter((cells) => cells.length > 1 || cells[0]!.trim() !== '');
 }
 
-// Series whose DECIMALS attribute says more than the ECB has ever published for them, checked
-// against eurofxref-hist.xml (1999 to 2026): THB says 4 but is published to 3 decimals (37.459),
-// and LTL says 5 but was published to 4. Padding to the attribute would invent a digit.
+// Series whose DECIMALS attribute says more than the ECB has ever published for them. Evidence:
+// eurofxref-daily.xml publishes THB to 3 decimals (37.459 on 2026-11-06) while DECIMALS says 4,
+// and eurofxref-hist.xml (1999 to 2026) never has more than 4 for LTL, whose DECIMALS says 5.
+// Padding to the attribute would invent a digit. A cap only limits padding: a value published
+// with more digits keeps them all (withDecimals never drops digits).
 const PUBLISHED_DECIMALS: Readonly<Record<string, number>> = { THB: 3, LTL: 4 };
 
 /** Options for parseEcbSdmxCsv. */
