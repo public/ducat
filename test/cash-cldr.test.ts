@@ -71,11 +71,11 @@ describe('cash rounding against CLDR', () => {
 
   it('lists only differences that still exist', () => {
     for (const code of Object.keys(KNOWN_DIFFERENCES)) {
-      expect(cldr[code], code).toBeDefined();
+      expect([code, cldr[code] !== undefined]).toEqual([code, true]);
       const steps = CASH_RULES.filter((rule) => rule.currency === code).map(
         (rule) => rule.increment,
       );
-      expect(steps, code).not.toContain(cldrStep(code, cldr[code]!));
+      expect([code, steps.includes(cldrStep(code, cldr[code]!))]).toEqual([code, false]);
     }
   });
 
@@ -84,7 +84,7 @@ describe('cash rounding against CLDR', () => {
       if (!(code in ISO_EXPONENTS) || code in KNOWN_DIFFERENCES) {
         continue;
       }
-      expect(currencyDigits(code, { usage: 'cash' }), code).toBe(entry.cashDigits);
+      expect([code, currencyDigits(code, { usage: 'cash' })]).toEqual([code, entry.cashDigits]);
     }
   });
 });
