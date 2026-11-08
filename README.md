@@ -243,13 +243,13 @@ money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
 
 ```ts
 import { money } from '@ducatjs/money';
-import { average, divideToIntegral, ratioOf, remainder, trimScale } from '@ducatjs/money/math';
+import { average } from '@ducatjs/money/math';
 
 average([money('10', 'EUR'), money('10', 'EUR'), money('10.01', 'EUR')]); // → 10.00 EUR
-ratioOf(money('25', 'EUR'), money('100', 'EUR')); // → { num: 1n, den: 4n, n: 1, d: 4 }
-divideToIntegral(money('9.99', 'EUR'), money('2.50', 'EUR')); // → 3
-remainder(money('9.99', 'EUR'), money('2.50', 'EUR')); // → 2.49 EUR
-trimScale(money('1.2300', 'EUR', { scale: 4 })); // → 1.23 EUR
+money('25', 'EUR').ratioOf(money('100', 'EUR')); // → { num: 1n, den: 4n, n: 1, d: 4 }
+money('9.99', 'EUR').divideToIntegral(money('2.50', 'EUR')); // → 3
+money('9.99', 'EUR').remainder(money('2.50', 'EUR')); // → 2.49 EUR
+money('1.2300', 'EUR', { scale: 4 }).trimScale(); // → 1.23 EUR
 ```
 
 **Compare**
