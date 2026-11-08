@@ -254,7 +254,12 @@ function generate() {
     if (code in iso || nonMonetary.includes(code)) {
       throw new Error(`data/historic.json: ${code} is a current ISO 4217 code`);
     }
-    historic[code] = { name: entry.name, numeric: entry.numeric, exponent, withdrawn: entry.withdrawn };
+    historic[code] = {
+      name: entry.name,
+      numeric: entry.numeric,
+      exponent,
+      withdrawn: entry.withdrawn,
+    };
   }
   for (const [code, entry] of Object.entries(historicData.nonIso)) {
     if (code in iso || listThree.entries.has(code)) {
