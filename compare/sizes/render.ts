@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 const HIDDEN_LIBRARIES = new Set(['prototype']);
 
 function kilobytes(bytes: string): string {
-  return `${(Number(bytes) / 1024).toFixed(1)} kB`;
+  return `${(Number(bytes) / 1024).toFixed(1)} KiB`;
 }
 
 function renderRows(tsvPath: string): string {

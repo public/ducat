@@ -133,9 +133,9 @@ function fastestOtherMoneyLibrary(run: BenchRun, op: string): { library: string;
  */
 /** Shown with every speed table built from the latest Genoa runs. */
 export const GENOA_CAVEAT =
-  'Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, ' +
-  'on the ducat 0.2.0 release candidate (commit ea9160b). Lower is better; the faster of ducat and the fastest ' +
-  'other money library is in bold.';
+  'Measured on 2026-11-08 on one-vCPU AMD EPYC Genoa machines (Node 24.22.2 and Bun 1.4.4 on one, Deno 2.9.8 ' +
+  'on a second of the same plan), on the ducat 0.2.0 release candidate (commit ea9160b). Lower is better; ' +
+  'the faster of ducat and the fastest other money library is in bold.';
 
 export function renderSpeedHeadline(directory: string): string {
   const runs = loadRuns(directory);

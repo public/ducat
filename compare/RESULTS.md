@@ -191,6 +191,8 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 
 ## Speed
 
+The `parse` rows were measured before `parse` started checking where group separators are. `Fixed`'s parse (`fixed('…')`) is not affected.
+
 | ns/op | node 24.22.2 | bun 1.4.4 | deno 2.9.8 |
 |---|--:|--:|--:|
 | fromMinor | **9.29** (fastest other: dinero.js 2 14.5) | **9.22** (fastest other: monetra 24.4; dinero.js 2 35.6) | **8.42** (fastest other: monetra 26.4; dinero.js 2 86.6) |
@@ -202,7 +204,7 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | format | 413 (fastest other: **currency.js 379**; dinero.js 2 1.1 µs) | **268** (fastest other: currency.js 274; dinero.js 2 1.2 µs) | 398 (fastest other: **currency.js 386**; dinero.js 2 1.0 µs) |
 | compare | **7.49** (fastest other: ts-money 8.06; dinero.js 2 202) | 10.3 (fastest other: **currency.js 6.68**; dinero.js 2 324) | **6.88** (fastest other: @screeny05/ts-money 7.49; dinero.js 2 171) |
 
-Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on the ducat 0.2.0 release candidate (commit ea9160b). Lower is better; the faster of ducat and the fastest other money library is in bold.
+Measured on 2026-11-08 on one-vCPU AMD EPYC Genoa machines (Node 24.22.2 and Bun 1.4.4 on one, Deno 2.9.8 on a second of the same plan), on the ducat 0.2.0 release candidate (commit ea9160b). Lower is better; the faster of ducat and the fastest other money library is in bold.
 
 ### node 24.22.2 (V8 13.6.233.17-node.63)
 
@@ -341,20 +343,20 @@ Round-to-round range (min–max of the 5 round medians):
 
 | library | program, min | program, gzip | whole package, min | whole package, gzip |
 |---|--:|--:|--:|--:|
-| currency.js | 2.8 kB | 1.3 kB | 2.8 kB | 1.3 kB |
-| bigint-money | 3.7 kB | 1.5 kB | 3.7 kB | 1.5 kB |
-| dinero.js 2 | 4.6 kB | 1.8 kB | 18.5 kB | 5.0 kB |
-| @screeny05/ts-money | 6.0 kB | 2.2 kB | 5.9 kB | 2.2 kB |
-| big.js | 6.8 kB | 2.9 kB | 6.7 kB | 2.9 kB |
-| dinero.js 1 | 10.1 kB | 3.2 kB | 10.0 kB | 3.2 kB |
-| ducat | 10.4 kB | 4.0 kB | 12.9 kB | 4.9 kB |
-| monetra | 13.7 kB | 4.5 kB | 37.3 kB | 11.2 kB |
-| decimal.js-light | 13.5 kB | 5.9 kB | 13.5 kB | 5.8 kB |
-| money-math | 23.1 kB | 8.3 kB | 23.1 kB | 8.3 kB |
-| bignumber.js | 19.8 kB | 8.5 kB | 19.7 kB | 8.5 kB |
-| js-money | 28.9 kB | 8.8 kB | 28.8 kB | 8.8 kB |
-| decimal.js | 31.6 kB | 12.6 kB | 31.6 kB | 12.6 kB |
-| ts-money | 91.3 kB | 30.7 kB | 91.3 kB | 30.7 kB |
+| currency.js | 2.8 KiB | 1.3 KiB | 2.8 KiB | 1.3 KiB |
+| bigint-money | 3.7 KiB | 1.5 KiB | 3.7 KiB | 1.5 KiB |
+| dinero.js 2 | 4.6 KiB | 1.8 KiB | 18.5 KiB | 5.0 KiB |
+| @screeny05/ts-money | 6.0 KiB | 2.2 KiB | 5.9 KiB | 2.2 KiB |
+| big.js | 6.8 KiB | 2.9 KiB | 6.7 KiB | 2.9 KiB |
+| dinero.js 1 | 10.1 KiB | 3.2 KiB | 10.0 KiB | 3.2 KiB |
+| ducat | 10.4 KiB | 4.0 KiB | 12.9 KiB | 4.9 KiB |
+| monetra | 13.7 KiB | 4.5 KiB | 37.3 KiB | 11.2 KiB |
+| decimal.js-light | 13.5 KiB | 5.9 KiB | 13.5 KiB | 5.8 KiB |
+| money-math | 23.1 KiB | 8.3 KiB | 23.1 KiB | 8.3 KiB |
+| bignumber.js | 19.8 KiB | 8.5 KiB | 19.7 KiB | 8.5 KiB |
+| js-money | 28.9 KiB | 8.8 KiB | 28.8 KiB | 8.8 KiB |
+| decimal.js | 31.6 KiB | 12.6 KiB | 31.6 KiB | 12.6 KiB |
+| ts-money | 91.3 KiB | 30.7 KiB | 91.3 KiB | 30.7 KiB |
 
 ## Fixed-point decimal libraries
 
@@ -418,6 +420,8 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 
 ### Speed
 
+The `parse` rows were measured before `parse` started checking where group separators are. `Fixed`'s parse (`fixed('…')`) is not affected.
+
 **node 24.22.2 (V8 13.6.233.17-node.63)** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
 | ns/op | parse | add | multiply | divide | compare | toString |
@@ -461,11 +465,11 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 
 | library | program, min | program, gzip | whole package, min | whole package, gzip |
 |---|--:|--:|--:|--:|
-| dnum | 3.4 kB | 1.5 kB | 7.2 kB | 2.8 kB |
-| bigint-money | 3.7 kB | 1.5 kB | 3.7 kB | 1.5 kB |
-| @formatjs/bigdecimal | 8.9 kB | 2.3 kB | 8.9 kB | 2.3 kB |
-| js-big-decimal | 9.3 kB | 3.0 kB | 9.2 kB | 3.0 kB |
-| ethers FixedNumber (import from 'ethers') | 8.5 kB | 3.2 kB | 376.4 kB | 140.8 kB |
-| ducat Money | 10.4 kB | 4.0 kB | 12.9 kB | 4.9 kB |
-| ducat Fixed | 14.8 kB | 5.2 kB | 15.1 kB | 5.2 kB |
-| bigdecimal.js | 45.9 kB | 11.6 kB | 45.9 kB | 11.6 kB |
+| dnum | 3.4 KiB | 1.5 KiB | 7.2 KiB | 2.8 KiB |
+| bigint-money | 3.7 KiB | 1.5 KiB | 3.7 KiB | 1.5 KiB |
+| @formatjs/bigdecimal | 8.9 KiB | 2.3 KiB | 8.9 KiB | 2.3 KiB |
+| js-big-decimal | 9.3 KiB | 3.0 KiB | 9.2 KiB | 3.0 KiB |
+| ethers FixedNumber (import from 'ethers') | 8.5 KiB | 3.2 KiB | 376.4 KiB | 140.8 KiB |
+| ducat Money | 10.4 KiB | 4.0 KiB | 12.9 KiB | 4.9 KiB |
+| ducat Fixed | 14.8 KiB | 5.2 KiB | 15.1 KiB | 5.2 KiB |
+| bigdecimal.js | 45.9 KiB | 11.6 KiB | 45.9 KiB | 11.6 KiB |

@@ -32,6 +32,10 @@ const fixedBatterySummary = renderSummary(fixedBattery);
 const fixedSpeedTable = renderFixedSpeedTable(BENCH_RUN_DIRECTORY, fixedBattery.libraries);
 const fixedSizeTable = renderFixedSizeTable(FIXED_SIZES_PATH);
 const speedHeadline = renderSpeedHeadline(BENCH_RUN_DIRECTORY);
+// The 0.2.0 runs predate parse() checking where group separators are; remove with the next run.
+const PARSE_NOTE =
+  'The `parse` rows were measured before `parse` started checking where group separators are. ' +
+  "`Fixed`'s parse (`fixed('…')`) is not affected.";
 const sizeTable = renderSizeTable(SIZES_PATH);
 
 const fullPage = [
@@ -52,6 +56,8 @@ const fullPage = [
   '',
   renderNonPasses(battery),
   '## Speed',
+  '',
+  PARSE_NOTE,
   '',
   speedHeadline,
   renderBenchTables(BENCH_RUN_DIRECTORY),
@@ -76,6 +82,8 @@ const fullPage = [
   '',
   renderNonPasses(fixedBattery),
   '### Speed',
+  '',
+  PARSE_NOTE,
   '',
   fixedSpeedTable,
   '### Bundle size',

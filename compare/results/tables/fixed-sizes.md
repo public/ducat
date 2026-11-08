@@ -1,10 +1,10 @@
 | library | program, min | program, gzip | whole package, min | whole package, gzip |
 |---|--:|--:|--:|--:|
-| dnum | 3.4 kB | 1.5 kB | 7.2 kB | 2.8 kB |
-| bigint-money | 3.7 kB | 1.5 kB | 3.7 kB | 1.5 kB |
-| @formatjs/bigdecimal | 8.9 kB | 2.3 kB | 8.9 kB | 2.3 kB |
-| js-big-decimal | 9.3 kB | 3.0 kB | 9.2 kB | 3.0 kB |
-| ethers FixedNumber (import from 'ethers') | 8.5 kB | 3.2 kB | 376.4 kB | 140.8 kB |
-| ducat Money | 10.4 kB | 4.0 kB | 12.9 kB | 4.9 kB |
-| ducat Fixed | 14.8 kB | 5.2 kB | 15.1 kB | 5.2 kB |
-| bigdecimal.js | 45.9 kB | 11.6 kB | 45.9 kB | 11.6 kB |
+| dnum | 3.4 KiB | 1.5 KiB | 7.2 KiB | 2.8 KiB |
+| bigint-money | 3.7 KiB | 1.5 KiB | 3.7 KiB | 1.5 KiB |
+| @formatjs/bigdecimal | 8.9 KiB | 2.3 KiB | 8.9 KiB | 2.3 KiB |
+| js-big-decimal | 9.3 KiB | 3.0 KiB | 9.2 KiB | 3.0 KiB |
+| ethers FixedNumber (import from 'ethers') | 8.5 KiB | 3.2 KiB | 376.4 KiB | 140.8 KiB |
+| ducat Money | 10.4 KiB | 4.0 KiB | 12.9 KiB | 4.9 KiB |
+| ducat Fixed | 14.8 KiB | 5.2 KiB | 15.1 KiB | 5.2 KiB |
+| bigdecimal.js | 45.9 KiB | 11.6 KiB | 45.9 KiB | 11.6 KiB |
