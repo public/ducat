@@ -155,6 +155,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (.99, .95, the nearest 5), `tieredPrice` (tiers)   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
+| `@ducatjs/money/crypto`             | nothing                                                            | `defineCryptoCurrencies`, `toBaseUnits`, `fromBaseUnits`         |
 | `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
@@ -432,6 +433,19 @@ import type { HistoricCurrencies } from '@ducatjs/money/historic';
 declare module '@ducatjs/money' {
   interface CustomCurrencies extends HistoricCurrencies {}
 }
+```
+
+**Crypto currencies and tokens** (`@ducatjs/money/crypto`). BTC (8 decimals, satoshi), ETH (18, wei), SOL (9, lamport) and common Ethereum tokens (USDC, USDT, DAI, WBTC, EURC, PYUSD) as an opt-in table, registered by `defineCryptoCurrencies`, like the historic codes. Each unit's decimals are read from the source that defines it, pinned to a release or commit (Bitcoin Core's `COIN`, Ethereum mainnet in ethereum-lists/chains, the Solana SDK, and the Uniswap default token list for tokens). A token's decimals belong to its contract, so `cryptoUnit(code)` names the network and the contract. `toBaseUnits(m)` gives the exact count of base units as a bigint, and `fromBaseUnits(count, code)` parses one strictly: digits and an optional minus sign only. Amounts at 18 decimals use Money's bigint path, so they stay exact.
+
+```ts
+import { money } from '@ducatjs/money';
+import { defineCryptoCurrencies, fromBaseUnits, toBaseUnits } from '@ducatjs/money/crypto';
+
+defineCryptoCurrencies(['BTC', 'ETH']);
+toBaseUnits(money('0.00000001', 'BTC')); // → 1n
+fromBaseUnits('1500000000000000000', 'ETH'); // → 1.500000000000000000 ETH
+money('0.1', 'ETH').add(money('0.2', 'ETH')).toDecimal(); // → '0.300000000000000000'
+fromBaseUnits('1e18', 'ETH'); // throws SyntaxError
 ```
 
 ### Interest, loans, NPV and proration

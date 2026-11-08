@@ -56,6 +56,13 @@ describe('Money methods', () => {
       'currencyDigits',
       // the historic currency table: lookups and registration by code, not by amount
       'historicCurrency',
+      // the crypto table: lookups and registration by code; base-unit conversions stay functions,
+      // like the processor views' from* helpers
+      'cryptoUnit',
+      'cryptoUnits',
+      'defineCryptoCurrencies',
+      'toBaseUnits',
+      'fromBaseUnits',
       'historicCurrencies',
       'defineHistoricCurrencies',
       // /finance: free functions only, by design (options-heavy calls read badly as methods)

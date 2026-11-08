@@ -42,6 +42,7 @@
     "@ducatjs/money/testing/arbitraries": 0.57,
     "@ducatjs/money/kysely": 2.22,
     "@ducatjs/money/historic": 1.28,
+    "@ducatjs/money/crypto": 0.76,
     "@ducatjs/money/finance": 5.4
   },
   "aggregateCeilings": {
