@@ -54,6 +54,17 @@ describe('Money methods', () => {
       'historicCurrency',
       'historicCurrencies',
       'defineHistoricCurrencies',
+      // /finance: free functions only, by design (options-heavy calls read badly as methods)
+      'yearFraction',
+      'interest',
+      'interestExact',
+      'compound',
+      'amortise',
+      'npv',
+      'npvExact',
+      'irr',
+      'prorate',
+      'splitPeriod',
       'exchangeRate',
       // fixed-point constructors; Money#toFixedPoint covers moneyToFixed
       'fixed',
