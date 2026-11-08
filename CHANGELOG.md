@@ -7,6 +7,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Fixed
+
+- Types: a program that augments Money itself (`declare module '@ducatjs/money' { interface Money<C
+  extends string> { ... } }`, as `extendMoney` plugins do) and imports opt-in modules no longer
+  loses methods. Depending on the order TypeScript read the files, the methods of modules loaded
+  after the augmentation, and the augmentation's own methods, were missing from `Money`. Every
+  module now augments the root entry, as users do.
+
 ## [0.2.0] - 2026-11-08
 
 Integrations and sources. New opt-in entries for Drizzle, Kysely, node-postgres, Zod, Valibot and
