@@ -1,7 +1,7 @@
 // Network fetchers for published reference rates, using the platform fetch. Opt-in: nothing else in
 // the library imports this module, so core and @ducatjs/money/convert never touch the
 // network. You decide when to call it and how to cache.
-import { parseEcbXml } from './ecb.js';
+import { parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml } from './ecb.js';
 import type { RateTable } from './provider.js';
 
 /**
@@ -73,24 +73,7 @@ export class FetchRatesError extends Error {
  */
 export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> {
   const url = ECB_URLS[options?.history ?? 'daily'];
-  const fetchFunction = options?.fetch ?? (globalThis as { fetch?: Fetch }).fetch;
-  if (fetchFunction === undefined) {
-    throw new TypeError('No fetch available: pass options.fetch');
-  }
-
-  const init: { signal?: AbortSignalLike; headers: Record<string, string> } = {
-    headers: { accept: 'application/xml' },
-  };
-  const signal = requestSignal(options?.signal, options?.timeout ?? DEFAULT_TIMEOUT_MS);
-  if (signal !== undefined) {
-    init.signal = signal;
-  }
-  const response = await fetchFunction(url, init);
-  if (!response.ok) {
-    throw new FetchRatesError(url, response.status);
-  }
-
-  const body = await response.text();
+  const body = await getText(url, 'application/xml', options);
   try {
     return parseEcbXml(body);
   } catch (error) {
@@ -124,4 +107,90 @@ function requestSignal(
     return signal;
   }
   return statics.any([signal, timeoutSignal]);
+}
+
+/** The ECB Data Portal's SDMX REST API (no key, and CORS-enabled, so it works in browsers). */
+export const ECB_DATA_API = 'https://data-api.ecb.europa.eu/service/data/EXR';
+
+/** Options for fetching a date range of ECB reference rates. */
+export interface FetchEcbRangeOptions extends Omit<FetchEcbOptions, 'history'> {
+  /** The first day ('1999-01-04' at the earliest). */
+  readonly start: string | Date;
+  /** The last day (default: the latest published). */
+  readonly end?: string | Date;
+  /** ISO codes to fetch (default: every currency, including discontinued series). */
+  readonly currencies?: readonly string[];
+}
+
+/** A UTC day for the API's startPeriod and endPeriod. */
+function apiDay(time: string | Date, name: string): string {
+  const day = (typeof time === 'string' ? time : time.toISOString()).slice(0, 10);
+  if (!/^\d{4}-\d\d-\d\d$/.test(day) || Number.isNaN(Date.parse(day))) {
+    throw new RangeError(`${name} must be a date, got ${String(time)}`);
+  }
+  return day;
+}
+
+/** GETs `url` as text, with the timeout and signal handling every fetcher here shares. */
+async function getText(
+  url: string,
+  accept: string,
+  options: Omit<FetchEcbOptions, 'history'> | undefined,
+): Promise<string> {
+  const fetchFunction = options?.fetch ?? (globalThis as { fetch?: Fetch }).fetch;
+  if (fetchFunction === undefined) {
+    throw new TypeError('No fetch available: pass options.fetch');
+  }
+  const init: { signal?: AbortSignalLike; headers: Record<string, string> } = {
+    headers: { accept },
+  };
+  const signal = requestSignal(options?.signal, options?.timeout ?? DEFAULT_TIMEOUT_MS);
+  if (signal !== undefined) {
+    init.signal = signal;
+  }
+  const response = await fetchFunction(url, init);
+  if (!response.ok) {
+    throw new FetchRatesError(url, response.status);
+  }
+  return response.text();
+}
+
+/**
+ * Fetches a date range of ECB euro reference rates from the ECB Data Portal and parses them with
+ * parseEcbSdmxCsv: EUR-based tables, one per TARGET working day, newest first, with the published
+ * digits. It makes two requests: the series' DECIMALS (small) and the observations without
+ * attributes, which keeps the full history since 1999 to about 15 MB. Give a few days before the
+ * first day you need, so that a lookback from it has a table to fall back on. The ECB states that
+ * its rates are for information purposes only.
+ *
+ *     const tables = await fetchEcbRange({ start: '2026-01-01', currencies: ['USD', 'JPY'] });
+ *     const history = rateHistory(tables); // from @ducatjs/money/convert/history
+ */
+export async function fetchEcbRange(options: FetchEcbRangeOptions): Promise<RateTable[]> {
+  const currencies = options.currencies ?? [];
+  for (const currency of currencies) {
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      throw new RangeError(`Not an ISO currency code: ${currency}`);
+    }
+  }
+  let query = `?format=csvdata&startPeriod=${apiDay(options.start, 'start')}`;
+  if (options.end !== undefined) {
+    query += `&endPeriod=${apiDay(options.end, 'end')}`;
+  }
+  const url = `${ECB_DATA_API}/D.${currencies.join('+')}.EUR.SP00.A`;
+
+  const dataUrl = `${url}${query}&detail=dataonly`;
+  const [series, data] = await Promise.all([
+    getText(`${url}?format=csvdata&detail=nodata`, 'text/csv', options),
+    getText(dataUrl, 'text/csv', options),
+  ]);
+  try {
+    return parseEcbSdmxCsv(data, { decimals: parseEcbSdmxDecimals(series) });
+  } catch (error) {
+    // An error page or a captive portal is the usual cause, so say where the bad file came from.
+    if (error instanceof SyntaxError) {
+      throw new SyntaxError(`${error.message} (from ${dataUrl})`, { cause: error });
+    }
+    throw error;
+  }
 }
