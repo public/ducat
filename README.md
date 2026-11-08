@@ -140,6 +140,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents   |
 | `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                      |
 | `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                         |
+| `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`                                              |
 | `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                  |
 | `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                         |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                  |
@@ -237,6 +238,19 @@ import { money, type Money } from '@ducatjs/money';
 
 const toFiveRappen = (value: Money<'CHF'>) => value.divide(5).round('halfExpand').multiply(5);
 money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
+```
+
+**Averages, shares and remainders** (`@ducatjs/money/math`). `average(list, rounding?)` divides the exact sum by the count and rounds once. `ratioOf(part, total)` is the exact share as a `Ratio`, which `multiply` and `allocate` accept. `divideToIntegral(m, divisor)` counts how many whole times one amount fits into another (truncated toward zero), and `remainder(m, divisor)` is what is left, with `m`'s sign, so `m = divisor × count + remainder` exactly. `trimScale(m, minimumScale?)` drops trailing zeros down to the currency's exponent (or `minimumScale`).
+
+```ts
+import { money } from '@ducatjs/money';
+import { average, divideToIntegral, ratioOf, remainder, trimScale } from '@ducatjs/money/math';
+
+average([money('10', 'EUR'), money('10', 'EUR'), money('10.01', 'EUR')]); // → 10.00 EUR
+ratioOf(money('25', 'EUR'), money('100', 'EUR')); // → { num: 1n, den: 4n, n: 1, d: 4 }
+divideToIntegral(money('9.99', 'EUR'), money('2.50', 'EUR')); // → 3
+remainder(money('9.99', 'EUR'), money('2.50', 'EUR')); // → 2.49 EUR
+trimScale(money('1.2300', 'EUR', { scale: 4 })); // → 1.23 EUR
 ```
 
 **Compare**

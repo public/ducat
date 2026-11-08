@@ -46,6 +46,8 @@ describe('Money methods', () => {
       'isMoneyIn',
       'assertCurrency',
       'sum',
+      // takes a list, like sum
+      'average',
       'ratio',
       'parse',
       'parseMoney',
