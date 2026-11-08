@@ -9,6 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "declaration": true,
     "declarationMap": true,
