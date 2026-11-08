@@ -144,6 +144,9 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
 | `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
 | `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
+| `@ducatjs/money/testing`            | nothing                                                            | matchers, value equality, snapshot serializer                  |
+| `.../testing/vitest`, `/jest`       | nothing (installs on `expect`)                                     | the same, set up in one import                                 |
+| `.../testing/arbitraries`           | nothing                                                            | `arbMoney`, `arbCurrency` (fast-check)                         |
 | `@ducatjs/money/all`                | everything above                                                   | everything                                                     |
 | `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules          |
 
@@ -656,6 +659,48 @@ These are stated over the proved kernel (`divRound`):
 
 - **The TypeScript `instalments`, `chunk`, `schedule` and `roundToIncrement`**, compared with their models' oracle fixtures, on both the number and bigint paths, including the cases where `schedule` must throw.
 - `split` without a unit is `allocate` with equal weights. Decimal parsing, `Intl` formatting and parsing, and the processor and database adapters are tested, not proved.
+
+## Testing your code
+
+`@ducatjs/money/testing` makes Money pleasant to test with Vitest and Jest. One import in a setup file is enough:
+
+<!-- doctest: skip (a setup-file import, shown for its setup) -->
+
+```ts
+import '@ducatjs/money/testing/vitest'; // or '@ducatjs/money/testing/jest', or installMoneyMatchers(expect)
+```
+
+- **Value equality.** `toEqual`, `toStrictEqual` and nested structures compare Money by value: 1.0 EUR at scale 1 equals 1.00 EUR, and number and bigint minor units compare as equal.
+- **Readable output.** Snapshots and failure diffs show `12.34 EUR`, and `console.log` shows `Money(12.34 EUR)`.
+- **Matchers**, whose failures read "expected 12.35 EUR to be 12.34 EUR":
+  - `toBeMoney(amount, currency)` and `toHaveCurrency(code)`;
+  - `toBeGreaterThanMoney`, `toBeGreaterThanOrEqualMoney`, `toBeLessThanMoney` and `toBeLessThanOrEqualMoney`;
+  - `toSumTo(total)`, which checks that a list of parts sums exactly to a total, for allocation and instalment tests.
+- **Arbitraries** in `@ducatjs/money/testing/arbitraries`, for fast-check property tests. `arbMoney({ currency?, min?, max?, scale? })` and `arbCurrency({ exponents?, all? })` cover minor units beyond 2^53, currencies with exponents 0, 3 and 4, and scales above the currency's exponent.
+
+<!-- doctest: skip (needs a test runner) -->
+
+```ts
+import fc from 'fast-check';
+import { arbMoney } from '@ducatjs/money/testing/arbitraries';
+
+test('a split always sums to its total', () => {
+  fc.assert(fc.property(arbMoney(), (total) => expect(total.split(3)).toSumTo(total)));
+});
+```
+
+Vitest's types come with the import. For Jest, add the matchers to its `Matchers` interface in a declaration file. ducat doesn't do this itself, because augmenting Jest's global namespace clashes with Vitest's types in projects that have both:
+
+<!-- doctest: skip (a declaration file for Jest projects) -->
+
+```ts
+import type { MoneyMatchers } from '@ducatjs/money/testing';
+declare module 'expect' {
+  interface Matchers<R> extends MoneyMatchers<R> {}
+}
+```
+
+Vitest and fast-check are optional peer dependencies, used only by these entries. Nothing in the core changes, so production bundles are unaffected.
 
 ## Tests
 

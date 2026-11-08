@@ -26,7 +26,11 @@
     "@ducatjs/money/drizzle/pg": 4.89,
     "@ducatjs/money/drizzle/mysql": 4.89,
     "@ducatjs/money/drizzle/sqlite": 4.74,
-    "@ducatjs/money/all": 21.44
+    "@ducatjs/money/all": 21.44,
+    "@ducatjs/money/testing": 4.92,
+    "@ducatjs/money/testing/vitest": 4.94,
+    "@ducatjs/money/testing/jest": 5.01,
+    "@ducatjs/money/testing/arbitraries": 4.58
   },
   "snippets": {
     "methods: money, add, multiply, toDecimal": {

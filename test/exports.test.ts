@@ -117,13 +117,16 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only the /drizzle entries reach drizzle-orm, and no entry imports anything else', async () => {
+  it('only /drizzle and the /testing helpers reach their peer libraries; nothing else imports any', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
       actual[key] = [...packageImportsOf(join(ROOT, source))];
       expected[key] = key.startsWith('./drizzle/') ? [`drizzle-orm/${key.slice(10)}-core`] : [];
     }
+    // the test helpers reach only their own test libraries
+    expected['./testing/vitest'] = ['vitest'];
+    expected['./testing/arbitraries'] = ['fast-check'];
     expect(actual).toEqual(expected);
   });
 
@@ -138,6 +141,10 @@ describe('package entries', () => {
     const drizzleNames: Record<string, string[]> = {};
     const leaked: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
+      // the Jest setup entry installs on Jest's global expect when imported, so it can't load here
+      if (key === './testing/jest') {
+        continue;
+      }
       // a computed path, so the type checker doesn't load drizzle-orm into this project
       const names = Object.keys(await import(pathToFileURL(join(ROOT, source)).href));
       if (key in expectedNames) {
@@ -163,6 +170,16 @@ describe('policy entry', () => {
       expect(Object.keys(root)).not.toContain(name);
       expect(Object.keys(fn)).toContain(name);
       expect(Object.keys(all)).toContain(name);
+    }
+  });
+});
+
+describe('testing entries', () => {
+  it('none is part of /fn or /all', async () => {
+    const testing = await import('../src/testing/index.js');
+    for (const name of Object.keys(testing)) {
+      expect(Object.keys(fn)).not.toContain(name);
+      expect(Object.keys(all)).not.toContain(name);
     }
   });
 });
