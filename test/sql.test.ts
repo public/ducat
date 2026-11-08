@@ -47,6 +47,23 @@ describe('minor units', () => {
     expect(() => minorFromDriver(null, 'EUR')).toThrow(TypeError);
   });
 
+  it('refuses amounts beyond the BIGINT range, which MySQL would otherwise clip', () => {
+    expect(minorToDriver(fromMinor(2n ** 63n - 1n, 'EUR'), 'EUR')).toBe(2n ** 63n - 1n);
+    expect(minorToDriver(fromMinor(-(2n ** 63n), 'EUR'), 'EUR')).toBe(-(2n ** 63n));
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: 2n ** 63n, max: 10n ** 30n }),
+        fc.boolean(),
+        (excess, negative) => {
+          const minor = negative ? -excess - 1n : excess;
+          expect(() => minorToDriver(fromMinor(minor, 'EUR'), 'EUR')).toThrow(/range of a BIGINT/);
+        },
+      ),
+      { numRuns: runs(200) },
+    );
+    expect(() => minorToDriver(money('1e20', 'EUR'), 'EUR')).toThrow(RangeError);
+  });
+
   it('refuses another currency, or a scale the column cannot record', () => {
     expect(() => minorToDriver(money('1', 'USD'), 'EUR')).toThrow(CurrencyMismatchError);
     expect(() => minorToDriver(money('1.234', 'EUR', { scale: 3 }), 'EUR')).toThrow(/round\(\)/);
@@ -94,6 +111,22 @@ describe('decimals', () => {
       /round\(\)/,
     );
     expect(() => checkDecimalSize('KWD', { precision: 19, scale: 2 })).toThrow(/would round KWD/);
+    for (const [precision, scale] of [
+      [4, 5],
+      [0, 0],
+      [19.5, 4],
+      [19, -1],
+      [NaN, 2],
+    ] as const) {
+      expect(() => checkDecimalSize('EUR', { precision, scale })).toThrow(/not a valid/);
+    }
+    // a column with no integer digits still holds amounts below one
+    const fractionOnly = { precision: 4, scale: 4 };
+    expect(decimalToDriver(money('0.12', 'EUR'), 'EUR', fractionOnly)).toBe('0.12');
+    expect(decimalToDriver(money('-0.12', 'EUR'), 'EUR', fractionOnly)).toBe('-0.12');
+    expect(() => decimalToDriver(money('1.00', 'EUR'), 'EUR', fractionOnly)).toThrow(
+      /does not fit/,
+    );
     expect(() => checkDecimalSize('EUR', { precision: 19, scale: 2 })).not.toThrow();
   });
 });

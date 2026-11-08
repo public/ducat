@@ -15,6 +15,9 @@ import {
 } from './money.js';
 
 const INTEGER_TEXT = /^-?\d+$/;
+// a BIGINT (SQLite INTEGER) column's range: MySQL outside strict mode clips anything beyond it
+const BIGINT_MIN = -(2n ** 63n);
+const BIGINT_MAX = 2n ** 63n - 1n;
 
 /** The declared size of a NUMERIC/DECIMAL column. */
 export interface DecimalColumnSize {
@@ -47,11 +50,19 @@ export function checkIsoScale(money: Money): void {
   }
 }
 
-/** Minor units for a BIGINT column, as a bigint. */
+/**
+ * Minor units for a BIGINT column, as a bigint. Throws beyond the column's range, ±9.2·10^18:
+ * MySQL outside strict mode would store the nearest limit instead.
+ */
 export function minorToDriver(money: Money, currency: string | undefined): bigint {
   checkCurrency(money, currency);
   checkIsoScale(money);
-  return toMinor(money);
+  const minor = toMinor(money);
+
+  if (minor < BIGINT_MIN || minor > BIGINT_MAX) {
+    throw new RangeError(`${money} is ${minor} minor units, beyond the range of a BIGINT column`);
+  }
+  return minor;
 }
 
 /**
@@ -74,6 +85,17 @@ export function minorFromDriver<C extends string>(value: unknown, currency: C): 
 
 /** Throws if a decimal column of this size would round amounts in this currency. */
 export function checkDecimalSize(currency: string, size: DecimalColumnSize): void {
+  const { precision, scale } = size;
+  const isValidSize =
+    Number.isInteger(precision) &&
+    Number.isInteger(scale) &&
+    precision >= 1 &&
+    scale >= 0 &&
+    scale <= precision;
+  if (!isValidSize) {
+    throw new RangeError(`NUMERIC(${precision},${scale}) is not a valid column size`);
+  }
+
   const exponent = currencyExponent(currency);
   if (size.scale < exponent) {
     throw new RangeError(
@@ -96,7 +118,9 @@ export function decimalToDriver(
   const decimal = toDecimal(money);
 
   if (size !== undefined) {
-    const integerDigits = decimal.replace('-', '').split('.')[0]!.length;
+    const integerPart = decimal.replace('-', '').split('.')[0]!;
+    // "0.12" has no integer digits: NUMERIC(4,4) holds it
+    const integerDigits = integerPart === '0' ? 0 : integerPart.length;
     if (integerDigits > size.precision - size.scale) {
       throw new RangeError(
         `${money} does not fit NUMERIC(${size.precision},${size.scale}), which holds ` +
