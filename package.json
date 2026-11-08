@@ -110,6 +110,14 @@
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"
     },
+    "./zod": {
+      "types": "./dist/zod.d.ts",
+      "default": "./dist/zod.js"
+    },
+    "./valibot": {
+      "types": "./dist/valibot.d.ts",
+      "default": "./dist/valibot.js"
+    },
     "./all": {
       "types": "./dist/plugins/all.d.ts",
       "default": "./dist/plugins/all.js"
@@ -164,7 +172,21 @@
     "pg": "8.23.1",
     "ts-money": "^0.4.8",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.12"
+    "valibot": "1.5.0",
+    "vitest": "^4.1.12",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "valibot": "^1.0.0",
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "valibot": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=24"
