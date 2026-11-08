@@ -4,6 +4,8 @@ import { money, type CurrencyInput, type Money, type MoneyOptions } from './mone
 interface Symbols {
   group: string;
   decimal: string;
+  /** The locale's group sizes, looked up the first time a group separator is seen. */
+  groupSizes?: readonly GroupSizes[];
 }
 const symCache = new Map<string, Symbols>();
 
@@ -100,7 +102,8 @@ export function parse<C extends CurrencyInput>(
   locale?: string,
   options?: ParseOptions,
 ): Money<C> {
-  const { group, decimal } = symbols(locale, currency);
+  const localeSymbols = symbols(locale, currency);
+  const { group, decimal } = localeSymbols;
   const chars = Array.from(input);
   let first = -1;
   let last = -1;
@@ -129,38 +132,48 @@ export function parse<C extends CurrencyInput>(
     ch === '٬';
   let out = prefix.endsWith(decimal) ? '0.' : '';
   let seenDecimal = out !== '';
-  // the integer digits with a comma for every group separator, to check the group sizes
-  let groupedInteger = '';
+  // Lengths of the integer part's digit runs between group separators, kept only once a separator
+  // is seen; most input has none, and then nothing is allocated or checked.
+  let groupLengths: number[] | undefined;
+  let digitsInGroup = 0;
   for (let i = first; i <= last; i++) {
     const ch = chars[i]!;
     const digit = asciiDigit(ch.codePointAt(0)!);
     if (digit >= 0) {
       out += digit;
-      if (!seenDecimal) {
-        groupedInteger += digit;
-      }
+      digitsInGroup++;
     } else if (ch === decimal || ch === '٫') {
       if (seenDecimal) {
         throw new SyntaxError(`Cannot parse "${input}": more than one decimal separator`);
       }
       seenDecimal = true;
       out += '.';
+      groupLengths?.push(digitsInGroup);
     } else if (isGroup(ch)) {
       if (seenDecimal) {
         throw new SyntaxError(
           `Cannot parse "${input}": group separator after the decimal separator`,
         );
       }
-      groupedInteger += ',';
+      (groupLengths ??= []).push(digitsInGroup);
+      digitsInGroup = 0;
     } else {
       throw new SyntaxError(`Cannot parse "${input}": unexpected "${ch}"`);
     }
   }
-  // most input has no group separators, so it skips the locale lookup
-  if (options?.lenient !== true && groupedInteger.includes(',')) {
-    checkGroups(input, groupedInteger, groupSizes(locale, currency));
+  if (groupLengths !== undefined && options?.lenient !== true) {
+    if (!seenDecimal) {
+      groupLengths.push(digitsInGroup);
+    }
+    localeSymbols.groupSizes ??= groupSizes(locale, currency);
+    checkGroupLengths(input, groupLengths, localeSymbols.groupSizes);
   }
-  const { lenient: _lenient, ...moneyOptions } = options ?? {};
+  // pass options through as they are unless they carry `lenient`, so the common call allocates nothing
+  let moneyOptions: MoneyOptions | undefined = options;
+  if (options !== undefined && 'lenient' in options) {
+    const { lenient: _lenient, ...rest } = options;
+    moneyOptions = rest;
+  }
   return money((neg ? '-' : '') + out, currency, moneyOptions);
 }
 
@@ -353,23 +366,44 @@ function sizesOf(parts: Intl.NumberFormatPart[]): GroupSizes {
 function checkGroups(input: string, integerPart: string, allSizes: readonly GroupSizes[]): void {
   // the caller has turned every separator into a comma
   const groups = integerPart.split(',');
-  if (groups.length <= 1) {
-    return;
+  if (groups.length > 1) {
+    checkGroupLengths(
+      input,
+      groups.map((group) => group.length),
+      allSizes,
+    );
   }
-  const lastIndex = groups.length - 1;
-  const fits = ([primary, secondary]: GroupSizes) =>
-    groups.every((group, i) => {
-      if (i === lastIndex) {
-        return group.length === primary;
-      }
-      if (i === 0) {
-        return group.length >= 1 && group.length <= secondary;
-      }
-      return group.length === secondary;
-    });
-  if (!allSizes.some(fits)) {
-    throw new SyntaxError(`Cannot parse "${input}": group separators in the wrong places`);
+}
+
+/** Throws unless digit runs of these lengths, split by group separators, fit one of the sizes. */
+function checkGroupLengths(
+  input: string,
+  lengths: readonly number[],
+  allSizes: readonly GroupSizes[],
+): void {
+  for (let option = 0; option < allSizes.length; option++) {
+    if (fitsGroupSizes(lengths, allSizes[option]!)) {
+      return;
+    }
   }
+  throw new SyntaxError(`Cannot parse "${input}": group separators in the wrong places`);
+}
+
+function fitsGroupSizes(lengths: readonly number[], [primary, secondary]: GroupSizes): boolean {
+  const lastIndex = lengths.length - 1;
+  for (let i = 0; i <= lastIndex; i++) {
+    const length = lengths[i]!;
+    let expected = secondary;
+    if (i === lastIndex) {
+      expected = primary;
+    }
+    // the leading group may be shorter: 1,234 or 12,34,567
+    const isLeadingAndShorter = i === 0 && i !== lastIndex && length >= 1 && length <= secondary;
+    if (length !== expected && !isLeadingAndShorter) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
