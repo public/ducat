@@ -1186,7 +1186,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
   - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.0 KiB**, of which about 0.55 KiB is the ISO table
   - the core entry point: 4.9 KiB; everything (`@ducatjs/money/all`): 50.1 KiB
-  - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.3 KiB
+  - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.2 KiB
   - the same snippet with dinero.js (EUR only): 1.8 KiB
 
 ---

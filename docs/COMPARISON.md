@@ -219,8 +219,8 @@ Node and Deno. Every cell where another library measured faster than `Fixed`, or
 - **divide by 3:** `Fixed` is now fastest everywhere (Node 28 ns against bigdecimal.js's 57; Bun 27 against 35; Deno
   24 against 46), using the same integer-divisor fast path as `Money` (28, 25 and 25 ns).
 - **add on Bun:** bigdecimal.js and `Fixed` are level (11.78 and 11.79 ns).
-- **toString:** js-big-decimal and ethers are fastest everywhere (about 5 ns), against `Fixed`'s 31 on Node and Deno
-  and 55 on Bun.
+- **toString:** js-big-decimal and ethers are fastest everywhere (about 5 ns), against `Fixed`'s 31 on Node, 30 on
+  Deno and 55 on Bun.
 
 The `Money` row parses currency amounts, so it also checks the currency's scale: bigdecimal.js and js-big-decimal
 parse faster than it on every runtime (Node 44 and 64 ns against 126), and @formatjs/bigdecimal on Node and Deno (120
