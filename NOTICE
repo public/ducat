@@ -24,6 +24,31 @@ data/adyen.json
   retrieved 2026-11-07, with short quotations of the special cases.
   Adyen is a trademark of Adyen N.V.
 
+data/checkout.json
+  Amount rules from Checkout.com's documentation,
+  https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value,
+  retrieved 2026-11-07, with short quotations. Checkout.com is a trademark
+  of Checkout Ltd.
+
+data/paypal.json
+  Currency codes and decimals from PayPal's documentation,
+  https://developer.paypal.com/api/rest/reference/currency-codes/,
+  retrieved 2026-11-07, with short quotations. PayPal is a trademark of
+  PayPal, Inc.
+
+data/braintree.json
+  Supported currencies and zero-decimal currencies from Braintree's
+  documentation,
+  https://developer.paypal.com/braintree/docs/reference/general/currencies,
+  retrieved 2026-11-07, with short quotations. Braintree is a service of
+  PayPal, Inc.
+
+data/klarna.json
+  Amount rules from Klarna's documentation,
+  https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/,
+  retrieved 2026-11-07, with short quotations. Klarna is a trademark of
+  Klarna Bank AB.
+
 data/stripe-fx.json
   Field definitions for exchange rates on balance transactions, quoted
   from Stripe's API reference,
@@ -35,6 +60,23 @@ data/adyen-fx.json
   report, quoted from Adyen's documentation,
   https://docs.adyen.com/reporting/settlement-reconciliation/transaction-level/settlement-details-report,
   retrieved 2026-11-07.
+
+data/iso4217-list-three.xml, data/historic.json
+  ISO 4217 List Three (withdrawn currency and funds codes), published by
+  SIX Financial Information AG as the ISO 4217 maintenance agency
+  (snapshot 2026-01-01): the withdrawn codes, names and withdrawal
+  dates. Minor units taken from OpenJDK's currency data
+  (CurrencyData.properties, dataVersion 180, GPLv2 with the Classpath
+  Exception), as the facts ISO 4217 assigned while each code was
+  current. None was verified against an ISO source directly, since
+  List Three carries no minor units.
+
+data/crypto-units.json
+  Decimals, names and contract addresses (facts) from the sources that
+  define them, pinned to the versions named in the file: Bitcoin Core
+  v28.0 (src/consensus/amount.h), ethereum-lists/chains, the Solana SDK
+  (native-token), and the Uniswap default token list 22.34.0 for the
+  Ethereum mainnet tokens. Token names are their issuers'.
 
 data/cash-rounding.json
   Cash rounding rules compiled from central-bank, statutory and
