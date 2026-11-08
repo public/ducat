@@ -625,6 +625,33 @@ export function divide<C extends string>(
   if (divisorRatio.num === 0n) {
     throw new RangeError('Division by zero');
   }
+
+  // Fast path: m / (n/d) = m·d / n, rounded once by the same kernel the ratio path uses. Building
+  // the inverse ratio d/n would cost bigint arithmetic and a gcd on every call; the divisor's own
+  // ratio is cached for small integers and strings. Exact while m·d is a safe integer.
+  const minor = money.minor;
+  const numerator = divisorRatio.n;
+  const denominator = divisorRatio.d;
+  if (
+    typeof minor === 'number' &&
+    typeof rounding === 'string' &&
+    numerator === numerator &&
+    denominator === denominator
+  ) {
+    const product = minor * denominator;
+    if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
+      // divideAndRound needs a positive divisor: (−p)/(−n) is the same quotient
+      if (numerator > 0) {
+        return new Money(money.currency, divideAndRound(product, numerator, rounding), money.scale);
+      }
+      return new Money(
+        money.currency,
+        divideAndRound(0 - product, 0 - numerator, rounding),
+        money.scale,
+      );
+    }
+  }
+
   return multiplyByRatio(money, ratio(divisorRatio.den, divisorRatio.num), rounding);
 }
 
