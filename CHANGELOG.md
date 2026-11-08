@@ -9,6 +9,15 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
+  (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
+  `assertCurrency` throws `CurrencyMismatchError` for another currency.
+- `majorPart` and `minorPart` split an amount at the decimal point (`12` and `34` for 12.34 EUR),
+  truncating toward zero and keeping the sign.
+- `identical(a, b)`: equal value, currency _and_ scale, for round-trip tests (`equals` treats
+  1.0 EUR and 1.00 EUR as equal).
+- `m.with(operation)` applies a function such as a rounding step or a conversion as one link of a
+  method chain.
 - **Historical rates.** In `@ducatjs/money/convert`: `availableAt` on rates and tables (a lookup
   before publication gets nothing, `Rate#isAvailable`), `Rate#quote` with the published digits,
   `null` for missing values with the table's `missing` list, and `validUntil` periods on tables.
@@ -17,6 +26,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `decimals`), and `rateHistory()` over a date range, whose `lookup()` reports why it fell back.
 
 ### Changed
+
+- `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
+  building one for every row, which makes it about 20 times faster.
 
 - **Visible change:** `Rate#toString()` (and so `toJSON().rate`) prints a decimal-string rate
   with the digits it was given, and `rateFromJSON` keeps them: `exchangeRate('EUR', 'HUF',

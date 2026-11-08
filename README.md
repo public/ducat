@@ -174,6 +174,20 @@ The sections below list each operation with its plain-function signature, as `@d
 - `money(amount: string | number | bigint, currency, { scale?, rounding? })`: the amount is in major units. A string is the recommended form. An integer number means major units (`money(12,'EUR')` is 12.00).
 - `fromMinor(minor: number | bigint, currency, scale?)`: from cents, e.g. a BIGINT column.
 - `zero(currency)`, `fromJSON({ amount, currency } | string)`, `isMoney(x)`
+- `isMoneyIn(x, currency)` and `assertCurrency(m, currency)` narrow a currency known only at run time (`Money<string>`) to a literal one, without a cast. `assertCurrency` throws `CurrencyMismatchError` for another currency.
+
+```ts
+import { assertCurrency, fromJSON, isMoneyIn, money } from '@ducatjs/money';
+
+const price = fromJSON({ amount: '12.34', currency: 'EUR' as string }); // Money<string>
+if (isMoneyIn(price, 'EUR')) {
+  price.add(money('1', 'EUR')); // → 13.34 EUR
+}
+assertCurrency(price, 'EUR'); // now Money<'EUR'>
+
+const other = fromJSON({ amount: '1', currency: 'USD' as string });
+assertCurrency(other, 'EUR'); // throws
+```
 
 **Arithmetic.** All of these are immutable and return new values.
 
@@ -183,11 +197,28 @@ The sections below list each operation with its plain-function signature, as `@d
 - `percentage(m, percent, rounding?)`, `discount(price, percent, rounding?)`
 - `addTax(net, percent, rounding?)` and `extractTax(gross, percent, rounding?)` both return `{ net, tax, gross }`, and net + tax is always exactly gross.
 - `convert(m, to, rate, rounding?, { scale? })` at a decimal-string rate, or `convert(m, exchangeRate(...), rounding?)`. See [Currency conversion](#currency-conversion).
+- `m.with(operation)` applies a function to the amount and returns its result, so a rounding step or a conversion reads as one link of a chain.
+
+```ts
+import { money, type Money } from '@ducatjs/money';
+
+const toFiveRappen = (value: Money<'CHF'>) => value.divide(5).round('halfExpand').multiply(5);
+money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
+```
 
 **Compare**
 
 - `compare` (returns −1, 0 or 1), `equals`, `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual`
 - `isZero`, `isPositive`, `isNegative`, `sign`, `min`, `max`, `clamp`
+- `identical(a, b)`: like `equals`, but the scale must match too (`1.0` is not identical to `1.00`), for round-trip tests.
+
+```ts
+import { money } from '@ducatjs/money';
+
+const one = money('1', 'EUR');
+one.equals(money('1', 'EUR', { scale: 1 })); // → true
+one.identical(money('1', 'EUR', { scale: 1 })); // → false
+```
 
 **Allocate and split**
 
@@ -240,6 +271,7 @@ The sections below list each operation with its plain-function signature, as `@d
 
 - `toDecimal(m)` gives `"12.34"` for NUMERIC/DECIMAL and wire formats.
 - `toMinor(m)` gives a bigint for BIGINT columns. `toMinorNumber(m)` gives a number and throws if it isn't safe.
+- `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
 
 **Currencies**

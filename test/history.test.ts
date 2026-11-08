@@ -4,7 +4,7 @@ import { convert } from '../src/convert.js';
 import { money } from '../src/fn.js';
 import { parseEcbCsv } from '../src/ecb.js';
 import { quotedTable, rateFromQuote, rateHistory } from '../src/history.js';
-import { rateTable, snapshots, snapshotsFrom, via, type RateTable } from '../src/provider.js';
+import { rateTable, snapshotsFrom, via, type RateTable } from '../src/provider.js';
 import { exchangeRate, rateFromJSON, type RateJSON } from '../src/rate.js';
 import { readRateCell, withDecimals } from '../src/rate-text.js';
 

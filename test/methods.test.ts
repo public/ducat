@@ -36,6 +36,8 @@ describe('Money methods', () => {
       'zero',
       'fromJSON',
       'isMoney',
+      'isMoneyIn',
+      'assertCurrency',
       'sum',
       'ratio',
       'parse',

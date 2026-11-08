@@ -156,29 +156,25 @@ export function hasEnded(validUntil: string, at: string | Date): boolean {
   return instant > validUntil;
 }
 
-/** The later of two ISO-8601 strings; undefined = no constraint. */
-function later(first: string | undefined, second: string | undefined): string | undefined {
-  if (first === undefined) {
-    return second;
-  }
-  if (second === undefined || first >= second) {
-    return first;
-  }
-  return second;
-}
-
 /**
- * The earlier of two ISO-8601 strings (one format compares lexicographically); undefined = no
- * limit.
+ * The earlier of two ISO-8601 strings (one format compares lexicographically), or the later one
+ * with `later`; undefined = no limit.
  */
-function earlier(first: string | undefined, second: string | undefined): string | undefined {
+function earlier(
+  first: string | undefined,
+  second: string | undefined,
+  later?: boolean,
+): string | undefined {
   if (first === undefined) {
     return second;
   }
-  if (second === undefined || first <= second) {
+  if (second === undefined) {
     return first;
   }
-  return second;
+  if (later === true) {
+    return first >= second ? first : second;
+  }
+  return first <= second ? first : second;
 }
 
 /**
@@ -257,21 +253,6 @@ export class Rate<From extends string = string, To extends string = string> {
 
     // Only defined fields are assigned, so rates compare and serialise without undefined keys.
     const writable = this as { -readonly [Key in keyof Rate]?: unknown };
-    if (info?.source !== undefined) {
-      writable.source = info.source;
-    }
-    if (info?.asOf !== undefined) {
-      writable.asOf = toIsoString(info.asOf);
-    }
-    if (info?.availableAt !== undefined) {
-      writable.availableAt = toIsoString(info.availableAt);
-    }
-    if (info?.validUntil !== undefined) {
-      writable.validUntil = toIsoString(info.validUntil);
-    }
-    if (info?.type !== undefined) {
-      writable.type = info.type;
-    }
     const quote = info?.quote;
     if (quote !== undefined) {
       // toString prints a one-for-one quote, so it must be this rate. (rateFromQuote derives a
@@ -282,7 +263,9 @@ export class Rate<From extends string = string, To extends string = string> {
       if (quoted.num !== normalized.num || quoted.den !== normalized.den) {
         throw new RangeError(`Quote ${quote.rate} isn't the rate ${from}→${to}`);
       }
-      writable.quote = quote;
+    }
+    if (info !== undefined) {
+      Object.assign(this, infoOf(info));
     }
     if (derivedFrom !== undefined) {
       writable.derivedFrom = derivedFrom;
@@ -324,7 +307,7 @@ export class Rate<From extends string = string, To extends string = string> {
     }
     // A composite is known only once both legs are, and is valid only while both are.
     const asOf = earlier(this.asOf, next.asOf);
-    const availableAt = later(this.availableAt, next.availableAt);
+    const availableAt = earlier(this.availableAt, next.availableAt, true);
     const validUntil = earlier(this.validUntil, next.validUntil);
     const info = timing(asOf, availableAt, validUntil, type);
     return new Rate(this.from, next.to, product, info, [this, next]);
