@@ -46,6 +46,7 @@ describe('Money methods', () => {
       'sum',
       'ratio',
       'parse',
+      'parseMoney',
       'cashRule',
       'exchangeRate',
       // fixed-point constructors; Money#toFixedPoint covers moneyToFixed

@@ -134,7 +134,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`…                            |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                       |
-| `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                        |
+| `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                          |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                      |
 | `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                        |
 | `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                  |
@@ -292,7 +292,22 @@ assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws
   - NBSP and narrow NBSP, Swiss `’`
   - Arabic-Indic, Persian, Devanagari and Thai digits
   - accounting parentheses and U+2212 minus
-- The currency always comes from the argument and is never guessed from the text. A `parse(format(x)) == x` property test runs across 14 locales.
+- `parse` takes the currency from its argument and never guesses it from the text. A `parse(format(x)) == x` property test runs across 14 locales.
+- `parseMoney(text, locale?, { hint?, currencies?, strict?, scale?, rounding? })` detects the currency from the text. It recognises ISO codes, the symbols `Intl.NumberFormat` uses in the locale, and English ones such as `US$` and `CA$`. Then it reads the number as `parse` does.
+  - A symbol that several currencies share means the currency whose own symbol it is in the locale (`$` is USD in en-US and CAD in en-CA), or the `hint`. Text with no currency uses the `hint`.
+  - Text that isn't a currency (`"about 100 USD"`) or that names two currencies throws.
+  - `strict: true` also rejects an ambiguous symbol without a hint and a currency that contradicts the hint, and it checks the locale's group sizes (`1,234,567`; `12,34,567` in en-IN).
+  - `currencies` limits what is detected.
+
+```ts
+import { parseMoney } from '@ducatjs/money/parse';
+
+parseMoney('CHF 1’234.50', 'de-CH'); // → 1234.50 CHF
+parseMoney('1.234,50 €', 'de-DE'); // → 1234.50 EUR
+parseMoney('$5.00', 'en-CA'); // → 5.00 CAD
+parseMoney('$5.00', 'en-US', { strict: true }); // throws
+parseMoney('$5.00', 'en-US', { strict: true, hint: 'USD' }); // → 5.00 USD
+```
 
 **Serialise**
 
