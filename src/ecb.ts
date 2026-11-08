@@ -1,7 +1,7 @@
 // Offline parsers for the ECB euro foreign exchange reference rates (eurofxref). No I/O: fetch or
 // read the files yourself, or use ducat/convert/fetch. Rates are kept exactly as published.
 import { rateTable, type RateTable } from './provider.js';
-import { csvRows, readRateCell, withDecimals } from './rate-text.js';
+import { addDayRate, csvRows, newestFirst, readRateCell, withDecimals } from './rate-text.js';
 
 const MONTHS = [
   'january',
@@ -66,10 +66,6 @@ function ratesOfDay(body: string): Record<string, string> {
     rates[currency] = rate;
   }
   return rates;
-}
-
-function newestFirst(tables: RateTable[]): RateTable[] {
-  return tables.sort((table, other) => other.asOf!.localeCompare(table.asOf!));
 }
 
 /**
@@ -319,17 +315,7 @@ export function parseEcbSdmxCsv(csv: string, options?: EcbSdmxOptions): RateTabl
       Number(day.slice(5, 7)),
       Number(day.slice(8)),
     );
-    let rates = days.get(isoDay);
-    if (rates === undefined) {
-      rates = {};
-      days.set(isoDay, rates);
-    }
-    // The same currency twice on one day is either a repeat or a contradiction; never pick one.
-    const earlier = rates[currency];
-    if (earlier !== undefined && earlier !== rate) {
-      throw new SyntaxError(`Two different values for ${where}: ${earlier} and ${rate}`);
-    }
-    rates[currency] = rate;
+    addDayRate(days, isoDay, currency, rate);
   }
 
   const tables: RateTable[] = [];

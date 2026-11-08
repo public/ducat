@@ -105,3 +105,47 @@ export function csvRows(text: string): string[][] {
   }
   return rows;
 }
+
+const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
+
+/**
+ * @internal
+ * Whether `text` is a real calendar day in ISO form. '2026-02-30' is not, although Date.parse rolls
+ * it over to 2 March.
+ */
+export function isCalendarDay(text: string): boolean {
+  const match = ISO_DAY.exec(text);
+  if (match === null) {
+    return false;
+  }
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return date.toISOString().slice(0, 10) === text;
+}
+
+/**
+ * @internal
+ * Records a currency's rate (or null, missing) for a day. The same currency twice on one day is
+ * either a repeat, which is fine, or a contradiction, which throws: a parser never picks one.
+ */
+export function addDayRate(
+  days: Map<string, Record<string, string | null>>,
+  day: string,
+  currency: string,
+  rate: string | null,
+): void {
+  let rates = days.get(day);
+  if (rates === undefined) {
+    rates = {};
+    days.set(day, rates);
+  }
+  const earlier = rates[currency];
+  if (earlier !== undefined && earlier !== rate) {
+    throw new SyntaxError(`Two different values for ${currency} on ${day}: ${earlier} and ${rate}`);
+  }
+  rates[currency] = rate;
+}
+
+/** @internal Dated tables, newest first (ISO dates sort as strings). */
+export function newestFirst<T extends { readonly asOf?: string }>(tables: T[]): T[] {
+  return tables.sort((table, other) => other.asOf!.localeCompare(table.asOf!));
+}

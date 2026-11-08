@@ -87,10 +87,51 @@ describe('parseFedH10Csv', () => {
     expect(() => parseFedH10Csv(HEADER.replace('"RXI_N.B.JA"', '"XYZ"'))).toThrow(SyntaxError);
     expect(() =>
       parseFedH10Csv(HEADER.replace('"Multiplier:","1","1"', '"Multiplier:","1","100"')),
-    ).toThrow(/multiplier 100 for JPY/);
+    ).toThrow(/unit Currency × 100 for JPY/);
     expect(() => parseFedH10Csv(`${HEADER}\n11/06/2026,1.1650,150.0000\n`)).toThrow(SyntaxError);
     expect(() => parseFedH10Csv(`${HEADER}\n2026-11-06,1.1650\n`)).toThrow(SyntaxError);
     expect(() => parseFedH10Csv(`${HEADER}\n2026-11-06,1.1650,n/q\n`)).toThrow(/JPY on 2026-11-06/);
+  });
+
+  it('is strict about columns, days and conflicts', () => {
+    const header = (from: string, to: string) => HEADER.replace(from, to);
+    // the series ID's country must match the currency code
+    expect(() =>
+      parseFedH10Csv(header('"Currency:","EUR","JPY"', '"Currency:","GBP","JPY"')),
+    ).toThrow(/is EUR, not GBP/);
+    expect(() =>
+      parseFedH10Csv(header('"Currency:","EUR","JPY"', '"Currency:","EUR","USD"')),
+    ).toThrow(SyntaxError);
+    expect(() =>
+      parseFedH10Csv(
+        header(
+          '"Time Period","RXI$US_N.B.EU","RXI_N.B.JA"',
+          '"Time Period","RXI$US_N.B.EU","RXI_N.B.XX"',
+        ).replace('"Currency:","EUR","JPY"', '"Currency:","EUR","EUR"'),
+      ),
+    ).toThrow(/two columns/);
+    // Unit and Multiplier rows are required and must say Currency and 1
+    expect(() => parseFedH10Csv(header('"Multiplier:","1","1"\n', ''))).toThrow(/Multiplier/);
+    expect(() =>
+      parseFedH10Csv(header('"Unit:","Currency","Currency"', '"Unit:","Currency","Index"')),
+    ).toThrow(/unit Index/);
+    // monthly data is rejected, by its series ID or its dates
+    expect(() =>
+      parseFedH10Csv(header('"Time Period","RXI$US_N.B.EU"', '"Time Period","RXI$US_N.M.EU"')),
+    ).toThrow(SyntaxError);
+    expect(() => parseFedH10Csv(`${HEADER}\n2026-01,1.1650,150.0000\n`)).toThrow(
+      /Malformed H.10 row/,
+    );
+    expect(() => parseFedH10Csv(`${HEADER}\n2026-02-30,1.1650,150.0000\n`)).toThrow(SyntaxError);
+    // a repeat is fine, a contradiction throws
+    const twice = `${HEADER}\n2026-11-06,1.1650,150.0000\n2026-11-06,1.1650,150.0000\n`;
+    expect(parseFedH10Csv(twice)).toHaveLength(1);
+    expect(() =>
+      parseFedH10Csv(`${HEADER}\n2026-11-06,1.1650,150.0000\n2026-11-06,1.1650,151.0000\n`),
+    ).toThrow(/Two different values for JPY on 2026-11-06/);
+    // no observations at all is a cut-off file; holidays only is []
+    expect(() => parseFedH10Csv(HEADER)).toThrow(/no observations/);
+    expect(parseFedH10Csv(`${HEADER}\n2026-12-25,ND,ND\n`)).toEqual([]);
   });
 
   it('every published rate survives exactly, both directions (property)', () => {
