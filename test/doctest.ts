@@ -1,6 +1,12 @@
 // Checks used by the README examples that test/readme.test.ts generates.
+import { ValiError } from 'valibot';
+import { ZodError } from 'zod';
+import { FetchRatesError } from '../src/fetch.js';
 import { Fixed } from '../src/fixed.js';
-import { isMoney } from '../src/money.js';
+import { CurrencyMismatchError, isMoney } from '../src/money.js';
+import { RateUnavailableError } from '../src/provider.js';
+import { RateExpiredError } from '../src/rate.js';
+import { RoundingError } from '../src/rounding-error.js';
 
 /** A value as the README writes it. */
 export function show(value: unknown): string {
@@ -45,11 +51,47 @@ export function check(line: number, value: unknown, expected: string): void {
   }
 }
 
-export function checkThrows(line: number, run: () => unknown): void {
+/** The error classes a README `// throws ClassName` comment can name. */
+const ERROR_CLASSES: Record<string, abstract new (...args: never[]) => Error> = {
+  CurrencyMismatchError,
+  FetchRatesError,
+  RateExpiredError,
+  RateUnavailableError,
+  RoundingError,
+  ValiError,
+  ZodError,
+  Error,
+  RangeError,
+  SyntaxError,
+  TypeError,
+};
+
+/** `RoundingError` from `// throws RoundingError: note`, or undefined when no class is named. */
+export function documentedErrorClass(comment: string): string | undefined {
+  return /^([A-Z][A-Za-z0-9]*Error)\b/.exec(comment)?.[1];
+}
+
+/**
+ * The call must throw, and when `errorName` is given, an instance of that class (a subclass counts:
+ * `RoundingError` is a `RangeError`).
+ */
+export function checkThrows(line: number, run: () => unknown, errorName?: string): void {
+  let value: unknown;
   try {
-    const value = run();
-    failures.push({ line, message: `expected an error, got ${show(value)}` });
-  } catch {
-    // the documented error
+    value = run();
+  } catch (error) {
+    if (errorName === undefined) {
+      return;
+    }
+    const errorClass = ERROR_CLASSES[errorName];
+    if (errorClass === undefined) {
+      failures.push({ line, message: `${errorName} is not an error class test/doctest.ts knows` });
+    } else if (!(error instanceof errorClass)) {
+      const actual =
+        error instanceof Error ? `${error.constructor.name}: ${error.message}` : show(error);
+      failures.push({ line, message: `expected ${errorName}, got ${actual}` });
+    }
+    return;
   }
+  failures.push({ line, message: `expected an error, got ${show(value)}` });
 }

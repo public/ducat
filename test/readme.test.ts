@@ -4,8 +4,9 @@
 // line whose comment starts with an arrow is checked against what it returns:
 //
 //   total.multiply('1.075'); // → 26.88 EUR (anything after the value is a note)
-//   toStripeAmount(money('10.45', 'HUF'), { payout: true }); // throws: payouts must be whole HUF
+//   toStripeAmount(money('10.45', 'HUF'), { payout: true }); // throws RoundingError: whole HUF only
 //
+// `// throws` names the error class, which the error must be an instance of (a subclass counts).
 // `// compile error` means the line must fail to type-check and throw at run time.
 // `const name = …; // → value` checks `name`. Values are written as `show()` prints them: Money as
 // `12.34 EUR`, Fixed as `12.34`, strings in single quotes, arrays in brackets and objects as `{ key: value }`.
@@ -19,7 +20,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { failures } from './doctest.js';
+import { documentedErrorClass, failures } from './doctest.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'test', '.doctest');
@@ -107,7 +108,11 @@ function toModule(example: Example, dir: string): string {
       output.push(`${indent}// @ts-expect-error`);
       output.push(`${indent}checkThrows(${line}, () => ${expression});`);
     } else if (kind === 'throws') {
-      output.push(`${indent}checkThrows(${line}, () => ${expression});`);
+      const errorName = documentedErrorClass(expected ?? '');
+      if (errorName === undefined) {
+        throw new Error(`README.md:${line}: name the error class, as in // throws RangeError`);
+      }
+      output.push(`${indent}checkThrows(${line}, () => ${expression}, '${errorName}');`);
     } else if (name) {
       output.push(`${indent}const ${name} = ${expression};`);
       output.push(`${indent}check(${line}, ${name}, ${JSON.stringify(expected)});`);

@@ -202,7 +202,7 @@ if (isMoneyIn(price, 'EUR')) {
 assertCurrency(price, 'EUR'); // now Money<'EUR'>
 
 const other = fromJSON({ amount: '1', currency: 'USD' as string });
-assertCurrency(other, 'EUR'); // throws
+assertCurrency(other, 'EUR'); // throws CurrencyMismatchError
 ```
 
 **Arithmetic.** All of these are immutable and return new values.
@@ -282,7 +282,7 @@ money('10.00', 'CHF').multiply('1.077', cashPolicy('CHF')); // → 10.75 CHF
 const unitPrice = roundingPolicy({ scale: 4, rounding: 'halfEven' });
 money('10.00', 'EUR').divide(3, unitPrice); // → 3.3333 EUR
 [money('1.234', 'EUR', { scale: 3 })].map(isoPolicy); // → [1.23 EUR]
-assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws
+assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws RangeError
 ```
 
 **Cash rounding**
@@ -317,10 +317,10 @@ import { parseMoney } from '@ducatjs/money/parse';
 
 parseMoney('CHF 1’234.50', 'de-CH'); // → 1234.50 CHF
 parseMoney('1.234,50 €', 'de-DE'); // → 1234.50 EUR
-parseMoney('$5.00', 'en-CA'); // throws (CAD, USD, AUD...: pass a hint)
+parseMoney('$5.00', 'en-CA'); // throws SyntaxError (CAD, USD, AUD...: pass a hint)
 parseMoney('$5.00', 'en-CA', { hint: 'CAD' }); // → 5.00 CAD
 parseMoney('$5.00', 'en-CA', { symbols: { $: 'CAD' } }); // → 5.00 CAD
-parseMoney('€5.00', 'en-IE', { hint: 'USD' }); // throws
+parseMoney('€5.00', 'en-IE', { hint: 'USD' }); // throws SyntaxError
 parseMoney('12.34', 'en', { hint: 'EUR', lenient: true }); // → 12.34 EUR
 ```
 
@@ -345,7 +345,7 @@ import { moneySchema } from '@ducatjs/money/zod';
 
 const Order = z.object({ total: moneySchema({ currency: ['EUR', 'USD'] }) });
 Order.parse({ total: { amount: '12.34', currency: 'EUR' } }).total; // → 12.34 EUR
-Order.parse({ total: { amount: '12.345', currency: 'EUR' } }); // throws
+Order.parse({ total: { amount: '12.345', currency: 'EUR' } }); // throws ZodError
 z.encode(moneySchema(), money('9.99', 'USD')); // → { amount: '9.99', currency: 'USD' }
 ```
 
@@ -530,12 +530,12 @@ import { toKlarna, fromKlarna } from '@ducatjs/money/klarna';
 
 toStripe(money('10.99', 'USD')); // → { amount: 1099, currency: 'usd' }
 toStripeAmount(money('5', 'ISK')); // → 500     (Stripe: two-decimal value ending in 00)
-toStripeAmount(money('10.45', 'HUF'), { payout: true }); // throws: payouts must be whole HUF
+toStripeAmount(money('10.45', 'HUF'), { payout: true }); // throws RoundingError: payouts must be whole HUF
 toStripeAmount(money('5.124', 'KWD'), { rounding: 'halfEven' }); // → 5120 (last digit must be 0)
 toAdyen(money('15000', 'IDR')); // → { value: 15000, currency: 'IDR' }  (Adyen: IDR has 0 decimals)
 toAdyen(money('5000', 'CLP')); // → { value: 500000, currency: 'CLP' } (Adyen: CLP has 2 decimals)
 toCheckout(money('5000', 'CLP')); // → { amount: 500000, currency: 'CLP' } (Checkout.com: 2 decimals, must end in 00)
-toCheckout(money('1.001', 'BHD')); // throws: Checkout.com needs the last digit 0
+toCheckout(money('1.001', 'BHD')); // throws RoundingError: Checkout.com needs the last digit 0
 toPayPal(money('10.99', 'USD')); // → { currency_code: 'USD', value: '10.99' }  (PayPal: exact decimal string)
 toPayPal(money('1000', 'HUF')); // → { currency_code: 'HUF', value: '1000' }  (PayPal: HUF takes no decimals)
 toBraintree(money('5000', 'LAK')); // → '5000'  (Braintree: LAK is zero-decimal; the merchant account sets the currency)
@@ -677,7 +677,7 @@ await client.query('INSERT INTO items (price) VALUES ($1::ducat_money)', [
   toMoneyComposite(money('12.34', 'EUR')),
 ]);
 (await client.query('SELECT sum(price) AS total FROM items')).rows[0].total; // Money
-toNumeric(money('1.23456', 'EUR', { scale: 5 }), { precision: 19, scale: 4 }); // throws
+toNumeric(money('1.23456', 'EUR', { scale: 5 }), { precision: 19, scale: 4 }); // throws RangeError
 ```
 
 #### Drizzle
