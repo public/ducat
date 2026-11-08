@@ -7,6 +7,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `@ducatjs/money/pricing`: `priceEnding`, retail price endings ("charm pricing"). A rule allows
+  the prices `ending + k × step` (.99, .95, 9.90 in steps of 10, the nearest 5) and moves an amount
+  to one of them by a rounding mode (up by default, down, or to the nearest), exactly.
+
 ### Changed
 
 - **Visible change:** arithmetic and comparison with an operand that isn't Money (`m.add(5)` from
