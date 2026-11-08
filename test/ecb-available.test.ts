@@ -91,4 +91,32 @@ describe('ECB availableAt', () => {
     expect(range.length).toBeGreaterThan(0);
     expect(range.every((table) => table.availableAt === `${table.asOf}T18:00:00.000Z`)).toBe(true);
   });
+
+  it.each([
+    ['a string', 'true', 'string'],
+    ['a Date', new Date('2026-01-01'), 'object'],
+    ['a number', 1, 'number'],
+    ['null', null, 'object'],
+  ])('rejects %s, even on a file with no days', (_name, value, kind) => {
+    const message = `availableAt must be a boolean or a function, got ${kind}`;
+    const options = { availableAt: value as never };
+    expect(() => parseEcbXml(fixture('ecb/eurofxref-daily.xml'), options)).toThrow(TypeError);
+    expect(() => parseEcbXml(envelope(), options)).toThrow(message);
+    expect(() => parseEcbCsv(fixture('ecb/eurofxref.csv'), options)).toThrow(message);
+    expect(() => parseEcbSdmxCsv('', options)).toThrow(message);
+  });
+
+  it('fetchEcb and fetchEcbRange reject it before making a request', async () => {
+    let requests = 0;
+    const counting: Fetch = async () => {
+      requests++;
+      return { ok: true, status: 200, text: async () => '' };
+    };
+    const availableAt = 'yes' as never;
+    await expect(fetchEcb({ fetch: counting, availableAt })).rejects.toThrow(TypeError);
+    await expect(
+      fetchEcbRange({ start: '2026-01-01', fetch: counting, availableAt }),
+    ).rejects.toThrow('availableAt must be a boolean or a function, got string');
+    expect(requests).toBe(0);
+  });
 });

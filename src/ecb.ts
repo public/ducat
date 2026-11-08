@@ -1,7 +1,14 @@
 // Offline parsers for the ECB euro foreign exchange reference rates (eurofxref). No I/O: fetch or
 // read the files yourself, or use ducat/convert/fetch. Rates are kept exactly as published.
 import { rateTable, type RateTable } from './provider.js';
-import { addDayRate, csvRows, newestFirst, readRateCell, withDecimals } from './rate-text.js';
+import {
+  addDayRate,
+  checkAvailableAt,
+  csvRows,
+  newestFirst,
+  readRateCell,
+  withDecimals,
+} from './rate-text.js';
 
 const MONTHS = [
   'january',
@@ -125,6 +132,7 @@ function ratesOfDay(body: string): Record<string, string> {
  *     const [latest] = parseEcbXml(await readFile('eurofxref-daily.xml', 'utf8'));
  */
 export function parseEcbXml(xml: string, options?: EcbOptions): RateTable[] {
+  checkAvailableAt(options?.availableAt);
   let days = 0;
   const tables: RateTable[] = [];
   for (const [, asOf, body] of withoutByteOrderMark(xml).matchAll(DAY_CUBE)) {
@@ -180,6 +188,7 @@ function isoDay(text: string): string {
  * as in parseEcbXml.
  */
 export function parseEcbCsv(csv: string, options?: EcbOptions): RateTable[] {
+  checkAvailableAt(options?.availableAt);
   const lines = withoutByteOrderMark(csv)
     .split(/\r?\n/)
     .filter((line) => line.trim() !== '');
@@ -319,6 +328,7 @@ function optionalCell(cells: readonly string[], columns: Map<string, number>, na
  *     const history = rateHistory(tables); // from @ducatjs/money/convert/history
  */
 export function parseEcbSdmxCsv(csv: string, options?: EcbSdmxOptions): RateTable[] {
+  checkAvailableAt(options?.availableAt);
   const { header, rows } = sdmxRecords(csv);
   const columns = sdmxColumns(header, ['CURRENCY', 'CURRENCY_DENOM', 'TIME_PERIOD', 'OBS_VALUE']);
   const at = (cells: readonly string[], name: string): string =>

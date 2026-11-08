@@ -55,6 +55,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean
+  nor a function (a string or a Date from untyped code), before parsing or fetching anything.
+  Before, it was ignored on a file with no days and failed as "not a function" on the first day.
 - Types: a program that augments Money itself (`declare module '@ducatjs/money' { interface Money<C
   extends string> { ... } }`, as `extendMoney` plugins do) and imports opt-in modules no longer
   loses methods. Depending on the order TypeScript read the files, the methods of modules loaded

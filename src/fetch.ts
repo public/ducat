@@ -3,6 +3,7 @@
 // network. You decide when to call it and how to cache.
 import { parseBankOfCanadaJson } from './boc.js';
 import { parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml, type EcbAvailableAt } from './ecb.js';
+import { checkAvailableAt } from './rate-text.js';
 import type { RateTable } from './provider.js';
 
 /**
@@ -78,6 +79,8 @@ export class FetchRatesError extends Error {
  *     const hist = snapshotsFrom(await fetchEcb({ history: '90d' }));
  */
 export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> {
+  // before the request, not after it
+  checkAvailableAt(options?.availableAt);
   const url = ECB_URLS[options?.history ?? 'daily'];
   const body = await getText(url, 'application/xml', options);
   const parseOptions =
@@ -209,6 +212,8 @@ async function getTextOrNotFound(
  *     const history = rateHistory(tables); // from @ducatjs/money/convert/history
  */
 export async function fetchEcbRange(options: FetchEcbRangeOptions): Promise<RateTable[]> {
+  // before the request, not after it
+  checkAvailableAt(options?.availableAt);
   const currencies = options.currencies ?? [];
   for (const currency of currencies) {
     if (!/^[A-Z]{3}$/.test(currency)) {
