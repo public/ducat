@@ -41,6 +41,8 @@ describe('Money methods', () => {
       'cashPolicy',
       'isoPolicy',
       'assertScale',
+      'isMoneyIn',
+      'assertCurrency',
       'sum',
       'ratio',
       'parse',

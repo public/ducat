@@ -150,6 +150,13 @@ describe('roundingPolicy', () => {
     expect(Object.keys(rounded).sort()).toEqual(['currency', 'minor', 'scale']);
   });
 
+  it('is an operation for with()', () => {
+    const cash = cashPolicy('CHF');
+    expect(show(money('10.00', 'CHF').multiply('1.077', 'unnecessary').with(cash))).toBe(
+      '10.75 CHF @2',
+    );
+  });
+
   it('works as a function over lists', () => {
     const amounts = [money('1.234', 'EUR', { scale: 3 }), money('5.675', 'EUR', { scale: 3 })];
     expect(amounts.map(isoPolicy).map(String)).toEqual(['1.23 EUR', '5.68 EUR']);
