@@ -19,6 +19,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `toBeMoney`, `toHaveCurrency`, `toBeGreaterThanMoney` (and the other comparisons) and
   `toSumTo`. `/testing/vitest` and `/testing/jest` set it all up in one import, and
   `/testing/arbitraries` has the fast-check arbitraries `arbMoney` and `arbCurrency`.
+- **Sterling sources:** `parseHmrcMonthlyCsv` in the new `@ducatjs/money/convert/hmrc` reads
+  HMRC's monthly exchange rates (customs and VAT, Open Government Licence) into GBP tables valid
+  for their month, available from the penultimate Thursday before. `parseBankOfEnglandCsv` in the
+  new `@ducatjs/money/convert/boe` reads the Bank of England's daily spot rates from its database
+  CSV, putting back the stripped zeros. Parsers only; the Bank's spot rates may be third-party
+  data, so ducat ships none.
 - **Federal Reserve H.10:** `parseFedH10Csv` in the new `@ducatjs/money/convert/fed` reads the
   Board's daily rates (CSV from its Data Download Program) into USD tables, with the four currencies
   H.10 quotes as USD per unit inverted exactly and `ND` holidays left out. Parser only.
