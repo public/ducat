@@ -134,6 +134,19 @@ describe('package entries', () => {
       './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/pg': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
       './drizzle/mysql': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
+      './pg': [
+        'DEFAULT_DECIMAL_SIZE',
+        'MONEY_TYPE_NAME',
+        'exactTypes',
+        'moneyTypeOids',
+        'moneyTypeSql',
+        'parseArray',
+        'parseBigInt',
+        'parseMoneyComposite',
+        'parseNumeric',
+        'toMoneyComposite',
+        'toNumeric',
+      ],
     };
     const drizzleNames: Record<string, string[]> = {};
     const leaked: Record<string, string[]> = {};
