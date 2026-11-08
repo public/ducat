@@ -173,6 +173,20 @@ The sections below list each operation with its plain-function signature, as `@d
 - `money(amount: string | number | bigint, currency, { scale?, rounding? })`: the amount is in major units. A string is the recommended form. An integer number means major units (`money(12,'EUR')` is 12.00).
 - `fromMinor(minor: number | bigint, currency, scale?)`: from cents, e.g. a BIGINT column.
 - `zero(currency)`, `fromJSON({ amount, currency } | string)`, `isMoney(x)`
+- `isMoneyIn(x, currency)` and `assertCurrency(m, currency)` narrow a currency known only at run time (`Money<string>`) to a literal one, without a cast. `assertCurrency` throws `CurrencyMismatchError` for another currency.
+
+```ts
+import { assertCurrency, fromJSON, isMoneyIn, money } from '@ducatjs/money';
+
+const price = fromJSON({ amount: '12.34', currency: 'EUR' as string }); // Money<string>
+if (isMoneyIn(price, 'EUR')) {
+  price.add(money('1', 'EUR')); // → 13.34 EUR
+}
+assertCurrency(price, 'EUR'); // now Money<'EUR'>
+
+const other = fromJSON({ amount: '1', currency: 'USD' as string });
+assertCurrency(other, 'EUR'); // throws
+```
 
 **Arithmetic.** All of these are immutable and return new values.
 
@@ -186,8 +200,9 @@ The sections below list each operation with its plain-function signature, as `@d
 
 ```ts
 import { money, type Money } from '@ducatjs/money';
+import '@ducatjs/money/cash';
 
-const toFiveRappen = (value: Money<'CHF'>) => value.divide(5).round('halfExpand').multiply(5);
+const toFiveRappen = (value: Money<'CHF'>) => value.roundToIncrement(money('0.05', 'CHF'));
 money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
 ```
 

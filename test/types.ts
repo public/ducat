@@ -2,6 +2,8 @@
 import '../src/plugins/all.js';
 import {
   add,
+  assertCurrency,
+  isMoneyIn,
   allocate,
   compare,
   convert,
@@ -66,6 +68,24 @@ eur.multiply('1.1', 'halfUp');
 void viaMethod;
 void chained;
 
+// --- narrowing a runtime currency to a literal one
+declare const unknownCurrency: Money<string>;
+// @ts-expect-error a Money<string> is not known to be a Money<'EUR'>
+const notYet: Money<'EUR'> = unknownCurrency;
+if (isMoneyIn(unknownCurrency, 'EUR')) {
+  const narrowed: Money<'EUR'> = unknownCurrency;
+  void narrowed;
+}
+declare const fromUnknown: unknown;
+if (isMoneyIn(fromUnknown, 'USD')) {
+  const narrowedUnknown: Money<'USD'> = fromUnknown;
+  void narrowedUnknown;
+}
+declare const asserted: Money<string>;
+assertCurrency(asserted, 'EUR');
+const afterAssert: Money<'EUR'> = asserted.add(eur);
+void notYet;
+void afterAssert;
 // --- with() keeps the operation's result type
 const withResult: Money<'EUR'> = eur.with((value) => value.negate());
 const withString: string = eur.with((value) => value.toDecimal());

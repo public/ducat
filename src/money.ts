@@ -209,6 +209,33 @@ export function isMoney(value: unknown): value is Money {
 }
 
 /**
+ * Whether a value is a Money in `currency`. It narrows a currency known only at run time
+ * (`Money<string>`, or `unknown`) to the literal type:
+ *
+ *     if (isMoneyIn(price, 'EUR')) { price.add(money('1', 'EUR')) }
+ */
+export function isMoneyIn<C extends CurrencyInput>(value: unknown, currency: C): value is Money<C> {
+  return value instanceof Money && value.currency === currency;
+}
+
+/**
+ * Narrows `money` to `Money<C>`, or throws a `CurrencyMismatchError` if it is in another
+ * currency. Use it where a different currency is a bug rather than a branch.
+ */
+export function assertCurrency<C extends CurrencyInput>(
+  money: Money,
+  currency: C,
+): asserts money is Money<C> {
+  // A non-Money would otherwise pass when it happens to have a matching `currency` field.
+  if (!(money instanceof Money)) {
+    throw new TypeError(`Expected Money, got ${typeof money}`);
+  }
+  if (money.currency !== currency) {
+    throw new CurrencyMismatchError(currency, money.currency);
+  }
+}
+
+/**
  * Which module installed each added method, so a second copy of the same module can replace its
  * own.
  */
