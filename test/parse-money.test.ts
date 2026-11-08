@@ -63,7 +63,9 @@ describe('parseMoney', () => {
     expect(() => parseMoney('USD 1,2345.00', 'en-US')).toThrow(/group separators/);
     expect(() => parseMoney('USD 1234,567', 'en-US')).toThrow(/group separators/);
     expect(show('₹12,34,567.50', 'en-IN')).toBe('1234567.50 INR');
-    expect(() => parseMoney('₹1,234,567.50', 'en-IN')).toThrow(/group separators/);
+    // en-IN's accounting format groups in threes ((₹1,234,567.50)), so both are its own output
+    expect(show('₹1,234,567.50', 'en-IN')).toBe('1234567.50 INR');
+    expect(() => parseMoney('₹1,2345,67.50', 'en-IN')).toThrow(/group separators/);
     expect(show('1.234.567,89 €', 'de-DE')).toBe('1234567.89 EUR');
     expect(show('USD 12,34,567.89', 'en-US', { lenient: true })).toBe('1234567.89 USD');
   });

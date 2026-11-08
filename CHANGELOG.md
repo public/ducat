@@ -108,6 +108,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **`parse` checks where group separators are**, as `parseMoney` does: `78.00` in de-DE (where
+  `.` groups thousands) and `1,5` in en-US now throw instead of becoming 7800.00 and 15.00. Text
+  `format()` produces always parses, in both the standard and the accounting style, which can
+  group differently (en-IN writes JP¥1,00,000 but (JP¥100,000)). `{ lenient: true }` restores
+  the old behaviour.
+- `parseMoney` accepts the accounting style's grouping too, so `(₹1,234,567.50)` parses in en-IN.
+
 - **Visible change:** `cashRound`, `cashPolicy` and `cashRule` now have rules for AMD, CRC, UZS,
   TZS, RSD, PKR, MNT, GYD, TWD and MRU. Before, `cashRound` returned these amounts unchanged,
   `cashPolicy` threw a RangeError (no cash-rounding rule) and `cashRule` returned `undefined`. Cash
