@@ -13,8 +13,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 - `Fixed#divide` takes the number fast path Money's `divide` has: a safe-integer value divided by a
   divisor whose ratio parts are safe integers, at the value's own scale, no longer builds the
-  inverse ratio in bigint. It runs 43% fewer instructions dividing by 3 or by '1.5'. Results are
-  unchanged.
+  inverse ratio in bigint. It runs 43% fewer instructions dividing by 3 or by '1.5', and on a clean
+  machine `Fixed` now divides faster than bigdecimal.js on every runtime. Results are unchanged.
 
 ## [0.2.1] - 2026-11-08
 

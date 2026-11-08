@@ -2,37 +2,37 @@
 
 | ns/op | parse | add | multiply | divide | compare | toString |
 |---|--:|--:|--:|--:|--:|--:|
-| ducat Money | 128 | 9.86 | 78.2 | 28.1 | 6.92 | 30.3 |
-| ducat Fixed | 30.1 | 10.9 | 29.4 | 69.3 | 7.45 | 30.6 |
-| dnum 2.18.1 | 325 | 24.3 | 282 | 229 | 20.6 | 267 |
-| ethers FixedNumber 6.17.0 | 2.2 µs | 1.6 µs | 5.8 µs | 5.4 µs | 8.99 | 4.93 |
-| js-big-decimal 2.2.0 | 59.9 | 1.7 µs | 1.5 µs | 36.1 µs | 626 | 4.57 |
-| bigdecimal.js 1.7.2 | 45.1 | 16.1 | 78.4 | 57.0 | 8.98 | 38.8 |
-| @formatjs/bigdecimal 0.2.10 | 120 | 32.2 | n/a | n/a | 22.7 | 48.5 |
-| bigint-money 2.0.1 | 547 | 46.6 | 2.8 µs | 2.6 µs | 13.7 | 481 |
+| ducat Money | 139 | 10.9 | 89.2 | 33.3 | 7.63 | 32.1 |
+| ducat Fixed | 32.8 | 13.1 | 27.2 | 31.4 | 8.65 | 33.0 |
+| dnum 2.18.1 | 364 | 27.2 | 336 | 293 | 23.5 | 291 |
+| ethers FixedNumber 6.17.0 | 2.4 µs | 1.8 µs | 6.2 µs | 6.1 µs | 9.41 | 5.27 |
+| js-big-decimal 2.2.0 | 70.1 | 1.8 µs | 1.6 µs | 42.1 µs | 678 | 5.10 |
+| bigdecimal.js 1.7.2 | 48.9 | 16.5 | 80.8 | 63.7 | 9.58 | 41.8 |
+| @formatjs/bigdecimal 0.2.10 | 141 | 38.6 | n/a | n/a | 23.9 | 55.2 |
+| bigint-money 2.0.1 | 628 | 56.1 | 3.3 µs | 2.9 µs | 15.9 | 524 |
 
 **bun 1.4.4** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
 | ns/op | parse | add | multiply | divide | compare | toString |
 |---|--:|--:|--:|--:|--:|--:|
-| ducat Money | 88.1 | 10.2 | 54.7 | 26.4 | 5.56 | 59.0 |
-| ducat Fixed | 26.7 | 12.3 | 33.9 | 147 | 4.68 | 58.6 |
-| dnum 2.18.1 | 352 | 43.4 | 438 | 326 | 30.0 | 495 |
-| ethers FixedNumber 6.17.0 | 2.2 µs | 1.5 µs | 5.2 µs | 4.9 µs | 7.53 | 4.80 |
-| js-big-decimal 2.2.0 | 35.5 | 1.9 µs | 1.9 µs | 44.9 µs | 592 | 4.40 |
-| bigdecimal.js 1.7.2 | 28.9 | 11.9 | 47.4 | 34.1 | 7.78 | 75.9 |
-| @formatjs/bigdecimal 0.2.10 | 192 | 47.3 | n/a | n/a | 17.4 | 98.6 |
-| bigint-money 2.0.1 | 341 | 47.2 | 2.3 µs | 2.2 µs | 20.5 | 407 |
+| ducat Money | 103 | 9.75 | 72.4 | 29.1 | 9.94 | 86.5 |
+| ducat Fixed | 29.5 | 15.8 | 30.4 | 29.2 | 6.26 | 88.8 |
+| dnum 2.18.1 | 408 | 44.8 | 540 | 375 | 34.2 | 638 |
+| ethers FixedNumber 6.17.0 | 2.6 µs | 1.9 µs | 6.8 µs | 6.0 µs | 9.58 | 5.01 |
+| js-big-decimal 2.2.0 | 38.8 | 2.2 µs | 2.5 µs | 54.5 µs | 696 | 4.62 |
+| bigdecimal.js 1.7.2 | 33.5 | 14.4 | 59.6 | 38.8 | 9.05 | 102 |
+| @formatjs/bigdecimal 0.2.10 | 255 | 49.9 | n/a | n/a | 20.6 | 146 |
+| bigint-money 2.0.1 | 362 | 53.4 | 2.6 µs | 2.6 µs | 21.8 | 492 |
 
 **deno 2.9.8 (V8 15.0.245.2-rusty)** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
 | ns/op | parse | add | multiply | divide | compare | toString |
 |---|--:|--:|--:|--:|--:|--:|
-| ducat Money | 126 | 8.92 | 82.6 | 25.6 | 6.58 | 30.4 |
-| ducat Fixed | 28.7 | 10.2 | 23.7 | 60.3 | 6.76 | 30.8 |
-| dnum 2.18.1 | 349 | 24.1 | 288 | 214 | 19.7 | 261 |
-| ethers FixedNumber 6.17.0 | 2.4 µs | 1.7 µs | 5.8 µs | 5.6 µs | 8.84 | 4.79 |
-| js-big-decimal 2.2.0 | 58.2 | 1.6 µs | 1.4 µs | 20.2 µs | 590 | 4.80 |
-| bigdecimal.js 1.7.2 | 36.0 | 13.7 | 62.3 | 47.0 | 7.97 | 34.9 |
-| @formatjs/bigdecimal 0.2.10 | 118 | 24.9 | n/a | n/a | 20.6 | 50.8 |
-| bigint-money 2.0.1 | 490 | 51.5 | 2.2 µs | 2.0 µs | 13.3 | 315 |
+| ducat Money | 144 | 10.7 | 90.3 | 29.2 | 7.57 | 33.9 |
+| ducat Fixed | 33.1 | 11.0 | 27.0 | 28.8 | 7.90 | 32.8 |
+| dnum 2.18.1 | 417 | 26.5 | 306 | 241 | 22.4 | 305 |
+| ethers FixedNumber 6.17.0 | 2.8 µs | 1.9 µs | 7.2 µs | 6.6 µs | 9.78 | 5.48 |
+| js-big-decimal 2.2.0 | 64.6 | 1.8 µs | 1.5 µs | 21.7 µs | 633 | 5.45 |
+| bigdecimal.js 1.7.2 | 39.5 | 14.8 | 63.5 | 50.5 | 9.44 | 37.0 |
+| @formatjs/bigdecimal 0.2.10 | 131 | 27.8 | n/a | n/a | 23.3 | 55.2 |
+| bigint-money 2.0.1 | 537 | 57.1 | 2.2 µs | 2.1 µs | 13.8 | 342 |
