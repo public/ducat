@@ -565,10 +565,10 @@ These are stated over the proved kernel (`divRound`):
 - CodSpeed measures every pull request by instruction count, so speed regressions show up even on noisy CI machines.
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
   ±20–30%.
-- Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
-  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.9 kB**, of which about 0.55 kB is the ISO table
-  - the core entry point: 4.7 kB; everything (`@ducatjs/money/all`): 19.1 kB
-  - the same snippet with dinero.js (EUR only): 1.9 kB
+- Bundle size in KiB (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **3.8 KiB**, of which about 0.5 KiB is the ISO table
+  - the core entry point: 4.6 KiB; everything (`@ducatjs/money/all`): 18.7 KiB
+  - the same snippet with dinero.js 2 (EUR only): 1.8 KiB
 
 ---
 
@@ -613,6 +613,6 @@ These are stated over the proved kernel (`divRound`):
   - Memory and GC pressure, which were reasoned about but not measured.
   - dinero.js's bigint calculator.
 - **No Money arrays or columnar ops** (e.g. summing a `Float64Array`/`BigInt64Array` of minor units).
-- **The ISO table is always bundled** (about 0.55 kB gzipped, 1 kB minified). Per-currency imports like dinero's would make the minimum bundle smaller.
+- **The ISO table is always bundled** (about 0.5 KiB gzipped, 1 KiB minified). Per-currency imports like dinero's would make the minimum bundle smaller.
 - **Minor-unit columns can't round-trip values with a non-ISO scale.** `toMinorColumns` refuses them by design. There is no `scale` column helper.
 - **No docs site yet.**
