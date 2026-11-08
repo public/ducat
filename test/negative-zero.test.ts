@@ -57,7 +57,7 @@ function expectNoNegativeZero(money: Money): void {
 
 describe('no operation returns -0 minor units', () => {
   it('fromMinor(-0)', () => {
-    expectNoNegativeZero(fromMinor(-0, 'EUR'));
+    expect(Object.is(fromMinor(-0, 'EUR').minor, -0)).toBe(false);
   });
 
   it('multiply(zero, -1) (#105)', () => {
