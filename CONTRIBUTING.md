@@ -15,6 +15,12 @@ sizes without failing), `pnpm gen` (the currency tables), `pnpm gen:check` (chec
 tables, and that `src/generated/kernel.ts` matches its Lean sources), `pnpm bench` and `pnpm
 bench:vitest`, `pnpm test:runtimes` (Bun, Deno and the engine shells).
 
+`pnpm install` also points git at `.githooks/` (`git config core.hooksPath .githooks`, replacing `.git/hooks`; `git config --unset core.hooksPath` undoes it): a pre-commit hook lints (warnings fail) and
+format-checks the staged files, and a commit-msg hook checks the subject is a
+[Conventional Commit](https://www.conventionalcommits.org/) of at most 100 characters. CI runs the
+same checks on the whole repo, and checks the pull request title, which becomes the squash commit's
+subject.
+
 ## What a change needs
 
 - `pnpm check` passes.

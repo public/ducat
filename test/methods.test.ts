@@ -212,7 +212,7 @@ describe('Money methods', () => {
 
   it('does not accept bare numbers as operands', () => {
     // @ts-expect-error a number is neither major nor minor units here
-    expect(() => eur('1').add(5)).toThrow();
+    expect(() => eur('1').add(5)).toThrow(/Expected Money, got number/);
   });
 
   it('chunk, schedule, cashRound, clamp', () => {

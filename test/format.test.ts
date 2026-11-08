@@ -2,7 +2,7 @@ import '../src/plugins/all.js';
 import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
-import { equals, format, fromMinor, money, parse, toDecimal } from '../src/fn.js';
+import { RoundingError, equals, format, fromMinor, money, parse, toDecimal } from '../src/fn.js';
 
 const norm = (s: string) => s.replace(/[  ]/g, ' ');
 
@@ -59,10 +59,10 @@ describe('parse', () => {
     }
   });
   it('rejects ambiguous or garbage input', () => {
-    expect(() => parse('1,234.50', 'EUR', 'de-DE')).toThrow(); // ',' is the decimal mark in de-DE
-    expect(() => parse('12.3.4', 'EUR', 'en-US')).toThrow();
-    expect(() => parse('abc', 'EUR', 'en-US')).toThrow();
-    expect(() => parse('1.234', 'EUR', 'en-US')).toThrow(); // 3 decimals for EUR
+    expect(() => parse('1,234.50', 'EUR', 'de-DE')).toThrow(SyntaxError); // ',' is the decimal mark in de-DE
+    expect(() => parse('12.3.4', 'EUR', 'en-US')).toThrow(SyntaxError);
+    expect(() => parse('abc', 'EUR', 'en-US')).toThrow(SyntaxError);
+    expect(() => parse('1.234', 'EUR', 'en-US')).toThrow(RoundingError); // 3 decimals for EUR
   });
   it('property: parse(format(x)) === x across locales', () => {
     const locales = [

@@ -310,12 +310,12 @@ export function parseEcbSdmxCsv(csv: string, options?: EcbSdmxOptions): RateTabl
       }
     }
 
-    const isoDay = calendarDay(
+    const calendarDayOf = calendarDay(
       Number(day.slice(0, 4)),
       Number(day.slice(5, 7)),
       Number(day.slice(8)),
     );
-    addDayRate(days, isoDay, currency, rate);
+    addDayRate(days, calendarDayOf, currency, rate);
   }
 
   const tables: RateTable[] = [];

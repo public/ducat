@@ -321,15 +321,15 @@ function meaningsOf(
   piece: string,
   locale: string,
   candidates: ReadonlySet<string> | undefined,
-  symbols: Readonly<Record<string, string>> | undefined,
+  customSymbols: Readonly<Record<string, string>> | undefined,
 ): string[] {
   const isCandidate = (code: string) =>
     candidates === undefined ? defaultCandidates().includes(code) : candidates.has(code);
   if (/^[A-Z]{3}$/.test(piece) && isCandidate(piece)) {
     return [piece];
   }
-  if (symbols !== undefined && Object.hasOwn(symbols, piece)) {
-    return [symbols[piece]!];
+  if (customSymbols !== undefined && Object.hasOwn(customSymbols, piece)) {
+    return [customSymbols[piece]!];
   }
   // The locale's own symbols first, then English ones (US$, CA$, A$...), which many texts use.
   for (const source of [locale, ...ENGLISH_SYMBOL_LOCALES]) {

@@ -61,8 +61,8 @@ describe('allocate', () => {
       '0.50',
     ]);
     expect(dec(allocate(eur('0.01'), [0, 1], { remainder: 'toFirst' }))).toEqual(['0.00', '0.01']);
-    expect(() => allocate(eur('1'), [0, 0])).toThrow();
-    expect(() => allocate(eur('1'), [-1, 2])).toThrow();
+    expect(() => allocate(eur('1'), [0, 0])).toThrow(/must not all be zero/);
+    expect(() => allocate(eur('1'), [-1, 2])).toThrow(/must not be negative/);
   });
   it('bigint amounts and weights', () => {
     const big = fromMinor(10n ** 30n + 1n, 'EUR');

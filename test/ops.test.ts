@@ -1,6 +1,6 @@
 import '../src/plugins/all.js';
 import { describe, expect, it } from 'vitest';
-import { defineCurrency } from '../src/fn.js';
+import { CurrencyMismatchError, RoundingError, defineCurrency } from '../src/fn.js';
 defineCurrency('BTC', 8);
 import fc from 'fast-check';
 import {
@@ -26,7 +26,7 @@ describe('percentages, tax and discounts', () => {
     expect(d(percentage(money('80', 'EUR'), '12.5'))).toBe('10.00');
     expect(d(percentage(money('9.99', 'EUR'), 15, 'halfEven'))).toBe('1.50');
     expect(d(percentage(money('9.99', 'EUR'), 15))).toBe('1.50'); // 1.4985, default halfExpand
-    expect(() => percentage(money('9.99', 'EUR'), 15, 'unnecessary')).toThrow();
+    expect(() => percentage(money('9.99', 'EUR'), 15, 'unnecessary')).toThrow(RoundingError);
   });
   it('UK VAT 20%: exclusive and inclusive', () => {
     const t = addTax(gbp('10'), 20);
@@ -71,15 +71,15 @@ describe('currency conversion', () => {
     expect(d(convert(money('1', 'BTC', { scale: 8 }), 'USD', '67250.12345678', 'halfEven'))).toBe(
       '67250.12',
     );
-    expect(() => convert(money('1', 'EUR'), 'USD', '0')).toThrow();
+    expect(() => convert(money('1', 'EUR'), 'USD', '0')).toThrow(/must be positive/);
     expect(d(convert(money('1', 'EUR'), 'USD', '1.0832'))).toBe('1.08'); // default halfExpand
-    expect(() => convert(money('1', 'EUR'), 'USD', '1.0832', 'unnecessary')).toThrow();
+    expect(() => convert(money('1', 'EUR'), 'USD', '1.0832', 'unnecessary')).toThrow(RoundingError);
   });
   it('exchangeRate pins the pair', () => {
     const r = exchangeRate('EUR', 'USD', '1.25');
     expect(d(r.convert(money('10', 'EUR')))).toBe('12.50');
     expect(d(r.inverse().convert(money('12.50', 'USD')))).toBe('10.00');
     // @ts-expect-error a EUR→USD rate cannot convert GBP
-    expect(() => r.convert(money('1', 'GBP'))).toThrow();
+    expect(() => r.convert(money('1', 'GBP'))).toThrow(CurrencyMismatchError);
   });
 });

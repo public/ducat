@@ -1,0 +1,13 @@
+#!/bin/sh
+# Lint (warnings fail) and format-check the staged files, as CI does for the whole repo.
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.mts' '*.mjs' '*.js' '*.json' '*.md' '*.yml' '*.yaml')
+[ -n "$files" ] || exit 0
+code=$(printf '%s\n' "$files" | grep -E '\.(ts|mts|mjs|js)$' || true)
+if [ -n "$code" ]; then
+  # shellcheck disable=SC2086 # one file name per word
+  pnpm exec oxlint --deny-warnings $code
+fi
+# shellcheck disable=SC2086
+pnpm exec oxfmt --check $files
