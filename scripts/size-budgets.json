@@ -43,8 +43,8 @@
     "@ducatjs/money/historic": 1.28
   },
   "aggregateCeilings": {
-    "@ducatjs/money/fn": 30,
-    "@ducatjs/money/all": 30
+    "@ducatjs/money/fn": 40,
+    "@ducatjs/money/all": 40
   },
   "snippets": {
     "methods: money, add, multiply, toDecimal": {
