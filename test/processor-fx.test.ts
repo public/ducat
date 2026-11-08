@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { money } from '../src/fn.js';
 import { adyenRate } from '../src/adyen-fx.js';
 import { impliedRate } from '../src/rate.js';
@@ -83,10 +83,6 @@ describe('processor rates', () => {
   });
 
   describe('Adyen account time zones', () => {
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
     const row = (created: string) => ({
       'Gross Currency': 'USD',
       'Net Currency': 'EUR',
@@ -104,13 +100,17 @@ describe('processor rates', () => {
         zones.push(String(options?.timeZone));
         return new RealDateTimeFormat(locales, options);
       };
-      vi.stubGlobal('Intl', { ...Intl, DateTimeFormat: CountingDateTimeFormat });
-
-      for (let day = 10; day < 30; day++) {
-        const options = { timeZone: 'Asia/Kolkata' };
-        expect(adyenRate(row(`2026-03-${day} 12:00:00`), options)?.asOf).toBe(
-          `2026-03-${day}T06:30:00.000Z`,
-        );
+      // Assigned directly rather than through vi.stubGlobal, which Bun's test runner lacks.
+      (Intl as { DateTimeFormat: unknown }).DateTimeFormat = CountingDateTimeFormat;
+      try {
+        for (let day = 10; day < 30; day++) {
+          const options = { timeZone: 'Asia/Kolkata' };
+          expect(adyenRate(row(`2026-03-${day} 12:00:00`), options)?.asOf).toBe(
+            `2026-03-${day}T06:30:00.000Z`,
+          );
+        }
+      } finally {
+        Intl.DateTimeFormat = RealDateTimeFormat;
       }
       // At most one: the cache is module-wide, so another test may already have built it.
       expect(zones.length).toBeLessThanOrEqual(1);
