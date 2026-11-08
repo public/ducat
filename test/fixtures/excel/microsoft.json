@@ -1,5 +1,5 @@
 {
-  "comment": "Worked examples from Microsoft's Excel function pages, copied as printed. Results are rounded as the pages show them.",
+  "comment": "Worked examples from Microsoft's Excel function pages, copied as printed. NPV results are in dollars and IRR results are fractions (the pages print -2.1% as -2.1%; it is stored as -0.021), rounded as the pages show them.",
   "npv": {
     "source": "https://support.microsoft.com/en-us/office/npv-function-8672cb67-2576-4d07-b67b-ac28acf2a568",
     "examples": [

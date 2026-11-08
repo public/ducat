@@ -14,8 +14,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `compound`), loan schedules (`amortise`: annuity, linear and interest-only, with a balloon,
   payment dates and the rounding residual on the last payment or the last interest), Excel's
   `npv` (and `npvExact`) and `irr` (exact bisection to a stated number of digits, checked against
-  Microsoft's examples and LibreOffice Calc), the period-0 form as `presentValue` and
-  `presentValueExact`, and subscription proration (`prorate` by the day or the second, `splitPeriod`). Exact
+  Microsoft's examples and LibreOffice Calc), the period-0 form as `discountedSum` and
+  `discountedSumExact`, and subscription proration (`prorate` by the day or the second, `splitPeriod`). Exact
   arithmetic throughout, rounded once per paid amount with a mode or a policy; dates are
   `'YYYY-MM-DD'` or `{ year, month, day }`, so `Temporal.PlainDate` works.
 - `@ducatjs/money/pricing`: `priceEnding`, retail price endings ("charm pricing"). A rule allows

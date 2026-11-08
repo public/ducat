@@ -114,7 +114,7 @@ plan.totalInterest; // exact sum of the interest column
 ### 3. NPV and IRR
 
 ```ts
-presentValue(
+discountedSum(
   '0.08',
   [money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')],
   'halfEven',
@@ -136,9 +136,9 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
   is discounted once, exact and rounded once (it matches Excel to the cent). Like Excel, an
   initial outlay at period 0 goes outside: `flows[0] + npv(rate, rest)`. `npvExact` returns the
   `ExactMoney`.
-- `presentValue(rate, flows, rounding)` and `presentValueExact` are the textbook form, flows at
+- `discountedSum(rate, flows, rounding)` and `discountedSumExact` are the textbook form, flows at
   periods 0, 1, 2…, with the first undiscounted.
-- `irr` is Excel's IRR (its first value is at period 0, the same root as `presentValue`). The
+- `irr` is Excel's IRR (its first value is at period 0, the same root as `discountedSum`). The
   rate is exact to `digits` places, floored. Where Excel guesses, it throws instead: no sign
   change (Excel's #NUM!), several sign changes without a `bracket` (which replaces Excel's
   `guess`; Excel returns whichever root its Newton iteration finds), and an IRR within
@@ -146,9 +146,11 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
   returned is inside it.
 - `irr(flows, { digits, bracket? })`: the IRR is a polynomial root, irrational in general, so it
   is computed to `digits` decimal places by bisection in exact rational arithmetic, with no floats
-  and no Newton steps that can diverge. The result guarantees that NPV changes sign between `lower`
-  and `upper`, which are 10^−digits apart, and `rate` is `lower` (truncated, never rounded up past
-  the root).
+  and no Newton steps that can diverge. The IRR lies in [`lower`, `upper`], which are 10^−digits
+  apart, and `rate` is `lower` (floored, never rounded up past the root). Without a bracket the
+  flows have one IRR, so the NPV also changes sign between `lower` and `upper`. With a bracket,
+  the guarantee is that the IRR inside the bracket lies in [`lower`, `upper`]: another root can
+  share that grid cell, so the NPV's signs at the two ends may agree.
   - It throws when the flows have no sign change (no IRR).
   - Flows with more than one sign change can have several IRRs (Descartes), so they throw unless a
     `bracket` with a sign change is given: picking one silently is the classic IRR bug.
@@ -227,7 +229,7 @@ The review took the recommendation on every fork:
    where Excel uses doubles; it may throw where Excel guesses (`irr`), but never returns a
    different value. Anything with other semantics gets another name. So `npv` is Excel's NPV,
    the first flow at the end of period 1, and the period-0 form the design first had is
-   `presentValue`. The tests check both against Microsoft's documented examples and against
+   `discountedSum` (not `presentValue`, which reads as Excel's PV, an annuity's present value). The tests check both against Microsoft's documented examples and against
    LibreOffice Calc. `yearFraction`, `amortise`, `interest` and `prorate` aren't Excel names
    and follow ISDA and lender practice; `yearFraction` is not YEARFRAC, and a schedule's
    payments are positive and its interest is rounded every period, unlike PMT, IPMT and PPMT.

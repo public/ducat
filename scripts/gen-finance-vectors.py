@@ -266,7 +266,8 @@ def amortise_cases(rng: random.Random) -> list:
         balloon = 0
         if method != "interestOnly" and rng.random() < 0.25:
             balloon = rng.randint(0, loan)
-        residual = rng.choice(["lastPayment", "lastInterest"]) if method == "annuity" else "lastPayment"
+        # lastInterest needs interest to put the residual in: an annuity at a non-zero rate
+        residual = rng.choice(["lastPayment", "lastInterest"]) if method == "annuity" and rate != "0" else "lastPayment"
         payment, rows = schedule(loan, exponent, Fraction(rate), per_year, periods, method, mode, balloon, residual)
         if any(row[1] < 0 for row in rows):
             # lastInterest refuses a negative last interest; that path has its own unit test
@@ -293,7 +294,7 @@ def amortise_cases(rng: random.Random) -> list:
     return cases
 
 
-def present_value(rate: Fraction, flows: list) -> Fraction:
+def discounted_sum(rate: Fraction, flows: list) -> Fraction:
     """the textbook form: the first flow at period 0, undiscounted"""
     return sum((Fraction(flow) / (1 + rate) ** t for t, flow in enumerate(flows)), Fraction(0))
 
@@ -312,7 +313,7 @@ def npv_cases(rng: random.Random) -> list:
         rate = rng.choice([rate_string(rng), "-" + rate_string(rng, zero_ok=False), "1.5"])
         mode = rng.choice(MODES)
         npv = excel_npv(Fraction(rate), flows) / 10**exponent
-        present = present_value(Fraction(rate), flows) / 10**exponent
+        present = discounted_sum(Fraction(rate), flows) / 10**exponent
         cases.append(
             {
                 "currency": currency,
@@ -320,7 +321,7 @@ def npv_cases(rng: random.Random) -> list:
                 "rate": rate,
                 "mode": mode,
                 "npv": str(round_major(npv, exponent, mode)),
-                "presentValue": str(round_major(present, exponent, mode)),
+                "discountedSum": str(round_major(present, exponent, mode)),
             }
         )
     return cases
@@ -334,18 +335,18 @@ def irr_grid(flows: list, digits: int) -> int:
     """the IRR truncated to `digits` places, as an integer count of 10^-digits"""
     first_sign = sign(Fraction(next(flow for flow in flows if flow != 0)))
     low, high = Fraction(-1), Fraction(1)
-    while sign(present_value(high, flows)) not in (first_sign, 0):
+    while sign(discounted_sum(high, flows)) not in (first_sign, 0):
         high *= 2
-    if sign(present_value(Fraction(0), flows)) == first_sign:
+    if sign(discounted_sum(Fraction(0), flows)) == first_sign:
         high = Fraction(0)
     else:
         low = Fraction(0) if high == 1 else high / 2
     # bisect on the real line until the bracket is far narrower than the grid
     width = Fraction(1, 10 ** (digits + 3))
-    low_sign = -first_sign if low == -1 else sign(present_value(low, flows))
+    low_sign = -first_sign if low == -1 else sign(discounted_sum(low, flows))
     while high - low > width:
         middle = (low + high) / 2
-        middle_sign = sign(present_value(middle, flows))
+        middle_sign = sign(discounted_sum(middle, flows))
         if middle_sign == 0:
             low = high = middle
             break
@@ -359,8 +360,8 @@ def irr_grid(flows: list, digits: int) -> int:
     while True:
         here = Fraction(grid, unit)
         above = Fraction(grid + 1, unit)
-        here_sign = -first_sign if here == -1 else sign(present_value(here, flows))
-        if here_sign == 0 or here_sign != sign(present_value(above, flows)):
+        here_sign = -first_sign if here == -1 else sign(discounted_sum(here, flows))
+        if here_sign == 0 or here_sign != sign(discounted_sum(above, flows)):
             return grid
         grid += 1
 

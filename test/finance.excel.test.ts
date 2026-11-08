@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ratio, type Ratio } from '../src/decimal.js';
 import type { ExactMoney } from '../src/exact.js';
-import { irr, npv, npvExact } from '../src/finance.js';
+import { discountedSumExact, irr, npv, npvExact } from '../src/finance.js';
 import { abs, add, money, type Money } from '../src/money.js';
 
 interface Microsoft {
@@ -159,7 +159,14 @@ describe(`LibreOffice Calc (${calc.calc})`, () => {
     let gaveUp = 0;
     let belowMinusOne = 0;
     const mismatches = calc.irr.filter((vector) => {
-      const { lower, upper } = irr(vector.flows.map(usd), { digits: 12 });
+      const flows = vector.flows.map(usd);
+      const { lower, upper } = irr(flows, { digits: 12 });
+      // whatever Calc did, our bracket is genuine: one sign change, so the NPV changes sign over it
+      const lowerSign = discountedSumExact(lower, flows).sign();
+      const upperSign = discountedSumExact(upper, flows).sign();
+      if (!(lowerSign === 0 || lowerSign === -upperSign)) {
+        return true;
+      }
       if (vector.calc.startsWith('Err')) {
         // Calc's Newton iteration gave up (Err:523), as Excel's returns #NUM!
         gaveUp++;

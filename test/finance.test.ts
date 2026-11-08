@@ -11,8 +11,8 @@ import {
   irr,
   npv,
   npvExact,
-  presentValue,
-  presentValueExact,
+  discountedSum,
+  discountedSumExact,
   prorate,
   splitPeriod,
   yearFraction,
@@ -516,7 +516,19 @@ describe('amortise', () => {
     );
     expect(() =>
       amortise(eur('100'), { ...base, method: 'linear', residual: 'lastInterest' }),
-    ).toThrow('annuities only');
+    ).toThrow('non-zero rate only');
+    expect(() => amortise(eur('100'), { ...base, rate: '0', residual: 'lastInterest' })).toThrow(
+      'non-zero rate only',
+    );
+    expect(() => amortise(eur('120'), { ...base, rate: '0', firstPayment: '9999-06-30' })).toThrow(
+      'past the year 9999',
+    );
+    expect(() =>
+      amortise(eur('120'), { ...base, rate: '0', perYear: 52, firstPayment: '9999-12-01' }),
+    ).toThrow('past the year 9999');
+    expect(
+      amortise(eur('120'), { ...base, rate: '0', firstPayment: '9998-12-31' }).rows.at(-1)?.date,
+    ).toBe('9999-11-30');
     // amounts the rounding can't produce would leave the schedule off the policy's grid
     const cash = roundingPolicy({ increment: 5 });
     expect(() => amortise(money('1000.02', 'CHF'), { ...base, rounding: cash })).toThrow(
@@ -648,8 +660,8 @@ describe('amortise properties', () => {
 describe('npv and irr', () => {
   const flows = [eur('-1000'), eur('300'), eur('400'), eur('500')];
 
-  it('the design examples: presentValue takes flows from period 0, npv from period 1', () => {
-    expect(String(presentValue('0.08', flows, 'halfEven'))).toBe('17.63 EUR');
+  it('the design examples: discountedSum takes flows from period 0, npv from period 1', () => {
+    expect(String(discountedSum('0.08', flows, 'halfEven'))).toBe('17.63 EUR');
     expect(String(npv('0.08', flows, 'halfEven'))).toBe('16.32 EUR');
     // an initial outlay goes outside Excel's NPV
     const outside = add(flows[0]!, npv('0.08', flows.slice(1), 'halfEven'));
@@ -660,17 +672,17 @@ describe('npv and irr', () => {
       upper: '0.08896340',
     });
     expect(irr(flows).rate).toBe('0.0889633946');
-    expect(String(presentValueExact('0', flows))).toBe('200 EUR');
+    expect(String(discountedSumExact('0', flows))).toBe('200 EUR');
   });
 
-  it('npv is exact: npvExact and presentValueExact at the IRR bracket change sign', () => {
+  it('npv is exact: npvExact and discountedSumExact at the IRR bracket change sign', () => {
     const { lower, upper } = irr(flows, { digits: 12 });
     expect(npvExact(lower, flows).sign()).toBe(1);
     expect(npvExact(upper, flows).sign()).toBe(-1);
-    expect(presentValueExact(lower, flows).sign()).toBe(1);
-    expect(presentValueExact(upper, flows).sign()).toBe(-1);
+    expect(discountedSumExact(lower, flows).sign()).toBe(1);
+    expect(discountedSumExact(upper, flows).sign()).toBe(-1);
     // Excel's form is the period-0 form discounted once more
-    expect(npvExact('0.25', flows).equals(presentValueExact('0.25', flows).divide('1.25'))).toBe(
+    expect(npvExact('0.25', flows).equals(discountedSumExact('0.25', flows).divide('1.25'))).toBe(
       true,
     );
   });
@@ -729,7 +741,7 @@ describe('npv and irr', () => {
     expect(() => irr(flows, { digits: 1.5 })).toThrow('Invalid digits');
     expect(() => irr([])).toThrow('At least one cash flow');
     expect(() => npv('-1', flows)).toThrow('above -1');
-    expect(() => presentValue('-1.5', flows)).toThrow('above -1');
+    expect(() => discountedSum('-1.5', flows)).toThrow('above -1');
     expect(() => irr([eur('-1'), money('2', 'USD')] as Money[])).toThrow(CurrencyMismatchError);
   });
 
@@ -747,8 +759,11 @@ describe('npv and irr', () => {
         try {
           result = irr(cashFlows, { digits });
         } catch (error) {
-          // an IRR within 10^-digits of -1 has no lower end to give
+          // an IRR within 10^-digits of -1 has no lower end to give: check that it really is, that
+          // the NPV at -1 + 10^-digits already has the outlay's sign (or is zero)
           expect(String(error)).toContain('ask for more digits');
+          const nearMinusOne = ratio(1n - 10n ** BigInt(digits), 10n ** BigInt(digits));
+          expect(discountedSumExact(nearMinusOne, cashFlows).sign()).toBeLessThanOrEqual(0);
           return;
         }
         expect(result.rate).toBe(result.lower);

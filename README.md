@@ -155,7 +155,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (charm pricing: .99, .95, 9.90, the nearest 5)     |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
-| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `presentValue`…        |
+| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                        |
@@ -439,7 +439,7 @@ declare module '@ducatjs/money' {
 
 - `yearFraction(start, end, convention)` is an exact `Ratio` under `ACT/360`, `ACT/365F`, `ACT/ACT ISDA`, `30/360` (Bond Basis), `30E/360` or `30E/360 ISDA` (pass `maturity: true` or `false` when the end date is the last day of February), as the 2006 ISDA Definitions §4.16 define them. It isn't Excel's YEARFRAC, whose bases differ (US 30/360, an average year length for actual/actual). `interest` is simple interest over a day count, and `compound` is periodic compounding over a whole number of periods.
 - `amortise(loan, options)` builds an annuity, linear or interest-only schedule. Each period's interest is the balance times `rate / perYear`, rounded; the principal parts sum exactly to the loan and the balance ends at zero, because the rounding residual goes to the last payment (or, with `residual: 'lastInterest'`, to the last interest). It takes a `balloon` and a `firstPayment` date.
-- Functions named after Excel's give Excel's values. `npv(rate, flows)` is Excel's NPV: the first flow is at the end of period 1, so, like Excel, an initial outlay at period 0 goes outside, `flows[0] + npv(rate, rest)`. `presentValue(rate, flows)` takes flows from period 0. Both are exact and rounded once, so `npv` matches Excel to the cent.
+- Functions named after Excel's give Excel's values. `npv(rate, flows)` is Excel's NPV: the first flow is at the end of period 1, so, like Excel, an initial outlay at period 0 goes outside, `flows[0] + npv(rate, rest)`. `discountedSum(rate, flows)` takes flows from period 0. Both are exact and rounded once, so `npv` matches Excel to the cent.
 - `irr(flows, { digits })` is Excel's IRR, exact to `digits` places (floored): it bisects in exact integer arithmetic, the IRR lies between `lower` and `upper`, 10^−digits apart, and `rate` is `lower`. Where Excel guesses, it throws: with no sign change (Excel's #NUM!), and with more than one unless a `bracket` (in place of Excel's `guess`) selects one root.
 - `prorate(price, { period, used })` charges the used part of a period (by the day, or with `unit: 'second'` by the second), and `splitPeriod(price, { period, at })` splits a period's price at plan changes into pieces that sum exactly to it.
 
@@ -450,7 +450,7 @@ import {
   interest,
   irr,
   npv,
-  presentValue,
+  discountedSum,
   prorate,
   splitPeriod,
 } from '@ducatjs/money/finance';
@@ -465,7 +465,7 @@ plan.rows.at(-1)?.balance; // → 0.00 EUR
 plan.totalInterest; // → 133500.69 EUR
 
 const flows = ['-1000', '300', '400', '500'].map((amount) => money(amount, 'EUR'));
-presentValue('0.08', flows, 'halfEven'); // → 17.63 EUR
+discountedSum('0.08', flows, 'halfEven'); // → 17.63 EUR
 npv('0.08', flows.slice(1), 'halfEven'); // → 1017.63 EUR (Excel's NPV: add the outlay yourself)
 irr(flows, { digits: 8 }); // → { rate: '0.08896339', lower: '0.08896339', upper: '0.08896340' }
 irr(['-100', '230', '-132'].map((amount) => money(amount, 'EUR'))); // throws RangeError: two IRRs, 10% and 20%

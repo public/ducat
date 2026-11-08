@@ -9,7 +9,7 @@ import {
   interest,
   irr,
   npv,
-  presentValue,
+  discountedSum,
   prorate,
   splitPeriod,
   yearFraction,
@@ -70,7 +70,7 @@ interface Vectors {
     rate: string;
     mode: RoundingMode;
     npv: string;
-    presentValue: string;
+    discountedSum: string;
   }[];
   irr: { currency: string; flows: string[]; digits: number; lower: string }[];
   irrBracketed: {
@@ -179,9 +179,9 @@ describe('finance matches the Python fractions oracle', () => {
       const flows = vector.flows.map((flow) => amount(flow, vector.currency));
       const actual = [
         npv(vector.rate, flows, vector.mode),
-        presentValue(vector.rate, flows, vector.mode),
+        discountedSum(vector.rate, flows, vector.mode),
       ];
-      return actual.map(minorOf).join() !== [vector.npv, vector.presentValue].join();
+      return actual.map(minorOf).join() !== [vector.npv, vector.discountedSum].join();
     });
     expect(mismatches).toEqual([]);
   });

@@ -10984,7 +10984,7 @@
    "checksum": "17572"
   },
   {
-   "currency": "KWD",
+   "currency": "EUR",
    "loan": "508",
    "rate": "0.19274",
    "perYear": 26,
@@ -11213,7 +11213,7 @@
    "periods": 301,
    "method": "annuity",
    "mode": "expand",
-   "residual": "lastInterest",
+   "residual": "lastPayment",
    "payment": "7",
    "rows": 301,
    "totalInterest": "0",
@@ -11226,24 +11226,24 @@
    "checksum": "363909"
   },
   {
-   "currency": "EUR",
-   "loan": "54",
-   "rate": "0",
+   "currency": "JPY",
+   "loan": "1746",
+   "rate": "0.09",
    "perYear": 12,
-   "periods": 26,
+   "periods": 269,
    "method": "annuity",
    "mode": "halfCeil",
    "residual": "lastPayment",
-   "payment": "2",
-   "rows": 26,
-   "totalInterest": "0",
+   "payment": "15",
+   "rows": 269,
+   "totalInterest": "2425",
    "last": [
-    "4",
-    "0",
-    "4",
+    "151",
+    "1",
+    "150",
     "0"
    ],
-   "checksum": "754"
+   "checksum": "2392342"
   },
   {
    "currency": "JPY",
@@ -12101,7 +12101,7 @@
    "periods": 1,
    "method": "annuity",
    "mode": "halfFloor",
-   "residual": "lastInterest",
+   "residual": "lastPayment",
    "payment": "540921449",
    "rows": 1,
    "totalInterest": "0",
@@ -12115,43 +12115,43 @@
   },
   {
    "currency": "KWD",
-   "loan": "3286",
-   "rate": "0.202",
-   "perYear": 1,
-   "periods": 1,
+   "loan": "541827788",
+   "rate": "0.181",
+   "perYear": 52,
+   "periods": 16,
    "method": "interestOnly",
-   "mode": "halfExpand",
+   "mode": "halfEven",
    "residual": "lastPayment",
-   "payment": "664",
-   "rows": 1,
-   "totalInterest": "664",
+   "payment": "1885977",
+   "rows": 16,
+   "totalInterest": "30175632",
    "last": [
-    "3950",
-    "664",
-    "3286",
+    "543713765",
+    "1885977",
+    "541827788",
     "0"
    ],
-   "checksum": "8598"
+   "checksum": "10721187584"
   },
   {
-   "currency": "KWD",
-   "loan": "6795",
-   "rate": "0.068",
-   "perYear": 52,
+   "currency": "JPY",
+   "loan": "946240130",
+   "rate": "0.0782",
+   "perYear": 12,
    "periods": 49,
    "method": "linear",
    "mode": "ceil",
    "residual": "lastPayment",
-   "payment": "147",
+   "payment": "25477355",
    "rows": 49,
-   "totalInterest": "247",
+   "totalInterest": "154158324",
    "last": [
-    "172",
-    "1",
-    "171",
+    "19436870",
+    "125844",
+    "19311026",
     "0"
    ],
-   "checksum": "206123"
+   "checksum": "44621537722"
   },
   {
    "currency": "JPY",
@@ -13233,7 +13233,7 @@
    "periods": 17,
    "method": "annuity",
    "mode": "halfFloor",
-   "residual": "lastInterest",
+   "residual": "lastPayment",
    "payment": "40970559",
    "rows": 17,
    "totalInterest": "0",
@@ -13246,7 +13246,7 @@
    "checksum": "6268495731"
   },
   {
-   "currency": "KWD",
+   "currency": "JPY",
    "loan": "1190",
    "rate": "0.124",
    "perYear": 12,
@@ -13589,44 +13589,44 @@
    "checksum": "186792315"
   },
   {
-   "currency": "JPY",
-   "loan": "787923431",
-   "rate": "0.12",
+   "currency": "KWD",
+   "loan": "93",
+   "rate": "0.1431",
    "perYear": 12,
-   "periods": 45,
-   "method": "annuity",
-   "mode": "trunc",
+   "periods": 177,
+   "method": "interestOnly",
+   "mode": "halfTrunc",
    "residual": "lastPayment",
-   "payment": "21829454",
-   "rows": 45,
-   "totalInterest": "194402001",
+   "payment": "1",
+   "rows": 177,
+   "totalInterest": "177",
    "last": [
-    "21829456",
-    "216133",
-    "21613323",
+    "94",
+    "1",
+    "93",
     "0"
    ],
-   "checksum": "44666463362"
+   "checksum": "142485"
   },
   {
    "currency": "JPY",
-   "loan": "1044",
-   "rate": "0.18",
-   "perYear": 26,
+   "loan": "135455112",
+   "rate": "0.15",
+   "perYear": 1,
    "periods": 1,
    "method": "annuity",
    "mode": "floor",
    "residual": "lastInterest",
-   "payment": "1051",
+   "payment": "155773378",
    "rows": 1,
-   "totalInterest": "7",
+   "totalInterest": "20318266",
    "last": [
-    "1051",
-    "7",
-    "1044",
+    "155773378",
+    "20318266",
+    "135455112",
     "0"
    ],
-   "checksum": "1100"
+   "checksum": "298001240"
   },
   {
    "currency": "KWD",
@@ -13778,7 +13778,7 @@
    "periods": 1,
    "method": "annuity",
    "mode": "halfCeil",
-   "residual": "lastInterest",
+   "residual": "lastPayment",
    "payment": "133484266",
    "rows": 1,
    "totalInterest": "0",
@@ -13791,105 +13791,106 @@
    "checksum": "133484266"
   },
   {
-   "currency": "EUR",
-   "loan": "5537",
-   "rate": "0.096",
+   "currency": "JPY",
+   "loan": "682346912",
+   "rate": "0.21",
    "perYear": 12,
-   "periods": 1,
-   "method": "annuity",
-   "mode": "halfFloor",
-   "residual": "lastInterest",
-   "payment": "4094",
-   "rows": 1,
-   "totalInterest": "44",
-   "last": [
-    "5581",
-    "44",
-    "5537",
-    "0"
-   ],
-   "checksum": "5889",
-   "balloon": "1487"
-  },
-  {
-   "currency": "EUR",
-   "loan": "34158607",
-   "rate": "0.1412",
-   "perYear": 26,
-   "periods": 3,
-   "method": "annuity",
-   "mode": "halfCeil",
-   "residual": "lastInterest",
-   "payment": "11510097",
-   "rows": 3,
-   "totalInterest": "371684",
-   "last": [
-    "11510097",
-    "62170",
-    "11447927",
-    "0"
-   ],
-   "checksum": "73400792"
-  },
-  {
-   "currency": "EUR",
-   "loan": "9645",
-   "rate": "0.0151",
-   "perYear": 12,
-   "periods": 51,
-   "method": "interestOnly",
-   "mode": "halfTrunc",
-   "residual": "lastPayment",
-   "payment": "12",
-   "rows": 51,
-   "totalInterest": "612",
-   "last": [
-    "9657",
-    "12",
-    "9645",
-    "0"
-   ],
-   "checksum": "619191"
-  },
-  {
-   "currency": "KWD",
-   "loan": "9881",
-   "rate": "0.07",
-   "perYear": 4,
-   "periods": 25,
-   "method": "interestOnly",
-   "mode": "halfTrunc",
-   "residual": "lastPayment",
-   "payment": "173",
-   "rows": 25,
-   "totalInterest": "4325",
-   "last": [
-    "10054",
-    "173",
-    "9881",
-    "0"
-   ],
-   "checksum": "696825"
-  },
-  {
-   "currency": "KWD",
-   "loan": "76297141",
-   "rate": "0",
-   "perYear": 12,
-   "periods": 3,
+   "periods": 2,
    "method": "linear",
    "mode": "halfEven",
    "residual": "lastPayment",
-   "payment": "25432380",
-   "rows": 3,
-   "totalInterest": "0",
+   "payment": "316723463",
+   "rows": 2,
+   "totalInterest": "18548450",
    "last": [
-    "25432381",
-    "0",
-    "25432381",
+    "384171899",
+    "6607379",
+    "377564520",
     "0"
    ],
-   "checksum": "152594283"
+   "checksum": "1261158064",
+   "balloon": "72782128"
+  },
+  {
+   "currency": "JPY",
+   "loan": "2976",
+   "rate": "0.17",
+   "perYear": 12,
+   "periods": 3,
+   "method": "linear",
+   "mode": "halfExpand",
+   "residual": "lastPayment",
+   "payment": "1034",
+   "rows": 3,
+   "totalInterest": "84",
+   "last": [
+    "1006",
+    "14",
+    "992",
+    "0"
+   ],
+   "checksum": "7072"
+  },
+  {
+   "currency": "JPY",
+   "loan": "2812",
+   "rate": "0.00069",
+   "perYear": 52,
+   "periods": 2,
+   "method": "linear",
+   "mode": "halfEven",
+   "residual": "lastPayment",
+   "payment": "1406",
+   "rows": 2,
+   "totalInterest": "0",
+   "last": [
+    "1406",
+    "0",
+    "1406",
+    "0"
+   ],
+   "checksum": "4218"
+  },
+  {
+   "currency": "EUR",
+   "loan": "8682",
+   "rate": "0.167",
+   "perYear": 4,
+   "periods": 1,
+   "method": "annuity",
+   "mode": "halfTrunc",
+   "residual": "lastInterest",
+   "payment": "9044",
+   "rows": 1,
+   "totalInterest": "362",
+   "last": [
+    "9044",
+    "362",
+    "8682",
+    "0"
+   ],
+   "checksum": "11578"
+  },
+  {
+   "currency": "JPY",
+   "loan": "2049",
+   "rate": "0.0204",
+   "perYear": 26,
+   "periods": 1,
+   "method": "linear",
+   "mode": "halfFloor",
+   "residual": "lastPayment",
+   "payment": "2051",
+   "rows": 1,
+   "totalInterest": "2",
+   "last": [
+    "2051",
+    "2",
+    "2049",
+    "0"
+   ],
+   "checksum": "2065",
+   "balloon": "1399"
   },
   {
    "currency": "KWD",
@@ -14297,125 +14298,125 @@
    "checksum": "933811233"
   },
   {
-   "currency": "KWD",
-   "loan": "281612591",
-   "rate": "0.06764",
-   "perYear": 4,
-   "periods": 30,
-   "method": "annuity",
-   "mode": "halfEven",
-   "residual": "lastPayment",
-   "payment": "12046063",
-   "rows": 30,
-   "totalInterest": "79769306",
-   "last": [
-    "12046070",
-    "200312",
-    "11845758",
-    "0"
-   ],
-   "checksum": "11790354712"
-  },
-  {
-   "currency": "KWD",
-   "loan": "5160",
-   "rate": "0.16",
-   "perYear": 52,
-   "periods": 258,
-   "method": "interestOnly",
-   "mode": "ceil",
-   "residual": "lastPayment",
-   "payment": "16",
-   "rows": 258,
-   "totalInterest": "4128",
-   "last": [
-    "5176",
-    "16",
-    "5160",
-    "0"
-   ],
-   "checksum": "5607888"
-  },
-  {
    "currency": "EUR",
-   "loan": "909952455",
-   "rate": "0.1397",
-   "perYear": 1,
-   "periods": 1,
-   "method": "annuity",
-   "mode": "halfCeil",
-   "residual": "lastInterest",
-   "payment": "1037072813",
-   "rows": 1,
-   "totalInterest": "127120358",
-   "last": [
-    "1037072813",
-    "127120358",
-    "909952455",
-    "0"
-   ],
-   "checksum": "1926915319"
-  },
-  {
-   "currency": "KWD",
-   "loan": "6604",
-   "rate": "0.1816",
+   "loan": "693020614",
+   "rate": "0.08014",
    "perYear": 12,
-   "periods": 53,
-   "method": "linear",
-   "mode": "trunc",
+   "periods": 2,
+   "method": "interestOnly",
+   "mode": "expand",
    "residual": "lastPayment",
-   "payment": "223",
-   "rows": 53,
-   "totalInterest": "2686",
+   "payment": "4628223",
+   "rows": 2,
+   "totalInterest": "9256446",
    "last": [
-    "158",
-    "2",
-    "156",
+    "697648837",
+    "4628223",
+    "693020614",
     "0"
    ],
-   "checksum": "573132"
+   "checksum": "1497118580"
   },
   {
    "currency": "JPY",
-   "loan": "646705119",
-   "rate": "0.07045",
-   "perYear": 12,
+   "loan": "927127110",
+   "rate": "0.0184",
+   "perYear": 26,
    "periods": 3,
    "method": "annuity",
-   "mode": "expand",
-   "residual": "lastInterest",
-   "payment": "80943731",
+   "mode": "halfExpand",
+   "residual": "lastPayment",
+   "payment": "309479887",
    "rows": 3,
-   "totalInterest": "10028685",
+   "totalInterest": "1312552",
    "last": [
-    "494846342",
-    "2888206",
-    "491958136",
+    "309479888",
+    "218862",
+    "309261026",
     "0"
    ],
-   "checksum": "1861412365",
-   "balloon": "413902611"
+   "checksum": "1872194240"
+  },
+  {
+   "currency": "KWD",
+   "loan": "1605",
+   "rate": "0.19298",
+   "perYear": 52,
+   "periods": 2,
+   "method": "annuity",
+   "mode": "ceil",
+   "residual": "lastInterest",
+   "payment": "516",
+   "rows": 2,
+   "totalInterest": "12",
+   "last": [
+    "1101",
+    "6",
+    "1095",
+    "0"
+   ],
+   "checksum": "2844",
+   "balloon": "585"
   },
   {
    "currency": "JPY",
-   "loan": "8968",
+   "loan": "494573057",
+   "rate": "0.1849",
+   "perYear": 26,
+   "periods": 3,
+   "method": "interestOnly",
+   "mode": "trunc",
+   "residual": "lastPayment",
+   "payment": "3517175",
+   "rows": 3,
+   "totalInterest": "10551525",
+   "last": [
+    "498090232",
+    "3517175",
+    "494573057",
+    "0"
+   ],
+   "checksum": "1652543571"
+  },
+  {
+   "currency": "JPY",
+   "loan": "3523",
+   "rate": "0.085",
+   "perYear": 1,
+   "periods": 3,
+   "method": "linear",
+   "mode": "floor",
+   "residual": "lastPayment",
+   "payment": "1473",
+   "rows": 3,
+   "totalInterest": "597",
+   "last": [
+    "1274",
+    "99",
+    "1175",
+    "0"
+   ],
+   "checksum": "14999"
+  },
+  {
+   "currency": "KWD",
+   "loan": "728449210",
    "rate": "0.21287",
    "perYear": 52,
    "periods": 2,
    "method": "annuity",
    "mode": "trunc",
    "residual": "lastPayment",
-   "payment": "4511",
+   "payment": "366462641",
    "rows": 2,
-   "totalInterest": "54",
+   "totalInterest": "4476073",
    "last": [
-    "4511",
-    "18",
-    "4493",
+    "366462642",
+    "1494055",
+    "364968587",
     "0"
    ],
-   "checksum": "14037"
+   "checksum": "1141178821"
   },
   {
    "currency": "KWD",
@@ -14868,7 +14869,7 @@
    "periods": 114,
    "method": "annuity",
    "mode": "halfFloor",
-   "residual": "lastInterest",
+   "residual": "lastPayment",
    "payment": "56",
    "rows": 114,
    "totalInterest": "0",
@@ -14882,165 +14883,185 @@
   },
   {
    "currency": "JPY",
-   "loan": "2817",
-   "rate": "0.2",
+   "loan": "6754",
+   "rate": "0.186",
    "perYear": 12,
-   "periods": 2,
+   "periods": 3,
    "method": "annuity",
-   "mode": "halfFloor",
+   "mode": "halfExpand",
    "residual": "lastInterest",
-   "payment": "844",
-   "rows": 2,
-   "totalInterest": "80",
+   "payment": "319",
+   "rows": 3,
+   "totalInterest": "303",
    "last": [
-    "2053",
-    "33",
-    "2020",
+    "6419",
+    "97",
+    "6322",
     "0"
    ],
-   "checksum": "5741",
-   "balloon": "1209"
+   "checksum": "24400",
+   "balloon": "6100"
   },
   {
    "currency": "EUR",
-   "loan": "69843792",
-   "rate": "0.14197",
-   "perYear": 26,
-   "periods": 2,
-   "method": "annuity",
-   "mode": "halfTrunc",
-   "residual": "lastInterest",
-   "payment": "35208186",
-   "rows": 2,
-   "totalInterest": "572580",
-   "last": [
-    "35208186",
-    "191206",
-    "35016980",
-    "0"
-   ],
-   "checksum": "110971060"
-  },
-  {
-   "currency": "EUR",
-   "loan": "779558492",
-   "rate": "0.0953",
-   "perYear": 26,
-   "periods": 198,
-   "method": "linear",
-   "mode": "halfCeil",
+   "loan": "969599917",
+   "rate": "0.19",
+   "perYear": 1,
+   "periods": 30,
+   "method": "interestOnly",
+   "mode": "trunc",
    "residual": "lastPayment",
-   "payment": "6794546",
-   "rows": 198,
-   "totalInterest": "284309485",
+   "payment": "184223984",
+   "rows": 30,
+   "totalInterest": "5526719520",
    "last": [
-    "3951615",
-    "14431",
-    "3937184",
+    "1153823901",
+    "184223984",
+    "969599917",
     "0"
    ],
-   "checksum": "229197800676"
+   "checksum": "714401217990"
   },
   {
    "currency": "KWD",
-   "loan": "589111715",
-   "rate": "0.17",
-   "perYear": 52,
-   "periods": 3,
+   "loan": "3195",
+   "rate": "0.046",
+   "perYear": 12,
+   "periods": 2,
    "method": "interestOnly",
-   "mode": "halfFloor",
+   "mode": "expand",
    "residual": "lastPayment",
-   "payment": "1925942",
-   "rows": 3,
-   "totalInterest": "5777826",
+   "payment": "13",
+   "rows": 2,
+   "totalInterest": "26",
    "last": [
-    "591037657",
-    "1925942",
-    "589111715",
+    "3208",
+    "13",
+    "3195",
     "0"
    ],
-   "checksum": "1859780361"
-  },
-  {
-   "currency": "EUR",
-   "loan": "1472",
-   "rate": "0.2415",
-   "perYear": 4,
-   "periods": 1,
-   "method": "annuity",
-   "mode": "halfExpand",
-   "residual": "lastPayment",
-   "payment": "1561",
-   "rows": 1,
-   "totalInterest": "89",
-   "last": [
-    "1561",
-    "89",
-    "1472",
-    "0"
-   ],
-   "checksum": "2184"
+   "checksum": "6702"
   },
   {
    "currency": "JPY",
-   "loan": "259498422",
-   "rate": "0.01",
-   "perYear": 1,
-   "periods": 3,
+   "loan": "249799507",
+   "rate": "0.2327",
+   "perYear": 4,
+   "periods": 142,
    "method": "interestOnly",
-   "mode": "ceil",
+   "mode": "floor",
    "residual": "lastPayment",
-   "payment": "2594985",
-   "rows": 3,
-   "totalInterest": "7784955",
+   "payment": "14532086",
+   "rows": 142,
+   "totalInterest": "2063556212",
    "last": [
-    "262093407",
-    "2594985",
-    "259498422",
+    "264331593",
+    "14532086",
+    "249799507",
     "0"
    ],
-   "checksum": "903054546"
+   "checksum": "1215825683258"
   },
   {
    "currency": "KWD",
-   "loan": "3021",
-   "rate": "0.02427",
-   "perYear": 52,
-   "periods": 1,
+   "loan": "9797",
+   "rate": "0.0409",
+   "perYear": 12,
+   "periods": 3,
    "method": "annuity",
-   "mode": "halfTrunc",
-   "residual": "lastInterest",
-   "payment": "1791",
-   "rows": 1,
-   "totalInterest": "1",
+   "mode": "halfExpand",
+   "residual": "lastPayment",
+   "payment": "3288",
+   "rows": 3,
+   "totalInterest": "66",
    "last": [
-    "3022",
-    "1",
-    "3021",
+    "3287",
+    "11",
+    "3276",
     "0"
    ],
-   "checksum": "3029",
-   "balloon": "1231"
+   "checksum": "20495"
+  },
+  {
+   "currency": "JPY",
+   "loan": "274",
+   "rate": "0.01",
+   "perYear": 1,
+   "periods": 3,
+   "method": "annuity",
+   "mode": "halfCeil",
+   "residual": "lastPayment",
+   "payment": "93",
+   "rows": 3,
+   "totalInterest": "6",
+   "last": [
+    "94",
+    "1",
+    "93",
+    "0"
+   ],
+   "checksum": "631"
   },
   {
    "currency": "EUR",
-   "loan": "91342930",
-   "rate": "0.2095",
+   "loan": "215248012",
+   "rate": "0.14686",
    "perYear": 12,
-   "periods": 41,
+   "periods": 1,
+   "method": "annuity",
+   "mode": "ceil",
+   "residual": "lastPayment",
+   "payment": "43332429",
+   "rows": 1,
+   "totalInterest": "2634277",
+   "last": [
+    "217882289",
+    "2634277",
+    "215248012",
+    "0"
+   ],
+   "checksum": "236322228",
+   "balloon": "174549860"
+  },
+  {
+   "currency": "KWD",
+   "loan": "891",
+   "rate": "0.2327",
+   "perYear": 12,
+   "periods": 1,
+   "method": "interestOnly",
+   "mode": "halfExpand",
+   "residual": "lastPayment",
+   "payment": "17",
+   "rows": 1,
+   "totalInterest": "17",
+   "last": [
+    "908",
+    "17",
+    "891",
+    "0"
+   ],
+   "checksum": "1027"
+  },
+  {
+   "currency": "KWD",
+   "loan": "6325",
+   "rate": "0.21",
+   "perYear": 26,
+   "periods": 290,
    "method": "linear",
    "mode": "halfExpand",
    "residual": "lastPayment",
-   "payment": "3822571",
-   "rows": 41,
-   "totalInterest": "33488595",
+   "payment": "72",
+   "rows": 290,
+   "totalInterest": "7707",
    "last": [
-    "2266785",
-    "38895",
-    "2227890",
+    "258",
+    "2",
+    "256",
     "0"
    ],
-   "checksum": "5758227370"
+   "checksum": "7166117"
   },
   {
    "currency": "JPY",
@@ -17699,7 +17720,7 @@
    "periods": 3,
    "method": "annuity",
    "mode": "expand",
-   "residual": "lastInterest",
+   "residual": "lastPayment",
    "payment": "769",
    "rows": 3,
    "totalInterest": "0",
@@ -17713,25 +17734,25 @@
    "balloon": "4851"
   },
   {
-   "currency": "JPY",
-   "loan": "4880",
-   "rate": "0.04162",
-   "perYear": 12,
+   "currency": "KWD",
+   "loan": "392880920",
+   "rate": "0.1942",
+   "perYear": 4,
    "periods": 1,
    "method": "linear",
    "mode": "halfFloor",
    "residual": "lastPayment",
-   "payment": "4897",
+   "payment": "411955289",
    "rows": 1,
-   "totalInterest": "17",
+   "totalInterest": "19074369",
    "last": [
-    "4897",
-    "17",
-    "4880",
+    "411955289",
+    "19074369",
+    "392880920",
     "0"
    ],
-   "checksum": "5016",
-   "balloon": "3219"
+   "checksum": "545475872",
+   "balloon": "210983904"
   },
   {
    "currency": "EUR",
@@ -17994,33 +18015,30 @@
     "0"
    ],
    "checksum": "3473"
-  },
-  {
-   "currency": "JPY",
-   "loan": "581327293",
-   "rate": "0.214",
-   "perYear": 12,
-   "periods": 3,
-   "method": "linear",
-   "mode": "halfEven",
-   "residual": "lastPayment",
-   "payment": "91680995",
-   "rows": 3,
-   "totalInterest": "26750711",
-   "last": [
-    "426166113",
-    "7466804",
-    "418699309",
-    "0"
-   ],
-   "checksum": "1904849687",
-   "balloon": "337385317"
   }
  ],
  "npv": [
   {
-   "currency": "KWD",
+   "currency": "JPY",
    "flows": [
+    "8166165",
+    "-949383",
+    "3300688",
+    "-5453733",
+    "-1657093",
+    "9623882",
+    "-2909652",
+    "-1150259",
+    "2482462",
+    "7850725",
+    "1738865",
+    "8951813",
+    "-8188704",
+    "-5454063",
+    "-9864756",
+    "543291",
+    "8381379",
+    "4177611",
     "951815",
     "1916053",
     "-5625283",
@@ -18029,35 +18047,34 @@
     "-493107",
     "-2453076",
     "-6982338",
-    "8368233",
-    "-369701",
-    "9189293",
-    "-405767",
-    "7727049",
-    "-5292693",
-    "-1551536",
-    "-1003906",
-    "9455293",
-    "6669334",
-    "6124140",
-    "-8182775",
+    "8368233"
+   ],
+   "rate": "-0.065",
+   "mode": "ceil",
+   "npv": "80221632",
+   "discountedSum": "75007226"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
     "-9980798",
     "5454552",
     "-2056898",
-    "-4786412",
-    "9910116",
-    "-916502",
-    "1944881",
-    "-8381038"
+    "-4786412"
    ],
-   "rate": "-0.2",
-   "mode": "halfCeil",
-   "npv": "-2330997951",
-   "presentValue": "-1864798361"
+   "rate": "1.5",
+   "mode": "halfExpand",
+   "npv": "-3373764",
+   "discountedSum": "-8434411"
   },
   {
-   "currency": "KWD",
+   "currency": "JPY",
    "flows": [
+    "6376248",
+    "-788349",
+    "-1632634",
+    "8896374",
+    "-5588587",
     "2936667",
     "648632",
     "-7441893",
@@ -18066,31 +18083,27 @@
     "-1185515",
     "-6342728",
     "1333381",
-    "6630722"
+    "6630722",
+    "5915187",
+    "-51668",
+    "7470209",
+    "-5664022",
+    "2237302",
+    "1755441",
+    "-109213",
+    "-6875920",
+    "6311050",
+    "549224"
    ],
-   "rate": "1.5",
-   "mode": "expand",
-   "npv": "973128",
-   "presentValue": "2432819"
+   "rate": "-0.0106",
+   "mode": "halfEven",
+   "npv": "25608771",
+   "discountedSum": "25337318"
   },
   {
    "currency": "JPY",
    "flows": [
-    "6311050",
-    "549224",
-    "1411058",
-    "-5939865",
-    "-2081947",
-    "1384394"
-   ],
-   "rate": "1.5",
-   "mode": "trunc",
-   "npv": "2534894",
-   "presentValue": "6337235"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
+    "6849371",
     "-2839452",
     "6618227",
     "-6522483",
@@ -18117,22 +18130,24 @@
     "-9595333",
     "-1617647",
     "2091469",
-    "9536934",
-    "5561803",
-    "1764456",
-    "-5172532",
-    "-7134786",
-    "-3369456",
-    "-4984377"
+    "9536934"
    ],
-   "rate": "0.201",
+   "rate": "1.5",
    "mode": "halfTrunc",
-   "npv": "-4694466",
-   "presentValue": "-5638054"
+   "npv": "2500415",
+   "discountedSum": "6251038"
   },
   {
-   "currency": "JPY",
+   "currency": "EUR",
    "flows": [
+    "-4561666",
+    "1294010",
+    "-6249258",
+    "-3783378",
+    "9234540",
+    "-4667851",
+    "6431458",
+    "1271196",
     "-3317915",
     "-2316911",
     "674542",
@@ -18154,18 +18169,20 @@
     "-9214363",
     "7679939",
     "-7946031",
-    "-6405889"
+    "-6405889",
+    "-5277841",
+    "-4191731",
+    "-2769713",
+    "4963427"
    ],
-   "rate": "0.115",
-   "mode": "halfFloor",
-   "npv": "-4064795",
-   "presentValue": "-4532247"
+   "rate": "1.5",
+   "mode": "halfCeil",
+   "npv": "-2028776",
+   "discountedSum": "-5071940"
   },
   {
-   "currency": "KWD",
+   "currency": "EUR",
    "flows": [
-    "-7763445",
-    "-2431639",
     "9834847",
     "8465860",
     "-6347",
@@ -18177,31 +18194,31 @@
     "1103741",
     "4730066",
     "5597347",
-    "-1127871"
+    "-1127871",
+    "-5268178",
+    "676200",
+    "-3353642"
    ],
    "rate": "1.5",
    "mode": "trunc",
-   "npv": "-2688235",
-   "presentValue": "-6720588"
+   "npv": "5038742",
+   "discountedSum": "12596855"
   },
   {
-   "currency": "KWD",
+   "currency": "JPY",
    "flows": [
-    "-8443249",
-    "2839383",
-    "1656566",
-    "-8558877"
+    "-5651283",
+    "2852554",
+    "-1046404"
    ],
-   "rate": "0.08744",
-   "mode": "halfCeil",
-   "npv": "-10195612",
-   "presentValue": "-11087116"
+   "rate": "1.5",
+   "mode": "halfTrunc",
+   "npv": "-1871074",
+   "discountedSum": "-4677686"
   },
   {
-   "currency": "KWD",
+   "currency": "EUR",
    "flows": [
-    "-6026001",
-    "-2454905",
     "6770891",
     "-1330567",
     "-3363709",
@@ -18210,22 +18227,22 @@
     "-7802023",
     "5938255",
     "3551205",
-    "-9201870"
+    "-9201870",
+    "9212033",
+    "80262",
+    "-9286657",
+    "-9100250",
+    "-5258855",
+    "-6307691"
    ],
-   "rate": "0.01",
-   "mode": "halfEven",
-   "npv": "-17646223",
-   "presentValue": "-17822686"
+   "rate": "0.2056",
+   "mode": "expand",
+   "npv": "-1768408",
+   "discountedSum": "-2131993"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-3678215",
-    "-4615560",
-    "-6518175",
-    "2015752",
-    "5454682",
-    "-3898650",
     "2161071",
     "7980599",
     "-2436767",
@@ -18237,50 +18254,49 @@
     "7720489",
     "-1585503",
     "-4379579",
-    "7128572",
-    "8056807",
-    "8006564",
-    "-1271446",
-    "9704227",
-    "-1650461",
-    "6789175",
-    "-3226018",
-    "2779248",
-    "-4320431",
+    "7128572"
+   ],
+   "rate": "0.2406",
+   "mode": "trunc",
+   "npv": "9831966",
+   "discountedSum": "12197537"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
     "-7490792",
     "-9451824",
     "-8736747",
     "8982323",
     "-1071773",
-    "7548897"
+    "7548897",
+    "7962008",
+    "5288666",
+    "8612778",
+    "-1805180",
+    "6536588"
    ],
-   "rate": "-0.222",
-   "mode": "halfEven",
-   "npv": "13374502012",
-   "presentValue": "10405362565"
+   "rate": "0",
+   "mode": "ceil",
+   "npv": "16374944",
+   "discountedSum": "16374944"
   },
   {
-   "currency": "KWD",
+   "currency": "JPY",
    "flows": [
-    "9665720",
-    "-8398725",
-    "4955440",
-    "125271",
-    "1219602",
     "5660000",
     "409139",
     "-3695621",
     "-6407594",
-    "-5879073"
-   ],
-   "rate": "0.1339",
-   "mode": "floor",
-   "npv": "3856803",
-   "presentValue": "4373229"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
+    "-5879073",
+    "399838",
+    "1092707",
+    "966860",
+    "-5547958",
+    "-8354270",
+    "8471356",
+    "8198505",
+    "5162886",
     "9626179",
     "8625798",
     "5777046",
@@ -18289,15 +18305,16 @@
     "-8421000",
     "3620342",
     "12841",
-    "1188920",
-    "-3978078",
-    "-2932405",
-    "2075332",
-    "2545046",
-    "-7525396",
-    "-2490380",
-    "4212690",
-    "3870171",
+    "1188920"
+   ],
+   "rate": "0.054",
+   "mode": "halfCeil",
+   "npv": "8712878",
+   "discountedSum": "9183373"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
     "-5220551",
     "8296791",
     "-3260111",
@@ -18309,16 +18326,13 @@
     "-4122988",
     "-5128066",
     "7594423",
-    "-6554167"
-   ],
-   "rate": "1.5",
-   "mode": "expand",
-   "npv": "5668624",
-   "presentValue": "14171558"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
+    "-6554167",
+    "-9625918",
+    "-9601798",
+    "-9720225",
+    "-5203971",
+    "1660287",
+    "-895751",
     "-9286467",
     "4794314",
     "-9989965",
@@ -18327,32 +18341,29 @@
     "-5424900",
     "-7010395",
     "-2727321",
-    "-1609784",
-    "3003879",
-    "6196981",
-    "-609038",
-    "-6369641",
-    "7963698",
-    "3708782",
-    "-579158",
-    "-4326589",
-    "-5249455"
+    "-1609784"
    ],
-   "rate": "1.5",
-   "mode": "halfExpand",
-   "npv": "-3607173",
-   "presentValue": "-9017932"
+   "rate": "-0.23441",
+   "mode": "halfTrunc",
+   "npv": "-18723245397",
+   "discountedSum": "-14334329443"
+  },
+  {
+   "currency": "EUR",
+   "flows": [
+    "-6875923",
+    "-1751102",
+    "8011349",
+    "-6023496"
+   ],
+   "rate": "-0.18",
+   "mode": "halfFloor",
+   "npv": "-9782309",
+   "discountedSum": "-8021493"
   },
   {
    "currency": "JPY",
    "flows": [
-    "3969902",
-    "4715346",
-    "9396881",
-    "-4142828",
-    "1171636",
-    "-40671",
-    "2772770",
     "-5097454",
     "6642246",
     "-9572592",
@@ -18378,16 +18389,13 @@
     "-2566230",
     "-4329039",
     "-279269",
-    "9988269"
-   ],
-   "rate": "0.22116",
-   "mode": "expand",
-   "npv": "9073619",
-   "presentValue": "11080340"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
+    "9988269",
+    "6123574",
+    "-3921683",
+    "-7881467",
+    "1488627",
+    "-9432256",
+    "-348481",
     "3575047",
     "-4469209",
     "-3257831",
@@ -18395,38 +18403,39 @@
     "-3270312",
     "52496",
     "-1469171",
-    "-6325332",
-    "3629221",
-    "6709081",
-    "-6281066",
-    "9252873",
-    "-7604304",
-    "3032988",
-    "438961",
-    "-2845025",
+    "-6325332"
+   ],
+   "rate": "1.5",
+   "mode": "trunc",
+   "npv": "-1693481",
+   "discountedSum": "-4233702"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
     "-8108508",
     "6615155",
-    "5045903"
+    "5045903",
+    "-4097765",
+    "3632843",
+    "-2132060",
+    "2907463",
+    "-8211008",
+    "-6644880",
+    "2283645",
+    "7520863",
+    "2932764",
+    "5378499",
+    "-6002909"
    ],
-   "rate": "0.226",
-   "mode": "expand",
-   "npv": "-3479198",
-   "presentValue": "-4265496"
+   "rate": "0.07",
+   "mode": "trunc",
+   "npv": "-280432",
+   "discountedSum": "-300063"
   },
   {
    "currency": "KWD",
    "flows": [
-    "5378499",
-    "-6002909",
-    "4784901",
-    "8792671",
-    "9465873",
-    "-8966098",
-    "-2839065",
-    "2837351",
-    "-7432408",
-    "4456895",
-    "-1395120",
     "-2607653",
     "-5349286",
     "-4294440",
@@ -18440,50 +18449,49 @@
     "-1875104",
     "8757921",
     "-6568336",
-    "2538395"
+    "2538395",
+    "6231883",
+    "9385418",
+    "8572729"
    ],
-   "rate": "1.5",
-   "mode": "ceil",
-   "npv": "1778053",
-   "presentValue": "4445132"
+   "rate": "0.087",
+   "mode": "halfCeil",
+   "npv": "8116623",
+   "discountedSum": "8822770"
   },
   {
-   "currency": "KWD",
+   "currency": "JPY",
    "flows": [
-    "-2920214",
-    "4231944",
-    "-1651305",
     "-9461824",
-    "7331253"
-   ],
-   "rate": "0.1209",
-   "mode": "floor",
-   "npv": "-2260109",
-   "presentValue": "-2533356"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
+    "7331253",
+    "-768173",
+    "7629832",
+    "-275442",
+    "-101536",
+    "-3082241",
+    "-9272574",
+    "-6608522",
+    "8071479",
+    "-4333164",
     "141700",
     "-8165366",
     "-4101763",
     "4971584",
-    "-3896545",
-    "-7058002",
-    "170960",
-    "-4432682",
-    "2003546",
-    "-1189381",
-    "-7360486"
+    "-3896545"
    ],
-   "rate": "1.5",
-   "mode": "ceil",
-   "npv": "-1456362",
-   "presentValue": "-3640905"
+   "rate": "0.233",
+   "mode": "trunc",
+   "npv": "-3640287",
+   "discountedSum": "-4488474"
   },
   {
-   "currency": "EUR",
+   "currency": "KWD",
    "flows": [
+    "-589372",
+    "5643738",
+    "5162919",
+    "-7261130",
+    "-3987022",
     "-8629166",
     "-8923347",
     "-9249273",
@@ -18495,16 +18503,17 @@
     "5816683",
     "9925883",
     "-556423",
-    "6764481"
-   ],
-   "rate": "0.10935",
-   "mode": "trunc",
-   "npv": "-10296867",
-   "presentValue": "-11422829"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
+    "6764481",
+    "-29075",
+    "-8134675",
+    "5615246",
+    "1196702",
+    "4181184",
+    "8673334",
+    "-5256323",
+    "3110828",
+    "-5877405",
+    "410713",
     "-2002117",
     "5573547",
     "8737666",
@@ -18515,25 +18524,27 @@
     "-8788359",
     "9224803",
     "-5048914",
-    "6428995",
-    "5645650",
-    "-573242",
-    "-9350316",
-    "4873839",
-    "-7970374",
-    "-7800012",
-    "3800869",
-    "4145911",
-    "5494936"
+    "6428995"
    ],
-   "rate": "1.5",
-   "mode": "halfCeil",
-   "npv": "394138",
-   "presentValue": "985344"
+   "rate": "0.09206",
+   "mode": "halfExpand",
+   "npv": "-4954089",
+   "discountedSum": "-5410163"
   },
   {
-   "currency": "EUR",
+   "currency": "JPY",
    "flows": [
+    "5494936",
+    "-362750",
+    "-1186438",
+    "-4088429",
+    "9484616",
+    "5590135",
+    "212930",
+    "8200488",
+    "-3345556",
+    "-9860107",
+    "1185742",
     "-7938540",
     "4957599",
     "314236",
@@ -18549,22 +18560,24 @@
     "9583301",
     "-6478623",
     "-599318",
-    "291127",
-    "-3256156",
-    "-2879815",
-    "-1264565",
-    "3078509",
-    "-2869212",
-    "-9906229"
+    "291127"
    ],
    "rate": "1.5",
-   "mode": "halfCeil",
-   "npv": "-2564336",
-   "presentValue": "-6410840"
+   "mode": "halfEven",
+   "npv": "2083113",
+   "discountedSum": "5207782"
   },
   {
-   "currency": "EUR",
+   "currency": "KWD",
    "flows": [
+    "-4753363",
+    "-4319784",
+    "3997777",
+    "-3943367",
+    "6964443",
+    "-2696391",
+    "-8709011",
+    "3874627",
     "8141217",
     "9036956",
     "-8421012",
@@ -18583,32 +18596,32 @@
     "3893387",
     "-5704192",
     "-4402337",
-    "1610374",
-    "8806622",
-    "-8985858",
-    "8858172",
-    "-3421325",
-    "5654135",
-    "-7648493",
-    "5090415",
-    "-6774276"
+    "1610374"
    ],
-   "rate": "-0.19",
-   "mode": "expand",
-   "npv": "-1013743344",
-   "presentValue": "-821132109"
+   "rate": "1.5",
+   "mode": "halfExpand",
+   "npv": "-2386410",
+   "discountedSum": "-5966025"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-725995",
-    "-5327487",
-    "-3908662",
-    "-4171415",
-    "6447618",
-    "-7278799",
-    "1676694",
-    "-2170418",
+    "438861",
+    "772073",
+    "-8318851",
+    "-5413357",
+    "-147472",
+    "2122574",
+    "3859816"
+   ],
+   "rate": "-0.045",
+   "mode": "halfExpand",
+   "npv": "-6813035",
+   "discountedSum": "-6506448"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
     "711499",
     "-4221993",
     "-9611958",
@@ -18623,28 +18636,26 @@
     "-7299219",
     "-9670672",
     "-9691632",
-    "-614055",
-    "8997336",
-    "-9223278",
-    "-2737883",
-    "7151409",
-    "860802",
-    "-6494556",
-    "6602891",
-    "26546",
-    "9227328",
-    "-7639157",
+    "-614055"
+   ],
+   "rate": "-0.0428",
+   "mode": "halfFloor",
+   "npv": "-47711697",
+   "discountedSum": "-45669636"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
     "8856408",
     "-9669214",
     "-3483654",
     "-4150367",
-    "-9721168",
-    "2036423"
+    "-9721168"
    ],
    "rate": "-0.16697",
    "mode": "halfEven",
-   "npv": "-15288054482",
-   "presentValue": "-12735408025"
+   "npv": "-42180776",
+   "discountedSum": "-35137852"
   },
   {
    "currency": "EUR",
@@ -18658,7 +18669,7 @@
    "rate": "0.18122",
    "mode": "expand",
    "npv": "-2759980",
-   "presentValue": "-3260143"
+   "discountedSum": "-3260143"
   },
   {
    "currency": "KWD",
@@ -18691,7 +18702,7 @@
    "rate": "-0.09316",
    "mode": "floor",
    "npv": "-22949846",
-   "presentValue": "-20811839"
+   "discountedSum": "-20811839"
   },
   {
    "currency": "JPY",
@@ -18723,7 +18734,7 @@
    "rate": "0.13",
    "mode": "floor",
    "npv": "-4535854",
-   "presentValue": "-5125515"
+   "discountedSum": "-5125515"
   },
   {
    "currency": "KWD",
@@ -18738,7 +18749,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "-2658725",
-   "presentValue": "-6646811"
+   "discountedSum": "-6646811"
   },
   {
    "currency": "KWD",
@@ -18783,7 +18794,7 @@
    "rate": "-0.03",
    "mode": "halfCeil",
    "npv": "48317026",
-   "presentValue": "46867515"
+   "discountedSum": "46867515"
   },
   {
    "currency": "JPY",
@@ -18799,7 +18810,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "-1819373",
-   "presentValue": "-4548433"
+   "discountedSum": "-4548433"
   },
   {
    "currency": "JPY",
@@ -18843,7 +18854,7 @@
    "rate": "0.191",
    "mode": "halfTrunc",
    "npv": "4579237",
-   "presentValue": "5453872"
+   "discountedSum": "5453872"
   },
   {
    "currency": "EUR",
@@ -18881,7 +18892,7 @@
    "rate": "1.5",
    "mode": "halfTrunc",
    "npv": "-632953",
-   "presentValue": "-1582381"
+   "discountedSum": "-1582381"
   },
   {
    "currency": "KWD",
@@ -18916,7 +18927,7 @@
    "rate": "-0.03",
    "mode": "halfTrunc",
    "npv": "55960957",
-   "presentValue": "54282128"
+   "discountedSum": "54282128"
   },
   {
    "currency": "KWD",
@@ -18955,7 +18966,7 @@
    "rate": "-0.092",
    "mode": "floor",
    "npv": "-46978419",
-   "presentValue": "-42656405"
+   "discountedSum": "-42656405"
   },
   {
    "currency": "JPY",
@@ -18982,7 +18993,7 @@
    "rate": "1.5",
    "mode": "halfFloor",
    "npv": "-2215042",
-   "presentValue": "-5537606"
+   "discountedSum": "-5537606"
   },
   {
    "currency": "EUR",
@@ -19023,7 +19034,7 @@
    "rate": "0.21",
    "mode": "halfTrunc",
    "npv": "6927112",
-   "presentValue": "8381805"
+   "discountedSum": "8381805"
   },
   {
    "currency": "JPY",
@@ -19056,7 +19067,7 @@
    "rate": "-0.22",
    "mode": "halfTrunc",
    "npv": "3880871999",
-   "presentValue": "3027080159"
+   "discountedSum": "3027080159"
   },
   {
    "currency": "KWD",
@@ -19079,7 +19090,7 @@
    "rate": "0.24",
    "mode": "halfFloor",
    "npv": "12167090",
-   "presentValue": "15087192"
+   "discountedSum": "15087192"
   },
   {
    "currency": "EUR",
@@ -19091,7 +19102,7 @@
    "rate": "-0.17",
    "mode": "halfFloor",
    "npv": "-1050250",
-   "presentValue": "-871708"
+   "discountedSum": "-871708"
   },
   {
    "currency": "KWD",
@@ -19136,7 +19147,7 @@
    "rate": "0.02251",
    "mode": "ceil",
    "npv": "31270718",
-   "presentValue": "31974621"
+   "discountedSum": "31974621"
   },
   {
    "currency": "JPY",
@@ -19181,7 +19192,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "519349",
-   "presentValue": "1298372"
+   "discountedSum": "1298372"
   },
   {
    "currency": "EUR",
@@ -19210,7 +19221,7 @@
    "rate": "0.03751",
    "mode": "halfEven",
    "npv": "23960425",
-   "presentValue": "24859180"
+   "discountedSum": "24859180"
   },
   {
    "currency": "KWD",
@@ -19224,7 +19235,7 @@
    "rate": "-0.2289",
    "mode": "trunc",
    "npv": "-32990185",
-   "presentValue": "-25438731"
+   "discountedSum": "-25438731"
   },
   {
    "currency": "EUR",
@@ -19240,7 +19251,7 @@
    "rate": "1.5",
    "mode": "halfEven",
    "npv": "514118",
-   "presentValue": "1285296"
+   "discountedSum": "1285296"
   },
   {
    "currency": "KWD",
@@ -19271,7 +19282,7 @@
    "rate": "1.5",
    "mode": "ceil",
    "npv": "-4174410",
-   "presentValue": "-10436027"
+   "discountedSum": "-10436027"
   },
   {
    "currency": "KWD",
@@ -19315,7 +19326,7 @@
    "rate": "0",
    "mode": "expand",
    "npv": "-43195220",
-   "presentValue": "-43195220"
+   "discountedSum": "-43195220"
   },
   {
    "currency": "KWD",
@@ -19342,7 +19353,7 @@
    "rate": "-0.03",
    "mode": "halfCeil",
    "npv": "-44015369",
-   "presentValue": "-42694908"
+   "discountedSum": "-42694908"
   },
   {
    "currency": "EUR",
@@ -19375,7 +19386,7 @@
    "rate": "-0.04062",
    "mode": "halfCeil",
    "npv": "8843554",
-   "presentValue": "8484329"
+   "discountedSum": "8484329"
   },
   {
    "currency": "EUR",
@@ -19389,7 +19400,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "3790723",
-   "presentValue": "9476807"
+   "discountedSum": "9476807"
   },
   {
    "currency": "JPY",
@@ -19433,7 +19444,7 @@
    "rate": "0.17",
    "mode": "ceil",
    "npv": "-8227857",
-   "presentValue": "-9626593"
+   "discountedSum": "-9626593"
   },
   {
    "currency": "EUR",
@@ -19444,7 +19455,7 @@
    "rate": "0.21",
    "mode": "halfCeil",
    "npv": "-6568935",
-   "presentValue": "-7948411"
+   "discountedSum": "-7948411"
   },
   {
    "currency": "JPY",
@@ -19465,7 +19476,7 @@
    "rate": "-0.22296",
    "mode": "halfCeil",
    "npv": "120763881",
-   "presentValue": "93838366"
+   "discountedSum": "93838366"
   },
   {
    "currency": "EUR",
@@ -19487,7 +19498,7 @@
    "rate": "0.0686",
    "mode": "halfTrunc",
    "npv": "3712084",
-   "presentValue": "3966733"
+   "discountedSum": "3966733"
   },
   {
    "currency": "EUR",
@@ -19498,7 +19509,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "254416",
-   "presentValue": "636041"
+   "discountedSum": "636041"
   },
   {
    "currency": "JPY",
@@ -19526,7 +19537,7 @@
    "rate": "1.5",
    "mode": "ceil",
    "npv": "2244081",
-   "presentValue": "5610201"
+   "discountedSum": "5610201"
   },
   {
    "currency": "EUR",
@@ -19568,7 +19579,7 @@
    "rate": "0.1495",
    "mode": "halfExpand",
    "npv": "5266000",
-   "presentValue": "6053267"
+   "discountedSum": "6053267"
   },
   {
    "currency": "EUR",
@@ -19586,7 +19597,7 @@
    "rate": "0.028",
    "mode": "trunc",
    "npv": "-15892284",
-   "presentValue": "-16337268"
+   "discountedSum": "-16337268"
   },
   {
    "currency": "KWD",
@@ -19610,7 +19621,7 @@
    "rate": "0.1",
    "mode": "ceil",
    "npv": "-3960227",
-   "presentValue": "-4356250"
+   "discountedSum": "-4356250"
   },
   {
    "currency": "KWD",
@@ -19636,7 +19647,7 @@
    "rate": "0.234",
    "mode": "expand",
    "npv": "-569599",
-   "presentValue": "-702885"
+   "discountedSum": "-702885"
   },
   {
    "currency": "JPY",
@@ -19679,7 +19690,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "946037",
-   "presentValue": "2365093"
+   "discountedSum": "2365093"
   },
   {
    "currency": "KWD",
@@ -19726,7 +19737,7 @@
    "rate": "-0.22",
    "mode": "expand",
    "npv": "100322237196",
-   "presentValue": "78251345013"
+   "discountedSum": "78251345013"
   },
   {
    "currency": "EUR",
@@ -19748,7 +19759,7 @@
    "rate": "-0.0474",
    "mode": "halfTrunc",
    "npv": "1111404",
-   "presentValue": "1058724"
+   "discountedSum": "1058724"
   },
   {
    "currency": "JPY",
@@ -19784,7 +19795,7 @@
    "rate": "1.5",
    "mode": "halfTrunc",
    "npv": "-4436655",
-   "presentValue": "-11091638"
+   "discountedSum": "-11091638"
   },
   {
    "currency": "KWD",
@@ -19815,7 +19826,7 @@
    "rate": "0.035",
    "mode": "halfExpand",
    "npv": "-5476345",
-   "presentValue": "-5668017"
+   "discountedSum": "-5668017"
   },
   {
    "currency": "JPY",
@@ -19835,7 +19846,7 @@
    "rate": "-0.12",
    "mode": "expand",
    "npv": "25592808",
-   "presentValue": "22521671"
+   "discountedSum": "22521671"
   },
   {
    "currency": "EUR",
@@ -19864,7 +19875,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "-1354015",
-   "presentValue": "-3385036"
+   "discountedSum": "-3385036"
   },
   {
    "currency": "KWD",
@@ -19901,7 +19912,7 @@
    "rate": "0.103",
    "mode": "halfCeil",
    "npv": "-15427651",
-   "presentValue": "-17016699"
+   "discountedSum": "-17016699"
   },
   {
    "currency": "EUR",
@@ -19914,7 +19925,7 @@
    "rate": "0.1904",
    "mode": "floor",
    "npv": "-5587098",
-   "presentValue": "-6650882"
+   "discountedSum": "-6650882"
   },
   {
    "currency": "JPY",
@@ -19948,7 +19959,7 @@
    "rate": "1.5",
    "mode": "ceil",
    "npv": "1147434",
-   "presentValue": "2868585"
+   "discountedSum": "2868585"
   },
   {
    "currency": "JPY",
@@ -19963,7 +19974,7 @@
    "rate": "0.07457",
    "mode": "halfEven",
    "npv": "-4938808",
-   "presentValue": "-5307095"
+   "discountedSum": "-5307095"
   },
   {
    "currency": "EUR",
@@ -19989,7 +20000,7 @@
    "rate": "0.01548",
    "mode": "trunc",
    "npv": "15317938",
-   "presentValue": "15555060"
+   "discountedSum": "15555060"
   },
   {
    "currency": "KWD",
@@ -20016,7 +20027,7 @@
    "rate": "-0.1",
    "mode": "halfFloor",
    "npv": "45238829",
-   "presentValue": "40714946"
+   "discountedSum": "40714946"
   },
   {
    "currency": "EUR",
@@ -20044,7 +20055,7 @@
    "rate": "-0.1919",
    "mode": "halfTrunc",
    "npv": "1289159082",
-   "presentValue": "1041769454"
+   "discountedSum": "1041769454"
   },
   {
    "currency": "KWD",
@@ -20069,7 +20080,7 @@
    "rate": "1.5",
    "mode": "trunc",
    "npv": "4280579",
-   "presentValue": "10701448"
+   "discountedSum": "10701448"
   },
   {
    "currency": "JPY",
@@ -20116,7 +20127,7 @@
    "rate": "0.09932",
    "mode": "halfEven",
    "npv": "-1722294",
-   "presentValue": "-1893352"
+   "discountedSum": "-1893352"
   },
   {
    "currency": "JPY",
@@ -20157,7 +20168,7 @@
    "rate": "-0.0155",
    "mode": "trunc",
    "npv": "-3532395",
-   "presentValue": "-3477643"
+   "discountedSum": "-3477643"
   },
   {
    "currency": "JPY",
@@ -20192,7 +20203,7 @@
    "rate": "0",
    "mode": "expand",
    "npv": "9342839",
-   "presentValue": "9342839"
+   "discountedSum": "9342839"
   },
   {
    "currency": "EUR",
@@ -20216,7 +20227,7 @@
    "rate": "-0.065",
    "mode": "ceil",
    "npv": "8300911",
-   "presentValue": "7761352"
+   "discountedSum": "7761352"
   },
   {
    "currency": "EUR",
@@ -20230,7 +20241,7 @@
    "rate": "-0.193",
    "mode": "floor",
    "npv": "-17340780",
-   "presentValue": "-13994010"
+   "discountedSum": "-13994010"
   },
   {
    "currency": "EUR",
@@ -20272,7 +20283,7 @@
    "rate": "-0.0281",
    "mode": "halfExpand",
    "npv": "-7759324",
-   "presentValue": "-7541287"
+   "discountedSum": "-7541287"
   },
   {
    "currency": "KWD",
@@ -20298,7 +20309,7 @@
    "rate": "1.5",
    "mode": "expand",
    "npv": "1344246",
-   "presentValue": "3360615"
+   "discountedSum": "3360615"
   },
   {
    "currency": "JPY",
@@ -20331,7 +20342,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "1318636",
-   "presentValue": "3296591"
+   "discountedSum": "3296591"
   },
   {
    "currency": "EUR",
@@ -20343,7 +20354,7 @@
    "rate": "0.105",
    "mode": "halfFloor",
    "npv": "-8683572",
-   "presentValue": "-9595347"
+   "discountedSum": "-9595347"
   },
   {
    "currency": "EUR",
@@ -20374,7 +20385,7 @@
    "rate": "-0.12",
    "mode": "halfTrunc",
    "npv": "-198198297",
-   "presentValue": "-174414502"
+   "discountedSum": "-174414502"
   },
   {
    "currency": "KWD",
@@ -20390,7 +20401,7 @@
    "rate": "-0.15",
    "mode": "trunc",
    "npv": "3324920",
-   "presentValue": "2826182"
+   "discountedSum": "2826182"
   },
   {
    "currency": "KWD",
@@ -20427,7 +20438,7 @@
    "rate": "-0.10692",
    "mode": "halfEven",
    "npv": "116887620",
-   "presentValue": "104389996"
+   "discountedSum": "104389996"
   },
   {
    "currency": "JPY",
@@ -20441,7 +20452,7 @@
    "rate": "1.5",
    "mode": "floor",
    "npv": "661596",
-   "presentValue": "1653992"
+   "discountedSum": "1653992"
   },
   {
    "currency": "KWD",
@@ -20464,7 +20475,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "-1371571",
-   "presentValue": "-3428929"
+   "discountedSum": "-3428929"
   },
   {
    "currency": "JPY",
@@ -20513,7 +20524,7 @@
    "rate": "0.128",
    "mode": "halfEven",
    "npv": "6888308",
-   "presentValue": "7770012"
+   "discountedSum": "7770012"
   },
   {
    "currency": "EUR",
@@ -20534,7 +20545,7 @@
    "rate": "1.5",
    "mode": "floor",
    "npv": "84999",
-   "presentValue": "212499"
+   "discountedSum": "212499"
   },
   {
    "currency": "EUR",
@@ -20553,7 +20564,7 @@
    "rate": "0.0019",
    "mode": "ceil",
    "npv": "1739971",
-   "presentValue": "1743277"
+   "discountedSum": "1743277"
   },
   {
    "currency": "KWD",
@@ -20571,7 +20582,7 @@
    "rate": "0.17",
    "mode": "ceil",
    "npv": "-1372117",
-   "presentValue": "-1605377"
+   "discountedSum": "-1605377"
   },
   {
    "currency": "JPY",
@@ -20607,7 +20618,7 @@
    "rate": "-0.047",
    "mode": "trunc",
    "npv": "-27802206",
-   "presentValue": "-26495502"
+   "discountedSum": "-26495502"
   },
   {
    "currency": "JPY",
@@ -20650,7 +20661,7 @@
    "rate": "1.5",
    "mode": "expand",
    "npv": "2513484",
-   "presentValue": "6283710"
+   "discountedSum": "6283710"
   },
   {
    "currency": "KWD",
@@ -20686,7 +20697,7 @@
    "rate": "-0.01",
    "mode": "trunc",
    "npv": "-21111585",
-   "presentValue": "-20900470"
+   "discountedSum": "-20900470"
   },
   {
    "currency": "JPY",
@@ -20710,7 +20721,7 @@
    "rate": "1.5",
    "mode": "expand",
    "npv": "2613391",
-   "presentValue": "6533478"
+   "discountedSum": "6533478"
   },
   {
    "currency": "JPY",
@@ -20748,7 +20759,7 @@
    "rate": "0.18",
    "mode": "ceil",
    "npv": "304535",
-   "presentValue": "359352"
+   "discountedSum": "359352"
   },
   {
    "currency": "JPY",
@@ -20785,7 +20796,7 @@
    "rate": "0.07244",
    "mode": "halfTrunc",
    "npv": "-4921945",
-   "presentValue": "-5278490"
+   "discountedSum": "-5278490"
   },
   {
    "currency": "JPY",
@@ -20795,7 +20806,7 @@
    "rate": "0.033",
    "mode": "halfTrunc",
    "npv": "2128894",
-   "presentValue": "2199148"
+   "discountedSum": "2199148"
   },
   {
    "currency": "EUR",
@@ -20837,7 +20848,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "-951239",
-   "presentValue": "-2378096"
+   "discountedSum": "-2378096"
   },
   {
    "currency": "KWD",
@@ -20858,7 +20869,7 @@
    "rate": "-0.155",
    "mode": "floor",
    "npv": "138022505",
-   "presentValue": "116629016"
+   "discountedSum": "116629016"
   },
   {
    "currency": "EUR",
@@ -20899,7 +20910,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "-4509243",
-   "presentValue": "-11273108"
+   "discountedSum": "-11273108"
   },
   {
    "currency": "KWD",
@@ -20911,7 +20922,7 @@
    "rate": "-0.14",
    "mode": "trunc",
    "npv": "7727599",
-   "presentValue": "6645735"
+   "discountedSum": "6645735"
   },
   {
    "currency": "JPY",
@@ -20926,7 +20937,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "767277",
-   "presentValue": "1918192"
+   "discountedSum": "1918192"
   },
   {
    "currency": "JPY",
@@ -20943,7 +20954,7 @@
    "rate": "0.1226",
    "mode": "floor",
    "npv": "16143474",
-   "presentValue": "18122664"
+   "discountedSum": "18122664"
   },
   {
    "currency": "KWD",
@@ -20985,7 +20996,7 @@
    "rate": "1.5",
    "mode": "expand",
    "npv": "-2177109",
-   "presentValue": "-5442771"
+   "discountedSum": "-5442771"
   },
   {
    "currency": "JPY",
@@ -21017,7 +21028,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "-4953945",
-   "presentValue": "-12384863"
+   "discountedSum": "-12384863"
   },
   {
    "currency": "EUR",
@@ -21051,7 +21062,7 @@
    "rate": "-0.241",
    "mode": "ceil",
    "npv": "-3182130663",
-   "presentValue": "-2415237173"
+   "discountedSum": "-2415237173"
   },
   {
    "currency": "KWD",
@@ -21093,7 +21104,7 @@
    "rate": "1.5",
    "mode": "halfFloor",
    "npv": "-891529",
-   "presentValue": "-2228823"
+   "discountedSum": "-2228823"
   },
   {
    "currency": "EUR",
@@ -21124,7 +21135,7 @@
    "rate": "0.04123",
    "mode": "floor",
    "npv": "4494560",
-   "presentValue": "4679871"
+   "discountedSum": "4679871"
   },
   {
    "currency": "EUR",
@@ -21157,7 +21168,7 @@
    "rate": "0.1065",
    "mode": "floor",
    "npv": "14219662",
-   "presentValue": "15734056"
+   "discountedSum": "15734056"
   },
   {
    "currency": "KWD",
@@ -21202,7 +21213,7 @@
    "rate": "0",
    "mode": "expand",
    "npv": "32359548",
-   "presentValue": "32359548"
+   "discountedSum": "32359548"
   },
   {
    "currency": "EUR",
@@ -21242,7 +21253,7 @@
    "rate": "-0.1923",
    "mode": "halfExpand",
    "npv": "-1199220018",
-   "presentValue": "-968610008"
+   "discountedSum": "-968610008"
   },
   {
    "currency": "JPY",
@@ -21269,7 +21280,7 @@
    "rate": "-0.131",
    "mode": "expand",
    "npv": "-181601609",
-   "presentValue": "-157811798"
+   "discountedSum": "-157811798"
   },
   {
    "currency": "EUR",
@@ -21288,7 +21299,7 @@
    "rate": "1.5",
    "mode": "ceil",
    "npv": "-1893810",
-   "presentValue": "-4734526"
+   "discountedSum": "-4734526"
   },
   {
    "currency": "JPY",
@@ -21298,7 +21309,7 @@
    "rate": "1.5",
    "mode": "halfFloor",
    "npv": "-3582763",
-   "presentValue": "-8956908"
+   "discountedSum": "-8956908"
   },
   {
    "currency": "EUR",
@@ -21324,7 +21335,7 @@
    "rate": "0.2",
    "mode": "ceil",
    "npv": "4308279",
-   "presentValue": "5169935"
+   "discountedSum": "5169935"
   },
   {
    "currency": "JPY",
@@ -21352,7 +21363,7 @@
    "rate": "0.03461",
    "mode": "halfCeil",
    "npv": "-24544396",
-   "presentValue": "-25393878"
+   "discountedSum": "-25393878"
   },
   {
    "currency": "JPY",
@@ -21383,7 +21394,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "-3894727",
-   "presentValue": "-9736818"
+   "discountedSum": "-9736818"
   },
   {
    "currency": "JPY",
@@ -21403,7 +21414,7 @@
    "rate": "-0.021",
    "mode": "ceil",
    "npv": "11988759",
-   "presentValue": "11736995"
+   "discountedSum": "11736995"
   },
   {
    "currency": "KWD",
@@ -21437,7 +21448,7 @@
    "rate": "-0.225",
    "mode": "halfTrunc",
    "npv": "-8920118149",
-   "presentValue": "-6913091565"
+   "discountedSum": "-6913091565"
   },
   {
    "currency": "EUR",
@@ -21453,7 +21464,7 @@
    "rate": "1.5",
    "mode": "floor",
    "npv": "1504830",
-   "presentValue": "3762075"
+   "discountedSum": "3762075"
   },
   {
    "currency": "JPY",
@@ -21468,7 +21479,7 @@
    "rate": "0.207",
    "mode": "trunc",
    "npv": "475187",
-   "presentValue": "573551"
+   "discountedSum": "573551"
   },
   {
    "currency": "KWD",
@@ -21515,7 +21526,7 @@
    "rate": "-0.1676",
    "mode": "trunc",
    "npv": "-4857524671",
-   "presentValue": "-4043403536"
+   "discountedSum": "-4043403536"
   },
   {
    "currency": "KWD",
@@ -21554,7 +21565,7 @@
    "rate": "0.059",
    "mode": "halfExpand",
    "npv": "7142375",
-   "presentValue": "7563775"
+   "discountedSum": "7563775"
   },
   {
    "currency": "JPY",
@@ -21580,7 +21591,7 @@
    "rate": "0.05841",
    "mode": "halfFloor",
    "npv": "8238800",
-   "presentValue": "8720028"
+   "discountedSum": "8720028"
   },
   {
    "currency": "JPY",
@@ -21613,7 +21624,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "-1063259",
-   "presentValue": "-2658147"
+   "discountedSum": "-2658147"
   },
   {
    "currency": "KWD",
@@ -21643,7 +21654,7 @@
    "rate": "1.5",
    "mode": "trunc",
    "npv": "-1407906",
-   "presentValue": "-3519765"
+   "discountedSum": "-3519765"
   },
   {
    "currency": "KWD",
@@ -21690,7 +21701,7 @@
    "rate": "1.5",
    "mode": "trunc",
    "npv": "421609",
-   "presentValue": "1054022"
+   "discountedSum": "1054022"
   },
   {
    "currency": "JPY",
@@ -21728,7 +21739,7 @@
    "rate": "1.5",
    "mode": "expand",
    "npv": "1294396",
-   "presentValue": "3235989"
+   "discountedSum": "3235989"
   },
   {
    "currency": "EUR",
@@ -21740,7 +21751,7 @@
    "rate": "0.2263",
    "mode": "halfTrunc",
    "npv": "15928",
-   "presentValue": "19533"
+   "discountedSum": "19533"
   },
   {
    "currency": "KWD",
@@ -21763,7 +21774,7 @@
    "rate": "0.1663",
    "mode": "halfTrunc",
    "npv": "2409191",
-   "presentValue": "2809839"
+   "discountedSum": "2809839"
   },
   {
    "currency": "EUR",
@@ -21795,7 +21806,7 @@
    "rate": "0.11",
    "mode": "halfEven",
    "npv": "15152220",
-   "presentValue": "16818964"
+   "discountedSum": "16818964"
   },
   {
    "currency": "JPY",
@@ -21813,7 +21824,7 @@
    "rate": "1.5",
    "mode": "halfFloor",
    "npv": "4172441",
-   "presentValue": "10431102"
+   "discountedSum": "10431102"
   },
   {
    "currency": "JPY",
@@ -21832,7 +21843,7 @@
    "rate": "0.2388",
    "mode": "floor",
    "npv": "-2150479",
-   "presentValue": "-2664014"
+   "discountedSum": "-2664014"
   },
   {
    "currency": "EUR",
@@ -21850,7 +21861,7 @@
    "rate": "1.5",
    "mode": "ceil",
    "npv": "-2169930",
-   "presentValue": "-5424826"
+   "discountedSum": "-5424826"
   },
   {
    "currency": "JPY",
@@ -21894,7 +21905,7 @@
    "rate": "-0.1787",
    "mode": "halfExpand",
    "npv": "-7182559322",
-   "presentValue": "-5899035971"
+   "discountedSum": "-5899035971"
   },
   {
    "currency": "JPY",
@@ -21909,7 +21920,7 @@
    "rate": "0.1395",
    "mode": "halfCeil",
    "npv": "-5067234",
-   "presentValue": "-5774113"
+   "discountedSum": "-5774113"
   },
   {
    "currency": "JPY",
@@ -21956,7 +21967,7 @@
    "rate": "-0.12",
    "mode": "ceil",
    "npv": "-669560905",
-   "presentValue": "-589213597"
+   "discountedSum": "-589213597"
   },
   {
    "currency": "KWD",
@@ -21991,7 +22002,7 @@
    "rate": "1.5",
    "mode": "expand",
    "npv": "-1283903",
-   "presentValue": "-3209756"
+   "discountedSum": "-3209756"
   },
   {
    "currency": "EUR",
@@ -22032,7 +22043,7 @@
    "rate": "1.5",
    "mode": "halfEven",
    "npv": "-1167871",
-   "presentValue": "-2919676"
+   "discountedSum": "-2919676"
   },
   {
    "currency": "KWD",
@@ -22045,7 +22056,7 @@
    "rate": "-0.009",
    "mode": "halfFloor",
    "npv": "-23221106",
-   "presentValue": "-23012116"
+   "discountedSum": "-23012116"
   },
   {
    "currency": "JPY",
@@ -22056,7 +22067,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "-1329876",
-   "presentValue": "-3324690"
+   "discountedSum": "-3324690"
   },
   {
    "currency": "EUR",
@@ -22094,7 +22105,7 @@
    "rate": "0.08",
    "mode": "halfExpand",
    "npv": "14094491",
-   "presentValue": "15222050"
+   "discountedSum": "15222050"
   },
   {
    "currency": "JPY",
@@ -22107,7 +22118,7 @@
    "rate": "0.1008",
    "mode": "halfFloor",
    "npv": "-18589894",
-   "presentValue": "-20463755"
+   "discountedSum": "-20463755"
   },
   {
    "currency": "EUR",
@@ -22130,7 +22141,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "623248",
-   "presentValue": "1558119"
+   "discountedSum": "1558119"
   },
   {
    "currency": "KWD",
@@ -22170,7 +22181,7 @@
    "rate": "0.1641",
    "mode": "halfCeil",
    "npv": "7648675",
-   "presentValue": "8903823"
+   "discountedSum": "8903823"
   },
   {
    "currency": "EUR",
@@ -22209,7 +22220,7 @@
    "rate": "-0.1013",
    "mode": "halfTrunc",
    "npv": "41311746",
-   "presentValue": "37126867"
+   "discountedSum": "37126867"
   },
   {
    "currency": "JPY",
@@ -22252,7 +22263,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "4098087",
-   "presentValue": "10245219"
+   "discountedSum": "10245219"
   },
   {
    "currency": "KWD",
@@ -22274,7 +22285,7 @@
    "rate": "-0.17",
    "mode": "halfCeil",
    "npv": "-98441136",
-   "presentValue": "-81706143"
+   "discountedSum": "-81706143"
   },
   {
    "currency": "JPY",
@@ -22299,7 +22310,7 @@
    "rate": "0.14105",
    "mode": "halfExpand",
    "npv": "8952666",
-   "presentValue": "10215440"
+   "discountedSum": "10215440"
   },
   {
    "currency": "JPY",
@@ -22342,7 +22353,7 @@
    "rate": "1.5",
    "mode": "trunc",
    "npv": "-1129694",
-   "presentValue": "-2824235"
+   "discountedSum": "-2824235"
   },
   {
    "currency": "KWD",
@@ -22363,7 +22374,7 @@
    "rate": "0.0126",
    "mode": "trunc",
    "npv": "-14244908",
-   "presentValue": "-14424394"
+   "discountedSum": "-14424394"
   },
   {
    "currency": "EUR",
@@ -22401,7 +22412,7 @@
    "rate": "0.22949",
    "mode": "floor",
    "npv": "6889207",
-   "presentValue": "8470211"
+   "discountedSum": "8470211"
   },
   {
    "currency": "EUR",
@@ -22445,7 +22456,7 @@
    "rate": "0.205",
    "mode": "expand",
    "npv": "-14806685",
-   "presentValue": "-17842056"
+   "discountedSum": "-17842056"
   },
   {
    "currency": "KWD",
@@ -22493,7 +22504,7 @@
    "rate": "0.13",
    "mode": "expand",
    "npv": "11344744",
-   "presentValue": "12819561"
+   "discountedSum": "12819561"
   },
   {
    "currency": "EUR",
@@ -22518,7 +22529,7 @@
    "rate": "0.195",
    "mode": "expand",
    "npv": "7791494",
-   "presentValue": "9310835"
+   "discountedSum": "9310835"
   },
   {
    "currency": "EUR",
@@ -22537,7 +22548,7 @@
    "rate": "-0.03701",
    "mode": "halfCeil",
    "npv": "20463526",
-   "presentValue": "19706171"
+   "discountedSum": "19706171"
   },
   {
    "currency": "EUR",
@@ -22559,7 +22570,7 @@
    "rate": "1.5",
    "mode": "halfEven",
    "npv": "2678960",
-   "presentValue": "6697400"
+   "discountedSum": "6697400"
   },
   {
    "currency": "EUR",
@@ -22576,7 +22587,7 @@
    "rate": "0.15297",
    "mode": "halfCeil",
    "npv": "14829878",
-   "presentValue": "17098405"
+   "discountedSum": "17098405"
   },
   {
    "currency": "EUR",
@@ -22612,7 +22623,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "1736129",
-   "presentValue": "4340322"
+   "discountedSum": "4340322"
   },
   {
    "currency": "KWD",
@@ -22628,7 +22639,7 @@
    "rate": "0.02",
    "mode": "ceil",
    "npv": "13530355",
-   "presentValue": "13800962"
+   "discountedSum": "13800962"
   },
   {
    "currency": "JPY",
@@ -22669,7 +22680,7 @@
    "rate": "0.0138",
    "mode": "trunc",
    "npv": "12932282",
-   "presentValue": "13110747"
+   "discountedSum": "13110747"
   },
   {
    "currency": "EUR",
@@ -22700,7 +22711,7 @@
    "rate": "0.01192",
    "mode": "floor",
    "npv": "-34743528",
-   "presentValue": "-35157671"
+   "discountedSum": "-35157671"
   },
   {
    "currency": "JPY",
@@ -22734,7 +22745,7 @@
    "rate": "-0.1657",
    "mode": "halfExpand",
    "npv": "498324552",
-   "presentValue": "415752174"
+   "discountedSum": "415752174"
   },
   {
    "currency": "JPY",
@@ -22780,7 +22791,7 @@
    "rate": "-0.1395",
    "mode": "floor",
    "npv": "1929270109",
-   "presentValue": "1660136929"
+   "discountedSum": "1660136929"
   },
   {
    "currency": "KWD",
@@ -22810,7 +22821,7 @@
    "rate": "1.5",
    "mode": "halfCeil",
    "npv": "-2092912",
-   "presentValue": "-5232279"
+   "discountedSum": "-5232279"
   },
   {
    "currency": "EUR",
@@ -22841,7 +22852,7 @@
    "rate": "1.5",
    "mode": "halfTrunc",
    "npv": "2049995",
-   "presentValue": "5124986"
+   "discountedSum": "5124986"
   },
   {
    "currency": "JPY",
@@ -22887,7 +22898,7 @@
    "rate": "0.1",
    "mode": "ceil",
    "npv": "-24212462",
-   "presentValue": "-26633709"
+   "discountedSum": "-26633709"
   },
   {
    "currency": "EUR",
@@ -22907,7 +22918,7 @@
    "rate": "0.01808",
    "mode": "halfEven",
    "npv": "31515800",
-   "presentValue": "32085606"
+   "discountedSum": "32085606"
   },
   {
    "currency": "JPY",
@@ -22949,7 +22960,7 @@
    "rate": "0.14174",
    "mode": "floor",
    "npv": "-3062992",
-   "presentValue": "-3497141"
+   "discountedSum": "-3497141"
   },
   {
    "currency": "EUR",
@@ -22974,7 +22985,7 @@
    "rate": "-0.02",
    "mode": "ceil",
    "npv": "-23420499",
-   "presentValue": "-22952089"
+   "discountedSum": "-22952089"
   },
   {
    "currency": "KWD",
@@ -23002,7 +23013,7 @@
    "rate": "-0.24458",
    "mode": "floor",
    "npv": "-1337118107",
-   "presentValue": "-1010085761"
+   "discountedSum": "-1010085761"
   },
   {
    "currency": "EUR",
@@ -23013,7 +23024,7 @@
    "rate": "0.224",
    "mode": "trunc",
    "npv": "-13812341",
-   "presentValue": "-16906306"
+   "discountedSum": "-16906306"
   },
   {
    "currency": "EUR",
@@ -23050,7 +23061,7 @@
    "rate": "-0.2151",
    "mode": "ceil",
    "npv": "9652687659",
-   "presentValue": "7576394544"
+   "discountedSum": "7576394544"
   },
   {
    "currency": "KWD",
@@ -23097,7 +23108,7 @@
    "rate": "0.142",
    "mode": "ceil",
    "npv": "1595415",
-   "presentValue": "1821963"
+   "discountedSum": "1821963"
   },
   {
    "currency": "JPY",
@@ -23132,7 +23143,7 @@
    "rate": "0.02625",
    "mode": "halfEven",
    "npv": "9870889",
-   "presentValue": "10130000"
+   "discountedSum": "10130000"
   },
   {
    "currency": "JPY",
@@ -23153,7 +23164,7 @@
    "rate": "-0.14",
    "mode": "floor",
    "npv": "73747873",
-   "presentValue": "63423170"
+   "discountedSum": "63423170"
   },
   {
    "currency": "KWD",
@@ -23176,7 +23187,7 @@
    "rate": "1.5",
    "mode": "halfFloor",
    "npv": "3401064",
-   "presentValue": "8502661"
+   "discountedSum": "8502661"
   },
   {
    "currency": "EUR",
@@ -23196,7 +23207,7 @@
    "rate": "0",
    "mode": "trunc",
    "npv": "30120307",
-   "presentValue": "30120307"
+   "discountedSum": "30120307"
   },
   {
    "currency": "KWD",
@@ -23219,7 +23230,7 @@
    "rate": "-0.05619",
    "mode": "halfExpand",
    "npv": "-15826325",
-   "presentValue": "-14937044"
+   "discountedSum": "-14937044"
   },
   {
    "currency": "KWD",
@@ -23264,7 +23275,7 @@
    "rate": "1.5",
    "mode": "trunc",
    "npv": "3806684",
-   "presentValue": "9516711"
+   "discountedSum": "9516711"
   },
   {
    "currency": "KWD",
@@ -23286,7 +23297,7 @@
    "rate": "1.5",
    "mode": "trunc",
    "npv": "1509623",
-   "presentValue": "3774057"
+   "discountedSum": "3774057"
   },
   {
    "currency": "JPY",
@@ -23303,7 +23314,7 @@
    "rate": "-0.02468",
    "mode": "halfTrunc",
    "npv": "12620088",
-   "presentValue": "12308624"
+   "discountedSum": "12308624"
   },
   {
    "currency": "EUR",
@@ -23319,7 +23330,7 @@
    "rate": "-0.1878",
    "mode": "halfEven",
    "npv": "39682998",
-   "presentValue": "32230531"
+   "discountedSum": "32230531"
   },
   {
    "currency": "JPY",
@@ -23330,7 +23341,7 @@
    "rate": "1.5",
    "mode": "halfFloor",
    "npv": "4760986",
-   "presentValue": "11902465"
+   "discountedSum": "11902465"
   },
   {
    "currency": "JPY",
@@ -23356,7 +23367,7 @@
    "rate": "0.12",
    "mode": "halfEven",
    "npv": "1944402",
-   "presentValue": "2177730"
+   "discountedSum": "2177730"
   },
   {
    "currency": "JPY",
@@ -23405,7 +23416,7 @@
    "rate": "0.0995",
    "mode": "halfTrunc",
    "npv": "24849965",
-   "presentValue": "27322537"
+   "discountedSum": "27322537"
   },
   {
    "currency": "EUR",
@@ -23434,7 +23445,7 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "2677335",
-   "presentValue": "6693338"
+   "discountedSum": "6693338"
   },
   {
    "currency": "JPY",
@@ -23447,7 +23458,7 @@
    "rate": "0.0812",
    "mode": "halfFloor",
    "npv": "-23964782",
-   "presentValue": "-25910723"
+   "discountedSum": "-25910723"
   },
   {
    "currency": "EUR",
@@ -23460,7 +23471,7 @@
    "rate": "1.5",
    "mode": "ceil",
    "npv": "-2192574",
-   "presentValue": "-5481436"
+   "discountedSum": "-5481436"
   },
   {
    "currency": "JPY",
@@ -23470,7 +23481,7 @@
    "rate": "-0.2258",
    "mode": "trunc",
    "npv": "12168854",
-   "presentValue": "9421127"
+   "discountedSum": "9421127"
   },
   {
    "currency": "KWD",
@@ -23504,7 +23515,7 @@
    "rate": "0.21",
    "mode": "halfEven",
    "npv": "9980828",
-   "presentValue": "12076801"
+   "discountedSum": "12076801"
   },
   {
    "currency": "JPY",
@@ -23543,7 +23554,7 @@
    "rate": "1.5",
    "mode": "ceil",
    "npv": "1926880",
-   "presentValue": "4817199"
+   "discountedSum": "4817199"
   },
   {
    "currency": "EUR",
@@ -23564,7 +23575,7 @@
    "rate": "1.5",
    "mode": "halfTrunc",
    "npv": "-1796341",
-   "presentValue": "-4490852"
+   "discountedSum": "-4490852"
   },
   {
    "currency": "KWD",
@@ -23589,7 +23600,7 @@
    "rate": "1.5",
    "mode": "halfTrunc",
    "npv": "3764003",
-   "presentValue": "9410008"
+   "discountedSum": "9410008"
   },
   {
    "currency": "JPY",
@@ -23628,7 +23639,7 @@
    "rate": "1.5",
    "mode": "trunc",
    "npv": "1171083",
-   "presentValue": "2927709"
+   "discountedSum": "2927709"
   },
   {
    "currency": "EUR",
@@ -23638,7 +23649,7 @@
    "rate": "0.09542",
    "mode": "halfTrunc",
    "npv": "8303107",
-   "presentValue": "9095389"
+   "discountedSum": "9095389"
   },
   {
    "currency": "KWD",
@@ -23683,7 +23694,7 @@
    "rate": "1.5",
    "mode": "halfEven",
    "npv": "2898691",
-   "presentValue": "7246727"
+   "discountedSum": "7246727"
   },
   {
    "currency": "JPY",
@@ -23710,7 +23721,7 @@
    "rate": "0.24",
    "mode": "halfExpand",
    "npv": "325660",
-   "presentValue": "403818"
+   "discountedSum": "403818"
   },
   {
    "currency": "KWD",
@@ -23736,148 +23747,170 @@
    "rate": "1.5",
    "mode": "halfExpand",
    "npv": "-4157680",
-   "presentValue": "-10394201"
-  },
-  {
-   "currency": "JPY",
-   "flows": [
-    "861533",
-    "-4975646",
-    "-2004875",
-    "-9718077",
-    "-2218704",
-    "-4074695",
-    "8830998",
-    "2999780",
-    "-1586624",
-    "-4045154",
-    "320105",
-    "9934268",
-    "4888254",
-    "-4662881",
-    "2301692",
-    "1207340",
-    "-4344855",
-    "3219552",
-    "9512905",
-    "-1516253",
-    "1162478",
-    "-7879976",
-    "-4806072",
-    "4522759"
-   ],
-   "rate": "-0.19",
-   "mode": "halfCeil",
-   "npv": "-49950213",
-   "presentValue": "-40459673"
+   "discountedSum": "-10394201"
   }
  ],
  "irr": [
   {
-   "currency": "EUR",
+   "currency": "JPY",
    "flows": [
-    "-7089773",
-    "691321",
-    "192866",
-    "848279",
-    "449866",
+    "5430767",
+    "-157011",
+    "-687910",
+    "-904546",
+    "-249847",
+    "-8810",
+    "-243165",
+    "-185165",
+    "-588468",
+    "-678064",
+    "-406243",
+    "-910617",
+    "-262918"
+   ],
+   "digits": 11,
+   "lower": "-402124652"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "-2668560",
+    "728233",
+    "696927",
+    "384427",
+    "350229",
+    "176723",
+    "413111",
+    "924504",
+    "609778",
+    "265117",
+    "348827",
+    "66250",
+    "162310",
+    "820909",
+    "453836",
+    "662908"
+   ],
+   "digits": 9,
+   "lower": "170615227"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "-9675506",
+    "317259",
+    "244494",
+    "12315",
+    "979609"
+   ],
+   "digits": 8,
+   "lower": "-41488416"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "-7197868",
     "589612",
     "280284",
     "61292",
     "739884",
     "673658",
-    "446931",
-    "37240",
-    "434482",
-    "860851",
-    "563791",
-    "495653",
-    "329757",
-    "352147"
+    "446931"
    ],
-   "digits": 5,
-   "lower": "1492"
+   "digits": 8,
+   "lower": "-20876114"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "-5276126",
+    "352147",
+    "337633",
+    "939725",
+    "251221",
+    "956563",
+    "204598",
+    "915711",
+    "250165",
+    "679948",
+    "794183",
+    "713714",
+    "524706",
+    "726928",
+    "246154",
+    "158966",
+    "166503"
+   ],
+   "digits": 3,
+   "lower": "60"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "-5157511",
+    "188407",
+    "736826",
+    "629589",
+    "334418",
+    "270543",
+    "904351",
+    "652939",
+    "523929",
+    "197323",
+    "646446",
+    "564949",
+    "647042"
+   ],
+   "digits": 4,
+   "lower": "307"
   },
   {
    "currency": "EUR",
    "flows": [
-    "4002649",
-    "-679948",
-    "-794183",
-    "-713714",
-    "-524706",
-    "-726928",
-    "-246154",
-    "-158966",
-    "-166503",
-    "-753292",
-    "-244394",
-    "-130575",
-    "-553559",
-    "-385449",
-    "-322344",
-    "-188407",
-    "-736826",
-    "-629589",
-    "-334418",
-    "-270543",
-    "-904351",
-    "-652939",
-    "-523929",
-    "-197323",
-    "-646446",
-    "-564949",
-    "-647042",
-    "-688020",
-    "-637032"
+    "-9068217",
+    "884656"
    ],
-   "digits": 2,
-   "lower": "12"
+   "digits": 7,
+   "lower": "-9024444"
   },
   {
    "currency": "KWD",
    "flows": [
-    "9068217",
-    "-884656",
-    "-732715",
-    "-526402",
-    "-387103",
-    "-540054",
-    "-830427",
-    "-472113",
-    "-512425",
-    "-642803",
-    "-336103",
-    "-956002",
-    "-685100",
-    "-964983",
-    "-351669",
-    "-533831",
-    "-840456",
-    "-477721",
-    "-2025",
-    "-247926",
-    "-180428",
-    "-675341",
-    "-661304",
-    "-824252",
-    "-385407",
-    "-897218",
-    "-910524",
-    "-939702",
-    "-559703"
+    "-7553820",
+    "512425",
+    "642803",
+    "336103",
+    "956002",
+    "685100",
+    "964983",
+    "351669",
+    "533831",
+    "840456",
+    "477721",
+    "2025",
+    "247926",
+    "180428",
+    "675341",
+    "661304",
+    "824252",
+    "385407",
+    "897218",
+    "910524",
+    "939702",
+    "559703",
+    "72053",
+    "956170",
+    "278732",
+    "537383",
+    "890079"
    ],
-   "digits": 6,
-   "lower": "49760"
+   "digits": 9,
+   "lower": "60681055"
   },
   {
    "currency": "KWD",
    "flows": [
-    "-9506717",
-    "499982",
-    "568186",
-    "478084",
-    "344006",
+    "-5504104",
     "973221",
     "796211",
     "129263",
@@ -23892,24 +23925,22 @@
     "209389",
     "812643",
     "788351",
-    "676331",
-    "736927",
-    "643070",
-    "431746",
-    "982073",
-    "558832",
-    "735919",
-    "660796",
-    "258420",
-    "224132"
+    "676331"
    ],
-   "digits": 4,
-   "lower": "355"
+   "digits": 8,
+   "lower": "5461740"
   },
   {
    "currency": "KWD",
    "flows": [
-    "-7519652",
+    "-4134729",
+    "224132",
+    "748625",
+    "974108",
+    "189323",
+    "746298",
+    "283713",
+    "469978",
     "440621",
     "633070",
     "791872",
@@ -23918,86 +23949,85 @@
     "590771",
     "134888",
     "972731",
-    "845175"
+    "845175",
+    "530255",
+    "245201",
+    "797456",
+    "661791",
+    "604545",
+    "515021",
+    "298394"
    ],
-   "digits": 12,
-   "lower": "-70103724194"
+   "digits": 10,
+   "lower": "1184474201"
   },
   {
    "currency": "KWD",
    "flows": [
-    "4774309",
-    "-987241",
-    "-595730",
-    "-553531",
-    "-800493",
-    "-550581",
-    "-63087",
-    "-963490",
-    "-129221",
-    "-155146",
-    "-398557",
-    "-602931",
-    "-770140",
-    "-179917",
-    "-753395",
-    "-979799",
-    "-866396"
+    "-2067546",
+    "155146",
+    "398557"
    ],
-   "digits": 12,
-   "lower": "94754252003"
+   "digits": 4,
+   "lower": "-5219"
   },
   {
-   "currency": "EUR",
+   "currency": "KWD",
    "flows": [
-    "2340582",
-    "-596534",
-    "-754979",
-    "-742653",
-    "-121930",
-    "-660515",
-    "-896284",
-    "-878",
-    "-692251",
-    "-852332",
-    "-317761",
-    "-805317",
-    "-456230",
-    "-560542",
-    "-578471",
-    "-965405",
-    "-246787",
-    "-978502",
-    "-520867",
-    "-634682",
-    "-735054",
-    "-867165",
-    "-902531"
+    "-4643858",
+    "674910",
+    "714836",
+    "224347",
+    "700587",
+    "919871",
+    "146286",
+    "596534",
+    "754979",
+    "742653",
+    "121930",
+    "660515",
+    "896284",
+    "878",
+    "692251",
+    "852332",
+    "317761",
+    "805317",
+    "456230",
+    "560542",
+    "578471",
+    "965405",
+    "246787",
+    "978502",
+    "520867",
+    "634682",
+    "735054",
+    "867165"
+   ],
+   "digits": 9,
+   "lower": "120458199"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "4359229",
+    "-627914",
+    "-339576",
+    "-347338",
+    "-216032",
+    "-823957",
+    "-100922",
+    "-779561",
+    "-282122",
+    "-801738",
+    "-656366"
    ],
    "digits": 10,
-   "lower": "2530957415"
+   "lower": "230185219"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-4359229",
-    "627914",
-    "339576",
-    "347338",
-    "216032",
-    "823957",
-    "100922",
-    "779561",
-    "282122",
-    "801738",
-    "656366",
-    "117715",
-    "403832",
-    "529081",
-    "382055",
-    "897607",
-    "781108",
-    "53002",
+    "-848038",
     "540467",
     "867405",
     "220750",
@@ -24006,33 +24036,34 @@
     "672672",
     "659814",
     "322142",
-    "532044"
+    "532044",
+    "606312",
+    "846982",
+    "818963",
+    "11858",
+    "236607",
+    "977900",
+    "92666",
+    "297593",
+    "839270",
+    "867411",
+    "498074",
+    "185322",
+    "703899",
+    "965772",
+    "793634",
+    "597797",
+    "147191",
+    "814952",
+    "558544"
    ],
    "digits": 2,
-   "lower": "9"
+   "lower": "63"
   },
   {
-   "currency": "EUR",
+   "currency": "JPY",
    "flows": [
-    "4761490",
-    "-839270",
-    "-867411",
-    "-498074"
-   ],
-   "digits": 11,
-   "lower": "-32464809648"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "-8936720",
-    "458093",
-    "747985",
-    "25650",
-    "891706",
-    "275963",
-    "875662",
-    "224009",
+    "-3584150",
     "301139",
     "539572",
     "902189",
@@ -24050,23 +24081,24 @@
     "215514",
     "921612",
     "134992",
-    "673186"
+    "673186",
+    "930475",
+    "221993",
+    "576331",
+    "836934",
+    "497707",
+    "682391",
+    "419775",
+    "812669",
+    "106935"
    ],
-   "digits": 10,
-   "lower": "253971265"
+   "digits": 11,
+   "lower": "13663475712"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-6716404",
-    "812669",
-    "106935",
-    "973338",
-    "463756",
-    "604400",
-    "342892",
-    "739230",
-    "289611",
+    "-4633780",
     "874379",
     "574448",
     "953365",
@@ -24079,85 +24111,87 @@
     "900816",
     "921113",
     "908971",
-    "779739"
-   ],
-   "digits": 5,
-   "lower": "6847"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "6111094",
-    "-230192",
-    "-613419",
-    "-729202",
-    "-439002",
-    "-617891",
-    "-496025",
-    "-131213",
-    "-409957",
-    "-167441",
-    "-580148",
-    "-939657",
-    "-853665",
-    "-422163",
-    "-554972",
-    "-155086",
-    "-527237",
-    "-365213"
-   ],
-   "digits": 6,
-   "lower": "35372"
-  },
-  {
-   "currency": "JPY",
-   "flows": [
-    "-7139544",
-    "491289",
-    "417198",
-    "32581",
-    "259095",
-    "707858",
-    "93617",
-    "787064",
-    "849453",
-    "435597",
-    "170621",
-    "798908",
-    "26938"
+    "779739",
+    "316686",
+    "605864",
+    "213865",
+    "532283",
+    "548029",
+    "927056",
+    "381943",
+    "230192",
+    "613419",
+    "729202"
    ],
    "digits": 9,
-   "lower": "-48583672"
+   "lower": "135873930"
   },
   {
    "currency": "EUR",
    "flows": [
-    "-8696676",
-    "558276",
-    "651677",
-    "139527",
-    "57105",
-    "138224"
+    "-2679072",
+    "580148",
+    "939657",
+    "853665",
+    "422163",
+    "554972",
+    "155086",
+    "527237",
+    "365213",
+    "87781",
+    "533775",
+    "749100",
+    "755742",
+    "273855"
    ],
-   "digits": 3,
-   "lower": "-477"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "-6800153",
-    "17850",
-    "886743",
-    "472872",
-    "487531"
-   ],
-   "digits": 7,
-   "lower": "-3569040"
+   "digits": 8,
+   "lower": "19732725"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-9739576",
+    "521306",
+    "-259095",
+    "-707858",
+    "-93617",
+    "-787064",
+    "-849453",
+    "-435597",
+    "-170621",
+    "-798908",
+    "-26938",
+    "-953001",
+    "-383164",
+    "-512992",
+    "-134116"
+   ],
+   "digits": 10,
+   "lower": "8051671477"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "-913687",
+    "138224",
+    "908303",
+    "504610",
+    "764348",
+    "87619"
+   ],
+   "digits": 8,
+   "lower": "42824162"
+  },
+  {
+   "currency": "EUR",
+   "flows": [
+    "-7565956",
+    "487531",
+    "664960",
+    "529629",
+    "363726",
+    "297632",
+    "427169",
+    "608723",
     "557209",
     "421045",
     "42653",
@@ -24171,52 +24205,47 @@
     "177198",
     "830321",
     "895693",
-    "253551"
+    "253551",
+    "975617",
+    "45627",
+    "209483",
+    "227907",
+    "341321",
+    "357332",
+    "999089"
    ],
-   "digits": 5,
-   "lower": "-3850"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "-5717323",
-    "999089",
-    "487676",
-    "843219",
-    "941909",
-    "620607",
-    "404398",
-    "540733",
-    "801944",
-    "987558",
-    "273406",
-    "967807"
-   ],
-   "digits": 6,
-   "lower": "59008"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "-4000604",
-    "475596",
-    "356207"
-   ],
-   "digits": 4,
-   "lower": "-6364"
+   "digits": 11,
+   "lower": "4481963144"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-278650",
-    "896057",
-    "466312",
-    "450666",
-    "897024",
-    "266407",
-    "332036",
-    "323288",
-    "578705",
+    "-4374511",
+    "967807",
+    "382067",
+    "273112",
+    "739813",
+    "49731",
+    "250037",
+    "475596",
+    "356207",
+    "362882",
+    "911453",
+    "874167",
+    "186890",
+    "460152",
+    "974283",
+    "698476",
+    "17415",
+    "896057"
+   ],
+   "digits": 6,
+   "lower": "89734"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
+    "-9259286",
     "33803",
     "114472",
     "335141",
@@ -24226,19 +24255,19 @@
     "957376",
     "1732",
     "309292",
-    "657785",
-    "969191",
-    "904101",
-    "396398",
-    "320980"
+    "657785"
    ],
-   "digits": 3,
-   "lower": "2827"
+   "digits": 8,
+   "lower": "-12877763"
   },
   {
-   "currency": "EUR",
+   "currency": "JPY",
    "flows": [
-    "-2296755",
+    "-1957761",
+    "886558",
+    "192138",
+    "827801",
+    "143547",
     "427441",
     "414189",
     "780570",
@@ -24247,15 +24276,15 @@
     "33976",
     "380927",
     "141063",
-    "977032",
-    "912505",
-    "343473",
-    "834331",
-    "107983",
-    "978110",
-    "111762",
-    "722431",
-    "101003",
+    "977032"
+   ],
+   "digits": 3,
+   "lower": "260"
+  },
+  {
+   "currency": "EUR",
+   "flows": [
+    "-1616060",
     "724719",
     "959265",
     "476150",
@@ -24264,15 +24293,13 @@
     "368314",
     "47896",
     "199077",
-    "993539"
-   ],
-   "digits": 9,
-   "lower": "220996403"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "-4358776",
+    "993539",
+    "660079",
+    "649375",
+    "487890",
+    "50028",
+    "441615",
+    "272423",
     "988301",
     "602919",
     "890713",
@@ -24280,21 +24307,21 @@
     "590250",
     "265232",
     "443718",
-    "803021",
-    "409015",
-    "282298",
-    "829374",
-    "847634",
-    "709407",
-    "180012"
+    "803021"
    ],
-   "digits": 8,
-   "lower": "10705270"
+   "digits": 12,
+   "lower": "406077552646"
   },
   {
-   "currency": "KWD",
+   "currency": "EUR",
    "flows": [
-    "6501224",
+    "8639374",
+    "-759276",
+    "-430739",
+    "-930282",
+    "-772585",
+    "-794087",
+    "-406326",
     "-779645",
     "-901603",
     "-816813",
@@ -24313,49 +24340,47 @@
     "-601908",
     "-530599",
     "-980899",
-    "-21866",
-    "-275471",
-    "-691646",
-    "-583974",
-    "-930029",
-    "-113791",
-    "-976548"
+    "-21866"
    ],
-   "digits": 2,
-   "lower": "7"
+   "digits": 10,
+   "lower": "507561324"
+  },
+  {
+   "currency": "EUR",
+   "flows": [
+    "-741839",
+    "431291",
+    "230688",
+    "458980"
+   ],
+   "digits": 4,
+   "lower": "2370"
+  },
+  {
+   "currency": "EUR",
+   "flows": [
+    "8131376",
+    "-24738",
+    "-843238",
+    "-188533",
+    "-485267",
+    "-429021",
+    "-343743",
+    "-639917"
+   ],
+   "digits": 10,
+   "lower": "-1917327966"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-7343681",
-    "623806",
-    "188730",
-    "257891",
-    "199412",
-    "508210",
-    "24738",
-    "843238",
-    "188533"
-   ],
-   "digits": 7,
-   "lower": "-1728205"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "1434196",
-    "-545838",
-    "-288551",
-    "-853219",
-    "-886938"
-   ],
-   "digits": 5,
-   "lower": "24557"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "2944388",
+    "1171248",
+    "-409041",
+    "-209609",
+    "-805744",
+    "-615653",
+    "-657419",
+    "-184024",
     "-456237",
     "-918176",
     "-518202",
@@ -24379,7 +24404,7 @@
     "-974742"
    ],
    "digits": 8,
-   "lower": "16363648"
+   "lower": "40122653"
   },
   {
    "currency": "KWD",
@@ -26440,191 +26465,190 @@
    ],
    "digits": 10,
    "lower": "430219642"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "-5014895",
-    "344524",
-    "635043",
-    "971264",
-    "221679",
-    "627480",
-    "751325",
-    "725702",
-    "863589",
-    "613660",
-    "741964",
-    "257280",
-    "701572",
-    "24567",
-    "25026",
-    "178517",
-    "295605",
-    "294361",
-    "513721"
-   ],
-   "digits": 7,
-   "lower": "793745"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "-9041525",
-    "335974",
-    "209284",
-    "394598",
-    "110182",
-    "359106",
-    "911054",
-    "402596",
-    "13105",
-    "794304",
-    "147322",
-    "620262",
-    "216848",
-    "639536",
-    "665718",
-    "432188",
-    "997375",
-    "145477",
-    "237216",
-    "771203",
-    "18188",
-    "810614",
-    "510938",
-    "549428"
-   ],
-   "digits": 4,
-   "lower": "102"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "6793020",
-    "-122481",
-    "-620671",
-    "-736672",
-    "-812818",
-    "-530632",
-    "-172217",
-    "-185651",
-    "-93771",
-    "-546191",
-    "-581288",
-    "-721945",
-    "-30632",
-    "-932553",
-    "-963083",
-    "-214423",
-    "-803128",
-    "-870895",
-    "-335496",
-    "-593025",
-    "-719753"
-   ],
-   "digits": 3,
-   "lower": "42"
   }
  ],
  "irrBracketed": [
   {
    "currency": "KWD",
    "flows": [
-    "73200000000",
-    "-164736600000",
-    "92634490200"
+    "-62100000000",
+    "152635590000",
+    "-93557782134"
    ],
-   "digits": 8,
+   "digits": 4,
    "bracket": [
-    "1/80",
-    "3981/40000"
+    "991/10000",
+    "1371/8000"
    ],
-   "lower": "9900000"
+   "lower": "1677"
   },
   {
    "currency": "EUR",
    "flows": [
-    "-9900000000",
-    "27416070000",
-    "-18793794888"
-   ],
-   "digits": 2,
-   "bracket": [
-    "949/5000",
-    "186827/500000"
-   ],
-   "lower": "24"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "3000000000",
-    "-7399200000",
-    "4560985650"
+    "-50200000000",
+    "108175980000",
+    "-58109684688"
    ],
    "digits": 6,
    "bracket": [
-    "124481/500000",
-    "301/1000"
+    "-537/10000",
+    "19879/200000"
    ],
-   "lower": "254500"
+   "lower": "19700"
   },
   {
    "currency": "JPY",
    "flows": [
-    "-55500000000",
-    "145199100000",
-    "-93921224760"
+    "35100000000",
+    "-77837760000",
+    "42944605353"
    ],
-   "digits": 8,
+   "digits": 7,
    "bracket": [
-    "507/5000",
-    "74279/250000"
+    "-459/10000",
+    "929/15625"
    ],
-   "lower": "17080000"
+   "lower": "317000"
   },
   {
    "currency": "KWD",
    "flows": [
-    "55300000000",
-    "-149514610000",
-    "100833090960"
+    "-97400000000",
+    "225899820000",
+    "-129461705388"
    ],
-   "digits": 6,
+   "digits": 3,
    "bracket": [
-    "368529/1000000",
-    "537/1250"
+    "-407/10000",
+    "42197/1000000"
    ],
-   "lower": "416000"
+   "lower": "34"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
+    "3500000000",
+    "-8904350000",
+    "5622979950"
+   ],
+   "digits": 7,
+   "bracket": [
+    "1039/10000",
+    "35801/100000"
+   ],
+   "lower": "1646000"
   },
   {
    "currency": "KWD",
    "flows": [
-    "74300000000",
-    "-164448190000",
-    "90453314838"
-   ],
-   "digits": 6,
-   "bracket": [
-    "-233/5000",
-    "4139/50000"
-   ],
-   "lower": "21400"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "96600000000",
-    "-242205180000",
-    "149832436572"
+    "53400000000",
+    "-112513800000",
+    "59196279504"
    ],
    "digits": 1,
    "bracket": [
-    "101/2000",
-    "149777/500000"
+    "-613/10000",
+    "23483/500000"
    ],
-   "lower": "1"
+   "lower": "0"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "82400000000",
+    "-212863920000",
+    "137170737808"
+   ],
+   "digits": 6,
+   "bracket": [
+    "141/625",
+    "21407/62500"
+   ],
+   "lower": "231100"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
+    "6300000000",
+    "-16278570000",
+    "10514887362"
+   ],
+   "digits": 6,
+   "bracket": [
+    "339/1250",
+    "56873/200000"
+   ],
+   "lower": "281700"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "89800000000",
+    "-201592020000",
+    "113076131264"
+   ],
+   "digits": 2,
+   "bracket": [
+    "319/5000",
+    "133517/1000000"
+   ],
+   "lower": "9"
+  },
+  {
+   "currency": "KWD",
+   "flows": [
+    "46500000000",
+    "-128093550000",
+    "87782254530"
+   ],
+   "digits": 5,
+   "bracket": [
+    "33877/100000",
+    "5653/10000"
+   ],
+   "lower": "47380"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
+    "-79800000000",
+    "205125900000",
+    "-131817231000"
+   ],
+   "digits": 6,
+   "bracket": [
+    "563/2500",
+    "56993/200000"
+   ],
+   "lower": "280500"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
+    "42700000000",
+    "-93470300000",
+    "51120262368"
+   ],
+   "digits": 3,
+   "bracket": [
+    "13303/125000",
+    "237/1250"
+   ],
+   "lower": "121"
+  },
+  {
+   "currency": "JPY",
+   "flows": [
+    "96600000000",
+    "-207989460000",
+    "111334966008"
+   ],
+   "digits": 1,
+   "bracket": [
+    "-633/10000",
+    "51099/500000"
+   ],
+   "lower": "-1"
   },
   {
    "currency": "EUR",
@@ -27563,139 +27587,162 @@
     "2977/10000"
    ],
    "lower": "21090"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "11000000000",
-    "-30420500000",
-    "20843058060"
-   ],
-   "digits": 1,
-   "bracket": [
-    "411/2500",
-    "22939/62500"
-   ],
-   "lower": "2"
-  },
-  {
-   "currency": "JPY",
-   "flows": [
-    "58300000000",
-    "-128475710000",
-    "70742422146"
-   ],
-   "digits": 3,
-   "bracket": [
-    "79/5000",
-    "58079/500000"
-   ],
-   "lower": "76"
-  },
-  {
-   "currency": "JPY",
-   "flows": [
-    "32100000000",
-    "-72664770000",
-    "40963038552"
-   ],
-   "digits": 6,
-   "bracket": [
-    "11239/62500",
-    "1507/5000"
-   ],
-   "lower": "202400"
-  },
-  {
-   "currency": "JPY",
-   "flows": [
-    "-84900000000",
-    "213837630000",
-    "-134319216864"
-   ],
-   "digits": 3,
-   "bracket": [
-    "5187/20000",
-    "3701/10000"
-   ],
-   "lower": "321"
-  },
-  {
-   "currency": "KWD",
-   "flows": [
-    "-14800000000",
-    "32634000000",
-    "-17950846592"
-   ],
-   "digits": 8,
-   "bracket": [
-    "30299/500000",
-    "853/5000"
-   ],
-   "lower": "15360000"
-  },
-  {
-   "currency": "EUR",
-   "flows": [
-    "1200000000",
-    "-2513640000",
-    "1309714752"
-   ],
-   "digits": 7,
-   "bracket": [
-    "-441/5000",
-    "5609/200000"
-   ],
-   "lower": "-269000"
   }
  ],
  "proration": [
   {
-   "currency": "EUR",
-   "price": "14880333",
+   "currency": "KWD",
+   "price": "97787479",
    "period": [
-    "2025-12-30",
-    "2026-04-21"
+    "2036-04-01",
+    "2036-06-03"
    ],
    "used": [
-    "2026-03-04",
-    "2026-03-12"
+    "2036-04-07",
+    "2036-05-13"
    ],
    "at": [
-    "2025-12-31",
-    "2026-02-04",
-    "2026-03-03"
+    "2036-04-09",
+    "2036-04-21",
+    "2036-04-23",
+    "2036-05-01",
+    "2036-05-24",
+    "2036-05-29"
    ],
-   "mode": "expand",
-   "prorate": "1062881",
+   "mode": "halfTrunc",
+   "prorate": "55878559",
    "split": [
-    "132860",
-    "4650104",
-    "3587223",
-    "6510146"
+    "12417458",
+    "18626186",
+    "3104364",
+    "12417458",
+    "35700191",
+    "7760911",
+    "7760911"
    ]
   },
   {
-   "currency": "KWD",
-   "price": "55099953",
+   "currency": "EUR",
+   "price": "58367341",
    "period": [
-    "2019-07-29",
-    "2020-06-03"
+    "2034-07-31",
+    "2034-09-23"
    ],
    "used": [
-    "2020-04-07",
-    "2020-05-31"
+    "2034-09-23",
+    "2034-09-23"
    ],
    "at": [
-    "2019-07-30",
-    "2020-01-01"
+    "2034-08-21",
+    "2034-09-07"
+   ],
+   "mode": "halfExpand",
+   "prorate": "0",
+   "split": [
+    "22698410",
+    "18374904",
+    "17294027"
+   ]
+  },
+  {
+   "currency": "JPY",
+   "price": "61971272",
+   "period": [
+    "2015-08-28",
+    "2016-05-06"
+   ],
+   "used": [
+    "2016-03-15",
+    "2016-03-30"
+   ],
+   "at": [
+    "2015-10-31",
+    "2015-12-28",
+    "2016-02-08"
+   ],
+   "mode": "halfFloor",
+   "prorate": "3688766",
+   "split": [
+    "15738736",
+    "14263229",
+    "10328545",
+    "21640762"
+   ]
+  },
+  {
+   "currency": "EUR",
+   "price": "23736732",
+   "period": [
+    "2032-06-28",
+    "2032-07-31"
+   ],
+   "used": [
+    "2032-07-21",
+    "2032-07-24"
+   ],
+   "at": [],
+   "mode": "halfEven",
+   "prorate": "2157885",
+   "split": [
+    "23736732"
+   ]
+  },
+  {
+   "currency": "JPY",
+   "price": "-53968967",
+   "period": [
+    "2034-05-31",
+    "2035-01-21"
+   ],
+   "used": [
+    "2034-06-01",
+    "2035-01-12"
+   ],
+   "at": [
+    "2034-07-26",
+    "2034-08-12",
+    "2034-09-13",
+    "2034-09-24",
+    "2034-11-08"
+   ],
+   "mode": "halfFloor",
+   "prorate": "-51672415",
+   "split": [
+    "-12860690",
+    "-3904138",
+    "-7348966",
+    "-2526207",
+    "-10334483",
+    "-16994483"
+   ]
+  },
+  {
+   "currency": "JPY",
+   "price": "35142722",
+   "period": [
+    "2004-10-31",
+    "2005-05-31"
+   ],
+   "used": [
+    "2005-05-07",
+    "2005-05-22"
+   ],
+   "at": [
+    "2004-11-01",
+    "2005-01-01",
+    "2005-01-17",
+    "2005-04-04",
+    "2005-04-21"
    ],
    "mode": "floor",
-   "prorate": "9598056",
+   "prorate": "2486513",
    "split": [
-    "177742",
-    "27549976",
-    "27372235"
+    "165768",
+    "10111821",
+    "2652281",
+    "12764102",
+    "2818048",
+    "6630702"
    ]
   },
   {
@@ -31244,109 +31291,423 @@
     "7800506",
     "2138848"
    ]
-  },
-  {
-   "currency": "KWD",
-   "price": "50359840",
-   "period": [
-    "2026-06-15",
-    "2027-06-23"
-   ],
-   "used": [
-    "2026-10-22",
-    "2027-02-02"
-   ],
-   "at": [
-    "2026-08-23",
-    "2026-11-19"
-   ],
-   "mode": "halfTrunc",
-   "prorate": "13906337",
-   "split": [
-    "9315895",
-    "11881142",
-    "29162803"
-   ]
-  },
-  {
-   "currency": "EUR",
-   "price": "-72390223",
-   "period": [
-    "2009-12-15",
-    "2010-08-22"
-   ],
-   "used": [
-    "2010-04-12",
-    "2010-08-16"
-   ],
-   "at": [
-    "2010-02-20",
-    "2010-03-14"
-   ],
-   "mode": "halfEven",
-   "prorate": "-36484672",
-   "split": [
-    "-19400580",
-    "-6370340",
-    "-46619303"
-   ]
-  },
-  {
-   "currency": "JPY",
-   "price": "61965273",
-   "period": [
-    "2003-11-30",
-    "2004-09-01"
-   ],
-   "used": [
-    "2004-05-26",
-    "2004-06-25"
-   ],
-   "at": [
-    "2004-04-07",
-    "2004-08-12"
-   ],
-   "mode": "halfFloor",
-   "prorate": "6735356",
-   "split": [
-    "28962030",
-    "28513006",
-    "4490237"
-   ]
-  },
-  {
-   "currency": "KWD",
-   "price": "84277138",
-   "period": [
-    "2003-10-28",
-    "2004-04-01"
-   ],
-   "used": [
-    "2004-03-24",
-    "2004-03-27"
-   ],
-   "at": [
-    "2003-12-07",
-    "2004-01-04",
-    "2004-01-11",
-    "2004-01-25",
-    "2004-02-23",
-    "2004-03-17"
-   ],
-   "mode": "halfEven",
-   "prorate": "1620714",
-   "split": [
-    "21609523",
-    "15126666",
-    "3781666",
-    "7563333",
-    "15666904",
-    "12425475",
-    "8103571"
-   ]
   }
  ],
  "paymentDates": [
+  {
+   "firstPayment": "2034-09-30",
+   "perYear": 12,
+   "count": 3,
+   "dates": [
+    "2034-09-30",
+    "2034-10-30",
+    "2034-11-30"
+   ]
+  },
+  {
+   "firstPayment": "2001-12-28",
+   "perYear": 6,
+   "count": 54,
+   "dates": [
+    "2001-12-28",
+    "2002-02-28",
+    "2002-04-28",
+    "2002-06-28",
+    "2002-08-28",
+    "2002-10-28",
+    "2002-12-28",
+    "2003-02-28",
+    "2003-04-28",
+    "2003-06-28",
+    "2003-08-28",
+    "2003-10-28",
+    "2003-12-28",
+    "2004-02-28",
+    "2004-04-28",
+    "2004-06-28",
+    "2004-08-28",
+    "2004-10-28",
+    "2004-12-28",
+    "2005-02-28",
+    "2005-04-28",
+    "2005-06-28",
+    "2005-08-28",
+    "2005-10-28",
+    "2005-12-28",
+    "2006-02-28",
+    "2006-04-28",
+    "2006-06-28",
+    "2006-08-28",
+    "2006-10-28",
+    "2006-12-28",
+    "2007-02-28",
+    "2007-04-28",
+    "2007-06-28",
+    "2007-08-28",
+    "2007-10-28",
+    "2007-12-28",
+    "2008-02-28",
+    "2008-04-28",
+    "2008-06-28",
+    "2008-08-28",
+    "2008-10-28",
+    "2008-12-28",
+    "2009-02-28",
+    "2009-04-28",
+    "2009-06-28",
+    "2009-08-28",
+    "2009-10-28",
+    "2009-12-28",
+    "2010-02-28",
+    "2010-04-28",
+    "2010-06-28",
+    "2010-08-28",
+    "2010-10-28"
+   ]
+  },
+  {
+   "firstPayment": "2012-07-29",
+   "perYear": 2,
+   "count": 14,
+   "dates": [
+    "2012-07-29",
+    "2013-01-29",
+    "2013-07-29",
+    "2014-01-29",
+    "2014-07-29",
+    "2015-01-29",
+    "2015-07-29",
+    "2016-01-29",
+    "2016-07-29",
+    "2017-01-29",
+    "2017-07-29",
+    "2018-01-29",
+    "2018-07-29",
+    "2019-01-29"
+   ]
+  },
+  {
+   "firstPayment": "2040-08-25",
+   "perYear": 52,
+   "count": 17,
+   "dates": [
+    "2040-08-25",
+    "2040-09-01",
+    "2040-09-08",
+    "2040-09-15",
+    "2040-09-22",
+    "2040-09-29",
+    "2040-10-06",
+    "2040-10-13",
+    "2040-10-20",
+    "2040-10-27",
+    "2040-11-03",
+    "2040-11-10",
+    "2040-11-17",
+    "2040-11-24",
+    "2040-12-01",
+    "2040-12-08",
+    "2040-12-15"
+   ]
+  },
+  {
+   "firstPayment": "2012-06-30",
+   "perYear": 1,
+   "count": 20,
+   "dates": [
+    "2012-06-30",
+    "2013-06-30",
+    "2014-06-30",
+    "2015-06-30",
+    "2016-06-30",
+    "2017-06-30",
+    "2018-06-30",
+    "2019-06-30",
+    "2020-06-30",
+    "2021-06-30",
+    "2022-06-30",
+    "2023-06-30",
+    "2024-06-30",
+    "2025-06-30",
+    "2026-06-30",
+    "2027-06-30",
+    "2028-06-30",
+    "2029-06-30",
+    "2030-06-30",
+    "2031-06-30"
+   ]
+  },
+  {
+   "firstPayment": "2034-02-28",
+   "perYear": 12,
+   "count": 54,
+   "dates": [
+    "2034-02-28",
+    "2034-03-28",
+    "2034-04-28",
+    "2034-05-28",
+    "2034-06-28",
+    "2034-07-28",
+    "2034-08-28",
+    "2034-09-28",
+    "2034-10-28",
+    "2034-11-28",
+    "2034-12-28",
+    "2035-01-28",
+    "2035-02-28",
+    "2035-03-28",
+    "2035-04-28",
+    "2035-05-28",
+    "2035-06-28",
+    "2035-07-28",
+    "2035-08-28",
+    "2035-09-28",
+    "2035-10-28",
+    "2035-11-28",
+    "2035-12-28",
+    "2036-01-28",
+    "2036-02-28",
+    "2036-03-28",
+    "2036-04-28",
+    "2036-05-28",
+    "2036-06-28",
+    "2036-07-28",
+    "2036-08-28",
+    "2036-09-28",
+    "2036-10-28",
+    "2036-11-28",
+    "2036-12-28",
+    "2037-01-28",
+    "2037-02-28",
+    "2037-03-28",
+    "2037-04-28",
+    "2037-05-28",
+    "2037-06-28",
+    "2037-07-28",
+    "2037-08-28",
+    "2037-09-28",
+    "2037-10-28",
+    "2037-11-28",
+    "2037-12-28",
+    "2038-01-28",
+    "2038-02-28",
+    "2038-03-28",
+    "2038-04-28",
+    "2038-05-28",
+    "2038-06-28",
+    "2038-07-28"
+   ]
+  },
+  {
+   "firstPayment": "2030-06-30",
+   "perYear": 52,
+   "count": 23,
+   "dates": [
+    "2030-06-30",
+    "2030-07-07",
+    "2030-07-14",
+    "2030-07-21",
+    "2030-07-28",
+    "2030-08-04",
+    "2030-08-11",
+    "2030-08-18",
+    "2030-08-25",
+    "2030-09-01",
+    "2030-09-08",
+    "2030-09-15",
+    "2030-09-22",
+    "2030-09-29",
+    "2030-10-06",
+    "2030-10-13",
+    "2030-10-20",
+    "2030-10-27",
+    "2030-11-03",
+    "2030-11-10",
+    "2030-11-17",
+    "2030-11-24",
+    "2030-12-01"
+   ]
+  },
+  {
+   "firstPayment": "2011-05-15",
+   "perYear": 3,
+   "count": 60,
+   "dates": [
+    "2011-05-15",
+    "2011-09-15",
+    "2012-01-15",
+    "2012-05-15",
+    "2012-09-15",
+    "2013-01-15",
+    "2013-05-15",
+    "2013-09-15",
+    "2014-01-15",
+    "2014-05-15",
+    "2014-09-15",
+    "2015-01-15",
+    "2015-05-15",
+    "2015-09-15",
+    "2016-01-15",
+    "2016-05-15",
+    "2016-09-15",
+    "2017-01-15",
+    "2017-05-15",
+    "2017-09-15",
+    "2018-01-15",
+    "2018-05-15",
+    "2018-09-15",
+    "2019-01-15",
+    "2019-05-15",
+    "2019-09-15",
+    "2020-01-15",
+    "2020-05-15",
+    "2020-09-15",
+    "2021-01-15",
+    "2021-05-15",
+    "2021-09-15",
+    "2022-01-15",
+    "2022-05-15",
+    "2022-09-15",
+    "2023-01-15",
+    "2023-05-15",
+    "2023-09-15",
+    "2024-01-15",
+    "2024-05-15",
+    "2024-09-15",
+    "2025-01-15",
+    "2025-05-15",
+    "2025-09-15",
+    "2026-01-15",
+    "2026-05-15",
+    "2026-09-15",
+    "2027-01-15",
+    "2027-05-15",
+    "2027-09-15",
+    "2028-01-15",
+    "2028-05-15",
+    "2028-09-15",
+    "2029-01-15",
+    "2029-05-15",
+    "2029-09-15",
+    "2030-01-15",
+    "2030-05-15",
+    "2030-09-15",
+    "2031-01-15"
+   ]
+  },
+  {
+   "firstPayment": "2015-05-31",
+   "perYear": 6,
+   "count": 48,
+   "dates": [
+    "2015-05-31",
+    "2015-07-31",
+    "2015-09-30",
+    "2015-11-30",
+    "2016-01-31",
+    "2016-03-31",
+    "2016-05-31",
+    "2016-07-31",
+    "2016-09-30",
+    "2016-11-30",
+    "2017-01-31",
+    "2017-03-31",
+    "2017-05-31",
+    "2017-07-31",
+    "2017-09-30",
+    "2017-11-30",
+    "2018-01-31",
+    "2018-03-31",
+    "2018-05-31",
+    "2018-07-31",
+    "2018-09-30",
+    "2018-11-30",
+    "2019-01-31",
+    "2019-03-31",
+    "2019-05-31",
+    "2019-07-31",
+    "2019-09-30",
+    "2019-11-30",
+    "2020-01-31",
+    "2020-03-31",
+    "2020-05-31",
+    "2020-07-31",
+    "2020-09-30",
+    "2020-11-30",
+    "2021-01-31",
+    "2021-03-31",
+    "2021-05-31",
+    "2021-07-31",
+    "2021-09-30",
+    "2021-11-30",
+    "2022-01-31",
+    "2022-03-31",
+    "2022-05-31",
+    "2022-07-31",
+    "2022-09-30",
+    "2022-11-30",
+    "2023-01-31",
+    "2023-03-31"
+   ]
+  },
+  {
+   "firstPayment": "2005-09-29",
+   "perYear": 1,
+   "count": 51,
+   "dates": [
+    "2005-09-29",
+    "2006-09-29",
+    "2007-09-29",
+    "2008-09-29",
+    "2009-09-29",
+    "2010-09-29",
+    "2011-09-29",
+    "2012-09-29",
+    "2013-09-29",
+    "2014-09-29",
+    "2015-09-29",
+    "2016-09-29",
+    "2017-09-29",
+    "2018-09-29",
+    "2019-09-29",
+    "2020-09-29",
+    "2021-09-29",
+    "2022-09-29",
+    "2023-09-29",
+    "2024-09-29",
+    "2025-09-29",
+    "2026-09-29",
+    "2027-09-29",
+    "2028-09-29",
+    "2029-09-29",
+    "2030-09-29",
+    "2031-09-29",
+    "2032-09-29",
+    "2033-09-29",
+    "2034-09-29",
+    "2035-09-29",
+    "2036-09-29",
+    "2037-09-29",
+    "2038-09-29",
+    "2039-09-29",
+    "2040-09-29",
+    "2041-09-29",
+    "2042-09-29",
+    "2043-09-29",
+    "2044-09-29",
+    "2045-09-29",
+    "2046-09-29",
+    "2047-09-29",
+    "2048-09-29",
+    "2049-09-29",
+    "2050-09-29",
+    "2051-09-29",
+    "2052-09-29",
+    "2053-09-29",
+    "2054-09-29",
+    "2055-09-29"
+   ]
+  },
   {
    "firstPayment": "2042-08-28",
    "perYear": 12,
@@ -35108,378 +35469,6 @@
     "2022-04-29",
     "2022-10-29",
     "2023-04-29"
-   ]
-  },
-  {
-   "firstPayment": "2037-09-15",
-   "perYear": 2,
-   "count": 18,
-   "dates": [
-    "2037-09-15",
-    "2038-03-15",
-    "2038-09-15",
-    "2039-03-15",
-    "2039-09-15",
-    "2040-03-15",
-    "2040-09-15",
-    "2041-03-15",
-    "2041-09-15",
-    "2042-03-15",
-    "2042-09-15",
-    "2043-03-15",
-    "2043-09-15",
-    "2044-03-15",
-    "2044-09-15",
-    "2045-03-15",
-    "2045-09-15",
-    "2046-03-15"
-   ]
-  },
-  {
-   "firstPayment": "2043-10-13",
-   "perYear": 12,
-   "count": 41,
-   "dates": [
-    "2043-10-13",
-    "2043-11-13",
-    "2043-12-13",
-    "2044-01-13",
-    "2044-02-13",
-    "2044-03-13",
-    "2044-04-13",
-    "2044-05-13",
-    "2044-06-13",
-    "2044-07-13",
-    "2044-08-13",
-    "2044-09-13",
-    "2044-10-13",
-    "2044-11-13",
-    "2044-12-13",
-    "2045-01-13",
-    "2045-02-13",
-    "2045-03-13",
-    "2045-04-13",
-    "2045-05-13",
-    "2045-06-13",
-    "2045-07-13",
-    "2045-08-13",
-    "2045-09-13",
-    "2045-10-13",
-    "2045-11-13",
-    "2045-12-13",
-    "2046-01-13",
-    "2046-02-13",
-    "2046-03-13",
-    "2046-04-13",
-    "2046-05-13",
-    "2046-06-13",
-    "2046-07-13",
-    "2046-08-13",
-    "2046-09-13",
-    "2046-10-13",
-    "2046-11-13",
-    "2046-12-13",
-    "2047-01-13",
-    "2047-02-13"
-   ]
-  },
-  {
-   "firstPayment": "1998-06-30",
-   "perYear": 1,
-   "count": 18,
-   "dates": [
-    "1998-06-30",
-    "1999-06-30",
-    "2000-06-30",
-    "2001-06-30",
-    "2002-06-30",
-    "2003-06-30",
-    "2004-06-30",
-    "2005-06-30",
-    "2006-06-30",
-    "2007-06-30",
-    "2008-06-30",
-    "2009-06-30",
-    "2010-06-30",
-    "2011-06-30",
-    "2012-06-30",
-    "2013-06-30",
-    "2014-06-30",
-    "2015-06-30"
-   ]
-  },
-  {
-   "firstPayment": "2036-06-30",
-   "perYear": 6,
-   "count": 52,
-   "dates": [
-    "2036-06-30",
-    "2036-08-30",
-    "2036-10-30",
-    "2036-12-30",
-    "2037-02-28",
-    "2037-04-30",
-    "2037-06-30",
-    "2037-08-30",
-    "2037-10-30",
-    "2037-12-30",
-    "2038-02-28",
-    "2038-04-30",
-    "2038-06-30",
-    "2038-08-30",
-    "2038-10-30",
-    "2038-12-30",
-    "2039-02-28",
-    "2039-04-30",
-    "2039-06-30",
-    "2039-08-30",
-    "2039-10-30",
-    "2039-12-30",
-    "2040-02-29",
-    "2040-04-30",
-    "2040-06-30",
-    "2040-08-30",
-    "2040-10-30",
-    "2040-12-30",
-    "2041-02-28",
-    "2041-04-30",
-    "2041-06-30",
-    "2041-08-30",
-    "2041-10-30",
-    "2041-12-30",
-    "2042-02-28",
-    "2042-04-30",
-    "2042-06-30",
-    "2042-08-30",
-    "2042-10-30",
-    "2042-12-30",
-    "2043-02-28",
-    "2043-04-30",
-    "2043-06-30",
-    "2043-08-30",
-    "2043-10-30",
-    "2043-12-30",
-    "2044-02-29",
-    "2044-04-30",
-    "2044-06-30",
-    "2044-08-30",
-    "2044-10-30",
-    "2044-12-30"
-   ]
-  },
-  {
-   "firstPayment": "2011-08-30",
-   "perYear": 52,
-   "count": 20,
-   "dates": [
-    "2011-08-30",
-    "2011-09-06",
-    "2011-09-13",
-    "2011-09-20",
-    "2011-09-27",
-    "2011-10-04",
-    "2011-10-11",
-    "2011-10-18",
-    "2011-10-25",
-    "2011-11-01",
-    "2011-11-08",
-    "2011-11-15",
-    "2011-11-22",
-    "2011-11-29",
-    "2011-12-06",
-    "2011-12-13",
-    "2011-12-20",
-    "2011-12-27",
-    "2012-01-03",
-    "2012-01-10"
-   ]
-  },
-  {
-   "firstPayment": "2009-04-01",
-   "perYear": 1,
-   "count": 9,
-   "dates": [
-    "2009-04-01",
-    "2010-04-01",
-    "2011-04-01",
-    "2012-04-01",
-    "2013-04-01",
-    "2014-04-01",
-    "2015-04-01",
-    "2016-04-01",
-    "2017-04-01"
-   ]
-  },
-  {
-   "firstPayment": "1999-07-30",
-   "perYear": 4,
-   "count": 43,
-   "dates": [
-    "1999-07-30",
-    "1999-10-30",
-    "2000-01-30",
-    "2000-04-30",
-    "2000-07-30",
-    "2000-10-30",
-    "2001-01-30",
-    "2001-04-30",
-    "2001-07-30",
-    "2001-10-30",
-    "2002-01-30",
-    "2002-04-30",
-    "2002-07-30",
-    "2002-10-30",
-    "2003-01-30",
-    "2003-04-30",
-    "2003-07-30",
-    "2003-10-30",
-    "2004-01-30",
-    "2004-04-30",
-    "2004-07-30",
-    "2004-10-30",
-    "2005-01-30",
-    "2005-04-30",
-    "2005-07-30",
-    "2005-10-30",
-    "2006-01-30",
-    "2006-04-30",
-    "2006-07-30",
-    "2006-10-30",
-    "2007-01-30",
-    "2007-04-30",
-    "2007-07-30",
-    "2007-10-30",
-    "2008-01-30",
-    "2008-04-30",
-    "2008-07-30",
-    "2008-10-30",
-    "2009-01-30",
-    "2009-04-30",
-    "2009-07-30",
-    "2009-10-30",
-    "2010-01-30"
-   ]
-  },
-  {
-   "firstPayment": "2006-10-30",
-   "perYear": 3,
-   "count": 39,
-   "dates": [
-    "2006-10-30",
-    "2007-02-28",
-    "2007-06-30",
-    "2007-10-30",
-    "2008-02-29",
-    "2008-06-30",
-    "2008-10-30",
-    "2009-02-28",
-    "2009-06-30",
-    "2009-10-30",
-    "2010-02-28",
-    "2010-06-30",
-    "2010-10-30",
-    "2011-02-28",
-    "2011-06-30",
-    "2011-10-30",
-    "2012-02-29",
-    "2012-06-30",
-    "2012-10-30",
-    "2013-02-28",
-    "2013-06-30",
-    "2013-10-30",
-    "2014-02-28",
-    "2014-06-30",
-    "2014-10-30",
-    "2015-02-28",
-    "2015-06-30",
-    "2015-10-30",
-    "2016-02-29",
-    "2016-06-30",
-    "2016-10-30",
-    "2017-02-28",
-    "2017-06-30",
-    "2017-10-30",
-    "2018-02-28",
-    "2018-06-30",
-    "2018-10-30",
-    "2019-02-28",
-    "2019-06-30"
-   ]
-  },
-  {
-   "firstPayment": "2005-03-31",
-   "perYear": 52,
-   "count": 27,
-   "dates": [
-    "2005-03-31",
-    "2005-04-07",
-    "2005-04-14",
-    "2005-04-21",
-    "2005-04-28",
-    "2005-05-05",
-    "2005-05-12",
-    "2005-05-19",
-    "2005-05-26",
-    "2005-06-02",
-    "2005-06-09",
-    "2005-06-16",
-    "2005-06-23",
-    "2005-06-30",
-    "2005-07-07",
-    "2005-07-14",
-    "2005-07-21",
-    "2005-07-28",
-    "2005-08-04",
-    "2005-08-11",
-    "2005-08-18",
-    "2005-08-25",
-    "2005-09-01",
-    "2005-09-08",
-    "2005-09-15",
-    "2005-09-22",
-    "2005-09-29"
-   ]
-  },
-  {
-   "firstPayment": "2003-01-29",
-   "perYear": 1,
-   "count": 35,
-   "dates": [
-    "2003-01-29",
-    "2004-01-29",
-    "2005-01-29",
-    "2006-01-29",
-    "2007-01-29",
-    "2008-01-29",
-    "2009-01-29",
-    "2010-01-29",
-    "2011-01-29",
-    "2012-01-29",
-    "2013-01-29",
-    "2014-01-29",
-    "2015-01-29",
-    "2016-01-29",
-    "2017-01-29",
-    "2018-01-29",
-    "2019-01-29",
-    "2020-01-29",
-    "2021-01-29",
-    "2022-01-29",
-    "2023-01-29",
-    "2024-01-29",
-    "2025-01-29",
-    "2026-01-29",
-    "2027-01-29",
-    "2028-01-29",
-    "2029-01-29",
-    "2030-01-29",
-    "2031-01-29",
-    "2032-01-29",
-    "2033-01-29",
-    "2034-01-29",
-    "2035-01-29",
-    "2036-01-29",
-    "2037-01-29"
    ]
   }
  ]

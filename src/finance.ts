@@ -521,7 +521,7 @@ function paymentDates(first: CalendarDate, perYear: number, count: number): stri
     for (let i = 0; i < count; i++) {
       dates.push(dateFromDayNumber(anchorDay + i * step));
     }
-    return dates;
+    return checkedDates(dates);
   }
   if (!(Number.isSafeInteger(perYear) && 12 % perYear === 0)) {
     // payment dates step by whole months, or by 7 or 14 days
@@ -534,6 +534,14 @@ function paymentDates(first: CalendarDate, perYear: number, count: number): stri
     const month = (monthIndex % 12) + 1;
     const day = Math.min(anchor.day, daysInMonth(year, month));
     dates.push(formatFields(year, month, day));
+  }
+  return checkedDates(dates);
+}
+
+/** The dates, unless the last (and latest) is past the year 9999, which dates can't hold. */
+function checkedDates(dates: string[]): string[] {
+  if (dates[dates.length - 1]!.length !== 10) {
+    throw new RangeError('The payment dates run past the year 9999');
   }
   return dates;
 }
@@ -604,9 +612,6 @@ export function amortise<C extends string>(
   if (residual !== 'lastPayment' && residual !== 'lastInterest') {
     invalid('residual', residual);
   }
-  if (residual === 'lastInterest' && method !== 'annuity') {
-    throw new RangeError("residual 'lastInterest' applies to annuities only");
-  }
   const unit = roundingUnit(currency, rounding);
   if (!isMultipleOf(loan, unit) || !isMultipleOf(balloon, unit)) {
     throw new RangeError(`The loan and the balloon must be multiples of ${unit}`);
@@ -614,6 +619,10 @@ export function amortise<C extends string>(
   const rateRatio = ratio(options.rate);
   if (rateRatio.num < 0n) {
     throw new RangeError(`The rate must not be negative; got ${options.rate}`);
+  }
+  // with no interest to round, there is no residual to put in it
+  if (residual === 'lastInterest' && (method !== 'annuity' || rateRatio.num === 0n)) {
+    throw new RangeError("residual 'lastInterest' applies to annuities with a non-zero rate only");
   }
   const dates =
     options.firstPayment === undefined
@@ -762,10 +771,11 @@ function scaledPresentValue(
 }
 
 /**
- * The present value of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`, exactly: the textbook
- * NPV, with the first flow (an initial outlay, say) not discounted. `npvExact` is Excel's form.
+ * The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`, exactly: the textbook
+ * NPV, with the first flow (an initial outlay, say) not discounted. `npvExact` is Excel's form. (Not
+ * Excel's PV, which is an annuity's present value.)
  */
-export function presentValueExact<C extends string>(
+export function discountedSumExact<C extends string>(
   rate: Factor,
   flows: readonly Money<C>[],
 ): ExactMoney<C> {
@@ -774,14 +784,14 @@ export function presentValueExact<C extends string>(
 }
 
 /**
- * The present value of flows at periods 0, 1, 2…, exact and rounded once (to the currency's
+ * The discounted sum of flows at periods 0, 1, 2…, exact and rounded once (to the currency's
  * exponent with a mode, or to a policy's scale; default 'halfExpand'). The first flow is not
  * discounted; this is `flows[0] + npv(rate, flows.slice(1))`.
  *
- *     presentValue('0.08', [money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'),
+ *     discountedSum('0.08', [money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'),
  *       money('500', 'EUR')], 'halfEven')   // 17.63 EUR
  */
-export function presentValue<C extends string>(
+export function discountedSum<C extends string>(
   rate: Factor,
   flows: readonly Money<C>[],
   rounding: RoundingInput = DEFAULT_ROUNDING,
@@ -793,7 +803,7 @@ export function presentValue<C extends string>(
 /**
  * Excel's NPV, exactly: `Σ flowᵢ / (1 + rate)ⁱ` for i = 1, 2…, so the first flow is at the end of
  * period 1 and is discounted once. Like Excel, an initial outlay at period 0 goes outside:
- * `flows[0] + npv(rate, rest)`, or use `presentValueExact`.
+ * `flows[0] + npv(rate, rest)`, or use `discountedSumExact`.
  */
 export function npvExact<C extends string>(
   rate: Factor,
@@ -807,7 +817,7 @@ export function npvExact<C extends string>(
  * Excel's NPV: flows at the ends of periods 1, 2…, exact and rounded once (to the currency's
  * exponent with a mode, or to a policy's scale; default 'halfExpand'), so it matches Excel to the
  * cent. Like Excel, an initial outlay at period 0 goes outside: `flows[0] + npv(rate, rest)`, or use
- * `presentValue`, which takes flows from period 0.
+ * `discountedSum`, which takes flows from period 0.
  *
  *     npv('0.1', [money('-10000', 'USD'), money('3000', 'USD'), money('4200', 'USD'),
  *       money('6800', 'USD')])   // 1188.44 USD, as Excel's NPV(10%, -10000, 3000, 4200, 6800)
@@ -860,7 +870,7 @@ export interface IrrOptions {
 
 /** The result of `irr`: decimal strings with `digits` places. */
 export interface IrrResult {
-  /** The IRR truncated to `digits` places: the same as `lower`. */
+  /** The IRR floored to `digits` places: the same as `lower`. */
   readonly rate: string;
   /**
    * The IRR rounded down to `digits` places. Without a bracket, the NPV at `lower` has the
