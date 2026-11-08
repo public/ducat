@@ -29,7 +29,7 @@ const fixedBattery = JSON.parse(
 
 const batterySummary = renderSummary(battery);
 const fixedBatterySummary = renderSummary(fixedBattery);
-const fixedSpeedTable = renderFixedSpeedTable(BENCH_RUN_DIRECTORY);
+const fixedSpeedTable = renderFixedSpeedTable(BENCH_RUN_DIRECTORY, fixedBattery.libraries);
 const fixedSizeTable = renderFixedSizeTable(FIXED_SIZES_PATH);
 const speedHeadline = renderSpeedHeadline(BENCH_RUN_DIRECTORY);
 const sizeTable = renderSizeTable(SIZES_PATH);

@@ -78,6 +78,9 @@ column -t -s$'\t' results/sizes.tsv
 declare -A FIXED_SNIPPET FIXED_PACKAGE
 FIXED_SNIPPET[ducat Money]="import { money } from '$DUCAT'; const a = money('1.00','EUR'); console.log(a.add(a).multiply('1.075','halfExpand').toDecimal());"
 FIXED_PACKAGE[ducat Money]="export * from '$DUCAT';"
+DUCAT_FIXED="$(realpath ../src/plugins/fixed.ts)"
+FIXED_SNIPPET[ducat Fixed]="import { fixed } from '$DUCAT_FIXED'; const a = fixed('1.00'); console.log(a.add(a).multiply('1.075','halfExpand').toString());"
+FIXED_PACKAGE[ducat Fixed]="export * from '$DUCAT_FIXED';"
 FIXED_SNIPPET[dnum]="import * as dn from 'dnum'; const a = dn.from('1.00', 2); console.log(dn.toString(dn.multiply(dn.add(a, a), '1.075', { decimals: 2, rounding: 'ROUND_HALF' })));"
 FIXED_PACKAGE[dnum]="export * from 'dnum';"
 FIXED_SNIPPET[js-big-decimal]="import bigDecimal from 'js-big-decimal'; const a = new bigDecimal('1.00'); console.log(a.add(a).multiply(new bigDecimal('1.075')).round(2, bigDecimal.RoundingModes.HALF_UP).getValue());"
@@ -95,7 +98,7 @@ FIXED_PACKAGE[bigint-money]="export * from 'bigint-money';"
 ETHERS_ROOT_SNIPPET="import { FixedNumber } from 'ethers'; const f = (s) => FixedNumber.fromString(s, 'fixed128x18'); const a = f('1.00'); console.log(a.add(a).mul(f('1.075')).round(2).toString());"
 ETHERS_UTILS_SNIPPET="import { FixedNumber } from 'ethers/utils'; const f = (s) => FixedNumber.fromString(s, 'fixed128x18'); const a = f('1.00'); console.log(a.add(a).mul(f('1.075')).round(2).toString());"
 
-FIXED_LIBRARIES=("ducat Money" dnum js-big-decimal bigdecimal.js @formatjs/bigdecimal bigint-money)
+FIXED_LIBRARIES=("ducat Money" "ducat Fixed" dnum js-big-decimal bigdecimal.js @formatjs/bigdecimal bigint-money)
 
 # one row: name, then minified and gzipped sizes of the program and of the whole package
 size_row() {

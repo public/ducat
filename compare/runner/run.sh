@@ -42,7 +42,8 @@ case "$RUNTIME" in
     fetch_verified https://github.com/denoland/deno/releases/download/v2.9.8/deno-x86_64-unknown-linux-gnu.zip \
       e890975bc2549807bbcc0b584ffafda72cc7c93349dd99c80483dd784f6c4609 runtime/deno.zip
     unzip -q -o runtime/deno.zip -d runtime
-    COMMAND=(runtime/deno run -A --no-config)
+    # the benchmark reads its settings from the environment, and monetra reads NODE_ENV
+    COMMAND=(runtime/deno run --no-config --no-prompt --allow-env=BENCH_MS,BENCH_ROUNDS,BENCH_ONLY,NODE_ENV)
     ;;
   *)
     echo "unknown runtime $RUNTIME (expected node, bun or deno)" >&2

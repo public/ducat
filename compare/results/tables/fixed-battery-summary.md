@@ -1,6 +1,7 @@
 | library | pass | wrong (silent) | lossy | threw | n/a |
 |---|--:|--:|--:|--:|--:|
 | ducat Money | 28 | 0 | 0 | 0 | 0 |
+| ducat Fixed | 28 | 0 | 0 | 0 | 0 |
 | dnum 2.18.1 | 21 | 0 | 0 | 0 | 7 |
 | ethers FixedNumber 6.17.0 | 18 | 3 | 0 | 0 | 7 |
 | js-big-decimal 2.2.0 | 28 | 0 | 0 | 0 | 0 |

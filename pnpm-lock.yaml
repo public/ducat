@@ -292,6 +292,9 @@ importers:
       dnum:
         specifier: 2.18.1
         version: 2.18.1
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
       ethers:
         specifier: 6.17.0
         version: 6.17.0
@@ -314,9 +317,6 @@ importers:
       '@types/big.js':
         specifier: 6.2.2
         version: 6.2.2
-      esbuild:
-        specifier: 0.28.2
-        version: 0.28.2
 
 packages:
 

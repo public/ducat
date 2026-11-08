@@ -12,11 +12,13 @@ import jsBigDecimal from 'js-big-decimal';
 import {
   convert,
   divide,
+  fixed,
   money,
   multiply,
   negate,
   ratio,
   toScale,
+  type Fixed,
   type Money,
 } from '../../src/fn.ts';
 import { FixedNotSupported, type FixedLibrary, type FixedRounding } from './library.ts';
@@ -56,6 +58,20 @@ const ducatMoneyLibrary: FixedLibrary<Money> = {
   round: (value, scale, mode) => toScale(value, scale, mode),
   compare: (first, second) => first.compare(second),
   toString: (value) => value.toDecimal(),
+};
+
+// --- ducat Fixed --------------------------------------------------------------------------------
+
+// ducat's own fixed-point decimal: no currency, and multiply and divide round once to any scale.
+const ducatFixedLibrary: FixedLibrary<Fixed> = {
+  name: 'ducat Fixed',
+  parse: (text) => fixed(text),
+  add: (first, second) => first.add(second),
+  multiply: (value, factor, scale, mode) => value.multiply(factor, mode, { scale }),
+  divide: (value, divisor, scale, mode) => value.divide(divisor, mode, { scale }),
+  round: (value, scale, mode) => value.toScale(scale, mode),
+  compare: (first, second) => first.compare(second),
+  toString: (value) => value.toString(),
 };
 
 // --- dnum ---------------------------------------------------------------------------------------
@@ -225,6 +241,7 @@ const bigintMoneyLibrary: FixedLibrary<HeldMoney> = {
 
 export const FIXED_LIBRARIES: FixedLibrary<any>[] = [
   ducatMoneyLibrary,
+  ducatFixedLibrary,
   dnumLibrary,
   ethersLibrary,
   jsBigDecimalLibrary,
