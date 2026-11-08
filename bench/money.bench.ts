@@ -64,6 +64,21 @@ describe('arithmetic', () => {
   bench('divide', () => {
     for (let i = 0; i < N; i++) sink = M.divide(eur[i]!, 3, 'halfEven');
   });
+  bench("divide by string '7'", () => {
+    for (let i = 0; i < N; i++) sink = M.divide(eur[i]!, '7', 'halfEven');
+  });
+  bench("divide by decimal '1.5'", () => {
+    for (let i = 0; i < N; i++) sink = M.divide(eur[i]!, '1.5', 'halfEven');
+  });
+  bench("divide by decimal '1.075'", () => {
+    for (let i = 0; i < N; i++) sink = M.divide(eur[i]!, '1.075', 'halfEven');
+  });
+  bench('divide by a negative integer', () => {
+    for (let i = 0; i < N; i++) sink = M.divide(eur[i]!, -3, 'halfEven');
+  });
+  bench('divide beyond 2^53 (bigint path)', () => {
+    for (let i = 0; i < N; i++) sink = M.divide(big[i]!, 3, 'halfEven');
+  });
   bench('compare', () => {
     let s = 0;
     for (let i = 0; i < N; i++) s += M.compare(eur[i]!, eur2[i]!);
