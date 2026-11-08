@@ -4,6 +4,7 @@
   "overCore": {
     "@ducatjs/money/allocate": 1.55,
     "@ducatjs/money/tax": 0.25,
+    "@ducatjs/money/math": 0.42,
     "@ducatjs/money/convert": 3.62,
     "@ducatjs/money/convert/ecb": 3.84,
     "@ducatjs/money/convert/fetch": 5.85,

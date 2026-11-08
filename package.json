@@ -46,6 +46,10 @@
       "types": "./dist/plugins/tax.d.ts",
       "default": "./dist/plugins/tax.js"
     },
+    "./math": {
+      "types": "./dist/plugins/math.d.ts",
+      "default": "./dist/plugins/math.js"
+    },
     "./convert": {
       "types": "./dist/plugins/convert.d.ts",
       "default": "./dist/plugins/convert.js"
