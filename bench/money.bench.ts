@@ -29,6 +29,7 @@ import { format } from '../src/format.ts';
 import { parse } from '../src/parse.ts';
 import { ratio } from '../src/decimal.ts';
 import { fromAdyen, toAdyen } from '../src/adyen.ts';
+import { fromScaled } from '../src/fixed.ts';
 import { fromStripe, toStripe } from '../src/stripe.ts';
 
 const N = 1000;
@@ -38,6 +39,7 @@ const eur2 = cents.map((c) => fromMinor(10_000_000 - c, 'EUR'));
 const strs = eur.map((m) => toDecimal(m));
 const big = cents.map((c) => fromMinor(10n ** 20n + BigInt(c), 'EUR'));
 const bigStrs = big.map((m) => toDecimal(m));
+const fixeds = cents.map((c) => fromScaled(c, 2));
 const usd = cents.map((c) => fromMinor(c, 'USD'));
 const chf = cents.map((c) => fromMinor(c, 'CHF'));
 const json = eur.map((m) => JSON.parse(JSON.stringify(m)) as MoneyJSON<'EUR'>);
@@ -196,6 +198,18 @@ describe('processors', () => {
   });
   bench('toAdyen / fromAdyen', () => {
     for (let i = 0; i < N; i++) sink = fromAdyen(toAdyen(usd[i]!));
+  });
+});
+
+describe('fixed', () => {
+  bench('Fixed divide by 3', () => {
+    for (let i = 0; i < N; i++) sink = fixeds[i]!.divide(3, 'halfEven');
+  });
+  bench("Fixed divide by decimal '1.5'", () => {
+    for (let i = 0; i < N; i++) sink = fixeds[i]!.divide('1.5', 'halfEven');
+  });
+  bench("Fixed multiply by '1.075'", () => {
+    for (let i = 0; i < N; i++) sink = fixeds[i]!.multiply('1.075', 'halfEven');
   });
 });
 

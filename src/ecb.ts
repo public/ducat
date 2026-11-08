@@ -24,13 +24,60 @@ const ATTRIBUTE = /([A-Za-z]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 const RATE_TEXT = /^\d+(?:\.\d+)?$/;
 const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
 
+/** When each day's ECB rates became available: a publication time, for point-in-time lookups. */
+export type EcbAvailableAt = boolean | ((day: string) => string | Date);
+
+/** Options for parseEcbXml and parseEcbCsv. */
+export interface EcbOptions {
+  /**
+   * When each day's rates became available, so that a historical lookup (`asOf` a time) can't
+   * use a rate before it was published. `true` gives the ECB's documented publication time, 16:00
+   * CET on the day (Frankfurt time: 15:00 UTC in winter, 14:00 UTC in summer); a function gives
+   * your own, say from your own fetch log, since the ECB's time is approximate and a delay moves
+   * it. Default: none, so a query at any time on the day gets that day's rates.
+   */
+  readonly availableAt?: EcbAvailableAt;
+}
+
+// The ECB publishes its rates "at around 16:00 CET" on each TARGET working day. CET here is
+// Frankfurt's local time, summer time included; one formatter gives its offset on any day.
+let frankfurtFormatter: Intl.DateTimeFormat | undefined;
+
+/** 16:00 in Frankfurt on `day`, as a UTC instant. */
+function ecbPublicationTime(day: string): string {
+  frankfurtFormatter ??= new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Berlin',
+    timeZoneName: 'shortOffset',
+  });
+  // Noon UTC is after any clock change that day (they happen at 01:00 UTC), and before 16:00 local.
+  const noon = new Date(`${day}T12:00:00Z`);
+  const zone = frankfurtFormatter.formatToParts(noon).find((part) => part.type === 'timeZoneName');
+  const offset = /^GMT([+-]\d+)$/.exec(zone?.value ?? '');
+  if (offset === null) {
+    throw new RangeError(`Can't tell Frankfurt's UTC offset on ${day} (${zone?.value})`);
+  }
+  const utcMs = Date.parse(`${day}T16:00:00Z`) - Number(offset[1]) * 3_600_000;
+  return new Date(utcMs).toISOString();
+}
+
 /**
  * The ECB's rates are typed 'reference', not 'mid': they are set once a day, around 14:10 CET, from
  * a regular concertation between central banks, and published for information only. They are not a
  * market mid-rate that anyone deals at.
  */
-function ecbTable(asOf: string, rates: Record<string, string | null>): RateTable {
-  return rateTable({ base: 'EUR', asOf, source: 'ECB', type: 'reference', rates });
+function ecbTable(
+  asOf: string,
+  rates: Record<string, string | null>,
+  availableAt: EcbAvailableAt | undefined,
+): RateTable {
+  const info = { base: 'EUR', asOf, source: 'ECB', type: 'reference', rates };
+  if (availableAt === undefined || availableAt === false) {
+    return rateTable(info);
+  }
+  if (availableAt === true) {
+    return rateTable({ ...info, availableAt: ecbPublicationTime(asOf) });
+  }
+  return rateTable({ ...info, availableAt: availableAt(asOf) });
 }
 
 function notAnEcbFile(): never {
@@ -72,11 +119,12 @@ function ratesOfDay(body: string): Record<string, string> {
  * Parses eurofxref-daily.xml, eurofxref-hist-90d.xml or eurofxref-hist.xml into one EUR-based table
  * per day, newest first. Each rate is EUR → currency, with `source: 'ECB'`, `type: 'reference'` and
  * `asOf` the publication day. A day without any rates is left out, so a lookback goes on to the day
- * before. A rate entry that can't be read throws SyntaxError.
+ * before. A rate entry that can't be read throws SyntaxError. Pass `availableAt: true` to give each
+ * table the ECB's publication time, 16:00 CET (see `EcbOptions`).
  *
  *     const [latest] = parseEcbXml(await readFile('eurofxref-daily.xml', 'utf8'));
  */
-export function parseEcbXml(xml: string): RateTable[] {
+export function parseEcbXml(xml: string, options?: EcbOptions): RateTable[] {
   let days = 0;
   const tables: RateTable[] = [];
   for (const [, asOf, body] of withoutByteOrderMark(xml).matchAll(DAY_CUBE)) {
@@ -84,7 +132,7 @@ export function parseEcbXml(xml: string): RateTable[] {
     const day = isoDay(asOf!);
     const rates = ratesOfDay(body!);
     if (Object.keys(rates).length > 0) {
-      tables.push(ecbTable(day, rates));
+      tables.push(ecbTable(day, rates, options?.availableAt));
     }
   }
 
@@ -128,9 +176,10 @@ function isoDay(text: string): string {
 /**
  * Parses eurofxref.csv or eurofxref-hist.csv (from the ECB's zips) the way parseEcbXml does.
  * 'N/A' and blank cells (currencies not quoted that day) are listed in the table's `missing`, and a
- * day with no rates at all is left out, so a lookback goes on to the day before.
+ * day with no rates at all is left out, so a lookback goes on to the day before. `availableAt` works
+ * as in parseEcbXml.
  */
-export function parseEcbCsv(csv: string): RateTable[] {
+export function parseEcbCsv(csv: string, options?: EcbOptions): RateTable[] {
   const lines = withoutByteOrderMark(csv)
     .split(/\r?\n/)
     .filter((line) => line.trim() !== '');
@@ -157,7 +206,7 @@ export function parseEcbCsv(csv: string): RateTable[] {
       }
     }
     if (quoted > 0) {
-      tables.push(ecbTable(day, rates));
+      tables.push(ecbTable(day, rates, options?.availableAt));
     }
   }
   return newestFirst(tables);
@@ -171,7 +220,7 @@ export function parseEcbCsv(csv: string): RateTable[] {
 const PUBLISHED_DECIMALS: Readonly<Record<string, number>> = { THB: 3, LTL: 4 };
 
 /** Options for parseEcbSdmxCsv. */
-export interface EcbSdmxOptions {
+export interface EcbSdmxOptions extends EcbOptions {
   /**
    * The decimals each currency is published with, for a file without the DECIMALS column (as
    * fetched with `detail=dataonly`). A DECIMALS column in the file takes precedence.
@@ -262,9 +311,9 @@ function optionalCell(cells: readonly string[], columns: Map<string, number>, na
  * throws SyntaxError rather than being read as a daily rate. Discontinued series simply end, so
  * the tables of their last days include them.
  *
- * No `availableAt` is set, as with parseEcbXml: the API gives no publication time, and the ECB
- * publishes at about 16:00 CET. So a backtest that asks for 10:00 CET on a day still gets that
- * day's rate; ask for the day before if that matters.
+ * The API gives no publication time, so no `availableAt` is set unless asked for, as with
+ * parseEcbXml: without it, a backtest that asks for 10:00 CET on a day still gets that day's rate.
+ * Pass `availableAt: true` for the ECB's documented 16:00 CET, or a function for your own.
  *
  *     const tables = parseEcbSdmxCsv(await (await fetch(url)).text());
  *     const history = rateHistory(tables); // from @ducatjs/money/convert/history
@@ -321,7 +370,7 @@ export function parseEcbSdmxCsv(csv: string, options?: EcbSdmxOptions): RateTabl
   const tables: RateTable[] = [];
   for (const [day, rates] of days) {
     if (Object.values(rates).some((rate) => rate !== null)) {
-      tables.push(ecbTable(day, rates));
+      tables.push(ecbTable(day, rates, options?.availableAt));
     }
   }
   return newestFirst(tables);

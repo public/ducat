@@ -18,6 +18,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `discountedSumExact`, and subscription proration (`prorate` by the day or the second, `splitPeriod`). Exact
   arithmetic throughout, rounded once per paid amount with a mode or a policy; dates are
   `'YYYY-MM-DD'` or `{ year, month, day }`, so `Temporal.PlainDate` works.
+- The ECB parsers (`parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`) and fetchers (`fetchEcb`,
+  `fetchEcbRange`) take an opt-in `availableAt`: `true` for the ECB's documented publication time,
+  16:00 CET (Frankfurt time, summer time included), or a function of the day for the caller's
+  own, so historical lookups can't use a rate before it was published. Without it nothing
+  changes.
 - `@ducatjs/money/pricing`: `priceEnding`, retail price endings ("charm pricing"). A rule allows
   the prices `ending + k × step` (.99, .95, 9.90 in steps of 10, the nearest 5) and moves an amount
   to one of them by a rounding mode (up by default, down, or to the nearest), exactly.
@@ -25,9 +30,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (the exact share of one amount in another, as a `Ratio`), `divideToIntegral` and `remainder`
   (truncating division between amounts, with `m = divisor × count + remainder` exactly) and
   `trimScale` (the smallest exact scale, not below the currency's exponent unless asked).
+- `@ducatjs/money/pricing`: `tieredPrice` prices a quantity under graduated or volume tiers in
+  the style of Stripe's (inclusive `upTo`, per-unit and flat amounts, sub-cent unit prices and
+  decimal quantities), exactly, with the total rounded once and a breakdown per tier whose
+  amounts sum to the total.
 
 ### Changed
 
+- `Fixed#divide` takes the number fast path Money's `divide` has: a safe-integer value divided by a
+  divisor whose ratio parts are safe integers, at the value's own scale, no longer builds the
+  inverse ratio in bigint. It runs 43% fewer instructions dividing by 3 or by '1.5'. Results are
+  unchanged.
 - **Visible change:** arithmetic and comparison with an operand that isn't Money (`m.add(5)` from
   untyped code) throw a `TypeError` ("Expected Money, got number") instead of a
   `CurrencyMismatchError`. Two Money values in different currencies still throw

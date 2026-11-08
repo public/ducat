@@ -1,7 +1,7 @@
 /**
- * `@ducatjs/money/pricing`: retail price endings ("charm pricing"). A rule such as "end in .99,
- * rounding up" is a plain value passed explicitly, like a rounding policy, and every result is
- * exact.
+ * `@ducatjs/money/pricing`: retail price endings ("charm pricing") and, from `tiers.ts`, tiered
+ * and volume pricing. A rule such as "end in .99, rounding up" is a plain value passed explicitly,
+ * like a rounding policy, and every result is exact.
  */
 import { MAX_DECIMAL_SCALE, parseDecimal, pow10n } from './decimal.js';
 import { make, type Money } from './money.js';
@@ -151,3 +151,5 @@ export function priceEnding(options: PriceEndingOptions): PriceEnding {
     rounding,
   }) as PriceEnding;
 }
+
+export * from './tiers.js';
