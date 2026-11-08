@@ -1,7 +1,7 @@
 #!/bin/sh
 # check-commit-msg.sh: Conventional Commits (https://www.conventionalcommits.org/en/v1.0.0/) for this repo.
 #   check-commit-msg.sh FILE           the commit-msg hook: FILE holds the message (.githooks/commit-msg calls this)
-#   check-commit-msg.sh --subject TEXT one subject line (CI: every commit in a PR, and the PR title)
+#   check-commit-msg.sh --subject TEXT one subject line (CI: the PR title, which becomes the squash commit's subject)
 # Accepted: type(optional-scope)!: description, with type one of
 #   build chore ci docs feat fix perf refactor revert style test
 # and a subject of at most 100 characters. Git's own messages (Merge ..., Revert "...", fixup!/squash!/amend!) pass.

@@ -7,6 +7,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Changed
+
+- **Visible change:** arithmetic and comparison with an operand that isn't Money (`m.add(5)` from
+  untyped code) throw a `TypeError` ("Expected Money, got number") instead of a
+  `CurrencyMismatchError`. Two Money values in different currencies still throw
+  `CurrencyMismatchError`.
+
 ## [0.2.0] - 2026-11-08
 
 Integrations and sources. New opt-in entries for Drizzle, Kysely, node-postgres, Zod, Valibot and
