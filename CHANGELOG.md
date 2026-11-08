@@ -9,6 +9,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/fixed/money`: Fixed and Money together. It has everything in
+  `@ducatjs/money/fixed`, plus `moneyToFixed` and `fixedToMoney`, and installs
+  `Money#toFixedPoint()` and `Fixed#toMoney()`.
 - `@ducatjs/money/pricing`: `priceEnding`, retail price endings ("charm pricing"). A rule allows
   the prices `ending + k × step` (.99, .95, 9.90 in steps of 10, the nearest 5) and moves an amount
   to one of them by a rounding mode (up by default, down, or to the nearest), exactly.
@@ -19,6 +22,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Breaking:** `@ducatjs/money/fixed` no longer loads Money or the currency table, so a program
+  that uses only `Fixed` is 3.2 kB gzipped instead of 5.3 kB. `Money#toFixedPoint()`,
+  `Fixed#toMoney()` and `moneyToFixed` moved to the new `@ducatjs/money/fixed/money`: import that
+  entry instead where you convert between the two. `/all` and `/fn` include it.
 - **Visible change:** arithmetic and comparison with an operand that isn't Money (`m.add(5)` from
   untyped code) throw a `TypeError` ("Expected Money, got number") instead of a
   `CurrencyMismatchError`. Two Money values in different currencies still throw

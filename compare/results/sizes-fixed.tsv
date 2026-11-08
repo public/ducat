@@ -1,6 +1,6 @@
 lib	snippet_min	snippet_gz	full_min	full_gz
-ducat Money	10656	4068	13258	4969
-ducat Fixed	15185	5320	15491	5356
+ducat Money	10720	4092	13322	4979
+ducat Fixed	8504	3210	8792	3272
 dnum	3460	1506	7373	2823
 js-big-decimal	9513	3102	9426	3068
 bigdecimal.js	46957	11835	46971	11836
