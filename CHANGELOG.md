@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- The ECB parsers (`parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`) and fetchers (`fetchEcb`,
+  `fetchEcbRange`) take an opt-in `availableAt`: `true` for the ECB's documented publication time,
+  16:00 CET (Frankfurt time, summer time included), or a function of the day for the caller's
+  own, so historical lookups can't use a rate before it was published. Without it nothing
+  changes.
 - `@ducatjs/money/math`: `average` (the exact sum divided by the count, rounded once), `ratioOf`
   (the exact share of one amount in another, as a `Ratio`), `divideToIntegral` and `remainder`
   (truncating division between amounts, with `m = divisor × count + remainder` exactly) and
