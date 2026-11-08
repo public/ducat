@@ -58,6 +58,10 @@
       "types": "./dist/plugins/exact.d.ts",
       "default": "./dist/plugins/exact.js"
     },
+    "./policy": {
+      "types": "./dist/policy.d.ts",
+      "default": "./dist/policy.js"
+    },
     "./cash": {
       "types": "./dist/plugins/cash.d.ts",
       "default": "./dist/plugins/cash.js"

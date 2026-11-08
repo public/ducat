@@ -18,6 +18,8 @@ export {
   sum,
   ratio,
   CurrencyMismatchError,
+  type RoundingPolicy,
+  type RoundingInput,
   type Money,
   type MoneyJSON,
   type MoneyOptions,

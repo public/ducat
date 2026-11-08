@@ -130,7 +130,8 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`                                   |
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb` (the only module that uses the network)             |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
-| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashRule`, `CASH_RULES`                             |
+| `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
+| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`…                            |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                       |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`                                                        |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                      |
@@ -249,6 +250,28 @@ one.identical(money('1', 'EUR', { scale: 1 })); // → false
 | `Ceil`                 | `'ceil'`        | always toward +∞                                   |
 | `Floor`                | `'floor'`       | always toward −∞                                   |
 | `Unnecessary`          | `'unnecessary'` | throws `RoundingError` if rounding would be needed |
+
+**Rounding policies** (`@ducatjs/money/policy`). A policy bundles a scale, an increment and a mode ("CHF cash", "4 decimals, half even") into one value that goes wherever a rounding mode goes: `multiply`, `divide`, `round`, `percentage`, `discount`, `addTax`, `extractTax`. The result is rounded once, straight to the policy, so it never rounds twice through the amount's own scale. A policy is also a function that rounds an amount, so `amounts.map(policy)` and `m.with(policy)` work.
+
+- `roundingPolicy({ scale?, increment?, rounding?, currency? })`. The scale defaults to the currency's exponent, the increment (counted in 10^-scale units) to 1, and the mode to `'halfExpand'`. With `currency`, the policy refuses amounts in other currencies.
+- `isoPolicy`: the currency's exponent, half up.
+- `cashPolicy(currency, { country?, rounding?, includeUnverified? })`, from `@ducatjs/money/cash`, is the cash-rounding rule as a policy, for that currency only. It throws when no rule applies. Unlike `cashRound`, which keeps a larger scale (10.034 CHF gives 10.050), a policy always returns its own scale (10.05).
+- `assertScale(m, policy)` throws a `RangeError` unless `m` is already at the policy's scale and on its increment, for example before an amount is booked.
+- The tax functions apply a policy to the amount they compute: the **gross** for `addTax` (the amount charged), the **net** for `extractTax`, and the **discounted price** for `discount`. The other part is the exact difference, so net + tax is still exactly gross. With a plain rounding mode, `addTax` and `discount` round the tax and the discount amount, as before.
+
+Policies are passed explicitly, never stored on amounts or set globally. Only policies built by this copy of the package are accepted. A lookalike function, or a policy from a second installed copy of ducat, throws a `TypeError`, just as `isMoney` rejects the other copy's Money.
+
+```ts
+import { money } from '@ducatjs/money';
+import { assertScale, isoPolicy, roundingPolicy } from '@ducatjs/money/policy';
+import { cashPolicy } from '@ducatjs/money/cash';
+
+money('10.00', 'CHF').multiply('1.077', cashPolicy('CHF')); // → 10.75 CHF
+const unitPrice = roundingPolicy({ scale: 4, rounding: 'halfEven' });
+money('10.00', 'EUR').divide(3, unitPrice); // → 3.3333 EUR
+[money('1.234', 'EUR', { scale: 3 })].map(isoPolicy); // → [1.23 EUR]
+assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws
+```
 
 **Cash rounding**
 
@@ -664,6 +687,7 @@ These are stated over the proved kernel (`divRound`):
 - **The core is small; everything else is an opt-in module that installs methods.** Methods on one class pull every feature into every bundle, so `Money` carries only the core, and `@ducatjs/money/allocate`, `/tax`, `/format`… add their methods when imported (types through `declare module` augmentation, as dayjs plugins do). The cost is that installed methods are global at run time. `@ducatjs/money/fn` offers the same functions without touching the prototype, for function-level tree-shaking.
 - **Correctness and features come before bundle size.** The core keeps the currency table, the comparison methods, bigint support and exact string parsing; everything else is an opt-in module, and size budgets in CI stop either from growing.
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
+- **Rounding policies are explicit values.** A policy (scale, increment and mode) is passed to each operation that rounds, the way a rounding mode is. It is never attached to an amount or installed as a global default: a stored or global policy would make the same expression round differently depending on where a value came from or what ran earlier, which is the kind of action at a distance a money library should rule out.
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
 - **Withdrawn and non-ISO codes** (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…) stay out of the core registry. An opt-in table of them with withdrawal dates is planned for a later release; until then, register any you need with `defineCurrency`.

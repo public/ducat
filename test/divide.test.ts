@@ -138,3 +138,21 @@ describe('divide', () => {
     expect(divide(max, '1/3', 'halfEven').minor).toBe(SAFE * 3n);
   });
 });
+
+describe('divide and multiply with a rounding policy', () => {
+  it('never take the number fast paths, which would keep the amount’s own scale', async () => {
+    const { roundingPolicy } = await import('../src/policy.js');
+    const fourDecimals = roundingPolicy({ scale: 4 });
+    const amount = fromMinor(1000, 'EUR');
+    const quotient = divide(amount, 3, fourDecimals);
+    expect([quotient.minor, quotient.scale]).toEqual([33333, 4]);
+    const exactQuotient = divide(amount, 4, fourDecimals);
+    expect([exactQuotient.minor, exactQuotient.scale]).toEqual([25000, 4]);
+    const byString = divide(amount, '7', fourDecimals);
+    expect([byString.minor, byString.scale]).toEqual([14286, 4]);
+    const product = amount.multiply(3, fourDecimals);
+    expect([product.minor, product.scale]).toEqual([300000, 4]);
+    const fiveCents = roundingPolicy({ increment: 5 });
+    expect(divide(fromMinor(1001, 'EUR'), 1, fiveCents).minor).toBe(1000);
+  });
+});
