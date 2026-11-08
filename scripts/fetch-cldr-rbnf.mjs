@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Writes data/rbnf/<language>.txt: CLDR's spell-out rules (RBNF) for the languages ducat ships,
 // from the cldr-rbnf package of a pinned CLDR release. `pnpm gen` turns them into
-// src/generated/rbnf/<language>.ts.
+// src/generated/rbnf-<language>.ts.
 //
 //   node scripts/fetch-cldr-rbnf.mjs            fetch and write the rules
 //   node scripts/fetch-cldr-rbnf.mjs --check    exit 1 if a file differs from the release

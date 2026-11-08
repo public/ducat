@@ -13,7 +13,7 @@
  * Nothing here loads Money or the currency table: an amount is read through its fields.
  */
 import type { Money } from './money.js';
-import { cardinalFor, spellOut, type SpelloutRules } from './rbnf.js';
+import { cardinalFor, pluralOperand, spellOut, type SpelloutRules } from './rbnf.js';
 
 export { ruleSets, spellOut, type SpelloutRules } from './rbnf.js';
 
@@ -31,7 +31,7 @@ export interface AmountInWordsOptions {
    * genders.
    */
   readonly gender?: 'masculine' | 'feminine' | 'neuter';
-  /** A rule set to spell numbers with, instead of the gender's cardinal (see `ruleSets`). */
+  /** A public rule set to spell numbers with, instead of the gender's cardinal (see `ruleSets`). */
   readonly ruleSet?: string;
   /**
    * How to write the minor part. By default, as cheques do: '45/100' after the language's 'and'
@@ -71,18 +71,22 @@ function conjunction(locale: string): string {
  * with the currency's name, with the digits replaced by `words`.
  */
 function withCurrencyName(locale: string, currency: string, count: bigint, words: string): string {
-  const format = cached(
-    currencyNames,
-    `${locale}\u0000${currency}`,
-    () =>
-      new Intl.NumberFormat(locale, {
+  const format = cached(currencyNames, `${locale}\u0000${currency}`, () => {
+    try {
+      return new Intl.NumberFormat(locale, {
         style: 'currency',
         currency,
         currencyDisplay: 'name',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-      }),
-  );
+      });
+    } catch {
+      // Intl names only three-letter codes
+      throw new RangeError(
+        `amountInWords takes currencies Intl can name (three-letter codes), got ${currency}`,
+      );
+    }
+  });
   let output = '';
   let isNumberWritten = false;
   for (const part of format.formatToParts(count)) {
@@ -110,9 +114,14 @@ function withCurrencyName(locale: string, currency: string, count: bigint, words
  * The minor part is written at the amount's scale, so round first for a currency's usual decimals
  * (an amount at scale 3 gives '/1000'). Zero minor units are written as '00/100' cheque-style, and
  * left out when `minor` names are given. Negative amounts throw a RangeError: words are for amounts
- * to pay. German, Italian and Dutch words keep CLDR's soft hyphens (U+00AD), which show only where
- * a line breaks. The grammar is CLDR's numbers plus Intl's currency name: languages that put a
- * preposition after a round million ('un million de yens') don't get it.
+ * to pay, and so do whole units or spelled minor units past 2^63 - 1, where ICU's rules stop (see
+ * `spellOut`). German, Italian and Dutch words keep CLDR's soft hyphens (U+00AD), which show only
+ * where a line breaks. The grammar is CLDR's numbers plus Intl's currency name: languages that put
+ * a preposition after a round million ('un million de yens') don't get it. The currency's name, the
+ * word for 'and' and the digit grouping of numbers the rules write as digits come from the
+ * runtime's `Intl`. A code Intl can't name (not three letters, such as one registered with
+ * `defineCurrency('USDC', 6)`) throws a RangeError; a three-letter code Intl doesn't know is
+ * written as the code ('five XBT').
  */
 export function amountInWords(
   money: Money,
@@ -132,7 +141,7 @@ export function amountInWords(
   const named = options?.minor;
   if (named !== undefined) {
     const plural = cached(pluralRules, locale, () => new Intl.PluralRules(locale));
-    const minorWords = `${spellOut(fraction, rules, ruleSet)} ${named[plural.select(Number(fraction))] ?? named.other}`;
+    const minorWords = `${spellOut(fraction, rules, ruleSet)} ${named[plural.select(pluralOperand(fraction))] ?? named.other}`;
     if (fraction > 0n && whole === 0n) {
       return minorWords;
     }

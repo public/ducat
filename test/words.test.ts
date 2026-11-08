@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { money } from '../src/index.js';
+import { defineCurrency, money } from '../src/index.js';
 import { amountInWords } from '../src/words.js';
 import { ruleSets, spellOut, type SpelloutRules } from '../src/rbnf.js';
 import { german } from '../src/words/de.js';
@@ -21,23 +21,30 @@ const LANGUAGES: Record<string, SpelloutRules> = {
   pt: portuguese,
   nl: dutch,
 };
-const { vectors } = JSON.parse(
-  readFileSync(new URL('vectors/rbnf.json', import.meta.url), 'utf8'),
-) as { vectors: Record<string, Record<string, [string, string][]>> };
+// ICU4C 79.1 on its own CLDR 49 data, and ICU4C 74.2 on data/rbnf's text for the other rule sets
+const vectorFiles = ['vectors/rbnf.json', 'vectors/rbnf-data.json'].map(
+  (file) =>
+    JSON.parse(readFileSync(new URL(file, import.meta.url), 'utf8')) as {
+      source: string;
+      vectors: Record<string, Record<string, [string, string][]>>;
+    },
+);
 
 describe('the RBNF interpreter matches ICU', () => {
-  for (const [locale, sets] of Object.entries(vectors)) {
-    for (const [ruleSet, cases] of Object.entries(sets)) {
-      it(`${locale} ${ruleSet}`, () => {
-        const wrong = cases
-          .map(([value, expected]) => [
-            value,
-            expected,
-            spellOut(BigInt(value), LANGUAGES[locale]!, ruleSet),
-          ])
-          .filter(([, expected, actual]) => expected !== actual);
-        expect(wrong).toEqual([]);
-      });
+  for (const { source, vectors } of vectorFiles) {
+    for (const [locale, sets] of Object.entries(vectors)) {
+      for (const [ruleSet, cases] of Object.entries(sets)) {
+        it(`${locale} ${ruleSet} (${source})`, () => {
+          const wrong = cases
+            .map(([value, expected]) => [
+              value,
+              expected,
+              spellOut(BigInt(value), LANGUAGES[locale]!, ruleSet),
+            ])
+            .filter(([, expected, actual]) => expected !== actual);
+          expect(wrong).toEqual([]);
+        });
+      }
     }
   }
 });
@@ -101,12 +108,42 @@ describe('amountInWords', () => {
     ).toBe('two British pounds');
   });
 
-  it('writes the minor part at the amount scale, and exact for any size', () => {
+  it('writes the minor part at the amount scale, and refuses whole units past the range of ICU', () => {
     expect(amountInWords(money('1.005', 'EUR', { scale: 3 }), english)).toBe(
       'one euro and 005/1000',
     );
-    expect(amountInWords(money('1000000000000000000000', 'USD'), english)).toBe(
-      '1,000,000,000,000,000,000,000 US dollars and 00/100',
+    expect(amountInWords(money('9223372036854775807', 'USD'), english)).toBe(
+      '9,223,372,036,854,775,807 US dollars and 00/100',
+    );
+    expect(() => amountInWords(money('1000000000000000000000', 'USD'), english)).toThrow(
+      RangeError,
+    );
+    expect(() => amountInWords(money('1000000000000000000000', 'USD'), english)).toThrow(
+      /within ±\(2\^63 - 1\)/,
+    );
+  });
+
+  it('picks the plural form of the minor unit exactly, past 2^53', () => {
+    // 10^18 + 1 hundred-sextillionths: French 'many' is for exact multiples of a million only
+    const names = { one: 'centime', many: 'de centimes', other: 'centimes' };
+    // the rules write these as digits, grouped by the runtime's Intl
+    const digits = (value: bigint) => new Intl.NumberFormat('fr').format(value);
+    expect(
+      amountInWords(money('0.00001000000000000000001', 'EUR', { scale: 23 }), french, {
+        minor: names,
+      }),
+    ).toBe(`${digits(10n ** 18n + 1n)} centimes`);
+    expect(amountInWords(money('0.00001', 'EUR', { scale: 23 }), french, { minor: names })).toBe(
+      `${digits(10n ** 18n)} de centimes`,
+    );
+  });
+
+  it('refuses a currency Intl cannot name', () => {
+    // a code only this test registers (Bun runs every test file in one process)
+    defineCurrency('WORDSTEST', 2);
+    expect(() => amountInWords(money('1', 'WORDSTEST'), english)).toThrow(RangeError);
+    expect(() => amountInWords(money('1', 'WORDSTEST'), english)).toThrow(
+      'amountInWords takes currencies Intl can name (three-letter codes), got WORDSTEST',
     );
   });
 
@@ -118,6 +155,12 @@ describe('amountInWords', () => {
     expect(() => amountInWords(money('1', 'EUR'), english, { ruleSet: '%nope' })).toThrow(
       'No rule set %nope for en',
     );
+    expect(() => amountInWords(money('1', 'EUR'), english, { ruleSet: '%%and' })).toThrow(
+      RangeError,
+    );
+    expect(() => amountInWords(money('1', 'EUR'), english, { ruleSet: '%%and' })).toThrow(
+      '%%and is a private rule set of en',
+    );
   });
 });
 
@@ -128,6 +171,43 @@ describe('spellOut', () => {
     expect(spellOut(-1999n, english)).toBe('minus one thousand nine hundred ninety-nine');
     expect(spellOut(21, spanish)).toBe('veintiún');
     expect(() => spellOut(1.5, english)).toThrow(RangeError);
+  });
+
+  it('refuses private rule sets, as ICU does', () => {
+    expect(() => spellOut(5, english, '%%2d-year')).toThrow(RangeError);
+    expect(() => spellOut(5, english, '%%2d-year')).toThrow(
+      '%%2d-year is a private rule set of en',
+    );
+  });
+
+  it('refuses values outside ±(2^63 - 1), where ICU writes digits instead of the rules', () => {
+    const max = 2n ** 63n - 1n;
+    expect(spellOut(max, english)).toBe('9,223,372,036,854,775,807');
+    expect(spellOut(-max, spanish)).toBe('menos 9.223.372.036.854.775.807');
+    for (const [value, rules] of [
+      [2n ** 63n, english],
+      [-(2n ** 63n), english],
+      [2n ** 63n, spanish],
+      [-(2n ** 63n), spanish],
+    ] as const) {
+      expect(() => spellOut(value, rules)).toThrow(RangeError);
+      expect(() => spellOut(value, rules, ruleSets(rules).at(-1))).toThrow(
+        /spellOut takes whole numbers within ±\(2\^63 - 1\)/,
+      );
+    }
+  });
+
+  it('refuses ordinals whose plural form ICU picks from a 32-bit truncation', () => {
+    // ICU casts the quotient to int32 for $(ordinal,…)$; where that changes the form, refuse
+    expect(() => spellOut(8721694496465577220n, english, '%spellout-ordinal')).toThrow(RangeError);
+    expect(() => spellOut(8721694496465577220n, english, '%spellout-ordinal')).toThrow(
+      /ICU picks the ordinal plural form of 8721694496465577220 from it cast to 32 bits/,
+    );
+    // where the truncated value has the same form, the words are ICU's (and exact, not by float)
+    expect(spellOut(3827107958841198709n, english, '%spellout-ordinal')).toBe(
+      '3,827,107,958,841,198,709th',
+    );
+    expect(spellOut(10n ** 18n, english, '%spellout-ordinal')).toBe('1,000,000,000,000,000,000th');
   });
 
   it('spells every value in every language, the same for numbers and bigints (property)', () => {

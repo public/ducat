@@ -1,7 +1,12 @@
 // An interpreter for CLDR's rule-based number formats (RBNF, the rules behind ICU's
 // RuleBasedNumberFormat), for whole numbers. ECMA-402 has no spell-out, so the rules are CLDR's own
-// text, generated into src/generated/rbnf/, and this follows ICU's semantics for them:
+// text, generated into src/generated/rbnf-<language>.ts, and this follows ICU's semantics for them:
 // https://unicode-org.github.io/icu/userguide/format_parse/numbers/rbnf.html
+//
+// Where it can't match ICU it refuses with a RangeError: values outside ICU's int64 range (ICU
+// writes those with a plain decimal format, not the rules), and plurals whose quotient ICU
+// truncates to 32 bits into a different plural category. Digit grouping in fallbacks (=#,##0=)
+// comes from the runtime's Intl, not CLDR 49.
 //
 // It loads neither Money nor the currency table: a language pack is plain data.
 
@@ -56,6 +61,10 @@ interface Compiled {
 }
 
 const compiledRules = new WeakMap<SpelloutRules, Compiled>();
+
+/** ICU's RBNF formats int64 values; past them it writes plain digits, so this refuses instead. */
+const INT64_MAX = 2n ** 63n - 1n;
+const MILLION = 1_000_000n;
 
 /** The exponent of the rule's divisor: the largest e with radix^e <= base. */
 function divisorFor(base: bigint, radix: bigint): bigint {
@@ -235,13 +244,33 @@ function formatDecimal(language: Compiled, pattern: string, value: bigint): stri
   return format.format(value);
 }
 
+/**
+ * @internal A whole number reduced, exactly, to one with the same plural category in every CLDR
+ * rule the shipped languages use (n % 10, n % 100, i % 1000000 = 0 with i != 0, and equality with
+ * values below a million; plural operands ignore the sign), small enough for `Intl.PluralRules`.
+ */
+export function pluralOperand(value: bigint): number {
+  const magnitude = value < 0n ? -value : value;
+  return Number(magnitude < MILLION ? magnitude : (magnitude % MILLION) + MILLION);
+}
+
 function pluralCategory(language: Compiled, type: 'cardinal' | 'ordinal', value: bigint): string {
   let rules = language.plurals.get(type);
   if (rules === undefined) {
     rules = new Intl.PluralRules(language.locale, { type });
     language.plurals.set(type, rules);
   }
-  return rules.select(Number(value));
+  const category = rules.select(pluralOperand(value));
+  // ICU selects by the quotient cast to int32; where the cast changes the category, ICU writes
+  // another form than the number's own, so refuse
+  const int32 = BigInt.asIntN(32, value);
+  if (int32 !== value && rules.select(Number(int32)) !== category) {
+    throw new RangeError(
+      `ICU picks the ${type} plural form of ${value} from it cast to 32 bits (${int32}), ` +
+        'which gives another form: no spell-out matches ICU',
+    );
+  }
+  return category;
 }
 
 function applyRule(
@@ -311,10 +340,13 @@ export function ruleSets(rules: SpelloutRules): string[] {
 
 /**
  * A whole number in words, by a language's CLDR rules: `spellOut(123, en)` is 'one hundred
- * twenty-three'. `ruleSet` picks one of the language's rule sets (default '%spellout-cardinal',
- * or the masculine one where the language has no neutral cardinal): '%spellout-ordinal',
- * '%spellout-cardinal-feminine', and the financial sets where CLDR has them. Accepts a safe integer
- * or a bigint; beyond 10^18 the rules write digits, as ICU does.
+ * twenty-three'. `ruleSet` picks one of the language's public rule sets (default
+ * '%spellout-cardinal', or the masculine one where the language has no neutral cardinal):
+ * '%spellout-ordinal', '%spellout-cardinal-feminine' and the others `ruleSets` lists. Accepts a safe
+ * integer or a bigint within ±(2^63 - 1), ICU's range for the rules; from 10^18 most rule sets
+ * write digits, grouped by the runtime's `Intl`, as ICU does. Throws a RangeError outside that
+ * range, for a private ('%%') rule set, and where ICU picks a plural form by a value truncated to
+ * 32 bits that would differ from ours (in CLDR 49's rules, some English ordinals from 10^18).
  */
 export function spellOut(
   value: number | bigint,
@@ -324,9 +356,18 @@ export function spellOut(
   if (typeof value === 'number' && !Number.isSafeInteger(value)) {
     throw new RangeError(`spellOut takes whole numbers, got ${value}`);
   }
+  const whole = BigInt(value);
+  if (whole > INT64_MAX || whole < -INT64_MAX) {
+    throw new RangeError(
+      `spellOut takes whole numbers within ±(2^63 - 1), as ICU's rules do, got ${whole}`,
+    );
+  }
   const language = compiled(rules);
   const name = ruleSetName ?? defaultCardinal(language);
-  return spell(language, ruleSet(language, name), BigInt(value));
+  if (name.startsWith('%%')) {
+    throw new RangeError(`${name} is a private rule set of ${language.locale}; use a public one`);
+  }
+  return spell(language, ruleSet(language, name), whole);
 }
 
 function defaultCardinal(language: Compiled): string {
