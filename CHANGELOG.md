@@ -17,6 +17,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
   without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
   and Valibot 1 are optional peer dependencies.
+- **Bank of Canada:** `parseBankOfCanadaJson` in the new `@ducatjs/money/convert/boc` reads the
+  Valet API's daily rates into CAD tables (exact inverses of the published CAD-per-unit quotes,
+  with `availableAt` 16:30 Toronto time), and `fetchBankOfCanada({ start, end })` in
+  `@ducatjs/money/convert/fetch` fetches them.
 - **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
   rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
   reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,
@@ -24,6 +28,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   policy's scale and increment; for the tax functions that is the gross (`addTax`), the net
   (`extractTax`) or the discounted price (`discount`). A policy is also a function that rounds an
   amount. `assertScale(money, policy)` checks that an amount is already rounded to a policy.
+- **A scale column for minor units:** `toMinorColumns(m, 'amountMinor', 'currency', { scale:
+  'amountScale' })` and `minorMoneyField(..., { scale: 'amountScale' })` store and read each
+  amount's scale next to its minor units, so any scale round-trips and stored amounts keep their
+  meaning if an exponent changes. A bundled ISO 4217 exponent change is now documented as
+  breaking: listed under Changed, and shipped only in a minor version before 1.0 and a major version
+  from 1.0. See [Databases](README.md#databases).
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
   (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
   `assertCurrency` throws `CurrencyMismatchError` for another currency.
@@ -50,6 +60,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   In the new opt-in `@ducatjs/money/convert/history`: `quotedTable` and `rateFromQuote` for rates
   published the other way round, per 100 units or with stripped zeros (`per`, `inverted`,
   `decimals`), and `rateHistory()` over a date range, whose `lookup()` reports why it fell back.
+- **node-postgres support** in `@ducatjs/money/pg`: `exactTypes(pg.types)` parses BIGINT as bigint
+  and NUMERIC (and their arrays) as exact strings, rejecting `NaN` and `Infinity`. `moneyTypeSql()`
+  creates a `(amount, currency)` composite type with a currency-checked `sum` aggregate, read and
+  written as Money. `toNumeric` refuses values a `NUMERIC(p, s)` column would round silently. See
+  [node-postgres](README.md#node-postgres).
 
 ### Changed
 

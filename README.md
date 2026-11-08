@@ -129,8 +129,9 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                       |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                |
 | `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                  |
+| `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                        |
 | `.../convert/fed`                   | nothing                                                            | `parseFedH10Csv` (parser only)                                 |
-| `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange` (the only module with network I/O) |
+| `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O) |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                 |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`…                            |
@@ -144,6 +145,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
 | `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
 | `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
+| `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O       |
 | `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
 | `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)       |
 | `@ducatjs/money/valibot`            | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Valibot, an optional peer)   |
@@ -400,7 +402,7 @@ nok.rate('NOK', 'JPY')?.quote; // → { rate: '6.50', per: 100, inverted: true }
 nok.missing; // → ['ISK']
 ```
 
-**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. There are two opt-in fetchers in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. The Federal Reserve's H.10 rates (noon buying rates in New York, certified for US customs, daily since 1971) have a parser only, `parseFedH10Csv` in `@ducatjs/money/convert/fed`, for the CSV from the Board's Data Download Program (release H10, series in columns, with labels). H.10 quotes currency per USD except AUD, EUR, NZD and GBP, which it quotes as USD per unit; those four are stored as exact inverses with the published quote kept, so every table is USD → currency. Holidays are rows of `ND` and are left out. The Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule out a fetcher in ducat, so download the CSV yourself. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
+**Where rates come from.** ducat ships parsers for the ECB's euro reference rates (`@ducatjs/money/convert/ecb`): the daily, 90-day and full-history eurofxref XML and CSV files, and the ECB Data Portal's SDMX-CSV (`parseEcbSdmxCsv`), which has any date range back to 1999 in one file. The opt-in fetchers are in `@ducatjs/money/convert/fetch`: `fetchEcb()` for the eurofxref files and `fetchEcbRange({ start, end, currencies })` for the Data Portal, which needs no key and allows browsers (CORS). They use the platform `fetch` and have a 30-second default timeout. Nothing else in ducat touches the network. The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`. The Data Portal strips trailing zeros (`147.2` for 147.20), so the parser rebuilds the published digits from each series' `DECIMALS` attribute. The Bank of Canada's daily rates come from its Valet API (`parseBankOfCanadaJson` in `@ducatjs/money/convert/boc`, and `fetchBankOfCanada()`, also keyless and CORS-enabled). The Bank quotes CAD per unit of each currency, so the tables hold exact inverses with the published quote kept, and its rates carry `availableAt` 16:30 Toronto time, when it says it publishes them. It quotes four decimals (up to six for small rates), so a small rate has only about four significant digits: JPY `0.008760`, KRW `0.000929`, and IDR `0.000082` with two. The inverse of such a rate is exact, but no more precise than the quote, so for those currencies prefer a source that quotes them the other way round. The Federal Reserve's H.10 rates (noon buying rates in New York, certified for US customs, daily since 1971) have a parser only, `parseFedH10Csv` in `@ducatjs/money/convert/fed`, for the CSV from the Board's Data Download Program (release H10, series in columns, with labels). H.10 quotes currency per USD except AUD, EUR, NZD and GBP, which it quotes as USD per unit; those four are stored as exact inverses with the published quote kept, so every table is USD → currency. Holidays are rows of `ND` and are left out. The Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule out a fetcher in ducat, so download the CSV yourself. For what a payment actually settled at, read the processor's own rate: `stripeRate` and `stripeImpliedRate` from a Stripe balance transaction, and `adyenRate` from an Adyen settlement details row. Any other source is a small loader that returns a `rateTable`.
 
 <!-- doctest: setup import { readFileSync } from 'node:fs'; const sdmxCsv = readFileSync('test/fixtures/ecb-sdmx/exr-d-full.csv', 'utf8'); -->
 
@@ -412,6 +414,16 @@ import { rateHistory } from '@ducatjs/money/convert/history';
 const history = rateHistory(parseEcbSdmxCsv(sdmxCsv));
 history.rate('EUR', 'ISK', { asOf: '2026-01-06' })?.toString(); // → '147.20' (the API sends 147.2)
 history.rate('EUR', 'USD', { asOf: '2025-12-26' })?.asOf; // → '2025-12-24' (Christmas)
+```
+
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const valetJson = readFileSync('test/fixtures/boc/fx-rates-daily.json', 'utf8'); -->
+
+```ts
+import { parseBankOfCanadaJson } from '@ducatjs/money/convert/boc';
+
+const [latest] = parseBankOfCanadaJson(valetJson); // what fetchBankOfCanada() parses
+latest?.rate('CAD', 'USD')?.inverse().toString(); // → '1.3789' (CAD per USD, as published)
+latest?.availableAt; // → '2026-01-06T21:30:00.000Z' (16:30 in Toronto)
 ```
 
 <!-- doctest: setup import { readFileSync } from 'node:fs'; const h10Csv = readFileSync('test/fixtures/fed/h10-daily.csv', 'utf8'); -->
@@ -512,6 +524,8 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 - BIGINT holds ±9.2·10^18 minor units, which is 92 quadrillion EUR. Postgres's `money` type is locale-dependent; don't use it.
 - Choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 - Prisma maps `BigInt` to JS `bigint`. The helpers accept it, and `fromMinor` normalises it back to a number when it is safe.
+- **A scale column** makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below). To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
+- **Exponent changes.** Minor units stored without a scale are read at the currency's exponent in the installed version of ducat, so a changed exponent would silently change what old rows mean: 1234 stored as 12.34 would read as 1.234 or 123.4. So an exponent change is a breaking change (see [Decisions](#decisions)), listed under **Changed** in the changelog with the currencies affected. Before upgrading across one, migrate the affected rows, or store a scale column (or a decimal) so the question never arises. Custom currencies keep the exponent given to `defineCurrency`.
 - `fromDecimal` rejects values with more decimals than the currency allows (e.g. `12.3456` in NUMERIC(19,4) for EUR) unless you pass `{ scale }` or `{ rounding }`. Trailing zeros are fine.
 
 Prisma client extension (from `examples/prisma`, which runs end to end against SQLite):
@@ -537,6 +551,41 @@ await db.order.create({
 ```
 
 `src/prisma.ts` does not import `@prisma/client`. It types Decimal structurally, as `{ toFixed(): string }`, so it also works with decimal.js and big.js. `examples/prisma/typecheck.ts` checks the helpers against Prisma's generated extension types.
+
+#### node-postgres
+
+`@ducatjs/money/pg` keeps every amount node-postgres reads exact. It doesn't import `pg`; you pass `pg.types` in.
+
+- **`exactTypes(pg.types)`** gives type parsers that return BIGINT as a bigint and NUMERIC as its exact string, rejecting `NaN` and `Infinity`. Arrays of both are parsed the same way: pg's default parses `numeric[]` as floats. Other types keep pg's parsers. **The bigint applies to every BIGINT on that client**, `count(*)` and bigserial ids included, and `JSON.stringify` throws on a bigint. To keep pg's exact strings, pass `{ int8: 'string' }`, or give the money parsers their own pool.
+- **A composite type**, `(amount numeric, currency text)`. `moneyTypeSql()` returns its DDL plus a `sum` aggregate that throws on mixed currencies. With the type's OIDs, `exactTypes` reads it (and its arrays) as Money, keeping the scale it was stored at. `toMoneyComposite(m)` writes it. Run the DDL once, in a migration: it isn't idempotent. A schema-qualified name (`moneyTypeSql('billing.amount')`) puts the type, its function and the aggregate in that schema. OIDs are looked up once, so after recreating the type, or with one type per tenant schema, pass the new OIDs; a type `exactTypes` doesn't know comes back as pg's raw text. A value with a NULL field, `(,EUR)`, throws when read and makes `sum` raise.
+- **`toNumeric(m, { precision, scale })`** gives the decimal for a `NUMERIC(p, s)` parameter, or throws where Postgres would change the value. Postgres rounds extra decimals silently on insert, which is why the guard exists.
+
+<!-- doctest: skip (needs a Postgres server; test/db/pg-types.test.ts runs the same steps) -->
+
+```ts
+import pg from 'pg';
+import { money } from '@ducatjs/money';
+import {
+  exactTypes,
+  moneyTypeOids,
+  moneyTypeSql,
+  toMoneyComposite,
+  toNumeric,
+} from '@ducatjs/money/pg';
+
+const setup = new pg.Client();
+await setup.connect();
+for (const statement of moneyTypeSql()) await setup.query(statement); // once, in a migration
+const oids = await moneyTypeOids(setup);
+
+const client = new pg.Client({ types: exactTypes(pg.types, { money: oids }) });
+await client.connect();
+await client.query('INSERT INTO items (price) VALUES ($1::ducat_money)', [
+  toMoneyComposite(money('12.34', 'EUR')),
+]);
+(await client.query('SELECT sum(price) AS total FROM items')).rows[0].total; // Money
+toNumeric(money('1.23456', 'EUR', { scale: 5 }), { precision: 19, scale: 4 }); // throws
+```
 
 #### Drizzle
 
@@ -604,6 +653,8 @@ The columns check what the types can't: writing another currency, a value at a s
   - 3: BHD IQD JOD KWD LYD OMR TND
   - 4: CLF UYW
 - Tests also check the Adyen differences, the consistency of every Stripe rule, and that `format()` shows ISO digits for every code on every engine.
+
+A change to an ISO exponent in this data is a breaking change, because it changes what stored minor units mean (see [Decisions](#decisions) and [Databases](#databases)).
 
 Recent ISO changes that are already encoded:
 
@@ -769,6 +820,7 @@ These are stated over the proved kernel (`divRound`):
 - **Correctness and features come before bundle size.** The core keeps the currency table, the comparison methods, bigint support and exact string parsing; everything else is an opt-in module, and size budgets in CI stop either from growing.
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
 - **Rounding policies are explicit values.** A policy (scale, increment and mode) is passed to each operation that rounds, the way a rounding mode is. It is never attached to an amount or installed as a global default: a stored or global policy would make the same expression round differently depending on where a value came from or what ran earlier, which is the kind of action at a distance a money library should rule out.
+- **A bundled ISO 4217 exponent change is breaking:** it is listed under **Changed**, and ships only in a minor version before 1.0 and a major version from 1.0. Minor units stored without a scale are read at the installed exponent, so such a change silently changes what stored rows mean.
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
 - **Withdrawn and non-ISO codes** (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…) stay out of the core registry. An opt-in table of them with withdrawal dates is planned for a later release; until then, register any you need with `defineCurrency`.
