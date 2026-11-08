@@ -50,15 +50,16 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 
 - **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
   units, float traps and negative allocations.
-- **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing, add, multiply,
-  allocate and toDecimal on Node, Bun and Deno, and on compare on Node and Deno. Against the fastest other money library
+- **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing a decimal string
+  (`money('12.34', 'EUR')`), add, multiply, allocate and toDecimal on Node, Bun and Deno, and on compare on Node and Deno. Against the fastest other money library
   the margin ranges from about 1.05× (compare on Node: 7.31 against 7.65 ns) to about 9.5× (allocate on Node: 46
-  against bigint-money's 437 ns). Against dinero.js 2 it ranges from 1.4× (creating on Deno) to about 28× (multiply on
-  Bun).
+  against bigint-money's 437 ns). Against dinero.js 2, on the operations where ducat is fastest, it ranges from 1.4× (creating on
+  Deno) to about 28× (multiply on Bun).
 - **Where it isn't fastest:** formatting on Bun and Deno, where currency.js (formatting a float) is 3% faster (on Node,
   ducat and currency.js are level, 380 against 381 ns, and so are ducat and dinero.js 1 on Bun). On Bun, libraries that
   compare plain numbers are faster at compare (currency.js 6.4 against 9.8 ns).
-- **Fixed-point decimals:** ducat's `Fixed` is the fastest fixed-point library on parse and multiply on every runtime,
+- **Fixed-point decimals:** ducat's `Fixed` is the fastest fixed-point library on parsing a decimal string (`fixed('12.34')`)
+  and multiply on every runtime,
   and ahead of every other library on compare everywhere and on add on Node and Deno. bigdecimal.js is faster at
   dividing a `Fixed` on every runtime, though `Money` divides faster than either, and at add on Bun (11.9 against 12.3
   ns). js-big-decimal and ethers are faster on `toString` everywhere; see

@@ -2,8 +2,11 @@
 
 Raw output of the money benchmark (`compare/bench/bench.ts`) and the fixed-point benchmark
 (`compare/fixed/bench.ts`), one runtime per run, run back to back on the same machine against ducat
-at commit 7c9455a: the 0.2.0 code, including the stricter `parse` (it checks where group separators
-are). `pnpm tables` renders them. The release-candidate run at ea9160b is kept in `../genoa-2026-11-08-v020/`.
+at commit 7c9455a: the 0.2.0 code. `pnpm tables` renders them. The release-candidate run at ea9160b is kept in `../genoa-2026-11-08-v020/`.
+
+The benchmark bundles are byte-identical to the `../genoa-2026-11-08-v020/` run's (same SHA-256 in
+`env.txt`): nothing the benchmarks import changed between ea9160b and 7c9455a. The cross-library parse
+row is decimal-string construction (`money('12.34', 'EUR')`), not the locale `parse()` that #138 changed.
 
 ## Machine
 
