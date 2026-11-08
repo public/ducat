@@ -21,9 +21,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
-- Faster, with the same results: locale parsing (`parse`) about 2.6× on de-DE input, division,
-  percentages and tax by a bigint ratio about 2.3–2.7×, and `cashRound` about 2.9× (one lookup
-  per currency instead of a scan of the cash-rule table).
+- `adyenRate` with `{ timeZone }` keeps one `Intl.DateTimeFormat` per time zone instead of
+  building one for every row, which makes it about 20 times faster.
 
 ## [0.1.0] - 2026-11-07
 

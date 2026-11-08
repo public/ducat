@@ -202,7 +202,7 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | format | 411 (fastest other: **currency.js 380**; dinero.js 2 1.1 µs) | **269** (fastest other: dinero.js 1 272; dinero.js 2 1.2 µs) | 401 (fastest other: **currency.js 393**; dinero.js 2 1.1 µs) |
 | compare | **7.39** (fastest other: ts-money 7.91; dinero.js 2 190) | 10.6 (fastest other: **currency.js 6.93**; dinero.js 2 303) | **6.90** (fastest other: @screeny05/ts-money 7.53; dinero.js 2 181) |
 
-Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on ducat 0.1.1 (commit 69d7fe9). Lower is better; the faster of ducat and the fastest other money library is in bold.
+Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on ducat 0.1.0 (commit 69d7fe9). Lower is better; the faster of ducat and the fastest other money library is in bold.
 
 ### node 24.22.2 (V8 13.6.233.17-node.63)
 
