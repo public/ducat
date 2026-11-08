@@ -1,5 +1,13 @@
 import { CASH_RULES, type CashRule } from './generated/cash.js';
-import { CurrencyMismatchError, make, scaleUp, toScale, type Money } from './money.js';
+import {
+  CurrencyMismatchError,
+  make,
+  roundingPolicy,
+  scaleUp,
+  toScale,
+  type Money,
+  type RoundingPolicy,
+} from './money.js';
 import { divideAndRound, divideAndRoundBigint, type RoundingMode } from './rounding.js';
 import { currencyExponent } from './currency.js';
 
@@ -110,6 +118,26 @@ export function cashRound<C extends string>(money: Money<C>, options?: CashRound
   }
   const inc = make(money.currency, rule.increment, currencyExponent(money.currency));
   return roundToIncrement(money, inc, options?.rounding ?? 'halfExpand');
+}
+
+/**
+ * The cash-rounding rule for a currency as a `RoundingPolicy`, to pass wherever a rounding mode
+ * goes: `m.multiply('1.075', cashPolicy('CHF'))` rounds once, straight to CHF 0.05. The policy only
+ * accepts amounts in `currency`. Throws a RangeError when no rule applies (EUR needs a country);
+ * use `isoPolicy` for currencies without cash rounding.
+ */
+export function cashPolicy(currency: string, options?: CashRoundOptions): RoundingPolicy {
+  const rule = cashRule(currency, options?.country);
+  if (!rule || (options?.includeUnverified === false && !rule.verified)) {
+    const where = options?.country === undefined ? '' : ` in ${options.country}`;
+    throw new RangeError(`No cash-rounding rule for ${currency}${where}`);
+  }
+  return roundingPolicy({
+    scale: currencyExponent(currency),
+    increment: rule.increment,
+    rounding: options?.rounding ?? 'halfExpand',
+    currency,
+  });
 }
 
 export { CASH_RULES, type CashRule };

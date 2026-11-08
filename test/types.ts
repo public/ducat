@@ -2,6 +2,8 @@
 import '../src/plugins/all.js';
 import {
   add,
+  isoPolicy,
+  round,
   allocate,
   compare,
   convert,
@@ -65,3 +67,14 @@ dyn.add(fromMinor(1, 'USD' as string)); // erased types: checked at runtime inst
 eur.multiply('1.1', 'halfUp');
 void viaMethod;
 void chained;
+
+// --- rounding policies go where rounding modes go
+const policyRounded: Money<'EUR'> = eur.multiply('1.075', isoPolicy).round(isoPolicy);
+round(eur, isoPolicy);
+const mapped: Money<'EUR'>[] = [eur, eur].map(isoPolicy);
+// @ts-expect-error a policy fixes its own scale, so round() takes no scale with it
+round(eur, isoPolicy, 2);
+// @ts-expect-error nor does the method
+eur.round(isoPolicy, 2);
+void policyRounded;
+void mapped;

@@ -1,6 +1,6 @@
 import { ratio, type Factor, type Ratio } from './decimal.js';
-import { add, multiplyByRatio, subtract, type Money } from './money.js';
-import { DEFAULT_ROUNDING, type RoundingMode } from './rounding.js';
+import { add, multiplyByRatio, subtract, type Money, type RoundingInput } from './money.js';
+import { DEFAULT_ROUNDING } from './rounding.js';
 
 const percentRatio = (percent: Factor): Ratio => {
   const asRatio = ratio(percent);
@@ -14,7 +14,7 @@ const percentRatio = (percent: Factor): Ratio => {
 export function percentage<C extends string>(
   money: Money<C>,
   percent: Factor,
-  rounding: RoundingMode = DEFAULT_ROUNDING,
+  rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
   return multiplyByRatio(money, percentRatio(percent), rounding);
 }
@@ -34,7 +34,7 @@ export interface TaxBreakdown<C extends string> {
 export function addTax<C extends string>(
   net: Money<C>,
   percent: Factor,
-  rounding: RoundingMode = DEFAULT_ROUNDING,
+  rounding: RoundingInput = DEFAULT_ROUNDING,
 ): TaxBreakdown<C> {
   const tax = multiplyByRatio(net, percentRatio(percent), rounding);
   const gross = add(net, tax);
@@ -49,7 +49,7 @@ export function addTax<C extends string>(
 export function extractTax<C extends string>(
   gross: Money<C>,
   percent: Factor,
-  rounding: RoundingMode = DEFAULT_ROUNDING,
+  rounding: RoundingInput = DEFAULT_ROUNDING,
 ): TaxBreakdown<C> {
   const percentAsRatio = ratio(percent);
   // 1 / (1 + p/100) = 100 den / (100 den + num)
@@ -65,7 +65,7 @@ export function extractTax<C extends string>(
 export function discount<C extends string>(
   price: Money<C>,
   percent: Factor,
-  rounding: RoundingMode = DEFAULT_ROUNDING,
+  rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
   return subtract(price, multiplyByRatio(price, percentRatio(percent), rounding));
 }

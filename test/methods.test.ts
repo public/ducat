@@ -36,6 +36,11 @@ describe('Money methods', () => {
       'zero',
       'fromJSON',
       'isMoney',
+      // rounding policies: a constructor, and a check that throws rather than returning Money
+      'roundingPolicy',
+      'cashPolicy',
+      'isoPolicy',
+      'assertScale',
       'sum',
       'ratio',
       'parse',

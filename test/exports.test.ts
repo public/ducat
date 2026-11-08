@@ -40,6 +40,9 @@ const ROOT_FUNCTIONS = [
   'isMoney',
   'ratio',
   'extendMoney',
+  'roundingPolicy',
+  'isoPolicy',
+  'assertScale',
 ];
 
 describe('export surface', () => {
