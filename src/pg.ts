@@ -11,7 +11,7 @@
  */
 import { currencyExponent } from './currency.js';
 import { money as parseMoney, toDecimal, type CurrencyInput, type Money } from './money.js';
-import { checkDecimalSize, type DecimalColumnSize } from './sql.js';
+import { checkDecimalSize, checkIntegerDigits, type DecimalColumnSize } from './sql.js';
 
 export { DEFAULT_DECIMAL_SIZE, type DecimalColumnSize } from './sql.js';
 
@@ -33,6 +33,12 @@ export interface MoneyTypeOids {
 export interface ExactTypesOptions {
   /** Also parse this composite money type (and its array) into Money. */
   readonly money?: MoneyTypeOids;
+  /**
+   * How BIGINT (and BIGINT[]) values come back: `'bigint'` (the default) or `'string'`, pg's own
+   * exact format. A bigint is what `fromMinor` takes, but it applies to every BIGINT on the client,
+   * `count(*)` and bigserial ids included, and `JSON.stringify` throws on it.
+   */
+  readonly int8?: 'bigint' | 'string';
 }
 
 const INT8_OID = 20;
@@ -52,6 +58,12 @@ export function parseBigInt(text: string): bigint {
     throw new SyntaxError(`Expected BIGINT text, got "${text}"`);
   }
   return BigInt(text);
+}
+
+/** BIGINT text, checked and kept as the string. */
+function checkBigIntText(text: string): string {
+  parseBigInt(text);
+  return text;
 }
 
 /**
@@ -147,30 +159,93 @@ function mapArray(items: unknown[], parseElement: (text: string) => unknown): un
 }
 
 /**
- * Money from the text of the composite type, `(12.34,EUR)`. The amount keeps the scale it was
- * stored with, and never less than the currency's exponent.
+ * Splits record text, `(12.34,EUR)` or `(12.34,"A\\B")`, into its fields, with `null` for an empty
+ * unquoted field. Quoted fields are unescaped: Postgres doubles `"` and `\` inside them on output,
+ * and accepts a backslash before any character on input.
  */
-export function parseMoneyComposite(text: string): Money {
-  const match = /^\((-?\d+(?:\.\d+)?)?,"?([^,"()]*)"?\)$/.exec(text);
-  if (match === null) {
-    throw new SyntaxError(`Expected (amount,currency) composite text, got "${text}"`);
+function parseRecord(text: string): (string | null)[] {
+  if (!text.startsWith('(') || !text.endsWith(')')) {
+    throw new SyntaxError(`Expected record text in parentheses, got "${text}"`);
   }
-  const [, amount, currency] = match;
-  if (amount === undefined || currency === '') {
-    throw new TypeError(`A money composite needs both an amount and a currency, got "${text}"`);
-  }
+  const fields: (string | null)[] = [];
+  let position = 1;
+  const end = text.length - 1;
 
-  const fractionDigits = amount.includes('.') ? amount.length - amount.indexOf('.') - 1 : 0;
-  const scale = Math.max(fractionDigits, currencyExponent(currency!));
-  return parseMoney(amount, currency!, { scale });
+  for (;;) {
+    let field = '';
+    let isQuotedOrNonEmpty = false;
+    while (position < end && text[position] !== ',') {
+      const character = text[position]!;
+      if (character === '"') {
+        isQuotedOrNonEmpty = true;
+        position++;
+        for (;;) {
+          if (position >= end) {
+            throw new SyntaxError(`Unbalanced quote in record text "${text}"`);
+          }
+          const quoted = text[position]!;
+          if (quoted === '\\') {
+            field += text[position + 1] ?? '';
+            position += 2;
+          } else if (quoted === '"' && text[position + 1] === '"') {
+            field += '"';
+            position += 2;
+          } else if (quoted === '"') {
+            position++;
+            break;
+          } else {
+            field += quoted;
+            position++;
+          }
+        }
+        continue;
+      }
+      if (character === '\\') {
+        field += text[position + 1] ?? '';
+        position += 2;
+      } else {
+        field += character;
+        position++;
+      }
+      isQuotedOrNonEmpty = true;
+    }
+    fields.push(isQuotedOrNonEmpty ? field : null);
+    if (position >= end) {
+      return fields;
+    }
+    position++;
+  }
 }
 
 /**
- * The composite type's text for a query parameter: `(12.34,EUR)`, at the Money's own scale. Cast it
- * in SQL (`$1::ducat_money`) where Postgres can't infer the type.
+ * Money from the text of the composite type, `(12.34,EUR)`. The amount keeps the scale it was
+ * stored with, and never less than the currency's exponent. NULL fields, `NaN`, `Infinity` and
+ * malformed text throw.
+ */
+export function parseMoneyComposite(text: string): Money {
+  const fields = parseRecord(text);
+  if (fields.length !== 2) {
+    throw new SyntaxError(`Expected (amount,currency) composite text, got "${text}"`);
+  }
+  const [amount, currency] = fields;
+  if (amount === null || amount === undefined || currency === null || currency === undefined) {
+    throw new TypeError(`A money composite needs both an amount and a currency, got "${text}"`);
+  }
+  parseNumeric(amount);
+
+  const fractionDigits = amount.includes('.') ? amount.length - amount.indexOf('.') - 1 : 0;
+  const scale = Math.max(fractionDigits, currencyExponent(currency));
+  return parseMoney(amount, currency, { scale });
+}
+
+/**
+ * The composite type's text for a query parameter: `(12.34,"EUR")`, at the Money's own scale. The
+ * currency is always quoted and escaped, so custom codes containing `\`, `"`, `,` or `)` survive.
+ * Cast it in SQL (`$1::ducat_money`) where Postgres can't infer the type.
  */
 export function toMoneyComposite(money: Money): string {
-  return `(${toDecimal(money)},${money.currency})`;
+  const currency = money.currency.replace(/["\\]/g, (character) => `\\${character}`);
+  return `(${toDecimal(money)},"${currency}")`;
 }
 
 /**
@@ -183,6 +258,7 @@ export function toMoneyComposite(money: Money): string {
  */
 export function exactTypes(base: TypeParserSource, options?: ExactTypesOptions): TypeParserSource {
   const moneyOids = options?.money;
+  const parseInt8 = options?.int8 === 'string' ? checkBigIntText : parseBigInt;
 
   return {
     getTypeParser(oid: number, format?: 'text' | 'binary'): TypeParser {
@@ -191,13 +267,13 @@ export function exactTypes(base: TypeParserSource, options?: ExactTypesOptions):
         return base.getTypeParser(oid, format);
       }
       if (oid === INT8_OID) {
-        return parseBigInt;
+        return parseInt8;
       }
       if (oid === NUMERIC_OID) {
         return parseNumeric;
       }
       if (oid === INT8_ARRAY_OID) {
-        return (text) => mapArray(parseArray(text), parseBigInt);
+        return (text) => mapArray(parseArray(text), parseInt8);
       }
       if (oid === NUMERIC_ARRAY_OID) {
         return (text) => mapArray(parseArray(text), parseNumeric);
@@ -217,11 +293,17 @@ export function exactTypes(base: TypeParserSource, options?: ExactTypesOptions):
 export const MONEY_TYPE_NAME = 'ducat_money';
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?$/;
+// Postgres truncates longer names, which would make `name` and `name_add` collide with others
+const MAX_IDENTIFIER_LENGTH = 63;
 
 /**
  * The DDL for a composite money type, `(amount numeric, currency text)`, and a `sum` aggregate over
- * it that throws on mixed currencies. The amount is an unconstrained NUMERIC, so it keeps every
- * digit and its scale. Run the statements once, in order, e.g. in a migration.
+ * it that throws on mixed currencies, and on a value with a NULL amount or currency. The amount is
+ * an unconstrained NUMERIC, so it keeps every digit and its scale. A schema-qualified name puts the
+ * type, its add function and the aggregate in that schema.
+ *
+ * Run the statements once, in order, in a migration: they are not idempotent, and a second run
+ * fails with `duplicate_object`.
  *
  *     for (const statement of moneyTypeSql()) await client.query(statement);
  *     SELECT sum(price) FROM items;   -- (37.50,EUR)
@@ -230,15 +312,26 @@ export function moneyTypeSql(name: string = MONEY_TYPE_NAME): string[] {
   if (!IDENTIFIER.test(name)) {
     throw new RangeError(`"${name}" is not a plain lower-case SQL name (optionally schema.name)`);
   }
+  const dot = name.indexOf('.');
+  const schemaPrefix = dot < 0 ? '' : name.slice(0, dot + 1);
+  const typeName = name.slice(dot + 1);
+  if (`${typeName}_add`.length > MAX_IDENTIFIER_LENGTH) {
+    throw new RangeError(`"${typeName}" is too long for a Postgres name with an "_add" suffix`);
+  }
   const add = `${name}_add`;
 
   return [
     `CREATE TYPE ${name} AS (amount numeric, currency text)`,
+    // search_path FROM CURRENT: the cast below resolves the same way whatever the caller's path
     `CREATE FUNCTION ${add}(total ${name}, item ${name}) RETURNS ${name}
-LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE SET search_path FROM CURRENT AS $$
 BEGIN
   IF item IS NULL THEN
     RETURN total;
+  END IF;
+  IF item.amount IS NULL OR item.currency IS NULL THEN
+    RAISE EXCEPTION 'a money value needs both an amount and a currency'
+      USING ERRCODE = 'null_value_not_allowed';
   END IF;
   IF total IS NULL THEN
     RETURN item;
@@ -250,7 +343,8 @@ BEGIN
   RETURN ROW(total.amount + item.amount, total.currency)::${name};
 END
 $$`,
-    `CREATE AGGREGATE sum(${name}) (SFUNC = ${add}, STYPE = ${name}, COMBINEFUNC = ${add}, PARALLEL = SAFE)`,
+    `CREATE AGGREGATE ${schemaPrefix}sum(${name}) ` +
+      `(SFUNC = ${add}, STYPE = ${name}, COMBINEFUNC = ${add}, PARALLEL = SAFE)`,
   ];
 }
 
@@ -264,7 +358,9 @@ export interface Queryable {
 
 /**
  * Looks up the OIDs of the composite money type, for `exactTypes`. Run it once at start-up on a
- * client without the money parser; OIDs differ between databases.
+ * client without the money parser. OIDs differ between databases, and change if the type is
+ * dropped and recreated; values of a type whose OID `exactTypes` wasn't given come back as pg's
+ * raw text. With a type per schema, look up and pass each one's OIDs.
  */
 export async function moneyTypeOids(
   client: Queryable,
@@ -303,14 +399,7 @@ export function toNumeric<C extends CurrencyInput>(
     );
   }
 
-  // "0.12" has no integer digits: NUMERIC(4,4) holds it
-  const integerDigits = integerPart === '0' ? 0 : integerPart!.length;
-  if (integerDigits > size.precision - size.scale) {
-    throw new RangeError(
-      `${money} does not fit NUMERIC(${size.precision},${size.scale}), which holds ` +
-        `${size.precision - size.scale} integer digits`,
-    );
-  }
+  checkIntegerDigits(money, decimal, size);
 
   if (fraction.length <= size.scale) {
     return decimal;

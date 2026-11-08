@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { fromMinor, money } from '../src/index.js';
+import { defineCurrency, fromMinor, money } from '../src/index.js';
 import { identical } from '../src/fn.js';
 import {
   exactTypes,
@@ -97,6 +97,9 @@ describe('the composite money type', () => {
     expect(String(parseMoneyComposite('(12,EUR)'))).toBe('12.00 EUR');
     expect(String(parseMoneyComposite('(1.5000,EUR)'))).toBe('1.5000 EUR');
     expect(String(parseMoneyComposite('(5,"JPY")'))).toBe('5 JPY');
+    for (const text of ['(1,"EUR)', '(1,EUR', '1,EUR)', '(1,EUR,X)', '(1)', '(1e3,EUR)']) {
+      expect(() => parseMoneyComposite(text)).toThrow(SyntaxError);
+    }
     expect(() => parseMoneyComposite('(,EUR)')).toThrow(TypeError);
     expect(() => parseMoneyComposite('(1.00,)')).toThrow(TypeError);
     expect(() => parseMoneyComposite('(NaN,EUR)')).toThrow(SyntaxError);
@@ -104,11 +107,26 @@ describe('the composite money type', () => {
     expect(() => parseMoneyComposite('(1.00,XXX1)')).toThrow(/Unknown currency/);
   });
 
+  it('quotes and escapes custom currency codes, so any code round-trips', () => {
+    for (const code of ['A\\B', 'Q"X', 'C,D', 'P)Q', '(E)']) {
+      defineCurrency(code, 2);
+      const original = money('12.34', code);
+      const text = toMoneyComposite(original);
+      expect(identical(parseMoneyComposite(text), original)).toBe(true);
+    }
+    expect(toMoneyComposite(money('1', 'A\\B'))).toBe('(1.00,"A\\\\B")');
+    // Postgres's own output doubles quotes and backslashes inside quoted fields
+    expect(parseMoneyComposite('(1.00,"Q""X")').currency).toBe('Q"X');
+    expect(parseMoneyComposite('(1.00,"A\\\\B")').currency).toBe('A\\B');
+  });
+
   it('has DDL with a currency-checking sum, under a validated name', () => {
     const [type, add, aggregate] = moneyTypeSql('billing.amount');
     expect(type).toBe('CREATE TYPE billing.amount AS (amount numeric, currency text)');
-    expect(add).toContain('RAISE EXCEPTION');
-    expect(aggregate).toMatch(/^CREATE AGGREGATE sum\(billing\.amount\)/);
+    expect(add).toContain('SET search_path FROM CURRENT');
+    expect(add).toContain('::billing.amount');
+    expect(aggregate).toMatch(/^CREATE AGGREGATE billing\.sum\(billing\.amount\)/);
+    expect(() => moneyTypeSql('x'.repeat(60))).toThrow(/too long/);
     for (const name of ['Money', 'a; DROP TABLE x', 'a.b.c', '']) {
       expect(() => moneyTypeSql(name)).toThrow(RangeError);
     }
@@ -131,6 +149,13 @@ describe('exactTypes', () => {
     expect(types.getTypeParser(20, 'binary')('x')).toBe('base 20 binary x');
   });
 
+  it("keeps BIGINT as pg's exact string when asked", () => {
+    const types = exactTypes(base, { int8: 'string' });
+    expect(types.getTypeParser(20)('-9223372036854775808')).toBe('-9223372036854775808');
+    expect(types.getTypeParser(1016)('{1,NULL}')).toEqual(['1', null]);
+    expect(() => types.getTypeParser(20)('1.5')).toThrow(SyntaxError);
+  });
+
   it('parses the composite type and its array when given their OIDs', () => {
     const types = exactTypes(base, { money: { oid: 90001, arrayOid: 90002 } });
     expect(String(types.getTypeParser(90001)('(1.234,KWD)'))).toBe('1.234 KWD');
@@ -149,11 +174,11 @@ describe('toNumeric: the NUMERIC(p, s) guard', () => {
         fc.integer({ min: 2, max: 8 }),
         (minor, scale) => {
           const amount = fromMinor(minor, 'EUR', scale);
-          const decimal = amount.toDecimal();
-          const [integerPart, fraction = ''] = decimal.replace('-', '').split('.');
-          const fits =
-            fraction.replace(/0+$/, '').length <= 4 &&
-            (integerPart === '0' ? 0 : integerPart!.length) <= 15;
+          // an independent model in integers: the value times 10^4 must be whole, and below 10^15
+          const scaledUp = minor * 10n ** 4n;
+          const divisor = 10n ** BigInt(scale);
+          const magnitude = minor < 0n ? -minor : minor;
+          const fits = scaledUp % divisor === 0n && magnitude < 10n ** BigInt(15 + scale);
           if (fits) {
             // the stored text means the same amount
             expect(money(toNumeric(amount, size), 'EUR', { scale: 4 }).equals(amount)).toBe(true);
