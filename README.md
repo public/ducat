@@ -200,9 +200,8 @@ assertCurrency(other, 'EUR'); // throws
 
 ```ts
 import { money, type Money } from '@ducatjs/money';
-import '@ducatjs/money/cash';
 
-const toFiveRappen = (value: Money<'CHF'>) => value.roundToIncrement(money('0.05', 'CHF'));
+const toFiveRappen = (value: Money<'CHF'>) => value.divide(5).round('halfExpand').multiply(5);
 money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
 ```
 
