@@ -70,6 +70,10 @@
       "types": "./dist/fed.d.ts",
       "default": "./dist/fed.js"
     },
+    "./wire": {
+      "types": "./dist/wire.d.ts",
+      "default": "./dist/wire.js"
+    },
     "./crypto": {
       "types": "./dist/crypto.d.ts",
       "default": "./dist/crypto.js"

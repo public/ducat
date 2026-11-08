@@ -85,6 +85,7 @@ export * from './cash.js';
 export * from './historic.js';
 export * from './crypto.js';
 export * from './currencies.js';
+export * from './wire.js';
 export * from './territories.js';
 export * from './finance.js';
 export { roundingPolicy, isoPolicy, assertScale, type RoundingPolicyOptions } from './policy.js';

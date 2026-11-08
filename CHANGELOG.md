@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/wire`: wire formats, exact both ways and strict on input. `google.type.Money`
+  (`toGoogleMoney`, `fromGoogleMoney`: int64 units, nanos with the same sign); ISO 20022 amounts
+  (`toIso20022Amount`, `fromIso20022Amount`: at most 5 decimals and 18 digits, non-negative,
+  written with the currency's decimals); and
+  `{ value, currency }` in ISO 4217 minor units (`toMinorUnits`, `fromMinorUnits`).
 - `@ducatjs/money/crypto`: BTC (8 decimals), ETH (18), SOL (9) and common Ethereum tokens (USDC,
   USDT, DAI, WBTC, EURC, PYUSD) as an opt-in table, each unit's decimals read from its defining
   source with a `--check` (`scripts/fetch-crypto-units.mjs`, snapshot `data/crypto-units.json`).

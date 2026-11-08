@@ -44,6 +44,7 @@
     "@ducatjs/money/historic": 1.28,
     "@ducatjs/money/crypto": 0.76,
     "@ducatjs/money/currencies": 1.5,
+    "@ducatjs/money/wire": 1.38,
     "@ducatjs/money/territories": 4.7,
     "@ducatjs/money/finance": 5.4
   },
