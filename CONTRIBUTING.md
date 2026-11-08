@@ -23,7 +23,8 @@ bench:vitest`, `pnpm test:runtimes` (Bun, Deno and the engine shells).
   (construction, parsing, arithmetic, rounding, formatting). CodSpeed runs on every pull request.
 - **No size regression beyond the budget.** `scripts/size-budgets.json` holds a gzip budget for
   every package export and a few representative snippets. A new export needs a budget; raising one
-  needs a reason in the pull request.
+  needs a reason in the pull request. `/fn` and `/all` re-export everything, so they have only a
+  loose ceiling (`aggregateCeilings`); don't change it for a new module.
 - Never edit `src/generated/` by hand. The currency tables come from the snapshots in `data/`
   through `pnpm gen`; `src/generated/kernel.ts` is printed from the Lean proofs in `proofs/` by
   `pnpm gen:kernel`, which needs the Lean toolchain.
