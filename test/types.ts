@@ -13,6 +13,10 @@ import {
   sum,
   type Money,
 } from '../src/fn.js';
+import { z as zodLibrary } from 'zod';
+import * as valibotLibrary from 'valibot';
+import { moneySchema as zodMoney } from '../src/zod.js';
+import { moneySchema as valibotMoney } from '../src/valibot.js';
 
 const eur = money('1', 'EUR');
 const usd = money('1', 'USD');
@@ -93,3 +97,17 @@ const withString: string = eur.with((value) => value.toDecimal());
 eur.with((value: Money<'USD'>) => value);
 void withResult;
 void withString;
+
+// --- schema outputs are typed by the allowed currencies
+const zodEur: Money<'EUR'> = zodLibrary.parse(zodMoney({ currency: 'EUR' }), {});
+// @ts-expect-error a schema for EUR does not produce USD
+const zodUsd: Money<'USD'> = zodLibrary.parse(zodMoney({ currency: 'EUR' }), {});
+const valibotEither: Money<'EUR'> | Money<'USD'> = valibotLibrary.parse(
+  valibotMoney({ currency: ['EUR', 'USD'] }),
+  {},
+);
+const anyCurrency: Money = zodLibrary.parse(zodMoney(), {});
+void zodEur;
+void zodUsd;
+void valibotEither;
+void anyCurrency;

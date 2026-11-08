@@ -9,6 +9,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
+  `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
+  currencies, typed output), and `moneyJSONSchema()` validates it without converting. Zod 4 and
+  Valibot 1 are optional peer dependencies.
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
   (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
   `assertCurrency` throws `CurrencyMismatchError` for another currency.

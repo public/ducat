@@ -138,7 +138,9 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/klarna`     | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
 | `@ducatjs/money/prisma`     | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
 | `@ducatjs/money/fixed`      | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
-| `@ducatjs/money/all`        | everything above                                                   | everything                                                     |
+| `@ducatjs/money/zod`        | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)       |
+| `@ducatjs/money/valibot`    | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Valibot, an optional peer)   |
+| `@ducatjs/money/all`        | everything above (the schema entries only export functions)        | everything                                                     |
 | `@ducatjs/money/fn`         | nothing                                                            | every operation as a plain function, core and modules          |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that must not change any prototype (a library built on ducat, for example) can use the plain functions from `@ducatjs/money/fn` instead.
@@ -272,6 +274,24 @@ one.identical(money('1', 'EUR', { scale: 1 })); // → false
 - `toMinor(m)` gives a bigint for BIGINT columns. `toMinorNumber(m)` gives a number and throws if it isn't safe.
 - `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
+
+**Validate at API boundaries.** `@ducatjs/money/zod` and `@ducatjs/money/valibot` turn the JSON form into Money inside your request schemas. They accept exactly what `toJSON` writes: an exact decimal string (no exponent, plus sign or spaces) with no more decimals than the currency allows, and a known currency or one of `{ currency }`. Pass `{ rounding }` or `{ scale }` as in `money()`. Errors are issues on the `amount` or `currency` path. `moneyJSONSchema` checks the same things but keeps the JSON. Zod (4) and Valibot (1) are optional peer dependencies; no other entry imports them.
+
+```ts
+import { z } from 'zod';
+import { moneySchema } from '@ducatjs/money/zod';
+
+const Order = z.object({ total: moneySchema({ currency: ['EUR', 'USD'] }) });
+Order.parse({ total: { amount: '12.34', currency: 'EUR' } }).total; // → 12.34 EUR
+Order.parse({ total: { amount: '12.345', currency: 'EUR' } }); // throws
+```
+
+```ts
+import * as v from 'valibot';
+import { moneySchema } from '@ducatjs/money/valibot';
+
+v.parse(moneySchema({ currency: 'JPY' }), { amount: '1000', currency: 'JPY' }); // → 1000 JPY
+```
 
 **Currencies**
 

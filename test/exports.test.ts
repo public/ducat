@@ -64,3 +64,18 @@ describe('export surface', () => {
     }
   });
 });
+
+describe('schema entries', () => {
+  it('/zod and /valibot export the same schema functions', async () => {
+    const zod = await import('../src/zod.js');
+    const valibot = await import('../src/valibot.js');
+    expect(Object.keys(zod).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
+    expect(Object.keys(valibot).sort()).toEqual(['moneyJSONSchema', 'moneySchema']);
+  });
+
+  it('/fn and /all do not include them, so neither needs zod or valibot installed', () => {
+    for (const entry of [fn, all]) {
+      expect(Object.keys(entry)).not.toContain('moneySchema');
+    }
+  });
+});
