@@ -62,8 +62,9 @@ const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 /**
  * @internal `value / divisor` rounded with `mode`, for a safe-integer `value` and a reduced ratio
  * (`ratio()` makes its denominator positive): the number fast path of Fixed's divide, at the value's
- * own scale. Money's divide inlines the same steps, since a call there costs it about 4% on its
- * benchmark; test/divide.test.ts checks both against the proved kernel. It is `value × denominator / numerator`,
+ * own scale. Money's `divide` in money.ts inlines a copy of these steps, since a call there costs it
+ * about 4% on its benchmarks; test/divide.test.ts checks that the copies agree in every mode, and
+ * both against the proved kernel. It is `value × denominator / numerator`,
  * rounded once by `divideAndRound`, which is the same fraction the inverse ratio would give, without
  * building that ratio (bigint arithmetic and a gcd). Returns NaN when the number path doesn't apply,
  * so the caller takes the bigint path:

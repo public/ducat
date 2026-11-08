@@ -6,6 +6,7 @@ import { runs } from './fc-config.js';
 import { divideAndRoundBigint } from '../src/generated/kernel.js';
 import { divide, fromMinor, ratio, RoundingError, type RoundingMode } from '../src/fn.js';
 import { multiplyByRatio } from '../src/money.js';
+import { divideSafeByRatio } from '../src/rounding.js';
 import { fixed, fromScaled } from '../src/fixed.js';
 
 const MODES: RoundingMode[] = [
@@ -203,5 +204,43 @@ describe('Fixed#divide', () => {
     expect(Object.is(fixed('0.00').divide(-3).value, 0)).toBe(true);
     expect(fromScaled(Number.MAX_SAFE_INTEGER, 0).divide('0.5').value).toBe(SAFE * 2n);
     expect(() => fixed('1').divide(0)).toThrow('Division by zero');
+  });
+});
+
+describe('the two copies of the number fast path', () => {
+  // Money#divide inlines the steps of divideSafeByRatio (which Fixed#divide calls), so the copies
+  // must agree wherever the fast path applies
+  it('Money#divide and divideSafeByRatio agree in every mode (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.integer({ min: -1_000_000, max: 1_000_000 }),
+          fc.integer({ min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER }),
+        ),
+        fc.oneof(
+          fc.integer({ min: -1000, max: 1000 }).filter((value) => value !== 0),
+          fc.constantFrom('1.5', '-0.07', '1.075', '1/3', '-22/7'),
+        ),
+        modesAndUnnecessary,
+        (value, divisor, mode) => {
+          const divisorRatio = ratio(divisor);
+          let fast: number | undefined;
+          try {
+            fast = divideSafeByRatio(value, divisorRatio, mode);
+          } catch (error) {
+            expect(error).toBeInstanceOf(RoundingError);
+            expect(() => divide(fromMinor(value, 'EUR'), divisor, mode)).toThrow(RoundingError);
+            return;
+          }
+          if (fast !== fast) {
+            // out of the number path's range; the bigint path is checked above
+            return;
+          }
+          expect(divide(fromMinor(value, 'EUR'), divisor, mode).minor).toBe(fast);
+          expect(fromScaled(value, 2).divide(divisor, mode).value).toBe(fast);
+        },
+      ),
+      { numRuns: runs(2000) },
+    );
   });
 });
