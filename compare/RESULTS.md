@@ -362,11 +362,12 @@ Plain decimals without currencies: parse, add, multiply and divide rounded to a 
 
 ### Correctness
 
-28 vectors against 7 libraries.
+28 vectors against 8 libraries.
 
 | library | pass | wrong (silent) | lossy | threw | n/a |
 |---|--:|--:|--:|--:|--:|
 | ducat Money | 28 | 0 | 0 | 0 | 0 |
+| ducat Fixed | 28 | 0 | 0 | 0 | 0 |
 | dnum 2.18.1 | 21 | 0 | 0 | 0 | 7 |
 | ethers FixedNumber 6.17.0 | 18 | 3 | 0 | 0 | 7 |
 | js-big-decimal 2.2.0 | 28 | 0 | 0 | 0 | 0 |
@@ -376,36 +377,36 @@ Plain decimals without currencies: parse, add, multiply and divide rounded to a 
 
 Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see note), ! threw where a value was expected, · not supported by the library.
 
-| vector | ducat Money | dnum | ethers FixedNumber | js-big-decimal | bigdecimal.js | @formatjs/bigdecimal | bigint-money |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| `tie-even` 0.25 × 0.5 = 0.125 → half-even 0.12 | ✓ | · | · | ✓ | ✓ | · | ✓ |
-| `tie-even-neg` -0.25 × 0.5 = -0.125 → half-even -0.12 | ✓ | · | · | ✓ | ✓ | · | ✓ |
-| `tie-up` 0.25 × 0.5 = 0.125 → half-up 0.13 | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `tie-up-neg` -0.25 × 0.5 = -0.125 → half-up (away from 0) -0.13 | ✓ | ✓ | ✗ | ✓ | ✓ | · | ✓ |
-| `tie-even-odd` 0.35 × 0.5 = 0.175 → half-even 0.18 | ✓ | · | · | ✓ | ✓ | · | ✓ |
-| `float-mul-1.15` 0.50 × 1.15 = 0.575 → half-up 0.58 (float gives 0.57499…) | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `float-mul-0.7` 0.45 × 0.7 = 0.315 → half-up 0.32 (float gives 0.31499…) | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `float-mul-1.1` 1.15 × 1.1 = 1.265 → half-even 1.26 (float gives 1.26500…01) | ✓ | · | · | ✓ | ✓ | · | ✓ |
-| `dec-add` 0.10 + 0.20 = 0.30 exactly | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `big-2^53+1` 90071992547409.93 (2^53+1 hundredths) round-trips | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `add-trailing-zeros` 1.00 + 80.19 = 81.19 (the first operand has trailing zeros) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `big-add` 90071992547409.92 + 0.01 = 90071992547409.93 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `bigint-max` 92233720368547758.07 (BIGINT max hundredths) round-trips | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `big-mul` 123456789012345678.90 × 1.1 = 135802467913580246.79 (half-up) | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `div-exact` 12.00 ÷ 1.2 = 10.00 | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `div-119` 119.00 ÷ 1.19 = 100.00 | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `div-tie-even` 9.99 ÷ 1.2 = 8.325 → half-even 8.32 | ✓ | · | · | ✓ | ✓ | · | ✓ |
-| `div-tie-up` 9.99 ÷ 1.2 = 8.325 → half-up 8.33 | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `div-third` 1 ÷ 3 → 0.33 (half-up) | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `div-neg-third` -2 ÷ 3 → -0.67 (half-up) | ✓ | ✓ | ✗ | ✓ | ✓ | · | ✓ |
-| `div-eighth` 1 ÷ 8 = 0.125 at 3 decimals, exactly | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `round-even` 1.005 to 2 decimals, half-even → 1.00 | ✓ | · | · | ✓ | ✓ | · | ✓ |
-| `round-up` 1.005 to 2 decimals, half-up → 1.01 | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
-| `round-up-neg` -1.005 to 2 decimals, half-up → -1.01 | ✓ | ✓ | ✗ | ✓ | ✓ | · | ✓ |
-| `round-integer-even` 2.5 to 0 decimals, half-even → 2 | ✓ | · | · | ✓ | ✓ | · | ✓ |
-| `cmp-trailing-zero` compare(1.10, 1.1) = 0 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `cmp-neg` compare(-0.01, 0) = -1 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `neg-small` -0.05 round-trips as "-0.05" | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| vector | ducat Money | ducat Fixed | dnum | ethers FixedNumber | js-big-decimal | bigdecimal.js | @formatjs/bigdecimal | bigint-money |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `tie-even` 0.25 × 0.5 = 0.125 → half-even 0.12 | ✓ | ✓ | · | · | ✓ | ✓ | · | ✓ |
+| `tie-even-neg` -0.25 × 0.5 = -0.125 → half-even -0.12 | ✓ | ✓ | · | · | ✓ | ✓ | · | ✓ |
+| `tie-up` 0.25 × 0.5 = 0.125 → half-up 0.13 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `tie-up-neg` -0.25 × 0.5 = -0.125 → half-up (away from 0) -0.13 | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | · | ✓ |
+| `tie-even-odd` 0.35 × 0.5 = 0.175 → half-even 0.18 | ✓ | ✓ | · | · | ✓ | ✓ | · | ✓ |
+| `float-mul-1.15` 0.50 × 1.15 = 0.575 → half-up 0.58 (float gives 0.57499…) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `float-mul-0.7` 0.45 × 0.7 = 0.315 → half-up 0.32 (float gives 0.31499…) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `float-mul-1.1` 1.15 × 1.1 = 1.265 → half-even 1.26 (float gives 1.26500…01) | ✓ | ✓ | · | · | ✓ | ✓ | · | ✓ |
+| `dec-add` 0.10 + 0.20 = 0.30 exactly | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `big-2^53+1` 90071992547409.93 (2^53+1 hundredths) round-trips | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `add-trailing-zeros` 1.00 + 80.19 = 81.19 (the first operand has trailing zeros) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `big-add` 90071992547409.92 + 0.01 = 90071992547409.93 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `bigint-max` 92233720368547758.07 (BIGINT max hundredths) round-trips | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `big-mul` 123456789012345678.90 × 1.1 = 135802467913580246.79 (half-up) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `div-exact` 12.00 ÷ 1.2 = 10.00 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `div-119` 119.00 ÷ 1.19 = 100.00 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `div-tie-even` 9.99 ÷ 1.2 = 8.325 → half-even 8.32 | ✓ | ✓ | · | · | ✓ | ✓ | · | ✓ |
+| `div-tie-up` 9.99 ÷ 1.2 = 8.325 → half-up 8.33 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `div-third` 1 ÷ 3 → 0.33 (half-up) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `div-neg-third` -2 ÷ 3 → -0.67 (half-up) | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | · | ✓ |
+| `div-eighth` 1 ÷ 8 = 0.125 at 3 decimals, exactly | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `round-even` 1.005 to 2 decimals, half-even → 1.00 | ✓ | ✓ | · | · | ✓ | ✓ | · | ✓ |
+| `round-up` 1.005 to 2 decimals, half-up → 1.01 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| `round-up-neg` -1.005 to 2 decimals, half-up → -1.01 | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | · | ✓ |
+| `round-integer-even` 2.5 to 0 decimals, half-even → 2 | ✓ | ✓ | · | · | ✓ | ✓ | · | ✓ |
+| `cmp-trailing-zero` compare(1.10, 1.1) = 0 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `cmp-neg` compare(-0.01, 0) = -1 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `neg-small` -0.05 round-trips as "-0.05" | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 #### Every non-pass, with the value returned
 
@@ -428,6 +429,7 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | bigdecimal.js 1.7.2 | 45.7 | 15.1 | 75.6 | 56.9 | 9.09 | 39.9 |
 | @formatjs/bigdecimal 0.2.10 | 122 | 33.7 | n/a | n/a | 22.7 | 51.1 |
 | bigint-money 2.0.1 | 542 | 47.8 | 3.0 µs | 2.6 µs | 14.1 | 481 |
+| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
 
 **bun 1.4.4** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
@@ -440,6 +442,7 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | bigdecimal.js 1.7.2 | 30.6 | 15.2 | 61.1 | 34.8 | 8.72 | 95.2 |
 | @formatjs/bigdecimal 0.2.10 | 215 | 53.9 | n/a | n/a | 20.4 | 128 |
 | bigint-money 2.0.1 | 360 | 51.4 | 2.5 µs | 2.3 µs | 19.8 | 390 |
+| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
 
 **deno 2.9.8 (V8 15.0.245.2-rusty)** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
@@ -452,6 +455,9 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | bigdecimal.js 1.7.2 | 37.0 | 13.4 | 59.5 | 47.0 | 8.00 | 34.9 |
 | @formatjs/bigdecimal 0.2.10 | 121 | 25.3 | n/a | n/a | 20.4 | 54.6 |
 | bigint-money 2.0.1 | 480 | 52.1 | 2.1 µs | 1.9 µs | 12.9 | 306 |
+| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
+
+¹ Added to the benchmark after this run; the next clean-machine run of compare/runner measures it.
 
 ### Bundle size
 
@@ -463,4 +469,5 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | js-big-decimal | 9.3 kB | 3.0 kB | 9.2 kB | 3.0 kB |
 | ethers FixedNumber (import from 'ethers') | 8.5 kB | 3.2 kB | 376.4 kB | 140.8 kB |
 | ducat Money | 9.2 kB | 3.7 kB | 12.0 kB | 4.7 kB |
+| ducat Fixed | 14.8 kB | 5.2 kB | 15.1 kB | 5.2 kB |
 | bigdecimal.js | 45.9 kB | 11.6 kB | 45.9 kB | 11.6 kB |

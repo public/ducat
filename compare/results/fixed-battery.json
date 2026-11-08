@@ -1,6 +1,7 @@
 {
  "libraries": [
   "ducat Money",
+  "ducat Fixed",
   "dnum 2.18.1",
   "ethers FixedNumber 6.17.0",
   "js-big-decimal 2.2.0",
@@ -315,6 +316,174 @@
   },
   {
    "library": "ducat Money",
+   "id": "neg-small",
+   "outcome": "pass",
+   "got": "-0.05"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "tie-even",
+   "outcome": "pass",
+   "got": "0.12"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "tie-even-neg",
+   "outcome": "pass",
+   "got": "-0.12"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "tie-up",
+   "outcome": "pass",
+   "got": "0.13"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "tie-up-neg",
+   "outcome": "pass",
+   "got": "-0.13"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "tie-even-odd",
+   "outcome": "pass",
+   "got": "0.18"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "float-mul-1.15",
+   "outcome": "pass",
+   "got": "0.58"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "float-mul-0.7",
+   "outcome": "pass",
+   "got": "0.32"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "float-mul-1.1",
+   "outcome": "pass",
+   "got": "1.26"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "dec-add",
+   "outcome": "pass",
+   "got": "0.3"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "big-2^53+1",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "add-trailing-zeros",
+   "outcome": "pass",
+   "got": "81.19"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "big-add",
+   "outcome": "pass",
+   "got": "90071992547409.93"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "bigint-max",
+   "outcome": "pass",
+   "got": "92233720368547758.07"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "big-mul",
+   "outcome": "pass",
+   "got": "135802467913580246.79"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "div-exact",
+   "outcome": "pass",
+   "got": "10"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "div-119",
+   "outcome": "pass",
+   "got": "100"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "div-tie-even",
+   "outcome": "pass",
+   "got": "8.32"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "div-tie-up",
+   "outcome": "pass",
+   "got": "8.33"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "div-third",
+   "outcome": "pass",
+   "got": "0.33"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "div-neg-third",
+   "outcome": "pass",
+   "got": "-0.67"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "div-eighth",
+   "outcome": "pass",
+   "got": "0.125"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "round-even",
+   "outcome": "pass",
+   "got": "1"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "round-up",
+   "outcome": "pass",
+   "got": "1.01"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "round-up-neg",
+   "outcome": "pass",
+   "got": "-1.01"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "round-integer-even",
+   "outcome": "pass",
+   "got": "2"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "cmp-trailing-zero",
+   "outcome": "pass",
+   "got": "0"
+  },
+  {
+   "library": "ducat Fixed",
+   "id": "cmp-neg",
+   "outcome": "pass",
+   "got": "-1"
+  },
+  {
+   "library": "ducat Fixed",
    "id": "neg-small",
    "outcome": "pass",
    "got": "-0.05"

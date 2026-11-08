@@ -194,7 +194,9 @@ jobs:
       - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
         with:
           deno-version: 2.9.8
-      - run: pnpm install --frozen-lockfile
+      # only the compared libraries and esbuild: the batteries bundle ducat from source, which has
+      # no dependencies, and none of the root's dev tooling is needed
+      - run: pnpm install --frozen-lockfile --filter @ducatjs/compare --prod
       - name: Bundle the money and fixed-point batteries
         working-directory: compare
         run: |
@@ -206,7 +208,8 @@ jobs:
           for battery in battery fixed-battery; do
             node out/$battery.mjs > out/$battery-node.json
             bun out/$battery.mjs > out/$battery-bun.json
-            deno run -A --no-config out/$battery.mjs > out/$battery-deno.json
+            # monetra reads NODE_ENV; nothing else needs a permission
+            deno run --no-config --no-prompt --allow-env=NODE_ENV out/$battery.mjs > out/$battery-deno.json
           done
       - name: Same outcomes as the committed results, and ducat passes every vector
         working-directory: compare

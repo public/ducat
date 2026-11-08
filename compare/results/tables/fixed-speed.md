@@ -9,6 +9,7 @@
 | bigdecimal.js 1.7.2 | 45.7 | 15.1 | 75.6 | 56.9 | 9.09 | 39.9 |
 | @formatjs/bigdecimal 0.2.10 | 122 | 33.7 | n/a | n/a | 22.7 | 51.1 |
 | bigint-money 2.0.1 | 542 | 47.8 | 3.0 µs | 2.6 µs | 14.1 | 481 |
+| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
 
 **bun 1.4.4** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
@@ -21,6 +22,7 @@
 | bigdecimal.js 1.7.2 | 30.6 | 15.2 | 61.1 | 34.8 | 8.72 | 95.2 |
 | @formatjs/bigdecimal 0.2.10 | 215 | 53.9 | n/a | n/a | 20.4 | 128 |
 | bigint-money 2.0.1 | 360 | 51.4 | 2.5 µs | 2.3 µs | 19.8 | 390 |
+| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
 
 **deno 2.9.8 (V8 15.0.245.2-rusty)** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
@@ -33,3 +35,6 @@
 | bigdecimal.js 1.7.2 | 37.0 | 13.4 | 59.5 | 47.0 | 8.00 | 34.9 |
 | @formatjs/bigdecimal 0.2.10 | 121 | 25.3 | n/a | n/a | 20.4 | 54.6 |
 | bigint-money 2.0.1 | 480 | 52.1 | 2.1 µs | 1.9 µs | 12.9 | 306 |
+| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
+
+¹ Added to the benchmark after this run; the next clean-machine run of compare/runner measures it.
