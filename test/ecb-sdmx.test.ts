@@ -121,6 +121,44 @@ describe('parseEcbSdmxCsv', () => {
     );
   });
 
+  it('a stray or unclosed quote, or a short row, throws instead of losing rows', () => {
+    const good = row('USD', '2026-11-06', '1.1');
+    expect(() =>
+      parseEcbSdmxCsv(`${HEADER},T\n${good},x"y\n${row('JPY', '2026-11-06', '170')},z`),
+    ).toThrow(/unexpected/);
+    expect(() => parseEcbSdmxCsv(`${HEADER},T\n${good},"open\n${good},z`)).toThrow(/never closed/);
+    expect(() => parseEcbSdmxCsv(`${HEADER},T\n${good},"a"b`)).toThrow(SyntaxError);
+    expect(() =>
+      parseEcbSdmxCsv(`${HEADER}\nEXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2026-11-06`),
+    ).toThrow(/7 cells, the header has 8/);
+  });
+
+  it('the same currency twice on a day: a repeat is fine, a contradiction throws', () => {
+    const twice = `${HEADER}\n${row('USD', '2026-11-06', '1.1')}\n${row('USD', '2026-11-06', '1.1')}`;
+    expect(parseEcbSdmxCsv(twice)[0]!.rate('EUR', 'USD')?.toString()).toBe('1.1');
+    const contradiction = `${HEADER}\n${row('USD', '2026-11-06', '1.1')}\n${row('USD', '2026-11-06', '1.2')}`;
+    expect(() => parseEcbSdmxCsv(contradiction)).toThrow(
+      /Two different values for USD on 2026-11-06/,
+    );
+  });
+
+  it('DECIMALS: malformed values throw, the caps apply to stated decimals only', () => {
+    const series = (decimals: string) =>
+      `KEY,FREQ,CURRENCY,DECIMALS\nEXR.D.THB.EUR.SP00.A,D,THB,${decimals}`;
+    expect(parseEcbSdmxDecimals(series('4'))).toEqual({ THB: 3 });
+    expect(() => parseEcbSdmxDecimals(series('x'))).toThrow(/Malformed DECIMALS/);
+    expect(() => parseEcbSdmxDecimals(series('31'))).toThrow(SyntaxError);
+    expect(() => parseEcbSdmxDecimals('KEY,FREQ,CURRENCY,DECIMALS\nEXR,D,THB')).toThrow(
+      SyntaxError,
+    );
+    const csv = `${HEADER},DECIMALS\n${row('USD', '2026-11-06', '1.1')},99`;
+    expect(() => parseEcbSdmxCsv(csv)).toThrow(SyntaxError);
+    // the caller's own decimals are taken as given
+    const dataOnlyThb = `${HEADER}\n${row('THB', '2026-11-06', '37.459')}`;
+    const rate = parseEcbSdmxCsv(dataOnlyThb, { decimals: { THB: 4 } })[0]!.rate('EUR', 'THB');
+    expect(rate?.toString()).toBe('37.4590');
+  });
+
   it('keeps any rate exactly, with at least the stated decimals (property)', () => {
     const published = fc
       .tuple(fc.bigInt({ min: 1n, max: 10n ** 12n }), fc.integer({ min: 0, max: 6 }))
@@ -164,6 +202,83 @@ describe('fetchEcbRange', () => {
     await fetchEcbRange({ start: '2026-01-01', fetch: fakeApi(seen) });
     expect(seen.at(-1)).toBe(
       `${ECB_DATA_API}/D..EUR.SP00.A?format=csvdata&startPeriod=2026-01-01&detail=dataonly`,
+    );
+  });
+
+  it('a failed request aborts the other, and both share one timeout', async () => {
+    const aborted: string[] = [];
+    const failing: Fetch = (url, init) => {
+      if (url.includes('detail=nodata')) {
+        return Promise.resolve({ ok: false, status: 503, text: async () => '' });
+      }
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => {
+            aborted.push(url);
+            reject(init.signal?.reason);
+          },
+          { once: true },
+        );
+      });
+    };
+    await expect(fetchEcbRange({ start: '2026-01-01', fetch: failing })).rejects.toThrow(
+      FetchRatesError,
+    );
+    expect(aborted).toHaveLength(1);
+    expect(aborted[0]).toContain('detail=dataonly');
+
+    const hanging: Fetch = (_url, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+      });
+    await expect(
+      fetchEcbRange({ start: '2026-01-01', fetch: hanging, timeout: 20 }),
+    ).rejects.toHaveProperty('name', 'TimeoutError');
+    const controller = new AbortController();
+    const pending = fetchEcbRange({
+      start: '2026-01-01',
+      fetch: hanging,
+      signal: controller.signal,
+    });
+    controller.abort();
+    await expect(pending).rejects.toHaveProperty('name', 'AbortError');
+  });
+
+  it('a range with no rates (HTTP 404 from the API) is empty', async () => {
+    const empty: Fetch = async (url) => ({
+      ok: !url.includes('dataonly'),
+      status: url.includes('dataonly') ? 404 : 200,
+      text: async () => (url.includes('dataonly') ? 'No results found.' : series),
+    });
+    expect(await fetchEcbRange({ start: '2026-11-07', end: '2026-11-08', fetch: empty })).toEqual(
+      [],
+    );
+  });
+
+  it('dates are strict, and a bad series file names its own URL', async () => {
+    const seen: string[] = [];
+    const api = fakeApi(seen);
+    for (const start of ['2026-01-01garbage', '2026-02-30', '1998-12-31', '20260101']) {
+      await expect(fetchEcbRange({ start, fetch: api })).rejects.toThrow(RangeError);
+    }
+    await expect(
+      fetchEcbRange({ start: '2026-01-02', end: '2026-01-01', fetch: api }),
+    ).rejects.toThrow(/before start/);
+    await expect(fetchEcbRange({ start: new Date(Number.NaN), fetch: api })).rejects.toThrow(
+      RangeError,
+    );
+    expect(seen).toEqual([]);
+    // an instant becomes its UTC day: 23:30 at UTC-5 on the 1st is the 2nd
+    await fetchEcbRange({ start: new Date('2026-01-01T23:30:00-05:00'), fetch: api });
+    expect(seen.find((url) => url.includes('dataonly'))).toContain('startPeriod=2026-01-02');
+    const badSeries: Fetch = async (url) => ({
+      ok: true,
+      status: 200,
+      text: async () => (url.includes('nodata') ? '<html/>' : dataOnly),
+    });
+    await expect(fetchEcbRange({ start: '2026-01-01', fetch: badSeries })).rejects.toThrow(
+      /from \S+detail=nodata/,
     );
   });
 
