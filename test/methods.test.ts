@@ -56,6 +56,8 @@ describe('Money methods', () => {
       'historicCurrency',
       'historicCurrencies',
       'defineHistoricCurrencies',
+      // /pricing: takes a quantity and a tier table, not an amount
+      'tieredPrice',
       'exchangeRate',
       // fixed-point constructors; Money#toFixedPoint covers moneyToFixed
       'fixed',

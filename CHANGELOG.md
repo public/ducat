@@ -13,6 +13,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (the exact share of one amount in another, as a `Ratio`), `divideToIntegral` and `remainder`
   (truncating division between amounts, with `m = divisor × count + remainder` exactly) and
   `trimScale` (the smallest exact scale, not below the currency's exponent unless asked).
+- `@ducatjs/money/pricing`: `tieredPrice` prices a quantity under graduated or volume tiers in
+  the style of Stripe's (inclusive `upTo`, per-unit and flat amounts, sub-cent unit prices and
+  decimal quantities), exactly, with the total rounded once and a breakdown per tier whose
+  amounts sum to the total.
 
 ### Changed
 

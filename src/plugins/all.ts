@@ -46,6 +46,7 @@ export * from '../stripe-fx.js';
 export * from '../adyen-fx.js';
 export * from './cash.js';
 export * from '../historic.js';
+export * from '../pricing.js';
 export * from './format.js';
 export * from '../parse.js';
 export * from './stripe.js';
