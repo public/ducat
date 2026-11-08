@@ -47,8 +47,8 @@
     "@ducatjs/money/finance": 5.4
   },
   "aggregateCeilings": {
-    "@ducatjs/money/fn": 40,
-    "@ducatjs/money/all": 40
+    "@ducatjs/money/fn": 50,
+    "@ducatjs/money/all": 50
   },
   "snippets": {
     "fixed: Fixed alone, without Money": {

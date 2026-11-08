@@ -16,8 +16,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   cash rules.
 - `@ducatjs/money/territories`: `territoryCurrencies` and `currencyTerritories`, which
   currencies a territory uses or used and since when, from CLDR release 49 (a snapshot in
-  `data/cldr-territories.json`, regenerated and checked like the ISO table). `/all` and `/fn` leave
-  this entry out, since the table is most of its 4.6 kB.
+  `data/cldr-territories.json`, regenerated and checked like the ISO table).
 - `@ducatjs/money/fixed/money`: Fixed and Money together. It has everything in
   `@ducatjs/money/fixed`, plus `moneyToFixed` and `fixedToMoney`, and installs
   `Money#toFixedPoint()` and `Fixed#toMoney()`.

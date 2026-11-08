@@ -436,7 +436,7 @@ declare module '@ducatjs/money' {
 }
 ```
 
-**Currency metadata** (`@ducatjs/money/currencies`). ISO 4217 numeric codes both ways (`numericCode`, `currencyFromNumeric`), for card networks, ISO 8583 and ISO 20022 messages; `minorUnit(code)`, the size of the minor unit; and names and symbols per locale (`currencyName`, `currencySymbol`). Names and symbols come from the runtime's `Intl`, not a bundled table, so they follow its CLDR version. The smallest coin is `cashUnit(code, { country? })` in `@ducatjs/money/cash`, from the cash rules. Which currencies a territory uses, and since when, is in `@ducatjs/money/territories` (`territoryCurrencies`, `currencyTerritories`, from CLDR). That entry is about 4.6 kB gzipped, mostly the table, so `/all` and `/fn` leave it out.
+**Currency metadata** (`@ducatjs/money/currencies`). ISO 4217 numeric codes both ways (`numericCode`, `currencyFromNumeric`), for card networks, ISO 8583 and ISO 20022 messages; `minorUnit(code)`, the size of the minor unit; and names and symbols per locale (`currencyName`, `currencySymbol`). Names and symbols come from the runtime's `Intl`, not a bundled table, so they follow its CLDR version. The smallest coin is `cashUnit(code, { country? })` in `@ducatjs/money/cash`, from the cash rules. Which currencies a territory uses, and since when, is in `@ducatjs/money/territories` (`territoryCurrencies`, `currencyTerritories`, from CLDR). It is a separate entry because the table is most of its 4.6 kB gzipped.
 
 ```ts
 import { cashUnit } from '@ducatjs/money/cash';

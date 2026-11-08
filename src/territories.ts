@@ -1,7 +1,7 @@
 /**
  * `@ducatjs/money/territories`: which currencies a territory uses and since when, from
- * CLDR. A separate entry because the table is most of its size (about 5 kB gzipped); `/all` and
- * `/fn` leave it out.
+ * CLDR. A separate entry from `@ducatjs/money/currencies` because the table is most of its size
+ * (about 4.6 kB gzipped).
  */
 import { CLDR_TERRITORY_CURRENCIES } from './generated/territories.js';
 
