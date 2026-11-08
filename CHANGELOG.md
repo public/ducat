@@ -68,10 +68,6 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   that uses only `Fixed` is 3.3 kB gzipped instead of 5.4 kB. `Money#toFixedPoint()`,
   `Fixed#toMoney()` and `moneyToFixed` moved to the new `@ducatjs/money/fixed/money`: import that
   entry instead where you convert between the two. `/all` and `/fn` include it.
-- `Fixed#divide` takes the number fast path Money's `divide` has: a safe-integer value divided by a
-  divisor whose ratio parts are safe integers, at the value's own scale, no longer builds the
-  inverse ratio in bigint. It runs 43% fewer instructions dividing by 3 or by '1.5'. Results are
-  unchanged.
 - **Visible change:** arithmetic and comparison with an operand that isn't Money (`m.add(5)` from
   untyped code) throw a `TypeError` ("Expected Money, got number") instead of a
   `CurrencyMismatchError`. Two Money values in different currencies still throw
@@ -82,6 +78,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean
   nor a function (a string or a Date from untyped code), before parsing or fetching anything.
   Before, it was ignored on a file with no days and failed as "not a function" on the first day.
+
+## [0.2.2] - 2026-11-08
+
+### Changed
+
+- `Fixed#divide` takes the number fast path Money's `divide` has: a safe-integer value divided by a
+  divisor whose ratio parts are safe integers, at the value's own scale, no longer builds the
+  inverse ratio in bigint. It runs 43% fewer instructions dividing by 3 or by '1.5', and on a clean
+  machine `Fixed` now divides faster than bigdecimal.js on every runtime. Results are unchanged.
+- NOTICE names the source of every data file (the Braintree, Checkout.com, Klarna and PayPal tables and
+  ISO 4217 List Three were missing), and a test keeps it so.
 
 ## [0.2.1] - 2026-11-08
 
@@ -286,7 +293,8 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/public/ducat/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/public/ducat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/public/ducat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/public/ducat/releases/tag/v0.1.0
