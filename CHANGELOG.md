@@ -7,6 +7,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `@ducatjs/money/finance`: day counts (`yearFraction` under ACT/360, ACT/365F, ACT/ACT ISDA,
+  30/360, 30E/360 and 30E/360 ISDA), simple and compound interest (`interest`, `interestExact`,
+  `compound`), loan schedules (`amortise`: annuity, linear and interest-only, with a balloon,
+  payment dates and the rounding residual on the last payment or the last interest), `npv`,
+  `npvExact` and `irr` (exact bisection to a stated number of digits, with a guaranteed bracket),
+  and subscription proration (`prorate` by the day or the second, `splitPeriod`). Exact
+  arithmetic throughout, rounded once per paid amount with a mode or a policy; dates are
+  `'YYYY-MM-DD'` or `{ year, month, day }`, so `Temporal.PlainDate` works.
+
 ### Changed
 
 - **Visible change:** arithmetic and comparison with an operand that isn't Money (`m.add(5)` from

@@ -139,6 +139,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
+| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `interest`, `amortise`, `npv`, `irr`, `prorate`… |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                        |
@@ -387,6 +388,38 @@ import type { HistoricCurrencies } from '@ducatjs/money/historic';
 declare module '@ducatjs/money' {
   interface CustomCurrencies extends HistoricCurrencies {}
 }
+```
+
+### Interest, loans, NPV and proration
+
+`@ducatjs/money/finance` has the calculations billing and lending code keeps rewriting in floats, in exact arithmetic: every amount that is paid or booked is rounded once from its exact value, with a rounding mode or a policy. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. The design is in [docs/FINANCE.md](docs/FINANCE.md).
+
+- `yearFraction(start, end, convention)` is an exact `Ratio` under `ACT/360`, `ACT/365F`, `ACT/ACT ISDA`, `30/360` (Bond Basis), `30E/360` or `30E/360 ISDA` (with `terminationDate`), as the 2006 ISDA Definitions §4.16 define them. `interest` is simple interest over a day count, and `compound` is periodic compounding over a whole number of periods.
+- `amortise(loan, options)` builds an annuity, linear or interest-only schedule. Each period's interest is the balance times `rate / perYear`, rounded; the principal parts sum exactly to the loan and the balance ends at zero, because the rounding residual goes to the last payment (or, with `residual: 'lastInterest'`, to the last interest). It takes a `balloon` and a `firstPayment` date.
+- `npv(rate, flows)` discounts flows at periods 0, 1, 2… (a spreadsheet's `NPV` starts at period 1). `irr(flows, { digits })` finds the rate by bisection in exact integer arithmetic: the NPV changes sign between `lower` and `upper`, 10^−digits apart, and `rate` is `lower`. Flows that change sign more than once can have several IRRs, so they need a `bracket`.
+- `prorate(price, { period, used })` charges the used part of a period (by the day, or with `unit: 'second'` by the second), and `splitPeriod(price, { period, at })` splits a period's price at plan changes into pieces that sum exactly to it.
+
+```ts
+import { money } from '@ducatjs/money';
+import { amortise, interest, irr, npv, prorate, splitPeriod } from '@ducatjs/money/finance';
+
+const period = { from: '2026-01-15', to: '2026-07-15', dayCount: 'ACT/365F' } as const;
+interest(money('10000', 'EUR'), '0.05', period, 'halfEven'); // → 247.95 EUR
+
+const plan = amortise(money('200000', 'EUR'), { rate: '0.045', perYear: 12, periods: 300 });
+plan.payment; // → 1111.66 EUR
+plan.rows[0]?.interest; // → 750.00 EUR
+plan.rows.at(-1)?.balance; // → 0.00 EUR
+plan.totalInterest; // → 133500.69 EUR
+
+const flows = ['-1000', '300', '400', '500'].map((amount) => money(amount, 'EUR'));
+npv('0.08', flows, 'halfEven'); // → 17.63 EUR
+irr(flows, { digits: 8 }); // → { rate: '0.08896339', lower: '0.08896339', upper: '0.08896340' }
+irr(['-100', '230', '-132'].map((amount) => money(amount, 'EUR'))); // throws RangeError: two IRRs, 10% and 20%
+
+const march = { start: '2026-03-01', end: '2026-04-01' };
+prorate(money('30', 'EUR'), { period: march, used: { start: '2026-03-11', end: '2026-04-01' } }); // → 20.32 EUR
+splitPeriod(money('30', 'EUR'), { period: march, at: ['2026-03-11', '2026-03-20'] }); // → [9.68 EUR, 8.71 EUR, 11.61 EUR]
 ```
 
 ### Currency conversion

@@ -1,6 +1,6 @@
 # `@ducatjs/money/finance`: design
 
-Status: approved design (#54). The module is planned for v0.3.0 (#135), and XNPV and XIRR for v0.4.0 (#136).
+Status: approved design (#54), implemented in v0.3.0 (#135). XNPV and XIRR are planned for v0.4.0 (#136).
 
 Billing and lending code keeps re-implementing the same few calculations, usually in floats: loan
 and amortisation schedules, interest between two dates under a day-count convention, net present
@@ -28,7 +28,8 @@ that reconcile to the cent.
   off-by-one-day interest bugs happen. Day arithmetic is proleptic Gregorian, done in integers.
 - **Opt-in, free functions.** One entry point, `@ducatjs/money/finance`, with functions only (no
   `Money` methods). Every function takes an options object, which suits functions rather than
-  methods. Nothing global, nothing network. Size budget: about +2 kB over the core.
+  methods. Nothing global, nothing network. Size: about +5 kB gzipped over the core
+  (the module, `allocate` and `ExactMoney`).
 
 ## Scope
 
@@ -94,13 +95,16 @@ plan.totalInterest; // exact sum of the interest column
 - **Residual:** the last payment absorbs whatever rounding left over, so the final balance is
   exactly zero and the principal column sums exactly to the loan. `residual: 'lastPayment'` is
   the default; `'lastInterest'` is the alternative some lenders use.
+- **Early payoff:** when rounded payments would clear a small loan before its last period, the
+  schedule ends with the payment that clears it, so the balance never goes negative.
 - Invariants, as property tests (fast-check) and, where the existing allocation proofs make it
   cheap, in Lean:
   - principal parts sum to the loan;
   - the balance never goes negative and ends at 0;
   - every payment except the last is equal (annuity);
   - every amount is at the currency's scale or the policy's;
-  - zero rate gives `instalments(loan, n)`.
+  - zero rate gives `instalments(loan, n, { remainder: 'toLast' })`, the residual on the last
+    payment.
 - Per-period interest from a day count (`interestBasis: 'ACT/365F'` with payment dates, as UK
   mortgages and some consumer loans compute it) is the natural second step. It is in the design so
   the row type has room for it (`days`, `yearFraction`), but it's a design fork (below).
@@ -130,8 +134,13 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
   - It throws when the flows have no sign change (no IRR).
   - Flows with more than one sign change can have several IRRs (Descartes), so they throw unless a
     `bracket` with a sign change is given: picking one silently is the classic IRR bug.
-  - Each midpoint is kept to a decimal with `digits` plus 4 guard digits, not the exact midpoint,
-    so the bigints stay bounded: the interval still halves and its ends stay decimals.
+  - Each midpoint is kept to a decimal, not the exact midpoint, so the bigints stay bounded: the
+    interval still halves and its ends stay decimals. The implementation bisects on the grid of
+    `digits`-place decimals itself (the integer midpoint of two grid points), which needs no guard
+    digits: the bracket ends exactly 10^−digits apart, with no rounding step at the end.
+  - Only the NPV's sign is needed at each step, and for a rate of `m / 10^digits` that is the sign
+    of `Σ flowₜ · 10^(digits·t) · (10^digits + m)^(n−t)`, an integer computed by Horner's rule:
+    nothing is divided.
   - Cost: about `digits × 3.3` steps, each an exact NPV by Horner's rule. Worst case documented:
     360 monthly periods at the default `digits: 10` takes 34 steps on integers of about 17,000
     bits (2 kB). An unoptimised exact-fraction prototype of the same arithmetic took 1.3 s in
