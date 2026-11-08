@@ -33,6 +33,7 @@ export {
 export { roundingPolicy, isoPolicy, assertScale, type RoundingPolicyOptions } from '../policy.js';
 export * from './allocate.js';
 export * from './tax.js';
+export * from '../pricing.js';
 export * from './math.js';
 export * from './convert.js';
 export * from './exact.js';
@@ -46,7 +47,6 @@ export * from '../stripe-fx.js';
 export * from '../adyen-fx.js';
 export * from './cash.js';
 export * from '../historic.js';
-export * from '../pricing.js';
 export * from './format.js';
 export * from '../parse.js';
 export * from './stripe.js';

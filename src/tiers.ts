@@ -48,7 +48,7 @@ export interface TieredPriceOptions<C extends string> {
   readonly rounding?: RoundingInput;
 }
 
-/** One line of a tiered price's breakdown: a tier that charged something. */
+/** One line of a tiered price's breakdown: a tier the quantity reached. */
 export interface TierLine<C extends string> {
   /** The tier's index in `tiers`. */
   readonly tier: number;
@@ -69,7 +69,10 @@ export interface TieredPrice<C extends string> {
   readonly total: Money<C>;
   /** The exact total. */
   readonly exact: ExactMoney<C>;
-  /** The tiers that charged something, in order; their `amount`s sum to `total`. */
+  /**
+   * The tiers the quantity reached, in order (one in 'volume' mode), even when one charges nothing
+   * (quantity 0 in a tier without a flat amount); their `amount`s sum to `total`.
+   */
   readonly lines: TierLine<C>[];
 }
 
