@@ -6,6 +6,8 @@ import { runs } from './fc-config.js';
 import { divideAndRoundBigint } from '../src/generated/kernel.js';
 import { divide, fromMinor, ratio, RoundingError, type RoundingMode } from '../src/fn.js';
 import { multiplyByRatio } from '../src/money.js';
+import { divideSafeByRatio } from '../src/rounding.js';
+import { fixed, fromScaled } from '../src/fixed.js';
 
 const MODES: RoundingMode[] = [
   'halfEven',
@@ -154,5 +156,91 @@ describe('divide and multiply with a rounding policy', () => {
     expect([product.minor, product.scale]).toEqual([300000, 4]);
     const fiveCents = roundingPolicy({ increment: 5 });
     expect(divide(fromMinor(1001, 'EUR'), 1, fiveCents).minor).toBe(1000);
+  });
+});
+
+describe('Fixed#divide', () => {
+  const scales = fc.integer({ min: 0, max: 6 });
+
+  it('matches the proved bigint kernel at its own scale and at another (property)', () => {
+    fc.assert(
+      fc.property(
+        minors,
+        scales,
+        divisors,
+        fc.option(scales, { nil: undefined }),
+        modesAndUnnecessary,
+        (value, scale, divisor, target, mode) => {
+          const dividend = fromScaled(value, scale);
+          const divisorRatio = ratio(divisor);
+          const resultScale = target ?? scale;
+          // value / 10^scale ÷ (num/den), at resultScale: value·den·10^(resultScale − scale) / num
+          let numerator = value * divisorRatio.den;
+          let denominator = divisorRatio.num;
+          if (resultScale > scale) {
+            numerator *= 10n ** BigInt(resultScale - scale);
+          } else {
+            denominator *= 10n ** BigInt(scale - resultScale);
+          }
+          const options = target === undefined ? undefined : { scale: target };
+          if (mode === 'unnecessary' && numerator % denominator !== 0n) {
+            expect(() => dividend.divide(divisor, mode, options)).toThrow(RoundingError);
+            return;
+          }
+          const expected = reference(numerator, denominator, 1n, mode);
+          const result = dividend.divide(divisor, mode, options);
+          expect(BigInt(result.value)).toBe(expected);
+          expect(result.scale).toBe(resultScale);
+          expect(typeof result.value === 'number').toBe(expected <= SAFE && expected >= -SAFE);
+        },
+      ),
+      { numRuns: runs(2000) },
+    );
+  });
+
+  it('takes the fast path for a Fixed divisor, and normalises -0', () => {
+    expect(fixed('10.00').divide(fixed('3'), 'halfEven').toString()).toBe('3.33');
+    expect(fixed('10.00').divide(fixed('-0.5')).toString()).toBe('-20.00');
+    expect(Object.is(fixed('0.00').divide(-3).value, 0)).toBe(true);
+    expect(fromScaled(Number.MAX_SAFE_INTEGER, 0).divide('0.5').value).toBe(SAFE * 2n);
+    expect(() => fixed('1').divide(0)).toThrow('Division by zero');
+  });
+});
+
+describe('the two copies of the number fast path', () => {
+  // Money#divide inlines the steps of divideSafeByRatio (which Fixed#divide calls), so the copies
+  // must agree wherever the fast path applies
+  it('Money#divide and divideSafeByRatio agree in every mode (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.integer({ min: -1_000_000, max: 1_000_000 }),
+          fc.integer({ min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER }),
+        ),
+        fc.oneof(
+          fc.integer({ min: -1000, max: 1000 }).filter((value) => value !== 0),
+          fc.constantFrom('1.5', '-0.07', '1.075', '1/3', '-22/7'),
+        ),
+        modesAndUnnecessary,
+        (value, divisor, mode) => {
+          const divisorRatio = ratio(divisor);
+          let fast: number | undefined;
+          try {
+            fast = divideSafeByRatio(value, divisorRatio, mode);
+          } catch (error) {
+            expect(error).toBeInstanceOf(RoundingError);
+            expect(() => divide(fromMinor(value, 'EUR'), divisor, mode)).toThrow(RoundingError);
+            return;
+          }
+          if (fast !== fast) {
+            // out of the number path's range; the bigint path is checked above
+            return;
+          }
+          expect(divide(fromMinor(value, 'EUR'), divisor, mode).minor).toBe(fast);
+          expect(fromScaled(value, 2).divide(divisor, mode).value).toBe(fast);
+        },
+      ),
+      { numRuns: runs(2000) },
+    );
   });
 });
