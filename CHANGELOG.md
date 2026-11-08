@@ -14,6 +14,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
   without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
   and Valibot 1 are optional peer dependencies.
+- **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
+  rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
+  reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,
+  `percentage`, `discount`, `addTax`, `extractTax`). The result is rounded once, straight to the
+  policy's scale and increment; for the tax functions that is the gross (`addTax`), the net
+  (`extractTax`) or the discounted price (`discount`). A policy is also a function that rounds an
+  amount. `assertScale(money, policy)` checks that an amount is already rounded to a policy.
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
   (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
   `assertCurrency` throws `CurrencyMismatchError` for another currency.

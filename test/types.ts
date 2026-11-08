@@ -2,6 +2,8 @@
 import '../src/plugins/all.js';
 import {
   add,
+  isoPolicy,
+  round,
   assertCurrency,
   isMoneyIn,
   allocate,
@@ -72,6 +74,16 @@ eur.multiply('1.1', 'halfUp');
 void viaMethod;
 void chained;
 
+// --- rounding policies go where rounding modes go
+const policyRounded: Money<'EUR'> = eur.multiply('1.075', isoPolicy).round(isoPolicy);
+round(eur, isoPolicy);
+const mapped: Money<'EUR'>[] = [eur, eur].map(isoPolicy);
+// @ts-expect-error a policy fixes its own scale, so round() takes no scale with it
+round(eur, isoPolicy, 2);
+// @ts-expect-error nor does the method
+eur.round(isoPolicy, 2);
+void policyRounded;
+void mapped;
 // --- narrowing a runtime currency to a literal one
 declare const unknownCurrency: Money<string>;
 // @ts-expect-error a Money<string> is not known to be a Money<'EUR'>
@@ -135,3 +147,6 @@ void zodEur;
 void zodUsd;
 void valibotEither;
 void anyCurrency;
+// --- a policy is an operation for with()
+const withPolicy: Money<'EUR'> = eur.with(isoPolicy);
+void withPolicy;
