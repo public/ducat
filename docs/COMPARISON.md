@@ -7,7 +7,7 @@ Everything in the JavaScript section is reproducible with the harness in `compar
 the same benchmark operations and the same bundle snippet for every library. Library versions are listed below. Where
 another library does something ducat doesn't, or does it better, this document says so.
 
-> **Note.** These numbers were measured on ducat 0.3.0 (commit f927311) in November 2026. The tables come from
+> **Note.** These numbers were measured on unreleased ducat at commit f927311 (the 0.3 line) in November 2026. The tables come from
 > `compare/results` (`pnpm tables` writes them to `compare/RESULTS.md`), and this document is updated from them.
 
 ## JavaScript and TypeScript libraries
@@ -113,7 +113,7 @@ order shuffled each round.
 | format    |        376 (fastest other: **currency.js 364**; dinero.js 2 1.1 µs) |          265 (fastest other: **currency.js 253**; dinero.js 2 1.1 µs) |        400 (fastest other: **currency.js 387**; dinero.js 2 1.0 µs) |
 | compare   |         **7.07** (fastest other: currency.js 7.60; dinero.js 2 182) |           7.90 (fastest other: **currency.js 6.51**; dinero.js 2 283) | **6.70** (fastest other: @screeny05/ts-money 7.26; dinero.js 2 176) |
 
-Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on ducat 0.3.0 (commit f927311). Lower is better; the faster of ducat and the fastest other money library is in bold.
+Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on unreleased ducat at commit f927311 (the 0.3 line). Lower is better; the faster of ducat and the fastest other money library is in bold.
 
 The ducat column measures its methods API. The parse row is decimal-string construction (`money('12.34', 'EUR')`),
 not the locale `parse()`. Where ducat is not fastest (every cell where another library measured

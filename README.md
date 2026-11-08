@@ -81,7 +81,7 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
-- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat 0.3.0 (commit f927311) under Node 24.22.2,
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on unreleased ducat at commit f927311 (the 0.3 line) under Node 24.22.2,
   Bun 1.4.4 and Deno 2.9.8; sizes are gzipped KiB. Differences within 2.5% are called level.
 
 ## Design
