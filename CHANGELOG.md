@@ -7,6 +7,15 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
+Integrations and sources. New opt-in entries for Drizzle, Kysely, node-postgres, Zod, Valibot and
+test matchers; historical exchange rates, with parsers for the ECB Data Portal, the Bank of Canada,
+the Federal Reserve's H.10, HMRC and the Bank of England; rounding policies; withdrawn currency
+codes; and more cash-rounding rules. Some results change: `parse` now rejects misplaced group
+separators, and amounts in ten more currencies cash-round. The breaking changes are listed under
+**Changed**.
+
 ### Added
 
 - `@ducatjs/money/historic`: an opt-in table of 54 withdrawn ISO 4217 codes (HRK, BGN, ANG, STD,
@@ -129,9 +138,6 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `rateTable` lookups with an `asOf` after a rate's `validUntil` now return nothing.
 - `parseEcbCsv` lists `N/A` and blank cells in the table's `missing`, and throws on a cell that
   isn't a rate instead of passing it on.
-
-### Changed
-
 - `divide` is about 3 to 14 times faster for ordinary amounts (number minor units, a divisor such as `3`,
   `'7'` or `'1.5'`). It no longer builds the inverse ratio with bigints on every call. The results
   are unchanged: the same proved rounding kernel is used.
@@ -191,5 +197,6 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/public/ducat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/public/ducat/releases/tag/v0.1.0
