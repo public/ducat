@@ -284,6 +284,19 @@ function generate() {
     ` * non-ISO codes (without them), each with the exponent ISO gave it while it was current.\n */\n` +
     `export const HISTORIC_CURRENCY_TABLE = ${obj(historicSorted)} as const;\n`;
 
+  // crypto currencies and tokens: decimals and base units from their defining sources
+  const cryptoData = JSON.parse(read('data/crypto-units.json'));
+  const crypto = {};
+  for (const code of Object.keys(cryptoData.units).toSorted()) {
+    // the source URLs stay in the snapshot: they would only add bytes to bundles
+    const { source: _source, ...unit } = cryptoData.units[code];
+    crypto[code] = unit;
+  }
+  out['crypto.ts'] =
+    header('data/crypto-units.json (scripts/fetch-crypto-units.mjs)') +
+    `\n/** Crypto currencies and tokens: decimals, base unit and where each comes from (${Object.keys(crypto).length} codes). */\n` +
+    `export const CRYPTO_UNIT_TABLE = ${obj(crypto)} as const;\n`;
+
   return { out, entries, published };
 }
 

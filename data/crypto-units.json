@@ -1,0 +1,68 @@
+{
+  "note": "Decimals of common crypto currencies and tokens, each from the source that defines it. A token's decimals belong to its contract on one network: these are Ethereum mainnet's.",
+  "units": {
+    "BTC": {
+      "name": "Bitcoin",
+      "decimals": 8,
+      "baseUnit": "satoshi",
+      "network": "Bitcoin",
+      "source": "https://raw.githubusercontent.com/bitcoin/bitcoin/v28.0/src/consensus/amount.h"
+    },
+    "ETH": {
+      "name": "Ether",
+      "decimals": 18,
+      "baseUnit": "wei",
+      "network": "Ethereum",
+      "source": "https://raw.githubusercontent.com/ethereum-lists/chains/e17474286275730fb6b0490b1d7ea1c64a36ed9e/_data/chains/eip155-1.json"
+    },
+    "SOL": {
+      "name": "Solana",
+      "decimals": 9,
+      "baseUnit": "lamport",
+      "network": "Solana",
+      "source": "https://raw.githubusercontent.com/anza-xyz/solana-sdk/dcc9f4df80afeaaa093316ab9d0dccba4ca55525/native-token/src/lib.rs"
+    },
+    "USDC": {
+      "name": "USDCoin",
+      "decimals": 6,
+      "network": "Ethereum",
+      "contract": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "source": "https://unpkg.com/@uniswap/default-token-list@22.34.0/build/uniswap-default.tokenlist.json"
+    },
+    "USDT": {
+      "name": "Tether USD",
+      "decimals": 6,
+      "network": "Ethereum",
+      "contract": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      "source": "https://unpkg.com/@uniswap/default-token-list@22.34.0/build/uniswap-default.tokenlist.json"
+    },
+    "DAI": {
+      "name": "Dai Stablecoin",
+      "decimals": 18,
+      "network": "Ethereum",
+      "contract": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "source": "https://unpkg.com/@uniswap/default-token-list@22.34.0/build/uniswap-default.tokenlist.json"
+    },
+    "WBTC": {
+      "name": "Wrapped BTC",
+      "decimals": 8,
+      "network": "Ethereum",
+      "contract": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+      "source": "https://unpkg.com/@uniswap/default-token-list@22.34.0/build/uniswap-default.tokenlist.json"
+    },
+    "EURC": {
+      "name": "Euro Coin",
+      "decimals": 6,
+      "network": "Ethereum",
+      "contract": "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c",
+      "source": "https://unpkg.com/@uniswap/default-token-list@22.34.0/build/uniswap-default.tokenlist.json"
+    },
+    "PYUSD": {
+      "name": "PayPal USD",
+      "decimals": 6,
+      "network": "Ethereum",
+      "contract": "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+      "source": "https://unpkg.com/@uniswap/default-token-list@22.34.0/build/uniswap-default.tokenlist.json"
+    }
+  }
+}
