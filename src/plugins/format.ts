@@ -3,11 +3,12 @@
  * below.
  */
 import { format, formatToParts } from '../format.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 
 export * from '../format.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /** Locale formatting via Intl: `price.format('de-DE')` gives "19,99 €" */
     format(locale?: string, options?: Intl.NumberFormatOptions): string;

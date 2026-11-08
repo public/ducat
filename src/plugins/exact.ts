@@ -3,11 +3,12 @@
  * `Money#exact`.
  */
 import { exact, type ExactMoney } from '../exact.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 
 export * from '../exact.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /**
      * The exact value, for chained arithmetic that rounds once: `price.exact().divide(3).round()`.

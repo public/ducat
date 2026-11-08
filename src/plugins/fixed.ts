@@ -3,11 +3,12 @@
  * Money. Importing this module adds `Money#toFixedPoint()`.
  */
 import { moneyToFixed, type Fixed } from '../fixed.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 
 export * from '../fixed.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /**
      * The exact Fixed of this amount, at its scale: `money('12.34', 'EUR').toFixedPoint()` is

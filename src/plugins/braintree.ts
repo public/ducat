@@ -2,11 +2,12 @@
  * `@ducatjs/money/braintree`: Braintree's amount view. Importing this module adds `toBraintree`.
  */
 import { toBraintree, type BraintreeAmountOptions } from '../braintree.js';
-import { extendMoney, type Money } from '../money.js';
+import type { Money } from '../index.js';
+import { extendMoney } from '../money.js';
 
 export * from '../braintree.js';
 
-declare module '../money.js' {
+declare module '../index.js' {
   interface Money<C extends string> {
     /** The exact `amount` string for Braintree: `money('10', 'USD').toBraintree()` is '10.00'. */
     toBraintree(options?: BraintreeAmountOptions): string;
