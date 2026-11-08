@@ -21,22 +21,25 @@ function isoDate(text: string): string {
 }
 
 /**
- * The penultimate Thursday of the month before `start` (an ISO date), when HMRC says it publishes
- * the next month's rates.
+ * When a month's rates are public: the end of the day HMRC publishes them, the Wednesday before the
+ * penultimate Thursday of the month before. The trade tariff service's API gives that Wednesday as
+ * the `publication_date` of every monthly file from January 2024 to November 2026; it gives no
+ * time of day, so the end of that UTC day is the earliest moment that is never too early. That
+ * instant is the start of the penultimate Thursday.
  */
-function publicationDay(start: string): string {
+function publishedBy(start: string): string {
   // The last day of the previous month, then back to its last Thursday, then a week before that.
   const lastDay = new Date(Date.UTC(Number(start.slice(0, 4)), Number(start.slice(5, 7)) - 1, 0));
   const backToThursday = (lastDay.getUTCDay() - 4 + 7) % 7;
   lastDay.setUTCDate(lastDay.getUTCDate() - backToThursday - 7);
-  return lastDay.toISOString().slice(0, 10);
+  return lastDay.toISOString();
 }
 
 /** Options for parseHmrcMonthlyCsv. */
 export interface HmrcOptions {
   /**
-   * When each period's rates were published, or false for none. Default: the penultimate Thursday
-   * of the month before, as HMRC states (a date: from the start of that UTC day).
+   * When each period's rates were published, or false for none. Default: the end (UTC) of the
+   * Wednesday before the penultimate Thursday of the month before, when HMRC publishes them.
    */
   readonly availableAt?: false | ((start: string) => string | Date);
 }
@@ -47,10 +50,13 @@ export interface HmrcOptions {
  * calendar month: `asOf` is the start date and `validUntil` the end date, so a `rateHistory` of
  * them answers any day of the month (see @ducatjs/money/convert/history). Rates are currency units
  * per £1, with `source: 'HMRC'` and `type: 'customs'`, four decimals as published. HMRC publishes
- * them "on the penultimate Thursday of every month", for the following calendar month, as of
- * midday the day before; that Thursday is the `availableAt`. Several countries share a code (the
- * CFA francs, AED, XCD): their rows must agree, or the file throws SyntaxError, as does any other
- * row that can't be read.
+ * each month's file in the month before, on the Wednesday before its penultimate Thursday (the
+ * `publication_date` that https://www.trade-tariff.service.gov.uk/api/v2/exchange_rates/
+ * period_lists/2026?filter[type]=monthly gives for each file); `availableAt` is the end of that
+ * UTC day. Several countries share a code (the CFA francs, AED, XCD): their rows must agree.
+ * HMRC never leaves a rate blank, so a blank or missing-value cell throws SyntaxError, as does any
+ * other row that can't be read. A file may hold several periods; they may overlap (a mid-month
+ * amendment, say), and `rateHistory` then uses the one that started last.
  *
  *     const [november] = parseHmrcMonthlyCsv(await readFile('monthly_csv_2026-11.csv', 'utf8'));
  *     november.rate('GBP', 'EUR', { asOf: '2026-11-15' })?.toString(); // '1.1930'
@@ -89,7 +95,12 @@ export function parseHmrcMonthlyCsv(csv: string, options?: HmrcOptions): RateTab
       codes = new Map();
       periods.set(key, codes);
     }
-    addDayRate(codes, start, code, readRateCell(cells[rateAt]!, `${code} from ${start}`));
+    const where = `${code} from ${start}`;
+    const rate = readRateCell(cells[rateAt]!, where);
+    if (rate === null) {
+      notHmrc(`no rate for ${where}`);
+    }
+    addDayRate(codes, start, code, rate);
   }
 
   const tables: RateTable[] = [];
@@ -101,7 +112,7 @@ export function parseHmrcMonthlyCsv(csv: string, options?: HmrcOptions): RateTab
     }
     let availableAt: string | Date | undefined;
     if (options?.availableAt === undefined) {
-      availableAt = publicationDay(start);
+      availableAt = publishedBy(start);
     } else if (options.availableAt !== false) {
       availableAt = options.availableAt(start);
     }

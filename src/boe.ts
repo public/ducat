@@ -71,12 +71,14 @@ export interface BankOfEnglandOptions {
  * that daily rates are updated "no more than two working days after the date to which they
  * relate".
  *
- * **Licensing: check before you republish.** The database is under the Open Government Licence,
+ * **Licensing: you must check the licence of every Bank of England series you load.** The database
+ * is under the Open Government Licence,
  * but the Bank's legal page says "selected exchange rate data and series are excluded from this
  * licence" and "reproduced by the Bank under licence from third parties", and its spot rates
  * page says LSEG and Bloomberg BFIX may be sources, with LSEG content not to be redistributed
  * without LSEG's consent. No series is named either way, so ducat ships no Bank of England data
- * and no fetcher: parse files you have downloaded and may use. The Bank also says these "are not
+ * and no fetcher. Parse only files you have downloaded and are allowed to use, and get the Bank's
+ * (or LSEG's) permission before you republish any of it. The Bank also says these "are not
  * official rates". For a licensed UK source, see HMRC's monthly rates
  * (@ducatjs/money/convert/hmrc).
  */
@@ -120,6 +122,10 @@ export function parseBankOfEnglandCsv(csv: string, options?: BankOfEnglandOption
         quotedTable({ base: 'GBP', source: 'BoE', type: 'spot', asOf: day, decimals, rates }),
       );
     }
+  }
+  // A download only has rows for business days, so rows without a single rate aren't data.
+  if (tables.length === 0) {
+    notBoe('no rates in any row');
   }
   return newestFirst(tables);
 }

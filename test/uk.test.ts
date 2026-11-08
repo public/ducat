@@ -37,7 +37,7 @@ describe('parseHmrcMonthlyCsv', () => {
       base: 'GBP',
       asOf: '2026-11-01',
       validUntil: '2026-11-30',
-      availableAt: '2026-10-22',
+      availableAt: '2026-10-22T00:00:00.000Z', // the end of Wednesday 21 October, its publication_date
     });
     expect(table!.rates.length).toBeGreaterThan(140);
     const gbpEur = table!.rate('GBP', 'EUR', { asOf: '2026-11-15T10:00:00Z' })!;
@@ -63,21 +63,32 @@ describe('parseHmrcMonthlyCsv', () => {
     expect(usd.toDecimal()).toBe('130.00');
   });
 
-  it('the penultimate Thursday, every month of a year', () => {
+  it('available from the end of the publication Wednesday, in the month before', () => {
     const published = (start: string) =>
       parseHmrcMonthlyCsv([HMRC_HEADER, hmrcRow('EUR', '1.1', start, start)].join('\n'))[0]!
         .availableAt;
-    expect(published('01/01/2027')).toBe('2026-12-24');
-    expect(published('01/03/2026')).toBe('2026-02-19');
-    expect(published('01/10/2026')).toBe('2026-09-17');
+    // the trade tariff API's publication_date for these files: 2025-12-17, 2026-02-18, 2026-09-16
+    expect(published('01/01/2026')).toBe('2025-12-18T00:00:00.000Z');
+    expect(published('01/03/2026')).toBe('2026-02-19T00:00:00.000Z');
+    expect(published('01/10/2026')).toBe('2026-09-17T00:00:00.000Z');
+    expect(published('01/01/2027')).toBe('2026-12-24T00:00:00.000Z');
+    const table = parseHmrcMonthlyCsv(november)[0]!;
+    const gbpEur = table.rate('GBP', 'EUR')!;
+    expect(gbpEur.isAvailable('2026-10-21T15:00:00Z')).toBe(false);
+    expect(gbpEur.isAvailable('2026-10-22T00:00:00Z')).toBe(true);
     for (let month = 1; month <= 12; month++) {
       const start = `01/${String(month).padStart(2, '0')}/2027`;
-      const day = new Date(`${published(start)!}T00:00:00Z`);
-      expect(day.getUTCDay()).toBe(4); // a Thursday
-      const later = new Date(day.getTime() + 7 * 86_400_000);
-      expect(later.getUTCMonth()).toBe(day.getUTCMonth()); // one more Thursday that month
-      const twoLater = new Date(day.getTime() + 14 * 86_400_000);
-      expect(twoLater.getUTCMonth()).not.toBe(day.getUTCMonth()); // but not two
+      // the publication day is the Wednesday just before the instant
+      const wednesday = new Date(Date.parse(published(start)!) - 1);
+      expect(wednesday.getUTCDay()).toBe(3);
+      // in the month before the period
+      const previousMonth = (month + 10) % 12;
+      expect(wednesday.getUTCMonth()).toBe(previousMonth);
+      expect(wednesday.getUTCFullYear()).toBe(month === 1 ? 2026 : 2027);
+      // and the next day, a Thursday, is the penultimate one of that month
+      const thursday = new Date(Date.parse(published(start)!));
+      expect(new Date(thursday.getTime() + 7 * 86_400_000).getUTCMonth()).toBe(previousMonth);
+      expect(new Date(thursday.getTime() + 14 * 86_400_000).getUTCMonth()).not.toBe(previousMonth);
     }
     const custom = parseHmrcMonthlyCsv([HMRC_HEADER, hmrcRow('EUR', '1.1')].join('\n'), {
       availableAt: () => '2026-09-24T12:00:00Z',
@@ -106,6 +117,26 @@ describe('parseHmrcMonthlyCsv', () => {
     expect(() => parseHmrcMonthlyCsv(file(hmrcRow('Euro', '1.1')))).toThrow(SyntaxError);
     expect(() => parseHmrcMonthlyCsv(file(hmrcRow('EUR', '1,1')))).toThrow(SyntaxError);
     expect(() => parseHmrcMonthlyCsv(file('Somewhere,Unit,EUR,1.1,01/10/2026'))).toThrow(/cells/);
+    // HMRC never leaves a rate blank
+    for (const blank of ['', 'N/A', 'ND']) {
+      expect(() => parseHmrcMonthlyCsv(file(hmrcRow('EUR', blank)))).toThrow(/no rate for EUR/);
+    }
+  });
+
+  it('overlapping periods: an amendment from mid-month wins from its start', () => {
+    const file = [
+      HMRC_HEADER,
+      hmrcRow('EUR', '1.1500', '01/10/2026', '31/10/2026'),
+      hmrcRow('EUR', '1.1600', '15/10/2026', '31/10/2026'),
+    ].join('\n');
+    const tables = parseHmrcMonthlyCsv(file, { availableAt: false });
+    expect(tables.map((table) => [table.asOf, table.validUntil])).toEqual([
+      ['2026-10-15', '2026-10-31'],
+      ['2026-10-01', '2026-10-31'],
+    ]);
+    const history = rateHistory(tables, { lookback: 0 });
+    expect(history.rate('GBP', 'EUR', { asOf: '2026-10-14' })?.toString()).toBe('1.1500');
+    expect(history.rate('GBP', 'EUR', { asOf: '2026-10-15' })?.toString()).toBe('1.1600');
   });
 });
 
@@ -139,6 +170,9 @@ describe('parseBankOfEnglandCsv', () => {
   it('refuses what it cannot read', () => {
     expect(() => parseBankOfEnglandCsv('<html>')).toThrow(SyntaxError);
     expect(() => parseBankOfEnglandCsv(BOE_HEADER)).toThrow(/no observations/);
+    expect(() => parseBankOfEnglandCsv(`${BOE_HEADER}\n05 Jan 2026,,,\n02 Jan 2026,,,`)).toThrow(
+      /no rates/,
+    );
     expect(() => parseBankOfEnglandCsv('DATE,XUDLXXS\n05 Jan 2026,1')).toThrow(/unknown series/);
     expect(() => parseBankOfEnglandCsv('DATE,XUDLUSS,XUDLUSS\n05 Jan 2026,1,1')).toThrow(/twice/);
     expect(() => parseBankOfEnglandCsv(`${BOE_HEADER}\n2026-01-05,1,1,1`)).toThrow(/bad date/);
@@ -154,7 +188,7 @@ describe('parseBankOfEnglandCsv', () => {
 
   it('keeps every value exactly, padded to the decimals (property)', () => {
     const value = fc
-      .tuple(fc.bigInt({ min: 1n, max: 10n ** 10n }), fc.integer({ min: 0, max: 4 }))
+      .tuple(fc.bigInt({ min: 1n, max: 10n ** 10n }), fc.integer({ min: 0, max: 8 }))
       .map(([digits, scale]) => exchangeRate('X', 'Y', `${digits}/${10n ** BigInt(scale)}`))
       .map((rate) => rate.toString());
     fc.assert(
@@ -162,7 +196,9 @@ describe('parseBankOfEnglandCsv', () => {
         const [table] = parseBankOfEnglandCsv(`DATE,XUDLUSS\n05 Jan 2026,${text}`);
         const rate = table!.rate('GBP', 'USD')!;
         expect(rate.ratio).toEqual(exchangeRate('GBP', 'USD', text).ratio);
-        expect(rate.toString().split('.')[1]?.length ?? 0).toBeGreaterThanOrEqual(4);
+        const places = rate.toString().split('.')[1]?.length ?? 0;
+        // padded to 4, and a value with more decimals keeps them all
+        expect(places).toBe(Math.max(4, text.split('.')[1]?.length ?? 0));
       }),
     );
   });
