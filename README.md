@@ -152,7 +152,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)   |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                   |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
-| `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (charm pricing: .99, .95, 9.90, the nearest 5)     |
+| `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (.99, .95, the nearest 5), `tieredPrice` (tiers)   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
@@ -430,6 +430,25 @@ import type { HistoricCurrencies } from '@ducatjs/money/historic';
 declare module '@ducatjs/money' {
   interface CustomCurrencies extends HistoricCurrencies {}
 }
+```
+
+### Tiered and volume pricing
+
+`tieredPrice(quantity, { mode, tiers })` in `@ducatjs/money/pricing` prices a quantity under tiers in the style of Stripe's: each tier has an inclusive `upTo` (`'inf'` on the last), a `unitAmount` (sub-cent amounts are fine) and a `flatAmount`, either or both. In `'graduated'` mode each tier prices the units that fall in it; in `'volume'` mode the tier the whole quantity falls in prices every unit. Quantity 0 falls in the first tier, so its flat amount is billed, as Stripe does. The arithmetic is exact and the total is rounded once (with a mode or a policy). The breakdown has a line per tier with its exact charge and an `amount` rounded from the running total, so the lines always sum to the total.
+
+```ts
+import { money } from '@ducatjs/money';
+import { tieredPrice } from '@ducatjs/money/pricing';
+
+const tiers = [
+  { upTo: 5, unitAmount: money('5', 'USD'), flatAmount: money('10', 'USD') },
+  { upTo: 10, unitAmount: money('4', 'USD'), flatAmount: money('20', 'USD') },
+  { upTo: 'inf', unitAmount: money('3', 'USD'), flatAmount: money('30', 'USD') },
+] as const;
+tieredPrice(12, { mode: 'graduated', tiers }).total; // → 111.00 USD
+tieredPrice(12, { mode: 'graduated', tiers }).lines.map((line) => line.amount); // → [35.00 USD, 40.00 USD, 36.00 USD]
+tieredPrice(12, { mode: 'volume', tiers }).total; // → 66.00 USD
+tieredPrice(0, { mode: 'volume', tiers }).total; // → 10.00 USD (the first tier's flat amount)
 ```
 
 ### Currency conversion

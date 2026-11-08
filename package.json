@@ -74,6 +74,10 @@
       "types": "./dist/historic.d.ts",
       "default": "./dist/historic.js"
     },
+    "./pricing": {
+      "types": "./dist/pricing.d.ts",
+      "default": "./dist/pricing.js"
+    },
     "./convert/boe": {
       "types": "./dist/boe.d.ts",
       "default": "./dist/boe.js"
@@ -93,10 +97,6 @@
     "./policy": {
       "types": "./dist/policy.d.ts",
       "default": "./dist/policy.js"
-    },
-    "./pricing": {
-      "types": "./dist/pricing.d.ts",
-      "default": "./dist/pricing.js"
     },
     "./cash": {
       "types": "./dist/plugins/cash.d.ts",
