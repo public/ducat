@@ -7,6 +7,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `@ducatjs/money/math`: `average` (the exact sum divided by the count, rounded once), `ratioOf`
+  (the exact share of one amount in another, as a `Ratio`), `divideToIntegral` and `remainder`
+  (truncating division between amounts, with `m = divisor × count + remainder` exactly) and
+  `trimScale` (the smallest exact scale, not below the currency's exponent unless asked).
+
 ### Changed
 
 - **Visible change:** arithmetic and comparison with an operand that isn't Money (`m.add(5)` from

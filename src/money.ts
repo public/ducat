@@ -572,10 +572,10 @@ export function subtract<C extends string>(money: Money<C>, other: Money<NoInfer
 
 type IsUnion<T, U = T> = T extends unknown ? ([U] extends [T] ? false : true) : never;
 /**
- * Rejects arrays whose element type mixes several literal currencies, e.g. (Money<'EUR'> |
- * Money<'USD'>)[].
+ * @internal Rejects arrays whose element type mixes several literal currencies, e.g. (Money<'EUR'>
+ * | Money<'USD'>)[].
  */
-type SingleCurrency<C extends string> =
+export type SingleCurrency<C extends string> =
   true extends IsUnion<C> ? { readonly 'mixed currencies are not allowed': C } : unknown;
 
 /** Sum of a list (same currency; any scale). An empty list needs `currency` and returns zero. */
