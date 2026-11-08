@@ -59,6 +59,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
   See [Drizzle](README.md#drizzle).
+- **Kysely helpers** in `@ducatjs/money/kysely`: `moneyHelpers(dialect)` gives `selectMoney`
+  and `selectDecimalMoney`, which select Money as a self-describing JSON value; `compareMoney`, which
+  compares currency and amount together; and `sumMoney`, which throws across currencies.
+  `setMoney` and `setDecimalMoney` give the columns for writes. `MoneyResultPlugin` converts only
+  the marked values, wherever they appear (unions, CTEs, nested JSON, streams, `CamelCasePlugin`),
+  so a raw column is never typed as Money. `kysely` is an optional peer dependency. See
+  [Kysely](README.md#kysely).
 - **ECB Data Portal:** `parseEcbSdmxCsv` (and `parseEcbSdmxDecimals`) in
   `@ducatjs/money/convert/ecb` read the SDMX-CSV of the daily euro reference rates, any range back
   to 1999, with the published digits rebuilt from each series' `DECIMALS`.

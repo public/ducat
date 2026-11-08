@@ -145,6 +145,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
 | `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
 | `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
+| `@ducatjs/money/kysely`             | nothing                                                            | `moneyHelpers`, `setMoney`, `MoneyResultPlugin`                |
 | `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O       |
 | `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
 | `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)       |
@@ -573,6 +574,54 @@ await db.order.create({
 ```
 
 `src/prisma.ts` does not import `@prisma/client`. It types Decimal structurally, as `{ toFixed(): string }`, so it also works with decimal.js and big.js. `examples/prisma/typecheck.ts` checks the helpers against Prisma's generated extension types.
+
+#### Kysely
+
+`@ducatjs/money/kysely` keeps Money exact in Kysely without the plugin having to understand your queries. A money value is selected as a JSON object built in SQL, which carries a marker, the amount as exact text, and the currency. `MoneyResultPlugin` turns exactly those objects into Money, wherever they appear: unions, CTEs, subqueries, nested `jsonArrayFrom` rows, every `stream()` chunk, and with `CamelCasePlugin`. A raw column keeps its driver type and is never typed as Money.
+
+```ts
+import Database from 'better-sqlite3';
+import { Kysely, SqliteDialect } from 'kysely';
+import { money } from '@ducatjs/money';
+import {
+  moneyHelpers,
+  MoneyResultPlugin,
+  setMoney,
+  type MinorUnitsColumn,
+} from '@ducatjs/money/kysely';
+
+interface Schema {
+  payments: { id: number; amount_minor: MinorUnitsColumn; currency: string };
+}
+
+const client = new Database(':memory:');
+client.defaultSafeIntegers(true); // integers as bigint, exact beyond 2^53
+client.exec('CREATE TABLE payments (id INTEGER, amount_minor INTEGER, currency TEXT)');
+const db = new Kysely<Schema>({
+  dialect: new SqliteDialect({ database: client }),
+  plugins: [new MoneyResultPlugin()],
+});
+const { selectMoney, compareMoney, sumMoney } = moneyHelpers('sqlite');
+
+const fee = money('1.234', 'KWD');
+await db
+  .insertInto('payments')
+  .values({ id: 1, ...setMoney(fee, 'amount_minor', 'currency') })
+  .execute();
+const row = await db
+  .selectFrom('payments')
+  .select((eb) => selectMoney(eb, 'amount_minor', 'currency').as('fee'))
+  .where((eb) => compareMoney(eb, 'amount_minor', 'currency', '>=', money('1', 'KWD')))
+  .executeTakeFirstOrThrow();
+row.fee; // → 1.234 KWD
+```
+
+- **Reads:** `selectMoney(eb, amount, currency)` for minor units and `selectDecimalMoney` for a NUMERIC/DECIMAL (SQLite TEXT) column. The currency comes from a column, or from `fixed('EUR')`, which types the result `Money<'EUR'>`. A nullable amount column gives `Money | null`.
+- **Writes:** `setMoney(m, 'amount_minor', 'currency')` and `setDecimalMoney` return the column values for `values()`, `set()` and upserts. The amount is an exact string, and with `fixed()` Money in another currency is a compile error and throws. `setDecimalMoney` and `compareDecimalMoney` take the column's size (`{ precision, scale }`, NUMERIC(19,4) by default) and throw where the column would round or clamp the value.
+- **Filters:** `compareMoney(eb, amount, currency, op, m)` (`=`, `<>`, `<`, `<=`, `>`, `>=`) compares currency and amount together, so 5 USD never matches 500 JPY. Parameters are cast exactly; MySQL would otherwise compare a string with a BIGINT or DECIMAL as doubles. SQL's three-valued logic applies: a row with a NULL currency or amount matches no comparison, `<>` included. There is no `in`-list form; combine comparisons with `eb.or`.
+- **Sums:** `sumMoney` and `sumDecimalMoney` give Money, or null over no rows. Rows in more than one currency, or an amount without a currency, make the result throw, so group by the currency column to sum per currency.
+- `moneyHelpers(dialect)` builds these for `'postgres'`, `'mysql'` or `'sqlite'`, which differ in their JSON and cast syntax. On SQLite, decimals are TEXT: `sumDecimalMoney` and ordering comparisons on them throw, and `=` and `<>` compare the text, so they only match values written with `setDecimalMoney` (`'5.0'` is not `'5.00'`). Compare and sum minor units instead. On Postgres the values are `jsonb`, so `UNION`, `DISTINCT` and `GROUP BY` work on them.
+- Plugin order: for nested JSON that SQLite returns as text, put `ParseJSONResultsPlugin` before `MoneyResultPlugin`. Markers carry a random nonce chosen when the module loads, and the plugin converts only objects with exactly the marker's keys and this process's nonce. So data that merely looks like a marker, in a JSON or text column, stays as it is, and the nonce never appears in results. `min`, `max` and `coalesce` over a money expression aren't supported: they would compare the JSON objects. `kysely` is an optional peer dependency.
 
 #### node-postgres
 

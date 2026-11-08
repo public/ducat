@@ -33,7 +33,8 @@
     "@ducatjs/money/testing": 5.07,
     "@ducatjs/money/testing/vitest": 5.1,
     "@ducatjs/money/testing/jest": 5.17,
-    "@ducatjs/money/testing/arbitraries": 4.67
+    "@ducatjs/money/testing/arbitraries": 4.67,
+    "@ducatjs/money/kysely": 6.45
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 30,
@@ -61,7 +62,7 @@
       "gzipped": 5.22
     },
     "parse: parse alone, without detection": {
-      "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 €', 'EUR', 'de-DE').toString());",
+      "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 \u20ac', 'EUR', 'de-DE').toString());",
       "gzipped": 4.84
     }
   }

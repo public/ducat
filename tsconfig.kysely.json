@@ -1,0 +1,8 @@
+{
+  // The Kysely entry. kysely's declarations use web platform types (AbortSignal, Blob), so this
+  // project adds the DOM library that the dependency-free base build leaves out.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "lib": ["ES2023", "ESNext.Intl", "DOM"] },
+  "include": ["src/kysely.ts"],
+  "exclude": []
+}
