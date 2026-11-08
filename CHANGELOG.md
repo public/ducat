@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/zod` and `@ducatjs/money/valibot`: `moneySchema()` parses the JSON form
+  `{ amount, currency }` into Money at API boundaries (exact decimal strings only, known or listed
+  currencies, at most 50 digits by default, typed output), and `moneyJSONSchema()` validates it
+  without converting. The Zod schema is a codec, so `z.encode` writes Money back as JSON. Zod 4
+  and Valibot 1 are optional peer dependencies.
 - **Rounding policies** (`@ducatjs/money/policy`): `roundingPolicy({ scale, increment,
   rounding, currency })`, `isoPolicy` and `cashPolicy(currency, options)` (in `/cash`) are
   reusable values accepted wherever a rounding mode is (`multiply`, `divide`, `round`,
