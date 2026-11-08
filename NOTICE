@@ -24,6 +24,31 @@ data/adyen.json
   retrieved 2026-11-07, with short quotations of the special cases.
   Adyen is a trademark of Adyen N.V.
 
+data/checkout.json
+  Amount rules from Checkout.com's documentation,
+  https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value,
+  retrieved 2026-11-07, with short quotations. Checkout.com is a trademark
+  of Checkout Ltd.
+
+data/paypal.json
+  Currency codes and decimals from PayPal's documentation,
+  https://developer.paypal.com/api/rest/reference/currency-codes/,
+  retrieved 2026-11-07, with short quotations. PayPal is a trademark of
+  PayPal, Inc.
+
+data/braintree.json
+  Supported currencies and zero-decimal currencies from Braintree's
+  documentation,
+  https://developer.paypal.com/braintree/docs/reference/general/currencies,
+  retrieved 2026-11-07, with short quotations. Braintree is a service of
+  PayPal, Inc.
+
+data/klarna.json
+  Amount rules from Klarna's documentation,
+  https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/,
+  retrieved 2026-11-07, with short quotations. Klarna is a trademark of
+  Klarna Bank AB.
+
 data/stripe-fx.json
   Field definitions for exchange rates on balance transactions, quoted
   from Stripe's API reference,
@@ -41,13 +66,15 @@ data/cash-rounding.json
   government publications, retrieved 2026-11-07. Each entry records
   its source URL and whether it was verified against a primary source.
 
-data/historic.json
-  Withdrawn codes and names from ISO 4217 List Three, published by SIX
-  Financial Information AG (snapshot 2026-01-01). Minor units taken from
-  OpenJDK's currency data (CurrencyData.properties, dataVersion 180,
-  GPLv2 with the Classpath Exception), as the facts ISO 4217 assigned
-  while each code was current. None was verified against an ISO source
-  directly, since List Three carries no minor units.
+data/iso4217-list-three.xml, data/historic.json
+  ISO 4217 List Three (withdrawn currency and funds codes), published by
+  SIX Financial Information AG as the ISO 4217 maintenance agency
+  (snapshot 2026-01-01): the withdrawn codes, names and withdrawal
+  dates. Minor units taken from OpenJDK's currency data
+  (CurrencyData.properties, dataVersion 180, GPLv2 with the Classpath
+  Exception), as the facts ISO 4217 assigned while each code was
+  current. None was verified against an ISO source directly, since
+  List Three carries no minor units.
 
 data/cldr-cash.json
   Data from the Unicode Common Locale Data Repository (CLDR), release

@@ -721,6 +721,8 @@ export function divide<C extends string>(
   //   dividend + divisor exceeds the safe range).
   // A rounding policy (a function, not a mode string) must not take this path: it rounds to its own
   // scale and increment.
+  // divideSafeByRatio in rounding.ts is the same steps as a function, for Fixed; a call here costs
+  // about 4% on the divide benchmarks. test/divide.test.ts checks that the two copies agree.
   const minor = money.minor;
   const numerator = divisorRatio.n;
   const denominator = divisorRatio.d;
