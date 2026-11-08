@@ -119,8 +119,8 @@ The ducat column measures its methods API. Where ducat is not fastest (every cel
 faster):
 
 - **Formatting:** every library spends most of its time inside `Intl.NumberFormat`. currency.js (formatting a float)
-  is faster on Node (380 ns against 411) and on Deno (393 against 401). (On Bun ducat measured fastest, level with
-  dinero.js 1: 269 and 272.)
+  is faster on Node (380 ns against 411) and on Deno (393 against 401). On Bun, ducat and dinero.js 1 are level (269
+  and 272 ns).
 - **Comparing on Bun:** libraries that compare plain numbers are faster: currency.js 6.9, js-money 7.9, ts-money 8.0,
   @screeny05/ts-money 8.4 and monetra 8.6 ns, against ducat's 10.6. On Node and Deno ducat is slightly ahead (7.39
   against ts-money's 7.91, and 6.90 against @screeny05/ts-money's 7.53).
