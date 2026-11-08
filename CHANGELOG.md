@@ -7,6 +7,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-08
+
+Finance, pricing and currency data. New opt-in entries: `/finance` (day counts, interest, loan
+schedules, Excel's NPV and IRR, proration), `/pricing` (price endings and tiered pricing), `/math`,
+`/currencies` and `/territories` (ISO numeric codes, Intl names and symbols, CLDR territory
+currencies), `/crypto`, `/wire` (google.type.Money, ISO 20022 amounts) and `/words` (amounts in
+words in seven languages). Two changes can break existing code, both listed under **Changed**:
+`@ducatjs/money/fixed` no longer loads Money, so converting between Fixed and Money now needs
+`@ducatjs/money/fixed/money`; and arithmetic with an operand that isn't Money throws a
+`TypeError` instead of a `CurrencyMismatchError`.
+
 ### Added
 
 - `@ducatjs/money/words`: amounts in words (`amountInWords`, cheque-style "and 45/100" by default,
@@ -82,11 +93,19 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean
   nor a function (a string or a Date from untyped code), before parsing or fetching anything.
   Before, it was ignored on a file with no days and failed as "not a function" on the first day.
+
+## [0.2.1] - 2026-11-08
+
+### Fixed
+
 - Types: a program that augments Money itself (`declare module '@ducatjs/money' { interface Money<C
   extends string> { ... } }`, as `extendMoney` plugins do) and imports opt-in modules no longer
   loses methods. Depending on the order TypeScript read the files, the methods of modules loaded
   after the augmentation, and the augmentation's own methods, were missing from `Money`. Every
   module now augments the root entry, as users do.
+  0.1.0 has the same problem; upgrade to 0.2.1 to fix it.
+- NOTICE now credits the Unicode CLDR data that `data/cldr-cash.json` ships, with the Unicode
+  License v3 it is used under.
 
 ## [0.2.0] - 2026-11-08
 
@@ -278,6 +297,8 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/public/ducat/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/public/ducat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/public/ducat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/public/ducat/releases/tag/v0.1.0
