@@ -378,7 +378,16 @@ eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedF
 eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
 ```
 
-Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate keeps the digits it was given: `exchangeRate('EUR', 'HUF', '363.90').toString()` is `'363.90'`. A rate carries optional metadata: `source`, `asOf`, `availableAt` (when it was published), `validUntil`, `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...) and `quote` (how the source published it). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to.
+Write rates as decimal strings, with every digit the source published. A JS number is read at its shortest decimal form, so it is exact as well, but a string says what was meant. A rate keeps the digits it was given: `exchangeRate('EUR', 'HUF', '363.90').toString()` is `'363.90'`. A rate carries optional metadata: `source`, `asOf`, `availableAt` (when it was published), `validUntil`, `type` (`'mid'`, `'bid'`, `'ask'`, `'reference'`...) and `quote` (how the source published it). Instants are stored in UTC, and dates stay as given. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to. A rounding policy (`@ducatjs/money/policy`, or `cashPolicy` from `/cash`) works wherever a rounding mode does, so a conversion can land directly on a cash increment or a fixed number of decimals:
+
+```ts
+import { money } from '@ducatjs/money';
+import { cashPolicy } from '@ducatjs/money/cash';
+import { exchangeRate } from '@ducatjs/money/convert';
+
+const eurChf = exchangeRate('EUR', 'CHF', '0.9143');
+money('10.07', 'EUR').convert(eurChf, cashPolicy('CHF')); // → 9.20 CHF (9.207001, to 0.05)
+```
 
 **Providers.** A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. `rateTable()` holds a fixed set of rates (one base against many, as the ECB publishes them), and combinators build the rest: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Loading is async and stays outside providers. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days. A loader that throws fails the lookup instead of falling back to an older day, so an outage can't silently become a stale rate. Days are UTC days, and a table answers for its whole day, including the hours before it was published, unless it has an `availableAt`.
 

@@ -4,11 +4,10 @@
  */
 import { convert } from '../convert.js';
 import type { Factor } from '../decimal.js';
-import { extendMoney, type CurrencyInput, type Money } from '../money.js';
+import { extendMoney, type CurrencyInput, type Money, type RoundingInput } from '../money.js';
 import type { ProviderConvertOptions } from '../convert.js';
 import type { RateProvider } from '../provider.js';
 import type { ConvertOptions, Rate } from '../rate.js';
-import type { RoundingMode } from '../rounding.js';
 
 export * from '../convert.js';
 
@@ -17,14 +16,14 @@ declare module '../money.js' {
     /** Converts at a Rate, rounding once: `eur.convert(eurUsd, 'halfEven')`. */
     convert<To extends string>(
       rate: Rate<NoInfer<C>, To>,
-      rounding?: RoundingMode,
+      rounding?: RoundingInput,
       options?: ConvertOptions,
     ): Money<To>;
     /** Converts at an exact decimal-string rate: `eur.convert('USD', '1.0832', 'halfEven')`. */
     convert<To extends CurrencyInput>(
       to: To,
       rate: Factor,
-      rounding?: RoundingMode,
+      rounding?: RoundingInput,
       options?: ConvertOptions,
     ): Money<To>;
     /**
@@ -34,7 +33,7 @@ declare module '../money.js' {
     convert<To extends CurrencyInput>(
       to: To,
       provider: RateProvider,
-      rounding?: RoundingMode,
+      rounding?: RoundingInput,
       options?: ProviderConvertOptions,
     ): Money<To>;
   }

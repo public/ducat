@@ -9,6 +9,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `convert`, `convertDetailed`, `Rate#convert` and `Money#convert` accept a rounding policy wherever
+  they accept a rounding mode: the result lands on the policy's scale and increment (and its
+  currency is checked against the target), and `convertDetailed`'s residual stays exact.
 - `parseMoney(text, locale, options)` in `/parse` parses `"CHF 1’234.50"` or `"USD 100"` and
   detects the currency from ISO codes and the locale's `Intl` symbols. It never guesses: a shared
   symbol such as `$` needs a `hint` or a `symbols` map, a contradicting hint, a locale without
