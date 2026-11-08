@@ -111,8 +111,12 @@
       "default": "./dist/plugins/format.js"
     },
     "./fixed": {
-      "types": "./dist/plugins/fixed.d.ts",
-      "default": "./dist/plugins/fixed.js"
+      "types": "./dist/fixed.d.ts",
+      "default": "./dist/fixed.js"
+    },
+    "./fixed/money": {
+      "types": "./dist/plugins/fixed-money.d.ts",
+      "default": "./dist/plugins/fixed-money.js"
     },
     "./parse": {
       "types": "./dist/parse.d.ts",

@@ -26,7 +26,7 @@ import {
   type Factor,
   type Money,
 } from '../src/fn.js';
-import { fixed } from '../src/plugins/fixed.js';
+import { fixed } from '../src/fixed.js';
 import { runs } from './fc-config.js';
 import { MODES } from './oracle.js';
 

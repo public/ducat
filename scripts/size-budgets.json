@@ -18,7 +18,8 @@
     "@ducatjs/money/pricing": 1.75,
     "@ducatjs/money/cash": 3.06,
     "@ducatjs/money/format": 0.39,
-    "@ducatjs/money/fixed": 1.34,
+    "@ducatjs/money/fixed": 1.27,
+    "@ducatjs/money/fixed/money": 1.42,
     "@ducatjs/money/parse": 2.14,
     "@ducatjs/money/stripe": 1.14,
     "@ducatjs/money/adyen": 0.66,
@@ -48,6 +49,10 @@
     "@ducatjs/money/all": 40
   },
   "snippets": {
+    "fixed: Fixed alone, without Money": {
+      "code": "import { fixed } from '@ducatjs/money/fixed'; const a = fixed('1.00'); console.log(a.add(a).multiply('1.075', 'halfExpand').toString());",
+      "gzipped": 3.3
+    },
     "methods: money, add, multiply, toDecimal": {
       "code": "import { money } from '@ducatjs/money'; const a = money('1.00', 'EUR'); console.log(a.add(a).multiply('1.075', 'halfEven').toDecimal());",
       "gzipped": 4.1

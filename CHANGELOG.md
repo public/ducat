@@ -9,6 +9,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/fixed/money`: Fixed and Money together. It has everything in
+  `@ducatjs/money/fixed`, plus `moneyToFixed` and `fixedToMoney`, and installs
+  `Money#toFixedPoint()` and `Fixed#toMoney()`.
 - `@ducatjs/money/finance`: day counts (`yearFraction` under ACT/360, ACT/365F, ACT/ACT ISDA,
   30/360, 30E/360 and 30E/360 ISDA), simple and compound interest (`interest`, `interestExact`,
   `compound`), loan schedules (`amortise`: annuity, linear and interest-only, with a balloon,
@@ -37,6 +40,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Breaking:** `@ducatjs/money/fixed` no longer loads Money or the currency table, so a program
+  that uses only `Fixed` is 3.3 kB gzipped instead of 5.4 kB. `Money#toFixedPoint()`,
+  `Fixed#toMoney()` and `moneyToFixed` moved to the new `@ducatjs/money/fixed/money`: import that
+  entry instead where you convert between the two. `/all` and `/fn` include it.
 - `Fixed#divide` takes the number fast path Money's `divide` has: a safe-integer value divided by a
   divisor whose ratio parts are safe integers, at the value's own scale, no longer builds the
   inverse ratio in bigint. It runs 43% fewer instructions dividing by 3 or by '1.5'. Results are

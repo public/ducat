@@ -79,6 +79,8 @@ describe('Money methods', () => {
       'fromScaled',
       'isFixed',
       'moneyToFixed',
+      // takes a Fixed first; Fixed#toMoney covers it
+      'fixedToMoney',
       // rate constructors and the conversion kernel, which work on rates rather than an amount
       'impliedRate',
       'isRate',

@@ -78,7 +78,7 @@ column -t -s$'\t' results/sizes.tsv
 declare -A FIXED_SNIPPET FIXED_PACKAGE
 FIXED_SNIPPET[ducat Money]="import { money } from '$DUCAT'; const a = money('1.00','EUR'); console.log(a.add(a).multiply('1.075','halfExpand').toDecimal());"
 FIXED_PACKAGE[ducat Money]="export * from '$DUCAT';"
-DUCAT_FIXED="$(realpath ../src/plugins/fixed.ts)"
+DUCAT_FIXED="$(realpath ../src/fixed.ts)"
 FIXED_SNIPPET[ducat Fixed]="import { fixed } from '$DUCAT_FIXED'; const a = fixed('1.00'); console.log(a.add(a).multiply('1.075','halfExpand').toString());"
 FIXED_PACKAGE[ducat Fixed]="export * from '$DUCAT_FIXED';"
 FIXED_SNIPPET[dnum]="import * as dn from 'dnum'; const a = dn.from('1.00', 2); console.log(dn.toString(dn.multiply(dn.add(a, a), '1.075', { decimals: 2, rounding: 'ROUND_HALF' })));"

@@ -10,8 +10,9 @@ import {
   RoundingError,
   type RoundingMode,
 } from '../src/fn.js';
-import { Fixed, fixed, fromScaled, isFixed } from '../src/plugins/fixed.js';
+import { Fixed, fixed, fromScaled, isFixed } from '../src/plugins/fixed-money.js';
 import { MODES, refDivRound } from './oracle.js';
+import { normalizeMinor } from '../src/decimal.js';
 
 const ALL_MODES: RoundingMode[] = [...MODES, 'unnecessary'];
 
@@ -437,5 +438,31 @@ describe('Python decimal vectors, through Fixed', () => {
       }
       expect([vector, String(result.value)]).toEqual([vector, vector.want]);
     }
+  });
+});
+
+describe('the two copies of the scale helpers', () => {
+  // src/scale.ts (for Fixed) copies Money's scaleUp and scaleDown, so they must agree
+  it('scale.ts and money.ts agree on every value, exponent and mode (property)', async () => {
+    const forFixed = await import('../src/scale.js');
+    const forMoney = await import('../src/money.js');
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.integer({ min: -1_000_000, max: 1_000_000 }),
+          fc.integer({ min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER }),
+          fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n }),
+        ),
+        fc.integer({ min: 0, max: 20 }),
+        fc.constantFrom(...MODES.filter((candidate) => candidate !== 'unnecessary')),
+        (value, exponent, rounding: RoundingMode) => {
+          const minor = typeof value === 'bigint' ? normalizeMinor(value) : value;
+          expect(forFixed.scaleUp(minor, exponent)).toBe(forMoney.scaleUp(minor, exponent));
+          expect(forFixed.scaleDown(minor, exponent, rounding)).toBe(
+            forMoney.scaleDown(minor, exponent, rounding),
+          );
+        },
+      ),
+    );
   });
 });

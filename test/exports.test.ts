@@ -195,6 +195,35 @@ describe('schema entries', () => {
   });
 });
 
+describe('fixed entry', () => {
+  /** Every src/ file the module reaches through its relative imports, type-only imports excluded. */
+  function sourcesOf(file: string, seen = new Set<string>()): Set<string> {
+    if (seen.has(file)) {
+      return seen;
+    }
+    seen.add(file);
+    const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    for (const match of text.matchAll(
+      /^(?:import|export)(?!\s+type\b)[^;]*?from\s*'(\.[^']+)'/gm,
+    )) {
+      sourcesOf(join(dirname(file), match[1]!.replace(/\.js$/, '.ts')), seen);
+    }
+    return seen;
+  }
+
+  it('/fixed reaches neither Money nor the currency table; /fixed/money adds both', () => {
+    const relativeNames = (entry: string) =>
+      [...sourcesOf(join(ROOT, entry))].map((file) => file.slice(ROOT.length + 1)).sort();
+    const fixedOnly = relativeNames('src/fixed.ts');
+    expect(fixedOnly).not.toContain('src/money.ts');
+    expect(fixedOnly).not.toContain('src/currency.ts');
+    expect(fixedOnly.some((file) => file === 'src/generated/iso4217.ts')).toBe(false);
+    const withMoney = relativeNames('src/plugins/fixed-money.ts');
+    expect(withMoney).toContain('src/money.ts');
+    expect(withMoney).toContain('src/currency.ts');
+  });
+});
+
 describe('policy entry', () => {
   it('/policy has the policy constructors and check, and the root entry does not', async () => {
     const policy = await import('../src/policy.js');
