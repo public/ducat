@@ -191,18 +191,20 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 
 ## Speed
 
+The `parse` rows were measured before `parse` started checking where group separators are. `Fixed`'s parse (`fixed('…')`) is not affected.
+
 | ns/op | node 24.22.2 | bun 1.4.4 | deno 2.9.8 |
 |---|--:|--:|--:|
-| fromMinor | **9.06** (fastest other: dinero.js 2 14.5) | **9.25** (fastest other: monetra 23.6; dinero.js 2 33.9) | **8.48** (fastest other: monetra 27.8; dinero.js 2 93.1) |
-| parse | **31.3** (fastest other: dinero.js 2 62.2) | **35.6** (fastest other: dinero.js 2 bigint 139; dinero.js 2 152) | **30.3** (fastest other: dinero.js 2 167) |
-| add | **11.9** (fastest other: monetra 14.6; dinero.js 2 187) | **10.4** (fastest other: monetra 19.9; dinero.js 2 313) | **9.92** (fastest other: monetra 13.6; dinero.js 2 398) |
-| mulRatio | **23.4** (fastest other: @screeny05/ts-money 148; dinero.js 2 470) | **27.8** (fastest other: @screeny05/ts-money 64.3; dinero.js 2 767) | **19.8** (fastest other: @screeny05/ts-money 162; dinero.js 2 1.2 µs) |
-| allocate3 | **47.8** (fastest other: bigint-money 415; dinero.js 2 1.2 µs) | **65.5** (fastest other: @screeny05/ts-money 268; dinero.js 2 1.6 µs) | **42.4** (fastest other: bigint-money 271; dinero.js 2 2.0 µs) |
-| toDecimal | **34.6** (fastest other: @screeny05/ts-money 58.4; dinero.js 2 426) | **50.0** (fastest other: js-money 76.8; dinero.js 2 570) | **32.6** (fastest other: ts-money 64.3; dinero.js 2 380) |
-| format | 411 (fastest other: **currency.js 380**; dinero.js 2 1.1 µs) | **269** (fastest other: dinero.js 1 272; dinero.js 2 1.2 µs) | 401 (fastest other: **currency.js 393**; dinero.js 2 1.1 µs) |
-| compare | **7.39** (fastest other: ts-money 7.91; dinero.js 2 190) | 10.6 (fastest other: **currency.js 6.93**; dinero.js 2 303) | **6.90** (fastest other: @screeny05/ts-money 7.53; dinero.js 2 181) |
+| fromMinor | **9.29** (fastest other: dinero.js 2 14.5) | **9.22** (fastest other: monetra 24.4; dinero.js 2 35.6) | **8.42** (fastest other: monetra 26.4; dinero.js 2 86.6) |
+| parse | **30.9** (fastest other: dinero.js 2 62.1) | **34.8** (fastest other: dinero.js 2 bigint 135; dinero.js 2 150) | **29.3** (fastest other: dinero.js 2 134) |
+| add | **11.5** (fastest other: monetra 14.6; dinero.js 2 200) | **11.1** (fastest other: monetra 19.6; dinero.js 2 308) | **9.44** (fastest other: monetra 12.3; dinero.js 2 321) |
+| mulRatio | **24.0** (fastest other: @screeny05/ts-money 151; dinero.js 2 497) | **29.0** (fastest other: @screeny05/ts-money 68.0; dinero.js 2 757) | **20.8** (fastest other: @screeny05/ts-money 155; dinero.js 2 1.1 µs) |
+| allocate3 | **48.6** (fastest other: bigint-money 457; dinero.js 2 1.3 µs) | **65.4** (fastest other: @screeny05/ts-money 274; dinero.js 2 1.6 µs) | **41.3** (fastest other: bigint-money 270; dinero.js 2 2.0 µs) |
+| toDecimal | **34.7** (fastest other: ts-money 58.6; dinero.js 2 429) | **55.5** (fastest other: ts-money 74.3; dinero.js 2 580) | **30.6** (fastest other: @screeny05/ts-money 63.5; dinero.js 2 370) |
+| format | 413 (fastest other: **currency.js 379**; dinero.js 2 1.1 µs) | **268** (fastest other: currency.js 274; dinero.js 2 1.2 µs) | 398 (fastest other: **currency.js 386**; dinero.js 2 1.0 µs) |
+| compare | **7.49** (fastest other: ts-money 8.06; dinero.js 2 202) | 10.3 (fastest other: **currency.js 6.68**; dinero.js 2 324) | **6.88** (fastest other: @screeny05/ts-money 7.49; dinero.js 2 171) |
 
-Measured on 2026-11-08 on one AMD EPYC Genoa vCPU with Node 24.22.2, Bun 1.4.4 and Deno 2.9.8, on ducat 0.1.0 (commit 69d7fe9). Lower is better; the faster of ducat and the fastest other money library is in bold.
+Measured on 2026-11-08 on one-vCPU AMD EPYC Genoa machines (Node 24.22.2 and Bun 1.4.4 on one, Deno 2.9.8 on a second of the same plan), on the ducat 0.2.0 release candidate (commit ea9160b). Lower is better; the faster of ducat and the fastest other money library is in bold.
 
 ### node 24.22.2 (V8 13.6.233.17-node.63)
 
@@ -210,43 +212,43 @@ Median ns per operation over 5 rounds (150 ms warm-up per cell).
 
 | ns/op | fromMinor | parse | add | mulRatio | allocate3 | toDecimal | format | compare |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| ducat methods | 9.06 | 31.3 | 11.9 | 23.4 | 47.8 | 34.6 | 411 | 7.39 |
-| ducat functions | 9.26 | 29.4 | 12.0 | 24.1 | 47.8 | 33.7 | 380 | 7.15 |
-| dinero.js 2 | 14.5 | 62.2 | 187 | 470 | 1.2 µs | 426 | 1.1 µs | 190 |
-| dinero.js 2 bigint | 26.4 | 80.9 | 209 | 604 | 1.5 µs | 622 | 1.3 µs | 201 |
-| dinero.js 1 | 188 | 260 | 440 | 765 | 2.1 µs | 64.7 | 422 | 38.9 |
-| currency.js | 140 | 810 | 231 | 239 | 958 | 69.5 | 380 | 8.00 |
-| js-money | 224 | 500 | 237 | 231 | 951 | 65.0 | 578 | 17.6 |
-| ts-money | 240 | 675 | 231 | 277 | 1.0 µs | 58.7 | 551 | 7.91 |
-| @screeny05/ts-money | 130 | 339 | 148 | 148 | 659 | 58.4 | 573 | 8.25 |
-| monetra | 35.4 | 236 | 14.6 | 185 | 886 | 102 | 629 | 10.5 |
-| bigint-money | 406 | 409 | 48.0 | 1.8 µs | 415 | 494 | 1.1 µs | 14.0 |
-| big.js | 730 | 154 | 101 | 384 | 7.5 µs | 175 | 780 | 39.3 |
-| bignumber.js | 1.2 µs | 316 | 90.4 | 798 | 7.1 µs | 379 | 957 | 36.2 |
-| decimal.js | 257 | 247 | 142 | 757 | 4.0 µs | 318 | 885 | 67.5 |
-| decimal.js-light | 157 | 243 | 91.2 | 585 | 2.9 µs | 316 | 920 | 44.1 |
-| Prisma.Decimal | 264 | 265 | 143 | 738 | 3.8 µs | 321 | 872 | 69.9 |
+| ducat methods | 9.29 | 30.9 | 11.5 | 24.0 | 48.6 | 34.7 | 413 | 7.49 |
+| ducat functions | 9.53 | 32.4 | 11.6 | 25.6 | 48.8 | 35.5 | 394 | 7.49 |
+| dinero.js 2 | 14.5 | 62.1 | 200 | 497 | 1.3 µs | 429 | 1.1 µs | 202 |
+| dinero.js 2 bigint | 26.3 | 78.3 | 211 | 626 | 1.5 µs | 611 | 1.3 µs | 207 |
+| dinero.js 1 | 192 | 255 | 429 | 824 | 2.2 µs | 64.6 | 397 | 38.5 |
+| currency.js | 155 | 840 | 234 | 245 | 927 | 69.0 | 379 | 8.26 |
+| js-money | 228 | 519 | 239 | 250 | 1.1 µs | 68.9 | 610 | 18.7 |
+| ts-money | 245 | 682 | 226 | 273 | 1.0 µs | 58.6 | 553 | 8.06 |
+| @screeny05/ts-money | 137 | 379 | 156 | 151 | 644 | 62.9 | 597 | 8.46 |
+| monetra | 28.9 | 228 | 14.6 | 189 | 890 | 111 | 681 | 10.6 |
+| bigint-money | 411 | 399 | 47.9 | 1.9 µs | 457 | 498 | 1.2 µs | 15.6 |
+| big.js | 869 | 143 | 106 | 396 | 8.6 µs | 186 | 799 | 40.4 |
+| bignumber.js | 1.1 µs | 331 | 90.7 | 793 | 6.4 µs | 373 | 977 | 35.5 |
+| decimal.js | 248 | 253 | 140 | 706 | 3.9 µs | 306 | 897 | 67.3 |
+| decimal.js-light | 162 | 236 | 97.9 | 612 | 3.0 µs | 340 | 979 | 48.4 |
+| Prisma.Decimal | 261 | 261 | 138 | 733 | 3.8 µs | 305 | 891 | 69.4 |
 
 Round-to-round range (min–max of the 5 round medians):
 
 | range | fromMinor | parse | add | mulRatio | allocate3 | toDecimal | format | compare |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| ducat methods | 3.82–9.97 | 27.2–35.0 | 5.78–12.4 | 20.4–26.5 | 46.8–51.3 | 27.1–36.0 | 378–434 | 3.31–9.19 |
-| ducat functions | 8.96–10.1 | 28.8–32.9 | 10.9–12.4 | 23.5–25.0 | 46.8–49.4 | 31.6–35.5 | 376–417 | 7.08–8.18 |
-| dinero.js 2 | 13.9–15.2 | 60.0–73.5 | 172–211 | 337–520 | 1.1 µs–1.4 µs | 411–463 | 1.1 µs–1.3 µs | 182–193 |
-| dinero.js 2 bigint | 25.5–27.0 | 75.5–85.5 | 199–224 | 575–622 | 1.5 µs–1.7 µs | 588–706 | 1.3 µs–1.4 µs | 194–215 |
-| dinero.js 1 | 185–193 | 240–286 | 429–492 | 750–805 | 2.1 µs–2.2 µs | 63.7–78.0 | 402–439 | 38.5–44.1 |
-| currency.js | 137–150 | 805–859 | 230–233 | 232–262 | 929–1.0 µs | 63.7–76.8 | 369–424 | 7.49–8.18 |
-| js-money | 213–230 | 491–518 | 232–250 | 227–237 | 937–1.0 µs | 62.2–66.4 | 564–591 | 17.5–18.4 |
-| ts-money | 236–248 | 636–709 | 223–248 | 268–288 | 986–1.1 µs | 57.3–61.7 | 543–577 | 7.78–8.16 |
-| @screeny05/ts-money | 126–133 | 332–381 | 142–159 | 144–155 | 615–678 | 57.3–60.1 | 558–582 | 7.89–8.51 |
-| monetra | 34.8–37.6 | 231–256 | 14.1–15.1 | 172–191 | 858–1.0 µs | 98.9–173 | 596–666 | 9.84–11.7 |
-| bigint-money | 401–433 | 406–439 | 44.8–58.0 | 1.8 µs–2.0 µs | 409–435 | 476–528 | 1.1 µs–1.1 µs | 13.7–15.5 |
-| big.js | 564–773 | 154–160 | 96.5–112 | 330–405 | 7.4 µs–7.9 µs | 168–189 | 741–814 | 37.3–41.5 |
-| bignumber.js | 1.2 µs–1.3 µs | 307–348 | 82.8–95.6 | 765–814 | 6.8 µs–7.6 µs | 355–385 | 934–1.0 µs | 34.9–36.7 |
-| decimal.js | 254–288 | 244–253 | 138–156 | 734–781 | 3.8 µs–4.2 µs | 300–348 | 858–912 | 65.5–69.5 |
-| decimal.js-light | 143–157 | 220–262 | 85.1–96.1 | 563–602 | 2.8 µs–3.0 µs | 302–323 | 877–938 | 41.2–55.1 |
-| Prisma.Decimal | 248–291 | 249–304 | 129–152 | 714–811 | 3.7 µs–4.0 µs | 298–371 | 863–912 | 67.7–74.0 |
+| ducat methods | 5.06–10.2 | 28.7–35.0 | 6.04–12.6 | 20.0–25.6 | 46.1–52.5 | 28.0–38.6 | 378–442 | 3.62–8.38 |
+| ducat functions | 9.11–9.92 | 32.1–34.2 | 10.8–12.2 | 23.7–27.0 | 46.9–51.9 | 32.1–39.1 | 388–429 | 7.07–7.96 |
+| dinero.js 2 | 14.0–15.3 | 60.9–65.2 | 176–212 | 366–507 | 1.2 µs–1.5 µs | 400–478 | 1.1 µs–1.2 µs | 175–225 |
+| dinero.js 2 bigint | 25.9–29.1 | 75.9–82.7 | 204–225 | 601–732 | 1.4 µs–1.6 µs | 591–630 | 1.3 µs–1.4 µs | 203–232 |
+| dinero.js 1 | 189–207 | 244–277 | 423–444 | 776–870 | 2.1 µs–2.2 µs | 62.8–68.8 | 392–448 | 38.4–45.9 |
+| currency.js | 137–158 | 822–914 | 229–262 | 232–269 | 912–1.0 µs | 65.3–73.4 | 374–424 | 7.66–8.72 |
+| js-money | 222–243 | 493–587 | 233–255 | 234–255 | 1.0 µs–1.1 µs | 64.9–70.8 | 561–625 | 16.9–19.2 |
+| ts-money | 233–277 | 645–694 | 222–245 | 271–283 | 994–1.0 µs | 57.6–71.9 | 547–583 | 7.92–8.91 |
+| @screeny05/ts-money | 129–145 | 345–404 | 143–176 | 147–154 | 620–687 | 60.3–67.2 | 555–665 | 7.89–9.01 |
+| monetra | 27.6–30.5 | 212–237 | 14.2–15.9 | 174–218 | 831–1.1 µs | 101–133 | 622–719 | 10.3–11.5 |
+| bigint-money | 401–439 | 395–453 | 47.1–49.9 | 1.8 µs–2.4 µs | 439–491 | 492–537 | 1.1 µs–1.2 µs | 15.5–17.0 |
+| big.js | 807–942 | 139–155 | 92.2–109 | 331–435 | 8.5 µs–8.9 µs | 169–194 | 727–834 | 35.0–41.1 |
+| bignumber.js | 1.1 µs–1.2 µs | 311–351 | 83.4–96.2 | 773–849 | 6.3 µs–6.7 µs | 363–418 | 949–1.0 µs | 35.0–36.3 |
+| decimal.js | 238–266 | 248–256 | 135–144 | 700–796 | 3.8 µs–4.3 µs | 301–328 | 887–947 | 65.8–72.8 |
+| decimal.js-light | 155–173 | 225–278 | 90.8–104 | 594–622 | 2.8 µs–3.5 µs | 297–373 | 876–997 | 42.1–54.8 |
+| Prisma.Decimal | 236–265 | 257–291 | 129–148 | 706–784 | 3.7 µs–4.0 µs | 298–328 | 843–1.1 µs | 63.5–74.3 |
 
 ### bun 1.4.4
 
@@ -254,43 +256,43 @@ Median ns per operation over 5 rounds (150 ms warm-up per cell).
 
 | ns/op | fromMinor | parse | add | mulRatio | allocate3 | toDecimal | format | compare |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| ducat methods | 9.25 | 35.6 | 10.4 | 27.8 | 65.5 | 50.0 | 269 | 10.6 |
-| ducat functions | 9.10 | 39.2 | 10.8 | 20.2 | 64.5 | 65.6 | 273 | 8.00 |
-| dinero.js 2 | 33.9 | 152 | 313 | 767 | 1.6 µs | 570 | 1.2 µs | 303 |
-| dinero.js 2 bigint | 41.2 | 139 | 372 | 1.1 µs | 2.1 µs | 886 | 1.6 µs | 342 |
-| dinero.js 1 | 312 | 478 | 740 | 956 | 3.7 µs | 79.7 | 272 | 60.8 |
-| currency.js | 162 | 821 | 241 | 241 | 991 | 83.6 | 277 | 6.93 |
-| js-money | 85.8 | 176 | 146 | 93.8 | 343 | 76.8 | 463 | 7.89 |
-| ts-money | 84.1 | 279 | 172 | 77.6 | 341 | 77.9 | 432 | 7.95 |
-| @screeny05/ts-money | 42.2 | 178 | 106 | 64.3 | 268 | 77.1 | 452 | 8.43 |
-| monetra | 23.6 | 209 | 19.9 | 262 | 930 | 164 | 656 | 8.63 |
-| bigint-money | 305 | 280 | 44.0 | 1.4 µs | 395 | 392 | 967 | 21.2 |
-| big.js | 536 | 217 | 117 | 364 | 4.4 µs | 157 | 672 | 36.7 |
-| bignumber.js | 1.1 µs | 436 | 90.9 | 638 | 5.9 µs | 321 | 901 | 36.6 |
-| decimal.js | 393 | 378 | 85.5 | 649 | 3.8 µs | 282 | 789 | 34.3 |
-| decimal.js-light | 251 | 346 | 75.6 | 791 | 3.5 µs | 342 | 903 | 31.0 |
-| Prisma.Decimal | 378 | 342 | 86.4 | 614 | 3.9 µs | 286 | 797 | 35.4 |
+| ducat methods | 9.22 | 34.8 | 11.1 | 29.0 | 65.4 | 55.5 | 268 | 10.3 |
+| ducat functions | 8.02 | 36.7 | 10.8 | 17.5 | 62.5 | 74.6 | 288 | 8.07 |
+| dinero.js 2 | 35.6 | 150 | 308 | 757 | 1.6 µs | 580 | 1.2 µs | 324 |
+| dinero.js 2 bigint | 40.5 | 135 | 339 | 1000 | 1.9 µs | 831 | 1.5 µs | 346 |
+| dinero.js 1 | 326 | 505 | 782 | 984 | 3.6 µs | 87.8 | 282 | 58.8 |
+| currency.js | 169 | 752 | 241 | 263 | 1.0 µs | 83.1 | 274 | 6.68 |
+| js-money | 85.1 | 175 | 148 | 78.1 | 322 | 76.1 | 426 | 8.02 |
+| ts-money | 85.9 | 265 | 156 | 80.6 | 339 | 74.3 | 455 | 8.10 |
+| @screeny05/ts-money | 43.9 | 176 | 112 | 68.0 | 274 | 77.4 | 456 | 8.54 |
+| monetra | 24.4 | 208 | 19.6 | 246 | 925 | 161 | 670 | 8.62 |
+| bigint-money | 289 | 271 | 47.3 | 1.5 µs | 394 | 414 | 1.0 µs | 21.0 |
+| big.js | 554 | 214 | 119 | 333 | 4.3 µs | 136 | 654 | 37.0 |
+| bignumber.js | 1.1 µs | 415 | 97.7 | 659 | 6.4 µs | 330 | 951 | 34.9 |
+| decimal.js | 368 | 389 | 88.9 | 663 | 4.1 µs | 301 | 843 | 35.9 |
+| decimal.js-light | 244 | 377 | 74.1 | 598 | 3.4 µs | 331 | 860 | 33.4 |
+| Prisma.Decimal | 398 | 320 | 88.8 | 583 | 4.2 µs | 286 | 838 | 37.7 |
 
 Round-to-round range (min–max of the 5 round medians):
 
 | range | fromMinor | parse | add | mulRatio | allocate3 | toDecimal | format | compare |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| ducat methods | 0.53–13.9 | 30.2–40.0 | 5.32–11.8 | 15.8–29.1 | 50.7–70.6 | 34.1–79.8 | 257–276 | 3.03–10.7 |
-| ducat functions | 1.93–15.7 | 32.8–41.0 | 8.98–11.8 | 18.3–21.9 | 56.5–65.7 | 40.6–72.4 | 266–288 | 4.34–9.25 |
-| dinero.js 2 | 28.9–36.9 | 133–180 | 245–325 | 433–900 | 1.1 µs–1.8 µs | 430–622 | 1.0 µs–1.3 µs | 290–332 |
-| dinero.js 2 bigint | 32.3–46.2 | 126–174 | 340–385 | 1.1 µs–1.2 µs | 1.9 µs–2.4 µs | 779–1.1 µs | 1.5 µs–1.8 µs | 314–371 |
-| dinero.js 1 | 301–364 | 447–496 | 710–898 | 907–1.1 µs | 3.6 µs–4.6 µs | 76.5–88.6 | 263–283 | 58.9–67.8 |
-| currency.js | 157–194 | 723–924 | 236–277 | 232–245 | 981–1.0 µs | 81.4–85.3 | 256–285 | 2.95–7.47 |
-| js-money | 72.7–104 | 164–187 | 137–171 | 83.9–98.2 | 325–356 | 75.3–89.7 | 440–483 | 7.87–8.72 |
-| ts-money | 77.4–108 | 274–312 | 139–190 | 75.0–81.2 | 321–358 | 72.9–79.7 | 430–545 | 7.39–8.59 |
-| @screeny05/ts-money | 27.8–45.5 | 138–183 | 104–134 | 62.7–90.3 | 230–387 | 66.9–78.9 | 386–479 | 2.83–8.91 |
-| monetra | 22.9–29.7 | 190–250 | 19.0–20.7 | 227–301 | 893–1.2 µs | 142–281 | 590–840 | 8.18–8.78 |
-| bigint-money | 283–306 | 258–297 | 41.8–50.1 | 1.2 µs–1.4 µs | 386–410 | 347–457 | 890–1.1 µs | 16.9–22.8 |
-| big.js | 523–556 | 189–258 | 116–123 | 325–381 | 4.2 µs–4.5 µs | 132–182 | 595–711 | 34.6–40.2 |
-| bignumber.js | 661–1.2 µs | 403–464 | 87.9–101 | 618–651 | 5.8 µs–8.6 µs | 308–392 | 843–1.0 µs | 35.0–41.3 |
-| decimal.js | 344–437 | 294–405 | 70.9–90.3 | 492–685 | 3.7 µs–4.1 µs | 241–327 | 755–858 | 32.1–35.8 |
-| decimal.js-light | 218–268 | 311–480 | 60.0–92.1 | 535–869 | 3.1 µs–3.9 µs | 322–373 | 881–947 | 29.1–34.6 |
-| Prisma.Decimal | 322–410 | 316–436 | 72.3–89.7 | 518–713 | 3.8 µs–4.7 µs | 241–295 | 682–883 | 34.5–36.9 |
+| ducat methods | 0.59–12.7 | 31.3–38.0 | 6.21–11.6 | 18.8–30.5 | 62.2–70.3 | 37.6–79.3 | 268–278 | 3.02–10.6 |
+| ducat functions | 2.06–14.2 | 32.5–39.4 | 10.1–11.1 | 11.3–18.0 | 54.5–65.7 | 48.6–85.5 | 271–315 | 4.50–8.87 |
+| dinero.js 2 | 27.7–42.7 | 136–172 | 247–324 | 494–833 | 1.1 µs–2.0 µs | 458–620 | 995–1.5 µs | 282–339 |
+| dinero.js 2 bigint | 32.6–42.5 | 122–193 | 330–358 | 970–1.1 µs | 1.9 µs–2.1 µs | 801–1.0 µs | 1.4 µs–1.7 µs | 342–397 |
+| dinero.js 1 | 312–367 | 486–541 | 723–812 | 958–1.1 µs | 3.5 µs–3.9 µs | 87.6–101 | 273–297 | 52.8–70.0 |
+| currency.js | 161–170 | 736–976 | 237–289 | 248–311 | 960–1.1 µs | 80.7–85.2 | 263–281 | 3.03–6.99 |
+| js-money | 75.1–104 | 169–183 | 136–180 | 74.9–85.0 | 315–345 | 74.4–79.4 | 424–449 | 7.87–8.08 |
+| ts-money | 79.5–115 | 264–287 | 139–189 | 77.9–82.0 | 333–347 | 71.8–76.7 | 443–488 | 7.23–9.44 |
+| @screeny05/ts-money | 31.7–48.5 | 149–199 | 105–140 | 52.3–89.2 | 235–402 | 67.2–85.5 | 401–470 | 2.95–9.20 |
+| monetra | 21.3–28.9 | 191–247 | 19.0–19.9 | 218–263 | 911–946 | 138–227 | 611–769 | 8.31–8.88 |
+| bigint-money | 275–307 | 264–288 | 42.7–54.2 | 1.3 µs–1.7 µs | 376–412 | 363–509 | 957–1.1 µs | 18.4–25.9 |
+| big.js | 530–602 | 193–247 | 114–124 | 319–378 | 4.2 µs–5.6 µs | 131–179 | 617–727 | 36.3–40.0 |
+| bignumber.js | 740–1.2 µs | 384–469 | 93.5–109 | 653–725 | 6.2 µs–8.5 µs | 323–349 | 891–1.0 µs | 33.9–35.6 |
+| decimal.js | 357–391 | 282–487 | 74.2–105 | 516–703 | 3.8 µs–5.0 µs | 249–316 | 778–1.1 µs | 32.2–42.6 |
+| decimal.js-light | 200–259 | 281–555 | 55.7–81.5 | 448–668 | 3.2 µs–3.8 µs | 320–339 | 810–998 | 31.1–35.5 |
+| Prisma.Decimal | 319–418 | 304–436 | 85.8–97.9 | 518–817 | 4.0 µs–4.3 µs | 265–299 | 751–908 | 35.3–39.9 |
 
 ### deno 2.9.8 (V8 15.0.245.2-rusty)
 
@@ -298,63 +300,63 @@ Median ns per operation over 5 rounds (150 ms warm-up per cell).
 
 | ns/op | fromMinor | parse | add | mulRatio | allocate3 | toDecimal | format | compare |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| ducat methods | 8.48 | 30.3 | 9.92 | 19.8 | 42.4 | 32.6 | 401 | 6.90 |
-| ducat functions | 8.97 | 30.8 | 10.1 | 19.6 | 44.0 | 34.3 | 417 | 7.18 |
-| dinero.js 2 | 93.1 | 167 | 398 | 1.2 µs | 2.0 µs | 380 | 1.1 µs | 181 |
-| dinero.js 2 bigint | 141 | 195 | 413 | 1.4 µs | 2.7 µs | 510 | 1.3 µs | 189 |
-| dinero.js 1 | 1.2 µs | 1.4 µs | 1.7 µs | 1.9 µs | 9.0 µs | 70.0 | 421 | 39.4 |
-| currency.js | 137 | 803 | 248 | 237 | 911 | 74.8 | 393 | 7.72 |
-| js-money | 213 | 434 | 226 | 217 | 963 | 65.7 | 568 | 20.4 |
-| ts-money | 226 | 587 | 217 | 240 | 942 | 64.3 | 554 | 7.67 |
-| @screeny05/ts-money | 119 | 333 | 156 | 162 | 642 | 66.2 | 583 | 7.53 |
-| monetra | 27.8 | 227 | 13.6 | 163 | 594 | 98.1 | 642 | 9.43 |
-| bigint-money | 239 | 293 | 50.7 | 1.3 µs | 271 | 314 | 985 | 12.9 |
-| big.js | 699 | 135 | 102 | 347 | 10.4 µs | 160 | 751 | 38.6 |
-| bignumber.js | 959 | 288 | 98.5 | 749 | 5.8 µs | 339 | 975 | 37.5 |
-| decimal.js | 205 | 242 | 117 | 635 | 3.2 µs | 285 | 870 | 61.7 |
-| decimal.js-light | 148 | 223 | 88.9 | 542 | 2.7 µs | 296 | 946 | 47.8 |
-| Prisma.Decimal | 206 | 250 | 113 | 633 | 3.2 µs | 277 | 898 | 60.0 |
+| ducat methods | 8.42 | 29.3 | 9.44 | 20.8 | 41.3 | 30.6 | 398 | 6.88 |
+| ducat functions | 8.31 | 29.3 | 9.73 | 20.8 | 40.8 | 32.0 | 394 | 6.82 |
+| dinero.js 2 | 86.6 | 134 | 321 | 1.1 µs | 2.0 µs | 370 | 1.0 µs | 171 |
+| dinero.js 2 bigint | 135 | 180 | 432 | 1.3 µs | 2.7 µs | 519 | 1.2 µs | 184 |
+| dinero.js 1 | 1.1 µs | 1.3 µs | 1.6 µs | 2.0 µs | 8.0 µs | 68.7 | 405 | 39.7 |
+| currency.js | 134 | 773 | 225 | 231 | 918 | 75.3 | 386 | 7.52 |
+| js-money | 210 | 436 | 226 | 218 | 948 | 64.7 | 547 | 20.2 |
+| ts-money | 208 | 598 | 224 | 244 | 958 | 65.5 | 542 | 7.64 |
+| @screeny05/ts-money | 116 | 348 | 158 | 155 | 653 | 63.5 | 544 | 7.49 |
+| monetra | 26.4 | 213 | 12.3 | 157 | 574 | 93.0 | 604 | 9.21 |
+| bigint-money | 232 | 311 | 48.5 | 1.3 µs | 270 | 312 | 925 | 19.0 |
+| big.js | 691 | 129 | 100 | 322 | 9.6 µs | 155 | 708 | 35.8 |
+| bignumber.js | 1.1 µs | 280 | 94.5 | 759 | 6.4 µs | 325 | 917 | 36.2 |
+| decimal.js | 200 | 229 | 109 | 626 | 3.1 µs | 268 | 816 | 57.4 |
+| decimal.js-light | 149 | 230 | 87.5 | 560 | 2.6 µs | 290 | 849 | 44.4 |
+| Prisma.Decimal | 385 | 239 | 110 | 624 | 3.6 µs | 265 | 820 | 57.0 |
 
 Round-to-round range (min–max of the 5 round medians):
 
 | range | fromMinor | parse | add | mulRatio | allocate3 | toDecimal | format | compare |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| ducat methods | 3.33–8.80 | 24.7–32.6 | 4.84–10.2 | 18.3–22.9 | 41.9–44.5 | 26.6–34.1 | 395–406 | 2.60–7.31 |
-| ducat functions | 8.71–9.17 | 29.7–32.7 | 9.12–10.6 | 19.1–20.8 | 41.1–44.9 | 31.2–34.7 | 401–425 | 6.78–7.98 |
-| dinero.js 2 | 90.2–105 | 144–181 | 276–465 | 874–1.2 µs | 1.7 µs–2.6 µs | 365–416 | 1.0 µs–1.1 µs | 178–189 |
-| dinero.js 2 bigint | 128–145 | 180–205 | 401–473 | 1.4 µs–1.6 µs | 2.0 µs–3.4 µs | 485–626 | 1.2 µs–1.3 µs | 183–193 |
-| dinero.js 1 | 1.1 µs–1.3 µs | 1.3 µs–1.5 µs | 1.6 µs–1.7 µs | 1.9 µs–2.4 µs | 8.7 µs–9.6 µs | 68.4–73.9 | 406–432 | 37.6–45.1 |
-| currency.js | 132–145 | 766–888 | 231–261 | 226–252 | 903–978 | 72.1–80.2 | 386–422 | 7.56–8.21 |
-| js-money | 208–231 | 408–452 | 214–236 | 209–232 | 918–998 | 63.4–71.3 | 547–592 | 19.9–21.5 |
-| ts-money | 180–233 | 560–621 | 205–230 | 237–272 | 933–965 | 63.1–69.1 | 545–591 | 7.65–8.07 |
-| @screeny05/ts-money | 114–120 | 317–347 | 153–164 | 153–174 | 635–697 | 62.8–69.9 | 552–609 | 7.34–8.16 |
-| monetra | 26.1–31.0 | 215–237 | 12.8–14.4 | 160–173 | 589–674 | 94.0–105 | 628–707 | 9.28–10.4 |
-| bigint-money | 225–249 | 280–300 | 47.0–51.1 | 1.3 µs–1.4 µs | 261–280 | 310–329 | 942–1.0 µs | 12.4–14.6 |
-| big.js | 651–737 | 134–148 | 95.9–125 | 286–368 | 9.9 µs–11.1 µs | 156–168 | 737–798 | 36.6–41.4 |
-| bignumber.js | 952–1.0 µs | 282–311 | 92.4–99.5 | 737–828 | 5.7 µs–6.4 µs | 322–368 | 942–1.0 µs | 37.1–39.4 |
-| decimal.js | 203–218 | 234–252 | 112–120 | 616–663 | 3.1 µs–3.5 µs | 271–286 | 856–908 | 59.9–63.4 |
-| decimal.js-light | 137–149 | 212–238 | 81.7–94.6 | 507–572 | 2.6 µs–2.7 µs | 289–308 | 884–998 | 42.0–48.5 |
-| Prisma.Decimal | 199–216 | 240–262 | 108–120 | 604–664 | 3.1 µs–3.3 µs | 253–281 | 840–935 | 59.0–69.6 |
+| ducat methods | 3.07–8.52 | 25.0–29.5 | 4.60–9.71 | 16.2–21.1 | 40.3–42.2 | 25.7–34.7 | 378–419 | 2.65–8.20 |
+| ducat functions | 8.25–8.74 | 29.0–31.1 | 9.18–10.0 | 20.4–21.4 | 40.4–42.6 | 31.4–34.0 | 391–403 | 6.73–6.83 |
+| dinero.js 2 | 76.2–94.5 | 129–148 | 260–369 | 809–1.1 µs | 1.3 µs–2.6 µs | 358–407 | 1.0 µs–1.1 µs | 162–183 |
+| dinero.js 2 bigint | 118–139 | 164–188 | 412–505 | 1.2 µs–1.3 µs | 2.5 µs–3.4 µs | 503–552 | 1.1 µs–1.2 µs | 182–185 |
+| dinero.js 1 | 1.1 µs–1.2 µs | 1.2 µs–1.3 µs | 1.5 µs–1.6 µs | 1.7 µs–2.2 µs | 6.8 µs–8.1 µs | 66.3–69.8 | 396–421 | 36.4–45.1 |
+| currency.js | 128–137 | 751–780 | 222–227 | 227–237 | 908–930 | 71.3–76.7 | 383–397 | 7.33–7.72 |
+| js-money | 209–218 | 415–492 | 223–230 | 216–224 | 929–956 | 63.6–66.6 | 540–555 | 19.8–20.6 |
+| ts-money | 169–215 | 587–658 | 223–226 | 240–249 | 939–976 | 63.1–69.7 | 536–549 | 7.51–7.71 |
+| @screeny05/ts-money | 113–116 | 337–376 | 154–161 | 154–158 | 647–669 | 62.6–65.7 | 535–567 | 7.23–7.78 |
+| monetra | 26.0–26.8 | 211–234 | 12.2–13.3 | 153–162 | 570–604 | 91.9–96.8 | 597–614 | 9.13–9.69 |
+| bigint-money | 231–241 | 309–317 | 48.0–49.1 | 1.3 µs–1.3 µs | 265–273 | 309–332 | 911–964 | 18.5–19.2 |
+| big.js | 601–720 | 124–132 | 93.2–102 | 317–328 | 9.4 µs–9.9 µs | 152–156 | 695–726 | 35.0–36.3 |
+| bignumber.js | 1.1 µs–1.1 µs | 278–284 | 86.6–96.0 | 717–779 | 6.3 µs–6.6 µs | 298–331 | 889–1.1 µs | 35.4–37.0 |
+| decimal.js | 195–203 | 228–244 | 107–109 | 616–638 | 3.1 µs–3.2 µs | 264–269 | 809–822 | 56.6–58.5 |
+| decimal.js-light | 138–151 | 205–233 | 80.5–90.2 | 506–562 | 2.6 µs–2.7 µs | 263–299 | 828–871 | 42.7–46.3 |
+| Prisma.Decimal | 325–393 | 235–246 | 101–111 | 613–639 | 3.5 µs–3.7 µs | 249–274 | 799–845 | 56.7–57.7 |
 
 
 ## Bundle size
 
 | library | program, min | program, gzip | whole package, min | whole package, gzip |
 |---|--:|--:|--:|--:|
-| currency.js | 2.8 kB | 1.3 kB | 2.8 kB | 1.3 kB |
-| bigint-money | 3.7 kB | 1.5 kB | 3.7 kB | 1.5 kB |
-| dinero.js 2 | 4.6 kB | 1.8 kB | 18.5 kB | 5.0 kB |
-| @screeny05/ts-money | 6.0 kB | 2.2 kB | 5.9 kB | 2.2 kB |
-| big.js | 6.8 kB | 2.9 kB | 6.7 kB | 2.9 kB |
-| dinero.js 1 | 10.1 kB | 3.2 kB | 10.0 kB | 3.2 kB |
-| ducat | 9.2 kB | 3.7 kB | 12.0 kB | 4.7 kB |
-| monetra | 13.7 kB | 4.5 kB | 37.3 kB | 11.2 kB |
-| decimal.js-light | 13.5 kB | 5.9 kB | 13.5 kB | 5.8 kB |
-| money-math | 23.1 kB | 8.3 kB | 23.1 kB | 8.3 kB |
-| bignumber.js | 19.8 kB | 8.5 kB | 19.7 kB | 8.5 kB |
-| js-money | 28.9 kB | 8.8 kB | 28.8 kB | 8.8 kB |
-| decimal.js | 31.6 kB | 12.6 kB | 31.6 kB | 12.6 kB |
-| ts-money | 91.3 kB | 30.7 kB | 91.3 kB | 30.7 kB |
+| currency.js | 2.8 KiB | 1.3 KiB | 2.8 KiB | 1.3 KiB |
+| bigint-money | 3.7 KiB | 1.5 KiB | 3.7 KiB | 1.5 KiB |
+| dinero.js 2 | 4.6 KiB | 1.8 KiB | 18.5 KiB | 5.0 KiB |
+| @screeny05/ts-money | 6.0 KiB | 2.2 KiB | 5.9 KiB | 2.2 KiB |
+| big.js | 6.8 KiB | 2.9 KiB | 6.7 KiB | 2.9 KiB |
+| dinero.js 1 | 10.1 KiB | 3.2 KiB | 10.0 KiB | 3.2 KiB |
+| ducat | 10.4 KiB | 4.0 KiB | 12.9 KiB | 4.9 KiB |
+| monetra | 13.7 KiB | 4.5 KiB | 37.3 KiB | 11.2 KiB |
+| decimal.js-light | 13.5 KiB | 5.9 KiB | 13.5 KiB | 5.8 KiB |
+| money-math | 23.1 KiB | 8.3 KiB | 23.1 KiB | 8.3 KiB |
+| bignumber.js | 19.8 KiB | 8.5 KiB | 19.7 KiB | 8.5 KiB |
+| js-money | 28.9 KiB | 8.8 KiB | 28.8 KiB | 8.8 KiB |
+| decimal.js | 31.6 KiB | 12.6 KiB | 31.6 KiB | 12.6 KiB |
+| ts-money | 91.3 KiB | 30.7 KiB | 91.3 KiB | 30.7 KiB |
 
 ## Fixed-point decimal libraries
 
@@ -418,56 +420,56 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 
 ### Speed
 
+The `parse` rows were measured before `parse` started checking where group separators are. `Fixed`'s parse (`fixed('…')`) is not affected.
+
 **node 24.22.2 (V8 13.6.233.17-node.63)** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
 | ns/op | parse | add | multiply | divide | compare | toString |
 |---|--:|--:|--:|--:|--:|--:|
-| ducat Money | 123 | 9.99 | 80.3 | 68.3 | 7.08 | 30.5 |
-| dnum 2.18.1 | 323 | 25.1 | 292 | 251 | 21.4 | 264 |
-| ethers FixedNumber 6.17.0 | 2.2 µs | 1.6 µs | 5.7 µs | 5.5 µs | 9.19 | 4.92 |
-| js-big-decimal 2.2.0 | 60.9 | 1.9 µs | 1.5 µs | 36.3 µs | 658 | 4.83 |
-| bigdecimal.js 1.7.2 | 45.7 | 15.1 | 75.6 | 56.9 | 9.09 | 39.9 |
-| @formatjs/bigdecimal 0.2.10 | 122 | 33.7 | n/a | n/a | 22.7 | 51.1 |
-| bigint-money 2.0.1 | 542 | 47.8 | 3.0 µs | 2.6 µs | 14.1 | 481 |
-| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
+| ducat Money | 133 | 10.2 | 78.3 | 29.9 | 7.14 | 31.1 |
+| ducat Fixed | 32.0 | 11.5 | 30.1 | 72.3 | 7.71 | 30.9 |
+| dnum 2.18.1 | 339 | 26.0 | 297 | 253 | 21.5 | 273 |
+| ethers FixedNumber 6.17.0 | 2.3 µs | 1.7 µs | 5.8 µs | 5.5 µs | 9.15 | 5.10 |
+| js-big-decimal 2.2.0 | 63.3 | 1.8 µs | 1.6 µs | 37.7 µs | 671 | 4.90 |
+| bigdecimal.js 1.7.2 | 46.3 | 15.6 | 77.8 | 59.7 | 10.0 | 40.2 |
+| @formatjs/bigdecimal 0.2.10 | 122 | 33.5 | n/a | n/a | 24.4 | 52.6 |
+| bigint-money 2.0.1 | 545 | 46.7 | 3.0 µs | 2.8 µs | 14.3 | 508 |
 
 **bun 1.4.4** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
 | ns/op | parse | add | multiply | divide | compare | toString |
 |---|--:|--:|--:|--:|--:|--:|
-| ducat Money | 94.8 | 10.7 | 75.3 | 148 | 7.06 | 57.7 |
-| dnum 2.18.1 | 361 | 43.3 | 488 | 330 | 33.4 | 555 |
-| ethers FixedNumber 6.17.0 | 2.4 µs | 1.7 µs | 5.7 µs | 5.6 µs | 9.82 | 2.72 |
-| js-big-decimal 2.2.0 | 38.5 | 2.1 µs | 2.2 µs | 51.8 µs | 700 | 1.30 |
-| bigdecimal.js 1.7.2 | 30.6 | 15.2 | 61.1 | 34.8 | 8.72 | 95.2 |
-| @formatjs/bigdecimal 0.2.10 | 215 | 53.9 | n/a | n/a | 20.4 | 128 |
-| bigint-money 2.0.1 | 360 | 51.4 | 2.5 µs | 2.3 µs | 19.8 | 390 |
-| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
+| ducat Money | 96.4 | 12.3 | 71.2 | 27.2 | 7.34 | 73.7 |
+| ducat Fixed | 29.8 | 13.4 | 34.9 | 154 | 6.45 | 80.9 |
+| dnum 2.18.1 | 380 | 43.2 | 491 | 307 | 33.0 | 554 |
+| ethers FixedNumber 6.17.0 | 2.3 µs | 1.7 µs | 7.2 µs | 5.6 µs | 9.43 | 4.83 |
+| js-big-decimal 2.2.0 | 37.7 | 2.2 µs | 2.1 µs | 54.3 µs | 713 | 4.65 |
+| bigdecimal.js 1.7.2 | 32.9 | 13.3 | 58.5 | 38.9 | 8.81 | 100 |
+| @formatjs/bigdecimal 0.2.10 | 242 | 56.3 | n/a | n/a | 20.1 | 134 |
+| bigint-money 2.0.1 | 350 | 49.8 | 2.6 µs | 2.5 µs | 20.3 | 438 |
 
 **deno 2.9.8 (V8 15.0.245.2-rusty)** (multiply by 1.075 and divide by 3, rounded halfExpand to 2 decimals; median of 5 rounds, 150 ms warm-up per cell)
 
 | ns/op | parse | add | multiply | divide | compare | toString |
 |---|--:|--:|--:|--:|--:|--:|
-| ducat Money | 132 | 9.39 | 87.5 | 65.3 | 6.78 | 30.5 |
-| dnum 2.18.1 | 357 | 25.0 | 297 | 227 | 21.4 | 289 |
-| ethers FixedNumber 6.17.0 | 2.4 µs | 1.8 µs | 5.8 µs | 5.6 µs | 8.94 | 4.91 |
-| js-big-decimal 2.2.0 | 59.9 | 1.7 µs | 1.4 µs | 19.0 µs | 550 | 4.60 |
-| bigdecimal.js 1.7.2 | 37.0 | 13.4 | 59.5 | 47.0 | 8.00 | 34.9 |
-| @formatjs/bigdecimal 0.2.10 | 121 | 25.3 | n/a | n/a | 20.4 | 54.6 |
-| bigint-money 2.0.1 | 480 | 52.1 | 2.1 µs | 1.9 µs | 12.9 | 306 |
-| ducat Fixed | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ | not measured¹ |
-
-¹ Added to the benchmark after this run; the next clean-machine run of compare/runner measures it.
+| ducat Money | 127 | 8.75 | 82.6 | 25.3 | 6.63 | 31.1 |
+| ducat Fixed | 28.4 | 9.88 | 23.6 | 61.6 | 6.86 | 30.9 |
+| dnum 2.18.1 | 328 | 23.1 | 289 | 219 | 19.1 | 266 |
+| ethers FixedNumber 6.17.0 | 2.4 µs | 1.6 µs | 5.8 µs | 5.6 µs | 8.72 | 4.93 |
+| js-big-decimal 2.2.0 | 56.8 | 1.6 µs | 1.4 µs | 19.2 µs | 568 | 4.59 |
+| bigdecimal.js 1.7.2 | 35.1 | 12.8 | 58.2 | 46.4 | 7.74 | 33.2 |
+| @formatjs/bigdecimal 0.2.10 | 115 | 27.0 | n/a | n/a | 20.2 | 48.8 |
+| bigint-money 2.0.1 | 467 | 26.8 | 2.1 µs | 1.9 µs | 18.3 | 306 |
 
 ### Bundle size
 
 | library | program, min | program, gzip | whole package, min | whole package, gzip |
 |---|--:|--:|--:|--:|
-| dnum | 3.4 kB | 1.5 kB | 7.2 kB | 2.8 kB |
-| bigint-money | 3.7 kB | 1.5 kB | 3.7 kB | 1.5 kB |
-| @formatjs/bigdecimal | 8.9 kB | 2.3 kB | 8.9 kB | 2.3 kB |
-| js-big-decimal | 9.3 kB | 3.0 kB | 9.2 kB | 3.0 kB |
-| ethers FixedNumber (import from 'ethers') | 8.5 kB | 3.2 kB | 376.4 kB | 140.8 kB |
-| ducat Money | 9.2 kB | 3.7 kB | 12.0 kB | 4.7 kB |
-| ducat Fixed | 14.8 kB | 5.2 kB | 15.1 kB | 5.2 kB |
-| bigdecimal.js | 45.9 kB | 11.6 kB | 45.9 kB | 11.6 kB |
+| dnum | 3.4 KiB | 1.5 KiB | 7.2 KiB | 2.8 KiB |
+| bigint-money | 3.7 KiB | 1.5 KiB | 3.7 KiB | 1.5 KiB |
+| @formatjs/bigdecimal | 8.9 KiB | 2.3 KiB | 8.9 KiB | 2.3 KiB |
+| js-big-decimal | 9.3 KiB | 3.0 KiB | 9.2 KiB | 3.0 KiB |
+| ethers FixedNumber (import from 'ethers') | 8.5 KiB | 3.2 KiB | 376.4 KiB | 140.8 KiB |
+| ducat Money | 10.4 KiB | 4.0 KiB | 12.9 KiB | 4.9 KiB |
+| ducat Fixed | 14.8 KiB | 5.2 KiB | 15.1 KiB | 5.2 KiB |
+| bigdecimal.js | 45.9 KiB | 11.6 KiB | 45.9 KiB | 11.6 KiB |
