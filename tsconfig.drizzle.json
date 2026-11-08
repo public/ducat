@@ -1,0 +1,9 @@
+{
+  // The Drizzle entries. drizzle-orm's declaration files don't type-check under the strict base
+  // options (they need Node and DOM types, and fail under exactOptionalPropertyTypes), so only this
+  // project skips checking library declarations.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "skipLibCheck": true },
+  "include": ["src/drizzle"],
+  "exclude": []
+}
