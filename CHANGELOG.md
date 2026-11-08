@@ -15,6 +15,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   divisor whose ratio parts are safe integers, at the value's own scale, no longer builds the
   inverse ratio in bigint. It runs 43% fewer instructions dividing by 3 or by '1.5', and on a clean
   machine `Fixed` now divides faster than bigdecimal.js on every runtime. Results are unchanged.
+- NOTICE names the source of every data file (the Braintree, Checkout.com, Klarna and PayPal tables and
+  ISO 4217 List Three were missing), and a test keeps it so.
 
 ## [0.2.1] - 2026-11-08
 

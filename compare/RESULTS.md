@@ -467,5 +467,5 @@ Legend: ✓ pass, ✗ wrong value returned silently, ~ accepted but lossy (see n
 | js-big-decimal | 9.3 KiB | 3.0 KiB | 9.2 KiB | 3.0 KiB |
 | ethers FixedNumber (import from 'ethers') | 8.5 KiB | 3.2 KiB | 376.4 KiB | 140.8 KiB |
 | ducat Money | 10.4 KiB | 4.0 KiB | 12.9 KiB | 4.9 KiB |
-| ducat Fixed | 14.8 KiB | 5.2 KiB | 15.1 KiB | 5.2 KiB |
+| ducat Fixed | 15.1 KiB | 5.3 KiB | 15.4 KiB | 5.3 KiB |
 | bigdecimal.js | 45.9 KiB | 11.6 KiB | 45.9 KiB | 11.6 KiB |

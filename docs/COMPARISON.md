@@ -194,7 +194,7 @@ Money's internals and the ISO table too.
 | js-big-decimal                            |      9.3 KiB |       3.0 KiB |            9.2 KiB |             3.0 KiB |
 | ethers FixedNumber (import from 'ethers') |      8.5 KiB |       3.2 KiB |          376.4 KiB |           140.8 KiB |
 | ducat Money                               |     10.4 KiB |       4.0 KiB |           12.9 KiB |             4.9 KiB |
-| ducat Fixed                               |     14.8 KiB |       5.2 KiB |           15.1 KiB |             5.2 KiB |
+| ducat Fixed                               |     15.1 KiB |       5.3 KiB |           15.4 KiB |             5.3 KiB |
 | bigdecimal.js                             |     45.9 KiB |      11.6 KiB |           45.9 KiB |            11.6 KiB |
 
 ### Speed (fixed point)
@@ -218,7 +218,7 @@ Node and Deno. Since 0.2.2, `Fixed` divides through the integer-divisor fast pat
 29 and 29 ns on Node, Bun and Deno, against bigdecimal.js's 64, 39 and 50, and as fast as `Money` or faster (`Money`: 33, 29 and 29).
 Every cell where another library measured faster than `Fixed`:
 
-- **add on Bun:** bigdecimal.js (14.4 against 15.8 ns, 9%).
+- **add on Bun:** bigdecimal.js (14.4 against 15.8 ns, 8%).
 - **toString:** js-big-decimal and ethers are fastest everywhere (about 5 ns), against `Fixed`'s 33 on Node and Deno
   and 89 on Bun.
 
