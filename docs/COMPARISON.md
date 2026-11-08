@@ -98,7 +98,7 @@ float's error (`0.30000000000000004`) instead of being rejected.
 
 ### Speed
 
-One quiet AMD EPYC Genoa machine (Vultr, Frankfurt; kernel 6.8; CPU steal 0.03–0.04%). Each runtime was a separate run
+One quiet AMD EPYC Genoa machine (Vultr, Frankfurt; kernel 6.8; CPU steal 0.01–0.02%). Each runtime was a separate run
 on the same machine. Each cell is nanoseconds per operation over 1,000 values: the median of 5 rounds, with library
 order shuffled each round.
 
@@ -119,8 +119,8 @@ The ducat column measures its methods API. Where ducat is not fastest (every cel
 faster):
 
 - **Formatting:** every library spends most of its time inside `Intl.NumberFormat`. currency.js (formatting a float)
-  is faster on Node (380 ns against 411) and on Deno (393 against 401). On Bun ducat and dinero.js 1 are level (269
-  and 272).
+  is faster on Node (380 ns against 411) and on Deno (393 against 401). (On Bun ducat measured fastest, level with
+  dinero.js 1: 269 and 272.)
 - **Comparing on Bun:** libraries that compare plain numbers are faster: currency.js 6.9, js-money 7.9, ts-money 8.0,
   @screeny05/ts-money 8.4 and monetra 8.6 ns, against ducat's 10.6. On Node and Deno ducat is slightly ahead (7.39
   against ts-money's 7.91, and 6.90 against @screeny05/ts-money's 7.53).
@@ -209,8 +209,8 @@ shown; Bun and Deno are in `compare/RESULTS.md`.
 **ducat is not the fastest fixed-point library.** It is fastest on add and compare on every runtime. Every cell where
 another library measured faster:
 
-- **parse:** bigdecimal.js and js-big-decimal on every runtime (Node 46 and 61 ns against ducat's 123; Bun 31 and 39
-  against 95; Deno 37 and 60 against 132), and @formatjs/bigdecimal narrowly on Node and Deno (122 and 121).
+- **parse:** bigdecimal.js and js-big-decimal on every runtime (Node 46 and 61 ns against ducat's 123; Bun 31 and 38
+  against 95; Deno 37 and 60 against 132), and @formatjs/bigdecimal on Node (122 against 123, level) and Deno (121 against 132).
 - **multiply:** bigdecimal.js on every runtime (Node 76 against 80 ns; Bun 61 against 75; Deno 60 against 88).
 - **divide by 3:** bigdecimal.js on every runtime (Node 57 against 68 ns; Bun 35 against 148; Deno 47 against 65).
   ducat's exact division by a non-terminating factor goes through bigint, which is slowest on Bun.
