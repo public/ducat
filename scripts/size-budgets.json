@@ -1,12 +1,11 @@
 {
   "entries": {
     "@ducatjs/money": 4.93,
-    "@ducatjs/money/fn": 21.89,
     "@ducatjs/money/allocate": 5.29,
     "@ducatjs/money/tax": 3.97,
     "@ducatjs/money/convert": 7.3,
-    "@ducatjs/money/convert/ecb": 7.15,
-    "@ducatjs/money/convert/fetch": 7.76,
+    "@ducatjs/money/convert/ecb": 7.39,
+    "@ducatjs/money/convert/fetch": 8.26,
     "@ducatjs/money/convert/history": 6.29,
     "@ducatjs/money/exact": 4.22,
     "@ducatjs/money/policy": 4.04,
@@ -25,8 +24,11 @@
     "@ducatjs/money/prisma": 4.51,
     "@ducatjs/money/drizzle/pg": 4.89,
     "@ducatjs/money/drizzle/mysql": 4.89,
-    "@ducatjs/money/drizzle/sqlite": 4.74,
-    "@ducatjs/money/all": 22.22
+    "@ducatjs/money/drizzle/sqlite": 4.74
+  },
+  "aggregateCeilings": {
+    "@ducatjs/money/fn": 30,
+    "@ducatjs/money/all": 30
   },
   "snippets": {
     "methods: money, add, multiply, toDecimal": {
