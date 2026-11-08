@@ -1,7 +1,7 @@
 // Network fetchers for published reference rates, using the platform fetch. Opt-in: nothing else in
 // the library imports this module, so core and @ducatjs/money/convert never touch the
 // network. You decide when to call it and how to cache.
-import { parseEcbXml } from './ecb.js';
+import { parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml } from './ecb.js';
 import type { RateTable } from './provider.js';
 
 /**
@@ -73,33 +73,8 @@ export class FetchRatesError extends Error {
  */
 export async function fetchEcb(options?: FetchEcbOptions): Promise<RateTable[]> {
   const url = ECB_URLS[options?.history ?? 'daily'];
-  const fetchFunction = options?.fetch ?? (globalThis as { fetch?: Fetch }).fetch;
-  if (fetchFunction === undefined) {
-    throw new TypeError('No fetch available: pass options.fetch');
-  }
-
-  const init: { signal?: AbortSignalLike; headers: Record<string, string> } = {
-    headers: { accept: 'application/xml' },
-  };
-  const signal = requestSignal(options?.signal, options?.timeout ?? DEFAULT_TIMEOUT_MS);
-  if (signal !== undefined) {
-    init.signal = signal;
-  }
-  const response = await fetchFunction(url, init);
-  if (!response.ok) {
-    throw new FetchRatesError(url, response.status);
-  }
-
-  const body = await response.text();
-  try {
-    return parseEcbXml(body);
-  } catch (error) {
-    // An error page or a captive portal is the usual cause, so say where the bad file came from.
-    if (error instanceof SyntaxError) {
-      throw new SyntaxError(`${error.message} (from ${url})`, { cause: error });
-    }
-    throw error;
-  }
+  const body = await getText(url, 'application/xml', options);
+  return parsedFrom(url, () => parseEcbXml(body));
 }
 
 /** The caller's signal, a timeout signal, or both combined. */
@@ -124,4 +99,162 @@ function requestSignal(
     return signal;
   }
   return statics.any([signal, timeoutSignal]);
+}
+
+/** The ECB Data Portal's SDMX REST API (no key, and CORS-enabled, so it works in browsers). */
+export const ECB_DATA_API = 'https://data-api.ecb.europa.eu/service/data/EXR';
+
+/** Options for fetching a date range of ECB reference rates. */
+export interface FetchEcbRangeOptions extends Omit<FetchEcbOptions, 'history'> {
+  /** The first day ('1999-01-04' at the earliest). */
+  readonly start: string | Date;
+  /** The last day (default: the latest published). */
+  readonly end?: string | Date;
+  /** ISO codes to fetch (default: every currency, including discontinued series). */
+  readonly currencies?: readonly string[];
+}
+
+/**
+ * A request's UTC day: a 'YYYY-MM-DD' string that is a real calendar day, or a Date (any
+ * offset) as its UTC day. Anything else is a RangeError, before any request is made.
+ */
+function requestDay(time: string | Date, name: string): string {
+  let day: string;
+  if (typeof time === 'string') {
+    day = time;
+  } else {
+    day = Number.isNaN(time.getTime()) ? '' : time.toISOString().slice(0, 10);
+  }
+  const match = /^(\d{4})-(\d\d)-(\d\d)$/.exec(day);
+  const date =
+    match === null ? undefined : new Date(Date.UTC(+match[1]!, +match[2]! - 1, +match[3]!));
+  // Date.UTC rolls 30 February over into March, so a real day must come back unchanged.
+  if (date === undefined || date.toISOString().slice(0, 10) !== day) {
+    throw new RangeError(`${name} must be a date, got ${String(time)}`);
+  }
+  return day;
+}
+
+/** Wraps a parser's SyntaxError with the URL the bad file came from (an error page, usually). */
+function parsedFrom<T>(url: string, parse: () => T): T {
+  try {
+    return parse();
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new SyntaxError(`${error.message} (from ${url})`, { cause: error });
+    }
+    throw error;
+  }
+}
+
+/** The platform's AbortController, where it exists. */
+type AbortControllerLike = { readonly signal: AbortSignalLike; abort(reason?: unknown): void };
+
+/** GETs `url` as text, with the timeout and signal handling every fetcher here shares. */
+async function getText(
+  url: string,
+  accept: string,
+  options: Omit<FetchEcbOptions, 'history'> | undefined,
+): Promise<string> {
+  return (await getTextOrNotFound(url, accept, options, false))!;
+}
+
+/** getText, or undefined for HTTP 404 when `notFoundIsEmpty` (an API's "no results"). */
+async function getTextOrNotFound(
+  url: string,
+  accept: string,
+  options: Omit<FetchEcbOptions, 'history'> | undefined,
+  notFoundIsEmpty: boolean,
+): Promise<string | undefined> {
+  const fetchFunction = options?.fetch ?? (globalThis as { fetch?: Fetch }).fetch;
+  if (fetchFunction === undefined) {
+    throw new TypeError('No fetch available: pass options.fetch');
+  }
+  const init: { signal?: AbortSignalLike; headers: Record<string, string> } = {
+    headers: { accept },
+  };
+  const signal = requestSignal(options?.signal, options?.timeout ?? DEFAULT_TIMEOUT_MS);
+  if (signal !== undefined) {
+    init.signal = signal;
+  }
+  const response = await fetchFunction(url, init);
+  if (notFoundIsEmpty && response.status === 404) {
+    return undefined;
+  }
+  if (!response.ok) {
+    throw new FetchRatesError(url, response.status);
+  }
+  return response.text();
+}
+
+/**
+ * Fetches a date range of ECB euro reference rates from the ECB Data Portal and parses them with
+ * parseEcbSdmxCsv: EUR-based tables, one per TARGET working day, newest first, with the published
+ * digits. It makes two requests: the series' DECIMALS (small) and the observations without
+ * attributes, which keeps the full history since 1999 to about 15 MB. Give a few days before the
+ * first day you need, so that a lookback from it has a table to fall back on. A range with no
+ * rates (a weekend, or after the latest day) gives []. Both requests share one timeout and are
+ * cancelled together: if one fails, the other is aborted. The ECB states that its rates are for
+ * information purposes only.
+ *
+ *     const tables = await fetchEcbRange({ start: '2026-01-01', currencies: ['USD', 'JPY'] });
+ *     const history = rateHistory(tables); // from @ducatjs/money/convert/history
+ */
+export async function fetchEcbRange(options: FetchEcbRangeOptions): Promise<RateTable[]> {
+  const currencies = options.currencies ?? [];
+  for (const currency of currencies) {
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      throw new RangeError(`Not an ISO currency code: ${currency}`);
+    }
+  }
+  const start = requestDay(options.start, 'start');
+  if (start < '1999-01-04') {
+    throw new RangeError(`The ECB's rates start on 1999-01-04, not ${start}`);
+  }
+  let query = `?format=csvdata&startPeriod=${start}`;
+  if (options.end !== undefined) {
+    const end = requestDay(options.end, 'end');
+    if (end < start) {
+      throw new RangeError(`end ${end} is before start ${start}`);
+    }
+    query += `&endPeriod=${end}`;
+  }
+  const url = `${ECB_DATA_API}/D.${currencies.join('+')}.EUR.SP00.A`;
+  const seriesUrl = `${url}?format=csvdata&detail=nodata`;
+  const dataUrl = `${url}${query}&detail=dataonly`;
+
+  // One controller for both requests, tied to the caller's signal and the timeout, so that a
+  // failure of either cancels the other (the data can be ~15 MB) instead of letting it run on.
+  let shared: Omit<FetchEcbOptions, 'history'> = options;
+  let controller: AbortControllerLike | undefined;
+  const Controller = (globalThis as { AbortController?: new () => AbortControllerLike })
+    .AbortController;
+  if (Controller !== undefined) {
+    const own = new Controller();
+    controller = own;
+    const outer = requestSignal(options.signal, options.timeout ?? DEFAULT_TIMEOUT_MS);
+    if (outer?.aborted === true) {
+      own.abort(outer.reason);
+    } else {
+      outer?.addEventListener('abort', () => own.abort(outer.reason), { once: true });
+    }
+    shared = { ...options, signal: own.signal, timeout: 0 };
+  }
+
+  let series: string;
+  let data: string | undefined;
+  try {
+    [series, data] = await Promise.all([
+      getText(seriesUrl, 'text/csv', shared),
+      getTextOrNotFound(dataUrl, 'text/csv', shared, true),
+    ]);
+  } catch (error) {
+    controller?.abort(error);
+    throw error;
+  }
+  if (data === undefined) {
+    return [];
+  }
+  const decimals = parsedFrom(seriesUrl, () => parseEcbSdmxDecimals(series));
+  return parsedFrom(dataUrl, () => parseEcbSdmxCsv(data, { decimals }));
 }
