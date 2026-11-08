@@ -48,6 +48,8 @@ describe('Money methods', () => {
       'parse',
       'parseMoney',
       'cashRule',
+      // takes a currency code, not an amount
+      'currencyDigits',
       // the historic currency table: lookups and registration by code, not by amount
       'historicCurrency',
       'historicCurrencies',
