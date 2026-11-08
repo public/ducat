@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import fc from 'fast-check';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { Decimal as PrismaDecimal } from '@prisma/client/runtime/library';
 import DecimalJs from 'decimal.js';
 import Big from 'big.js';
-import { money, toDecimal } from '../src/fn.js';
+import { fromMinor, identical, money, toDecimal } from '../src/fn.js';
+import { runs } from './fc-config.js';
 import {
   decimalMoneyField,
   fromDecimal,
@@ -41,5 +43,63 @@ describe('Prisma / DB helpers', () => {
       currency: 'EUR',
     });
     expect(() => toMinorColumns(money('1.234', 'EUR', { scale: 3 }), 'a', 'c')).toThrow(/round/);
+  });
+  it('a scale column round-trips any scale, and records it next to the minor units', () => {
+    const field = minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' });
+    expect(field.needs).toEqual({ amountMinor: true, currency: true, amountScale: true });
+
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(2n ** 63n), max: 2n ** 63n - 1n }),
+        fc.constantFrom('EUR', 'JPY', 'KWD', 'CLF'),
+        fc.nat({ max: 12 }),
+        (minor, currency, scale) => {
+          const original = fromMinor(minor, currency, scale);
+          const columns = toMinorColumns(original, 'amountMinor', 'currency', {
+            scale: 'amountScale',
+          });
+          expect(columns).toEqual({ amountMinor: minor, currency, amountScale: scale });
+          expect(identical(field.compute(columns), original)).toBe(true);
+          // drivers may return a SMALLINT as a bigint (SQLite with safe integers)
+          const asBigInt = { ...columns, amountScale: BigInt(scale) };
+          expect(identical(field.compute(asBigInt), original)).toBe(true);
+        },
+      ),
+      { numRuns: runs(1000) },
+    );
+
+    const subMinor = money('1.234', 'EUR', { scale: 3 });
+    expect(toMinorColumns(subMinor, 'a', 'c', { scale: 's' })).toEqual({
+      a: 1234n,
+      c: 'EUR',
+      s: 3,
+    });
+  });
+
+  it('rejects a scale that is missing, negative, not an integer or beyond 1000', () => {
+    const atLimit = { amountMinor: 1n, currency: 'EUR', amountScale: 1000 };
+    expect(
+      minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' }).compute(atLimit).scale,
+    ).toBe(1000);
+    const field = minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' });
+    for (const amountScale of [null, undefined, -1, 1.5, '2', NaN, 1001, 10 ** 9, 2n ** 70n]) {
+      const row = { amountMinor: 1234n, currency: 'EUR', amountScale } as never;
+      expect(() => field.compute(row)).toThrow(/integer scale from 0 to 1000 in "amountScale"/);
+    }
+  });
+
+  it('types the scale column in needs, rows and written columns', () => {
+    const columns = toMinorColumns(money('1', 'EUR'), 'amountMinor', 'currency', {
+      scale: 'amountScale',
+    });
+    expectTypeOf(columns).toEqualTypeOf<
+      { amountMinor: bigint } & { currency: string } & { amountScale: number }
+    >();
+    const field = minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' });
+    expectTypeOf(field.needs).toEqualTypeOf<{
+      amountMinor: true;
+      currency: true;
+      amountScale: true;
+    }>();
   });
 });

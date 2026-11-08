@@ -143,6 +143,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                      |
 | `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                     |
 | `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns      |
+| `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O       |
 | `@ducatjs/money/fixed`              | `toFixedPoint`                                                     | `Fixed`, `fixed`, `fromScaled`, `isFixed`, `moneyToFixed`      |
 | `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)       |
 | `@ducatjs/money/valibot`            | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Valibot, an optional peer)   |
@@ -504,6 +505,8 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 - BIGINT holds ±9.2·10^18 minor units, which is 92 quadrillion EUR. Postgres's `money` type is locale-dependent; don't use it.
 - Choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 - Prisma maps `BigInt` to JS `bigint`. The helpers accept it, and `fromMinor` normalises it back to a number when it is safe.
+- **A scale column** makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below). To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
+- **Exponent changes.** Minor units stored without a scale are read at the currency's exponent in the installed version of ducat, so a changed exponent would silently change what old rows mean: 1234 stored as 12.34 would read as 1.234 or 123.4. So an exponent change is a breaking change (see [Decisions](#decisions)), listed under **Changed** in the changelog with the currencies affected. Before upgrading across one, migrate the affected rows, or store a scale column (or a decimal) so the question never arises. Custom currencies keep the exponent given to `defineCurrency`.
 - `fromDecimal` rejects values with more decimals than the currency allows (e.g. `12.3456` in NUMERIC(19,4) for EUR) unless you pass `{ scale }` or `{ rounding }`. Trailing zeros are fine.
 
 Prisma client extension (from `examples/prisma`, which runs end to end against SQLite):
@@ -529,6 +532,41 @@ await db.order.create({
 ```
 
 `src/prisma.ts` does not import `@prisma/client`. It types Decimal structurally, as `{ toFixed(): string }`, so it also works with decimal.js and big.js. `examples/prisma/typecheck.ts` checks the helpers against Prisma's generated extension types.
+
+#### node-postgres
+
+`@ducatjs/money/pg` keeps every amount node-postgres reads exact. It doesn't import `pg`; you pass `pg.types` in.
+
+- **`exactTypes(pg.types)`** gives type parsers that return BIGINT as a bigint and NUMERIC as its exact string, rejecting `NaN` and `Infinity`. Arrays of both are parsed the same way: pg's default parses `numeric[]` as floats. Other types keep pg's parsers. **The bigint applies to every BIGINT on that client**, `count(*)` and bigserial ids included, and `JSON.stringify` throws on a bigint. To keep pg's exact strings, pass `{ int8: 'string' }`, or give the money parsers their own pool.
+- **A composite type**, `(amount numeric, currency text)`. `moneyTypeSql()` returns its DDL plus a `sum` aggregate that throws on mixed currencies. With the type's OIDs, `exactTypes` reads it (and its arrays) as Money, keeping the scale it was stored at. `toMoneyComposite(m)` writes it. Run the DDL once, in a migration: it isn't idempotent. A schema-qualified name (`moneyTypeSql('billing.amount')`) puts the type, its function and the aggregate in that schema. OIDs are looked up once, so after recreating the type, or with one type per tenant schema, pass the new OIDs; a type `exactTypes` doesn't know comes back as pg's raw text. A value with a NULL field, `(,EUR)`, throws when read and makes `sum` raise.
+- **`toNumeric(m, { precision, scale })`** gives the decimal for a `NUMERIC(p, s)` parameter, or throws where Postgres would change the value. Postgres rounds extra decimals silently on insert, which is why the guard exists.
+
+<!-- doctest: skip (needs a Postgres server; test/db/pg-types.test.ts runs the same steps) -->
+
+```ts
+import pg from 'pg';
+import { money } from '@ducatjs/money';
+import {
+  exactTypes,
+  moneyTypeOids,
+  moneyTypeSql,
+  toMoneyComposite,
+  toNumeric,
+} from '@ducatjs/money/pg';
+
+const setup = new pg.Client();
+await setup.connect();
+for (const statement of moneyTypeSql()) await setup.query(statement); // once, in a migration
+const oids = await moneyTypeOids(setup);
+
+const client = new pg.Client({ types: exactTypes(pg.types, { money: oids }) });
+await client.connect();
+await client.query('INSERT INTO items (price) VALUES ($1::ducat_money)', [
+  toMoneyComposite(money('12.34', 'EUR')),
+]);
+(await client.query('SELECT sum(price) AS total FROM items')).rows[0].total; // Money
+toNumeric(money('1.23456', 'EUR', { scale: 5 }), { precision: 19, scale: 4 }); // throws
+```
 
 #### Drizzle
 
@@ -596,6 +634,8 @@ The columns check what the types can't: writing another currency, a value at a s
   - 3: BHD IQD JOD KWD LYD OMR TND
   - 4: CLF UYW
 - Tests also check the Adyen differences, the consistency of every Stripe rule, and that `format()` shows ISO digits for every code on every engine.
+
+A change to an ISO exponent in this data is a breaking change, because it changes what stored minor units mean (see [Decisions](#decisions) and [Databases](#databases)).
 
 Recent ISO changes that are already encoded:
 
@@ -822,6 +862,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 - **Correctness and features come before bundle size.** The core keeps the currency table, the comparison methods, bigint support and exact string parsing; everything else is an opt-in module, and size budgets in CI stop either from growing.
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
 - **Rounding policies are explicit values.** A policy (scale, increment and mode) is passed to each operation that rounds, the way a rounding mode is. It is never attached to an amount or installed as a global default: a stored or global policy would make the same expression round differently depending on where a value came from or what ran earlier, which is the kind of action at a distance a money library should rule out.
+- **A bundled ISO 4217 exponent change is breaking:** it is listed under **Changed**, and ships only in a minor version before 1.0 and a major version from 1.0. Minor units stored without a scale are read at the installed exponent, so such a change silently changes what stored rows mean.
 - **Stripe UGX is ×100.** Stripe's docs: "UGX transitioned to a zero-decimal currency, but backwards compatibility requires you to represent it as a two-decimal value, where the decimal amount is always 00. For example, to charge 5 UGX, provide an amount value of 500. You can't charge fractions of UGX. For invoices where the amount is fractional after prorations, coupons, or taxes, Stripe automatically rounds that amount to the nearest number evenly divisible by 100." That is what `toStripeAmount` encodes. An amount with fractional UGX throws unless a rounding mode is passed.
 - **ESM only; Node ≥ 24.** Every supported Node can `require()` an ES module, so CommonJS callers still work, and a single build avoids the dual-package hazard: with separate CJS and ESM copies, `isMoney()` and `instanceof Money` fail across the two. Node 24 also formats exactly beyond 2^53 (Intl.NumberFormat v3). Browsers set the language floor, not Node: output targets ES2023.
 - **Withdrawn and non-ISO codes** (ANG, STD, BGN, HRK, ZWL, SLL, CUC, CNH, VEF…) stay out of the core registry. An opt-in table of them with withdrawal dates is planned for a later release; until then, register any you need with `defineCurrency`.
