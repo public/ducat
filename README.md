@@ -65,23 +65,23 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 - **Correct everywhere:** ducat is the only library that passes every vector, including amounts beyond 2⁵³ minor
   units, float traps and negative allocations.
 - **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing a decimal string
-  (`money('12.34', 'EUR')`), add, multiply, allocate and toDecimal on Node, Bun and Deno, and on compare on Node and Deno. Against the fastest other money library
-  the margin ranges from about 1.05× (compare on Node: 7.31 against 7.65 ns) to about 9.5× (allocate on Node: 46
-  against bigint-money's 437 ns). Against dinero.js 2, on the operations where ducat is fastest, it ranges from 1.4× (creating on
-  Deno) to about 28× (multiply on Bun).
-- **Where it isn't fastest:** formatting on Bun and Deno, where currency.js (formatting a float) is 3% faster (on Node,
-  ducat and currency.js are level, 380 against 381 ns, and so are ducat and dinero.js 1 on Bun). On Bun, libraries that
-  compare plain numbers are faster at compare (currency.js 6.4 against 9.8 ns).
-- **Fixed-point decimals:** ducat's `Fixed` is the fastest fixed-point library on parsing a decimal string (`fixed('12.34')`)
-  and multiply on every runtime,
-  and ahead of every other library on compare everywhere and on add on Node and Deno. bigdecimal.js is faster at
-  dividing a `Fixed` on every runtime, though `Money` divides faster than either, and at add on Bun (11.9 against 12.3
-  ns). js-big-decimal and ethers are faster on `toString` everywhere; see
+  (`money('12.34', 'EUR')`), add, multiply, allocate and toDecimal on Node, Bun and Deno, and on compare on Node and
+  Deno. Against the fastest other money library the margin ranges from about 1.08× (compare on Node and Deno: 7.07
+  against currency.js's 7.60 ns on Node) to about 8.6× (allocate on Node: 48 against bigint-money's 409 ns). Against
+  dinero.js 2, on the operations where ducat is fastest, it ranges from 1.4× (creating on Deno) to about 29× (add on
+  Bun).
+- **Where it isn't fastest:** formatting, where currency.js (formatting a float) is 3% faster on Node and Deno and 5%
+  faster on Bun (ducat and dinero.js 1 are level everywhere). On Bun, libraries that compare plain numbers are faster
+  at compare (currency.js 6.5, js-money and ts-money 7.5 against 7.9 ns).
+- **Fixed-point decimals:** ducat's `Fixed` is the fastest fixed-point library on parsing a decimal string
+  (`fixed('12.34')`), multiply, divide and compare on every runtime, and on add on Node and Deno (on Bun it is level
+  with bigdecimal.js, 11.8 ns each). It divides by 3 in 28, 27 and 24 ns on Node, Bun and Deno, against bigdecimal.js's
+  57, 35 and 46. js-big-decimal and ethers are faster on `toString` everywhere; see
   [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
-- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat 0.2.0 (commit 7c9455a) under Node 24.22.2,
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat 0.3.0 (commit f927311) under Node 24.22.2,
   Bun 1.4.4 and Deno 2.9.8; sizes are gzipped KiB. Differences within 2.5% are called level.
 
 ## Design
@@ -453,7 +453,7 @@ money('0.1', 'ETH').add(money('0.2', 'ETH')).toDecimal(); // → '0.300000000000
 fromBaseUnits('1e18', 'ETH'); // throws SyntaxError
 ```
 
-**Currency metadata** (`@ducatjs/money/currencies`). ISO 4217 numeric codes both ways (`numericCode`, `currencyFromNumeric`), for card networks, ISO 8583 and ISO 20022 messages; `minorUnit(code)`, the size of the minor unit; and names and symbols per locale (`currencyName`, `currencySymbol`). Names and symbols come from the runtime's `Intl`, not a bundled table, so they follow its CLDR version. The smallest coin is `cashUnit(code, { country? })` in `@ducatjs/money/cash`, from the cash rules. Which currencies a territory uses, and since when, is in `@ducatjs/money/territories` (`territoryCurrencies`, `currencyTerritories`, from CLDR). It is a separate entry because the table is most of its 4.6 kB gzipped.
+**Currency metadata** (`@ducatjs/money/currencies`). ISO 4217 numeric codes both ways (`numericCode`, `currencyFromNumeric`), for card networks, ISO 8583 and ISO 20022 messages; `minorUnit(code)`, the size of the minor unit; and names and symbols per locale (`currencyName`, `currencySymbol`). Names and symbols come from the runtime's `Intl`, not a bundled table, so they follow its CLDR version. The smallest coin is `cashUnit(code, { country? })` in `@ducatjs/money/cash`, from the cash rules. Which currencies a territory uses, and since when, is in `@ducatjs/money/territories` (`territoryCurrencies`, `currencyTerritories`, from CLDR). It is a separate entry because the table is most of its 4.5 KiB gzipped.
 
 ```ts
 import { cashUnit } from '@ducatjs/money/cash';
@@ -768,7 +768,7 @@ toMinorUnits(money('500', 'JPY')); // → { value: 500, currency: 'JPY' }
 
 ### Amounts in words
 
-`@ducatjs/money/words` writes amounts in words, as cheques, invoices and legal documents need. `Intl` can't spell numbers out, so the words come from CLDR's rule-based number formats (RBNF), the rules ICU uses, through a small interpreter that matches ICU on every test vector. Each language is its own entry, so a bundle carries only the ones it imports: `@ducatjs/money/words/en`, `/de`, `/fr`, `/es`, `/it`, `/pt` and `/nl`, from 0.6 to 1.9 kB each. The currency's name, in the right plural and word order, comes from the runtime's `Intl`, and so do the word for "and" and the digit grouping of numbers the rules write as digits (from 10^18 in most rule sets). A currency code `Intl` can't name (not three letters) throws a `RangeError`.
+`@ducatjs/money/words` writes amounts in words, as cheques, invoices and legal documents need. `Intl` can't spell numbers out, so the words come from CLDR's rule-based number formats (RBNF), the rules ICU uses, through a small interpreter that matches ICU on every test vector. Each language is its own entry, so a bundle carries only the ones it imports: `@ducatjs/money/words/en`, `/de`, `/fr`, `/es`, `/it`, `/pt` and `/nl`, from 0.6 to 1.8 KiB each. The currency's name, in the right plural and word order, comes from the runtime's `Intl`, and so do the word for "and" and the digit grouping of numbers the rules write as digits (from 10^18 in most rule sets). A currency code `Intl` can't name (not three letters) throws a `RangeError`.
 
 - `amountInWords(m, language, options?)` writes the whole units, then the minor part as cheques do ("and 45/100"). CLDR has no names for minor units, so pass them to spell the minor part out: `{ minor: { one: 'cent', other: 'cents' } }`.
 - `gender` picks the number's agreement where the language has genders (Spanish "veintiún euros", "veintiuna libras"); CLDR doesn't record a currency's gender, so it's the caller's. `ruleSet` picks any of the language's rule sets.
@@ -1185,14 +1185,15 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
   ±20–30%.
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
   - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.0 KiB**, of which about 0.55 KiB is the ISO table
-  - the core entry point: 4.9 KiB; everything (`@ducatjs/money/all`): 27.6 KiB
+  - the core entry point: 4.9 KiB; everything (`@ducatjs/money/all`): 50.1 KiB
+  - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.2 KiB
   - the same snippet with dinero.js (EUR only): 1.8 KiB
 
 ---
 
 ## Decisions
 
-- **Amounts in words come from CLDR's RBNF rules, not hand-written grammars.** `Intl` has no spell-out, and ECMA-402 doesn't expose ICU's RuleBasedNumberFormat. CLDR's rules are small (about 1 kB gzipped per language), carry every language's agreement and compounding rules, and are the same text ICU runs, so an interpreter can be tested against ICU itself. Each language is its own entry so bundles pay only for what they use. Minor-unit names (cent, centime) and a currency's grammatical gender are in no standard data, so the default is the cheque form ("and 45/100") and both are options the caller supplies.
+- **Amounts in words come from CLDR's RBNF rules, not hand-written grammars.** `Intl` has no spell-out, and ECMA-402 doesn't expose ICU's RuleBasedNumberFormat. CLDR's rules are small (about 1 KiB gzipped per language), carry every language's agreement and compounding rules, and are the same text ICU runs, so an interpreter can be tested against ICU itself. Each language is its own entry so bundles pay only for what they use. Minor-unit names (cent, centime) and a currency's grammatical gender are in no standard data, so the default is the cheque form ("and 45/100") and both are options the caller supplies.
 - **JSON is a decimal string plus the currency, never minor units**: `{"amount":"12.34","currency":"EUR"}`. Minor units only mean something to a reader who knows the exponent, and the exponent isn't fixed:
   - Processors disagree with ISO. Stripe sends ISK and UGX as two-decimal; Adyen has its own exceptions.
   - ISO exponents change over time.
