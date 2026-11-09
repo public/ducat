@@ -1,7 +1,7 @@
 // Tiered (graduated) and volume pricing, in the style of Stripe's price tiers: exact arithmetic, one
 // rounding for the total, and a breakdown per tier whose amounts sum exactly to that total.
 import { currencyExponent } from './currency.js';
-import { pow10n, ratio, ratioToDecimal, type Ratio } from './decimal.js';
+import { pow10n, ratio, ratioToDecimal, type Factor, type Ratio } from './decimal.js';
 import { ExactMoney } from './exact.js';
 import {
   CurrencyMismatchError,
@@ -12,16 +12,20 @@ import {
 } from './money.js';
 import { DEFAULT_ROUNDING } from './rounding.js';
 
-/** A quantity: a non-negative integer, bigint or decimal string ('1.5' for metered usage). */
-export type Quantity = number | bigint | string;
+/**
+ * A quantity, exactly and not negative: an integer, bigint, decimal string ('1.5' for metered
+ * usage), 'a/b' string ('250/3'), `ratio()` or `Fixed`. A non-integer number is read at its
+ * shortest decimal form, as factors are.
+ */
+export type Quantity = Factor;
 
 /**
  * One price tier. It covers quantities above the previous tier's `upTo`, up to and including its
- * own (`'inf'` for no limit, allowed only on the last tier).
+ * own. The last tier may be open: `upTo` 'inf', `null` or `Infinity`.
  */
 export interface PriceTier<C extends string> {
-  /** The tier's upper bound, inclusive, or 'inf'. */
-  readonly upTo: Quantity | 'inf';
+  /** The tier's upper bound, inclusive; 'inf', `null` or `Infinity` for no limit. */
+  readonly upTo: Quantity | 'inf' | null;
   /** The price per unit in this tier; it may have more decimals than the currency ('0.0025'). */
   readonly unitAmount?: Money<C>;
   /** A fixed amount charged once when the quantity falls in (or, graduated, reaches) this tier. */
@@ -46,13 +50,25 @@ export interface TieredPriceOptions<C extends string> {
    * 'halfExpand').
    */
   readonly rounding?: RoundingInput;
+  /**
+   * What a quantity past a bounded last tier does: 'throw' (the default), or 'cap', which charges
+   * as if the quantity were the last tier's `upTo`, so nothing more is charged past it.
+   */
+  readonly beyondLastTier?: 'throw' | 'cap';
+  /**
+   * In 'volume' mode, the quantity the chosen tier's `unitAmount` is multiplied by, when it isn't
+   * the quantity that chose the tier: tiers by meter count, say, priced per unit used. The tier's
+   * `flatAmount` is still charged once. Graduated tiers split the quantity across tiers, so there is
+   * no one tier to apply to another quantity, and this throws there.
+   */
+  readonly chargeQuantity?: Quantity;
 }
 
 /** One line of a tiered price's breakdown: a tier the quantity reached. */
 export interface TierLine<C extends string> {
   /** The tier's index in `tiers`. */
   readonly tier: number;
-  /** The units priced in this tier, as a decimal string. */
+  /** The units priced in this tier, as a decimal string ('num/den' when it doesn't terminate). */
   readonly quantity: string;
   /** The exact charge: quantity × unit amount + flat amount. */
   readonly exact: ExactMoney<C>;
@@ -90,6 +106,11 @@ function isLess(left: Ratio, right: Ratio): boolean {
   return left.num * right.den < right.num * left.den;
 }
 
+/** A ratio as a decimal string when it terminates, else as 'num/den'. */
+function decimalOf(value: Ratio): string {
+  return ratioToDecimal(value) ?? `${value.num}/${value.den}`;
+}
+
 function subtractRatio(left: Ratio, right: Ratio): Ratio {
   return ratio(left.num * right.den - right.num * left.den, left.den * right.den);
 }
@@ -125,13 +146,20 @@ export function tieredPrice<C extends string>(
 ): TieredPrice<C> {
   const { mode, tiers } = options;
   const rounding = options.rounding ?? DEFAULT_ROUNDING;
+  const beyondLastTier = options.beyondLastTier ?? 'throw';
   if (mode !== 'graduated' && mode !== 'volume') {
     throw new RangeError(`Invalid tiers mode ${String(mode)}`);
+  }
+  if (beyondLastTier !== 'throw' && beyondLastTier !== 'cap') {
+    throw new RangeError(`Invalid beyondLastTier ${String(beyondLastTier)}; use 'throw' or 'cap'`);
+  }
+  if (options.chargeQuantity !== undefined && mode !== 'volume') {
+    throw new TypeError("chargeQuantity needs mode 'volume': graduated tiers split the quantity");
   }
   if (tiers.length === 0) {
     throw new RangeError('tieredPrice needs at least one tier');
   }
-  const amount = quantityRatio(quantity, 'quantity');
+  let amount = quantityRatio(quantity, 'quantity');
 
   // The currency comes from the tiers' amounts, which must all share it.
   let currency: C | undefined;
@@ -151,28 +179,43 @@ export function tieredPrice<C extends string>(
     throw new RangeError('The tiers need a unitAmount or a flatAmount');
   }
 
-  // Bounds: increasing, positive, and 'inf' only last.
+  // Bounds: increasing, positive, and open only last.
   const bounds: (Ratio | undefined)[] = [];
   let previous: Ratio = ratio(0);
   tiers.forEach((tier, index) => {
-    if (tier.upTo === 'inf') {
+    const upTo = tier.upTo;
+    if (upTo === 'inf' || upTo === null || upTo === Infinity) {
       if (index !== tiers.length - 1) {
-        throw new RangeError("Only the last tier can have upTo 'inf'");
+        throw new RangeError(
+          `Tier ${index} is open (upTo ${String(upTo)}), but only the last tier can be`,
+        );
       }
       bounds.push(undefined);
       return;
     }
-    const bound = quantityRatio(tier.upTo, 'upTo');
+    const bound = quantityRatio(upTo, 'upTo');
     if (!isLess(previous, bound)) {
-      throw new RangeError('Tier bounds must increase');
+      const after = index === 0 ? 'above 0' : `above tier ${index - 1}'s ${decimalOf(previous)}`;
+      throw new RangeError(
+        `Tier bounds must increase: tier ${index}'s upTo ${decimalOf(bound)} is not ${after}`,
+      );
     }
     bounds.push(bound);
     previous = bound;
   });
   const lastBound = bounds[bounds.length - 1];
   if (lastBound !== undefined && isLess(lastBound, amount)) {
-    throw new RangeError(`The quantity ${String(quantity)} is beyond the last tier`);
+    if (beyondLastTier === 'throw') {
+      throw new RangeError(
+        `The quantity ${String(quantity)} is beyond the last tier (upTo ${decimalOf(lastBound)}); pass { beyondLastTier: 'cap' } to charge nothing past it`,
+      );
+    }
+    amount = lastBound;
   }
+  const chargeAmount =
+    options.chargeQuantity === undefined
+      ? undefined
+      : quantityRatio(options.chargeQuantity, 'chargeQuantity');
 
   const zero = new ExactMoney(currency, 0n, 1n);
   const charge = (tier: PriceTier<C>, units: Ratio): ExactMoney<C> => {
@@ -194,7 +237,7 @@ export function tieredPrice<C extends string>(
     const isInTier = upper === undefined || !isLess(upper, amount);
     if (mode === 'volume') {
       if (isInTier) {
-        charged.push({ tier: i, units: amount });
+        charged.push({ tier: i, units: chargeAmount ?? amount });
         break;
       }
     } else {
@@ -229,7 +272,7 @@ export function tieredPrice<C extends string>(
     );
     lines.push({
       tier,
-      quantity: ratioToDecimal(units) ?? `${units.num}/${units.den}`,
+      quantity: decimalOf(units),
       exact: lineExact,
       amount: lineAmount,
     });
