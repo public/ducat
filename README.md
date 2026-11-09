@@ -231,6 +231,28 @@ const other = fromJSON({ amount: '1', currency: 'USD' as string });
 assertCurrency(other, 'EUR'); // throws CurrencyMismatchError
 ```
 
+**Decimal strings.** `money()`, `fixed()`, `ratio()` and every other place that takes an amount or a factor as a string accept exactly this, and nothing else:
+
+- an optional sign, `+` or `-`;
+- one or more ASCII digits;
+- optionally a point followed by one or more digits;
+- optionally an exponent: `e` or `E`, an optional sign, and digits.
+
+The exponent is at most 1000 either way, and so is the number of decimal places once it is applied. `'.5'`, `'5.'`, `'-.5'`, grouping (`'1,000'`, `'1_000'`), other scripts' digits and surrounding whitespace are refused with a `SyntaxError`, because each is more often a truncated or mangled value than a deliberate one. Exponents are accepted because they're unambiguous and other systems write them: `String(1e-7)`, Java's `BigDecimal.toString()` and Python's `str(Decimal)` all do. For text as people write it, with grouping, symbols or another locale's separators, use `parse()` (below). A factor can also be written `'a/b'`, two of these strings around a slash.
+
+```ts
+import { money } from '@ducatjs/money';
+
+money('-12.34', 'EUR'); // → -12.34 EUR
+money('+7', 'EUR'); // → 7.00 EUR
+money('1.5e3', 'EUR'); // → 1500.00 EUR
+money('125E-2', 'EUR'); // → 1.25 EUR
+money('.5', 'EUR'); // throws SyntaxError
+money('5.', 'EUR'); // throws SyntaxError
+money(' 12.34', 'EUR'); // throws SyntaxError
+money('1,000', 'EUR'); // throws SyntaxError
+```
+
 **Arithmetic.** All of these are immutable and return new values.
 
 - `add`, `subtract`, `sum(list, currency?)`, `negate`, `abs`

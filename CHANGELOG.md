@@ -116,6 +116,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `ExactMoney#round` and `#isExact` used to fail with an unrelated message ("undefined must be
   positive"), and `money()`, `fromMinor()`, `zero()`, `toScale()` and conversion had no upper bound.
   Round to tens or hundreds with an increment, not a negative scale.
+- **Breaking:** decimal strings with surrounding whitespace are refused everywhere with a
+  `SyntaxError`. `money(' 12.34', 'EUR')`, `fixed('1e-7 ')` and `ratio(' 1/3')` used to be
+  accepted on the slower parsing path, while `'12.34 '` and similar were refused on the fast one.
+  The grammar is now written down in the README and the `money()` and `fixed()` docs: an optional
+  sign, digits, optionally a point with digits after it, and optionally an exponent.
+  **Upgrading:** values read from CSV files, forms or databases with stray spaces (`' 12.34'`,
+  `'1 / 3'`) now throw a `SyntaxError`. Trim them first, or use `parse()` for text people typed.
 
 ### Fixed
 

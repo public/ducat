@@ -113,7 +113,7 @@ export const MAX_DECIMAL_SCALE = 1000;
 
 /** Parses a decimal string, allowing exponent notation ("1e-7", as produced by String(1e-7)). */
 export function parseDecimal(input: string): { digits: bigint; scale: number } {
-  const match = EXP_RE.exec(input.trim());
+  const match = EXP_RE.exec(input);
   if (!match) {
     throw new SyntaxError(`Invalid decimal string "${input}"`);
   }
@@ -296,7 +296,7 @@ export function ratio(value: Factor, den?: Factor): Ratio {
   if (cached === undefined) {
     const slash = value.indexOf('/');
     if (slash > 0) {
-      cached = ratio(value.slice(0, slash).trim(), value.slice(slash + 1).trim());
+      cached = ratio(value.slice(0, slash), value.slice(slash + 1));
     } else {
       const { digits, scale } = parseDecimal(value);
       cached = makeRatio(digits, pow10n(scale));

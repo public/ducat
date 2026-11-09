@@ -434,6 +434,10 @@ export interface MoneyOptions {
  *     money(12.34, 'EUR')     // non-integer numbers are read at their shortest decimal form ("12.34")
  *     money(10n ** 30n, 'USD')
  *
+ * A string is an optional sign, ASCII digits, optionally a point with digits after it, and
+ * optionally an exponent (`'1.5e3'`); `'.5'`, `'5.'`, grouping and surrounding whitespace throw a
+ * SyntaxError (use `parse()` for text as people write it).
+ *
  * Throws if the amount has more decimals than the currency (or `scale`) unless `rounding` is given,
  * so `money(0.1 + 0.2, 'EUR')` throws rather than silently becoming 0.30. Without `rounding`, a
  * number whose shortest form has more than 15 significant digits throws a RangeError too.
