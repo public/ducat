@@ -9,6 +9,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `Fixed#trimScale(minimumScale = 0)`, the smallest scale that keeps the value exact, like Money's
+  `trimScale` from `/math`; and `Fixed#toNumber()`, the nearest double, an explicit lossy
+  conversion for display and charts (`Number(fixed)` still throws).
 - A `Fixed` is accepted as a factor everywhere a `Factor` is (Money's `multiply` and `divide`, the
   tax functions, `ExactMoney`, conversion and rates), read exactly as its scaled integer over
   10^scale, and `Fixed#toRatio()` gives it as a reduced `Ratio`. Money's core still doesn't load
