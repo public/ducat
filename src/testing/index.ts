@@ -209,7 +209,7 @@ export interface ExpectWithExtensions {
   addSnapshotSerializer?(serializer: any): void;
 }
 
-const INSPECT = Symbol.for('nodejs.util.inspect.custom');
+const INSPECT = /* @__PURE__ */ Symbol.for('nodejs.util.inspect.custom');
 
 /**
  * Installs everything on a test runner's `expect`: the matchers, value equality and the snapshot

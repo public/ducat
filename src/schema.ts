@@ -27,7 +27,7 @@ export interface MoneySchemaOptions<C extends string = string> {
 /** The default `maxDigits`: far beyond any real amount, small enough to be cheap to reject. */
 export const DEFAULT_MAX_DIGITS = 50;
 
-const MODES = new Set<unknown>(Object.values(Rounding));
+const MODES = /* @__PURE__ */ new Set<unknown>(/* @__PURE__ */ Object.values(Rounding));
 
 /**
  * @internal Checks the options when the schema is built, so a mistake there throws at once

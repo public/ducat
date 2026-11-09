@@ -42,9 +42,9 @@ export interface AmountInWordsOptions {
   readonly minor?: UnitNames;
 }
 
-const currencyNames = new Map<string, Intl.NumberFormat>();
-const conjunctions = new Map<string, string>();
-const pluralRules = new Map<string, Intl.PluralRules>();
+const currencyNames = /* @__PURE__ */ new Map<string, Intl.NumberFormat>();
+const conjunctions = /* @__PURE__ */ new Map<string, string>();
+const pluralRules = /* @__PURE__ */ new Map<string, Intl.PluralRules>();
 
 function cached<T>(cache: Map<string, T>, key: string, build: () => T): T {
   let value = cache.get(key);

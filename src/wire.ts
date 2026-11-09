@@ -44,7 +44,7 @@ function atScale<C extends string>(
   } catch (error) {
     if (error instanceof RoundingError) {
       throw new RoundingError(
-        `${format} ${exact.toDecimal()} ${currency} has more than ${scale} decimals; pass { rounding } or { scale }`,
+        `${format} ${formatScaled(exact.minor, exact.scale)} ${currency} has more than ${scale} decimals; pass { rounding } or { scale }`,
       );
     }
     throw error;

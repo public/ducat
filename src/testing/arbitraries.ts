@@ -57,7 +57,7 @@ export interface ArbMoneyOptions<C extends string = string> {
 }
 
 const BIG = 10n ** 30n;
-const SAFE = BigInt(Number.MAX_SAFE_INTEGER);
+const SAFE = /* @__PURE__ */ BigInt(Number.MAX_SAFE_INTEGER);
 
 /** Minor units weighted toward the interesting places: small, near 2^53, and far beyond it. */
 function arbMinor(min: bigint, max: bigint): fc.Arbitrary<bigint> {

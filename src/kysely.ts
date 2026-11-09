@@ -82,14 +82,15 @@ function isFixed(currency: unknown): currency is FixedCurrency<string> {
 /** The comparison operators `compareMoney` supports. */
 export type MoneyComparison = '=' | '<>' | '<' | '<=' | '>' | '>=';
 
-const COMPARISONS: ReadonlySet<string> = new Set(['=', '<>', '<', '<=', '>', '>=']);
+const COMPARISONS: ReadonlySet<string> = /* @__PURE__ */ new Set(['=', '<>', '<', '<=', '>', '>=']);
 
 // The marker key of the JSON objects the helpers build. Its value carries a random nonce chosen
 // when this module loads, so data that merely looks like a marker (a user's JSON column, a text
 // value) is never read as money: forging one needs the nonce, which only appears in query text.
 const MARKER = '$ducat';
-const NONCE = Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)), (byte) =>
-  byte.toString(16).padStart(2, '0'),
+const NONCE = /* @__PURE__ */ Array.from(
+  globalThis.crypto.getRandomValues(new Uint8Array(16)),
+  (byte) => byte.toString(16).padStart(2, '0'),
 ).join('');
 const MINOR_MARKER = `${NONCE}:minor`;
 const DECIMAL_MARKER = `${NONCE}:decimal`;

@@ -60,7 +60,7 @@ interface Compiled {
   readonly numberFormats: Map<boolean, Intl.NumberFormat>;
 }
 
-const compiledRules = new WeakMap<SpelloutRules, Compiled>();
+const compiledRules = /* @__PURE__ */ new WeakMap<SpelloutRules, Compiled>();
 
 /** ICU's RBNF formats int64 values; past them it writes plain digits, so this refuses instead. */
 const INT64_MAX = 2n ** 63n - 1n;

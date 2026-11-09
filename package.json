@@ -258,7 +258,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.drizzle.json && tsc -p tsconfig.kysely.json && tsc -p tsconfig.peers.json",
-    "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json && tsc -p test/jest-types/tsconfig.json",
+    "typecheck": "tsc -p test/fn-only/tsconfig.json && tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json && tsc -p test/jest-types/tsconfig.json",
     "test": "vitest run",
     "test:deep": "DUCAT_DEEP=1 vitest run",
     "compare": "pnpm --dir compare battery && pnpm --dir compare tables",

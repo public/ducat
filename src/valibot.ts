@@ -15,7 +15,10 @@ import {
 
 export type { MoneyFor, MoneySchemaOptions } from './schema.js';
 
-const jsonShape = valibot.object({ amount: valibot.string(), currency: valibot.string() });
+const jsonShape = /* @__PURE__ */ valibot.object({
+  amount: valibot.string(),
+  currency: valibot.string(),
+});
 
 /** The schema type both functions return: the JSON shape, then a transformation. */
 export type MoneySchema<TOutput> = valibot.SchemaWithPipe<

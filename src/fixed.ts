@@ -40,7 +40,7 @@ const EXPONENT = /[eE]([+-]?\d+)\s*$/;
 
 // Passed to the constructor by this module only, so `new Fixed(1.5, 2)` from outside can't break
 // the representation invariant. Values come from fixed(), fromScaled() and the methods.
-const INTERNAL: unique symbol = Symbol('Fixed');
+const INTERNAL: unique symbol = /* @__PURE__ */ Symbol('Fixed');
 
 /** What `fixed()` accepts: a decimal string, a number, a bigint or a Fixed. */
 export type FixedInput = string | number | bigint | Fixed;

@@ -31,8 +31,8 @@ export interface RoundingPolicyOptions {
   readonly currency?: string;
 }
 
-const ONE = ratio(1);
-const MODES = new Set<unknown>(Object.values(Rounding));
+const ONE = /* @__PURE__ */ ratio(1);
+const MODES = /* @__PURE__ */ new Set<unknown>(/* @__PURE__ */ Object.values(Rounding));
 
 /**
  * Builds a reusable rounding policy (see `RoundingPolicy`). The options are checked here, once, so

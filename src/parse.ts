@@ -7,7 +7,7 @@ interface Symbols {
   /** The locale's group sizes, looked up the first time a group separator is seen. */
   groupSizes?: readonly GroupSizes[];
 }
-const symCache = new Map<string, Symbols>();
+const symCache = /* @__PURE__ */ new Map<string, Symbols>();
 
 /**
  * The group and decimal separators `format()` uses for this locale and currency. They come from a
@@ -215,12 +215,12 @@ export interface ParseMoneyOptions<C extends string = string> extends MoneyOptio
   readonly lenient?: boolean;
 }
 
-const symbolTables = new Map<string, Map<string, Set<string>>>();
-const groupSizeCache = new Map<string, GroupSizes[]>();
+const symbolTables = /* @__PURE__ */ new Map<string, Map<string, Set<string>>>();
+const groupSizeCache = /* @__PURE__ */ new Map<string, GroupSizes[]>();
 
 /** The size of the last group, and of the groups before it: [3, 3] for 1,234,567, [3, 2] for 12,34,567. */
 type GroupSizes = readonly [number, number];
-const supportedLocales = new Map<string, boolean>();
+const supportedLocales = /* @__PURE__ */ new Map<string, boolean>();
 
 /** Strips what surrounds a symbol in formatted output: spaces, no-break spaces and bidi marks. */
 const normalizeSymbol = (text: string) => text.replace(/[\s\p{Z}\p{Cf}]/gu, '');

@@ -1,0 +1,9 @@
+{
+  // Type-checks only what @ducatjs/money/fn reaches. /fn doesn't install the Money methods, so any
+  // library code that calls one (m.toDecimal() instead of toDecimal(m)) would break /fn-only
+  // programs at run time; here it's a compile error instead.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "noEmit": true, "rootDir": "../../src" },
+  "include": [],
+  "files": ["../../src/fn.ts"]
+}

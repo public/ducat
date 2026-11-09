@@ -88,6 +88,14 @@
     "parse: parse alone, without detection": {
       "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 €', 'EUR', 'de-DE').toString());",
       "gzipped": 5.36
+    },
+    "functions, dinero.js shape: fromMinor, add, multiply, toDecimal": {
+      "code": "import { fromMinor, add, multiply, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
+      "gzipped": 3.0
+    },
+    "functions: fromMinor, add, toDecimal": {
+      "code": "import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
+      "gzipped": 1.85
     }
   }
 }

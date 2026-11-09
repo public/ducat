@@ -5,6 +5,9 @@
  * formatting, parsing and the processor and database views are opt-in modules
  * (`@ducatjs/money/allocate`, `@ducatjs/money/tax`, ...; `@ducatjs/money/all` for everything).
  */
+// the core methods (a.add(b), m.toDecimal()...); /fn leaves them out so its functions tree-shake
+import './plugins/core.js';
+
 export {
   money,
   fromMinor,

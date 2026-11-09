@@ -61,8 +61,8 @@ export function minorUnit(currency: string): string {
 // Names and symbols, from Intl
 // ---------------------------------------------------------------------------------------------
 
-const displayNames = new Map<string, Intl.DisplayNames>();
-const symbolFormats = new Map<string, Intl.NumberFormat>();
+const displayNames = /* @__PURE__ */ new Map<string, Intl.DisplayNames>();
+const symbolFormats = /* @__PURE__ */ new Map<string, Intl.NumberFormat>();
 
 function cached<T>(cache: Map<string, T>, key: string, build: () => T): T {
   let value = cache.get(key);
