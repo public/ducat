@@ -46,6 +46,8 @@ jobs:
       - run: pnpm build
       # the built package as apps bundle it: a wrong "sideEffects" drops the methods' install
       - run: node scripts/bundle-check.mjs
+      # the packed package's types from CommonJS (node10), nodenext and bundler projects
+      - run: pnpm check:consumers
       - run: pnpm gen:check
       - name: Python decimal reference vectors are up to date
         run: pnpm vectors:check

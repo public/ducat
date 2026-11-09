@@ -133,6 +133,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- TypeScript projects with `module: "commonjs"` (`node10` resolution) find ducat's types: the
+  package has a top-level `types` and a `typesVersions` map for every entry, next to `exports`.
 - The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean
   nor a function (a string or a Date from untyped code), before parsing or fetching anything.
   Before, it was ignored on a file with no days and failed as "not a function" on the first day.

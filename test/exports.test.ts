@@ -72,7 +72,25 @@ describe('export surface', () => {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
   exports: Record<string, string | { types: string; default: string }>;
+  types: string;
+  typesVersions: { '*': Record<string, string[]> };
 };
+
+// TypeScript's node10 resolution (CommonJS projects) ignores `exports`, and reads `types` and
+// `typesVersions` instead. They must name the same declarations, entry for entry.
+describe('types for node10 resolution', () => {
+  it('`types` and `typesVersions` mirror the types in `exports`', () => {
+    const fromExports: Record<string, string[]> = {};
+    for (const [key, target] of Object.entries(packageJson.exports)) {
+      if (typeof target !== 'string' && key !== '.') {
+        fromExports[key.slice(2)] = [target.types];
+      }
+    }
+    const rootEntry = packageJson.exports['.'] as { types: string };
+    expect(packageJson.types).toBe(rootEntry.types);
+    expect(packageJson.typesVersions['*']).toEqual(fromExports);
+  });
+});
 // export key -> source file, the way the build maps src/X.ts to dist/X.js
 const ENTRIES = Object.entries(packageJson.exports).flatMap(([key, target]) =>
   typeof target === 'string'
