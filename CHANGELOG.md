@@ -80,6 +80,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (cents), 1.5 EUR at scale 1 gives 150, and a value with non-zero digits below the minor unit
   throws a `RoundingError` (round it first). The old meaning is the new `toScaledUnits()`, which
   goes with the value's scale. Values at the currency's exponent are unaffected.
+  **Upgrading:** if you stored `toMinor()` or `toMinorNumber()` of amounts that aren't at the
+  currency's exponent, the same call now returns a different number, with no error, for values
+  below the exponent (1.5 EUR at scale 1: 15 → 150) and for values above it with trailing zeros
+  (12.340 EUR at scale 3: 12340 → 1234). Switch those calls to `toScaledUnits()` to keep the old
+  numbers, or migrate the stored values. See #211.
 
 ### Fixed
 
