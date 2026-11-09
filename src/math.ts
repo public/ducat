@@ -1,7 +1,7 @@
 // Aggregates, ratios and integral division between amounts: average, ratioOf, divideToIntegral,
 // remainder and trimScale. Everything is exact; only `average` rounds, once, after an exact sum.
 import { currencyExponent } from './currency.js';
-import { ratio, type Ratio } from './decimal.js';
+import { checkScale, ratio, type Ratio } from './decimal.js';
 import {
   CurrencyMismatchError,
   divide,
@@ -142,9 +142,7 @@ export function remainder<C extends string>(money: Money<C>, divisor: Money<NoIn
  */
 export function trimScale<C extends string>(money: Money<C>, minimumScale?: number): Money<C> {
   const minimum = minimumScale ?? currencyExponent(money.currency);
-  if (!Number.isInteger(minimum) || minimum < 0) {
-    throw new RangeError(`Invalid scale ${minimum}`);
-  }
+  checkScale(minimum);
 
   let minor = money.minor;
   let scale = money.scale;

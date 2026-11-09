@@ -140,8 +140,12 @@ describe('trimScale', () => {
   });
 
   it('rejects an invalid minimum scale', () => {
-    expect(() => trimScale(eur('1'), -1)).toThrow('Invalid scale -1');
-    expect(() => trimScale(eur('1'), 1.5)).toThrow('Invalid scale 1.5');
+    expect(() => trimScale(eur('1'), -1)).toThrow(
+      'Invalid scale -1: use an integer from 0 to 1000',
+    );
+    expect(() => trimScale(eur('1'), 1.5)).toThrow(
+      'Invalid scale 1.5: use an integer from 0 to 1000',
+    );
   });
 });
 

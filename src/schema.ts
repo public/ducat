@@ -1,5 +1,5 @@
 import { isCurrency } from './currency.js';
-import { MAX_DECIMAL_SCALE } from './decimal.js';
+import { checkScale } from './decimal.js';
 import { money, type Money, type MoneyJSON } from './money.js';
 import { Rounding, type RoundingMode } from './rounding.js';
 
@@ -45,11 +45,8 @@ export function checkSchemaOptions(options: MoneySchemaOptions | undefined): voi
     }
   }
   const scale = options.scale;
-  if (
-    scale !== undefined &&
-    !(Number.isInteger(scale) && scale >= 0 && scale <= MAX_DECIMAL_SCALE)
-  ) {
-    throw new RangeError(`Invalid scale ${scale}`);
+  if (scale !== undefined) {
+    checkScale(scale);
   }
   if (options.rounding !== undefined && !MODES.has(options.rounding)) {
     throw new RangeError(`Invalid rounding mode ${String(options.rounding)}`);
