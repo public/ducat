@@ -1,8 +1,7 @@
 // `ducat/convert` free functions: exact exchange rates and conversion that rounds once.
-import { currencyExponent } from './currency.js';
 import { exact, type Rounded } from './exact.js';
 import { ratio, type Factor } from './decimal.js';
-import { make, type CurrencyInput, type Money, type RoundingInput } from './money.js';
+import { make, resolveScale, type CurrencyInput, type Money, type RoundingInput } from './money.js';
 import { rateOf, type RateProvider } from './provider.js';
 import {
   convertWithPolicy,
@@ -140,7 +139,7 @@ export function convert(
   if (typeof rounding === 'function') {
     return convertWithPolicy(money, to, rate, rounding, maybeOptions);
   }
-  const scale = maybeOptions?.scale ?? currencyExponent(to);
+  const scale = resolveScale(to, maybeOptions?.scale);
   const minor = multiplyByRatioAtScale(money.minor, rate, scale - money.scale, rounding);
   return make(to, minor, scale);
 }
