@@ -184,6 +184,9 @@ describe('formatting', () => {
   bench('format en-US', () => {
     for (let i = 0; i < N; i++) sink = format(eur[i]!, 'en-US');
   });
+  bench('format with options (decimal style)', () => {
+    for (let i = 0; i < N; i++) sink = format(eur[i]!, 'en-US', { style: 'decimal' });
+  });
   bench('parse de-DE', () => {
     for (let i = 0; i < N; i++) sink = parse(formatted[i]!, 'EUR', 'de-DE');
   });
