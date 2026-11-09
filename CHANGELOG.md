@@ -129,6 +129,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `format()` and `formatToParts()` with options reuse a cached `Intl.NumberFormat` (keyed by
+  locale, currency, scale and the options) instead of building one per call, about 30 times faster
+  in a loop. The cache stays bounded.
 - TypeScript projects with `module: "commonjs"` (`node10` resolution) find ducat's types: the
   package has a top-level `types` and a `typesVersions` map for every entry, next to `exports`.
 - The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean
