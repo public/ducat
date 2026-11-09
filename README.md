@@ -27,7 +27,7 @@ price.add(money('1', 'USD')); // compile error, and throws if types are erased
 
 Operations are methods on `Money`. For pipelines or code that prefers plain functions, `@ducatjs/money/fn` has each of them as a function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`), and a bundle keeps only the functions it imports: a program that only creates, adds and prints amounts is about 1.4 KiB gzipped through `/fn`. Importing `@ducatjs/money` installs the methods and every ISO 4217 currency; `/fn` alone does neither, so it names currencies with the constants of `@ducatjs/money/iso` (`fromMinor(1250, EUR)`), and the bundle keeps only the currencies it uses. The core (`@ducatjs/money`) holds construction, arithmetic, rounding, comparison and serialisation; everything else is an opt-in module, so a bundle only pays for what it imports (see [Modules](#modules)).
 
-Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
+Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](https://github.com/public/ducat/blob/main/CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
 
 ## Why ducat
 
@@ -49,7 +49,7 @@ ducat is built to fix all three:
 
 The same 41 correctness vectors, the same benchmark and the same bundle snippet for every library. The details, the
 other libraries' bugs, the fixed-point libraries and the money libraries in other languages are in
-[docs/COMPARISON.md](docs/COMPARISON.md), regenerated from [compare/](compare) for each release.
+[docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md), regenerated from [compare/](https://github.com/public/ducat/tree/main/compare) for each release.
 
 | library                            | correct (of 41) | wrong, silently |        bundle (gzip) |
 | ---------------------------------- | --------------: | --------------: | -------------------: |
@@ -77,7 +77,7 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
   (`fixed('12.34')`), multiply, divide and compare on every runtime, and on add on Node and Deno (on Bun it is level
   with bigdecimal.js, 11.8 ns each). It divides by 3 in 28, 27 and 24 ns on Node, Bun and Deno, against bigdecimal.js's
   57, 35 and 46. js-big-decimal and ethers are faster on `toString` everywhere; see
-  [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
@@ -96,7 +96,7 @@ A `Money<C>` has three readonly fields:
 | `minor: number \| bigint` | Integer count of 10^-scale units. It is a **number whenever it is a safe integer** (absolute value ≤ 2^53−1) and a **bigint only beyond that**. The invariant is enforced everywhere, so ordinary amounts never allocate a bigint and huge amounts never lose a digit. |
 | `scale: number`           | Decimal places. Defaults to the currency's ISO exponent (EUR 2, JPY 0, KWD 3, CLF 4). It can be larger for sub-minor precision (unit prices, FX intermediates). `round()` brings it back.                                                                              |
 
-Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](bench/RESULTS.md)):
+Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](https://github.com/public/ducat/blob/main/bench/RESULTS.md)):
 
 | ns/op, indicative                    | **A: number + bigint fallback** | B: bigint everywhere |     C: decimal string | A + `Object.freeze` |
 | ------------------------------------ | ------------------------------: | -------------------: | --------------------: | ------------------: |
@@ -364,6 +364,19 @@ money('10.00', 'EUR').divide(3, unitPrice); // → 3.3333 EUR
 assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws RangeError
 ```
 
+**Tens, hundreds and thousands.** A scale is never negative: it counts decimal places, from 0 to 1000, so `round('floor', -2)` throws. To round to whole hundreds (Swiss tax rounds taxable income down to 100 CHF, for example), use an increment: a policy at scale 0 with `increment: 100`, or `roundToIncrement` from `@ducatjs/money/cash`. The same increment does tens, thousands and cash rounding.
+
+```ts
+import { money } from '@ducatjs/money';
+import { roundingPolicy } from '@ducatjs/money/policy';
+import { roundToIncrement } from '@ducatjs/money/cash';
+
+const downToHundreds = roundingPolicy({ scale: 0, increment: 100, rounding: 'floor' });
+money('12345.60', 'CHF').round(downToHundreds); // → 12300 CHF
+roundToIncrement(money('12345.60', 'CHF'), money('100', 'CHF'), 'floor'); // → 12300.00 CHF
+money('12345.60', 'CHF').round('floor', -2); // throws RangeError
+```
+
 **Cash rounding**
 
 - `cashRound(m, { country?, rounding?, includeUnverified? })` uses the table in `data/cash-rounding.json`:
@@ -511,7 +524,7 @@ territoryCurrencies('DE', { on: '2001-06-01' }).map((use) => use.currency); // �
 
 ### Interest, loans, NPV and proration
 
-`@ducatjs/money/finance` has the calculations billing and lending code keeps rewriting in floats, in exact arithmetic: every amount that is paid or booked is rounded once from its exact value, with a rounding mode or a policy. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. The design is in [docs/FINANCE.md](docs/FINANCE.md).
+`@ducatjs/money/finance` has the calculations billing and lending code keeps rewriting in floats, in exact arithmetic: every amount that is paid or booked is rounded once from its exact value, with a rounding mode or a policy. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. The design is in [docs/FINANCE.md](https://github.com/public/ducat/blob/main/docs/FINANCE.md).
 
 - `yearFraction(start, end, convention)` is an exact `Ratio` under `ACT/360`, `ACT/365F`, `ACT/ACT ISDA`, `30/360` (Bond Basis), `30E/360` or `30E/360 ISDA` (pass `maturity: true` or `false` when the end date is the last day of February), as the 2006 ISDA Definitions §4.16 define them. It isn't Excel's YEARFRAC, whose bases differ (US 30/360, an average year length for actual/actual). `interest` is simple interest over a day count, and `compound` is periodic compounding over a whole number of periods.
 - `amortise(loan, options)` builds an annuity, linear or interest-only schedule. Each period's interest is the balance times `rate / perYear`, rounded; the principal parts sum exactly to the loan and the balance ends at zero, because the rounding residual goes to the last payment (or, with `residual: 'lastInterest'`, to the last interest). It takes a `balloon` and a `firstPayment` date.
@@ -879,7 +892,7 @@ German, Italian and Dutch words keep CLDR's soft hyphens (U+00AD), which show on
 - BIGINT holds ±9.2·10^18 minor units, which is 92 quadrillion EUR. Postgres's `money` type is locale-dependent; don't use it.
 - Choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 - Prisma maps `BigInt` to JS `bigint`. The helpers accept it, and `fromMinor` normalises it back to a number when it is safe.
-- **A scale column** makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below). To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
+- **A scale column** (the Prisma helpers) makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below). To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
 - **Exponent changes.** Minor units stored without a scale are read at the currency's exponent in the installed version of ducat, so a changed exponent would silently change what old rows mean: 1234 stored as 12.34 would read as 1.234 or 123.4. So an exponent change is a breaking change (see [Decisions](#decisions)), listed under **Changed** in the changelog with the currencies affected. Before upgrading across one, migrate the affected rows, or store a scale column (or a decimal) so the question never arises. Custom currencies keep the exponent given to `defineCurrency`.
 - `fromDecimal` rejects values with more decimals than the currency allows (e.g. `12.3456` in NUMERIC(19,4) for EUR) unless you pass `{ scale }` or `{ rounding }`. Trailing zeros are fine.
 
@@ -1258,7 +1271,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 ## Benchmarks
 
 - Clean-machine numbers against the other money and fixed-point libraries are in [How it compares](#how-it-compares) and
-  [docs/COMPARISON.md](docs/COMPARISON.md), generated from [compare/](compare) on one quiet AMD EPYC Genoa vCPU under
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md), generated from [compare/](https://github.com/public/ducat/tree/main/compare) on one quiet AMD EPYC Genoa vCPU under
   Node, Bun and Deno.
 - CodSpeed measures every pull request by instruction count, so speed regressions show up even on noisy CI machines.
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
@@ -1318,5 +1331,5 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
   - dinero.js's bigint calculator.
 - **No Money arrays or columnar ops** (e.g. summing a `Float64Array`/`BigInt64Array` of minor units).
 - **The ISO table is always bundled** (about 0.55 KiB gzipped, 1 KiB minified). Per-currency imports like dinero's would make the minimum bundle smaller.
-- **Minor-unit columns can't round-trip values with a non-ISO scale.** `toMinorColumns` refuses them by design. There is no `scale` column helper.
+- **Only the Prisma helpers have a scale column.** Without one, minor-unit columns can't round-trip values at a scale other than the currency's, so `toMinorColumns`, the Kysely `setMoney` and the Drizzle `moneyMinor` columns refuse them by design. With Prisma, `{ scale: 'amountScale' }` stores the scale alongside (see [Databases](#databases)). Elsewhere, store `m.toScaledUnits()` and `m.scale` yourself, or use a decimal, JSON or the node-postgres composite column, which keep the scale.
 - **No docs site yet.**

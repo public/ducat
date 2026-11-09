@@ -52,10 +52,16 @@ declare module '../index.js' {
     divide(divisor: Factor, rounding?: RoundingInput): Money<C>;
     negate(): Money<C>;
     abs(): Money<C>;
-    /** Rounds to the currency's exponent (or `scale`), or to a rounding policy. */
+    /**
+     * Rounds to the currency's exponent (or `scale`), or to a rounding policy. A scale is never
+     * negative; round to tens or hundreds with a policy's `increment` or `roundToIncrement`.
+     */
     round(rounding: RoundingMode, scale?: number): Money<C>;
     round(policy: RoundingPolicy): Money<C>;
-    /** Changes the scale; decreasing it rounds (default 'halfExpand'). */
+    /**
+     * Changes the scale (an integer from 0 to 1000); decreasing it rounds (default 'halfExpand').
+     * For tens or hundreds, use an increment: a rounding policy or `roundToIncrement`.
+     */
     toScale(scale: number, rounding?: RoundingMode): Money<C>;
     /** -1, 0 or 1; throws on currency mismatch */
     compare(other: Money<C>): -1 | 0 | 1;

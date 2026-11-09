@@ -350,7 +350,6 @@ export class Fixed {
     return { value: this.value, scale: this.scale };
   }
 
-  /** Blocks `a + b`, `a > b` and `+a`: arithmetic and comparison go through the methods. */
   /**
    * The nearest double, for display, charts and other places that accept a float: lossy on
    * purpose, so it has a name. `fixed('0.1').toNumber()` is 0.1, and a value beyond a double's 15
@@ -362,6 +361,7 @@ export class Fixed {
     return Number(formatScaled(this.value, this.scale));
   }
 
+  /** Blocks `a + b`, `a > b` and `+a`: arithmetic and comparison go through the methods. */
   [Symbol.toPrimitive](hint: string): string {
     if (hint === 'string') {
       return this.toString();
