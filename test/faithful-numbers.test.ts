@@ -49,6 +49,9 @@ describe('numbers beyond 15 significant digits', () => {
       expect(fixed(value).value).toBe(value);
       expect(money('10', 'EUR').multiply(value).toScaledUnits()).toBe(1000n * BigInt(value));
     }
+    // a counterexample Bun's random seed found for an earlier version of the property below
+    expect(ratio(-1445494346142742).num).toBe(-1445494346142742n);
+    expect(ratio(1445494346142742).num).toBe(1445494346142742n);
     const parts = allocate(money('1', 'EUR'), [1234567890123456, 1]);
     expect(parts.map(String)).toEqual(['1.00 EUR', '0.00 EUR']);
     // beyond 2^53 an integer may not be the one typed: 2^53 + 2 has 16 digits
@@ -64,7 +67,8 @@ describe('numbers beyond 15 significant digits', () => {
           .replace(/[-.]/g, '')
           .replace(/^0+/, '')
           .replace(/0+$/, '');
-        if (digits.length > 15) {
+        // Safe integers are exempt: they are exact whatever their digit count.
+        if (digits.length > 15 && !Number.isSafeInteger(value)) {
           expect(() => ratio(value)).toThrow(RangeError);
         } else {
           const exact = ratio(value);
