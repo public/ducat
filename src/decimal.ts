@@ -141,8 +141,13 @@ export const MAX_FAITHFUL_DIGITS = 15;
 export function faithfulDecimal(value: number, fix: string): string {
   // The shortest form has at most 15 digits exactly when rounding to 15 digits gives the same
   // double back: shortest means the fewest digits that round-trip.
-  // NaN and the infinities pass through, for the caller's parser to reject.
-  if (Number(value.toPrecision(MAX_FAITHFUL_DIGITS)) !== value && Number.isFinite(value)) {
+  // Safe integers are exact whatever their digit count, and NaN and the infinities pass through
+  // for the caller's parser to reject. (Today's callers take safe integers on a path of their own.)
+  if (
+    !Number.isSafeInteger(value) &&
+    Number.isFinite(value) &&
+    Number(value.toPrecision(MAX_FAITHFUL_DIGITS)) !== value
+  ) {
     throw new RangeError(
       `${value} has more than ${MAX_FAITHFUL_DIGITS} significant digits; ${fix}`,
     );

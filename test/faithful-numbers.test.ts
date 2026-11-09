@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { money, ratio } from '../src/index.js';
+import { faithfulDecimal } from '../src/decimal.js';
 import { fixed } from '../src/fixed.js';
 import { allocate } from '../src/allocate.js';
 
@@ -71,5 +72,14 @@ describe('numbers beyond 15 significant digits', () => {
         }
       }),
     );
+  });
+});
+
+describe('faithfulDecimal', () => {
+  it('exempts safe integers itself, not only through its callers', () => {
+    expect(faithfulDecimal(2 ** 53 - 1, 'x')).toBe('9007199254740991');
+    expect(faithfulDecimal(1234567890123456, 'x')).toBe('1234567890123456');
+    expect(() => faithfulDecimal(2 ** 53 + 2, 'x')).toThrow(RangeError);
+    expect(faithfulDecimal(NaN, 'x')).toBe('NaN');
   });
 });
