@@ -8,6 +8,9 @@ let lastLocale: string | undefined;
 let lastCurrency = '';
 let lastScale = -1;
 let lastFormatter: Intl.NumberFormat | undefined;
+// the same for calls with options, keyed by the options' JSON
+let lastOptionsKey = '';
+let lastOptionsFormatter: Intl.NumberFormat | undefined;
 
 let stringInput: boolean | undefined;
 /** ES2023 Intl.NumberFormat v3 formats decimal strings exactly; older engines convert to Number. */
@@ -25,6 +28,11 @@ function supportsStringInput(): boolean {
   return stringInput;
 }
 
+/** A JSON.stringify replacer that writes undefined as a marker no Intl option value uses. */
+function keepUndefined(_key: string, value: unknown): unknown {
+  return value === undefined ? '\u0000undefined' : value;
+}
+
 function formatter(
   money: Money,
   locale: string | undefined,
@@ -39,8 +47,17 @@ function formatter(
   ) {
     return lastFormatter;
   }
-  const key = options === undefined ? `${locale}|${money.currency}|${money.scale}` : null;
-  let numberFormat = key === null ? undefined : cache.get(key);
+  // Options are keyed by their JSON: Intl's options are strings, numbers and booleans, so it is
+  // exact, and objects that differ only in key order just get an entry each. JSON.stringify is far
+  // cheaper than building a NumberFormat. The locale, currency and scale go first, in a form JSON
+  // can't produce, so no two inputs share a key. An undefined value is kept in the key, because
+  // the spread below lets it override our fraction digits, where a missing key doesn't.
+  const base = `${locale}|${money.currency}|${money.scale}`;
+  const key = options === undefined ? base : `${base}|${JSON.stringify(options, keepUndefined)}`;
+  if (options !== undefined && key === lastOptionsKey && lastOptionsFormatter !== undefined) {
+    return lastOptionsFormatter;
+  }
+  let numberFormat = cache.get(key);
   if (numberFormat === undefined) {
     numberFormat = new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -51,18 +68,20 @@ function formatter(
       maximumFractionDigits: money.scale,
       ...options,
     });
-    if (key !== null) {
-      if (cache.size > 256) {
-        cache.clear();
-      }
-      cache.set(key, numberFormat);
+    // bounded, as before: clearing is rare and cheap next to building formatters
+    if (cache.size > 256) {
+      cache.clear();
     }
+    cache.set(key, numberFormat);
   }
-  if (key !== null) {
+  if (options === undefined) {
     lastLocale = locale;
     lastCurrency = money.currency;
     lastScale = money.scale;
     lastFormatter = numberFormat;
+  } else {
+    lastOptionsKey = key;
+    lastOptionsFormatter = numberFormat;
   }
   return numberFormat;
 }

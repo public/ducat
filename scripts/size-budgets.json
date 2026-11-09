@@ -17,7 +17,7 @@
     "@ducatjs/money/policy": 0.4,
     "@ducatjs/money/pricing": 1.9,
     "@ducatjs/money/cash": 3.1,
-    "@ducatjs/money/format": 0.39,
+    "@ducatjs/money/format": 0.45,
     "@ducatjs/money/fixed": 1.27,
     "@ducatjs/money/fixed/money": 1.42,
     "@ducatjs/money/parse": 2.14,
@@ -79,7 +79,7 @@
     },
     "format: de-DE": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/format'; console.log(money('1234.5', 'EUR').format('de-DE'));",
-      "gzipped": 5.15
+      "gzipped": 5.2
     },
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",

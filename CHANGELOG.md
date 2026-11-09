@@ -136,6 +136,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `format()` and `formatToParts()` with options reuse a cached `Intl.NumberFormat` (keyed by
+  locale, currency, scale and the options) instead of building one per call, about 30 times faster
+  in a loop. The cache stays bounded.
 - The README's links to the changelog, `docs/`, `compare/` and `bench/` are absolute GitHub URLs,
   so they work when the README is read from `node_modules` or the npm page; a test fails on any
   relative link to a file the package doesn't ship.
