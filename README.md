@@ -27,7 +27,7 @@ price.add(money('1', 'USD')); // compile error, and throws if types are erased
 
 Operations are methods on `Money`. For pipelines or code that prefers plain functions, `@ducatjs/money/fn` has each of them as a function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`). The core (`@ducatjs/money`) holds construction, arithmetic, rounding, comparison and serialisation; everything else is an opt-in module, so a bundle only pays for what it imports (see [Modules](#modules)).
 
-Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
+Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](https://github.com/public/ducat/blob/release/0.2/CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
 
 ---
 
@@ -35,7 +35,7 @@ Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may c
 
 The same 41 correctness vectors, the same benchmark and the same bundle snippet for every library. The details, the
 other libraries' bugs, the fixed-point libraries and the money libraries in other languages are in
-[docs/COMPARISON.md](docs/COMPARISON.md), regenerated from [compare/](compare) for each release.
+[docs/COMPARISON.md](https://github.com/public/ducat/blob/release/0.2/docs/COMPARISON.md), regenerated from [compare/](https://github.com/public/ducat/tree/release/0.2/compare) for each release.
 
 | library                            | correct (of 41) | wrong, silently |        bundle (gzip) |
 | ---------------------------------- | --------------: | --------------: | -------------------: |
@@ -62,7 +62,7 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
   multiply, divide and compare on every runtime, and on add on Node and Deno. Dividing by 3 takes `Fixed` 31, 29 and
   29 ns on Node, Bun and Deno, against bigdecimal.js's 64, 39 and 50. bigdecimal.js is faster at add on Bun (14.4
   against 15.8 ns), and js-big-decimal and ethers are faster on `toString` everywhere; see
-  [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/release/0.2/docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
@@ -81,7 +81,7 @@ A `Money<C>` has three readonly fields:
 | `minor: number \| bigint` | Integer count of 10^-scale units. It is a **number whenever it is a safe integer** (absolute value ≤ 2^53−1) and a **bigint only beyond that**. The invariant is enforced everywhere, so ordinary amounts never allocate a bigint and huge amounts never lose a digit. |
 | `scale: number`           | Decimal places. Defaults to the currency's ISO exponent (EUR 2, JPY 0, KWD 3, CLF 4). It can be larger for sub-minor precision (unit prices, FX intermediates). `round()` brings it back.                                                                              |
 
-Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](bench/RESULTS.md)):
+Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](https://github.com/public/ducat/blob/release/0.2/bench/RESULTS.md)):
 
 | ns/op, indicative                    | **A: number + bigint fallback** | B: bigint everywhere |     C: decimal string | A + `Object.freeze` |
 | ------------------------------------ | ------------------------------: | -------------------: | --------------------: | ------------------: |
@@ -117,6 +117,8 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 ---
 
 ## API
+
+**From CommonJS.** ducat is an ES module, and Node 24 can `require()` it, so a CommonJS project needs no build step: `const { money } = require('@ducatjs/money')` works, and so does every entry below. TypeScript finds the types with any `moduleResolution`. `nodenext` and `bundler` read `exports`, while `node10` (the default for `module: "commonjs"`) reads `types` and `typesVersions`, which name the same declarations. So no `paths` mapping into `dist/` is needed.
 
 ### Modules
 
@@ -973,7 +975,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 ## Benchmarks
 
 - Clean-machine numbers against the other money and fixed-point libraries are in [How it compares](#how-it-compares) and
-  [docs/COMPARISON.md](docs/COMPARISON.md), generated from [compare/](compare) on one quiet AMD EPYC Genoa vCPU under
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/release/0.2/docs/COMPARISON.md), generated from [compare/](https://github.com/public/ducat/tree/release/0.2/compare) on one quiet AMD EPYC Genoa vCPU under
   Node, Bun and Deno.
 - CodSpeed measures every pull request by instruction count, so speed regressions show up even on noisy CI machines.
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
