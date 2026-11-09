@@ -433,7 +433,7 @@ export function money<C extends CurrencyInput>(
   currency: C,
   options?: MoneyOptions,
 ): Money<C> {
-  const scale = options?.scale ?? currencyExponent(currency);
+  const scale = resolveScale(currency, options?.scale);
   if (typeof amount === 'string') {
     const parsed = parsePlainDecimal(amount) ?? parseDecimal(amount);
     return fromScaled(
@@ -507,10 +507,15 @@ export function fromMinor<C extends CurrencyInput>(
   currency: C,
   scale?: number,
 ): Money<C> {
-  const resolvedScale = scale ?? currencyExponent(currency);
+  const resolvedScale = resolveScale(currency, scale);
   if (typeof minor === 'number') {
     if (!Number.isSafeInteger(minor)) {
-      throw new RangeError(`Minor units must be a safe integer, got ${minor}; pass a bigint`);
+      // A bigint only helps an integer too large to be safe; a fraction needs a different fix.
+      throw new RangeError(
+        Number.isInteger(minor)
+          ? `Minor units must be a safe integer, got ${minor}; pass a bigint`
+          : `Minor units must be an integer, got ${minor}`,
+      );
     }
     return new Money(currency, minor + 0, resolvedScale);
   }
@@ -522,7 +527,16 @@ export function fromMinor<C extends CurrencyInput>(
 
 /** Zero in a currency, at its exponent (or `scale`). */
 export function zero<C extends CurrencyInput>(currency: C, scale?: number): Money<C> {
-  return new Money(currency, 0, scale ?? currencyExponent(currency));
+  return new Money(currency, 0, resolveScale(currency, scale));
+}
+
+/**
+ * @internal The scale to build a value at: `scale`, or the currency's exponent. The currency is
+ * looked up either way, because an explicit scale doesn't make an unknown code valid.
+ */
+export function resolveScale(currency: string, scale: number | undefined): number {
+  const exponent = currencyExponent(currency);
+  return scale ?? exponent;
 }
 
 // ---------------------------------------------------------------------------------------------

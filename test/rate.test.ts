@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
   RoundingError,
+  defineCurrency,
   fromMinor,
   money,
   ratio,
@@ -280,10 +281,17 @@ describe('Rate properties', () => {
     );
   });
 
+  // Conversion checks the target currency, so the chain needs registered codes. Defining one again
+  // with the same exponent is a no-op, so this is safe when Bun shares the registry across files.
+  const CHAIN_CODES = ['QRA', 'QRB', 'QRC', 'QRD', 'QRE'];
+  for (const code of CHAIN_CODES) {
+    defineCurrency(code, 2);
+  }
+
   it('round-once: converting with a composed rate is one rounding of the exact product', () => {
     fc.assert(
       fc.property(minor, fc.array(rateStr, { minLength: 1, maxLength: 4 }), mode, (m, ss, rm) => {
-        const legs = ss.map((s, i) => exchangeRate(`C${i}`, `C${i + 1}`, s));
+        const legs = ss.map((s, i) => exchangeRate(CHAIN_CODES[i]!, CHAIN_CODES[i + 1]!, s));
         const chain = legs.reduce((a, b) => a.andThen(b as never));
         const src = fromMinor(m, chain.from, 2);
         const got = chain.convert(src as never, rm, { scale: 3 });

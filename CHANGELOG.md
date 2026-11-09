@@ -86,6 +86,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (12.340 EUR at scale 3: 12340 → 1234). Switch those calls to `toScaledUnits()` to keep the old
   numbers, or migrate the stored values. See #211.
 
+- **Visible change:** an explicit scale no longer skips the currency check. `fromMinor(1, 'XYZ', 2)`,
+  `money('1', 'XYZ', { scale: 2 })`, `zero('XYZ', 2)`, conversion into an unknown currency with
+  `{ scale }`, and the processor and wire readers built on them now throw "Unknown currency", as
+  they do without a scale. Register custom codes with `defineCurrency`.
+- `fromMinor` says "Minor units must be an integer" for a fraction such as 12.3, and suggests a
+  bigint only for integers beyond 2^53. `fromScaled` in `/fixed` does the same.
 - **Visible change:** `ratio()` and everything that takes a `Factor` (`multiply`, `divide`,
   `percentage`, the tax functions, `ExactMoney`, `Fixed`, conversion and rates) throw a `TypeError`
   naming what was passed for a value that isn't a factor: a `Fixed`, `{ num: 1, den: 2 }` with number

@@ -83,8 +83,12 @@ describe('construction', () => {
   });
   it('fromMinor requires safe integers', () => {
     expect(fromMinor(1234, 'EUR').toString()).toBe('12.34 EUR');
-    expect(() => fromMinor(1.5, 'EUR')).toThrow(/safe integer/);
-    expect(() => fromMinor(2 ** 53, 'EUR')).toThrow(/bigint/);
+    expect(() => fromMinor(1.5, 'EUR')).toThrow('Minor units must be an integer, got 1.5');
+    expect(() => fromMinor(12.3, 'EUR', 2)).toThrow('Minor units must be an integer, got 12.3');
+    expect(() => fromMinor(NaN, 'EUR')).toThrow('Minor units must be an integer, got NaN');
+    expect(() => fromMinor(2 ** 53, 'EUR')).toThrow(
+      'Minor units must be a safe integer, got 9007199254740992; pass a bigint',
+    );
     expect(fromMinor(2n ** 64n, 'EUR').minor).toBe(2n ** 64n);
     expect(fromMinor(5n, 'EUR').minor).toBe(5); // normalised back to a number
   });
