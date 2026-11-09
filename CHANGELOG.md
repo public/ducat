@@ -9,6 +9,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- A `Fixed` is accepted as a factor everywhere a `Factor` is (Money's `multiply` and `divide`, the
+  tax functions, `ExactMoney`, conversion and rates), read exactly as its scaled integer over
+  10^scale, and `Fixed#toRatio()` gives it as a reduced `Ratio`. Money's core still doesn't load
+  `/fixed`.
 - `toScaledUnits()` (method and `/fn`): the amount in units of the value's own scale, as a bigint.
 - `@ducatjs/money/words`: amounts in words (`amountInWords`, cheque-style "and 45/100" by default,
   or with the minor unit's names) and whole numbers in words (`spellOut`, any of a language's rule
