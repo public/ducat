@@ -7,6 +7,31 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-09
+
+Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day
+counts, interest, loan schedules, Excel's NPV and IRR, proration), `/pricing` (price endings and
+tiered pricing), `/math`, `/currencies` and `/territories` (ISO numeric codes, Intl names and
+symbols, CLDR territory currencies), `/crypto`, `/wire` (google.type.Money, ISO 20022 amounts),
+`/words` (amounts in words in seven languages) and `/iso` (ISO 4217 registration for `/fn`). A
+`/fn` program that creates, adds and prints amounts now bundles to about 1.3 KiB gzipped. The root
+entry grows from 4.9 to 5.5 KiB, for stricter validation and for installing the methods and
+currencies that `/fn` now leaves out. These changes can break existing code; each is under
+**Changed** with how to upgrade:
+
+- `toMinor()` and `toMinorNumber()` return the currency's minor units at any scale (the old
+  meaning is `toScaledUnits()`);
+- the core Money methods are installed by the root entry, so code that imports only `/fn` and
+  calls methods imports `@ducatjs/money` too;
+- `/fn` no longer registers the ISO 4217 currencies, so a module that imports only `/fn` imports
+  `@ducatjs/money/iso` (or the codes it uses);
+- `/fixed` no longer loads Money: conversions moved to `/fixed/money`;
+- a number beyond 15 significant digits is refused where it becomes exact;
+- decimal strings with surrounding whitespace throw a `SyntaxError`.
+
+Values that aren't Money or aren't factors, unknown currencies with an explicit scale, and invalid
+scales now fail early with clearer errors.
+
 ### Added
 
 - `@ducatjs/money/iso` registers every ISO 4217 currency, and `@ducatjs/money/iso/<CODE>` (one
@@ -376,7 +401,8 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/public/ducat/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/public/ducat/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/public/ducat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/public/ducat/compare/v0.1.0...v0.2.0
