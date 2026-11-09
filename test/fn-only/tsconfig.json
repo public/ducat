@@ -38,6 +38,8 @@
     "../../src/territories.ts",
     "../../src/testing/arbitraries.ts",
     "../../src/testing/index.ts",
+    "../../src/testing/jest.ts",
+    "../../src/testing/vitest.ts",
     "../../src/valibot.ts",
     "../../src/wire.ts",
     "../../src/words.ts",

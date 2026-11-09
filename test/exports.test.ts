@@ -268,3 +268,21 @@ describe('testing entries', () => {
     }
   });
 });
+
+it('test/fn-only/tsconfig.json type-checks every entry that installs no methods', async () => {
+  const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const pkg = JSON.parse(read('../package.json')) as { exports: Record<string, unknown> };
+  const expected = Object.values(pkg.exports)
+    .flatMap((target) =>
+      typeof target === 'object' && target !== null && 'default' in target
+        ? [String(target.default)]
+        : [],
+    )
+    .map((target) => target.replace('./dist/', 'src/').replace(/\.js$/, '.ts'))
+    .filter((source) => !source.includes('/plugins/') && source !== 'src/index.ts')
+    .map((source) => `../../${source}`)
+    .sort();
+  const config = read('fn-only/tsconfig.json');
+  const files = (JSON.parse(config.slice(config.indexOf('{'))) as { files: string[] }).files;
+  expect(files).toEqual([...new Set(expected)].sort());
+});

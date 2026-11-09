@@ -248,17 +248,24 @@ export function extendMoney(
   }
 }
 
+// the names installCoreMethods has installed, so loading it again replaces its own methods only
+const coreMethodNames = /* @__PURE__ */ new Set<string>();
+
 /**
  * @internal Installs the core methods (src/plugins/core.ts) on Money.prototype, non-enumerable like
  * class methods. Kept apart from `extendMoney`, whose name checks the methods bundle doesn't need.
  */
 export function installCoreMethods(methods: Record<string, unknown>): void {
+  // A program that imports only /fn can extendMoney a core name; the root entry must not then
+  // replace it silently. Reinstalling the core methods themselves (core.js loaded again, as hot
+  // reload does) is fine. Every name is checked before any is installed, so a throw changes nothing.
   for (const name in methods) {
-    // a program that imports only /fn can extendMoney a core name; the root entry must not then
-    // replace it silently
-    if (Object.hasOwn(Money.prototype, name)) {
+    if (Object.hasOwn(Money.prototype, name) && !coreMethodNames.has(name)) {
       throw new TypeError(`Money#${name} was defined before the core methods were installed`);
     }
+  }
+  for (const name in methods) {
+    coreMethodNames.add(name);
     Object.defineProperty(Money.prototype, name, {
       value: methods[name],
       writable: true,

@@ -38,6 +38,16 @@ const programs = [
     code: `import { money } from '@ducatjs/money'; import '@ducatjs/money/tax'; const m = money('1', 'EUR'); if (typeof m.addTax !== 'function') throw new Error('no addTax'); ${PROBE}`,
   },
   {
+    name: 'a named import from /all',
+    expect: 'methods',
+    code: `import { money } from '@ducatjs/money/all'; const m = money('1', 'EUR'); ${PROBE}`,
+  },
+  {
+    name: '/fn and an opt-in module, without the root entry',
+    expect: 'no methods',
+    code: `import { money } from '@ducatjs/money/fn'; import '@ducatjs/money/tax'; const m = money('1', 'EUR'); if (typeof m.addTax !== 'function') throw new Error('no addTax'); ${PROBE}`,
+  },
+  {
     name: '/fn alone',
     expect: 'no methods',
     code: `import { money, add, toDecimal } from '@ducatjs/money/fn'; const m = money('1', 'EUR'); toDecimal(add(m, m)); ${PROBE}`,
