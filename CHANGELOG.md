@@ -9,6 +9,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- A `Fixed` is accepted as a factor everywhere a `Factor` is (Money's `multiply` and `divide`, the
+  tax functions, `ExactMoney`, conversion and rates), read exactly as its scaled integer over
+  10^scale, and `Fixed#toRatio()` gives it as a reduced `Ratio`. Money's core still doesn't load
+  `/fixed`.
 - `toScaledUnits()` (method and `/fn`): the amount in units of the value's own scale, as a bigint.
 - `@ducatjs/money/words`: amounts in words (`amountInWords`, cheque-style "and 45/100" by default,
   or with the minor unit's names) and whole numbers in words (`spellOut`, any of a language's rule
@@ -110,6 +114,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   every factor (`multiply(1 / 0.52)`), allocation weights, and `money()` without a `rounding`
   mode (`money(1 / 0.52, 'EUR', { scale: 20 })`). Such a number (1.9230769230769231) is a float
   artefact, not a decimal anyone wrote. Pass a decimal string, or give `money()` a rounding mode.
+
+- **Visible change:** every function that takes a scale checks it the same way, and refuses
+  anything but an integer from 0 to 1000 with "Invalid scale -2: use an integer from 0 to 1000".
+  `ExactMoney#round` and `#isExact` used to fail with an unrelated message ("undefined must be
+  positive"), and `money()`, `fromMinor()`, `zero()`, `toScale()` and conversion had no upper bound.
+  Round to tens or hundreds with an increment, not a negative scale.
 
 ### Fixed
 

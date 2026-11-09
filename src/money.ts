@@ -2,6 +2,7 @@ import { currencyExponent, type CurrencyCode } from './currency.js';
 import {
   formatScaled,
   faithfulDecimal,
+  checkScale,
   parseDecimal,
   parsePlainDecimal,
   POW10,
@@ -22,6 +23,13 @@ import {
 // A module-local constant, not an import: the hot loops (sum, add) read it on every iteration, and
 // V8 reads an imported binding through an extra indirection.
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
+// MAX_DECIMAL_SCALE from decimal.ts, kept local: the scale checks below run on every toScale and on
+// every fromMinor with a scale, where an imported constant (or a call into decimal.ts) costs a
+// lookup. test/scale-validation.test.ts checks the two stay equal.
+const MAX_SCALE = 1000;
+
+/** A valid scale: an integer from 0 to MAX_SCALE (`>>> 0` changes negatives, fractions and NaN). */
+const isValidScale = (scale: number): boolean => scale >>> 0 === scale && scale <= MAX_SCALE;
 
 /** Currency codes accepted by constructors: known codes autocomplete, any string is allowed. */
 export type CurrencyInput = CurrencyCode | (string & {});
@@ -442,7 +450,10 @@ export function zero<C extends CurrencyInput>(currency: C, scale?: number): Mone
  */
 export function resolveScale(currency: string, scale: number | undefined): number {
   const exponent = currencyExponent(currency);
-  return scale ?? exponent;
+  if (scale === undefined || isValidScale(scale)) {
+    return scale ?? exponent;
+  }
+  return checkScale(scale); // throws the shared message
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -715,11 +726,12 @@ export function toScale<C extends string>(
   scale: number,
   rounding: RoundingMode = DEFAULT_ROUNDING,
 ): Money<C> {
-  if (!Number.isInteger(scale) || scale < 0) {
-    throw new RangeError(`Invalid scale ${scale}`);
-  }
+  // a value's own scale is always valid, so this needs no check
   if (scale === money.scale) {
     return money;
+  }
+  if (!isValidScale(scale)) {
+    checkScale(scale); // throws the shared message
   }
   if (scale > money.scale) {
     return make(money.currency, scaleUp(money.minor, scale - money.scale), scale);

@@ -5,7 +5,7 @@
  * this entry (or `cashPolicy` from `@ducatjs/money/cash`).
  */
 import { currencyExponent, isCurrency } from './currency.js';
-import { MAX_DECIMAL_SCALE, type Ratio } from './decimal.js';
+import { checkScale, type Ratio } from './decimal.js';
 import {
   CurrencyMismatchError,
   multiply,
@@ -47,11 +47,8 @@ export function roundingPolicy(options: RoundingPolicyOptions = {}): RoundingPol
   const rounding = options.rounding ?? DEFAULT_ROUNDING;
   const currency = options.currency;
 
-  if (
-    scale !== undefined &&
-    !(Number.isInteger(scale) && scale >= 0 && scale <= MAX_DECIMAL_SCALE)
-  ) {
-    throw new RangeError(`Invalid scale ${scale}`);
+  if (scale !== undefined) {
+    checkScale(scale);
   }
   if (!(Number.isSafeInteger(increment) && increment >= 1)) {
     throw new RangeError(`Invalid increment ${increment}; it must be a positive integer`);

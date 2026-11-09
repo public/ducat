@@ -6,6 +6,7 @@
 // `@ducatjs/money/fixed` points here and loads no Money: `toMoney()` needs
 // `import '@ducatjs/money/fixed/money'` (src/plugins/fixed-money.ts).
 import {
+  checkScale,
   formatScaled,
   faithfulDecimal,
   parseDecimal,
@@ -70,12 +71,6 @@ function toBigInt(value: number | bigint): bigint {
   return typeof value === 'bigint' ? value : BigInt(value);
 }
 
-function checkScale(scale: number): void {
-  if (!Number.isSafeInteger(scale) || scale < 0 || scale > MAX_SCALE) {
-    throw new RangeError(`Invalid scale ${scale}: use an integer from 0 to ${MAX_SCALE}`);
-  }
-}
-
 /** A Fixed from a value that already holds the invariant (an integer, safe when a number). */
 function make(value: number | bigint, scale: number): Fixed {
   return new Fixed(INTERNAL, value, scale);
@@ -135,7 +130,7 @@ export class Fixed {
    * Fixed. Give `scale` rather than calling toScale afterwards, which would round twice.
    */
   multiply(
-    factor: Factor | Fixed,
+    factor: Factor,
     rounding: RoundingMode = DEFAULT_ROUNDING,
     options?: ArithmeticOptions,
   ): Fixed {
@@ -163,7 +158,7 @@ export class Fixed {
    * `fixed('9.990').divide('1.2', 'halfEven', { scale: 2 })` is 8.32.
    */
   divide(
-    divisor: Factor | Fixed,
+    divisor: Factor,
     rounding: RoundingMode = DEFAULT_ROUNDING,
     options?: ArithmeticOptions,
   ): Fixed {
@@ -303,6 +298,14 @@ export class Fixed {
 
   // Conversion
 
+  /**
+   * The value as an exact `Ratio`, reduced: `fixed('0.0725').toRatio()` is 29/400. A Fixed is
+   * accepted as a factor anywhere, so this is only needed to keep a ratio for reuse.
+   */
+  toRatio(): Ratio {
+    return ratio(toBigInt(this.value), pow10n(this.scale));
+  }
+
   /** The plain decimal string, with every decimal place of the scale: '12.340'. */
   toString(): string {
     return formatScaled(this.value, this.scale);
@@ -390,7 +393,7 @@ function addAligned(first: Fixed, second: Fixed, sign: 1 | -1): Fixed {
 }
 
 /** A factor as an exact ratio; a Fixed is value / 10^scale. */
-function factorRatio(factor: Factor | Fixed): Ratio {
+function factorRatio(factor: Factor): Ratio {
   if (factor instanceof Fixed) {
     return ratio(toBigInt(factor.value), pow10n(factor.scale));
   }

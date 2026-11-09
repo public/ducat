@@ -1,6 +1,8 @@
 // Exact decimal-string handling. No floating point is used on amounts: numbers given as factors are
 // converted through their shortest round-trip decimal representation (String(x)), never multiplied.
 
+import type { Fixed } from './fixed.js';
+
 /** The largest minor-unit count held as a number (2^53 - 1); larger values are bigints. */
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 const MAXN = /* @__PURE__ */ BigInt(MAX_SAFE_MINOR);
@@ -18,8 +20,11 @@ export interface Ratio {
   readonly d: number;
 }
 
-/** Anything accepted where a multiplier, rate or percentage is expected. */
-export type Factor = number | bigint | string | Ratio;
+/**
+ * Anything accepted where a multiplier, rate or percentage is expected. A `Fixed` is read exactly,
+ * as its scaled integer over 10^scale.
+ */
+export type Factor = number | bigint | string | Ratio | Fixed;
 
 const POW10N: bigint[] = [];
 /** 10^exponent as a bigint, cached. */
@@ -155,6 +160,25 @@ export function faithfulDecimal(value: number, fix: string): string {
   return String(value);
 }
 
+/**
+ * Returns `scale` if it is a valid scale: an integer from 0 to MAX_DECIMAL_SCALE. Scales are never
+ * negative: round to tens or hundreds with an increment (`roundToIncrement`, a rounding policy).
+ */
+export function checkScale(scale: number): number {
+  // On hot paths (Fixed, ExactMoney, policies), so one comparison does most of the work: `>>> 0`
+  // leaves an integer from 0 to 2^32 - 1 unchanged and changes negatives, fractions, NaN and the
+  // infinities.
+  if (scale >>> 0 !== scale || scale > MAX_DECIMAL_SCALE) {
+    invalidScale(scale);
+  }
+  return scale;
+}
+
+// Kept out of checkScale, so the check stays small enough to inline.
+function invalidScale(scale: number): never {
+  throw new RangeError(`Invalid scale ${scale}: use an integer from 0 to ${MAX_DECIMAL_SCALE}`);
+}
+
 function gcd(left: bigint, right: bigint): bigint {
   if (left < 0n) {
     left = -left;
@@ -200,7 +224,7 @@ function makeRatio(num: bigint, den: bigint): Ratio {
  */
 function notAFactor(value: unknown): TypeError {
   return new TypeError(
-    `Expected a number, bigint, decimal string or Ratio, got ${typeof value} ${String(value)}`,
+    `Expected a number, bigint, decimal string, Ratio or Fixed, got ${typeof value} ${String(value)}`,
   );
 }
 
@@ -230,10 +254,23 @@ export function ratio(value: Factor, den?: Factor): Ratio {
   if (typeof value === 'object') {
     // A Ratio from ratio() passes straight through: the hot path for factors built once. A
     // hand-made { num, den } of bigints is rebuilt, so it is reduced and has `n` and `d`.
-    if (typeof value?.num === 'bigint' && typeof value.den === 'bigint') {
-      return typeof value.n === 'number' && typeof value.d === 'number'
-        ? value
-        : makeRatio(value.num, value.den);
+    const asRatio = value as Partial<Ratio> | null;
+    if (typeof asRatio?.num === 'bigint' && typeof asRatio.den === 'bigint') {
+      return typeof asRatio.n === 'number' && typeof asRatio.d === 'number'
+        ? (asRatio as Ratio)
+        : makeRatio(asRatio.num, asRatio.den);
+    }
+    // A Fixed, read through its scaled form rather than `instanceof`, so the core doesn't load
+    // `/fixed`. The scale is checked because a lookalike object could carry any value.
+    const scaled = (value as Partial<Fixed> | null)?.value;
+    const scale = (value as Partial<Fixed> | null)?.scale;
+    if (
+      (typeof scaled === 'bigint' || Number.isSafeInteger(scaled)) &&
+      typeof scale === 'number' &&
+      scale >>> 0 === scale &&
+      scale <= MAX_DECIMAL_SCALE
+    ) {
+      return makeRatio(BigInt(scaled as number | bigint), pow10n(scale));
     }
     throw notAFactor(value);
   }
