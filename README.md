@@ -35,7 +35,7 @@ Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may c
 
 The same 41 correctness vectors, the same benchmark and the same bundle snippet for every library. The details, the
 other libraries' bugs, the fixed-point libraries and the money libraries in other languages are in
-[docs/COMPARISON.md](docs/COMPARISON.md), regenerated from [compare/](compare) for each release.
+[docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md), regenerated from [compare/](compare) for each release.
 
 | library                            | correct (of 41) | wrong, silently |        bundle (gzip) |
 | ---------------------------------- | --------------: | --------------: | -------------------: |
@@ -62,7 +62,7 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
   multiply, divide and compare on every runtime, and on add on Node and Deno. Dividing by 3 takes `Fixed` 31, 29 and
   29 ns on Node, Bun and Deno, against bigdecimal.js's 64, 39 and 50. bigdecimal.js is faster at add on Bun (14.4
   against 15.8 ns), and js-big-decimal and ethers are faster on `toString` everywhere; see
-  [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
@@ -975,7 +975,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 ## Benchmarks
 
 - Clean-machine numbers against the other money and fixed-point libraries are in [How it compares](#how-it-compares) and
-  [docs/COMPARISON.md](docs/COMPARISON.md), generated from [compare/](compare) on one quiet AMD EPYC Genoa vCPU under
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md), generated from [compare/](compare) on one quiet AMD EPYC Genoa vCPU under
   Node, Bun and Deno.
 - CodSpeed measures every pull request by instruction count, so speed regressions show up even on noisy CI machines.
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
