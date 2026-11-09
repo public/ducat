@@ -2,7 +2,8 @@ import '../src/plugins/core.js'; // the tests below use the Money methods
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { exact, sumExact } from '../src/exact.js';
-import { CurrencyMismatchError, fromMinor, money, sum, type Money } from '../src/money.js';
+import { CurrencyMismatchError, fromMinor, money, ratio, sum, type Money } from '../src/money.js';
+import { fixed } from '../src/fixed.js';
 import { roundingPolicy } from '../src/policy.js';
 import { tieredPrice, type PriceTier, type TiersMode } from '../src/pricing.js';
 import { runs } from './fc-config.js';
@@ -125,7 +126,7 @@ describe('tieredPrice', () => {
         mode: 'volume',
         tiers: [{ upTo: 'inf', unitAmount: usd('1') }, { upTo: 5 }],
       }),
-    ).toThrow("Only the last tier can have upTo 'inf'");
+    ).toThrow('Tier 0 is open (upTo inf), but only the last tier can be');
     expect(() =>
       tieredPrice(1, {
         mode: 'volume',
@@ -134,10 +135,10 @@ describe('tieredPrice', () => {
           { upTo: 5, unitAmount: usd('1') },
         ],
       }),
-    ).toThrow('Tier bounds must increase');
+    ).toThrow("Tier bounds must increase: tier 1's upTo 5 is not above tier 0's 5");
     expect(() =>
       tieredPrice(1, { mode: 'volume', tiers: [{ upTo: 0, unitAmount: usd('1') }] }),
-    ).toThrow('Tier bounds must increase');
+    ).toThrow("Tier bounds must increase: tier 0's upTo 0 is not above 0");
     expect(() =>
       tieredPrice(6, { mode: 'volume', tiers: [{ upTo: 5, unitAmount: usd('1') }] }),
     ).toThrow('beyond the last tier');
@@ -146,6 +147,114 @@ describe('tieredPrice', () => {
       { upTo: 'inf', unitAmount: money('1', 'EUR') as Money },
     ] as PriceTier<string>[];
     expect(() => tieredPrice(1, { mode: 'volume', tiers: mixed })).toThrow(CurrencyMismatchError);
+  });
+});
+
+describe('tieredPrice for real tier tables', () => {
+  const meters: PriceTier<'EUR'>[] = [
+    { upTo: 10, unitAmount: money('2', 'EUR') },
+    { upTo: 100, unitAmount: money('1.50', 'EUR'), flatAmount: money('5', 'EUR') },
+  ];
+
+  it("beyondLastTier: 'cap' charges nothing past the last bound, in both modes", () => {
+    const graduated = tieredPrice(250, { mode: 'graduated', tiers: meters, beyondLastTier: 'cap' });
+    expect(show(graduated.total)).toBe(
+      show(tieredPrice(100, { mode: 'graduated', tiers: meters }).total),
+    );
+    expect(show(graduated.total)).toBe('160.00 EUR'); // 10 × 2 + 90 × 1.50 + 5
+    expect(graduated.lines.map((line) => line.quantity)).toEqual(['10', '90']);
+    const volume = tieredPrice(250, { mode: 'volume', tiers: meters, beyondLastTier: 'cap' });
+    expect(show(volume.total)).toBe('155.00 EUR'); // 100 × 1.50 + 5
+    // within the tiers, 'cap' changes nothing
+    expect(
+      show(tieredPrice(50, { mode: 'volume', tiers: meters, beyondLastTier: 'cap' }).total),
+    ).toBe(show(tieredPrice(50, { mode: 'volume', tiers: meters }).total));
+    expect(() => tieredPrice(250, { mode: 'volume', tiers: meters })).toThrow(
+      "The quantity 250 is beyond the last tier (upTo 100); pass { beyondLastTier: 'cap' } to charge nothing past it",
+    );
+    expect(() =>
+      tieredPrice(1, { mode: 'volume', tiers: meters, beyondLastTier: 'clamp' as never }),
+    ).toThrow("Invalid beyondLastTier clamp; use 'throw' or 'cap'");
+  });
+
+  it("an open last tier is 'inf', null or Infinity", () => {
+    const totals = (['inf', null, Infinity] as const).map((upTo) =>
+      show(
+        tieredPrice(1000, {
+          mode: 'graduated',
+          tiers: [
+            { upTo: 10, unitAmount: usd('1') },
+            { upTo, unitAmount: usd('0.50') },
+          ],
+        }).total,
+      ),
+    );
+    expect(totals).toEqual(['505.00 USD', '505.00 USD', '505.00 USD']);
+    expect(() =>
+      tieredPrice(1, {
+        mode: 'volume',
+        tiers: [
+          { upTo: null, unitAmount: usd('1') },
+          { upTo: 5, unitAmount: usd('1') },
+        ],
+      }),
+    ).toThrow('Tier 0 is open (upTo null), but only the last tier can be');
+    expect(() =>
+      tieredPrice(1, {
+        mode: 'volume',
+        tiers: [
+          { upTo: Infinity, unitAmount: usd('1') },
+          { upTo: 5, unitAmount: usd('1') },
+        ],
+      }),
+    ).toThrow('Tier 0 is open (upTo Infinity), but only the last tier can be');
+  });
+
+  it('fractional quantities: decimal strings, a/b strings, ratios, exactly', () => {
+    const tiers: PriceTier<'EUR'>[] = [
+      { upTo: '50.5', unitAmount: money('0.30', 'EUR') },
+      { upTo: 'inf', unitAmount: money('0.20', 'EUR') },
+    ];
+    const third = tieredPrice('250/3', { mode: 'graduated', tiers });
+    // 50.5 × 0.30 + (250/3 − 50.5) × 0.20 = 15.15 + 6.5666… = 21.7166…
+    expect(show(third.total)).toBe('21.72 EUR');
+    expect(third.lines.map((line) => line.quantity)).toEqual(['50.5', '197/6']);
+    expect(
+      third.exact.equals(exact(money('15.15', 'EUR')).add(exact(money('197', 'EUR')).divide(30))),
+    ).toBe(true);
+    expect(show(tieredPrice('250/3', { mode: 'volume', tiers }).total)).toBe('16.67 EUR');
+    expect(show(tieredPrice(ratio(250, 3), { mode: 'volume', tiers }).total)).toBe('16.67 EUR');
+    expect(show(tieredPrice(fixed('12.250'), { mode: 'volume', tiers }).total)).toBe('3.68 EUR');
+    expect(tieredPrice(fixed('12.250'), { mode: 'volume', tiers }).lines[0]!.quantity).toBe(
+      '12.25',
+    );
+    expect(show(tieredPrice('12.25', { mode: 'volume', tiers }).total)).toBe('3.68 EUR');
+    expect(() => tieredPrice('-1/3', { mode: 'volume', tiers })).toThrow('must not be negative');
+  });
+
+  it('volume tiers chosen by one quantity, charged by another', () => {
+    // tier by meter count, priced per kWh used, with the tier's flat fee once
+    const perKwh: PriceTier<'EUR'>[] = [
+      { upTo: 1, unitAmount: money('0.30', 'EUR'), flatAmount: money('10', 'EUR') },
+      { upTo: 'inf', unitAmount: money('0.25', 'EUR'), flatAmount: money('25', 'EUR') },
+    ];
+    const bill = tieredPrice(3, { mode: 'volume', tiers: perKwh, chargeQuantity: '1234.5' });
+    expect(bill.lines.map((line) => [line.tier, line.quantity])).toEqual([[1, '1234.5']]);
+    expect(show(bill.total)).toBe('333.63 EUR'); // 1234.5 × 0.25 + 25, half up
+    // flat-fee tiers: only a flatAmount, so the charge quantity doesn't matter
+    const flat: PriceTier<'EUR'>[] = [
+      { upTo: 5, flatAmount: money('49', 'EUR') },
+      { upTo: 'inf', flatAmount: money('99', 'EUR') },
+    ];
+    expect(show(tieredPrice(7, { mode: 'volume', tiers: flat, chargeQuantity: 1000 }).total)).toBe(
+      '99.00 EUR',
+    );
+    expect(() => tieredPrice(3, { mode: 'graduated', tiers: perKwh, chargeQuantity: 10 })).toThrow(
+      "chargeQuantity needs mode 'volume'",
+    );
+    expect(() => tieredPrice(3, { mode: 'volume', tiers: perKwh, chargeQuantity: '-1' })).toThrow(
+      'Invalid chargeQuantity -1; it must not be negative',
+    );
   });
 });
 

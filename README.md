@@ -566,6 +566,34 @@ tieredPrice(12, { mode: 'volume', tiers }).total; // → 66.00 USD
 tieredPrice(0, { mode: 'volume', tiers }).total; // → 10.00 USD (the first tier's flat amount)
 ```
 
+Real tier tables need a few more things, and get them as options:
+
+- **Quantities** can be fractional, exactly: a decimal string (`'12.25'` kWh), an `'a/b'` string (`'250/3'`), a `ratio()` or a `Fixed`.
+- **The last tier** may be open with `upTo: 'inf'`, `null` or `Infinity`. Bounds must increase, and the error names the tier that doesn't.
+- **Past a bounded last tier**, the quantity throws by default. With `beyondLastTier: 'cap'` it is charged as if it were the last `upTo`, so nothing more is charged past it.
+- **Tier by one quantity, charge by another** (volume mode): `chargeQuantity` multiplies the chosen tier's `unitAmount`, for tiers chosen by meter count but priced per unit used. The tier's `flatAmount` is charged once. Tiers with only a `flatAmount` give flat-fee pricing, chosen by the quantity. Graduated tiers split the quantity across tiers, so there is no single tier to apply to another quantity, and `chargeQuantity` throws there.
+
+```ts
+import { money } from '@ducatjs/money';
+import { fixed } from '@ducatjs/money/fixed';
+import { tieredPrice } from '@ducatjs/money/pricing';
+
+const capped = [
+  { upTo: 10, unitAmount: money('2', 'EUR') },
+  { upTo: 100, unitAmount: money('1.50', 'EUR'), flatAmount: money('5', 'EUR') },
+];
+tieredPrice(250, { mode: 'graduated', tiers: capped, beyondLastTier: 'cap' }).total; // → 160.00 EUR
+tieredPrice(250, { mode: 'graduated', tiers: capped }); // throws RangeError
+tieredPrice('250/3', { mode: 'volume', tiers: capped }).total; // → 130.00 EUR
+tieredPrice(fixed('12.25'), { mode: 'volume', tiers: capped }).total; // → 23.38 EUR
+
+const perMeter = [
+  { upTo: 1, unitAmount: money('0.30', 'EUR'), flatAmount: money('10', 'EUR') },
+  { upTo: null, unitAmount: money('0.25', 'EUR'), flatAmount: money('25', 'EUR') },
+];
+tieredPrice(3, { mode: 'volume', tiers: perMeter, chargeQuantity: '1234.5' }).total; // → 333.63 EUR
+```
+
 ### Currency conversion
 
 `@ducatjs/money/convert` converts at exact rates and rounds once, at the end. A rate is a `Rate`, an exact rational with the pair in its type, so converting the wrong currency is a compile error. Inverses and chains of rates are exact too: nothing is rounded until an amount is converted.

@@ -65,7 +65,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `@ducatjs/money/pricing`: `tieredPrice` prices a quantity under graduated or volume tiers in
   the style of Stripe's (inclusive `upTo`, per-unit and flat amounts, sub-cent unit prices and
   decimal quantities), exactly, with the total rounded once and a breakdown per tier whose
-  amounts sum to the total.
+  amounts sum to the total. For real tier tables: quantities as `'a/b'` strings, ratios or
+  `Fixed`; an open last tier as `'inf'`, `null` or `Infinity`; `beyondLastTier: 'cap'` to charge
+  nothing past a bounded last tier; and `chargeQuantity`, in volume mode, to choose the tier by one
+  quantity and charge by another.
 
 ### Changed
 
