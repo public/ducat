@@ -37,6 +37,12 @@
       "fn": [
         "./dist/fn.d.ts"
       ],
+      "iso": [
+        "./dist/iso.d.ts"
+      ],
+      "iso/all": [
+        "./dist/plugins/iso-all.d.ts"
+      ],
       "allocate": [
         "./dist/plugins/allocate.d.ts"
       ],
@@ -209,6 +215,14 @@
     "./fn": {
       "types": "./dist/fn.d.ts",
       "default": "./dist/fn.js"
+    },
+    "./iso": {
+      "types": "./dist/iso.d.ts",
+      "default": "./dist/iso.js"
+    },
+    "./iso/all": {
+      "types": "./dist/plugins/iso-all.d.ts",
+      "default": "./dist/plugins/iso-all.js"
     },
     "./allocate": {
       "types": "./dist/plugins/allocate.d.ts",

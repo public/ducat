@@ -17,7 +17,7 @@ export default defineConfig({
     include: ['test/**/*.test.ts'],
     exclude: ['test/db/**', 'test/browser/**'],
     benchmark: { include: ['bench/**/*.bench.ts'] },
-    setupFiles: ['test/setup.ts'],
+    setupFiles: ['test/setup-currencies.ts', 'test/setup.ts'],
     env: process.env.DUCAT_SEED ? { DUCAT_SEED: process.env.DUCAT_SEED } : {},
     testTimeout: isDeepRun ? 3_600_000 : 20_000,
   },

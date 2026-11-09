@@ -29,6 +29,7 @@
     "../../src/historic.ts",
     "../../src/history.ts",
     "../../src/hmrc.ts",
+    "../../src/iso.ts",
     "../../src/kysely.ts",
     "../../src/parse.ts",
     "../../src/pg.ts",

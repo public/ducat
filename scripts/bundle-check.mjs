@@ -14,7 +14,7 @@ import { rollup } from 'rollup';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Each program prints whether a Money value has its methods.
+// Each program prints whether a Money value has its methods, or fails with an error.
 const PROBE = "console.log(typeof m.add === 'function' ? 'methods' : 'no methods');";
 const programs = [
   {
@@ -45,12 +45,24 @@ const programs = [
   {
     name: '/fn and an opt-in module, without the root entry',
     expect: 'no methods',
-    code: `import { money } from '@ducatjs/money/fn'; import '@ducatjs/money/tax'; const m = money('1', 'EUR'); if (typeof m.addTax !== 'function') throw new Error('no addTax'); ${PROBE}`,
+    code: `import { money } from '@ducatjs/money/fn'; import { EUR } from '@ducatjs/money/iso'; import '@ducatjs/money/tax'; const m = money('1', EUR); if (typeof m.addTax !== 'function') throw new Error('no addTax'); ${PROBE}`,
   },
   {
     name: '/fn alone',
     expect: 'no methods',
-    code: `import { money, add, toDecimal } from '@ducatjs/money/fn'; const m = money('1', 'EUR'); toDecimal(add(m, m)); ${PROBE}`,
+    code: `import { money, add, toDecimal } from '@ducatjs/money/fn'; import { EUR } from '@ducatjs/money/iso'; const m = money('1', EUR); toDecimal(add(m, m)); ${PROBE}`,
+  },
+  {
+    // the ISO table is registered by the root entry or /iso/all, not by /fn
+    name: '/fn alone with a code as a string',
+    throws: true,
+    expect: 'Unknown currency "EUR"',
+    code: `import { money } from '@ducatjs/money/fn'; const m = money('1', 'EUR'); ${PROBE}`,
+  },
+  {
+    name: '/iso/all, then /fn with a code as a string',
+    expect: 'no methods',
+    code: `import '@ducatjs/money/iso/all'; import { money } from '@ducatjs/money/fn'; const m = money('1', 'EUR'); ${PROBE}`,
   },
 ];
 
@@ -95,11 +107,14 @@ try {
       console.log = (line) => lines.push(String(line));
       try {
         await import(`${pathToFileURL(file).href}?${bundler}-${program.name}`);
+      } catch (error) {
+        lines.push(String(error.message));
       } finally {
         console.log = original;
       }
       const got = lines.join('\n');
-      const ok = got === program.expect;
+      // a program expected to fail passes when the error message starts with `expect`
+      const ok = program.throws ? got.startsWith(program.expect) : got === program.expect;
       if (!ok) {
         failures++;
       }
@@ -112,7 +127,7 @@ try {
 
 if (failures > 0) {
   console.error(
-    `\n${failures} bundle(s) got the methods wrong: check "sideEffects" in package.json`,
+    `\n${failures} bundle(s) got the methods or currencies wrong: check "sideEffects" in package.json`,
   );
   process.exit(1);
 }

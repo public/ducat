@@ -1,5 +1,5 @@
 {
-  "core": 5.53,
+  "core": 5.57,
   "overCoreTolerance": 0.02,
   "overCore": {
     "@ducatjs/money/allocate": 1.55,
@@ -54,7 +54,9 @@
     "@ducatjs/money/words/nl": 0.64,
     "@ducatjs/money/words/pt": 0.99,
     "@ducatjs/money/territories": 4.7,
-    "@ducatjs/money/finance": 5.4
+    "@ducatjs/money/finance": 5.4,
+    "@ducatjs/money/iso": 1.65,
+    "@ducatjs/money/iso/all": 0.01
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 60,
@@ -67,35 +69,39 @@
     },
     "methods: money, add, multiply, toDecimal": {
       "code": "import { money } from '@ducatjs/money'; const a = money('1.00', 'EUR'); console.log(a.add(a).multiply('1.075', 'halfEven').toDecimal());",
-      "gzipped": 4.63
+      "gzipped": 4.65
     },
     "functions: money, add, multiply, toDecimal": {
-      "code": "import { money, add, multiply, toDecimal } from '@ducatjs/money/fn'; const a = money('1.00', 'EUR'); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
-      "gzipped": 4.52
+      "code": "import { money, add, multiply, toDecimal } from '@ducatjs/money/fn'; import { EUR } from '@ducatjs/money/iso'; const a = money('1.00', EUR); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
+      "gzipped": 3.07
     },
     "allocate: split a total three ways": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/allocate'; console.log(money('100', 'EUR').split(3).map(String));",
-      "gzipped": 6.31
+      "gzipped": 6.33
     },
     "format: de-DE": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/format'; console.log(money('1234.5', 'EUR').format('de-DE'));",
-      "gzipped": 5.15
+      "gzipped": 5.17
     },
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",
-      "gzipped": 5.76
+      "gzipped": 5.78
     },
     "parse: parse alone, without detection": {
-      "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 €', 'EUR', 'de-DE').toString());",
+      "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 \u20ac', 'EUR', 'de-DE').toString());",
       "gzipped": 5.65
     },
     "functions, dinero.js shape: fromMinor, add, multiply, toDecimal": {
-      "code": "import { fromMinor, add, multiply, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
-      "gzipped": 3.24
+      "code": "import { fromMinor, add, multiply, toDecimal } from '@ducatjs/money/fn'; import { EUR } from '@ducatjs/money/iso'; const a = fromMinor(100, EUR); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
+      "gzipped": 2.7
     },
     "functions: fromMinor, add, toDecimal": {
-      "code": "import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
-      "gzipped": 1.9
+      "code": "import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; import { EUR } from '@ducatjs/money/iso'; const a = fromMinor(100, EUR); console.log(toDecimal(add(a, a)));",
+      "gzipped": 1.37
+    },
+    "functions with every ISO code: /iso/all, fromMinor, add, toDecimal": {
+      "code": "import '@ducatjs/money/iso/all'; import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
+      "gzipped": 1.92
     }
   }
 }

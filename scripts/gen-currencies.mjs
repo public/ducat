@@ -142,6 +142,18 @@ function generate() {
     `/** Active codes whose minor unit is "N.A." (precious metals, SDR, testing): not monetary, not in ISO_EXPONENTS. */\n` +
     `export const ISO_NON_MONETARY = ${JSON.stringify(nonMonetary)} as const;\n`;
 
+  // One constant per code for @ducatjs/money/iso. Each registers its exponent when a program uses
+  // it, and the PURE marker lets bundlers drop the ones it doesn't, so /fn programs don't carry the
+  // whole table.
+  out['iso4217-constants.ts'] =
+    header('data/iso4217-list-one.xml') +
+    `import { isoCurrency as c } from '../currency.js';\n\n` +
+    Object.entries(iso)
+      .map(
+        ([code, exponent]) => `export const ${code} = /* @__PURE__ */ c('${code}', ${exponent});\n`,
+      )
+      .join('');
+
   // Stripe: [exponent the API expects, multiple the charge amount must be, multiple a payout amount
   // must be]
   const stripeData = JSON.parse(read('data/stripe.json'));

@@ -82,6 +82,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   0.13 KiB. Code that imports only `/fn` and also calls methods must import `@ducatjs/money` (or
   `@ducatjs/money/all`) too, or call the functions instead of the methods. Importing the root entry
   throws if a program already defined a core method name with `extendMoney`.
+- **Breaking:** `@ducatjs/money/fn` no longer carries the ISO 4217 table. Name currencies with the
+  constants of the new `@ducatjs/money/iso` (`fromMinor(1250, EUR)`; each is the plain string
+  `'EUR'`), and a bundle keeps only the ones it uses: create, add and print goes from 1.8 to 1.4 KiB
+  gzipped. The root entry and `/all` register the whole table as before (the root grows by 0.03
+  KiB), and `import '@ducatjs/money/iso/all'` does it for `/fn` alone. In a `/fn`-only program, a
+  code passed as a bare string without one of those throws "Unknown currency", naming the fix.
 - **Breaking:** `@ducatjs/money/fixed` no longer loads Money or the currency table, so a program
   that uses only `Fixed` is 3.3 kB gzipped instead of 5.4 kB. `Money#toFixedPoint()`,
   `Fixed#toMoney()` and `moneyToFixed` moved to the new `@ducatjs/money/fixed/money`: import that

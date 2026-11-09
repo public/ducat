@@ -12,8 +12,23 @@ export interface CustomCurrencies {}
 /** A known currency code: ISO 4217, or one added to `CustomCurrencies`. */
 export type CurrencyCode = IsoCurrencyCode | (keyof CustomCurrencies & string);
 
-const custom = /* @__PURE__ */ new Map<string, number>();
 const iso = ISO_EXPONENTS as Readonly<Record<string, number>>;
+
+// The exponents of the currencies this program can use: ISO codes registered by the root entry
+// (all of them) or by the constants of `@ducatjs/money/iso` (the ones used), and codes from
+// `defineCurrency`. `/fn` programs that never import the root entry carry only what they use.
+const known: Record<string, number> = /* @__PURE__ */ Object.create(null);
+
+/** @internal Registers an ISO 4217 code; the generated constants and the root entry call it. */
+export function isoCurrency<C extends string>(code: C, exponent: number): C {
+  known[code] = exponent;
+  return code;
+}
+
+/** @internal Registers every ISO 4217 code, for the root entry. */
+export function registerIsoCurrencies(): void {
+  Object.assign(known, iso);
+}
 
 /**
  * Registers a currency that is not in ISO 4217 (crypto, loyalty points, withdrawn codes you still
@@ -26,31 +41,31 @@ export function defineCurrency(code: string, exponent: number): void {
   if (typeof iso[code] === 'number') {
     throw new TypeError(`${code} is an ISO 4217 currency and cannot be redefined`);
   }
-  const prev = custom.get(code);
+  const prev = known[code];
   if (prev !== undefined && prev !== exponent) {
     throw new TypeError(`${code} is already defined with exponent ${prev}`);
   }
-  custom.set(code, exponent);
+  known[code] = exponent;
 }
 
 /** The minor-unit exponent of a currency (EUR 2, JPY 0, KWD 3). Throws for unknown codes. */
 export function currencyExponent(code: string): number {
-  const isoExponent = iso[code];
-  if (typeof isoExponent === 'number') {
-    return isoExponent;
+  const exponent = known[code];
+  if (exponent !== undefined) {
+    return exponent;
   }
-  const customExponent = custom.get(code);
-  if (customExponent !== undefined) {
-    return customExponent;
-  }
+  return unknownCurrency(code);
+}
+
+function unknownCurrency(code: string): never {
   throw new RangeError(
-    `Unknown currency "${code}" (not ISO 4217 and not registered with defineCurrency)`,
+    `Unknown currency "${code}" (with /fn, import it from @ducatjs/money/iso; otherwise defineCurrency)`,
   );
 }
 
 /** Whether the code is an ISO 4217 currency or one registered with `defineCurrency`. */
 export function isCurrency(code: string): code is CurrencyCode {
-  return typeof iso[code] === 'number' || custom.has(code);
+  return known[code] !== undefined;
 }
 
 export {
