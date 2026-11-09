@@ -75,6 +75,34 @@ describe('the formatter cache with options', () => {
     ).toBe('1.234,50');
   });
 
+  it('an option set to undefined is not the same as no option, in either order', () => {
+    const scale4 = money('1.2300', 'EUR', { scale: 4 });
+    const expectedWithout = format(scale4, 'en-US');
+    // undefined overrides the fraction digits ducat sets, so Intl uses EUR's default of 2
+    const expectedUndefined = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: undefined,
+    }).format(1.23);
+    expect(expectedWithout).not.toBe(expectedUndefined);
+
+    for (const locale of ['en-US', 'en-CA']) {
+      const first = locale === 'en-US' ? {} : { minimumFractionDigits: undefined };
+      const second = locale === 'en-US' ? { minimumFractionDigits: undefined } : {};
+      const results = [format(scale4, locale, first), format(scale4, locale, second)];
+      const fresh = [first, second].map((options) =>
+        new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 4,
+          maximumFractionDigits: 4,
+          ...options,
+        }).format(1.23),
+      );
+      expect(results).toEqual(fresh);
+    }
+  });
+
   it('does not reuse a formatter for an options object mutated between calls', () => {
     const options: Intl.NumberFormatOptions = { style: 'decimal' };
     expect(format(amounts[0]!, 'en-US', options)).toBe('1.00');

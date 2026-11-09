@@ -28,6 +28,11 @@ function supportsStringInput(): boolean {
   return stringInput;
 }
 
+/** A JSON.stringify replacer that writes undefined as a marker no Intl option value uses. */
+function keepUndefined(_key: string, value: unknown): unknown {
+  return value === undefined ? '\u0000undefined' : value;
+}
+
 function formatter(
   money: Money,
   locale: string | undefined,
@@ -45,9 +50,10 @@ function formatter(
   // Options are keyed by their JSON: Intl's options are strings, numbers and booleans, so it is
   // exact, and objects that differ only in key order just get an entry each. JSON.stringify is far
   // cheaper than building a NumberFormat. The locale, currency and scale go first, in a form JSON
-  // can't produce, so no two inputs share a key.
+  // can't produce, so no two inputs share a key. An undefined value is kept in the key, because
+  // the spread below lets it override our fraction digits, where a missing key doesn't.
   const base = `${locale}|${money.currency}|${money.scale}`;
-  const key = options === undefined ? base : `${base}|${JSON.stringify(options)}`;
+  const key = options === undefined ? base : `${base}|${JSON.stringify(options, keepUndefined)}`;
   if (options !== undefined && key === lastOptionsKey && lastOptionsFormatter !== undefined) {
     return lastOptionsFormatter;
   }
