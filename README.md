@@ -27,7 +27,7 @@ price.add(money('1', 'USD')); // compile error, and throws if types are erased
 
 Operations are methods on `Money`. For pipelines or code that prefers plain functions, `@ducatjs/money/fn` has each of them as a function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`). The core (`@ducatjs/money`) holds construction, arithmetic, rounding, comparison and serialisation; everything else is an opt-in module, so a bundle only pays for what it imports (see [Modules](#modules)).
 
-Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
+Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](https://github.com/public/ducat/blob/main/CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
 
 ## Why ducat
 
@@ -49,7 +49,7 @@ ducat is built to fix all three:
 
 The same 41 correctness vectors, the same benchmark and the same bundle snippet for every library. The details, the
 other libraries' bugs, the fixed-point libraries and the money libraries in other languages are in
-[docs/COMPARISON.md](docs/COMPARISON.md), regenerated from [compare/](compare) for each release.
+[docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md), regenerated from [compare/](https://github.com/public/ducat/tree/main/compare) for each release.
 
 | library                            | correct (of 41) | wrong, silently |        bundle (gzip) |
 | ---------------------------------- | --------------: | --------------: | -------------------: |
@@ -77,7 +77,7 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
   (`fixed('12.34')`), multiply, divide and compare on every runtime, and on add on Node and Deno (on Bun it is level
   with bigdecimal.js, 11.8 ns each). It divides by 3 in 28, 27 and 24 ns on Node, Bun and Deno, against bigdecimal.js's
   57, 35 and 46. js-big-decimal and ethers are faster on `toString` everywhere; see
-  [docs/COMPARISON.md](docs/COMPARISON.md#fixed-point-decimal-libraries).
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
@@ -96,7 +96,7 @@ A `Money<C>` has three readonly fields:
 | `minor: number \| bigint` | Integer count of 10^-scale units. It is a **number whenever it is a safe integer** (absolute value ≤ 2^53−1) and a **bigint only beyond that**. The invariant is enforced everywhere, so ordinary amounts never allocate a bigint and huge amounts never lose a digit. |
 | `scale: number`           | Decimal places. Defaults to the currency's ISO exponent (EUR 2, JPY 0, KWD 3, CLF 4). It can be larger for sub-minor precision (unit prices, FX intermediates). `round()` brings it back.                                                                              |
 
-Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](bench/RESULTS.md)):
+Why this representation, based on `bench/designs.ts` (the same seven operations written four ways and run on five engines; full tables in [bench/RESULTS.md](https://github.com/public/ducat/blob/main/bench/RESULTS.md)):
 
 | ns/op, indicative                    | **A: number + bigint fallback** | B: bigint everywhere |     C: decimal string | A + `Object.freeze` |
 | ------------------------------------ | ------------------------------: | -------------------: | --------------------: | ------------------: |
@@ -509,7 +509,7 @@ territoryCurrencies('DE', { on: '2001-06-01' }).map((use) => use.currency); // �
 
 ### Interest, loans, NPV and proration
 
-`@ducatjs/money/finance` has the calculations billing and lending code keeps rewriting in floats, in exact arithmetic: every amount that is paid or booked is rounded once from its exact value, with a rounding mode or a policy. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. The design is in [docs/FINANCE.md](docs/FINANCE.md).
+`@ducatjs/money/finance` has the calculations billing and lending code keeps rewriting in floats, in exact arithmetic: every amount that is paid or booked is rounded once from its exact value, with a rounding mode or a policy. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. The design is in [docs/FINANCE.md](https://github.com/public/ducat/blob/main/docs/FINANCE.md).
 
 - `yearFraction(start, end, convention)` is an exact `Ratio` under `ACT/360`, `ACT/365F`, `ACT/ACT ISDA`, `30/360` (Bond Basis), `30E/360` or `30E/360 ISDA` (pass `maturity: true` or `false` when the end date is the last day of February), as the 2006 ISDA Definitions §4.16 define them. It isn't Excel's YEARFRAC, whose bases differ (US 30/360, an average year length for actual/actual). `interest` is simple interest over a day count, and `compound` is periodic compounding over a whole number of periods.
 - `amortise(loan, options)` builds an annuity, linear or interest-only schedule. Each period's interest is the balance times `rate / perYear`, rounded; the principal parts sum exactly to the loan and the balance ends at zero, because the rounding residual goes to the last payment (or, with `residual: 'lastInterest'`, to the last interest). It takes a `balloon` and a `firstPayment` date.
@@ -1256,7 +1256,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 ## Benchmarks
 
 - Clean-machine numbers against the other money and fixed-point libraries are in [How it compares](#how-it-compares) and
-  [docs/COMPARISON.md](docs/COMPARISON.md), generated from [compare/](compare) on one quiet AMD EPYC Genoa vCPU under
+  [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md), generated from [compare/](https://github.com/public/ducat/tree/main/compare) on one quiet AMD EPYC Genoa vCPU under
   Node, Bun and Deno.
 - CodSpeed measures every pull request by instruction count, so speed regressions show up even on noisy CI machines.
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often

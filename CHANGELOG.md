@@ -129,6 +129,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- The README's links to the changelog, `docs/`, `compare/` and `bench/` are absolute GitHub URLs,
+  so they work when the README is read from `node_modules` or the npm page; a test fails on any
+  relative link to a file the package doesn't ship.
 - TypeScript projects with `module: "commonjs"` (`node10` resolution) find ducat's types: the
   package has a top-level `types` and a `typesVersions` map for every entry, next to `exports`.
 - The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean
