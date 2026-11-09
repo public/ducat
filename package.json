@@ -1,6 +1,6 @@
 {
   "name": "@ducatjs/money",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Exact, fast, typed Money for TypeScript: integer minor units, bigint fallback, Stripe/Adyen views, allocation, cash rounding, Prisma helpers.",
   "homepage": "https://github.com/public/ducat#readme",
   "bugs": {
@@ -41,9 +41,6 @@
       "tax": [
         "./dist/plugins/tax.d.ts"
       ],
-      "math": [
-        "./dist/plugins/math.d.ts"
-      ],
       "convert": [
         "./dist/plugins/convert.d.ts"
       ],
@@ -59,50 +56,8 @@
       "convert/fed": [
         "./dist/fed.d.ts"
       ],
-      "words": [
-        "./dist/words.d.ts"
-      ],
-      "words/de": [
-        "./dist/words/de.d.ts"
-      ],
-      "words/en": [
-        "./dist/words/en.d.ts"
-      ],
-      "words/es": [
-        "./dist/words/es.d.ts"
-      ],
-      "words/fr": [
-        "./dist/words/fr.d.ts"
-      ],
-      "words/it": [
-        "./dist/words/it.d.ts"
-      ],
-      "words/nl": [
-        "./dist/words/nl.d.ts"
-      ],
-      "words/pt": [
-        "./dist/words/pt.d.ts"
-      ],
-      "wire": [
-        "./dist/wire.d.ts"
-      ],
-      "crypto": [
-        "./dist/crypto.d.ts"
-      ],
-      "currencies": [
-        "./dist/currencies.d.ts"
-      ],
-      "territories": [
-        "./dist/territories.d.ts"
-      ],
       "historic": [
         "./dist/historic.d.ts"
-      ],
-      "finance": [
-        "./dist/finance.d.ts"
-      ],
-      "pricing": [
-        "./dist/pricing.d.ts"
       ],
       "convert/boe": [
         "./dist/boe.d.ts"
@@ -126,10 +81,7 @@
         "./dist/plugins/format.d.ts"
       ],
       "fixed": [
-        "./dist/fixed.d.ts"
-      ],
-      "fixed/money": [
-        "./dist/plugins/fixed-money.d.ts"
+        "./dist/plugins/fixed.d.ts"
       ],
       "parse": [
         "./dist/parse.d.ts"

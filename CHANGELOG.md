@@ -7,6 +7,31 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-09
+
+Fixes from the 0.3 line, for code that stays on 0.2.
+
+### Fixed
+
+- TypeScript projects with `module: "commonjs"` (`node10` resolution) find ducat's types: the
+  package has a top-level `types` and a `typesVersions` map for every entry, next to `exports`.
+  Before, those projects got TS2307 for every ducat import.
+- The README's links to the changelog, `docs/`, `compare/` and `bench/` are absolute GitHub URLs
+  (on the `release/0.2` branch), so they work when the README is read from `node_modules` or the
+  npm page; a test fails on any relative link to a file the package doesn't ship.
+
+### Changed
+
+- `format()` and `formatToParts()` with options reuse a cached `Intl.NumberFormat` (keyed by
+  locale, currency, scale and the options) instead of building one per call, about 30 times faster
+  in a loop. The cache stays bounded.
+- **Visible change:** `ratio()` and everything that takes a `Factor` (`multiply`, `divide`,
+  `percentage`, the tax functions, `ExactMoney`, `Fixed`, conversion and rates) throw a `TypeError`
+  naming what was passed for a value that isn't a factor: a `Fixed`, `{ num: 1, den: 2 }` with number
+  fields, `null`, a boolean. Before, `ratio(fixed('0.5'))` returned the object unchanged and
+  arithmetic failed later with "Cannot mix BigInt and other types". A hand-made `{ num, den }` of
+  bigints is now reduced and given its number fields, rather than trusted as it is.
+
 ## [0.2.2] - 2026-11-08
 
 ### Changed
@@ -221,7 +246,8 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/public/ducat/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/public/ducat/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/public/ducat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/public/ducat/compare/v0.1.0...v0.2.0

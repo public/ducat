@@ -1,5 +1,5 @@
 {
-  "core": 4.98,
+  "core": 5.06,
   "overCoreTolerance": 0.02,
   "overCore": {
     "@ducatjs/money/allocate": 1.55,
@@ -15,7 +15,7 @@
     "@ducatjs/money/exact": 0.47,
     "@ducatjs/money/policy": 0.4,
     "@ducatjs/money/cash": 3.06,
-    "@ducatjs/money/format": 0.39,
+    "@ducatjs/money/format": 0.45,
     "@ducatjs/money/fixed": 1.34,
     "@ducatjs/money/parse": 2.14,
     "@ducatjs/money/stripe": 1.14,
@@ -47,27 +47,27 @@
   "snippets": {
     "methods: money, add, multiply, toDecimal": {
       "code": "import { money } from '@ducatjs/money'; const a = money('1.00', 'EUR'); console.log(a.add(a).multiply('1.075', 'halfEven').toDecimal());",
-      "gzipped": 4.08
+      "gzipped": 4.16
     },
     "functions: money, add, multiply, toDecimal": {
       "code": "import { money, add, multiply, toDecimal } from '@ducatjs/money/fn'; const a = money('1.00', 'EUR'); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
-      "gzipped": 4.08
+      "gzipped": 4.17
     },
     "allocate: split a total three ways": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/allocate'; console.log(money('100', 'EUR').split(3).map(String));",
-      "gzipped": 5.75
+      "gzipped": 5.84
     },
     "format: de-DE": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/format'; console.log(money('1234.5', 'EUR').format('de-DE'));",
-      "gzipped": 4.61
+      "gzipped": 4.75
     },
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",
-      "gzipped": 5.23
+      "gzipped": 5.31
     },
     "parse: parse alone, without detection": {
       "code": "import { parse } from '@ducatjs/money/parse'; console.log(parse('1.234,50 \u20ac', 'EUR', 'de-DE').toString());",
-      "gzipped": 5.23
+      "gzipped": 5.32
     }
   }
 }
