@@ -24,3 +24,13 @@ The same as `../genoa-2026-11-08/`: 150 ms warm-up per (library, operation) cell
 library order shuffled each round with a fixed seed. Each cell is the median over rounds of the
 per-round median of 5 samples, in nanoseconds per operation over 1,000 values. `env.txt` records the
 settings, CPU, core count, kernel, and the SHA-256 of the exact benchmark bundles that ran.
+
+## dinero.js 2 on Deno
+
+dinero.js 2's Deno cells are several times slower here than in the runs of 2026-11-08 (`fromMinor`
+89 against 12 ns, `add` 335 against 179, `allocate3` 2.0 against 1.1 µs), while every other
+library's Deno cells, ducat's included, and dinero.js 2's own Node and Bun cells match those runs.
+It doesn't come from ducat: the 2026-11-08 payload (m020, at f927311) gives dinero.js 2 the slow
+numbers too when run on another machine, and the 41a566a run (m026, on a third machine) agrees with
+this one. V8 in Deno 2.9.8 appears to optimize dinero.js 2's code differently from machine to
+machine. The README's range against dinero.js 2 is therefore taken from Node and Bun only.

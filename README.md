@@ -34,7 +34,7 @@ Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may c
 Choosing a money library for JavaScript today means choosing which problem to live with.
 
 - **Wrong, to varying degrees.** On the same 41 correctness vectors, no other money library passes more than 34, and most return some wrong answers without an error: multiplying through floats turns 0.50 × 1.15 into 0.57, splitting −100.00 three ways loses a cent, amounts past 2⁵³ minor units drift, and a decimal string from another locale can parse as 100 times the amount. Their issue trackers are full of these bugs, some open for years.
-- **Slow.** The libraries that get the arithmetic right pay for it in speed: dinero.js 2, the most careful of them, is 1.6× to 52× slower than ducat on the operations ducat leads.
+- **Slow.** The libraries that get the arithmetic right pay for it in speed: dinero.js 2, the most careful of them, is 1.6× to 27× slower than ducat on the operations ducat leads.
 - **Missing features.** Most stop at add, multiply, allocate and format. Exact currency conversion, rounding modes beyond half up, cash rounding, the amounts payment processors expect and database storage are left to you, and that hand-written code is where the bugs come back.
 
 ducat is built to fix all three:
@@ -68,8 +68,9 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
   (`money('12.34', 'EUR')`), add, multiply, allocate and toDecimal on Node, Bun and Deno, and on compare on Node and
   Deno. Against the fastest other money library the margin ranges from about 1.06× (compare on Node and Deno: 7.05
   against currency.js's 7.46 ns on Node) to about 9.0× (allocate on Node: 47 against bigint-money's 419 ns). Against
-  dinero.js 2, on the operations where ducat is fastest, it ranges from 1.6× (creating on Node) to about 52× (multiply
-  on Deno).
+  dinero.js 2, on the operations where ducat is fastest, it ranges from 1.6× (creating on Node) to about 27× (compare
+  on Node), measured on Node and Bun: dinero.js 2's Deno cells vary several-fold between machines (see
+  [the run's notes](https://github.com/public/ducat/blob/main/compare/results/genoa-2026-11-09-v030-final/README.md)).
 - **Where it isn't fastest:** formatting on Deno, where currency.js (formatting a float) is 6% faster (on Node and Bun
   they are level, and ducat and dinero.js 1 are level everywhere). On Bun, libraries that compare plain numbers are
   faster at compare (currency.js 6.5, js-money and ts-money 7.7 against 9.9 ns; Bun's compare cells vary a lot between
@@ -1278,7 +1279,7 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
   ±20–30%.
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
-  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.5 KiB**, of which about 0.55 KiB is the ISO table
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.5 KiB**, of which about 0.55 KiB is the ISO table. 0.3 grew it from 4.0 KiB, and the core from 4.9: stricter input validation and clearer errors (the port-test fixes), and the root entry installing the methods and currencies so that `/fn` programs can leave them out
   - the core entry point: 5.5 KiB; everything (`@ducatjs/money/all`): 50.5 KiB
   - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.5 KiB
   - the same snippet with dinero.js (EUR only): 1.8 KiB
