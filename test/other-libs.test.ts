@@ -265,7 +265,7 @@ describe('large values', () => {
 
   // dinero.js 1 #84: 100000 * 10^18 at precision 18 printed as 99999.99999999999
   it('prints high-precision values exactly', () => {
-    expect(toDecimal(fromMinor(100000n * 10n ** 18n, 'ETH', 18))).toBe('100000.000000000000000000');
+    expect(toDecimal(fromMinor(100000n * 10n ** 18n, 'EUR', 18))).toBe('100000.000000000000000000');
   });
 });
 

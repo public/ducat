@@ -525,7 +525,11 @@ export function fromScaled(value: number | bigint, scale: number): Fixed {
   checkScale(scale);
   if (typeof value === 'number') {
     if (!Number.isSafeInteger(value)) {
-      throw new RangeError(`The scaled value must be a safe integer, got ${value}; pass a bigint`);
+      throw new RangeError(
+        Number.isInteger(value)
+          ? `The scaled value must be a safe integer, got ${value}; pass a bigint`
+          : `The scaled value must be an integer, got ${value}`,
+      );
     }
     return make(value + 0, scale);
   }

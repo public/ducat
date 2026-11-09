@@ -1,7 +1,6 @@
 // Exchange rates as exact rationals with metadata. A Rate never loses digits: inverses,
 // compositions and margins are exact products of ratios, and rounding happens once, when an amount
 // is converted.
-import { currencyExponent } from './currency.js';
 import {
   formatScaled,
   POW10,
@@ -15,6 +14,7 @@ import {
 import {
   CurrencyMismatchError,
   make,
+  resolveScale,
   roundWithPolicy,
   type CurrencyInput,
   type Money,
@@ -410,7 +410,7 @@ export class Rate<From extends string = string, To extends string = string> {
     if (typeof rounding === 'function') {
       return convertWithPolicy(money, this.to, this.ratio, rounding, options);
     }
-    const scale = options?.scale ?? currencyExponent(this.to);
+    const scale = resolveScale(this.to, options?.scale);
     const minor = multiplyByRatioAtScale(money.minor, this.ratio, scale - money.scale, rounding);
     return make(this.to, minor, scale);
   }
