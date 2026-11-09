@@ -37,3 +37,25 @@ it('there is one per-code module per ISO 4217 code', async () => {
     Object.keys(ISO_EXPONENTS).sort(),
   );
 });
+
+it('names on the prototype chain are never currencies, before or after the ISO table', async () => {
+  const names = [
+    'toString',
+    'valueOf',
+    'constructor',
+    'hasOwnProperty',
+    '__proto__',
+    'isPrototypeOf',
+  ];
+  const check = () => {
+    for (const name of names) {
+      expect(isCurrency(name)).toBe(false);
+      expect(() => currencyExponent(name)).toThrow(/Unknown currency/);
+    }
+  };
+  check();
+  await import('../src/plugins/iso.js');
+  check();
+  expect(currencyExponent('EUR')).toBe(2);
+  expect(Object.keys(Object.prototype)).toEqual([]);
+});
