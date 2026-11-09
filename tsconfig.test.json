@@ -12,6 +12,7 @@
     "test/plugin-types",
     "test/browser",
     "src/drizzle",
+    "src/entries/drizzle-*.ts",
     "test/db/drizzle.test.ts",
     "test/jest-types"
   ]

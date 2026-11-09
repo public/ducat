@@ -2,6 +2,8 @@
  * `@ducatjs/money/prisma`: Prisma and SQL column helpers. Importing this module adds
  * `toDecimalValue`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';
 import { toDecimalValue } from '../prisma.js';

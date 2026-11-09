@@ -1,5 +1,7 @@
 // CodSpeed / vitest benchmarks for @ducatjs/money/finance. The IRR case is the documented worst
 // case: 360 monthly flows at the default 10 digits.
+// every ISO 4217 code: this file imports src modules directly, which register none
+import '../src/plugins/iso.js';
 import { bench, describe } from 'vitest';
 import { amortise, irr, npv, yearFraction } from '../src/finance.ts';
 import { fromMinor, money } from '../src/money.ts';

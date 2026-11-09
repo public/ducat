@@ -4,6 +4,6 @@
   // project skips checking library declarations.
   "extends": "./tsconfig.json",
   "compilerOptions": { "skipLibCheck": true },
-  "include": ["src/drizzle"],
+  "include": ["src/drizzle", "src/entries/drizzle-*.ts"],
   "exclude": []
 }

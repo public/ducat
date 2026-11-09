@@ -2,6 +2,8 @@
  * `@ducatjs/money/math`: averages, ratios between amounts, integral division and scale trimming.
  * Importing this module adds the methods below; `average` is a plain function, like `sum`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import type { Ratio } from '../decimal.js';
 import { divideToIntegral, ratioOf, remainder, trimScale } from '../math.js';
 import type { Money } from '../index.js';

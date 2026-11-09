@@ -2,6 +2,7 @@
 // imported afterwards, must refuse to replace it. Run in its own file: vitest gives each file a fresh
 // module registry, so Money has no core methods here until the root entry is imported.
 import { expect, it } from 'vitest';
+import '../src/plugins/iso.js';
 import { extendMoney, money } from '../src/fn.js';
 
 it('importing the root entry after extendMoney({ add }) throws instead of replacing add', async () => {

@@ -18,7 +18,7 @@
 //   data/<processor>.json      one file per further processor (checkout, ...), same shape:
 //                              currencies, defaultExponent (a number or "iso"), exponents and
 //                              multiples overrides, quoted sources with retrieval dates
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -141,6 +141,16 @@ function generate() {
     `export type IsoCurrencyCode = keyof typeof ISO_EXPONENTS;\n\n` +
     `/** Active codes whose minor unit is "N.A." (precious metals, SDR, testing): not monetary, not in ISO_EXPONENTS. */\n` +
     `export const ISO_NON_MONETARY = ${JSON.stringify(nonMonetary)} as const;\n`;
+
+  // One module per code for @ducatjs/money/iso/<CODE>: importing it registers that currency, so a
+  // /fn program carries only the currencies it imports instead of the whole table. A side-effect
+  // import behaves the same bundled and unbundled, which an exported value's registration doesn't.
+  for (const [code, exponent] of Object.entries(iso)) {
+    out[`iso/${code}.ts`] =
+      header('data/iso4217-list-one.xml') +
+      `import { isoCurrency } from '../../currency.js';\n\n` +
+      `isoCurrency('${code}', ${exponent});\n`;
+  }
 
   // Stripe: [exponent the API expects, multiple the charge amount must be, multiple a payout amount
   // must be]
@@ -362,9 +372,19 @@ for (const [name, text] of Object.entries(out)) {
   if (cur !== text) {
     stale = true;
     if (!args.has('--check')) {
-      mkdirSync(dir, { recursive: true });
+      mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, text);
       console.log('wrote', path);
+    }
+  }
+}
+// a code withdrawn from ISO 4217 leaves a stale per-code module behind
+for (const name of readdirSync(join(dir, 'iso'))) {
+  if (!Object.hasOwn(out, `iso/${name}`)) {
+    stale = true;
+    if (!args.has('--check')) {
+      rmSync(join(dir, 'iso', name));
+      console.log('removed', join(dir, 'iso', name));
     }
   }
 }

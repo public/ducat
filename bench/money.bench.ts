@@ -1,6 +1,8 @@
 // CodSpeed / vitest benchmarks for the library's hot paths.
 // Each case processes N pre-built values so a single iteration is meaningful under simulation.
 // Run locally with `pnpm bench:vitest`; the cross-library comparison lives in `pnpm bench`.
+// every ISO 4217 code: this file imports src modules directly, which register none
+import '../src/plugins/iso.js';
 import { bench, describe } from 'vitest';
 // Each function is imported from the module that defines it. Under vitest an import is a getter
 // on that module's export object, and /fn's object grows with every module, so going through /fn

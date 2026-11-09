@@ -6,6 +6,8 @@
  * `a.add(b)` and `add(a, b)` are the same code. Operands are Money only: a bare number is never
  * guessed to mean major or minor units.
  */
+// every ISO 4217 code, so the root entry and /all take any code as a string
+import './iso.js';
 import { formatScaled, type Factor } from '../decimal.js';
 import type { Money } from '../index.js';
 import {

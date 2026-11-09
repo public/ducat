@@ -3,6 +3,8 @@
  * the conversions between the two; importing this module adds `Money#toFixedPoint()` and
  * `Fixed#toMoney()`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import { Fixed } from '../fixed.js';
 import { fixedToMoney, moneyToFixed } from '../fixed-money.js';
 import type { CurrencyInput, Money } from '../index.js';

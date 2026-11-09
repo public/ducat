@@ -1,6 +1,8 @@
 /**
  * `@ducatjs/money/braintree`: Braintree's amount view. Importing this module adds `toBraintree`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import { toBraintree, type BraintreeAmountOptions } from '../braintree.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';

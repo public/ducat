@@ -2,6 +2,8 @@
  * `@ducatjs/money/stripe`: Stripe's minor-unit view. Importing this module adds `toStripe` and
  * `toStripeAmount`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';
 import { toStripe, toStripeAmount, type StripeAmountOptions } from '../stripe.js';

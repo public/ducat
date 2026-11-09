@@ -2,6 +2,8 @@
  * `@ducatjs/money/paypal`: PayPal's amount view. Importing this module adds `toPayPal` and
  * `toPayPalValue`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';
 import { toPayPal, toPayPalValue, type PayPalAmountOptions } from '../paypal.js';
