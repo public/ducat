@@ -4,7 +4,7 @@
 | bigint-money | 3.7 KiB | 1.5 KiB | 3.7 KiB | 1.5 KiB |
 | @formatjs/bigdecimal | 8.9 KiB | 2.3 KiB | 8.9 KiB | 2.3 KiB |
 | js-big-decimal | 9.3 KiB | 3.0 KiB | 9.2 KiB | 3.0 KiB |
-| ducat Fixed | 8.5 KiB | 3.2 KiB | 8.8 KiB | 3.3 KiB |
 | ethers FixedNumber (import from 'ethers') | 8.5 KiB | 3.2 KiB | 376.4 KiB | 140.8 KiB |
-| ducat Money | 10.5 KiB | 4.0 KiB | 13.0 KiB | 4.9 KiB |
+| ducat Fixed | 9.3 KiB | 3.5 KiB | 9.6 KiB | 3.5 KiB |
+| ducat Money | 12.0 KiB | 4.5 KiB | 14.7 KiB | 5.5 KiB |
 | bigdecimal.js | 45.9 KiB | 11.6 KiB | 45.9 KiB | 11.6 KiB |

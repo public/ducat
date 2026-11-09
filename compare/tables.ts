@@ -14,7 +14,7 @@ import { renderFixedSizeTable, renderSizeTable } from './sizes/render.ts';
 
 const COMPARE_DIRECTORY = import.meta.dirname;
 const RESULTS_DIRECTORY = join(COMPARE_DIRECTORY, 'results');
-const BENCH_RUN_DIRECTORY = join(RESULTS_DIRECTORY, 'genoa-2026-11-08-v030');
+const BENCH_RUN_DIRECTORY = join(RESULTS_DIRECTORY, 'genoa-2026-11-09-v030-final');
 const SIZES_PATH = join(RESULTS_DIRECTORY, 'sizes.tsv');
 const FIXED_SIZES_PATH = join(RESULTS_DIRECTORY, 'sizes-fixed.tsv');
 const isCheck = process.argv.includes('--check');
