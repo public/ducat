@@ -7,6 +7,7 @@
 // `import '@ducatjs/money/fixed/money'` (src/plugins/fixed-money.ts).
 import {
   formatScaled,
+  faithfulDecimal,
   parseDecimal,
   parsePlainDecimal,
   pow10n,
@@ -26,11 +27,6 @@ import {
 import { scaleDown, scaleUp } from './scale.js';
 
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
-
-// A double carries 15 significant decimal digits faithfully (DBL_DIG): a number with no more than
-// that is the decimal its author wrote. 0.1 + 0.2 reads back as 0.30000000000000004 (17 digits), so
-// it is refused unless a scale and a rounding mode say what to do with it.
-const MAX_FAITHFUL_DIGITS = 15;
 
 // The largest scale accepted. Scales cost memory and time in proportion (10^scale is a bigint with
 // `scale` digits), so an untrusted '1e-999999999' must be refused before any work is done. toJSON
@@ -451,12 +447,6 @@ function parseBoundedDecimal(text: string): { digits: bigint; scale: number } {
   return parsed;
 }
 
-/** The count of significant digits in a plain decimal string ('0.0012300' has 3). */
-function significantDigits(text: string): number {
-  const digits = text.replace(/^[-+]/, '').replace('.', '').replace(/^0+/, '').replace(/0+$/, '');
-  return digits.length;
-}
-
 /**
  * Creates an exact fixed-point decimal.
  *
@@ -500,16 +490,12 @@ export function fixed(value: FixedInput, options?: FixedOptions): Fixed {
     if (!Number.isFinite(value)) {
       throw new RangeError(`Invalid number ${value}`);
     }
-    const parsed = parseDecimal(String(value));
-    // Only an explicit rounding mode says the float's extra digits may be dropped.
-    if (
-      options?.rounding === undefined &&
-      significantDigits(formatScaled(normalize(parsed.digits), parsed.scale)) > MAX_FAITHFUL_DIGITS
-    ) {
-      throw new RangeError(
-        `${value} is not an exact decimal; pass a string, or { scale, rounding }`,
-      );
-    }
+    // Only an explicit rounding mode says a float's extra digits may be dropped.
+    const text =
+      options?.rounding === undefined
+        ? faithfulDecimal(value, 'pass a string, or { scale, rounding }')
+        : String(value);
+    const parsed = parseDecimal(text);
     return rescale(parsed.digits, parsed.scale, scale ?? parsed.scale, rounding, value);
   }
 

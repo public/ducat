@@ -1,6 +1,7 @@
 import { currencyExponent, type CurrencyCode } from './currency.js';
 import {
   formatScaled,
+  faithfulDecimal,
   parseDecimal,
   parsePlainDecimal,
   POW10,
@@ -316,7 +317,8 @@ export interface MoneyOptions {
  *     money(10n ** 30n, 'USD')
  *
  * Throws if the amount has more decimals than the currency (or `scale`) unless `rounding` is given,
- * so `money(0.1 + 0.2, 'EUR')` throws rather than silently becoming 0.30.
+ * so `money(0.1 + 0.2, 'EUR')` throws rather than silently becoming 0.30. Without `rounding`, a
+ * number whose shortest form has more than 15 significant digits throws a RangeError too.
  */
 export function money<C extends CurrencyInput>(
   amount: string | number | bigint,
@@ -342,15 +344,22 @@ export function money<C extends CurrencyInput>(
     if (!Number.isFinite(amount)) {
       throw new RangeError(`Invalid amount ${amount}`);
     }
+    const rounding = options?.rounding;
     const parsed = parseDecimal(String(amount));
-    return fromScaled(
+    const result = fromScaled(
       currency,
       parsed.digits,
       parsed.scale,
       scale,
-      options?.rounding ?? 'unnecessary',
+      rounding ?? 'unnecessary',
       amount,
     );
+    // Only an explicit rounding mode says a float's extra digits may be dropped. Checked after
+    // fromScaled, so 0.1 + 0.2 at EUR's scale is still a RoundingError for its decimals.
+    if (rounding === undefined) {
+      faithfulDecimal(amount, 'pass a string, or { rounding }');
+    }
+    return result;
   }
   if (typeof amount === 'bigint') {
     return make(currency, scaleUp(normalizeMinor(amount), scale), scale);

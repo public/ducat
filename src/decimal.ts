@@ -127,6 +127,34 @@ export function parseDecimal(input: string): { digits: bigint; scale: number } {
   return { digits: sign === '-' ? -digits : digits, scale };
 }
 
+/**
+ * A double holds 15 significant decimal digits faithfully (DBL_DIG): a number whose shortest form
+ * has no more than that is the decimal its author wrote. 0.1 + 0.2 reads back as
+ * 0.30000000000000004 and 1 / 0.52 as 1.9230769230769231 (17 digits): those are float artefacts.
+ */
+export const MAX_FAITHFUL_DIGITS = 15;
+
+/**
+ * A number's shortest decimal form, which must have at most 15 significant digits (see
+ * MAX_FAITHFUL_DIGITS). `fix` says what to do instead, for the error message.
+ */
+export function faithfulDecimal(value: number, fix: string): string {
+  // The shortest form has at most 15 digits exactly when rounding to 15 digits gives the same
+  // double back: shortest means the fewest digits that round-trip.
+  // Safe integers are exact whatever their digit count, and NaN and the infinities pass through
+  // for the caller's parser to reject. (Today's callers take safe integers on a path of their own.)
+  if (
+    !Number.isSafeInteger(value) &&
+    Number.isFinite(value) &&
+    Number(value.toPrecision(MAX_FAITHFUL_DIGITS)) !== value
+  ) {
+    throw new RangeError(
+      `${value} has more than ${MAX_FAITHFUL_DIGITS} significant digits; ${fix}`,
+    );
+  }
+  return String(value);
+}
+
 function gcd(left: bigint, right: bigint): bigint {
   if (left < 0n) {
     left = -left;
@@ -181,7 +209,9 @@ const INT_RATIOS: Ratio[] = [];
 
 /**
  * Builds an exact ratio. `ratio('1.075')`, `ratio(3, 4)`, `ratio(10n)`, `ratio('1/3')`.
- * Numbers are taken at their shortest decimal representation: `ratio(0.1)` is exactly 1/10.
+ * Numbers are taken at their shortest decimal representation: `ratio(0.1)` is exactly 1/10. One
+ * with more than 15 significant digits (`1 / 0.52` is 1.9230769230769231) throws a RangeError,
+ * since a float artefact can't be told from a decimal someone wrote; pass a string instead.
  * Pre-build ratios you use in hot loops; strings are also cached (up to 1024 entries).
  */
 export function ratio(value: Factor, den?: Factor): Ratio {
@@ -217,7 +247,7 @@ export function ratio(value: Factor, den?: Factor): Ratio {
     if (!Number.isFinite(value)) {
       throw new RangeError(`Invalid factor ${value}`);
     }
-    value = String(value);
+    value = faithfulDecimal(value, 'pass it as a string');
   }
   if (typeof value === 'bigint') {
     return makeRatio(value, 1n);
