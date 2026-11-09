@@ -118,6 +118,8 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ## API
 
+**From CommonJS.** ducat is an ES module, and Node 24 can `require()` it, so a CommonJS project needs no build step: `const { money } = require('@ducatjs/money')` works, and so does every entry below. TypeScript finds the types with any `moduleResolution`. `nodenext` and `bundler` read `exports`, while `node10` (the default for `module: "commonjs"`) reads `types` and `typesVersions`, which name the same declarations. So no `paths` mapping into `dist/` is needed.
+
 ### Modules
 
 | import                              | adds to `Money`                                                    | also exports                                                     |

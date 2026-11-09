@@ -37,6 +37,8 @@ jobs:
       - run: pnpm typecheck
       # the release workflow builds with these tsconfigs, so a build error must fail here first
       - run: pnpm build
+      # the packed package's types from CommonJS (node10), nodenext and bundler projects
+      - run: pnpm check:consumers
       - run: pnpm gen:check
       - name: Python decimal reference vectors are up to date
         run: pnpm vectors:check
