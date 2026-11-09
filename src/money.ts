@@ -709,7 +709,8 @@ export function divide<C extends string>(
 
 /**
  * Rounds to the currency's exponent (or `scale`): `round(money('1.005', 'EUR', {scale: 3}),
- * 'halfEven')`.
+ * 'halfEven')`. A scale is never negative: round to tens or hundreds with an increment
+ * (`roundingPolicy({ scale: 0, increment: 100 })`, or `roundToIncrement` from `/cash`).
  */
 export function round<C extends string>(
   money: Money<C>,
@@ -731,6 +732,8 @@ export function round<C extends string>(
 
 /**
  * Changes the scale; increasing it is always exact, decreasing it rounds (default 'halfExpand').
+ * Scales are integers from 0 to 1000; for tens or hundreds, use an increment (a rounding policy, or
+ * `roundToIncrement` from `/cash`).
  */
 export function toScale<C extends string>(
   money: Money<C>,

@@ -362,6 +362,19 @@ money('10.00', 'EUR').divide(3, unitPrice); // → 3.3333 EUR
 assertScale(money('1.234', 'EUR', { scale: 3 }), isoPolicy); // throws RangeError
 ```
 
+**Tens, hundreds and thousands.** A scale is never negative: it counts decimal places, from 0 to 1000, so `round('floor', -2)` throws. To round to whole hundreds (Swiss tax rounds taxable income down to 100 CHF, for example), use an increment: a policy at scale 0 with `increment: 100`, or `roundToIncrement` from `@ducatjs/money/cash`. The same increment does tens, thousands and cash rounding.
+
+```ts
+import { money } from '@ducatjs/money';
+import { roundingPolicy } from '@ducatjs/money/policy';
+import { roundToIncrement } from '@ducatjs/money/cash';
+
+const downToHundreds = roundingPolicy({ scale: 0, increment: 100, rounding: 'floor' });
+money('12345.60', 'CHF').round(downToHundreds); // → 12300 CHF
+roundToIncrement(money('12345.60', 'CHF'), money('100', 'CHF'), 'floor'); // → 12300.00 CHF
+money('12345.60', 'CHF').round('floor', -2); // throws RangeError
+```
+
 **Cash rounding**
 
 - `cashRound(m, { country?, rounding?, includeUnverified? })` uses the table in `data/cash-rounding.json`:
