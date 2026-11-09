@@ -8,6 +8,7 @@
 // give r exactly. Cases are skipped when ducat has no equivalent: special values, exponents above 0
 // (a negative scale), clamping, 05up rounding, or results the spec flags as overflow, underflow,
 // subnormal or invalid.
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';

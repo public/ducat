@@ -92,3 +92,12 @@ describe('opt-in modules', () => {
     expect(money('1', 'EUR').toLocaleString()).toBe('local');
   });
 });
+
+describe('core method names', () => {
+  it('the root entry refuses to replace a core name a program defined with extendMoney', async () => {
+    const { installCoreMethods } = await import('../src/money.js');
+    // this file has the core methods installed already (it imports the root entry), so a second
+    // install finds `add` defined and must throw rather than replace it
+    expect(() => installCoreMethods({ add: () => 0 })).toThrow(/defined before the core methods/);
+  });
+});

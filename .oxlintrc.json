@@ -20,7 +20,7 @@
     // opt-in modules install methods on import: `import '@ducatjs/money/allocate'` is the API
     "import/no-unassigned-import": [
       "warn",
-      { "allow": ["**/plugins/*", "**/testing/vitest*", "@ducatjs/money/*"] }
+      { "allow": ["**/plugins/*", "./core.js", "**/testing/vitest*", "@ducatjs/money/*"] }
     ]
   },
   "overrides": [

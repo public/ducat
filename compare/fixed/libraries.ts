@@ -3,6 +3,8 @@
 //
 // Versions are pinned exactly in compare/package.json and carried in the names below.
 /* eslint-disable @typescript-eslint/no-explicit-any -- each library has its own value type */
+// the ducat Money adapter below uses the methods, as the published runs did
+import '../../src/plugins/core.ts';
 import BigDecimalFormatjs from '@formatjs/bigdecimal';
 import { Big as BigDecimalJava, RoundingMode as JavaRoundingMode } from 'bigdecimal.js';
 import { Money as BigintMoney, Round as BigintRound } from 'bigint-money';

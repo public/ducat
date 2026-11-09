@@ -182,7 +182,9 @@ const methodOwners = /* @__PURE__ */ new Map<string, string>();
  * `toLocaleString` is allowed, since a formatting module may want to provide it.
  */
 const RESERVED_NAMES = /* @__PURE__ */ new Set(
-  Object.getOwnPropertyNames(Object.prototype).filter((name) => name !== 'toLocaleString'),
+  /* @__PURE__ */ Object.getOwnPropertyNames(Object.prototype).filter(
+    (name) => name !== 'toLocaleString',
+  ),
 );
 
 /** Options for `extendMoney`. */
@@ -244,6 +246,11 @@ export function extendMoney(
  */
 export function installCoreMethods(methods: Record<string, unknown>): void {
   for (const name in methods) {
+    // a program that imports only /fn can extendMoney a core name; the root entry must not then
+    // replace it silently
+    if (Object.hasOwn(Money.prototype, name)) {
+      throw new TypeError(`Money#${name} was defined before the core methods were installed`);
+    }
     Object.defineProperty(Money.prototype, name, {
       value: methods[name],
       writable: true,
