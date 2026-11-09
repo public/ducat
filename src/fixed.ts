@@ -6,6 +6,7 @@
 // `@ducatjs/money/fixed` points here and loads no Money: `toMoney()` needs
 // `import '@ducatjs/money/fixed/money'` (src/plugins/fixed-money.ts).
 import {
+  checkScale,
   formatScaled,
   faithfulDecimal,
   parseDecimal,
@@ -68,12 +69,6 @@ function normalize(value: number | bigint): number | bigint {
 
 function toBigInt(value: number | bigint): bigint {
   return typeof value === 'bigint' ? value : BigInt(value);
-}
-
-function checkScale(scale: number): void {
-  if (!Number.isSafeInteger(scale) || scale < 0 || scale > MAX_SCALE) {
-    throw new RangeError(`Invalid scale ${scale}: use an integer from 0 to ${MAX_SCALE}`);
-  }
 }
 
 /** A Fixed from a value that already holds the invariant (an integer, safe when a number). */

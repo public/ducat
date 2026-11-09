@@ -11,6 +11,7 @@ import { exchangeRate } from '../src/rate.js';
 const notFactors: [string, unknown][] = [
   ['a Fixed lookalike with a negative scale', { value: 5, scale: -1 }],
   ['a Fixed lookalike with a fractional scale', { value: 5, scale: 0.5 }],
+  ['a Fixed lookalike with a fractional value', { value: 1.5, scale: 2 }],
   ['an object of numbers', { num: 1, den: 2 }],
   ['an empty object', {}],
   ['null', null],

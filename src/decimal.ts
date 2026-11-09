@@ -160,6 +160,25 @@ export function faithfulDecimal(value: number, fix: string): string {
   return String(value);
 }
 
+/**
+ * Returns `scale` if it is a valid scale: an integer from 0 to MAX_DECIMAL_SCALE. Scales are never
+ * negative: round to tens or hundreds with an increment (`roundToIncrement`, a rounding policy).
+ */
+export function checkScale(scale: number): number {
+  // On hot paths (Fixed, ExactMoney, policies), so one comparison does most of the work: `>>> 0`
+  // leaves an integer from 0 to 2^32 - 1 unchanged and changes negatives, fractions, NaN and the
+  // infinities.
+  if (scale >>> 0 !== scale || scale > MAX_DECIMAL_SCALE) {
+    invalidScale(scale);
+  }
+  return scale;
+}
+
+// Kept out of checkScale, so the check stays small enough to inline.
+function invalidScale(scale: number): never {
+  throw new RangeError(`Invalid scale ${scale}: use an integer from 0 to ${MAX_DECIMAL_SCALE}`);
+}
+
 function gcd(left: bigint, right: bigint): bigint {
   if (left < 0n) {
     left = -left;
@@ -246,12 +265,12 @@ export function ratio(value: Factor, den?: Factor): Ratio {
     const scaled = (value as Partial<Fixed> | null)?.value;
     const scale = (value as Partial<Fixed> | null)?.scale;
     if (
-      (typeof scaled === 'number' || typeof scaled === 'bigint') &&
+      (typeof scaled === 'bigint' || Number.isSafeInteger(scaled)) &&
       typeof scale === 'number' &&
       scale >>> 0 === scale &&
       scale <= MAX_DECIMAL_SCALE
     ) {
-      return makeRatio(BigInt(scaled), pow10n(scale));
+      return makeRatio(BigInt(scaled as number | bigint), pow10n(scale));
     }
     throw notAFactor(value);
   }

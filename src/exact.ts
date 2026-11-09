@@ -2,7 +2,7 @@
 // It has no formatting, JSON or minor units on purpose: it must be rounded back to Money before it
 // leaves the process.
 import { currencyExponent } from './currency.js';
-import { pow10n, ratio, type Factor } from './decimal.js';
+import { checkScale, pow10n, ratio, type Factor } from './decimal.js';
 import { CurrencyMismatchError, make, type Money } from './money.js';
 import type { Rate } from './rate.js';
 import { DEFAULT_ROUNDING, divideAndRoundBigint, type RoundingMode } from './rounding.js';
@@ -109,7 +109,7 @@ export class ExactMoney<C extends string = string> {
 
   /** Whether the amount fits `scale` (default: the currency's exponent) without rounding. */
   isExact(scale: number = currencyExponent(this.currency)): boolean {
-    return (this.num * pow10n(scale)) % this.den === 0n;
+    return (this.num * pow10n(checkScale(scale))) % this.den === 0n;
   }
 
   /** Rounds once to `scale` (default: the currency's exponent). */
@@ -117,7 +117,7 @@ export class ExactMoney<C extends string = string> {
     rounding: RoundingMode = DEFAULT_ROUNDING,
     scale: number = currencyExponent(this.currency),
   ): Money<C> {
-    const minor = divideAndRoundBigint(this.num * pow10n(scale), this.den, rounding);
+    const minor = divideAndRoundBigint(this.num * pow10n(checkScale(scale)), this.den, rounding);
     return make(this.currency, minor, scale);
   }
 
