@@ -81,7 +81,7 @@
     },
     "format: de-DE": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/format'; console.log(money('1234.5', 'EUR').format('de-DE'));",
-      "gzipped": 5.22
+      "gzipped": 5.23
     },
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",

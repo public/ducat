@@ -58,7 +58,8 @@ export function currencyExponent(code: string): number {
 
 function unknownCurrency(code: string): never {
   throw new RangeError(
-    `Unknown currency "${code}": import @ducatjs/money/iso/${code} or /iso with /fn, or defineCurrency`,
+    // true wherever it's thrown: with the root entry every ISO code is registered already
+    `Unknown currency "${code}" (ISO codes with /fn alone: import @ducatjs/money/iso; others: defineCurrency)`,
   );
 }
 
