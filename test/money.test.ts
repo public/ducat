@@ -28,6 +28,7 @@ import {
   toMinor,
   toMinorNumber,
   toScale,
+  toScaledUnits,
   zero,
   type Money,
 } from '../src/fn.js';
@@ -197,6 +198,35 @@ describe('serialisation', () => {
       /does not fit in a safe integer/,
     );
   });
+  it("minor units are the currency's at every scale", () => {
+    // below the exponent: scaled up exactly
+    expect(toMinor(eur('1.5', { scale: 1 }))).toBe(150n);
+    expect(toMinorNumber(eur('1.5', { scale: 1 }))).toBe(150);
+    expect(toMinor(money('7', 'KWD', { scale: 0 }))).toBe(7000n);
+    // equal
+    expect(toMinor(fromMinor(1234, 'EUR', 2))).toBe(1234n);
+    // above, with zero sub-minor digits: exact
+    expect(toMinor(fromMinor(12340, 'EUR', 3))).toBe(1234n);
+    expect(toMinorNumber(fromMinor(-12340, 'EUR', 3))).toBe(-1234);
+    expect(toMinor(fromMinor(10n ** 40n, 'EUR', 20))).toBe(10n ** 22n);
+    // above, with digits below the cent: the caller has to round
+    expect(() => toMinor(fromMinor(1234, 'EUR', 3))).toThrow(RoundingError);
+    expect(() => toMinorNumber(fromMinor(1234, 'EUR', 3))).toThrow(
+      /1.234 EUR has digits below the minor unit; round\(\) it first/,
+    );
+    expect(() => fromMinor(1234, 'EUR', 3).toMinor()).toThrow(RoundingError);
+    expect(toMinor(round(fromMinor(1234, 'EUR', 3), 'halfEven'))).toBe(123n);
+    // a scale-0 JPY value is already in its minor unit
+    expect(toMinor(money('-5', 'JPY'))).toBe(-5n);
+    // too large for a number only after scaling up
+    expect(() => toMinorNumber(fromMinor(2 ** 52, 'EUR', 1))).toThrow(RangeError);
+  });
+  it("scaled units are in the value's own scale", () => {
+    expect(toScaledUnits(fromMinor(1234, 'EUR', 3))).toBe(1234n);
+    expect(fromMinor(1234, 'EUR', 3).toScaledUnits()).toBe(1234n);
+    expect(toScaledUnits(eur('1.5', { scale: 1 }))).toBe(15n);
+    expect(toScaledUnits(fromMinor(2n ** 60n, 'EUR'))).toBe(2n ** 60n);
+  });
 });
 
 describe('properties', () => {
@@ -247,6 +277,36 @@ describe('properties', () => {
         expect(equals(money(toDecimal(x), cur), x)).toBe(true);
         expect(equals(fromJSON(JSON.parse(JSON.stringify(x))), x)).toBe(true);
         expect(equals(fromMinor(toMinor(x), cur), x)).toBe(true);
+      }),
+    );
+  });
+  it('toMinor round-trips through fromMinor at any scale that is exact at the exponent', () => {
+    fc.assert(
+      fc.property(
+        m,
+        fc.constantFrom('EUR', 'JPY', 'KWD', 'CLF'),
+        fc.integer({ min: 0, max: 8 }),
+        (a, cur, extra) => {
+          // a value at a higher scale whose extra digits are zero, and the same at the exponent
+          const atExponent = fromMinor(a.minor, cur);
+          const rescaled = toScale(atExponent, atExponent.scale + extra);
+          expect(toMinor(rescaled)).toBe(toMinor(atExponent));
+          expect(equals(fromMinor(toMinor(rescaled), cur), rescaled)).toBe(true);
+          expect(toScaledUnits(rescaled)).toBe(toMinor(atExponent) * 10n ** BigInt(extra));
+        },
+      ),
+    );
+  });
+  it('toMinor throws exactly when a value has non-zero digits below the minor unit', () => {
+    fc.assert(
+      fc.property(m, fc.integer({ min: 1, max: 6 }), (a, extra) => {
+        const value = fromMinor(a.minor, 'EUR', 2 + extra);
+        const exact = BigInt(a.minor) % 10n ** BigInt(extra) === 0n;
+        if (exact) {
+          expect(toMinor(value)).toBe(BigInt(a.minor) / 10n ** BigInt(extra));
+        } else {
+          expect(() => toMinor(value)).toThrow(RoundingError);
+        }
       }),
     );
   });

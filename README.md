@@ -384,7 +384,17 @@ parseMoney('12.34', 'en', { hint: 'EUR', lenient: true }); // → 12.34 EUR
 **Serialise**
 
 - `toDecimal(m)` gives `"12.34"` for NUMERIC/DECIMAL and wire formats.
-- `toMinor(m)` gives a bigint for BIGINT columns. `toMinorNumber(m)` gives a number and throws if it isn't safe.
+- `toMinor(m)` gives the currency's minor units (cents for EUR) as a bigint, whatever the value's scale, and throws a `RoundingError` if that would need rounding. `toMinorNumber(m)` gives a number and also throws if it isn't safe. `toScaledUnits(m)` gives units of the value's own scale, to store next to that scale.
+
+```ts
+import { money } from '@ducatjs/money';
+
+money('12.340', 'EUR', { scale: 3 }).toMinor(); // → 1234n
+money('1.5', 'EUR', { scale: 1 }).toMinor(); // → 150n
+money('12.345', 'EUR', { scale: 3 }).toMinor(); // throws RoundingError: round() first
+money('12.345', 'EUR', { scale: 3 }).toScaledUnits(); // → 12345n (pair it with scale 3)
+```
+
 - `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
 
@@ -796,6 +806,7 @@ German, Italian and Dutch words keep CLDR's soft hyphens (U+00AD), which show on
 | **decimal**                          | `NUMERIC(19,4)` for most cases; `NUMERIC(38,8)` for crypto/FX | `DECIMAL(19,4)`   | **avoid** (NUMERIC affinity may store REAL); use TEXT + `toDecimal` if you must | `toDecimalValue(m, Prisma.Decimal)`, `fromDecimal(d, 'EUR')`, `decimalMoneyField(...)` |
 | **JSON**                             | `jsonb` `{amount: "12.34", currency}`                         | `JSON`            | `TEXT`                                                                          | `JSON.stringify(m)`, `fromJSON`                                                        |
 
+- **Writing a BIGINT minor-units column:** `toMinorColumns(m, 'amountMinor', 'currency')` (or `m.toMinor()` for the amount alone), and `fromMinor(row.amountMinor, row.currency)` to read it back. Both use the currency's ISO exponent; a value with digits below the minor unit throws, so `round()` it first. With a scale column, write `m.toScaledUnits()` and `m.scale`, as below.
 - BIGINT holds ±9.2·10^18 minor units, which is 92 quadrillion EUR. Postgres's `money` type is locale-dependent; don't use it.
 - Choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 - Prisma maps `BigInt` to JS `bigint`. The helpers accept it, and `fromMinor` normalises it back to a number when it is safe.

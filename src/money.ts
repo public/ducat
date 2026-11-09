@@ -245,13 +245,20 @@ class Money<C extends string = string> {
   toDecimal(): string {
     return formatScaled(this.minor, this.scale);
   }
-  /** Minor units as a bigint (BIGINT columns) */
+  /**
+   * Units of the currency's minor unit as a bigint (cents for EUR), for BIGINT columns. Exact at
+   * any scale; throws RoundingError if the amount has non-zero digits below the minor unit.
+   */
   toMinor(): bigint {
-    return toBigInt(this.minor);
+    return toMinor(this);
   }
-  /** Minor units as a number; throws beyond 2^53 */
+  /** Like `toMinor()`, as a number; also throws a RangeError beyond 2^53. */
   toMinorNumber(): number {
     return toMinorNumber(this);
+  }
+  /** Units of 10^-scale as a bigint: 12340n for 12.340 EUR at scale 3. Pair it with the scale. */
+  toScaledUnits(): bigint {
+    return toBigInt(this.minor);
   }
 }
 export type { Money };
@@ -954,17 +961,53 @@ export function minorPart(money: Money): number | bigint {
   return normalizeMinor(toBigInt(minor) % pow10n(money.scale));
 }
 
-/** Minor units as a bigint (always safe; use for BIGINT columns). */
+/**
+ * Units of the currency's minor unit (cents for EUR) as a bigint, for BIGINT columns and APIs that
+ * take ISO 4217 minor units. Exact at any scale: 1.5 EUR at scale 1 is 150n, and 12.340 EUR at
+ * scale 3 is 1234n. Throws RoundingError when the amount has non-zero digits below the minor unit
+ * (12.345 EUR); round() it first. For units of the value's own scale, use `toScaledUnits`.
+ */
 export function toMinor(money: Money): bigint {
-  return toBigInt(money.minor);
+  const shift = currencyExponent(money.currency) - money.scale;
+  const scaled = toBigInt(money.minor);
+
+  // At or below the exponent, scaling up is exact.
+  if (shift >= 0) {
+    return scaled * pow10n(shift);
+  }
+
+  // Above it, the conversion is exact only when the extra digits are all zero.
+  const divisor = pow10n(-shift);
+  if (scaled % divisor !== 0n) {
+    throw new RoundingError(`${money} has digits below the minor unit; round() it first`);
+  }
+  return scaled / divisor;
 }
 
-/** Minor units as a number; throws if not a safe integer. */
+/**
+ * Like `toMinor`, as a number. Throws RoundingError for digits below the minor unit, and a
+ * RangeError when the result isn't a safe integer.
+ */
 export function toMinorNumber(money: Money): number {
-  if (typeof money.minor === 'bigint') {
+  // The common case, a number at the currency's exponent, needs no conversion.
+  if (typeof money.minor === 'number' && money.scale === currencyExponent(money.currency)) {
+    return money.minor;
+  }
+
+  const minor = normalizeMinor(toMinor(money));
+  if (typeof minor === 'bigint') {
     throw new RangeError(`${money} does not fit in a safe integer; use toMinor()`);
   }
-  return money.minor;
+  return minor;
+}
+
+/**
+ * The amount in units of 10^-scale, as a bigint: 12340n for 12.340 EUR at scale 3. Store it
+ * together with the scale (as the scale-column helpers do); for the currency's minor units, use
+ * `toMinor`.
+ */
+export function toScaledUnits(money: Money): bigint {
+  return toBigInt(money.minor);
 }
 
 /** Parses `{ amount: "12.34", currency: "EUR" }` (as produced by JSON.stringify(money)). */

@@ -14,6 +14,7 @@ import {
   money,
   toDecimal,
   toMinor,
+  toScaledUnits,
   type CurrencyInput,
   type Money,
   type MoneyOptions,
@@ -185,7 +186,11 @@ export function toMinorColumns(
   if (options === undefined) {
     return { [amount]: toMinorAtIsoScale(money), [currency]: money.currency };
   }
-  return { [amount]: toMinor(money), [currency]: money.currency, [options.scale]: money.scale };
+  return {
+    [amount]: toScaledUnits(money),
+    [currency]: money.currency,
+    [options.scale]: money.scale,
+  };
 }
 
 function toMinorAtIsoScale(money: Money): bigint {

@@ -264,7 +264,7 @@ function computeWithDucat(testCase: TestCase, mode: RoundingMode): Money {
 
 function describeOutcome(run: () => Money): string {
   try {
-    return String(run().toMinor());
+    return String(run().toScaledUnits());
   } catch (error) {
     if (error instanceof RoundingError) {
       return 'RoundingError';

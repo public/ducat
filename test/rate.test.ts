@@ -287,7 +287,7 @@ describe('Rate properties', () => {
         const chain = legs.reduce((a, b) => a.andThen(b as never));
         const src = fromMinor(m, chain.from, 2);
         const got = chain.convert(src as never, rm, { scale: 3 });
-        expect(got.toMinor()).toBe(oracle(m, legs, 1, rm));
+        expect(got.toScaledUnits()).toBe(oracle(m, legs, 1, rm));
       }),
     );
   });
@@ -301,7 +301,7 @@ describe('Rate properties', () => {
         // round trip at a scale fine enough that the first rounding is below half a unit of m
         const src = fromMinor(m, 'EUR', 2);
         const fine = r.convert(src, 'halfEven', { scale: 40 });
-        expect(r.inverse().convert(fine, 'halfEven', { scale: 2 }).toMinor()).toBe(BigInt(m));
+        expect(r.inverse().convert(fine, 'halfEven', { scale: 2 }).toScaledUnits()).toBe(BigInt(m));
       }),
     );
   });
@@ -316,7 +316,9 @@ describe('Rate properties', () => {
         const viaEur = eurUsd.inverse().andThen(eurJpy);
         expect(viaEur.ratio).toEqual(usdJpy.ratio);
         const usd = fromMinor(m, 'USD');
-        expect(viaEur.convert(usd, rm).toMinor()).toBe(usdJpy.convert(usd, rm).toMinor());
+        expect(viaEur.convert(usd, rm).toScaledUnits()).toBe(
+          usdJpy.convert(usd, rm).toScaledUnits(),
+        );
       }),
     );
   });

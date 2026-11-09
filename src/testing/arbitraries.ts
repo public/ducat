@@ -120,11 +120,11 @@ export function arbMoney<C extends string = string>(
       const min =
         options.min === undefined
           ? -BIG
-          : BigInt(money(options.min, currency, { scale, rounding: 'ceil' }).toMinor());
+          : BigInt(money(options.min, currency, { scale, rounding: 'ceil' }).toScaledUnits());
       const max =
         options.max === undefined
           ? BIG
-          : BigInt(money(options.max, currency, { scale, rounding: 'floor' }).toMinor());
+          : BigInt(money(options.max, currency, { scale, rounding: 'floor' }).toScaledUnits());
       if (min > max) {
         throw new RangeError(`No ${currency} amount at scale ${scale} between min and max`);
       }

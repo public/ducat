@@ -56,7 +56,7 @@ const INEXACT_MODES = Object.keys(DECIMAL_JS_MODES) as InexactMode[];
 
 /** The value of a Money as decimal.js sees it, built from its minor units and scale only. */
 function valueOf(amount: Money): Decimal {
-  const minorUnits = new Decimal(amount.toMinor().toString());
+  const minorUnits = new Decimal(amount.toScaledUnits().toString());
   return minorUnits.div(new Decimal(10).pow(amount.scale));
 }
 
@@ -162,7 +162,7 @@ describe('oracle: arithmetic against decimal.js', () => {
       expect(product.scale).toBe(amount.scale);
 
       const expected = expectedMinor(valueOf(amount).mul(factor), amount.scale, mode);
-      expect(product.toMinor()).toBe(expected);
+      expect(product.toScaledUnits()).toBe(expected);
     });
     fc.assert(property, { numRuns: runs(5000) });
   });
@@ -173,7 +173,7 @@ describe('oracle: arithmetic against decimal.js', () => {
 
       if (exactMinor.isInteger()) {
         const product = multiply(amount, factor, 'unnecessary');
-        expect(product.toMinor()).toBe(BigInt(exactMinor.toFixed(0)));
+        expect(product.toScaledUnits()).toBe(BigInt(exactMinor.toFixed(0)));
       } else {
         expect(() => multiply(amount, factor, 'unnecessary')).toThrow(RoundingError);
       }
@@ -185,7 +185,7 @@ describe('oracle: arithmetic against decimal.js', () => {
     const property = fc.property(amountArb, nonZeroFactorArb, modeArb, (amount, divisor, mode) => {
       const quotient = divide(amount, divisor, mode);
       const expected = expectedMinor(valueOf(amount).div(divisor), amount.scale, mode);
-      expect(quotient.toMinor()).toBe(expected);
+      expect(quotient.toScaledUnits()).toBe(expected);
     });
     fc.assert(property, { numRuns: runs(5000) });
   });
@@ -195,7 +195,7 @@ describe('oracle: arithmetic against decimal.js', () => {
     const property = fc.property(amountArb, targetScaleArb, modeArb, (amount, scale, mode) => {
       const rescaled = toScale(amount, scale, mode);
       expect(rescaled.scale).toBe(scale);
-      expect(rescaled.toMinor()).toBe(expectedMinor(valueOf(amount), scale, mode));
+      expect(rescaled.toScaledUnits()).toBe(expectedMinor(valueOf(amount), scale, mode));
     });
     fc.assert(property, { numRuns: runs(3000) });
   });
@@ -207,8 +207,8 @@ describe('oracle: tax, percentages and conversion against decimal.js', () => {
       const exactShare = valueOf(amount).mul(percent).div(100);
       const share = expectedMinor(exactShare, amount.scale, mode);
 
-      expect(percentage(amount, percent, mode).toMinor()).toBe(share);
-      expect(discount(amount, percent, mode).toMinor()).toBe(amount.toMinor() - share);
+      expect(percentage(amount, percent, mode).toScaledUnits()).toBe(share);
+      expect(discount(amount, percent, mode).toScaledUnits()).toBe(amount.toScaledUnits() - share);
     });
     fc.assert(property, { numRuns: runs(3000) });
   });
@@ -218,9 +218,9 @@ describe('oracle: tax, percentages and conversion against decimal.js', () => {
       const breakdown = addTax(net, percent, mode);
       const tax = expectedMinor(valueOf(net).mul(percent).div(100), net.scale, mode);
 
-      expect(breakdown.net.toMinor()).toBe(net.toMinor());
-      expect(breakdown.tax.toMinor()).toBe(tax);
-      expect(breakdown.gross.toMinor()).toBe(net.toMinor() + tax);
+      expect(breakdown.net.toScaledUnits()).toBe(net.toScaledUnits());
+      expect(breakdown.tax.toScaledUnits()).toBe(tax);
+      expect(breakdown.gross.toScaledUnits()).toBe(net.toScaledUnits() + tax);
     });
     fc.assert(property, { numRuns: runs(3000) });
   });
@@ -231,9 +231,9 @@ describe('oracle: tax, percentages and conversion against decimal.js', () => {
       const divisor = new Decimal(percent).div(100).add(1);
       const net = expectedMinor(valueOf(gross).div(divisor), gross.scale, mode);
 
-      expect(breakdown.net.toMinor()).toBe(net);
-      expect(breakdown.tax.toMinor()).toBe(gross.toMinor() - net);
-      expect(breakdown.gross.toMinor()).toBe(gross.toMinor());
+      expect(breakdown.net.toScaledUnits()).toBe(net);
+      expect(breakdown.tax.toScaledUnits()).toBe(gross.toScaledUnits() - net);
+      expect(breakdown.gross.toScaledUnits()).toBe(gross.toScaledUnits());
     });
     fc.assert(property, { numRuns: runs(3000) });
   });
@@ -250,7 +250,7 @@ describe('oracle: tax, percentages and conversion against decimal.js', () => {
         expect(converted.scale).toBe(targetExponent);
 
         const expected = expectedMinor(valueOf(amount).mul(rate), targetExponent, mode);
-        expect(converted.toMinor()).toBe(expected);
+        expect(converted.toScaledUnits()).toBe(expected);
       },
     );
     fc.assert(property, { numRuns: runs(3000) });
@@ -311,7 +311,7 @@ describe('oracle: allocation against a from-scratch largest-remainder allocator'
     const property = fc.property(minorArb, weightsArb, (minorUnits, weights) => {
       const parts = allocate(fromMinor(minorUnits, 'EUR'), weights);
       const expected = largestRemainderAllocation(minorUnits, weights.map(BigInt));
-      expect(parts.map((part) => part.toMinor())).toEqual(expected);
+      expect(parts.map((part) => part.toScaledUnits())).toEqual(expected);
     });
     fc.assert(property, { numRuns: runs(3000) });
   });
@@ -332,7 +332,7 @@ describe('oracle: allocation against a from-scratch largest-remainder allocator'
 
       const parts = allocate(fromMinor(minorUnits, 'EUR'), weightStrings);
       const expected = largestRemainderAllocation(minorUnits, integerWeights);
-      expect(parts.map((part) => part.toMinor())).toEqual(expected);
+      expect(parts.map((part) => part.toScaledUnits())).toEqual(expected);
     });
     fc.assert(property, { numRuns: runs(2000) });
   });
@@ -352,7 +352,7 @@ describe('oracle: allocation against a from-scratch largest-remainder allocator'
       });
 
       const parts = split(fromMinor(minorUnits, 'EUR'), count);
-      expect(parts.map((part) => part.toMinor())).toEqual(expected);
+      expect(parts.map((part) => part.toScaledUnits())).toEqual(expected);
     });
     fc.assert(property, { numRuns: runs(3000) });
   });
