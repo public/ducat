@@ -3,6 +3,7 @@
 // set computed by LibreOffice Calc (test/vectors/finance-calc.json, scripts/gen-calc-vectors.py).
 // Spreadsheets compute in doubles, so values are compared at 15 significant digits, and IRR at
 // Excel's stated accuracy (0.00001 percent).
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';

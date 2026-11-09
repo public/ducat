@@ -1,5 +1,6 @@
 // Reference vectors computed by Python's decimal module (scripts/gen-pydecimal-vectors.py): a
 // second implementation of decimal arithmetic, independent of both ducat and decimal.js.
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';

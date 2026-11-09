@@ -3,7 +3,18 @@
 
 // What sources write for "no value this day": blank (ECB CSV, BoE), ND (Fed H.10), N/A (ECB CSV),
 // NA (IMF), and dashes and NaN in other files. Compared upper-cased.
-const MISSING_MARKERS = new Set(['', 'ND', 'N/A', 'NA', 'N.A.', '-', '–', '—', 'NAN', 'NULL']);
+const MISSING_MARKERS = /* @__PURE__ */ new Set([
+  '',
+  'ND',
+  'N/A',
+  'NA',
+  'N.A.',
+  '-',
+  '–',
+  '—',
+  'NAN',
+  'NULL',
+]);
 const PLAIN_DECIMAL = /^\d+(?:\.\d+)?$/;
 
 /**

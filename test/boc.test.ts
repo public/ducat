@@ -1,3 +1,4 @@
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';

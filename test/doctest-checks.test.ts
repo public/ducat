@@ -1,3 +1,4 @@
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import { expect, it } from 'vitest';
 import { money } from '../src/fn.js';
 import { checkThrows, documentedErrorClass, failures } from './doctest.js';

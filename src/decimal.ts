@@ -5,7 +5,7 @@ import type { Fixed } from './fixed.js';
 
 /** The largest minor-unit count held as a number (2^53 - 1); larger values are bigints. */
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
-const MAXN = BigInt(MAX_SAFE_MINOR);
+const MAXN = /* @__PURE__ */ BigInt(MAX_SAFE_MINOR);
 
 /**
  * An exact rational factor num/den (den > 0). `n`/`d` hold the same values as numbers when both are
@@ -228,7 +228,7 @@ function notAFactor(value: unknown): TypeError {
   );
 }
 
-const cache = new Map<string, Ratio>();
+const cache = /* @__PURE__ */ new Map<string, Ratio>();
 const INT_RATIOS: Ratio[] = [];
 
 /**
@@ -330,7 +330,7 @@ export function ratioToDecimal(value: Ratio): string | null {
 }
 
 // Zero padding for the fraction digits, built once: indexing it is faster than padStart.
-const ZPAD = Array.from({ length: 16 }, (_, length) => '0'.repeat(length));
+const ZPAD = /* @__PURE__ */ Array.from({ length: 16 }, (_, length) => '0'.repeat(length));
 
 /** Formats an integer at `scale` as a plain decimal string ("-0.05"). */
 export function formatScaled(minor: number | bigint, scale: number): string {

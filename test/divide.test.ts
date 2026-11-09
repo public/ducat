@@ -1,5 +1,6 @@
 // divide() has a number fast path for divisors whose ratio parts are safe integers. It must give
 // exactly what the bigint path gives: the proved kernel applied to m·den / num.
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { runs } from './fc-config.js';

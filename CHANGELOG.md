@@ -75,6 +75,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Breaking:** the core Money methods (`add`, `multiply`, `round`, `toDecimal`...) are installed by
+  the root entry `@ducatjs/money` instead of being part of the class, so a program written with
+  `@ducatjs/money/fn` keeps only the functions it uses: create, add and print goes from 4.0 to 1.8
+  KiB gzipped, and create, add, multiply and print from 4.0 to 3.2 KiB. The root entry grows by about
+  0.13 KiB. Code that imports only `/fn` and also calls methods must import `@ducatjs/money` (or
+  `@ducatjs/money/all`) too, or call the functions instead of the methods. Importing the root entry
+  throws if a program already defined a core method name with `extendMoney`.
 - **Breaking:** `@ducatjs/money/fixed` no longer loads Money or the currency table, so a program
   that uses only `Fixed` is 3.3 kB gzipped instead of 5.4 kB. `Money#toFixedPoint()`,
   `Fixed#toMoney()` and `moneyToFixed` moved to the new `@ducatjs/money/fixed/money`: import that

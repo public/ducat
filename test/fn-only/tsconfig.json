@@ -1,0 +1,55 @@
+// Type-checks every entry that doesn't install the Money methods (/fn and the non-plugin entries,
+// including the ones built against optional peers). Without the root entry those programs have no
+// methods, so library code that calls one (m.toDecimal() instead of toDecimal(m)) is a compile
+// error here instead of a run-time one.
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "../../src",
+    "lib": ["ES2023", "ESNext.Intl", "DOM"],
+    "skipLibCheck": true
+  },
+  "include": [],
+  "files": [
+    "../../src/adyen-fx.ts",
+    "../../src/boc.ts",
+    "../../src/boe.ts",
+    "../../src/crypto.ts",
+    "../../src/currencies.ts",
+    "../../src/drizzle/mysql.ts",
+    "../../src/drizzle/pg.ts",
+    "../../src/drizzle/sqlite.ts",
+    "../../src/ecb.ts",
+    "../../src/fed.ts",
+    "../../src/fetch.ts",
+    "../../src/finance.ts",
+    "../../src/fixed.ts",
+    "../../src/fn.ts",
+    "../../src/historic.ts",
+    "../../src/history.ts",
+    "../../src/hmrc.ts",
+    "../../src/kysely.ts",
+    "../../src/parse.ts",
+    "../../src/pg.ts",
+    "../../src/policy.ts",
+    "../../src/pricing.ts",
+    "../../src/stripe-fx.ts",
+    "../../src/territories.ts",
+    "../../src/testing/arbitraries.ts",
+    "../../src/testing/index.ts",
+    "../../src/testing/jest.ts",
+    "../../src/testing/vitest.ts",
+    "../../src/valibot.ts",
+    "../../src/wire.ts",
+    "../../src/words.ts",
+    "../../src/words/de.ts",
+    "../../src/words/en.ts",
+    "../../src/words/es.ts",
+    "../../src/words/fr.ts",
+    "../../src/words/it.ts",
+    "../../src/words/nl.ts",
+    "../../src/words/pt.ts",
+    "../../src/zod.ts"
+  ]
+}
