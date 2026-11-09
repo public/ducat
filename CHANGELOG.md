@@ -86,6 +86,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (12.340 EUR at scale 3: 12340 → 1234). Switch those calls to `toScaledUnits()` to keep the old
   numbers, or migrate the stored values. See #211.
 
+- **Visible change:** `ratio()` and everything that takes a `Factor` (`multiply`, `divide`,
+  `percentage`, the tax functions, `ExactMoney`, `Fixed`, conversion and rates) throw a `TypeError`
+  naming what was passed for a value that isn't a factor: a `Fixed`, `{ num: 1, den: 2 }` with number
+  fields, `null`, a boolean. Before, `ratio(fixed('0.5'))` returned the object unchanged and
+  arithmetic failed later with "Cannot mix BigInt and other types". A hand-made `{ num, den }` of
+  bigints is now reduced and given its number fields, rather than trusted as it is.
+
 ### Fixed
 
 - The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean
