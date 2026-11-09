@@ -144,131 +144,6 @@ class Money<C extends string = string> {
       'Money cannot be converted to a number; use add(), compare(), toDecimal() etc.',
     );
   }
-
-  // Methods. Each one is a thin wrapper over the free function of the same name (also exported), so
-  // `a.add(b)` and `add(a, b)` are the same code. Operands are Money only: a bare number is never
-  // guessed to mean major or minor units.
-
-  // arithmetic
-  /** this + other (same currency; any scale) */
-  add(other: Money<C>): Money<C> {
-    return add(this, other);
-  }
-  /** this - other */
-  subtract(other: Money<C>): Money<C> {
-    return subtract(this, other);
-  }
-  /**
-   * this * factor, rounded to this scale. `factor` is exact: integer, decimal string ('1.075'),
-   * bigint or ratio().
-   */
-  multiply(factor: Factor, rounding?: RoundingInput): Money<C> {
-    return multiply(this, factor, rounding);
-  }
-  /** this / divisor, rounded to this scale (or to a policy's scale and increment) */
-  divide(divisor: Factor, rounding?: RoundingInput): Money<C> {
-    return divide(this, divisor, rounding);
-  }
-  negate(): Money<C> {
-    return negate(this);
-  }
-  abs(): Money<C> {
-    return abs(this);
-  }
-  /** Rounds to the currency's exponent (or `scale`), or to a rounding policy. */
-  round(rounding: RoundingMode, scale?: number): Money<C>;
-  round(policy: RoundingPolicy): Money<C>;
-  round(rounding: RoundingInput, scale?: number): Money<C> {
-    // the free function handles both; the cast only picks its implementation signature
-    return round(this, rounding as RoundingMode, scale);
-  }
-  /** Changes the scale; decreasing it rounds (default 'halfExpand'). */
-  toScale(scale: number, rounding?: RoundingMode): Money<C> {
-    return toScale(this, scale, rounding);
-  }
-  // comparison
-  /** -1, 0 or 1; throws on currency mismatch */
-  compare(other: Money<C>): -1 | 0 | 1 {
-    return compare(this, other);
-  }
-  /** same currency and value; a different currency is simply not equal */
-  equals(other: Money): boolean {
-    return equals(this, other);
-  }
-  lessThan(other: Money<C>): boolean {
-    return compare(this, other) < 0;
-  }
-  lessThanOrEqual(other: Money<C>): boolean {
-    return compare(this, other) <= 0;
-  }
-  greaterThan(other: Money<C>): boolean {
-    return compare(this, other) > 0;
-  }
-  greaterThanOrEqual(other: Money<C>): boolean {
-    return compare(this, other) >= 0;
-  }
-  isZero(): boolean {
-    return this.minor == 0;
-  }
-  isPositive(): boolean {
-    return this.minor > 0;
-  }
-  isNegative(): boolean {
-    return this.minor < 0;
-  }
-  sign(): -1 | 0 | 1 {
-    return sign(this);
-  }
-  min(...others: Money<C>[]): Money<C> {
-    return min(this, ...others);
-  }
-  max(...others: Money<C>[]): Money<C> {
-    return max(this, ...others);
-  }
-  clamp(lo: Money<C>, hi: Money<C>): Money<C> {
-    return clamp(this, lo, hi);
-  }
-
-  /** Same currency, value and scale: 1.0 EUR is not identical to 1.00 EUR. */
-  identical(other: Money): boolean {
-    return identical(this, other);
-  }
-  /**
-   * Applies `operation` to this amount and returns its result, so a rounding policy or a
-   * conversion reads as one step in a chain: `price.multiply('1.075').with(toCash)`.
-   */
-  with<R>(operation: (money: Money<C>) => R): R {
-    return operation(this);
-  }
-
-  // output
-  /** The whole major units, truncated toward zero: 12 for 12.34 EUR, -12 for -12.34 EUR. */
-  majorPart(): number | bigint {
-    return majorPart(this);
-  }
-  /** The rest in 10^-scale units, with the amount's sign: 34 for 12.34 EUR, -34 for -12.34. */
-  minorPart(): number | bigint {
-    return minorPart(this);
-  }
-  /** Exact decimal string in major units: "12.34" */
-  toDecimal(): string {
-    return formatScaled(this.minor, this.scale);
-  }
-  /**
-   * Units of the currency's minor unit as a bigint (cents for EUR), for BIGINT columns. Exact at
-   * any scale; throws RoundingError if the amount has non-zero digits below the minor unit.
-   */
-  toMinor(): bigint {
-    return toMinor(this);
-  }
-  /** Like `toMinor()`, as a number; also throws a RangeError beyond 2^53. */
-  toMinorNumber(): number {
-    return toMinorNumber(this);
-  }
-  /** Units of 10^-scale as a bigint: 12340n for 12.340 EUR at scale 3. Pair it with the scale. */
-  toScaledUnits(): bigint {
-    return toBigInt(this.minor);
-  }
 }
 export type { Money };
 
@@ -308,14 +183,16 @@ export function assertCurrency<C extends CurrencyInput>(
  * Which module installed each added method, so a second copy of the same module can replace its
  * own.
  */
-const methodOwners = new Map<string, string>();
+const methodOwners = /* @__PURE__ */ new Map<string, string>();
 
 /**
  * Names `extendMoney` refuses: the ones every object inherits, whose meaning other code relies on.
  * `toLocaleString` is allowed, since a formatting module may want to provide it.
  */
-const RESERVED_NAMES = new Set(
-  Object.getOwnPropertyNames(Object.prototype).filter((name) => name !== 'toLocaleString'),
+const RESERVED_NAMES = /* @__PURE__ */ new Set(
+  /* @__PURE__ */ Object.getOwnPropertyNames(Object.prototype).filter(
+    (name) => name !== 'toLocaleString',
+  ),
 );
 
 /** Options for `extendMoney`. */
@@ -368,6 +245,33 @@ export function extendMoney(
     if (owner !== undefined) {
       methodOwners.set(name, owner);
     }
+  }
+}
+
+// the names installCoreMethods has installed, so loading it again replaces its own methods only
+const coreMethodNames = /* @__PURE__ */ new Set<string>();
+
+/**
+ * @internal Installs the core methods (src/plugins/core.ts) on Money.prototype, non-enumerable like
+ * class methods. Kept apart from `extendMoney`, whose name checks the methods bundle doesn't need.
+ */
+export function installCoreMethods(methods: Record<string, unknown>): void {
+  // A program that imports only /fn can extendMoney a core name; the root entry must not then
+  // replace it silently. Reinstalling the core methods themselves (core.js loaded again, as hot
+  // reload does) is fine. Every name is checked before any is installed, so a throw changes nothing.
+  for (const name in methods) {
+    if (Object.hasOwn(Money.prototype, name) && !coreMethodNames.has(name)) {
+      throw new TypeError(`Money#${name} was defined before the core methods were installed`);
+    }
+  }
+  for (const name in methods) {
+    coreMethodNames.add(name);
+    Object.defineProperty(Money.prototype, name, {
+      value: methods[name],
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
   }
 }
 

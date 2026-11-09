@@ -59,7 +59,7 @@ function offsetMinutes(zone: string): number | undefined {
 // in one zone, so keep one formatter per zone. The bound stops a stream of distinct zone names
 // (case variants are accepted by Intl) from growing the cache without limit.
 const MAX_CACHED_FORMATTERS = 32;
-const formatters = new Map<string, Intl.DateTimeFormat>();
+const formatters = /* @__PURE__ */ new Map<string, Intl.DateTimeFormat>();
 
 /** The cached wall-clock formatter for an IANA time zone. */
 function wallClockFormatter(timeZone: string): Intl.DateTimeFormat {

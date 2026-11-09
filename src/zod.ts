@@ -13,7 +13,7 @@ import {
 
 export type { MoneyFor, MoneySchemaOptions } from './schema.js';
 
-const jsonShape = z.object({ amount: z.string(), currency: z.string() });
+const jsonShape = /* @__PURE__ */ z.object({ amount: z.string(), currency: z.string() });
 
 /** The schema `moneySchema` returns: a Zod codec between the JSON form and Money. */
 export type MoneyCodec<C extends string> = z.ZodCodec<typeof jsonShape, z.ZodCustom<MoneyFor<C>>>;

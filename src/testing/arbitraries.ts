@@ -7,7 +7,7 @@
 import fc from 'fast-check';
 import { currencyExponent, ISO_EXPONENTS } from '../currency.js';
 import { MAX_DECIMAL_SCALE } from '../decimal.js';
-import { fromMinor, money, type Money } from '../money.js';
+import { fromMinor, money, toScaledUnits, type Money } from '../money.js';
 
 /** A mix of exponents: the common two-decimal currencies and every unusual one. */
 const DEFAULT_CURRENCIES = ['EUR', 'USD', 'GBP', 'JPY', 'KRW', 'KWD', 'BHD', 'TND', 'CLF'];
@@ -57,7 +57,7 @@ export interface ArbMoneyOptions<C extends string = string> {
 }
 
 const BIG = 10n ** 30n;
-const SAFE = BigInt(Number.MAX_SAFE_INTEGER);
+const SAFE = /* @__PURE__ */ BigInt(Number.MAX_SAFE_INTEGER);
 
 /** Minor units weighted toward the interesting places: small, near 2^53, and far beyond it. */
 function arbMinor(min: bigint, max: bigint): fc.Arbitrary<bigint> {
@@ -120,11 +120,11 @@ export function arbMoney<C extends string = string>(
       const min =
         options.min === undefined
           ? -BIG
-          : BigInt(money(options.min, currency, { scale, rounding: 'ceil' }).toScaledUnits());
+          : BigInt(toScaledUnits(money(options.min, currency, { scale, rounding: 'ceil' })));
       const max =
         options.max === undefined
           ? BIG
-          : BigInt(money(options.max, currency, { scale, rounding: 'floor' }).toScaledUnits());
+          : BigInt(toScaledUnits(money(options.max, currency, { scale, rounding: 'floor' })));
       if (min > max) {
         throw new RangeError(`No ${currency} amount at scale ${scale} between min and max`);
       }

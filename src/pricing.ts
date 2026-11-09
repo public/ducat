@@ -3,12 +3,12 @@
  * and volume pricing. A rule such as "end in .99, rounding up" is a plain value passed explicitly,
  * like a rounding policy, and every result is exact.
  */
-import { MAX_DECIMAL_SCALE, parseDecimal, pow10n } from './decimal.js';
+import { formatScaled, MAX_DECIMAL_SCALE, parseDecimal, pow10n } from './decimal.js';
 import { make, type Money } from './money.js';
 import { divideAndRound, divideAndRoundBigint, Rounding, type RoundingMode } from './rounding.js';
 
 const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
-const MODES = new Set<unknown>(Object.values(Rounding));
+const MODES = /* @__PURE__ */ new Set<unknown>(/* @__PURE__ */ Object.values(Rounding));
 
 /** Options for `priceEnding`. */
 export interface PriceEndingOptions {
@@ -76,7 +76,7 @@ function unitsAt(value: Decimal, scale: number): bigint | undefined {
 }
 
 function decimalString(value: Decimal): string {
-  return make('', value.digits, value.scale).toDecimal();
+  return formatScaled(value.digits, value.scale);
 }
 
 /**

@@ -1,4 +1,6 @@
 /** `@ducatjs/money/all`: core plus every opt-in module, with all methods installed. */
+// the core methods directly, not only through the root entry, so no bundler can drop them
+import './core.js';
 export * from '../index.js';
 // The core Money methods as plain functions too, as in /fn: /all is everything.
 export {

@@ -22,6 +22,8 @@
   ],
   "type": "module",
   "sideEffects": [
+    "./dist/index.js",
+    "./src/index.ts",
     "./dist/plugins/*.js",
     "./src/plugins/*.ts",
     "./dist/testing/vitest.js",
@@ -429,7 +431,7 @@
   "scripts": {
     "check:consumers": "node scripts/check-consumer-types.mjs",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.drizzle.json && tsc -p tsconfig.kysely.json && tsc -p tsconfig.peers.json",
-    "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json && tsc -p test/jest-types/tsconfig.json",
+    "typecheck": "tsc -p test/fn-only/tsconfig.json && tsc -p tsconfig.test.json && tsc -p tsconfig.test-drizzle.json && tsc -p test/core-only/tsconfig.json && tsc -p test/browser/tsconfig.json && tsc -p test/jest-types/tsconfig.json",
     "test": "vitest run",
     "test:deep": "DUCAT_DEEP=1 vitest run",
     "compare": "pnpm --dir compare battery && pnpm --dir compare tables",
@@ -459,6 +461,7 @@
     "@codspeed/vitest-plugin": "6.1.1",
     "@playwright/test": "1.65.0",
     "@prisma/client": "^6.19.3",
+    "@rollup/plugin-node-resolve": "16.0.3",
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/vitest-runner": "10.1.1",
     "@types/better-sqlite3": "9.6.0",
@@ -479,6 +482,7 @@
     "oxlint": "1.92.0",
     "pg": "8.23.1",
     "pg-cursor": "2.22.1",
+    "rollup": "4.67.5",
     "ts-money": "^0.4.8",
     "typescript": "^5.9.3",
     "valibot": "1.5.0",

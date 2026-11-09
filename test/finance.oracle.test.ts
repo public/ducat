@@ -1,5 +1,6 @@
 // Reference vectors for /finance computed with Python's fractions module
 // (scripts/gen-finance-vectors.py): a second, independent implementation of the definitions.
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';

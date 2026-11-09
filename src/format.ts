@@ -1,7 +1,7 @@
 import { POW10 } from './decimal.js';
 import { toDecimal, type Money } from './money.js';
 
-const cache = new Map<string, Intl.NumberFormat>();
+const cache = /* @__PURE__ */ new Map<string, Intl.NumberFormat>();
 // one-entry memo in front of the Map: formatting in a loop is almost always the same
 // locale/currency
 let lastLocale: string | undefined;

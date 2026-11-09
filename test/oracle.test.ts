@@ -5,6 +5,7 @@
 // decimal.js runs at 200 significant digits. Every quotient below has a denominator under 10^40, so
 // a non-terminating quotient cannot sit within 10^-150 of a rounding boundary, and the single
 // rounding to the money's scale is the only one that matters.
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import { Decimal as DecimalJs } from 'decimal.js';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';

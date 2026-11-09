@@ -12,7 +12,7 @@ export interface CustomCurrencies {}
 /** A known currency code: ISO 4217, or one added to `CustomCurrencies`. */
 export type CurrencyCode = IsoCurrencyCode | (keyof CustomCurrencies & string);
 
-const custom = new Map<string, number>();
+const custom = /* @__PURE__ */ new Map<string, number>();
 const iso = ISO_EXPONENTS as Readonly<Record<string, number>>;
 
 /**
