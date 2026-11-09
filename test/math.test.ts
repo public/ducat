@@ -1,3 +1,4 @@
+import '../src/plugins/core.js'; // the tests below use the Money methods
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { add, fromMinor, money, multiply, type Money, type RoundingMode } from '../src/fn.js';

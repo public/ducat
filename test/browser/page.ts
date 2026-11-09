@@ -87,7 +87,7 @@ export function run(seed: number, numRuns: number): PageResult {
     assertEqual(total.minor, 9007199254740992n);
   });
   check('BIGINT max', () => {
-    assertEqual(euro('92233720368547758.07').toMinor(), 2n ** 63n - 1n);
+    assertEqual(ducat.toMinor(euro('92233720368547758.07')), 2n ** 63n - 1n);
   });
   check('allocate', () => {
     const parts = ducat.allocate(euro('100'), [1, 1, 1]).map(ducat.toDecimal);
@@ -107,7 +107,7 @@ export function run(seed: number, numRuns: number): PageResult {
 
       const exact = new Decimal(minorUnits.toString()).mul(factor);
       const expected = exact.toDecimalPlaces(0, Decimal.ROUND_HALF_EVEN).toFixed(0);
-      assertEqual(product.toMinor().toString(), expected);
+      assertEqual(ducat.toMinor(product).toString(), expected);
     }),
   );
 
@@ -120,7 +120,7 @@ export function run(seed: number, numRuns: number): PageResult {
       (minorUnits, weights) => {
         fc.pre(weights.some((weight) => weight > 0));
         const parts = ducat.allocate(ducat.fromMinor(minorUnits, 'EUR'), weights);
-        const total = parts.reduce((sum, part) => sum + part.toMinor(), 0n);
+        const total = parts.reduce((sum, part) => sum + ducat.toMinor(part), 0n);
         assertEqual(total, minorUnits);
       },
     ),
