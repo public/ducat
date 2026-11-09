@@ -254,6 +254,31 @@ describe('tieredPrice for real tier tables', () => {
     expect(() => tieredPrice(3, { mode: 'volume', tiers: perKwh, chargeQuantity: '-1' })).toThrow(
       'Invalid chargeQuantity -1; it must not be negative',
     );
+    // 'cap' caps the quantity that chooses the tier, not the charge quantity
+    const capped: PriceTier<'EUR'>[] = [{ upTo: 5, unitAmount: money('0.25', 'EUR') }];
+    const cappedBill = tieredPrice(9, {
+      mode: 'volume',
+      tiers: capped,
+      beyondLastTier: 'cap',
+      chargeQuantity: 100,
+    });
+    expect(show(cappedBill.total)).toBe('25.00 EUR');
+  });
+
+  it('messages print ratio and Fixed quantities as decimals', () => {
+    const tiers: PriceTier<'EUR'>[] = [{ upTo: 5, unitAmount: money('1', 'EUR') }];
+    expect(() => tieredPrice(ratio(13, 2), { mode: 'volume', tiers })).toThrow(
+      'The quantity 6.5 is beyond the last tier (upTo 5)',
+    );
+    expect(() => tieredPrice(fixed('5.10'), { mode: 'volume', tiers })).toThrow(
+      'The quantity 5.1 is beyond the last tier (upTo 5)',
+    );
+    expect(() => tieredPrice('20/3', { mode: 'volume', tiers })).toThrow(
+      'The quantity 20/3 is beyond the last tier (upTo 5)',
+    );
+    expect(() => tieredPrice(ratio(-1, 3), { mode: 'volume', tiers })).toThrow(
+      'Invalid quantity -1/3; it must not be negative',
+    );
   });
 });
 
