@@ -20,7 +20,9 @@ const iso = ISO_EXPONENTS as Readonly<Record<string, number>>;
 // lookup as fast as reading the literal directly: V8 folds a load through a stable prototype, while
 // a copy of 165 keys, or a null-prototype object, is a slow dictionary (#243 doubled fromMinor's
 // time that way). `known` has a prototype, so a value counts only when it's a number: `toString`
-// is a function and `__proto__` an object.
+// is a function and `__proto__` an object. A number someone puts on Object.prototype would count,
+// as it did when main read the ISO literal directly; the alternative is an own-property check on
+// every lookup.
 const known: Record<string, number> = {};
 
 function exponentOf(code: string): number | undefined {
@@ -48,6 +50,10 @@ export function defineCurrency(code: string, exponent: number): void {
   }
   if (typeof iso[code] === 'number') {
     throw new TypeError(`${code} is an ISO 4217 currency and cannot be redefined`);
+  }
+  // `known` has a prototype, where `__proto__` is a setter and `toString` a method
+  if (code in Object.prototype) {
+    throw new TypeError(`${code} can't be a currency code`);
   }
   const prev = exponentOf(code);
   if (prev !== undefined && prev !== exponent) {

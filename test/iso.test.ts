@@ -1,7 +1,7 @@
 // Registration for real: vitest gives each file a fresh module registry and there is no global
 // setup, so no ISO code is registered until this file imports one.
 import { describe, expect, it } from 'vitest';
-import { currencyExponent, ISO_EXPONENTS, isCurrency } from '../src/currency.js';
+import { currencyExponent, defineCurrency, ISO_EXPONENTS, isCurrency } from '../src/currency.js';
 import { add, fromMinor, money, toDecimal } from '../src/fn.js';
 
 // bun test shares one process across files, where another file has registered every code already
@@ -58,4 +58,8 @@ it('names on the prototype chain are never currencies, before or after the ISO t
   check();
   expect(currencyExponent('EUR')).toBe(2);
   expect(Object.keys(Object.prototype)).toEqual([]);
+  for (const name of names) {
+    expect(() => defineCurrency(name, 4)).toThrow(TypeError);
+  }
+  check();
 });
