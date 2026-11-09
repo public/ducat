@@ -33,7 +33,7 @@ const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 // `scale` digits), so an untrusted '1e-999999999' must be refused before any work is done. toJSON
 // never writes an exponent, so real data stays far below this.
 const MAX_SCALE = 1000;
-const EXPONENT = /[eE]([+-]?\d+)\s*$/;
+const EXPONENT = /[eE]([+-]?\d+)$/;
 
 // Passed to the constructor by this module only, so `new Fixed(1.5, 2)` from outside can't break
 // the representation invariant. Values come from fixed(), fromScaled() and the methods.
@@ -450,6 +450,10 @@ function parseBoundedDecimal(text: string): { digits: bigint; scale: number } {
  *     fixed(12)                       // 12, scale 0
  *     fixed(0.25)                     // 0.25: read at its shortest decimal form
  *     fixed(10n ** 30n)
+ *
+ * A string follows the same grammar as `money()`: an optional sign, ASCII digits, optionally a
+ * point with digits after it, and optionally an exponent; anything else, surrounding whitespace
+ * included, throws a SyntaxError.
  *
  * Numbers are taken at their shortest decimal form, and only when that has at most 15 significant
  * digits, which a double always holds faithfully. So `fixed(0.1 + 0.2)` throws rather than becoming
