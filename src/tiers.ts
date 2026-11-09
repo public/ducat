@@ -52,7 +52,9 @@ export interface TieredPriceOptions<C extends string> {
   readonly rounding?: RoundingInput;
   /**
    * What a quantity past a bounded last tier does: 'throw' (the default), or 'cap', which charges
-   * as if the quantity were the last tier's `upTo`, so nothing more is charged past it.
+   * as if the quantity were the last tier's `upTo`, so nothing more is charged past it. The cap is
+   * on the quantity that chooses (and, by default, is charged by) the tier: a `chargeQuantity` is
+   * not capped, and the last tier's unit amount applies to all of it.
    */
   readonly beyondLastTier?: 'throw' | 'cap';
   /**
@@ -96,7 +98,7 @@ export interface TieredPrice<C extends string> {
 function quantityRatio(quantity: Quantity, name: string): Ratio {
   const value = ratio(quantity);
   if (value.num < 0n) {
-    throw new RangeError(`Invalid ${name} ${String(quantity)}; it must not be negative`);
+    throw new RangeError(`Invalid ${name} ${decimalOf(value)}; it must not be negative`);
   }
   return value;
 }
@@ -207,7 +209,7 @@ export function tieredPrice<C extends string>(
   if (lastBound !== undefined && isLess(lastBound, amount)) {
     if (beyondLastTier === 'throw') {
       throw new RangeError(
-        `The quantity ${String(quantity)} is beyond the last tier (upTo ${decimalOf(lastBound)}); pass { beyondLastTier: 'cap' } to charge nothing past it`,
+        `The quantity ${decimalOf(amount)} is beyond the last tier (upTo ${decimalOf(lastBound)}); pass { beyondLastTier: 'cap' } to charge nothing past it`,
       );
     }
     amount = lastBound;
