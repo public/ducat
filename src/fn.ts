@@ -45,6 +45,7 @@ export {
   toDecimal,
   toMinor,
   toMinorNumber,
+  toScaledUnits,
   CurrencyMismatchError,
   type RoundingPolicy,
   type RoundingInput,

@@ -29,6 +29,7 @@ export {
   toDecimal,
   toMinor,
   toMinorNumber,
+  toScaledUnits,
 } from '../money.js';
 export { roundingPolicy, isoPolicy, assertScale, type RoundingPolicyOptions } from '../policy.js';
 export * from './allocate.js';

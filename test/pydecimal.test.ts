@@ -36,7 +36,7 @@ const vectorPath = join(import.meta.dirname, 'vectors', 'pydecimal.json');
 const { cases } = JSON.parse(readFileSync(vectorPath, 'utf8')) as { cases: VectorCase[] };
 
 function minorOf(amount: Money): string {
-  return amount.toMinor().toString();
+  return amount.toScaledUnits().toString();
 }
 
 function computeWithDucat(vector: VectorCase): string | [string, string] {

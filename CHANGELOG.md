@@ -9,6 +9,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `toScaledUnits()` (method and `/fn`): the amount in units of the value's own scale, as a bigint.
 - `@ducatjs/money/words`: amounts in words (`amountInWords`, cheque-style "and 45/100" by default,
   or with the minor unit's names) and whole numbers in words (`spellOut`, any of a language's rule
   sets: cardinals by gender, ordinals and the others CLDR has). An interpreter for
@@ -72,6 +73,18 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   untyped code) throw a `TypeError` ("Expected Money, got number") instead of a
   `CurrencyMismatchError`. Two Money values in different currencies still throw
   `CurrencyMismatchError`.
+- **Breaking:** `toMinor()` and `toMinorNumber()` (the methods and the `/fn` functions) return
+  units of the currency's minor unit at every scale. Before, they returned units of the value's own
+  scale, so `fromMinor(1234, 'EUR', 3).toMinorNumber()` was 1234 (tenths of a cent), and writing a
+  scale-3 value to a cents column stored ten times the amount. Now 12.340 EUR at scale 3 gives 1234
+  (cents), 1.5 EUR at scale 1 gives 150, and a value with non-zero digits below the minor unit
+  throws a `RoundingError` (round it first). The old meaning is the new `toScaledUnits()`, which
+  goes with the value's scale. Values at the currency's exponent are unaffected.
+  **Upgrading:** if you stored `toMinor()` or `toMinorNumber()` of amounts that aren't at the
+  currency's exponent, the same call now returns a different number, with no error, for values
+  below the exponent (1.5 EUR at scale 1: 15 → 150) and for values above it with trailing zeros
+  (12.340 EUR at scale 3: 12340 → 1234). Switch those calls to `toScaledUnits()` to keep the old
+  numbers, or migrate the stored values. See #211.
 
 ### Fixed
 
