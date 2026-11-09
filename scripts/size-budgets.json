@@ -63,7 +63,7 @@
   "snippets": {
     "fixed: Fixed alone, without Money": {
       "code": "import { fixed } from '@ducatjs/money/fixed'; const a = fixed('1.00'); console.log(a.add(a).multiply('1.075', 'halfExpand').toString());",
-      "gzipped": 3.47
+      "gzipped": 3.56
     },
     "methods: money, add, multiply, toDecimal": {
       "code": "import { money } from '@ducatjs/money'; const a = money('1.00', 'EUR'); console.log(a.add(a).multiply('1.075', 'halfEven').toDecimal());",
