@@ -25,7 +25,7 @@ total.format('de-DE'); // → '25,00 €'
 price.add(money('1', 'USD')); // compile error, and throws if types are erased
 ```
 
-Operations are methods on `Money`. For pipelines or code that prefers plain functions, `@ducatjs/money/fn` has each of them as a function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`), and a bundle keeps only the functions it imports: a program that only creates, adds and prints amounts is about 1.4 KiB gzipped through `/fn`. Importing `@ducatjs/money` installs the methods and registers every ISO 4217 currency; `/fn` does neither, so a `/fn` program imports the currencies it uses (`import '@ducatjs/money/iso/EUR'`, or `@ducatjs/money/iso` for all of them) and carries only those. The core (`@ducatjs/money`) holds construction, arithmetic, rounding, comparison and serialisation; everything else is an opt-in module, so a bundle only pays for what it imports (see [Modules](#modules)).
+Operations are methods on `Money`. For pipelines or code that prefers plain functions, `@ducatjs/money/fn` has each of them as a function of the same name (`add(price, fee)`, `allocate(m, [1, 1, 1])`), and a bundle keeps only the functions it imports: a program that only creates, adds and prints amounts is about 1.3 KiB gzipped through `/fn`. Importing `@ducatjs/money` installs the methods and registers every ISO 4217 currency; `/fn` does neither, so a `/fn` program imports the currencies it uses (`import '@ducatjs/money/iso/EUR'`, or `@ducatjs/money/iso` for all of them) and carries only those. The core (`@ducatjs/money`) holds construction, arithmetic, rounding, comparison and serialisation; everything else is an opt-in module, so a bundle only pays for what it imports (see [Modules](#modules)).
 
 Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may change it; the [changelog](https://github.com/public/ducat/blob/main/CHANGELOG.md) lists every breaking change. See [What's missing](#whats-missing-honest-list).
 
@@ -34,14 +34,14 @@ Status: 0.x. The API is meant to stay small, but until 1.0 a minor version may c
 Choosing a money library for JavaScript today means choosing which problem to live with.
 
 - **Wrong, to varying degrees.** On the same 41 correctness vectors, no other money library passes more than 34, and most return some wrong answers without an error: multiplying through floats turns 0.50 × 1.15 into 0.57, splitting −100.00 three ways loses a cent, amounts past 2⁵³ minor units drift, and a decimal string from another locale can parse as 100 times the amount. Their issue trackers are full of these bugs, some open for years.
-- **Slow.** The libraries that get the arithmetic right pay for it in speed: dinero.js 2, the most careful of them, is 1.4× to 28× slower than ducat on the operations ducat leads.
+- **Slow.** The libraries that get the arithmetic right pay for it in speed: dinero.js 2, the most careful of them, is 1.6× to 52× slower than ducat on the operations ducat leads.
 - **Missing features.** Most stop at add, multiply, allocate and format. Exact currency conversion, rounding modes beyond half up, cash rounding, the amounts payment processors expect and database storage are left to you, and that hand-written code is where the bugs come back.
 
 ducat is built to fix all three:
 
 - **Exact, and tested to stay exact.** Amounts are integers of minor units: a JS number while safe, a bigint beyond, so nothing is ever a float. Every operation that can round takes one of nine rounding modes (or `'unnecessary'`, which throws), the rounding kernel is generated from Lean proofs, and allocation is checked against a proved model. It passes all 41 vectors, and the bug classes found in the issue trackers and fix histories of dinero.js, currency.js, js-money, decimal.js, big.js and bignumber.js each have a regression test in ducat's suite.
 - **Fast.** Safe amounts stay on a plain-number fast path, so ducat is the fastest money library measured on creating, parsing, add, multiply, allocate and toDecimal on Node, Bun and Deno ([How it compares](#how-it-compares) has the numbers, and the cases where it isn't fastest).
-- **Complete, but you only pay for what you use.** Conversion with exact rates and their sources, rounding policies, cash rounding, processor amounts (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna), tax, a fixed-point `Fixed`, Intl formatting and strict parsing, and Prisma, Drizzle, Kysely and Postgres helpers are all opt-in modules. The core is 4.9 KiB gzipped.
+- **Complete, but you only pay for what you use.** Conversion with exact rates and their sources, rounding policies, cash rounding, processor amounts (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna), tax, a fixed-point `Fixed`, Intl formatting and strict parsing, and Prisma, Drizzle, Kysely and Postgres helpers are all opt-in modules. The core is 5.5 KiB gzipped.
 
 ---
 
@@ -53,7 +53,7 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
 
 | library                            | correct (of 41) | wrong, silently |        bundle (gzip) |
 | ---------------------------------- | --------------: | --------------: | -------------------: |
-| **ducat**                          |          **41** |           **0** |              4.0 KiB |
+| **ducat**                          |          **41** |           **0** |              4.5 KiB |
 | dinero.js 2 (bigint calculator)    |              34 |               0 |              1.8 KiB |
 | monetra                            |              34 |               3 |              4.5 KiB |
 | ts-money / js-money                |              31 |           7 / 6 |       30.7 / 8.8 KiB |
@@ -66,22 +66,23 @@ other libraries' bugs, the fixed-point libraries and the money libraries in othe
   units, float traps and negative allocations.
 - **Fastest on arithmetic:** with its methods API, it is the fastest money library on creating, parsing a decimal string
   (`money('12.34', 'EUR')`), add, multiply, allocate and toDecimal on Node, Bun and Deno, and on compare on Node and
-  Deno. Against the fastest other money library the margin ranges from about 1.08× (compare on Node and Deno: 7.07
-  against currency.js's 7.60 ns on Node) to about 8.6× (allocate on Node: 48 against bigint-money's 409 ns). Against
-  dinero.js 2, on the operations where ducat is fastest, it ranges from 1.4× (creating on Deno) to about 29× (add on
-  Bun).
-- **Where it isn't fastest:** formatting, where currency.js (formatting a float) is 3% faster on Node and Deno and 5%
-  faster on Bun (ducat and dinero.js 1 are level everywhere). On Bun, libraries that compare plain numbers are faster
-  at compare (currency.js 6.5, js-money and ts-money 7.5 against 7.9 ns).
+  Deno. Against the fastest other money library the margin ranges from about 1.06× (compare on Node and Deno: 7.05
+  against currency.js's 7.46 ns on Node) to about 9.0× (allocate on Node: 47 against bigint-money's 419 ns). Against
+  dinero.js 2, on the operations where ducat is fastest, it ranges from 1.6× (creating on Node) to about 52× (multiply
+  on Deno).
+- **Where it isn't fastest:** formatting on Deno, where currency.js (formatting a float) is 6% faster (on Node and Bun
+  they are level, and ducat and dinero.js 1 are level everywhere). On Bun, libraries that compare plain numbers are
+  faster at compare (currency.js 6.5, js-money and ts-money 7.7 against 9.9 ns; Bun's compare cells vary a lot between
+  runs).
 - **Fixed-point decimals:** ducat's `Fixed` is the fastest fixed-point library on parsing a decimal string
-  (`fixed('12.34')`), multiply, divide and compare on every runtime, and on add on Node and Deno (on Bun it is level
-  with bigdecimal.js, 11.8 ns each). It divides by 3 in 28, 27 and 24 ns on Node, Bun and Deno, against bigdecimal.js's
-  57, 35 and 46. js-big-decimal and ethers are faster on `toString` everywhere; see
+  (`fixed('12.34')`), multiply, divide and compare on every runtime, and on add on Node and Deno (on Bun bigdecimal.js
+  is 3% faster, 11.9 against 12.3 ns). It divides by 3 in 28, 28 and 25 ns on Node, Bun and Deno, against
+  bigdecimal.js's 57, 35 and 49. js-big-decimal and ethers are faster on `toString` everywhere; see
   [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md#fixed-point-decimal-libraries).
 - **Not the smallest:** currency.js, bigint-money, dinero.js 2, @screeny05/ts-money, big.js and dinero.js 1 are smaller
   for the same snippet. ducat's core includes exact decimal parsing, bigint support and the ISO table; everything else
   is opt-in.
-- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on unreleased ducat at commit f927311 (the 0.3 line) under Node 24.22.2,
+- **Measurement:** speed is from one quiet AMD EPYC Genoa vCPU, on ducat at commit 01753e5 (the 0.3.0 release candidate) under Node 24.22.2,
   Bun 1.4.4 and Deno 2.9.8; sizes are gzipped KiB. Differences within 2.5% are called level.
 
 ## Design
@@ -1277,11 +1278,11 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
   ±20–30%.
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
-  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.0 KiB**, of which about 0.55 KiB is the ISO table
-  - the core entry point: 4.9 KiB; everything (`@ducatjs/money/all`): 50.1 KiB
-  - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.2 KiB
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.5 KiB**, of which about 0.55 KiB is the ISO table
+  - the core entry point: 5.5 KiB; everything (`@ducatjs/money/all`): 50.5 KiB
+  - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.5 KiB
   - the same snippet with dinero.js (EUR only): 1.8 KiB
-  - the same snippet through `/fn`, with `import '@ducatjs/money/iso/EUR'`: 3.1 KiB; create, add and print only: 1.4 KiB
+  - the same snippet through `/fn`, with `import '@ducatjs/money/iso/EUR'`: 3.0 KiB; create, add and print only: 1.3 KiB
 
 ---
 
@@ -1330,6 +1331,6 @@ Vitest and fast-check are optional peer dependencies, used only by these entries
   - Memory and GC pressure, which were reasoned about but not measured.
   - dinero.js's bigint calculator.
 - **No Money arrays or columnar ops** (e.g. summing a `Float64Array`/`BigInt64Array` of minor units).
-- **The ISO table is always bundled** (about 0.55 KiB gzipped, 1 KiB minified). Per-currency imports like dinero's would make the minimum bundle smaller.
+- **The root entry always bundles the ISO table** (about 0.55 KiB gzipped, 1 KiB minified). A program written with `/fn` imports only the currencies it uses (`@ducatjs/money/iso/EUR`), like dinero.js's per-currency objects.
 - **Only the Prisma helpers have a scale column.** Without one, minor-unit columns can't round-trip values at a scale other than the currency's, so `toMinorColumns`, the Kysely `setMoney` and the Drizzle `moneyMinor` columns refuse them by design. With Prisma, `{ scale: 'amountScale' }` stores the scale alongside (see [Databases](#databases)). Elsewhere, store `m.toScaledUnits()` and `m.scale` yourself, or use a decimal, JSON or the node-postgres composite column, which keep the scale.
 - **No docs site yet.**
