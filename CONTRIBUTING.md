@@ -36,6 +36,10 @@ subject.
   new export needs a budget; raising one needs a reason in the pull request. `/fn` and `/all`
   re-export everything, so they have only a loose ceiling (`aggregateCeilings`), a guard against
   blow-ups; raise the ceiling only when a new module pushes past it, and say so in the PR.
+- A new entry point needs its `exports` entry and the matching `typesVersions` line, which is what
+  TypeScript projects on `node10` resolution (CommonJS) read; `test/exports.test.ts` checks the
+  two agree, and `pnpm check:consumers` type-checks the packed package from CommonJS, nodenext and
+  bundler projects.
 - Never edit `src/generated/` by hand. The currency tables come from the snapshots in `data/`
   through `pnpm gen`; `src/generated/kernel.ts` is printed from the Lean proofs in `proofs/` by
   `pnpm gen:kernel`, which needs the Lean toolchain.
