@@ -41,6 +41,19 @@ describe('numbers beyond 15 significant digits', () => {
     expect(money(12.34, 'EUR').toString()).toBe('12.34 EUR');
     expect(fixed(0.25).toString()).toBe('0.25');
   });
+  it('safe integers are exact, whatever their digit count', () => {
+    for (const value of [2 ** 53 - 1, 1234567890123456, 1000000000000001, -(2 ** 53 - 1)]) {
+      expect(ratio(value).num).toBe(BigInt(value));
+      expect(money(value, 'JPY').minor).toBe(value);
+      expect(fixed(value).value).toBe(value);
+      expect(money('10', 'EUR').multiply(value).toScaledUnits()).toBe(1000n * BigInt(value));
+    }
+    const parts = allocate(money('1', 'EUR'), [1234567890123456, 1]);
+    expect(parts.map(String)).toEqual(['1.00 EUR', '0.00 EUR']);
+    // beyond 2^53 an integer may not be the one typed: 2^53 + 2 has 16 digits
+    expect(() => ratio(2 ** 53 + 2)).toThrow(/more than 15 significant digits/);
+    expect(() => money(2 ** 53 + 2, 'JPY')).toThrow(/more than 15 significant digits/);
+  });
   it('property: a number accepted by ratio() is exactly its shortest decimal form', () => {
     fc.assert(
       fc.property(fc.double({ noNaN: true, noDefaultInfinity: true }), (value) => {
