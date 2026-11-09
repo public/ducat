@@ -52,3 +52,10 @@ describe('every function taking a scale validates it the same way', () => {
     );
   });
 });
+
+it('money.ts keeps its local copy of the scale limit equal to MAX_DECIMAL_SCALE', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { MAX_DECIMAL_SCALE } = await import('../src/decimal.js');
+  const source = readFileSync(new URL('../src/money.ts', import.meta.url), 'utf8');
+  expect(source).toContain(`const MAX_SCALE = ${MAX_DECIMAL_SCALE};`);
+});
