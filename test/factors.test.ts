@@ -9,7 +9,9 @@ import { exchangeRate } from '../src/rate.js';
 // Values untyped code passes as factors. Each used to fail later with an unrelated BigInt error, or
 // came back from ratio() unchanged as if it were a Ratio.
 const notFactors: [string, unknown][] = [
-  ['a Fixed', fixed('0.5')],
+  ['a Fixed lookalike with a negative scale', { value: 5, scale: -1 }],
+  ['a Fixed lookalike with a fractional scale', { value: 5, scale: 0.5 }],
+  ['a Fixed lookalike with a fractional value', { value: 1.5, scale: 2 }],
   ['an object of numbers', { num: 1, den: 2 }],
   ['an empty object', {}],
   ['null', null],
@@ -18,7 +20,7 @@ const notFactors: [string, unknown][] = [
   ['an array', [1, 2]],
   ['a Money', money('1', 'EUR')],
 ];
-const message = /^Expected a number, bigint, decimal string or Ratio, got /;
+const message = /^Expected a number, bigint, decimal string, Ratio or Fixed, got /;
 
 describe('values that are not factors throw a TypeError at the boundary', () => {
   const eur = money('10', 'EUR');
@@ -40,10 +42,6 @@ describe('values that are not factors throw a TypeError at the boundary', () => 
   ];
   for (const [name, use] of uses) {
     for (const [label, value] of notFactors) {
-      // Fixed's own methods take a Fixed operand on purpose.
-      if (name === 'Fixed#multiply' && label === 'a Fixed') {
-        continue;
-      }
       // undefined means "no denominator" or "default", not a bad factor, in a second position.
       if (name === 'ratio as a denominator' && value === undefined) {
         continue;
@@ -56,7 +54,7 @@ describe('values that are not factors throw a TypeError at the boundary', () => 
   }
 
   it('names what was passed', () => {
-    expect(() => ratio(fixed('0.5') as never)).toThrow('got object 0.5');
+    expect(() => ratio(money('1', 'EUR') as never)).toThrow('got object 1.00 EUR');
     expect(() => ratio(null as never)).toThrow('got object null');
     expect(() => ratio(true as never)).toThrow('got boolean true');
   });

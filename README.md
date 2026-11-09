@@ -696,6 +696,17 @@ JSON.stringify({ unitPrice }); // → '{"unitPrice":"0.0425"}'
 
 Input is strict in the same way as `money()`. A string keeps its own scale. A number is read at its shortest decimal form, and only when that has at most 15 significant digits, which a double always holds faithfully. So `fixed(0.1 + 0.2)` throws instead of becoming 0.30000000000000004: pass the decimal as a string, or give `{ scale, rounding }`. With a `scale`, input that has more decimals throws unless `rounding` is also given.
 
+**A Fixed is a factor** wherever Money takes one: `multiply`, `divide`, the tax and percentage functions, `ExactMoney`, conversion and rates. It is read exactly, as its scaled integer over 10^scale, so a rate kept as a Fixed needs no conversion. `toRatio()` gives the reduced `Ratio`, to keep for reuse.
+
+```ts
+import { money } from '@ducatjs/money';
+import { fixed } from '@ducatjs/money/fixed';
+
+const vat = fixed('0.0725');
+money('199.99', 'EUR').multiply(vat, 'halfEven'); // → 14.50 EUR
+vat.toRatio(); // → { num: 29n, den: 400n, n: 29, d: 400 }
+```
+
 Arithmetic follows Money's rules. `add`, `subtract` and `compare` align to the larger scale exactly. `multiply` and `divide` take exact factors (integers, decimal strings, bigints, `ratio()` or another `Fixed`) and round once, with `'halfExpand'` by default. The result keeps this value's scale unless you pass another: `fixed('9.990').divide('1.2', 'halfEven', { scale: 2 })` is 8.32. Pass the scale instead of calling `toScale` afterwards, which would round twice. `toScale` and `round` take any of the ten rounding modes, including `'unnecessary'`, which throws if digits would be lost.
 
 `@ducatjs/money/fixed` doesn't load Money or the currency table, so a program that uses only `Fixed` doesn't carry them. `toMoney()` needs `import '@ducatjs/money/fixed/money'`: that entry has everything in `/fixed`, and adds `money.toFixedPoint()`, the exact amount at the money's scale, and `fixedValue.toMoney('EUR')`, Money at the currency's exponent. That conversion throws RoundingError when it would drop digits, unless a rounding mode is passed.
