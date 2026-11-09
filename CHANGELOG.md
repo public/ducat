@@ -92,6 +92,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   they do without a scale. Register custom codes with `defineCurrency`.
 - `fromMinor` says "Minor units must be an integer" for a fraction such as 12.3, and suggests a
   bigint only for integers beyond 2^53. `fromScaled` in `/fixed` does the same.
+- **Visible change:** `ratio()` and everything that takes a `Factor` (`multiply`, `divide`,
+  `percentage`, the tax functions, `ExactMoney`, `Fixed`, conversion and rates) throw a `TypeError`
+  naming what was passed for a value that isn't a factor: a `Fixed`, `{ num: 1, den: 2 }` with number
+  fields, `null`, a boolean. Before, `ratio(fixed('0.5'))` returned the object unchanged and
+  arithmetic failed later with "Cannot mix BigInt and other types". A hand-made `{ num, den }` of
+  bigints is now reduced and given its number fields, rather than trusted as it is.
 
 ### Fixed
 
