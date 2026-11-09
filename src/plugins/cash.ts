@@ -2,6 +2,8 @@
  * `@ducatjs/money/cash`: cash rounding (cash tenders only; card payments are never rounded) and
  * rounding to an increment. Importing this module adds the methods below.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import { cashRound, roundToIncrement, type CashRoundOptions } from '../cash.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';

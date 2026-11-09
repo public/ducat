@@ -1,3 +1,5 @@
+// every ISO 4217 code: this file builds Money from /fn-level modules, which don't register them
+import '../src/plugins/iso.js';
 import { describe, expect, it } from 'vitest';
 import { add, money, multiply, toDecimal, RoundingError, currencyExponent } from '../src/fn.js';
 import {

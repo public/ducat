@@ -7,7 +7,7 @@
  * guessed to mean major or minor units.
  */
 // every ISO 4217 code, so the root entry and /all take any code as a string
-import './iso-all.js';
+import './iso.js';
 import { formatScaled, type Factor } from '../decimal.js';
 import type { Money } from '../index.js';
 import {

@@ -27,6 +27,12 @@
     "src/zod.ts",
     "src/valibot.ts",
     "src/testing/vitest.ts",
-    "src/testing/arbitraries.ts"
+    "src/testing/arbitraries.ts",
+    "src/entries/drizzle-*.ts",
+    "src/entries/kysely.ts",
+    "src/entries/zod.ts",
+    "src/entries/valibot.ts",
+    "src/entries/testing-vitest.ts",
+    "src/entries/testing-arbitraries.ts"
   ]
 }

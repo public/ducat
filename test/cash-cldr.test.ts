@@ -2,6 +2,8 @@
 // scripts/fetch-cldr-cash.mjs), the second source. Every currency CLDR cash-rounds must have the same
 // step in the table, unless the difference is listed below with the reason. The table also has
 // rules CLDR lacks (AUD, NZD, EUR by country...): CLDR's list is incomplete, so those aren't checked.
+// every ISO 4217 code: this file builds Money from /fn-level modules, which don't register them
+import '../src/plugins/iso.js';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CASH_RULES, currencyDigits, currencyExponent, ISO_EXPONENTS } from '../src/fn.js';

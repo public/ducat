@@ -2,6 +2,8 @@
  * `@ducatjs/money/convert`: currency conversion at exact rates. Importing this module adds
  * `Money#convert`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import { convert } from '../convert.js';
 import type { Factor } from '../decimal.js';
 import type { Money } from '../index.js';

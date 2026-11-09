@@ -30,11 +30,7 @@ const databaseTestFiles = testFilesIn('test/db');
 
 const suites = [
   ['node', process.execPath, ['node_modules/vitest/vitest.mjs', 'run']],
-  [
-    'bun',
-    BUN,
-    ['test', '--preload', './test/setup-currencies.ts', ...unitTestFiles, ...databaseTestFiles],
-  ],
+  ['bun', BUN, ['test', ...unitTestFiles, ...databaseTestFiles]],
   ['deno', DENO, ['run', '-A', 'node_modules/vitest/vitest.mjs', 'run']],
 ];
 for (const [name, bin, args] of suites) {

@@ -6,7 +6,15 @@
 // source-level test sees. Run after `pnpm build`.
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import { build } from 'esbuild';
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync, mkdirSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -43,34 +51,69 @@ const programs = [
     code: `import { money } from '@ducatjs/money/all'; const m = money('1', 'EUR'); ${PROBE}`,
   },
   {
+    // an opt-in module registers the ISO codes, as every entry except /fn does
     name: '/fn and an opt-in module, without the root entry',
     expect: 'no methods',
-    code: `import { money } from '@ducatjs/money/fn'; import { EUR } from '@ducatjs/money/iso'; import '@ducatjs/money/tax'; const m = money('1', EUR); if (typeof m.addTax !== 'function') throw new Error('no addTax'); ${PROBE}`,
+    code: `import { money } from '@ducatjs/money/fn'; import '@ducatjs/money/tax'; const m = money('1', 'USD'); if (typeof m.addTax !== 'function') throw new Error('no addTax'); ${PROBE}`,
   },
   {
-    name: '/fn alone',
+    name: '/fn alone, with /iso/EUR',
     expect: 'no methods',
-    code: `import { money, add, toDecimal } from '@ducatjs/money/fn'; import { EUR } from '@ducatjs/money/iso'; const m = money('1', EUR); toDecimal(add(m, m)); ${PROBE}`,
+    code: `import { money, add, toDecimal } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const m = money('1', 'EUR'); toDecimal(add(m, m)); ${PROBE}`,
   },
   {
-    // the ISO table is registered by the root entry or /iso/all, not by /fn
-    name: '/fn alone with a code as a string',
+    name: '/fn alone, without any ISO import',
     throws: true,
     expect: 'Unknown currency "EUR"',
     code: `import { money } from '@ducatjs/money/fn'; const m = money('1', 'EUR'); ${PROBE}`,
   },
   {
-    name: '/iso/all, then /fn with a code as a string',
+    // registration is by import, so a code the program didn't import throws, bundled or not
+    name: '/fn with /iso/EUR, using USD',
+    throws: true,
+    expect: 'Unknown currency "USD"',
+    code: `import { money } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; money('1', 'EUR'); const m = money('1', 'USD'); ${PROBE}`,
+  },
+  {
+    name: '/iso, then /fn',
     expect: 'no methods',
-    code: `import '@ducatjs/money/iso/all'; import { money } from '@ducatjs/money/fn'; const m = money('1', 'EUR'); ${PROBE}`,
+    code: `import '@ducatjs/money/iso'; import { money } from '@ducatjs/money/fn'; const m = money('1', 'KWD'); ${PROBE}`,
   },
 ];
+
+// Every other entry that builds or reads Money must work alone with codes as strings: each has the
+// whole ISO table. The /testing setup entries install on a test runner's expect, so they can't run
+// here; test/entries.test.ts loads them.
+const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const LEAN = new Set(['.', './fn', './fixed', './territories', './words', './package.json']);
+const NOT_RUNNABLE = new Set(['./testing/vitest', './testing/jest']);
+for (const key of Object.keys(pkg.exports)) {
+  if (LEAN.has(key) || NOT_RUNNABLE.has(key) || key.startsWith('./words/') || key.includes('*')) {
+    continue;
+  }
+  const specifier = `@ducatjs/money${key.slice(1)}`;
+  programs.push({
+    name: `${key.slice(2)} alone, with codes as strings`,
+    expect: 'every ISO code',
+    code: `import '${specifier}'; import { isCurrency } from '@ducatjs/money/fn'; console.log(['USD', 'KWD', 'JPY'].every(isCurrency) ? 'every ISO code' : 'missing ISO codes');`,
+  });
+}
+
+// The optional peers some entries import, resolved from this package's own node_modules
+const PEERS = ['zod', 'valibot', 'kysely', 'drizzle-orm', 'fast-check'];
 
 // A throwaway app whose node_modules/@ducatjs/money is this package, so resolution goes through
 // package.json exactly as for a user.
 const app = mkdtempSync(join(tmpdir(), 'ducat-bundle-check-'));
 mkdirSync(join(app, 'node_modules', '@ducatjs'), { recursive: true });
 symlinkSync(root, join(app, 'node_modules', '@ducatjs', 'money'), 'dir');
+for (const peer of PEERS) {
+  symlinkSync(
+    realpathSync(join(root, 'node_modules', peer)),
+    join(app, 'node_modules', peer),
+    'dir',
+  );
+}
 
 let failures = 0;
 try {
@@ -87,11 +130,13 @@ try {
       outfile: esbuildOut,
       logLevel: 'silent',
       preserveSymlinks: true,
+      external: PEERS.flatMap((peer) => [peer, `${peer}/*`]),
     });
 
     const bundle = await rollup({
       input: entry,
       plugins: [nodeResolve({ preserveSymlinks: true })],
+      external: (id) => PEERS.some((peer) => id === peer || id.startsWith(`${peer}/`)),
       onwarn: () => {},
     });
     const rollupOut = join(app, 'rollup-out.mjs');
@@ -127,7 +172,7 @@ try {
 
 if (failures > 0) {
   console.error(
-    `\n${failures} bundle(s) got the methods or currencies wrong: check "sideEffects" in package.json`,
+    `\n${failures} bundle(s) got the methods or currencies wrong: check "sideEffects" in package.json and src/entries/`,
   );
   process.exit(1);
 }

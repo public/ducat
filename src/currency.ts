@@ -14,18 +14,17 @@ export type CurrencyCode = IsoCurrencyCode | (keyof CustomCurrencies & string);
 
 const iso = ISO_EXPONENTS as Readonly<Record<string, number>>;
 
-// The exponents of the currencies this program can use: ISO codes registered by the root entry
-// (all of them) or by the constants of `@ducatjs/money/iso` (the ones used), and codes from
-// `defineCurrency`. `/fn` programs that never import the root entry carry only what they use.
+// The exponents of the currencies this program can use: ISO codes registered by importing
+// `@ducatjs/money/iso` (all of them; every entry except `/fn` does) or `@ducatjs/money/iso/<CODE>`
+// (one), and codes from `defineCurrency`. `/fn` programs carry only the codes they import.
 const known: Record<string, number> = /* @__PURE__ */ Object.create(null);
 
-/** @internal Registers an ISO 4217 code; the generated constants and the root entry call it. */
-export function isoCurrency<C extends string>(code: C, exponent: number): C {
+/** @internal Registers an ISO 4217 code; the generated `iso/<CODE>` modules call it. */
+export function isoCurrency(code: string, exponent: number): void {
   known[code] = exponent;
-  return code;
 }
 
-/** @internal Registers every ISO 4217 code, for the root entry. */
+/** @internal Registers every ISO 4217 code, for `@ducatjs/money/iso`. */
 export function registerIsoCurrencies(): void {
   Object.assign(known, iso);
 }
@@ -59,11 +58,15 @@ export function currencyExponent(code: string): number {
 
 function unknownCurrency(code: string): never {
   throw new RangeError(
-    `Unknown currency "${code}" (with /fn, import it from @ducatjs/money/iso; otherwise defineCurrency)`,
+    `Unknown currency "${code}": import @ducatjs/money/iso/${code} or /iso with /fn, or defineCurrency`,
   );
 }
 
-/** Whether the code is an ISO 4217 currency or one registered with `defineCurrency`. */
+/**
+ * Whether the code is registered: an ISO 4217 code (every one wherever an entry other than `/fn` is
+ * imported; in a `/fn`-only program, the ones imported from `@ducatjs/money/iso`), or a code from
+ * `defineCurrency`.
+ */
 export function isCurrency(code: string): code is CurrencyCode {
   return known[code] !== undefined;
 }

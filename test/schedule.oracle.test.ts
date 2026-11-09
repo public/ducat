@@ -1,6 +1,8 @@
 // The fixtures in test/fixtures/ are printed by proofs/Oracle.lean from models whose properties are proved
 // in proofs/Ducat/Schedule.lean (instalments, chunk, schedule) and proofs/Ducat/Cash.lean (rounding to an
 // increment); regenerate them with `pnpm gen:kernel`. The TypeScript must give exactly the model's answer.
+// every ISO 4217 code: this file builds Money from /fn-level modules, which don't register them
+import '../src/plugins/iso.js';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {

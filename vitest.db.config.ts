@@ -6,6 +6,5 @@ export default defineConfig({
     include: ['test/db/**/*.test.ts'],
     testTimeout: 60_000,
     fileParallelism: false,
-    setupFiles: ['test/setup-currencies.ts'],
   },
 });

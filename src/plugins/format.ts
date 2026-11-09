@@ -2,6 +2,8 @@
  * `@ducatjs/money/format`: locale formatting through Intl. Importing this module adds the methods
  * below.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import { format, formatToParts } from '../format.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';

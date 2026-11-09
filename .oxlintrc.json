@@ -23,9 +23,10 @@
       {
         "allow": [
           "**/plugins/*",
+          "**/generated/iso/*",
           "./core.js",
-          "./iso-all.js",
-          "../src/plugins/iso-all.js",
+          "./iso.js",
+          "../src/plugins/iso.js",
           "**/testing/vitest*",
           "@ducatjs/money/*"
         ]

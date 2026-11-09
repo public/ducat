@@ -1,6 +1,8 @@
 // test/fixtures/allocate.oracle.json is printed by proofs/Oracle.lean from the allocation model whose
 // properties are proved in proofs/Ducat/Allocate.lean (regenerate with `pnpm gen:kernel`). The TypeScript,
 // on its number fast path and on its bigint path, must give exactly the model's answer for every case.
+// every ISO 4217 code: this file builds Money from /fn-level modules, which don't register them
+import '../src/plugins/iso.js';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { allocate, fromMinor, money, type Remainder } from '../src/fn.js';

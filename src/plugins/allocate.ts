@@ -3,6 +3,8 @@
  * methods below to every Money; the free functions are exported too (and from `@ducatjs/money/fn`,
  * which changes no prototypes).
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import {
   allocate,
   chunk,

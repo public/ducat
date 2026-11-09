@@ -5,6 +5,15 @@
 import { Decimal as DecimalJs } from 'decimal.js';
 import fc from 'fast-check';
 import * as ducat from '../../src/fn.js';
+// /fn registers no currency: import the ones this page uses, as a /fn app would
+import '../../src/generated/iso/EUR.js';
+import '../../src/generated/iso/USD.js';
+import '../../src/generated/iso/GBP.js';
+import '../../src/generated/iso/JPY.js';
+import '../../src/generated/iso/KWD.js';
+import '../../src/generated/iso/CHF.js';
+import '../../src/generated/iso/INR.js';
+import '../../src/generated/iso/BRL.js';
 
 export interface PageResult {
   readonly passed: number;

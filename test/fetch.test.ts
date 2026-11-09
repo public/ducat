@@ -1,3 +1,5 @@
+// every ISO 4217 code: this file builds Money from /fn-level modules, which don't register them
+import '../src/plugins/iso.js';
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ECB_URLS, fetchEcb, FetchRatesError, type Fetch } from '../src/fetch.js';
@@ -63,11 +65,11 @@ describe('fetchEcb', () => {
     await expect(fetchEcb({ fetch: recording, timeout: -1 })).rejects.toThrow(RangeError);
   });
 
-  it('is imported by no other module', () => {
+  it('is imported by no other module, except its published entry', () => {
     const dir = new URL('../src/', import.meta.url);
     const importers = readdirSync(dir, { recursive: true })
       .map(String)
-      .filter((file) => file.endsWith('.ts') && file !== 'fetch.ts')
+      .filter((file) => file.endsWith('.ts') && file !== 'fetch.ts' && file !== 'entries/fetch.ts')
       .filter((file) => IMPORTS_FETCH.test(readFileSync(new URL(file, dir), 'utf8')));
     expect(importers).toEqual([]);
     for (const line of [

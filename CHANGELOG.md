@@ -9,6 +9,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `@ducatjs/money/iso` registers every ISO 4217 currency, and `@ducatjs/money/iso/<CODE>` (one
+  module per code, generated from the ISO list) registers one, for `/fn` programs.
 - `Fixed#trimScale(minimumScale = 0)`, the smallest scale that keeps the value exact, like Money's
   `trimScale` from `/math`; and `Fixed#toNumber()`, the nearest double, an explicit lossy
   conversion for display and charts (`Number(fixed)` still throws).
@@ -82,12 +84,16 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   0.13 KiB. Code that imports only `/fn` and also calls methods must import `@ducatjs/money` (or
   `@ducatjs/money/all`) too, or call the functions instead of the methods. Importing the root entry
   throws if a program already defined a core method name with `extendMoney`.
-- **Breaking:** `@ducatjs/money/fn` no longer carries the ISO 4217 table. Name currencies with the
-  constants of the new `@ducatjs/money/iso` (`fromMinor(1250, EUR)`; each is the plain string
-  `'EUR'`), and a bundle keeps only the ones it uses: create, add and print goes from 1.8 to 1.4 KiB
-  gzipped. The root entry and `/all` register the whole table as before (the root grows by 0.03
-  KiB), and `import '@ducatjs/money/iso/all'` does it for `/fn` alone. In a `/fn`-only program, a
-  code passed as a bare string without one of those throws "Unknown currency", naming the fix.
+- **Breaking:** `@ducatjs/money/fn` no longer registers the ISO 4217 currencies, so a `/fn` program
+  carries only the ones it imports: `import '@ducatjs/money/iso/EUR'` registers EUR (create, add and
+  print goes from 1.8 to 1.4 KiB gzipped), and `import '@ducatjs/money/iso'` registers them all.
+  Without either, a code throws "Unknown currency", naming the import. Every other entry (the root,
+  `/all`, the opt-in modules, `/parse`, `/wire`, the processor, database, schema and testing
+  entries) registers the whole table itself, as before, and the root grows by about 0.03 KiB. The
+  entries that never build Money (`/fixed`, `/words`, `/territories`) stay without it. Registration
+  is by import, so it's the same bundled and unbundled. One case to watch in `/fn`-only programs:
+  a module that builds Money at load time (`const FEE = money('0.30', 'EUR')`) must import its
+  currencies itself, or run after a module that does.
 - **Breaking:** `@ducatjs/money/fixed` no longer loads Money or the currency table, so a program
   that uses only `Fixed` is 3.3 kB gzipped instead of 5.4 kB. `Money#toFixedPoint()`,
   `Fixed#toMoney()` and `moneyToFixed` moved to the new `@ducatjs/money/fixed/money`: import that

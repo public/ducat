@@ -26,6 +26,29 @@ const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const budgets = JSON.parse(readFileSync(join(root, 'scripts/size-budgets.json'), 'utf8'));
 const reportOnly = process.argv.includes('--report');
 
+// The "default" target of an export key, through a pattern key (`./iso/*`) where one matches.
+function targetOf(exportKey) {
+  const exact = packageJson.exports[exportKey]?.default;
+  if (exact !== undefined) {
+    return exact;
+  }
+  for (const [key, target] of Object.entries(packageJson.exports)) {
+    const [prefix, suffix] = key.split('*');
+    if (
+      suffix !== undefined &&
+      exportKey.startsWith(prefix) &&
+      exportKey.endsWith(suffix) &&
+      exportKey.length > prefix.length + suffix.length
+    ) {
+      return target.default.replace(
+        '*',
+        exportKey.slice(prefix.length, exportKey.length - suffix.length),
+      );
+    }
+  }
+  return undefined;
+}
+
 // Resolves '@ducatjs/money/allocate' to src/plugins/allocate.ts through package.json "exports"
 // (./dist/X.js -> src/X.ts), so the sizes are measured from source without a build.
 const resolveFromSource = {
@@ -35,7 +58,7 @@ const resolveFromSource = {
     const pattern = new RegExp(`^${packageName.replace('/', '\\/')}(\\/.*)?$`);
     builder.onResolve({ filter: pattern }, (args) => {
       const exportKey = '.' + args.path.slice(packageName.length);
-      const target = packageJson.exports[exportKey]?.default;
+      const target = targetOf(exportKey);
       if (target === undefined) {
         return { errors: [{ text: `${args.path} is not in package.json "exports"` }] };
       }
@@ -76,7 +99,8 @@ for (const [exportKey, target] of Object.entries(packageJson.exports)) {
   if (typeof target !== 'object') {
     continue;
   }
-  const specifier = rootName + exportKey.slice(1);
+  // a pattern entry (one module per ISO code) is measured for one code
+  const specifier = rootName + exportKey.slice(1).replace('*', 'EUR');
   if (specifier === rootName) {
     cases.push({ name: specifier, code: `export * from '${specifier}';`, budget: budgets.core });
   } else if (specifier in budgets.aggregateCeilings) {

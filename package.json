@@ -29,7 +29,11 @@
     "./dist/testing/vitest.js",
     "./dist/testing/jest.js",
     "./src/testing/vitest.ts",
-    "./src/testing/jest.ts"
+    "./src/testing/jest.ts",
+    "./dist/entries/*.js",
+    "./src/entries/*.ts",
+    "./dist/generated/iso/*.js",
+    "./src/generated/iso/*.ts"
   ],
   "types": "./dist/index.d.ts",
   "typesVersions": {
@@ -38,10 +42,10 @@
         "./dist/fn.d.ts"
       ],
       "iso": [
-        "./dist/iso.d.ts"
+        "./dist/plugins/iso.d.ts"
       ],
-      "iso/all": [
-        "./dist/plugins/iso-all.d.ts"
+      "iso/*": [
+        "./dist/generated/iso/*.d.ts"
       ],
       "allocate": [
         "./dist/plugins/allocate.d.ts"
@@ -56,16 +60,16 @@
         "./dist/plugins/convert.d.ts"
       ],
       "convert/ecb": [
-        "./dist/ecb.d.ts"
+        "./dist/entries/ecb.d.ts"
       ],
       "convert/history": [
-        "./dist/history.d.ts"
+        "./dist/entries/history.d.ts"
       ],
       "convert/boc": [
-        "./dist/boc.d.ts"
+        "./dist/entries/boc.d.ts"
       ],
       "convert/fed": [
-        "./dist/fed.d.ts"
+        "./dist/entries/fed.d.ts"
       ],
       "words": [
         "./dist/words.d.ts"
@@ -92,40 +96,40 @@
         "./dist/words/pt.d.ts"
       ],
       "wire": [
-        "./dist/wire.d.ts"
+        "./dist/entries/wire.d.ts"
       ],
       "crypto": [
-        "./dist/crypto.d.ts"
+        "./dist/entries/crypto.d.ts"
       ],
       "currencies": [
-        "./dist/currencies.d.ts"
+        "./dist/entries/currencies.d.ts"
       ],
       "territories": [
         "./dist/territories.d.ts"
       ],
       "historic": [
-        "./dist/historic.d.ts"
+        "./dist/entries/historic.d.ts"
       ],
       "finance": [
-        "./dist/finance.d.ts"
+        "./dist/entries/finance.d.ts"
       ],
       "pricing": [
-        "./dist/pricing.d.ts"
+        "./dist/entries/pricing.d.ts"
       ],
       "convert/boe": [
-        "./dist/boe.d.ts"
+        "./dist/entries/boe.d.ts"
       ],
       "convert/hmrc": [
-        "./dist/hmrc.d.ts"
+        "./dist/entries/hmrc.d.ts"
       ],
       "convert/fetch": [
-        "./dist/fetch.d.ts"
+        "./dist/entries/fetch.d.ts"
       ],
       "exact": [
         "./dist/plugins/exact.d.ts"
       ],
       "policy": [
-        "./dist/policy.d.ts"
+        "./dist/entries/policy.d.ts"
       ],
       "cash": [
         "./dist/plugins/cash.d.ts"
@@ -140,7 +144,7 @@
         "./dist/plugins/fixed-money.d.ts"
       ],
       "parse": [
-        "./dist/parse.d.ts"
+        "./dist/entries/parse.d.ts"
       ],
       "stripe": [
         "./dist/plugins/stripe.d.ts"
@@ -161,46 +165,46 @@
         "./dist/plugins/klarna.d.ts"
       ],
       "stripe-fx": [
-        "./dist/stripe-fx.d.ts"
+        "./dist/entries/stripe-fx.d.ts"
       ],
       "adyen-fx": [
-        "./dist/adyen-fx.d.ts"
+        "./dist/entries/adyen-fx.d.ts"
       ],
       "prisma": [
         "./dist/plugins/prisma.d.ts"
       ],
       "drizzle/pg": [
-        "./dist/drizzle/pg.d.ts"
+        "./dist/entries/drizzle-pg.d.ts"
       ],
       "drizzle/mysql": [
-        "./dist/drizzle/mysql.d.ts"
+        "./dist/entries/drizzle-mysql.d.ts"
       ],
       "drizzle/sqlite": [
-        "./dist/drizzle/sqlite.d.ts"
+        "./dist/entries/drizzle-sqlite.d.ts"
       ],
       "zod": [
-        "./dist/zod.d.ts"
+        "./dist/entries/zod.d.ts"
       ],
       "valibot": [
-        "./dist/valibot.d.ts"
+        "./dist/entries/valibot.d.ts"
       ],
       "pg": [
-        "./dist/pg.d.ts"
+        "./dist/entries/pg.d.ts"
       ],
       "testing": [
-        "./dist/testing/index.d.ts"
+        "./dist/entries/testing-index.d.ts"
       ],
       "testing/vitest": [
-        "./dist/testing/vitest.d.ts"
+        "./dist/entries/testing-vitest.d.ts"
       ],
       "testing/jest": [
-        "./dist/testing/jest.d.ts"
+        "./dist/entries/testing-jest.d.ts"
       ],
       "testing/arbitraries": [
-        "./dist/testing/arbitraries.d.ts"
+        "./dist/entries/testing-arbitraries.d.ts"
       ],
       "kysely": [
-        "./dist/kysely.d.ts"
+        "./dist/entries/kysely.d.ts"
       ],
       "all": [
         "./dist/plugins/all.d.ts"
@@ -217,12 +221,12 @@
       "default": "./dist/fn.js"
     },
     "./iso": {
-      "types": "./dist/iso.d.ts",
-      "default": "./dist/iso.js"
+      "types": "./dist/plugins/iso.d.ts",
+      "default": "./dist/plugins/iso.js"
     },
-    "./iso/all": {
-      "types": "./dist/plugins/iso-all.d.ts",
-      "default": "./dist/plugins/iso-all.js"
+    "./iso/*": {
+      "types": "./dist/generated/iso/*.d.ts",
+      "default": "./dist/generated/iso/*.js"
     },
     "./allocate": {
       "types": "./dist/plugins/allocate.d.ts",
@@ -241,20 +245,20 @@
       "default": "./dist/plugins/convert.js"
     },
     "./convert/ecb": {
-      "types": "./dist/ecb.d.ts",
-      "default": "./dist/ecb.js"
+      "types": "./dist/entries/ecb.d.ts",
+      "default": "./dist/entries/ecb.js"
     },
     "./convert/history": {
-      "types": "./dist/history.d.ts",
-      "default": "./dist/history.js"
+      "types": "./dist/entries/history.d.ts",
+      "default": "./dist/entries/history.js"
     },
     "./convert/boc": {
-      "types": "./dist/boc.d.ts",
-      "default": "./dist/boc.js"
+      "types": "./dist/entries/boc.d.ts",
+      "default": "./dist/entries/boc.js"
     },
     "./convert/fed": {
-      "types": "./dist/fed.d.ts",
-      "default": "./dist/fed.js"
+      "types": "./dist/entries/fed.d.ts",
+      "default": "./dist/entries/fed.js"
     },
     "./words": {
       "types": "./dist/words.d.ts",
@@ -289,52 +293,52 @@
       "default": "./dist/words/pt.js"
     },
     "./wire": {
-      "types": "./dist/wire.d.ts",
-      "default": "./dist/wire.js"
+      "types": "./dist/entries/wire.d.ts",
+      "default": "./dist/entries/wire.js"
     },
     "./crypto": {
-      "types": "./dist/crypto.d.ts",
-      "default": "./dist/crypto.js"
+      "types": "./dist/entries/crypto.d.ts",
+      "default": "./dist/entries/crypto.js"
     },
     "./currencies": {
-      "types": "./dist/currencies.d.ts",
-      "default": "./dist/currencies.js"
+      "types": "./dist/entries/currencies.d.ts",
+      "default": "./dist/entries/currencies.js"
     },
     "./territories": {
       "types": "./dist/territories.d.ts",
       "default": "./dist/territories.js"
     },
     "./historic": {
-      "types": "./dist/historic.d.ts",
-      "default": "./dist/historic.js"
+      "types": "./dist/entries/historic.d.ts",
+      "default": "./dist/entries/historic.js"
     },
     "./finance": {
-      "types": "./dist/finance.d.ts",
-      "default": "./dist/finance.js"
+      "types": "./dist/entries/finance.d.ts",
+      "default": "./dist/entries/finance.js"
     },
     "./pricing": {
-      "types": "./dist/pricing.d.ts",
-      "default": "./dist/pricing.js"
+      "types": "./dist/entries/pricing.d.ts",
+      "default": "./dist/entries/pricing.js"
     },
     "./convert/boe": {
-      "types": "./dist/boe.d.ts",
-      "default": "./dist/boe.js"
+      "types": "./dist/entries/boe.d.ts",
+      "default": "./dist/entries/boe.js"
     },
     "./convert/hmrc": {
-      "types": "./dist/hmrc.d.ts",
-      "default": "./dist/hmrc.js"
+      "types": "./dist/entries/hmrc.d.ts",
+      "default": "./dist/entries/hmrc.js"
     },
     "./convert/fetch": {
-      "types": "./dist/fetch.d.ts",
-      "default": "./dist/fetch.js"
+      "types": "./dist/entries/fetch.d.ts",
+      "default": "./dist/entries/fetch.js"
     },
     "./exact": {
       "types": "./dist/plugins/exact.d.ts",
       "default": "./dist/plugins/exact.js"
     },
     "./policy": {
-      "types": "./dist/policy.d.ts",
-      "default": "./dist/policy.js"
+      "types": "./dist/entries/policy.d.ts",
+      "default": "./dist/entries/policy.js"
     },
     "./cash": {
       "types": "./dist/plugins/cash.d.ts",
@@ -353,8 +357,8 @@
       "default": "./dist/plugins/fixed-money.js"
     },
     "./parse": {
-      "types": "./dist/parse.d.ts",
-      "default": "./dist/parse.js"
+      "types": "./dist/entries/parse.d.ts",
+      "default": "./dist/entries/parse.js"
     },
     "./stripe": {
       "types": "./dist/plugins/stripe.d.ts",
@@ -381,60 +385,60 @@
       "default": "./dist/plugins/klarna.js"
     },
     "./stripe-fx": {
-      "types": "./dist/stripe-fx.d.ts",
-      "default": "./dist/stripe-fx.js"
+      "types": "./dist/entries/stripe-fx.d.ts",
+      "default": "./dist/entries/stripe-fx.js"
     },
     "./adyen-fx": {
-      "types": "./dist/adyen-fx.d.ts",
-      "default": "./dist/adyen-fx.js"
+      "types": "./dist/entries/adyen-fx.d.ts",
+      "default": "./dist/entries/adyen-fx.js"
     },
     "./prisma": {
       "types": "./dist/plugins/prisma.d.ts",
       "default": "./dist/plugins/prisma.js"
     },
     "./drizzle/pg": {
-      "types": "./dist/drizzle/pg.d.ts",
-      "default": "./dist/drizzle/pg.js"
+      "types": "./dist/entries/drizzle-pg.d.ts",
+      "default": "./dist/entries/drizzle-pg.js"
     },
     "./drizzle/mysql": {
-      "types": "./dist/drizzle/mysql.d.ts",
-      "default": "./dist/drizzle/mysql.js"
+      "types": "./dist/entries/drizzle-mysql.d.ts",
+      "default": "./dist/entries/drizzle-mysql.js"
     },
     "./drizzle/sqlite": {
-      "types": "./dist/drizzle/sqlite.d.ts",
-      "default": "./dist/drizzle/sqlite.js"
+      "types": "./dist/entries/drizzle-sqlite.d.ts",
+      "default": "./dist/entries/drizzle-sqlite.js"
     },
     "./zod": {
-      "types": "./dist/zod.d.ts",
-      "default": "./dist/zod.js"
+      "types": "./dist/entries/zod.d.ts",
+      "default": "./dist/entries/zod.js"
     },
     "./valibot": {
-      "types": "./dist/valibot.d.ts",
-      "default": "./dist/valibot.js"
+      "types": "./dist/entries/valibot.d.ts",
+      "default": "./dist/entries/valibot.js"
     },
     "./pg": {
-      "types": "./dist/pg.d.ts",
-      "default": "./dist/pg.js"
+      "types": "./dist/entries/pg.d.ts",
+      "default": "./dist/entries/pg.js"
     },
     "./testing": {
-      "types": "./dist/testing/index.d.ts",
-      "default": "./dist/testing/index.js"
+      "types": "./dist/entries/testing-index.d.ts",
+      "default": "./dist/entries/testing-index.js"
     },
     "./testing/vitest": {
-      "types": "./dist/testing/vitest.d.ts",
-      "default": "./dist/testing/vitest.js"
+      "types": "./dist/entries/testing-vitest.d.ts",
+      "default": "./dist/entries/testing-vitest.js"
     },
     "./testing/jest": {
-      "types": "./dist/testing/jest.d.ts",
-      "default": "./dist/testing/jest.js"
+      "types": "./dist/entries/testing-jest.d.ts",
+      "default": "./dist/entries/testing-jest.js"
     },
     "./testing/arbitraries": {
-      "types": "./dist/testing/arbitraries.d.ts",
-      "default": "./dist/testing/arbitraries.js"
+      "types": "./dist/entries/testing-arbitraries.d.ts",
+      "default": "./dist/entries/testing-arbitraries.js"
     },
     "./kysely": {
-      "types": "./dist/kysely.d.ts",
-      "default": "./dist/kysely.js"
+      "types": "./dist/entries/kysely.d.ts",
+      "default": "./dist/entries/kysely.js"
     },
     "./all": {
       "types": "./dist/plugins/all.d.ts",

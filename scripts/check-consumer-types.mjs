@@ -33,7 +33,10 @@ try {
     tarball = packed.at(-1);
   }
 
-  const subpaths = Object.keys(pkg.exports).filter((key) => key !== './package.json');
+  // a pattern export (one module per ISO code) is checked for one code
+  const subpaths = Object.keys(pkg.exports)
+    .filter((key) => key !== './package.json')
+    .map((key) => key.replace('*', 'EUR'));
   const imports = subpaths
     .map((key, i) => `import * as entry${i} from '${pkg.name}${key.slice(1)}';`)
     .join('\n');

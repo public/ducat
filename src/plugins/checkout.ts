@@ -2,6 +2,8 @@
  * `@ducatjs/money/checkout`: Checkout.com's amount view. Importing this module adds `toCheckout`
  * and `toCheckoutAmount`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import { toCheckout, toCheckoutAmount, type CheckoutAmountOptions } from '../checkout.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';

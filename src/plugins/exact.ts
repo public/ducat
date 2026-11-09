@@ -2,6 +2,8 @@
  * `@ducatjs/money/exact`: exact rational amounts that round once. Importing this module adds
  * `Money#exact`.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import { exact, type ExactMoney } from '../exact.js';
 import type { Money } from '../index.js';
 import { extendMoney } from '../money.js';

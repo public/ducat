@@ -2,6 +2,8 @@
  * `@ducatjs/money/tax`: percentages, discounts and tax breakdowns. Importing this module adds the
  * methods below.
  */
+// every ISO 4217 code, as for every entry except /fn
+import './iso.js';
 import type { Factor } from '../decimal.js';
 import type { Money } from '../index.js';
 import { extendMoney, type RoundingInput } from '../money.js';

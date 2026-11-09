@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -92,17 +92,28 @@ describe('types for node10 resolution', () => {
   });
 });
 // export key -> source file, the way the build maps src/X.ts to dist/X.js
-const ENTRIES = Object.entries(packageJson.exports).flatMap(([key, target]) =>
-  typeof target === 'string'
-    ? []
-    : [
-        {
-          key,
-          source: target.default.replace(/^\.\/dist\//, 'src/').replace(/\.js$/, '.ts'),
-          target,
-        },
-      ],
-);
+// A pattern export (`./iso/*`) stands for every file it matches.
+const ENTRIES = Object.entries(packageJson.exports).flatMap(([key, target]) => {
+  if (typeof target === 'string') {
+    return [];
+  }
+  const source = target.default.replace(/^\.\/dist\//, 'src/').replace(/\.js$/, '.ts');
+  if (!key.includes('*')) {
+    return [{ key, source, target }];
+  }
+  const [prefix, suffix] = source.split('*') as [string, string];
+  return readdirSync(join(ROOT, prefix))
+    .filter((name) => name.endsWith(suffix))
+    .map((name) => {
+      const stem = name.slice(0, -suffix.length);
+      const expand = (path: string) => path.replace('*', stem);
+      return {
+        key: expand(key),
+        source: expand(source),
+        target: { types: expand(target.types), default: expand(target.default) },
+      };
+    });
+});
 
 /** Every package specifier the module imports, following its relative imports through src/. */
 function packageImportsOf(file: string, seen = new Set<string>()): Set<string> {
@@ -297,7 +308,10 @@ it('test/fn-only/tsconfig.json type-checks every entry that installs no methods'
         : [],
     )
     .map((target) => target.replace('./dist/', 'src/').replace(/\.js$/, '.ts'))
-    .filter((source) => !source.includes('/plugins/') && source !== 'src/index.ts')
+    .filter(
+      (source) =>
+        !source.includes('/plugins/') && !source.includes('*') && source !== 'src/index.ts',
+    )
     .map((source) => `../../${source}`)
     .sort();
   const config = read('fn-only/tsconfig.json');

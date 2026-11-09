@@ -1,3 +1,5 @@
+// every ISO 4217 code: this file builds Money from /fn-level modules, which don't register them
+import '../src/plugins/iso.js';
 import fc from 'fast-check';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { Decimal as PrismaDecimal } from '@prisma/client/runtime/library';
