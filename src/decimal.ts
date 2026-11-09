@@ -165,6 +165,17 @@ function makeRatio(num: bigint, den: bigint): Ratio {
   return { num, den, n: safeNumberOrNaN(num), d: safeNumberOrNaN(den) };
 }
 
+/**
+ * The error for a value that isn't a factor. Untyped code passes all sorts here (a Fixed, a
+ * `{ num: 1, den: 2 }` of numbers, null), and without this check they fail later with an unrelated
+ * BigInt error, or are returned as if they were a Ratio.
+ */
+function notAFactor(value: unknown): TypeError {
+  return new TypeError(
+    `Expected a number, bigint, decimal string or Ratio, got ${typeof value} ${String(value)}`,
+  );
+}
+
 const cache = new Map<string, Ratio>();
 const INT_RATIOS: Ratio[] = [];
 
@@ -187,7 +198,14 @@ export function ratio(value: Factor, den?: Factor): Ratio {
     );
   }
   if (typeof value === 'object') {
-    return value;
+    // A Ratio from ratio() passes straight through: the hot path for factors built once. A
+    // hand-made { num, den } of bigints is rebuilt, so it is reduced and has `n` and `d`.
+    if (typeof value?.num === 'bigint' && typeof value.den === 'bigint') {
+      return typeof value.n === 'number' && typeof value.d === 'number'
+        ? value
+        : makeRatio(value.num, value.den);
+    }
+    throw notAFactor(value);
   }
   if (typeof value === 'number') {
     if (Number.isSafeInteger(value)) {
@@ -203,6 +221,9 @@ export function ratio(value: Factor, den?: Factor): Ratio {
   }
   if (typeof value === 'bigint') {
     return makeRatio(value, 1n);
+  }
+  if (typeof value !== 'string') {
+    throw notAFactor(value);
   }
   let cached = cache.get(value);
   if (cached === undefined) {
