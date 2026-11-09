@@ -113,8 +113,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `SyntaxError`. `money(' 12.34', 'EUR')`, `fixed('1e-7 ')` and `ratio(' 1/3')` used to be
   accepted on the slower parsing path, while `'12.34 '` and similar were refused on the fast one.
   The grammar is now written down in the README and the `money()` and `fixed()` docs: an optional
-  sign, digits, optionally a point with digits after it, and optionally an exponent. Use `parse()`
-  for text as people write it.
+  sign, digits, optionally a point with digits after it, and optionally an exponent.
+  **Upgrading:** values read from CSV files, forms or databases with stray spaces (`' 12.34'`,
+  `'1 / 3'`) now throw a `SyntaxError`. Trim them first, or use `parse()` for text people typed.
 
 ### Fixed
 
