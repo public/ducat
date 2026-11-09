@@ -744,7 +744,11 @@ fixed('1.5').add('0.25'); // → 1.75: mixed scales align to the larger one
 fixed('2.5').round('halfEven'); // → 2: round() defaults to scale 0
 fromScaled(12345, 3).toString(); // → '12.345'
 JSON.stringify({ unitPrice }); // → '{"unitPrice":"0.0425"}'
+fixed('12.3400').trimScale(); // → 12.34: the smallest exact scale (at least the argument, default 0)
+fixed('0.1').toNumber(); // → 0.1: the nearest double, for display and charts only
 ```
+
+`Number(fixed)` and `+fixed` throw, so a float never slips in unnoticed. `toNumber()` is the named way to accept one, where a chart or a UI library wants a number.
 
 Input is strict in the same way as `money()`. A string keeps its own scale. A number is read at its shortest decimal form, and only when that has at most 15 significant digits, which a double always holds faithfully. So `fixed(0.1 + 0.2)` throws instead of becoming 0.30000000000000004: pass the decimal as a string, or give `{ scale, rounding }`. With a `scale`, input that has more decimals throws unless `rounding` is also given.
 

@@ -217,6 +217,35 @@ export class Fixed {
     return make(scaleDown(this.value, this.scale - scale, rounding), scale);
   }
 
+  /**
+   * The smallest scale, at least `minimumScale` (default 0), that keeps the value exact: drops
+   * trailing zeros, so `fixed('12.3400').trimScale()` is 12.34 and `fixed('5.000').trimScale(2)`
+   * is 5.00. A value already at or below `minimumScale` is returned as it is; trimming never adds
+   * digits.
+   */
+  trimScale(minimumScale = 0): Fixed {
+    checkScale(minimumScale);
+    let value = this.value;
+    let scale = this.scale;
+    if (scale <= minimumScale) {
+      return this;
+    }
+
+    if (typeof value === 'number') {
+      // dividing a multiple of 10 by 10 is exact for a safe integer
+      while (scale > minimumScale && value % 10 === 0) {
+        value /= 10;
+        scale--;
+      }
+    } else {
+      while (scale > minimumScale && value % 10n === 0n) {
+        value /= 10n;
+        scale--;
+      }
+    }
+    return scale === this.scale ? this : make(value, scale);
+  }
+
   // Comparison
 
   /** −1, 0 or 1, exactly, across scales and number/bigint. */
@@ -322,12 +351,23 @@ export class Fixed {
   }
 
   /** Blocks `a + b`, `a > b` and `+a`: arithmetic and comparison go through the methods. */
+  /**
+   * The nearest double, for display, charts and other places that accept a float: lossy on
+   * purpose, so it has a name. `fixed('0.1').toNumber()` is 0.1, and a value beyond a double's 15
+   * to 17 digits is rounded to the nearest one. Never do arithmetic on the result.
+   */
+  toNumber(): number {
+    // Parsing the exact decimal string is correctly rounded, which a division of value by 10^scale
+    // isn't once either side passes 2^53.
+    return Number(formatScaled(this.value, this.scale));
+  }
+
   [Symbol.toPrimitive](hint: string): string {
     if (hint === 'string') {
       return this.toString();
     }
     throw new TypeError(
-      'Fixed cannot be converted to a number; use add(), compare(), toString() etc.',
+      'Fixed cannot be converted to a number implicitly; use toNumber() to accept a float, or add(), compare(), toString() etc.',
     );
   }
 }
