@@ -104,6 +104,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   mode (`money(1 / 0.52, 'EUR', { scale: 20 })`). Such a number (1.9230769230769231) is a float
   artefact, not a decimal anyone wrote. Pass a decimal string, or give `money()` a rounding mode.
 
+- **Visible change:** every function that takes a scale checks it the same way, and refuses
+  anything but an integer from 0 to 1000 with "Invalid scale -2: use an integer from 0 to 1000".
+  `ExactMoney#round` and `#isExact` used to fail with an unrelated message ("undefined must be
+  positive"), and `money()`, `fromMinor()`, `zero()`, `toScale()` and conversion had no upper bound.
+  Round to tens or hundreds with an increment, not a negative scale.
+
 ### Fixed
 
 - The ECB parsers and fetchers throw a `TypeError` naming `availableAt` when it is neither a boolean

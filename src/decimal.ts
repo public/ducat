@@ -155,6 +155,17 @@ export function faithfulDecimal(value: number, fix: string): string {
   return String(value);
 }
 
+/**
+ * Returns `scale` if it is a valid scale: an integer from 0 to MAX_DECIMAL_SCALE. Scales are never
+ * negative: round to tens or hundreds with an increment (`roundToIncrement`, a rounding policy).
+ */
+export function checkScale(scale: number): number {
+  if (!(Number.isInteger(scale) && scale >= 0 && scale <= MAX_DECIMAL_SCALE)) {
+    throw new RangeError(`Invalid scale ${scale}: use an integer from 0 to ${MAX_DECIMAL_SCALE}`);
+  }
+  return scale;
+}
+
 function gcd(left: bigint, right: bigint): bigint {
   if (left < 0n) {
     left = -left;

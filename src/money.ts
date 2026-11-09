@@ -2,6 +2,7 @@ import { currencyExponent, type CurrencyCode } from './currency.js';
 import {
   formatScaled,
   faithfulDecimal,
+  checkScale,
   parseDecimal,
   parsePlainDecimal,
   POW10,
@@ -545,7 +546,7 @@ export function zero<C extends CurrencyInput>(currency: C, scale?: number): Mone
  */
 export function resolveScale(currency: string, scale: number | undefined): number {
   const exponent = currencyExponent(currency);
-  return scale ?? exponent;
+  return scale === undefined ? exponent : checkScale(scale);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -818,9 +819,7 @@ export function toScale<C extends string>(
   scale: number,
   rounding: RoundingMode = DEFAULT_ROUNDING,
 ): Money<C> {
-  if (!Number.isInteger(scale) || scale < 0) {
-    throw new RangeError(`Invalid scale ${scale}`);
-  }
+  checkScale(scale);
   if (scale === money.scale) {
     return money;
   }
