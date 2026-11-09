@@ -1,4 +1,4 @@
-import { parseDecimal, pow10n, normalizeMinor } from './decimal.js';
+import { faithfulDecimal, parseDecimal, pow10n, normalizeMinor } from './decimal.js';
 import {
   CurrencyMismatchError,
   compare,
@@ -45,8 +45,9 @@ function weightsScaled(ws: readonly Weight[]): { ws: bigint[]; scale: number } {
     if (typeof weight === 'number' && Number.isSafeInteger(weight)) {
       return { digits: BigInt(weight), scale: 0 };
     }
-    const item = parseDecimal(String(weight));
-    return item;
+    return parseDecimal(
+      typeof weight === 'number' ? faithfulDecimal(weight, 'pass weights as strings') : weight,
+    );
   });
   for (const item of parsed) {
     if (item.digits < 0n) {

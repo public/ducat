@@ -98,6 +98,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   fields, `null`, a boolean. Before, `ratio(fixed('0.5'))` returned the object unchanged and
   arithmetic failed later with "Cannot mix BigInt and other types". A hand-made `{ num, den }` of
   bigints is now reduced and given its number fields, rather than trusted as it is.
+- **Breaking:** a number whose shortest decimal form has more than 15 significant digits is
+  refused wherever a number becomes an exact value, as `fixed()` already did: `ratio()` and so
+  every factor (`multiply(1 / 0.52)`), allocation weights, and `money()` without a `rounding`
+  mode (`money(1 / 0.52, 'EUR', { scale: 20 })`). Such a number (1.9230769230769231) is a float
+  artefact, not a decimal anyone wrote. Pass a decimal string, or give `money()` a rounding mode.
 
 ### Fixed
 
