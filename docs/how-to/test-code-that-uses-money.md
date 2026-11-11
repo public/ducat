@@ -77,7 +77,7 @@ Call `installMoneyMatchers(expect)`, which installs the matchers and the inspect
 
 ## If two copies of ducat are installed
 
-Value equality relies on `isMoney`, so a Money from a second installed copy of ducat is compared field by field, like any other object. Deduplicate the package.
+Value equality relies on `isMoney`, so a Money from a second installed copy of ducat is compared field by field, like any other object. If a comparison fails that way, check that only one copy of ducat is installed (`pnpm why @ducatjs/money`).
 
 ## Related
 

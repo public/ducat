@@ -13,7 +13,7 @@ require('@ducatjs/money/allocate'); // every entry works the same way
 
 TypeScript finds the types with any `moduleResolution`. `nodenext` and `bundler` read `exports`, while `node10` (the default for `module: "commonjs"`) reads `types` and `typesVersions`, which name the same declarations. So you need no `paths` mapping into `dist/`.
 
-This needs Node 24 or later, which every supported Node is: ducat is ESM only, so `isMoney()` and `instanceof Money` never fail across a CommonJS and an ESM copy.
+This needs Node 24 or later, ducat's minimum. ducat ships a single ES module build, with no CommonJS copy beside it, so `isMoney()` and `instanceof Money` can't fail across two copies (see [Decisions](../explanation/decisions.md)).
 
 ## Related
 

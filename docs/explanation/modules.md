@@ -34,6 +34,6 @@ The root entry always bundles the ISO table (about 0.55 KiB gzipped, 1 KiB minif
 
 ## Alternatives considered
 
-- **Everything on the class.** The simplest design, and the one most money libraries use. It puts conversion, formatting, processors and finance into every bundle, which is the cost the opt-in modules avoid.
+- **Everything on the class.** The simplest design. It puts conversion, formatting, processors and finance into every bundle, which is the cost the opt-in modules avoid.
 - **Functions only.** Smallest bundles, but chains read inside out (`multiply(add(price, fee), '1.075')`). ducat offers this through `/fn` for code that wants it, and keeps methods as the ordinary way.
 - **A global configuration** (default currency, locale, rounding). Rejected for the same reason as global rounding policies (see [About rounding](rounding.md)): the same expression would behave differently depending on what ran earlier. An app that works in one currency binds the plain functions to it with a [currency context](../how-to/work-in-one-currency.md) instead.

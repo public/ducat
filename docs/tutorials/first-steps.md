@@ -14,7 +14,7 @@ pnpm add @ducatjs/money
 
 ## Create some amounts
 
-Make a file, `bill.ts`, and create the two dishes that were ordered:
+Make a file, `bill.ts`, and create the two dishes that were ordered. Each step below adds to the same file:
 
 ```ts
 import { money } from '@ducatjs/money';
@@ -55,10 +55,9 @@ TypeScript refuses it, because a `Money<'EUR'>` and a `Money<'USD'>` don't mix. 
 
 We'll tip 12.5% of the food. 12.5% of 27.40 is 3.425, which has one decimal too many for euros, so ducat has to round it:
 
-```ts
-import { money } from '@ducatjs/money';
+<!-- doctest: continue -->
 
-const food = money('27.40', 'EUR');
+```ts
 food.multiply('0.125'); // → 3.43 EUR
 ```
 
@@ -71,17 +70,24 @@ food.multiply('0.125', 'halfEven'); // → 3.42 EUR
 food.multiply('0.125', 'unnecessary'); // throws RoundingError
 ```
 
-`'halfEven'` sends the half to the even cent. `'unnecessary'` says "this should never need rounding" and throws if it does. We'll keep the default: the tip is 3.43 EUR.
+`'halfEven'` sends the half to the even cent. `'unnecessary'` says "this should never need rounding" and throws if it does. We'll keep the default, so delete those two lines and add the tip to the bill:
+
+<!-- doctest: continue -->
+
+```ts
+const tip = food.multiply('0.125'); // → 3.43 EUR
+const bill = total.add(tip); // → 54.83 EUR
+```
 
 ## Split the bill
 
-Splitting is in its own module, `@ducatjs/money/allocate`. Importing it adds the methods to Money:
+Splitting is in its own module, `@ducatjs/money/allocate`. Importing it adds the methods to Money. Add the import at the top of `bill.ts`, next to the first one, and split the bill three ways:
+
+<!-- doctest: continue -->
 
 ```ts
-import { money } from '@ducatjs/money';
 import '@ducatjs/money/allocate';
 
-const bill = money('51.40', 'EUR').add(money('3.43', 'EUR')); // → 54.83 EUR
 const shares = bill.split(3); // → [18.28 EUR, 18.28 EUR, 18.27 EUR]
 ```
 
