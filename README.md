@@ -588,16 +588,19 @@ The currency and the locale are checked when the context is made. Its functions 
 - `amortise(loan, options)` builds an annuity, linear or interest-only schedule. Each period's interest is the balance times `rate / perYear`, rounded; the principal parts sum exactly to the loan and the balance ends at zero, because the rounding residual goes to the last payment (or, with `residual: 'lastInterest'`, to the last interest). It takes a `balloon` and a `firstPayment` date.
 - Functions named after Excel's give Excel's values. `npv(rate, flows)` is Excel's NPV: the first flow is at the end of period 1, so, like Excel, an initial outlay at period 0 goes outside, `flows[0] + npv(rate, rest)`. `discountedSum(rate, flows)` takes flows from period 0. Both are exact and rounded once, so `npv` matches Excel to the cent.
 - `irr(flows, { digits })` is Excel's IRR, exact to `digits` places (floored): it bisects in exact integer arithmetic, the IRR lies between `lower` and `upper`, 10^−digits apart, and `rate` is `lower`. Where Excel guesses, it throws: with no sign change (Excel's #NUM!), and with more than one unless a `bracket` (in place of Excel's `guess`) selects one root.
+- `periodicRate(annual, { perYear, digits })` is the periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear) − 1` (the monthly rate of a savings plan), and `annualRate(periodic, { perYear })` is the inverse, `(1 + periodic)^perYear − 1`, an exact `Ratio`. The root is irrational in general, so like `irr` it is found to `digits` places (floored) by exact bisection, between `lower` and `upper`, with `exact` set when it is rational. Neither is `rate / perYear`, the nominal split that `compound` and `amortise` use.
 - `prorate(price, { period, used })` charges the used part of a period (by the day, or with `unit: 'second'` by the second), and `splitPeriod(price, { period, at })` splits a period's price at plan changes into pieces that sum exactly to it.
 
 ```ts
 import { money } from '@ducatjs/money';
 import {
   amortise,
+  annualRate,
   interest,
   irr,
   npv,
   discountedSum,
+  periodicRate,
   prorate,
   splitPeriod,
 } from '@ducatjs/money/finance';
@@ -616,6 +619,10 @@ discountedSum('0.08', flows, 'halfEven'); // → 17.63 EUR
 npv('0.08', flows.slice(1), 'halfEven'); // → 1017.63 EUR (Excel's NPV: add the outlay yourself)
 irr(flows, { digits: 8 }); // → { rate: '0.08896339', lower: '0.08896339', upper: '0.08896340' }
 irr(['-100', '230', '-132'].map((amount) => money(amount, 'EUR'))); // throws RangeError: two IRRs, 10% and 20%
+
+periodicRate('0.05', { perYear: 12, digits: 8 }); // → { rate: '0.00407412', lower: '0.00407412', upper: '0.00407413' }
+periodicRate('0.21', { perYear: 2 }).exact; // → { num: 1n, den: 10n, n: 1, d: 10 }
+annualRate('0.1', { perYear: 2 }); // → { num: 21n, den: 100n, n: 21, d: 100 }
 
 const march = { start: '2026-03-01', end: '2026-04-01' };
 prorate(money('30', 'EUR'), { period: march, used: { start: '2026-03-11', end: '2026-04-01' } }); // → 20.32 EUR
