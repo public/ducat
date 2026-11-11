@@ -26,10 +26,10 @@ Reads a locale-formatted amount in `currency`. The currency comes from the argum
 Reads a formatted amount and detects its currency from the text, without guessing.
 
 - **Detects:** uppercase ISO codes (among `currencies`), and symbols that mean exactly one currency, in the locale (from `Intl.NumberFormat`) or in English (`US$`, `CA$`, `A$`). The number is then read as `parse` reads it, with the detected currency's separators.
-- **Shared symbols** (`$`, `kr`, and also `£` and `¥`, which other currencies use as narrow symbols) need a `hint`, or a `symbols` entry such as `{ $: 'CAD' }`, even where the locale "owns" the symbol.
+- **Shared symbols** (`$`, `kr`, and also `£` and `¥`, which other currencies use as narrow symbols) need a `hint`, or a `symbols` entry such as `{ $: 'CAD' }`, even where the locale "owns" the symbol: `$` in en-CA is usually CAD, but a Canadian text can mean USD.
 - `currencies` limits what is detected (default: every ISO 4217 currency), and can include codes registered with `defineCurrency`.
 - `lenient: true` accepts any grouping, and a bare number when a `hint` is given. It never makes the currency a guess.
-- **Throws:** `SyntaxError` when a currency in the text contradicts the `hint`, when the text names two currencies, when text around the number isn't a currency (`"about 100 USD"`), when a shared symbol has no `hint`, or for group separators in the wrong places; `RangeError` for a locale the runtime has no Intl data for; `RoundingError` as `parse`.
+- **Throws:** `SyntaxError` when a currency in the text contradicts the `hint`, when the text names two currencies, when text around the number isn't a currency (`"about 100 USD"`), when a shared symbol has no `hint`, or for group separators in the wrong places for the locale (`1,234,567`; `12,34,567` in en-IN); `RangeError` for a locale the runtime has no Intl data for; `RoundingError` as `parse`.
 
 ```ts
 import { parse, parseMoney } from '@ducatjs/money/parse';

@@ -13,7 +13,7 @@ The rules come from `data/cash-rounding.json`, one per currency (and country, fo
 - AMD and CRC 10, UZS and TZS 50, RSD, PKR, MNT and TWD 1, MRU 0.20
 - EUR 0.05 in BE, NL, FI, IE, IT, SK, EE and LT, and more. There is no euro-wide rule, so EUR needs a `country`.
 - Ties follow each rule's source: Serbia rounds a 50 para tie down (`10.50 RSD` to `10.00`); every other rule rounds ties away from zero (`'halfExpand'`). A `rounding` option overrides it.
-- CLDR rounds AMD, CRC, TZS and UZS cash to whole units, but their smallest coins are 10, 10, 50 and 50; the table follows the national sources.
+- CLDR's cash data is a second source (`data/cldr-cash.json`). A test fails when the table and CLDR disagree, except for the differences listed with the national source that settles them: CLDR rounds AMD, CRC, TZS and UZS cash to whole units, but their smallest coins are 10, 10, 50 and 50; the table follows the national sources.
 - Rules backed only by secondary sources have `verified: false`; `includeUnverified: false` turns them off. Which they are is in [Known limitations](limitations.md).
 
 ## Functions

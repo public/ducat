@@ -8,7 +8,7 @@ Factors, rates and percentages are exact rationals (`ratio('1.075')`, `ratio(1, 
 
 Other libraries multiply through floats, and that is where they go wrong: multiplying through floats turns 0.50 × 1.15 into 0.57. An exact rational avoids the problem altogether, and the [representation](representation.md) makes it cheap: integer minor units on a number fast path, with a bigint fallback, keep integer arithmetic exact at every size.
 
-`Symbol.toPrimitive` throws on numeric coercion, so `a + b`, `a > b` and `+a` fail loudly instead of doing float math. Template strings still work (`"12.34 EUR"`). The same holds for `Fixed`: `Number(fixed)` and `+fixed` throw, so a float never slips in unnoticed.
+`Symbol.toPrimitive` throws on numeric coercion, so `a + b`, `a > b` and `+a` fail loudly instead of doing float math. Template strings still work (`"12.34 EUR"`). The same holds for `Fixed`: `Number(fixed)` and `+fixed` throw, so a float never slips in unnoticed. `toNumber()` is the named way to accept one, where a chart or a UI library wants a number.
 
 ## Numbers: the 15-digit rule
 
@@ -35,6 +35,10 @@ A rate is an exact rational, and it also keeps the digits it was given: `exchang
 Sometimes a float is the right output: a chart, a PDF, an API that takes numbers. `toNumber(m)` gives the amount in major units as the nearest double, and `toMinorNumber(m, { lossy: true })` the minor units as the nearest double instead of throwing beyond 2^53. Both are lossy on purpose and named so; ducat never uses them itself, and arithmetic on the result loses the exactness. Each rounds once, so `toNumber` of 100000 at scale 18 is 100000, not the 99999.99999999999 of dividing by 10^18 as a float. `Fixed#toNumber()` is the same named exit for a `Fixed`.
 
 The one place a double touches an amount inside ducat is the display hand-off to `Intl.NumberFormat`, below 10^15 minor units, where a single correctly rounded division is bit-identical to `Number(decimalString)` (property-tested). The details are in [About the representation](representation.md).
+
+## Allocation is exact
+
+The parts always sum to the whole, and the remainder is distributed deterministically. A Lean model of it is proved for every remainder strategy, and the TypeScript is checked against that model (see [What is proved](proofs.md)) and property-tested with weights up to 2^40 and amounts up to 10^25.
 
 ## Currency mismatch
 

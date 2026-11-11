@@ -374,7 +374,7 @@ The minor-unit exponent of a registered currency: EUR 2, JPY 0, KWD 3.
 
 `isCurrency(code: string): code is CurrencyCode`
 
-Whether `code` is registered: an ISO code (all of them wherever an entry other than `/fn` is imported), or one from `defineCurrency`.
+Whether `code` is registered: an ISO code (all of them wherever an entry other than `/fn` is imported, and in a `/fn`-only program the ones imported from `@ducatjs/money/iso`), or one from `defineCurrency`.
 
 ### defineCurrency
 

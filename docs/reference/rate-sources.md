@@ -121,7 +121,7 @@ Precision: the Bank quotes four decimals, up to six for small rates, so a small 
 
 `parseFedH10Csv(csv: string): RateTable[]`
 
-Parses the Federal Reserve Board's H.10 daily rates, as CSV from its Data Download Program (release H10, series in columns, with labels), into one USD-based table per day. These are the noon buying rates in New York, certified by the New York Fed for customs purposes, daily since 1971, with `source: 'FRB'` and `type: 'noon buying'`.
+Parses the Federal Reserve Board's H.10 daily rates, as CSV from its Data Download Program (release H10, series in columns, with labels), into one USD-based table per day. These are the noon buying rates in New York, certified for US customs, daily since 1971, with `source: 'FRB'` and `type: 'noon buying'`.
 
 - **Direction:** H.10 quotes currency per USD except AUD, EUR, NZD and GBP (series `RXI$US_N.B.*`), which it quotes as USD per unit. Those four are stored as exact inverses with the published quote kept, so every table is USD → currency.
 - **Holidays** are rows of `ND`; such a day is left out, and a file of holidays only gives `[]`. A single `ND` cell is a missing value.

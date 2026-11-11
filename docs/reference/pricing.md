@@ -40,7 +40,7 @@ The price of `quantity` under tiers in the style of Stripe's, exactly, with the 
 - **Quantity 0** falls in the first tier, so its flat amount is charged.
 - **Rounds:** the exact total once, with `rounding` (default `'halfExpand'`, to the currency's exponent) or a policy. Each line's `amount` is the rounded running total minus the rounded running total before it, so the lines sum exactly to the total.
 - **Beyond a bounded last tier:** throws by default; `beyondLastTier: 'cap'` charges as if the quantity were the last `upTo`. A `chargeQuantity` is not capped.
-- **`chargeQuantity`** (volume mode only): the quantity the chosen tier's `unitAmount` multiplies, when it isn't the quantity that chose the tier. The tier's `flatAmount` is charged once.
+- **`chargeQuantity`** (volume mode only): the quantity the chosen tier's `unitAmount` multiplies, when it isn't the quantity that chose the tier. The tier's `flatAmount` is charged once. Tiers with only a `flatAmount` give flat-fee pricing, chosen by the quantity.
 - **Throws:** `RangeError` for no tiers, a tier with neither amount, bounds that don't increase (the message names the tier), an open tier that isn't last, a negative quantity, a quantity past a bounded last tier without `'cap'`, or an invalid `mode` or `beyondLastTier`; `TypeError` for `chargeQuantity` in graduated mode; `CurrencyMismatchError` for tiers in more than one currency.
 
 ```ts
