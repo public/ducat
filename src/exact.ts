@@ -131,6 +131,7 @@ export class ExactMoney<C extends string = string> {
   /**
    * The amount in major units as the nearest double: 10/3 EUR is 3.3333333333333335. Lossy on
    * purpose, for display, charts and APIs that take numbers; never do arithmetic on the result.
+   * Beyond the largest double it is ±Infinity, as Number() gives.
    */
   toNumber(): number {
     const magnitude = this.num < 0n ? -this.num : this.num;

@@ -934,8 +934,9 @@ export function toMinor(money: Money): bigint {
 export interface ToMinorNumberOptions {
   /**
    * Return the nearest double instead of throwing a RangeError beyond 2^53 (Number.MAX_SAFE_INTEGER):
-   * lossy on purpose, for charts and APIs that take numbers. Digits below the minor unit still
-   * throw a RoundingError; round() first.
+   * lossy on purpose, for charts and APIs that take numbers, and ±Infinity beyond the largest
+   * double. It waives only that check: digits below the minor unit still throw a RoundingError
+   * (round() first, or use toNumber() for a float in major units).
    */
   readonly lossy?: boolean;
 }
@@ -966,7 +967,8 @@ export function toMinorNumber(money: Money, options?: ToMinorNumberOptions): num
 /**
  * The amount in major units as the nearest double: 12.34 for 12.34 EUR. Lossy on purpose, for
  * display, charts and APIs that take numbers; beyond a double's 15 to 17 significant digits the
- * value is rounded (once, to the nearest double). Never do arithmetic on the result.
+ * value is rounded (once, to the nearest double), and beyond the largest double it is ±Infinity, as
+ * Number() and Fixed#toNumber() give. Never do arithmetic on the result.
  */
 export function toNumber(money: Money): number {
   // Parsing the exact decimal string is correctly rounded; dividing minor by 10^scale rounds twice.
