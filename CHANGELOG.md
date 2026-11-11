@@ -7,6 +7,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `/wire`: dinero.js 1's `{ amount, currency, precision }` shape (`toDineroObject`,
+  `fromDineroObject`), exact both ways and at the object's precision. `amount` must be a safe
+  integer or a bigint and `precision` a valid scale (#217).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day

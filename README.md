@@ -162,7 +162,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/crypto`             | nothing                                                            | `defineCryptoCurrencies`, `toBaseUnits`, `fromBaseUnits`         |
 | `@ducatjs/money/currencies`         | nothing                                                            | numeric codes, `minorUnit`, `currencyName`, `currencySymbol`     |
 | `@ducatjs/money/territories`        | nothing                                                            | `territoryCurrencies`, `currencyTerritories` (CLDR)              |
-| `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022 amounts, minor-unit JSON          |
+| `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022, minor units, dinero.js objects   |
 | `@ducatjs/money/words`              | nothing                                                            | `amountInWords`, `spellOut` (CLDR rules, no Money loaded)        |
 | `@ducatjs/money/words/<language>`   | nothing                                                            | `english`, `german`, `french`, `spanish`, `italian`…             |
 | `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
