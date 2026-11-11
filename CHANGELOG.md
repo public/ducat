@@ -11,6 +11,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 - `hasFraction()` (method and `/fn`): whether the amount has a non-zero fractional part, true for
   12.34 EUR and false for 12.00 EUR at any scale; dinero.js calls it `hasSubUnits` (#208).
+- `@ducatjs/money/typeorm`: TypeORM column transformers, exact both ways:
+  `minorTransformer(currency, { scale? })` for BIGINT minor units, `decimalTransformer(currency,
+  size?)` for NUMERIC/DECIMAL and `jsonTransformer(currency?)` for `json`, `jsonb` and
+  `simple-json`, which also work in find operators; and `fromRawMinor` and `fromRawDecimal` for
+  aggregates from raw queries. `typeorm` is an optional peer dependency, and the entry doesn't
+  import it (#215).
 - `/wire`: dinero.js 1's `{ amount, currency, precision }` shape (`toDineroObject`,
   `fromDineroObject`), exact both ways and at the object's precision; `m.round('unnecessary')`
   brings a value to the currency's exponent. `amount` must be a safe integer or a bigint and
