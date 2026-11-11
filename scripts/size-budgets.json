@@ -46,6 +46,7 @@
     "@ducatjs/money/crypto": 0.76,
     "@ducatjs/money/currencies": 1.5,
     "@ducatjs/money/wire": 1.56,
+    "@ducatjs/money/context": 1.65,
     "@ducatjs/money/words": 2.2,
     "@ducatjs/money/words/de": 0.93,
     "@ducatjs/money/words/en": 0.9,
@@ -103,6 +104,10 @@
     "functions: fromMinor, add, toDecimal": {
       "code": "import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
       "gzipped": 1.37
+    },
+    "functions: a currency context with /iso/EUR, money, format": {
+      "code": "import { currencyContext } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const eur = currencyContext('EUR', { locale: 'nl-NL' }); console.log(eur.format(eur.money('1234.5')));",
+      "gzipped": 4.1
     },
     "functions with every ISO code: /iso, fromMinor, add, toDecimal": {
       "code": "import '@ducatjs/money/iso'; import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
