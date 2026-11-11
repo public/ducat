@@ -2,7 +2,14 @@
 // It has no formatting, JSON or minor units on purpose: it must be rounded back to Money before it
 // leaves the process. The one exception is toNumber(), an explicitly lossy double for display.
 import { currencyExponent } from './currency.js';
-import { checkScale, pow10n, ratio, type Factor, type Ratio } from './decimal.js';
+import {
+  checkScale,
+  MAX_DECIMAL_SCALE,
+  pow10n,
+  ratio,
+  type Factor,
+  type Ratio,
+} from './decimal.js';
 import {
   CurrencyMismatchError,
   make,
@@ -12,7 +19,12 @@ import {
   type RoundingPolicy,
 } from './money.js';
 import type { Rate } from './rate.js';
-import { DEFAULT_ROUNDING, divideAndRoundBigint, type RoundingMode } from './rounding.js';
+import {
+  DEFAULT_ROUNDING,
+  divideAndRoundBigint,
+  RoundingError,
+  type RoundingMode,
+} from './rounding.js';
 
 /**
  * A rounded value and what rounding left out: `value + residual` is exactly the unrounded amount.
@@ -213,6 +225,18 @@ export class ExactMoney<C extends string = string> {
     return make(this.currency, minor, resultScale);
   }
 
+  /**
+   * The exact value as Money, at the smallest scale that holds it but at least `minimumScale`
+   * (default: the currency's exponent): 1/8 EUR is 0.125 EUR. Throws a RoundingError when the
+   * value has no finite decimal form (10/3), naming the need for round(), and a RangeError when it
+   * needs more than 1000 decimal places.
+   */
+  toMoney(minimumScale: number = currencyExponent(this.currency)): Money<C> {
+    checkScale(minimumScale);
+    const scale = Math.max(minimumScale, decimalPlaces(this.den, this));
+    return make(this.currency, (this.num * pow10n(scale)) / this.den, scale);
+  }
+
   /** Rounds once and reports the difference, for booking it (e.g. an "FX rounding" ledger line). */
   roundWithResidual(rounding?: RoundingMode, scale?: number): Rounded<C>;
   roundWithResidual(policy: RoundingPolicy): Rounded<C>;
@@ -261,6 +285,41 @@ export class ExactMoney<C extends string = string> {
     }
     throw new TypeError('ExactMoney cannot be converted to a number; round() it first');
   }
+}
+
+/** The decimal places 1/den needs (den > 0, reduced against the numerator), or a throw. */
+function decimalPlaces(den: bigint, value: ExactMoney): number {
+  // A fraction terminates exactly when its denominator is 2^twos × 5^fives; it then needs
+  // max(twos, fives) places.
+  let rest = den;
+  let twos = 0;
+  let fives = 0;
+  while ((rest & 1n) === 0n) {
+    rest >>= 1n;
+    twos++;
+  }
+  while (rest % 5n === 0n) {
+    rest /= 5n;
+    fives++;
+  }
+  if (rest !== 1n) {
+    throw new RoundingError(`${value} has no finite decimal form; round() it with a rounding mode`);
+  }
+  const places = Math.max(twos, fives);
+  if (places > MAX_DECIMAL_SCALE) {
+    throw new RangeError(`${value} needs ${places} decimal places, more than ${MAX_DECIMAL_SCALE}`);
+  }
+  return places;
+}
+
+/**
+ * money × factor exactly, as Money: the scale grows to hold every digit (never below the amount's
+ * own), so 10.00 EUR × 1.0775 is 10.775 EUR and 10.00 EUR × 2 stays 20.00 EUR. Throws a
+ * RoundingError when the product has no finite decimal form (a factor such as 1/3); use
+ * `multiply` with a rounding mode, or `exact()`, then.
+ */
+export function multiplyExact<C extends string>(money: Money<C>, factor: Factor): Money<C> {
+  return exact(money).multiply(factor).toMoney(money.scale);
 }
 
 function toExact<C extends string>(amount: ExactMoney<C> | Money<C>): ExactMoney<C> {

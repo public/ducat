@@ -9,6 +9,7 @@ import {
   addTaxExact,
   exact,
   extractTaxExact,
+  multiplyExact,
   type ExactMoney,
   type ExactTaxBreakdown,
 } from '../exact.js';
@@ -27,6 +28,11 @@ declare module '../index.js' {
     addTaxExact(percent: Factor): ExactTaxBreakdown<C>;
     /** Treats this as gross: exact `{ net, tax, gross }` parts, nothing rounded. */
     extractTaxExact(percent: Factor): ExactTaxBreakdown<C>;
+    /**
+     * this × factor exactly, at the smallest scale that holds the product (never below this
+     * scale); throws a RoundingError when the product doesn't terminate.
+     */
+    multiplyExact(factor: Factor): Money<C>;
   }
 }
 
@@ -39,5 +45,8 @@ extendMoney({
   },
   extractTaxExact(this: Money, percent: Factor) {
     return extractTaxExact(this, percent);
+  },
+  multiplyExact(this: Money, factor: Factor) {
+    return multiplyExact(this, factor);
   },
 });

@@ -139,58 +139,58 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 
 ### Modules
 
-| import                              | adds to `Money`                                                    | also exports                                                     |
-| ----------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents   |
-| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                      |
-| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                         |
-| `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`, `ratioAdd` and the other Ratio arithmetic   |
-| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                  |
-| `@ducatjs/money/exact`              | `exact`, `addTaxExact`, `extractTaxExact`                          | `ExactMoney`, `sumExact`, `addTaxExact`, `extractTaxExact`       |
-| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                  |
-| `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                    |
-| `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                          |
-| `.../convert/fed`                   | nothing                                                            | `parseFedH10Csv` (parser only)                                   |
-| `.../convert/boe`                   | nothing                                                            | `parseBankOfEnglandCsv` (parser only)                            |
-| `.../convert/hmrc`                  | nothing                                                            | `parseHmrcMonthlyCsv` (parser only)                              |
-| `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)   |
-| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                   |
-| `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
-| `@ducatjs/money/context`            | nothing                                                            | `currencyContext` (one currency and locale, nothing global)      |
-| `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (.99, .95, the nearest 5), `tieredPrice` (tiers)   |
-| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
-| `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
-| `@ducatjs/money/crypto`             | nothing                                                            | `defineCryptoCurrencies`, `toBaseUnits`, `fromBaseUnits`         |
-| `@ducatjs/money/currencies`         | nothing                                                            | numeric codes, `minorUnit`, `currencyName`, `currencySymbol`     |
-| `@ducatjs/money/territories`        | nothing                                                            | `territoryCurrencies`, `currencyTerritories` (CLDR)              |
-| `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022, minor units, dinero.js objects   |
-| `@ducatjs/money/words`              | nothing                                                            | `amountInWords`, `spellOut` (CLDR rules, no Money loaded)        |
-| `@ducatjs/money/words/<language>`   | nothing                                                            | `english`, `german`, `french`, `spanish`, `italian`…             |
-| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
-| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                         |
-| `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                            |
-| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                        |
-| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                          |
-| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                    |
-| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                        |
-| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                  |
-| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                        |
-| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                       |
-| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns        |
-| `@ducatjs/money/kysely`             | nothing                                                            | `moneyHelpers`, `setMoney`, `MoneyResultPlugin`                  |
-| `@ducatjs/money/typeorm`            | nothing                                                            | `minorTransformer`, `decimalTransformer`, `jsonTransformer`      |
-| `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O         |
-| `@ducatjs/money/fixed`              | nothing                                                            | `Fixed`, `fixed`, `fromScaled`, `isFixed` (without Money)        |
-| `@ducatjs/money/fixed/money`        | `toFixedPoint`, and `Fixed#toMoney`                                | `/fixed`, plus `moneyToFixed`, `fixedToMoney`                    |
-| `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)         |
-| `@ducatjs/money/valibot`            | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Valibot, an optional peer)     |
-| `@ducatjs/money/testing`            | nothing                                                            | matchers, value equality, snapshot serializer                    |
-| `.../testing/vitest`, `/jest`       | nothing (installs on `expect`)                                     | the same, set up in one import                                   |
-| `.../testing/arbitraries`           | nothing                                                            | `arbMoney`, `arbCurrency` (fast-check)                           |
-| `@ducatjs/money/all`                | the methods of every module above                                  | everything except the database, schema and testing entries       |
-| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules            |
-| `@ducatjs/money/iso`                | nothing (registers every ISO 4217 currency, for `/fn`)             | nothing                                                          |
-| `@ducatjs/money/iso/EUR`, ...       | nothing (registers that one currency, for `/fn`)                   | nothing                                                          |
+| import                              | adds to `Money`                                                    | also exports                                                                |
+| ----------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents              |
+| `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                                 |
+| `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                                    |
+| `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`, `ratioAdd` and the other Ratio arithmetic              |
+| `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                             |
+| `@ducatjs/money/exact`              | `exact`, `addTaxExact`, `extractTaxExact`, `multiplyExact`         | `ExactMoney`, `sumExact`, `addTaxExact`, `extractTaxExact`, `multiplyExact` |
+| `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                             |
+| `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                               |
+| `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                                     |
+| `.../convert/fed`                   | nothing                                                            | `parseFedH10Csv` (parser only)                                              |
+| `.../convert/boe`                   | nothing                                                            | `parseBankOfEnglandCsv` (parser only)                                       |
+| `.../convert/hmrc`                  | nothing                                                            | `parseHmrcMonthlyCsv` (parser only)                                         |
+| `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)              |
+| `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                              |
+| `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                                |
+| `@ducatjs/money/context`            | nothing                                                            | `currencyContext` (one currency and locale, nothing global)                 |
+| `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (.99, .95, the nearest 5), `tieredPrice` (tiers)              |
+| `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`                        |
+| `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes)            |
+| `@ducatjs/money/crypto`             | nothing                                                            | `defineCryptoCurrencies`, `toBaseUnits`, `fromBaseUnits`                    |
+| `@ducatjs/money/currencies`         | nothing                                                            | numeric codes, `minorUnit`, `currencyName`, `currencySymbol`                |
+| `@ducatjs/money/territories`        | nothing                                                            | `territoryCurrencies`, `currencyTerritories` (CLDR)                         |
+| `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022, minor units, dinero.js objects              |
+| `@ducatjs/money/words`              | nothing                                                            | `amountInWords`, `spellOut` (CLDR rules, no Money loaded)                   |
+| `@ducatjs/money/words/<language>`   | nothing                                                            | `english`, `german`, `french`, `spanish`, `italian`…                        |
+| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…                  |
+| `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                                    |
+| `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                                       |
+| `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                                   |
+| `@ducatjs/money/adyen`              | `toAdyen`                                                          | the same, `fromAdyen`, `adyenExponent`…                                     |
+| `@ducatjs/money/checkout`           | `toCheckout`, `toCheckoutAmount`                                   | the same, `fromCheckout`, `checkoutExponent`…                               |
+| `@ducatjs/money/paypal`             | `toPayPal`, `toPayPalValue`                                        | the same, `fromPayPal`, `paypalExponent`…                                   |
+| `@ducatjs/money/braintree`          | `toBraintree`                                                      | the same, `fromBraintree`, `braintreeExponent`…                             |
+| `@ducatjs/money/klarna`             | `toKlarna`                                                         | the same, `fromKlarna`, `klarnaExponent`…                                   |
+| `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                                  |
+| `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns                   |
+| `@ducatjs/money/kysely`             | nothing                                                            | `moneyHelpers`, `setMoney`, `MoneyResultPlugin`                             |
+| `@ducatjs/money/typeorm`            | nothing                                                            | `minorTransformer`, `decimalTransformer`, `jsonTransformer`                 |
+| `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O                    |
+| `@ducatjs/money/fixed`              | nothing                                                            | `Fixed`, `fixed`, `fromScaled`, `isFixed` (without Money)                   |
+| `@ducatjs/money/fixed/money`        | `toFixedPoint`, and `Fixed#toMoney`                                | `/fixed`, plus `moneyToFixed`, `fixedToMoney`                               |
+| `@ducatjs/money/zod`                | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Zod, an optional peer)                    |
+| `@ducatjs/money/valibot`            | nothing                                                            | `moneySchema`, `moneyJSONSchema` (Valibot, an optional peer)                |
+| `@ducatjs/money/testing`            | nothing                                                            | matchers, value equality, snapshot serializer                               |
+| `.../testing/vitest`, `/jest`       | nothing (installs on `expect`)                                     | the same, set up in one import                                              |
+| `.../testing/arbitraries`           | nothing                                                            | `arbMoney`, `arbCurrency` (fast-check)                                      |
+| `@ducatjs/money/all`                | the methods of every module above                                  | everything except the database, schema and testing entries                  |
+| `@ducatjs/money/fn`                 | nothing                                                            | every operation as a plain function, core and modules                       |
+| `@ducatjs/money/iso`                | nothing (registers every ISO 4217 currency, for `/fn`)             | nothing                                                                     |
+| `@ducatjs/money/iso/EUR`, ...       | nothing (registers that one currency, for `/fn`)                   | nothing                                                                     |
 
 Importing a module (`import '@ducatjs/money/allocate'`, or any named import from it) installs its methods on `Money.prototype`, and its `declare module` augmentation makes them type-check. Without the import, `m.allocate()` is a compile error. The trade-off: the methods are installed for the whole program, so one import anywhere makes them available everywhere at run time, while TypeScript only knows about them in a program that includes the import. Import a module in each file that uses its methods: the import is cheap and installing twice is harmless, and it keeps working where files run in isolation (test runners, workers), where a single import in the entry point would leave `m.allocate` undefined at run time even though the code type-checks. Code that must not change any prototype (a library built on ducat, for example) can use the plain functions from `@ducatjs/money/fn` instead, and imports the currencies it uses (`import '@ducatjs/money/iso'`), since `/fn` registers none. The core methods (`add`, `round`, `toDecimal`...) work the same way: the root entry `@ducatjs/money` installs them, so a program that imports only `/fn` has Money values without methods and keeps only the functions it calls. Currencies work the same way. Every entry except `/fn` registers the whole ISO 4217 table (`/fixed`, `/words` and `/territories` never build Money and don't need it); a program that imports only `/fn` registers what it uses with `import '@ducatjs/money/iso/EUR'` (one module per ISO code) or `import '@ducatjs/money/iso'` (all of them), and any other code throws "Unknown currency", naming the import. Registration is by import, so it's the same bundled and unbundled. It's per module, not per program: a module that imports only `/fn` and builds Money while it loads (`const FEE = money('0.30', 'EUR')` in a config file) runs before the modules that import it, so it throws even when the app's entry point imports `@ducatjs/money`; give such a module, and any library built on `/fn`, its own `import '@ducatjs/money/iso'` (or `/iso/EUR`). The per-code modules are named by the uppercase ISO code: `/iso/eur` may resolve on a case-insensitive file system and then fail elsewhere. The types don't track registration: `/fn` accepts any ISO code at compile time. `defineCurrency` checks the ISO table so ISO codes can't be redefined, so a `/fn` program that calls it carries the table again: about 0.6 kB gzipped with `defineCurrency` itself.
 
