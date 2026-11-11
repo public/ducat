@@ -36,6 +36,7 @@ const METHOD_FORMS = [
   'toDecimal',
   'toMinor',
   'toMinorNumber',
+  'toNumber',
   'toScaledUnits',
 ];
 

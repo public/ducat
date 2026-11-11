@@ -449,6 +449,20 @@ money('12.345', 'EUR', { scale: 3 }).toScaledUnits(); // → 12345n (pair it wit
 ```
 
 - `hasFraction(m)` is whether the amount has a non-zero fractional part (true for 12.34 EUR, false for 12.00 EUR at any scale), for display code that drops ".00" from whole amounts; dinero.js calls it `hasSubUnits`.
+- `toNumber(m)` gives the amount in major units as the nearest double, and `toMinorNumber(m, { lossy: true })` the minor units as the nearest double instead of throwing beyond 2^53. Both are lossy on purpose and named so; `lossy: true` waives only the 2^53 check, so digits below the minor unit still throw a `RoundingError` (use `toNumber()` for a float), and beyond the largest double both give ±Infinity, as `Number()` and `Fixed#toNumber()` do. They are for charts, PDFs and APIs that take numbers; ducat never uses them itself, and arithmetic on the result loses the exactness. Each rounds once, so `toNumber` of 100000 at scale 18 is 100000, not the 99999.99999999999 of dividing by 10^18 as a float. `ExactMoney#toNumber()` does the same for an exact amount.
+
+```ts
+import { fromMinor, money } from '@ducatjs/money';
+
+money('12.34', 'EUR').toNumber(); // → 12.34
+fromMinor(100000n * 10n ** 18n, 'EUR', 18).toNumber(); // → 100000
+fromMinor(1000000000000000050n, 'USD').toNumber(); // → 10000000000000000 (10000000000000000.50 has no double)
+fromMinor(1000000000000000050n, 'USD').toMinorNumber(); // throws RangeError
+fromMinor(1000000000000000050n, 'USD').toMinorNumber({ lossy: true }); // → 1000000000000000000
+money('12.345', 'EUR', { scale: 3 }).toMinorNumber({ lossy: true }); // throws RoundingError: lossy waives only the 2^53 check; round() first
+fromMinor(10n ** 309n, 'JPY').toNumber(); // → Infinity (beyond the largest double, as Number() gives)
+```
+
 - `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
 

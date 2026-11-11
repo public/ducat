@@ -19,6 +19,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - Arithmetic on `Ratio` values in `/math`: `ratioAdd`, `ratioSubtract`, `ratioMultiply`,
   `ratioDivide`, `ratioNegate`, `ratioComplement` (1 − r) and `ratioCompare`, exact and reduced,
   taking any factor (Ratio, Fixed, decimal string, integer) on either side (#201).
+- `toNumber()` (method and `/fn`) and `toMinorNumber({ lossy: true })`: explicitly lossy number
+  conversions that round once to the nearest double, for charts and APIs that take numbers.
+  `ExactMoney#toNumber()` too (#206).
 
 ## [0.3.0] - 2026-11-09
 
