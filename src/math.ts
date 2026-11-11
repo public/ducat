@@ -11,6 +11,7 @@ import {
   scaleUp,
   sum,
   type Money,
+  type MoneyOperand,
   type RoundingInput,
   type SingleCurrency,
 } from './money.js';
@@ -67,7 +68,10 @@ function assertNonZero(divisor: Money): void {
  * 'EUR'))` is 1/3 exactly, and it can be passed straight to `multiply` or `allocate`. A zero
  * `other` throws a RangeError.
  */
-export function ratioOf<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): Ratio {
+export function ratioOf<C extends string, O extends string = C>(
+  money: Money<C>,
+  other: MoneyOperand<NoInfer<C>, O>,
+): Ratio {
   assertSameCurrency(money, other);
   assertNonZero(other);
   const { left, right } = alignedBigInts(money, other);
@@ -80,9 +84,9 @@ export function ratioOf<C extends string>(money: Money<C>, other: Money<NoInfer<
  * divisor)` exactly. A number while it is a safe integer, a bigint beyond, like `minor`. A zero
  * divisor throws a RangeError.
  */
-export function divideToIntegral<C extends string>(
+export function divideToIntegral<C extends string, O extends string = C>(
   money: Money<C>,
-  divisor: Money<NoInfer<C>>,
+  divisor: MoneyOperand<NoInfer<C>, O>,
 ): number | bigint {
   assertSameCurrency(money, divisor);
   assertNonZero(divisor);
@@ -116,7 +120,10 @@ export function divideToIntegral<C extends string>(
  * 1.00 EUR and `remainder(money('-10', 'EUR'), money('3', 'EUR'))` is -1.00 EUR. A zero divisor
  * throws a RangeError.
  */
-export function remainder<C extends string>(money: Money<C>, divisor: Money<NoInfer<C>>): Money<C> {
+export function remainder<C extends string, O extends string = C>(
+  money: Money<C>,
+  divisor: MoneyOperand<NoInfer<C>, O>,
+): Money<C> {
   assertSameCurrency(money, divisor);
   assertNonZero(divisor);
   const dividendMinor = money.minor;

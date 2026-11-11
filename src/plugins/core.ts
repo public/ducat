@@ -34,6 +34,7 @@ import {
   toNumber,
   toScale,
   type ToMinorNumberOptions,
+  type MoneyOperand,
   type RoundingInput,
   type RoundingPolicy,
 } from '../money.js';
@@ -43,9 +44,9 @@ import { toBigInt } from '../scale.js';
 declare module '../index.js' {
   interface Money<C extends string> {
     /** this + other (same currency; any scale) */
-    add(other: Money<C>): Money<C>;
+    add<O extends string = C>(other: MoneyOperand<C, O>): Money<C>;
     /** this - other */
-    subtract(other: Money<C>): Money<C>;
+    subtract<O extends string = C>(other: MoneyOperand<C, O>): Money<C>;
     /**
      * this * factor, rounded to this scale. `factor` is exact: integer, decimal string ('1.075'),
      * bigint or ratio().
@@ -67,20 +68,20 @@ declare module '../index.js' {
      */
     toScale(scale: number, rounding?: RoundingMode): Money<C>;
     /** -1, 0 or 1; throws on currency mismatch */
-    compare(other: Money<C>): -1 | 0 | 1;
+    compare<O extends string = C>(other: MoneyOperand<C, O>): -1 | 0 | 1;
     /** same currency and value; a different currency is simply not equal */
     equals(other: Money): boolean;
-    lessThan(other: Money<C>): boolean;
-    lessThanOrEqual(other: Money<C>): boolean;
-    greaterThan(other: Money<C>): boolean;
-    greaterThanOrEqual(other: Money<C>): boolean;
+    lessThan<O extends string = C>(other: MoneyOperand<C, O>): boolean;
+    lessThanOrEqual<O extends string = C>(other: MoneyOperand<C, O>): boolean;
+    greaterThan<O extends string = C>(other: MoneyOperand<C, O>): boolean;
+    greaterThanOrEqual<O extends string = C>(other: MoneyOperand<C, O>): boolean;
     isZero(): boolean;
     isPositive(): boolean;
     isNegative(): boolean;
     sign(): -1 | 0 | 1;
-    min(...others: Money<C>[]): Money<C>;
-    max(...others: Money<C>[]): Money<C>;
-    clamp(lo: Money<C>, hi: Money<C>): Money<C>;
+    min<O extends string = C>(...others: MoneyOperand<C, O>[]): Money<C>;
+    max<O extends string = C>(...others: MoneyOperand<C, O>[]): Money<C>;
+    clamp<O extends string = C>(lo: MoneyOperand<C, O>, hi: MoneyOperand<C, O>): Money<C>;
     /** Same currency, value and scale: 1.0 EUR is not identical to 1.00 EUR. */
     identical(other: Money): boolean;
     /**

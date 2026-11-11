@@ -91,6 +91,16 @@ export const roundWithPolicy = <C extends string>(
 /** What rounding parameters accept: a mode such as `'halfEven'`, or a `RoundingPolicy`. */
 export type RoundingInput = RoundingMode | RoundingPolicy;
 
+/**
+ * The other operand of an operation on a `Money<C>`: a Money of the same currency type, or a
+ * `Money<string>` whose currency is only known at run time (from a database or an API), which is
+ * checked at run time. A different literal currency (`Money<'USD'>` beside `Money<'EUR'>`) or a
+ * union of them is a compile error; narrow it with `isMoneyIn` or `assertCurrency` first.
+ */
+export type MoneyOperand<C extends string, O extends string = C> =
+  | Money<C>
+  | (string extends O ? Money<O> : never);
+
 /** Thrown when two amounts in different currencies are combined. */
 export class CurrencyMismatchError extends TypeError {
   override name = 'CurrencyMismatchError';
@@ -490,7 +500,10 @@ function addUsingBigInt<C extends string>(money: Money<C>, other: Money, sign: 1
  * a + b. Mixing currencies is a type error for literal currency types and a runtime error
  * otherwise.
  */
-export function add<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): Money<C> {
+export function add<C extends string, O extends string = C>(
+  money: Money<C>,
+  other: MoneyOperand<NoInfer<C>, O>,
+): Money<C> {
   if (money.currency !== other.currency) {
     mismatch(money, other);
   }
@@ -507,7 +520,10 @@ export function add<C extends string>(money: Money<C>, other: Money<NoInfer<C>>)
 }
 
 /** a - b */
-export function subtract<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): Money<C> {
+export function subtract<C extends string, O extends string = C>(
+  money: Money<C>,
+  other: MoneyOperand<NoInfer<C>, O>,
+): Money<C> {
   if (money.currency !== other.currency) {
     mismatch(money, other);
   }
@@ -758,7 +774,10 @@ export function toScale<C extends string>(
 // ---------------------------------------------------------------------------------------------
 
 /** -1, 0 or 1. Throws on currency mismatch. Works across scales and number/bigint. */
-export function compare<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): -1 | 0 | 1 {
+export function compare<C extends string, O extends string = C>(
+  money: Money<C>,
+  other: MoneyOperand<NoInfer<C>, O>,
+): -1 | 0 | 1 {
   if (money.currency !== other.currency) {
     mismatch(money, other);
   }
@@ -802,20 +821,24 @@ export function identical(money: Money, other: Money): boolean {
 }
 
 /** money < other (same currency; any scale). */
-export const lessThan = <C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean =>
-  compare(money, other) < 0;
-/** money <= other */
-export const lessThanOrEqual = <C extends string>(
+export const lessThan = <C extends string, O extends string = C>(
   money: Money<C>,
-  other: Money<NoInfer<C>>,
+  other: MoneyOperand<NoInfer<C>, O>,
+): boolean => compare(money, other) < 0;
+/** money <= other */
+export const lessThanOrEqual = <C extends string, O extends string = C>(
+  money: Money<C>,
+  other: MoneyOperand<NoInfer<C>, O>,
 ): boolean => compare(money, other) <= 0;
 /** money > other */
-export const greaterThan = <C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean =>
-  compare(money, other) > 0;
-/** money >= other */
-export const greaterThanOrEqual = <C extends string>(
+export const greaterThan = <C extends string, O extends string = C>(
   money: Money<C>,
-  other: Money<NoInfer<C>>,
+  other: MoneyOperand<NoInfer<C>, O>,
+): boolean => compare(money, other) > 0;
+/** money >= other */
+export const greaterThanOrEqual = <C extends string, O extends string = C>(
+  money: Money<C>,
+  other: MoneyOperand<NoInfer<C>, O>,
 ): boolean => compare(money, other) >= 0;
 
 /** Whether the amount is zero. */
@@ -833,9 +856,13 @@ export const sign = (money: Money): -1 | 0 | 1 => {
 };
 
 /** The smallest of the amounts (same currency); the first one wins ties. */
-export function min<C extends string>(first: Money<C>, ...rest: Money<NoInfer<C>>[]): Money<C> {
+export function min<C extends string, O extends string = C>(
+  first: Money<C>,
+  ...rest: MoneyOperand<NoInfer<C>, O>[]
+): Money<C> {
   let smallest = first;
-  for (const candidate of rest) {
+  // compare() checks each currency at run time, so the operands are Money<C> from here on
+  for (const candidate of rest as Money<C>[]) {
     if (compare(candidate, smallest) < 0) {
       smallest = candidate;
     }
@@ -843,9 +870,12 @@ export function min<C extends string>(first: Money<C>, ...rest: Money<NoInfer<C>
   return smallest;
 }
 /** The largest of the amounts (same currency); the first one wins ties. */
-export function max<C extends string>(first: Money<C>, ...rest: Money<NoInfer<C>>[]): Money<C> {
+export function max<C extends string, O extends string = C>(
+  first: Money<C>,
+  ...rest: MoneyOperand<NoInfer<C>, O>[]
+): Money<C> {
   let largest = first;
-  for (const candidate of rest) {
+  for (const candidate of rest as Money<C>[]) {
     if (compare(candidate, largest) > 0) {
       largest = candidate;
     }
@@ -853,18 +883,20 @@ export function max<C extends string>(first: Money<C>, ...rest: Money<NoInfer<C>
   return largest;
 }
 /** Limits m to [lo, hi]. */
-export function clamp<C extends string>(
+export function clamp<C extends string, O extends string = C>(
   money: Money<C>,
-  lo: Money<NoInfer<C>>,
-  hi: Money<NoInfer<C>>,
+  lo: MoneyOperand<NoInfer<C>, O>,
+  hi: MoneyOperand<NoInfer<C>, O>,
 ): Money<C> {
-  if (compare(lo, hi) > 0) {
+  const low = lo as Money<C>;
+  const high = hi as Money<C>;
+  if (compare(low, high) > 0) {
     throw new RangeError('clamp(): lo > hi');
   }
-  if (compare(money, lo) < 0) {
-    return lo;
+  if (compare(money, low) < 0) {
+    return low;
   }
-  return compare(money, hi) > 0 ? hi : money;
+  return compare(money, high) > 0 ? high : money;
 }
 
 // ---------------------------------------------------------------------------------------------
