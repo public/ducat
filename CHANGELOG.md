@@ -9,10 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
-- `currencyContext(currency, { locale })` (`@ducatjs/money/context`, and `/fn`): `money`,
-  `fromMinor`, `zero`, `parse`, `format` and `is` bound to one currency and locale, as a frozen
-  plain object, for single-currency apps; `MoneyOf<typeof ctx>` is its Money type. Nothing global
-  is set, and a `/fn` program using one carries only the currencies it imports (#216).
+- `currencyContext(currency, { locale, parse? })` (`@ducatjs/money/context`, and `/fn`):
+  `money`, `fromMinor`, `zero`, `format` and `is` bound to one currency and locale, as a frozen
+  plain object, for single-currency apps, plus `parse` when it is passed in; `MoneyOf<typeof ctx>`
+  is its Money type. Nothing global is set, and a `/fn` program using one carries only the
+  currencies it imports (#216).
 - `hasFraction()` (method and `/fn`): whether the amount has a non-zero fractional part, true for
   12.34 EUR and false for 12.00 EUR at any scale; dinero.js calls it `hasSubUnits` (#208).
 - `@ducatjs/money/typeorm`: TypeORM column transformers, exact both ways:
