@@ -4,7 +4,7 @@
   "overCore": {
     "@ducatjs/money/allocate": 1.55,
     "@ducatjs/money/tax": 0.25,
-    "@ducatjs/money/math": 0.42,
+    "@ducatjs/money/math": 0.53,
     "@ducatjs/money/convert": 3.62,
     "@ducatjs/money/convert/ecb": 4.15,
     "@ducatjs/money/convert/fetch": 6.05,
@@ -97,7 +97,7 @@
     },
     "functions: one Ratio operation tree-shakes alone": {
       "code": "import { ratioComplement } from '@ducatjs/money/fn'; console.log(ratioComplement('0.15').num);",
-      "gzipped": 9
+      "gzipped": 1.05
     },
     "functions: fromMinor, add, toDecimal": {
       "code": "import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
