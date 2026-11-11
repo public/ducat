@@ -6,12 +6,14 @@ import { ratio, type Ratio } from '../src/decimal.js';
 import { exact } from '../src/exact.js';
 import {
   amortise,
+  annualRate,
   compound,
   interest,
   interestExact,
   irr,
   npv,
   npvExact,
+  periodicRate,
   discountedSum,
   discountedSumExact,
   prorate,
@@ -788,6 +790,154 @@ describe('npv and irr', () => {
     // 4.5%/12 = 0.00375 a month
     expect(result.rate).toBe('0.0037499956');
     expect(elapsed).toBeLessThan(1000);
+  });
+});
+
+describe('periodicRate and annualRate', () => {
+  /** (1 + rate)^n as a ratio, exactly */
+  const growthPower = (rate: string | Ratio, n: number): Ratio => {
+    const value = ratio(rate);
+    const power = BigInt(n);
+    return ratio((value.num + value.den) ** power, value.den ** power);
+  };
+  const lessOrEqual = (left: Ratio, right: Ratio) => left.num * right.den <= right.num * left.den;
+  const onePlus = (rate: string | Ratio): Ratio => {
+    const value = ratio(rate);
+    return ratio(value.num + value.den, value.den);
+  };
+
+  it('finds the monthly rate of an annual one, floored, like irr', () => {
+    expect(periodicRate('0.05', { perYear: 12, digits: 12 })).toEqual({
+      rate: '0.004074123783',
+      lower: '0.004074123783',
+      upper: '0.004074123784',
+    });
+    expect(periodicRate('0.05', { perYear: 12 }).rate).toBe('0.0040741237');
+    // negative rates floor downwards too
+    expect(periodicRate('-0.5', { perYear: 12 }).rate).toBe('-0.0561256874');
+    expect(periodicRate('0.05', { perYear: 365, digits: 3 }).rate).toBe('0.000');
+  });
+
+  it('gives the exact rate when the root is rational', () => {
+    expect(periodicRate('0.21', { perYear: 2 })).toEqual({
+      rate: '0.1000000000',
+      lower: '0.1000000000',
+      upper: '0.1000000001',
+      exact: ratio(1n, 10n),
+    });
+    expect(periodicRate('0', { perYear: 12 }).exact).toEqual(ratio(0n));
+    expect(periodicRate('0.05', { perYear: 1, digits: 2 }).exact).toEqual(ratio('0.05'));
+    // (64/27)^(1/3) − 1 = 1/3: rational but not a decimal
+    expect(periodicRate(ratio(37n, 27n), { perYear: 3, digits: 4 })).toEqual({
+      rate: '0.3333',
+      lower: '0.3333',
+      upper: '0.3334',
+      exact: ratio(1n, 3n),
+    });
+    expect(periodicRate('-0.75', { perYear: 2, digits: 1 }).exact).toEqual(ratio(-1n, 2n));
+    expect(periodicRate('0.05', { perYear: 12 }).exact).toBeUndefined();
+  });
+
+  it('computes the annual rate exactly', () => {
+    expect(annualRate('0.01', { perYear: 12 })).toEqual(
+      ratio(126825030131969720661201n, 10n ** 24n),
+    );
+    expect(annualRate(ratio(1n, 3n), { perYear: 3 })).toEqual(ratio(37n, 27n));
+    expect(annualRate('0', { perYear: 365 })).toEqual(ratio(0n));
+    expect(annualRate('-0.5', { perYear: 1 })).toEqual(ratio('-0.5'));
+  });
+
+  it('rejects rates at or below -1 and bad options', () => {
+    expect(() => periodicRate('-1', { perYear: 12 })).toThrow('must be above -1');
+    expect(() => periodicRate('-1.5', { perYear: 2 })).toThrow('must be above -1');
+    expect(() => annualRate('-1', { perYear: 12 })).toThrow('must be above -1');
+    expect(() => annualRate('-2', { perYear: 2 })).toThrow('must be above -1');
+    expect(() => periodicRate('0.05', { perYear: 0 })).toThrow('Invalid perYear 0');
+    expect(() => periodicRate('0.05', { perYear: 1.5 })).toThrow('Invalid perYear 1.5');
+    expect(() => periodicRate('0.05', { perYear: 12, digits: -1 })).toThrow('Invalid digits -1');
+    expect(() => periodicRate('0.05', { perYear: 12, digits: 101 })).toThrow('Invalid digits 101');
+    expect(() => periodicRate('0.05', { perYear: 1000, digits: 51 })).toThrow(
+      'digits × perYear must be at most 50000',
+    );
+    expect(periodicRate('0.05', { perYear: 1000, digits: 50 }).rate).toMatch(/^0\.0000487/);
+    expect(() => annualRate('0.01', { perYear: 0 })).toThrow('Invalid perYear 0');
+    expect(() => annualRate('0.01', { perYear: 100_001 })).toThrow('Invalid perYear 100001');
+  });
+
+  it('throws when the periodic rate is within 10^-digits of -1', () => {
+    // (10^-30)^(1/2) − 1 = −0.999999999999999…
+    const almostAll = ratio(1n - 10n ** 30n, 10n ** 30n);
+    expect(() => periodicRate(almostAll, { perYear: 2, digits: 10 })).toThrow(
+      'ask for more digits',
+    );
+    expect(periodicRate(almostAll, { perYear: 2, digits: 15 }).exact).toEqual(
+      ratio(1n - 10n ** 15n, 10n ** 15n),
+    );
+  });
+
+  const annualRates = fc
+    .tuple(fc.bigInt({ min: -999_999n, max: 10n ** 7n }), fc.integer({ min: 0, max: 6 }))
+    .map(([units, places]) => ratio(units, 10n ** BigInt(places)))
+    .filter((value) => value.num + value.den > 0n);
+  const perYears = fc.oneof(
+    fc.constantFrom(1, 2, 4, 12, 52, 365),
+    fc.integer({ min: 1, max: 400 }),
+  );
+
+  it('brackets the root: (1 + lower)^n ≤ 1 + annual < (1 + upper)^n', () => {
+    fc.assert(
+      fc.property(annualRates, perYears, fc.integer({ min: 0, max: 20 }), (annual, n, digits) => {
+        fc.pre(digits * n <= 50_000);
+        let result;
+        try {
+          result = periodicRate(annual, { perYear: n, digits });
+        } catch (error) {
+          // only a rate within 10^-digits of -1 may throw
+          expect(String(error)).toContain('ask for more digits');
+          return;
+        }
+        const { lower, upper } = result;
+        // both have `digits` places, one grid step apart
+        const grid = (value: string) => BigInt(value.replace('.', ''));
+        expect([lower.split('.')[1]?.length ?? 0, grid(upper) - grid(lower)]).toEqual([digits, 1n]);
+        expect(lessOrEqual(growthPower(lower, n), onePlus(annual))).toBe(true);
+        expect(lessOrEqual(growthPower(upper, n), onePlus(annual))).toBe(false);
+        if (result.exact !== undefined) {
+          expect(growthPower(result.exact, n)).toEqual(onePlus(annual));
+        }
+      }),
+      { numRuns: runs(200) },
+    );
+  });
+
+  it('round-trips: periodicRate(annualRate(p)) is exactly p', () => {
+    const periodicRates = fc
+      .tuple(fc.bigInt({ min: -99_999n, max: 10n ** 6n }), fc.integer({ min: 0, max: 6 }))
+      .map(([units, places]) => ratio(units, 10n ** BigInt(places)))
+      .filter((value) => value.num + value.den > 0n);
+    fc.assert(
+      fc.property(periodicRates, fc.integer({ min: 1, max: 60 }), (periodic, n) => {
+        const annual = annualRate(periodic, { perYear: n });
+        expect(periodicRate(annual, { perYear: n, digits: 6 }).exact).toEqual(periodic);
+      }),
+      { numRuns: runs(100) },
+    );
+  });
+
+  it('fewer digits truncate more digits', () => {
+    fc.assert(
+      fc.property(annualRates, perYears, fc.integer({ min: 0, max: 15 }), (annual, n, digits) => {
+        fc.pre(ratio(annual).num > -ratio(annual).den / 2n);
+        const fine = periodicRate(annual, { perYear: n, digits: 20 }).lower;
+        const coarse = periodicRate(annual, { perYear: n, digits }).lower;
+        const scaled = ratio(fine).num * 10n ** BigInt(digits);
+        const den = ratio(fine).den;
+        // floor(fine · 10^digits) / 10^digits
+        const floored = scaled / den - (scaled % den !== 0n && scaled < 0n ? 1n : 0n);
+        expect(ratio(coarse)).toEqual(ratio(floored, 10n ** BigInt(digits)));
+      }),
+      { numRuns: runs(100) },
+    );
   });
 });
 

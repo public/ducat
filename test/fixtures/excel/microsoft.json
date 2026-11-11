@@ -1,5 +1,5 @@
 {
-  "comment": "Worked examples from Microsoft's Excel function pages, copied as printed. NPV results are in dollars and IRR results are fractions (the pages print -2.1% as -2.1%; it is stored as -0.021), rounded as the pages show them.",
+  "comment": "Worked examples from Microsoft's Excel function pages, copied as printed. NPV results are in dollars and IRR results are fractions (the pages print -2.1% as -2.1%; it is stored as -0.021), rounded as the pages show them. RRI and EFFECT results are fractions, as printed.",
   "npv": {
     "source": "https://support.microsoft.com/en-us/office/npv-function-8672cb67-2576-4d07-b67b-ac28acf2a568",
     "examples": [
@@ -46,6 +46,18 @@
         "guess": "-0.1",
         "result": "-0.444"
       }
+    ]
+  },
+  "rri": {
+    "source": "https://support.microsoft.com/en-us/office/rri-function-6f5822d8-7ef1-4233-944c-79e8172930f4",
+    "examples": [
+      { "formula": "=RRI(96,10000,11000)", "nper": "96", "pv": "10000", "fv": "11000", "result": "0.0009933" }
+    ]
+  },
+  "effect": {
+    "source": "https://support.microsoft.com/en-us/office/effect-function-910d4e4c-79e2-4009-95e6-507e04f11bc4",
+    "examples": [
+      { "formula": "=EFFECT(A2,A3)", "nominal": "0.0525", "npery": "4", "result": "0.0535427" }
     ]
   }
 }
