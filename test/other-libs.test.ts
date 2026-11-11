@@ -7,6 +7,13 @@ import {
   allocate,
   currencyExponent,
   divide,
+  exact,
+  exchangeRate,
+  extractTax,
+  majorPart,
+  minorPart,
+  percentage,
+  trimScale,
   fromMinor,
   isCurrency,
   isPositive,
@@ -267,6 +274,17 @@ describe('large values', () => {
   it('prints high-precision values exactly', () => {
     expect(toDecimal(fromMinor(100000n * 10n ** 18n, 'EUR', 18))).toBe('100000.000000000000000000');
   });
+
+  // dinero.js 1 #84 (as a number) and dinero.js 2 #294: toUnit divided as a float, and couldn't say
+  // that 10000000000000000.50 USD has no exact double. toNumber rounds once, by name.
+  it('converts to a number only by name, rounding once', () => {
+    expect(fromMinor(100000n * 10n ** 18n, 'EUR', 18).toNumber()).toBe(100000);
+    expect(fromMinor(1000000000000000050n, 'USD').toNumber()).toBe(Number('10000000000000000.50'));
+    expect(() => fromMinor(1000000000000000050n, 'USD').toMinorNumber()).toThrow(RangeError);
+    expect(fromMinor(1000000000000000050n, 'USD').toMinorNumber({ lossy: true })).toBe(
+      Number(1000000000000000050n),
+    );
+  });
 });
 
 describe('parsing is strict', () => {
@@ -372,5 +390,137 @@ describe('currency data', () => {
     for (const code of ['ZMK', 'BYR', 'VEF', 'LTL', 'LVL', 'EEK', 'MRO', 'STD']) {
       expect([code, code in ISO_EXPONENTS]).toEqual([code, false]);
     }
+  });
+});
+
+describe('more from dinero.js’s issue history', () => {
+  // Each expected value comes from the report or from working the arithmetic by hand, not from
+  // ducat. Links: https://github.com/dinerojs/dinero.js/issues/<number>
+
+  // dinero.js 1 #8: 2090.50 × 8.61 = 17999.2050 printed as 17999.2 (float rounding)
+  it('rounds a product to the cent from its exact value', () => {
+    expect(multiply(money('2090.50', 'EUR'), '8.61').toString()).toBe('17999.21 EUR');
+    expect(multiply(money('2090.50', 'EUR'), 8.61).toString()).toBe('17999.21 EUR');
+  });
+
+  // dinero.js 1 #11: a division or product with a fractional result threw instead of rounding
+  it('rounds fractional results instead of throwing', () => {
+    expect(divide(money('5.00', 'USD'), 3).toString()).toBe('1.67 USD');
+    expect(multiply(money('5.00', 'USD'), '2.01').toString()).toBe('10.05 USD');
+  });
+
+  // dinero.js 1 #53: changing the scale to 0 after dividing by a long decimal threw a TypeError
+  it('changes scale after dividing by a long decimal', () => {
+    // 222.00 / 1.5555555 = 142.7142... -> 142.71 -> 143
+    expect(toScale(divide(money('222.00', 'EUR'), '1.5555555'), 0).toString()).toBe('143 EUR');
+  });
+
+  // dinero.js 1 #157: documented as half away from zero, rounded half to even
+  it('rounds half away from zero by default, and half to even when asked', () => {
+    // 50 × 0.0605 = 3.025
+    expect(multiply(money('50', 'EUR'), '0.0605').toString()).toBe('3.03 EUR');
+    expect(multiply(money('50', 'EUR'), '0.0605', 'halfEven').toString()).toBe('3.02 EUR');
+    expect(multiply(money('150', 'EUR'), '0.0605', 'halfEven').toString()).toBe('9.08 EUR');
+  });
+
+  // dinero.js 1 #177: 99.99 / 119 × 100 gave 84.00, expected 84.03. Every operation on Money
+  // rounds to the cent, as dinero.js does; ExactMoney keeps the exact value until the end.
+  it('rounds each step on Money, and once on ExactMoney', () => {
+    expect(multiply(divide(money('99.99', 'EUR'), 119), 100).toString()).toBe('84.00 EUR');
+    expect(exact(money('99.99', 'EUR')).divide(119).multiply(100).round().toString()).toBe(
+      '84.03 EUR',
+    );
+  });
+
+  // dinero.js 1 #639: 1.000 split in three with weights rounded to 1/10000 gave 0.3333 × 1.000
+  it('splits into equal thirds without approximating the weights', () => {
+    expect(strings(allocate(money('1000.00', 'EUR'), [1, 1, 1]))).toEqual([
+      '333.34 EUR',
+      '333.33 EUR',
+      '333.33 EUR',
+    ]);
+  });
+
+  // dinero.js 1 #757: percentages above 100 threw a RangeError
+  it('takes percentages above 100', () => {
+    expect(percentage(money('5.00', 'EUR'), 150).toString()).toBe('7.50 EUR');
+  });
+
+  // dinero.js #296: rounding to a coarser scale ignored the rounding mode at a custom scale
+  it('rounds from a custom scale with the mode given', () => {
+    expect(toScale(fromMinor(12345, 'EUR', 3), 2, 'halfExpand').toString()).toBe('12.35 EUR');
+    expect(toScale(fromMinor(12345, 'EUR', 3), 2, 'halfEven').toString()).toBe('12.34 EUR');
+    expect(toScale(fromMinor(12345, 'EUR', 3), 2, 'trunc').toString()).toBe('12.34 EUR');
+  });
+
+  // dinero.js #435: a zero-decimal amount times a scaled factor had fractional units
+  it('keeps zero-decimal currencies whole after multiplying', () => {
+    // 1423452356 × 0.05 = 71172617.8
+    const product = multiply(fromMinor(1423452356, 'VND'), '0.05');
+    expect(product.toString()).toBe('71172618 VND');
+    expect(product.scale).toBe(0);
+  });
+
+  // dinero.js #477: converting between currencies with different exponents gave the wrong scale
+  it('converts to the target currency’s scale', () => {
+    // 1.234 KWD × 485.123 = 598.641782 JPY
+    const yen = exchangeRate('KWD', 'JPY', '485.123').convert(money('1.234', 'KWD'));
+    expect([yen.toString(), yen.scale]).toEqual(['599 JPY', 0]);
+    // 1000 JPY × 0.00206 = 2.06 KWD
+    const dinars = exchangeRate('JPY', 'KWD', '0.00206').convert(fromMinor(1000, 'JPY'));
+    expect([dinars.toString(), dinars.scale]).toEqual(['2.060 KWD', 3]);
+  });
+
+  // dinero.js #501: a decimal amount threw a bare "Amount is invalid"
+  it('says what is wrong with fractional minor units, and takes decimals in major units', () => {
+    expect(() => fromMinor(45.99, 'USD')).toThrow(/integer/);
+    expect(money('45.99', 'USD').toString()).toBe('45.99 USD');
+  });
+
+  // dinero.js #600: extracting VAT from a gross amount needed a divide that wasn't there
+  it('extracts VAT from a gross amount', () => {
+    const { net, tax, gross } = extractTax(money('1.19', 'EUR'), 19);
+    expect([net, tax, gross].map(String)).toEqual(['1.00 EUR', '0.19 EUR', '1.19 EUR']);
+  });
+
+  // dinero.js #640: trimming the scale of zero never returned
+  it('trims the scale of zero', () => {
+    expect(trimScale(fromMinor(0, 'USD')).toString()).toBe('0.00 USD');
+    expect(trimScale(fromMinor(0, 'USD', 7)).toString()).toBe('0.00 USD');
+  });
+
+  // dinero.js #716: formatting failed above 21 decimal places
+  it('formats more than 21 decimal places exactly', () => {
+    const value = fromMinor(123456789012345678901234567n, 'USD', 25);
+    expect(format(value, 'en-US')).toBe('$12.3456789012345678901234567');
+  });
+
+  // dinero.js #734: multiplying by a float with 17 significant digits threw "Amount is invalid"
+  it('refuses a float with more digits than it can carry, and takes the same digits as a string', () => {
+    expect(() => multiply(fromMinor(56, 'USD'), 2.0659309759999998)).toThrow(/significant digits/);
+    // 0.56 × 2.0659309759999998 = 1.156921...
+    expect(multiply(fromMinor(56, 'USD'), '2.0659309759999998').toString()).toBe('1.16 USD');
+  });
+
+  // dinero.js #756 (closed as not planned): toUnits() lost the leading zero of 10.05 ([10, 5]).
+  // minorPart is a number of minor units, so 5 is right; toDecimal keeps the digits.
+  it('gives minor units as a number and the digits as a string', () => {
+    const value = fromMinor(1005, 'USD');
+    expect([majorPart(value), minorPart(value)]).toEqual([10, 5]);
+    expect(toDecimal(value)).toBe('10.05');
+    expect(toDecimal(fromMinor(10054, 'USD', 3))).toBe('10.054');
+  });
+
+  // dinero.js #203, #774: JPY printed as ¥500.00, and a trailing symbol dropped the decimals
+  it('formats by locale, decimals and symbol placement included', () => {
+    expect(format(fromMinor(500, 'JPY'), 'en-US')).toBe('¥500');
+    expect(format(money('10.51', 'EUR'), 'de-DE')).toBe('10,51\u00a0€');
+  });
+
+  // dinero.js #837: a crafted format string made a regular expression backtrack for seconds
+  it('parses long hostile input in time proportional to its length', { timeout: 5000 }, () => {
+    const digits = '1,' + '1'.repeat(100_000) + 'x';
+    expect(() => parse(digits, 'EUR', 'en-US')).toThrow(SyntaxError);
+    expect(parse('€' + ' '.repeat(100_000) + '1', 'EUR', 'de-DE').toString()).toBe('1.00 EUR');
   });
 });

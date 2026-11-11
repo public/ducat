@@ -28,9 +28,11 @@ export {
   clamp,
   majorPart,
   minorPart,
+  hasFraction,
   toDecimal,
   toMinor,
   toMinorNumber,
+  toNumber,
   toScaledUnits,
 } from '../money.js';
 export { roundingPolicy, isoPolicy, assertScale, type RoundingPolicyOptions } from '../policy.js';

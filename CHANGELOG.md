@@ -9,6 +9,25 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `hasFraction()` (method and `/fn`): whether the amount has a non-zero fractional part, true for
+  12.34 EUR and false for 12.00 EUR at any scale; dinero.js calls it `hasSubUnits` (#208).
+- `@ducatjs/money/typeorm`: TypeORM column transformers, exact both ways:
+  `minorTransformer(currency, { scale? })` for BIGINT minor units, `decimalTransformer(currency,
+  size?)` for NUMERIC/DECIMAL and `jsonTransformer(currency?)` for `json`, `jsonb` and
+  `simple-json`, which also work in find operators; and `fromRawMinor` and `fromRawDecimal` for
+  aggregates from raw queries. `typeorm` is an optional peer dependency, and the entry doesn't
+  import it (#215).
+- `/wire`: dinero.js 1's `{ amount, currency, precision }` shape (`toDineroObject`,
+  `fromDineroObject`), exact both ways and at the object's precision; `m.round('unnecessary')`
+  brings a value to the currency's exponent. `amount` must be a safe integer or a bigint and
+  `precision` a valid scale: a value of the wrong type throws a `TypeError`, one out of range a
+  `RangeError` (#217).
+- Arithmetic on `Ratio` values in `/math`: `ratioAdd`, `ratioSubtract`, `ratioMultiply`,
+  `ratioDivide`, `ratioNegate`, `ratioComplement` (1 − r) and `ratioCompare`, exact and reduced,
+  taking any factor (Ratio, Fixed, decimal string, integer) on either side (#201).
+- `toNumber()` (method and `/fn`) and `toMinorNumber({ lossy: true })`: explicitly lossy number
+  conversions that round once to the nearest double, for charts and APIs that take numbers.
+  `ExactMoney#toNumber()` too (#206).
 - `addTaxExact()` and `extractTaxExact()` in `/exact`: tax splits as unrounded `ExactMoney`
   parts (net + tax is exactly gross), so a report can sum the rows and round once (#218).
 
