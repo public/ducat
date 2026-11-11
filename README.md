@@ -146,7 +146,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                         |
 | `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`                                              |
 | `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                  |
-| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                         |
+| `@ducatjs/money/exact`              | `exact`, `multiplyExact`                                           | `ExactMoney`, `sumExact`, `multiplyExact`                        |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                  |
 | `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                    |
 | `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                          |
@@ -743,6 +743,19 @@ const eurUsd = exchangeRate('EUR', 'USD', '1.1165');
 const { value, residual } = convertDetailed(money('0.07', 'EUR'), eurUsd, 'halfEven');
 value; // → 0.08 USD
 residual; // → -369/200000 USD (value + residual is the exact conversion)
+```
+
+`multiplyExact(m, factor)` multiplies without rounding: the result's scale grows to hold every digit, and never drops below the amount's own. A product with no finite decimal form (a factor of 1/3) throws a `RoundingError`, so it can stand in for "exact at N decimals" without a guess at N. `ExactMoney#toMoney()` does the same for an exact chain, at least at the currency's exponent.
+
+```ts
+import { money, ratio } from '@ducatjs/money';
+import { exact } from '@ducatjs/money/exact';
+
+money('10.00', 'EUR').multiplyExact('1.0775'); // → 10.775 EUR
+money('10.00', 'EUR').multiplyExact(2); // → 20.00 EUR
+money('1.00', 'EUR').multiplyExact(ratio(1, 3)); // throws RoundingError
+exact(money('1', 'EUR')).divide(8).toMoney(); // → 0.125 EUR
+exact(money('10', 'EUR')).divide(3).toMoney(); // throws RoundingError: round() it with a rounding mode
 ```
 
 **Totals in several currencies.** `bag(...amounts)` keeps per-currency totals, and `bag.total('EUR', fx, 'halfEven')` converts every entry exactly, sums and rounds once. To order amounts in different currencies, `comparator(fx, { base: 'USD' })` compares them through one base currency. With one rate per currency the order is consistent. Pairwise rates are not: with bid/ask or slightly inconsistent mid rates, A < B < C < A can happen, and `Array#sort` then gives engine-dependent results. `sortByValue(list, fx, { base })` looks every rate up before it reorders anything.

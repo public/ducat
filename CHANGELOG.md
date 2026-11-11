@@ -7,6 +7,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `multiplyExact()` (function and method, in `/exact`): an exact multiply whose scale grows to
+  hold the product, never below the amount's, throwing a `RoundingError` when it doesn't
+  terminate; and `ExactMoney#toMoney()`, the exact value as Money by the same rule (#223).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day
