@@ -156,6 +156,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)   |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                   |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
+| `@ducatjs/money/context`            | nothing                                                            | `currencyContext` (one currency and locale, nothing global)      |
 | `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (.99, .95, the nearest 5), `tieredPrice` (tiers)   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
@@ -551,6 +552,31 @@ currencySymbol('USD', 'en-CA'); // → 'US$'
 cashUnit('CHF'); // → '0.05'
 territoryCurrencies('DE', { on: '2001-06-01' }).map((use) => use.currency); // → ['EUR', 'DEM']
 ```
+
+### One currency: a context
+
+ducat has no global default currency, precision or locale, on purpose. An app that works in one currency can bind the plain functions to it instead: `currencyContext('EUR', { locale })` from `@ducatjs/money/context` (or `/fn`) returns a frozen plain object with `money`, `fromMinor`, `zero`, `format` and `is`, all in that currency, and `parse` when you pass it in (it is about 1 kB, so a context that only formats doesn't carry it). Nothing global changes, two contexts never interfere, and tests stay isolated. `MoneyOf<typeof eur>` is `Money<'EUR'>`.
+
+```ts
+import { money } from '@ducatjs/money';
+import { currencyContext, type MoneyOf } from '@ducatjs/money/context';
+import { parse } from '@ducatjs/money/parse';
+
+const eur = currencyContext('EUR', { locale: 'en-IE', parse });
+type Eur = MoneyOf<typeof eur>; // Money<'EUR'>
+
+const price: Eur = eur.money('1234.5');
+eur.fromMinor(1234); // → 12.34 EUR
+eur.zero(); // → 0.00 EUR
+eur.format(price); // → '€1,234.50'
+eur.parse('€1,234.50'); // → 1234.50 EUR
+eur.is(money('5', 'USD')); // → false
+eur.format(money('5', 'USD')); // compile error, and throws
+currencyContext('EUR', { locale: 'not a locale' }); // throws RangeError
+currencyContext('EUR').parse('5'); // compile error, and throws
+```
+
+The currency and the locale are checked when the context is made. Its functions are the plain ones, so a `/fn` program that uses a context installs no methods and carries only the currencies it imports (`import '@ducatjs/money/iso/EUR'` before making it). `format` and `parse` take the same options as the functions they bind (`eur.format(m, { currencyDisplay: 'code' })`, `eur.parse(text, { lenient: true })`). As a `/fn` program, a context with `/iso/EUR`, `money` and `format` is 3.0 kB gzipped, and passing `parse` adds 1.1 kB.
 
 ### Interest, loans, NPV and proration
 
@@ -1158,7 +1184,7 @@ fromRawMinor(cents, 'EUR'); // → 12.34 EUR
 await dataSource.destroy();
 ```
 
-- **Checks:** writing another currency, a value at another scale (`round()` it first) or one a `{ precision, scale }` column would round or clamp throws, and so does a driver value that may have lost digits: a BIGINT returned as a number beyond 2^53 (better-sqlite3's default; TypeORM's MySQL driver and node-postgres return strings), a DECIMAL returned as a number, `NaN` or `Infinity`. An unknown currency or a bad `scale` throws where the column is declared. `null` passes through, for nullable columns.
+- **Checks:** writing another currency, a value at another scale (`round()` it first) or one a `{ precision, scale }` column would round or clamp throws, and so does a driver value that may have lost digits: a BIGINT returned as a number beyond 2^53 (better-sqlite3's default; TypeORM's MySQL driver and node-postgres return strings), a DECIMAL returned as a number, `NaN` or `Infinity`. An unknown currency or a bad `scale` throws where the column is declared. `null` passes through, for nullable columns. Give `decimalTransformer` the column's size, as in `{ type: 'decimal', precision: 19, scale: 4, transformer: decimalTransformer('EUR', { precision: 19, scale: 4 }) }`: without it, MySQL outside strict mode clamps a value that doesn't fit instead of failing.
 - **Find operators** (`MoreThan(m)`, `In([...])`, `Between(a, b)`) and plain `where` values take Money, which goes through the same checks. MySQL compares a BIGINT or DECIMAL column with a string parameter as doubles, so there they are exact only up to 2^53 minor units and 15 significant digits; compare larger amounts in SQL with a cast (`CAST(:total AS SIGNED)`).
 - **Raw queries:** `fromRawMinor(value, currency, { scale? })` and `fromRawDecimal(value, currency)` read what `getRawOne()` and `query()` return, which no transformer sees: Postgres sums BIGINT and NUMERIC to NUMERIC text, MySQL to DECIMAL text, SQLite to an integer. NULL, which `SUM()` returns over no rows, throws: `COALESCE(SUM(...), 0)` it. SQLite sums TEXT decimals as floats, so `fromRawDecimal` refuses those; sum minor units instead.
 - `jsonTransformer().to` returns the object, not its text, because TypeORM serialises `json`, `jsonb` and `simple-json` columns itself. Pass a currency (`jsonTransformer('EUR')`) to refuse others on write and on read. `typeorm` is an optional peer dependency (0.3 or later).

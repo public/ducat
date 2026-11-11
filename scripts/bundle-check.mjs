@@ -62,6 +62,12 @@ const programs = [
     code: `import { money, add, toDecimal } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const m = money('1', 'EUR'); toDecimal(add(m, m)); ${PROBE}`,
   },
   {
+    // a context binds the plain functions: no methods, and only the currencies imported
+    name: '/fn currencyContext, with /iso/EUR',
+    expect: 'no methods, EUR only',
+    code: `import { currencyContext, isCurrency, parse } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const eur = currencyContext('EUR', { locale: 'nl-NL', parse }); const m = eur.parse(eur.format(eur.money('1234.5'))); console.log((typeof m.add === 'function' ? 'methods' : 'no methods') + (isCurrency('USD') ? ', every ISO code' : ', EUR only'));`,
+  },
+  {
     name: '/fn alone, without any ISO import',
     throws: true,
     expect: 'Unknown currency "EUR"',
