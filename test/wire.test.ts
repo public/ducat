@@ -230,30 +230,35 @@ describe("dinero.js 1's { amount, currency, precision }", () => {
   });
 
   it('checks every field', () => {
-    const invalid: unknown[] = [
+    const wrongType: unknown[] = [
       null,
       'EUR 12.34',
-      { amount: 12.5, currency: 'EUR', precision: 2 },
       { amount: '1234', currency: 'EUR', precision: 2 },
-      { amount: 2 ** 53, currency: 'EUR', precision: 2 },
-      { amount: Number.NaN, currency: 'EUR', precision: 2 },
       { amount: null, currency: 'EUR', precision: 2 },
       { currency: 'EUR', precision: 2 },
-      { amount: 1234, precision: 2 },
-      { amount: 1234, currency: 42, precision: 2 },
       { amount: 1234, currency: 'EUR' },
       { amount: 1234, currency: 'JPY' },
+      { amount: 1234, currency: 'EUR', precision: '2' },
+    ];
+    for (const value of wrongType) {
+      expect(() => fromDineroObject(value as never)).toThrow(TypeError);
+    }
+    const outOfRange: unknown[] = [
+      { amount: 12.5, currency: 'EUR', precision: 2 },
+      { amount: 2 ** 53, currency: 'EUR', precision: 2 },
+      { amount: Number.NaN, currency: 'EUR', precision: 2 },
+      { amount: 1234, precision: 2 },
+      { amount: 1234, currency: 42, precision: 2 },
       { amount: 1234, currency: 'EUR', precision: -1 },
       { amount: 1234, currency: 'EUR', precision: 1.5 },
-      { amount: 1234, currency: 'EUR', precision: '2' },
       { amount: 1234, currency: 'EUR', precision: 1001 },
       { amount: 1234, currency: 'EUR', precision: Number.NaN },
     ];
-    for (const value of invalid) {
+    for (const value of outOfRange) {
       expect(() => fromDineroObject(value as never)).toThrow(RangeError);
     }
     expect(() => fromDineroObject({ amount: 1234, currency: 'EUR' } as never)).toThrow(
-      'Invalid scale undefined',
+      'A dinero.js precision must be a number, got undefined',
     );
     expect(() => fromDineroObject({ amount: 1234, currency: 'EUR', precision: 1001 })).toThrow(
       'Invalid scale 1001',

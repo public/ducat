@@ -358,9 +358,11 @@ export function toDineroObject(money: Money): DineroObject {
  * Reads dinero.js 1's `{ amount, currency, precision }`, exactly and at its precision:
  * `fromDineroObject({ amount: 1234, currency: 'EUR', precision: 2 })` is 12.34 EUR, and `{ amount:
  * 500, currency: 'JPY', precision: 2 }` is 5.00 JPY (dinero.js defaults every currency to
- * precision 2). `amount` must be a safe integer or a bigint, and `precision` a valid scale (an
- * integer from 0 to 1000); all three fields are required. Anything else throws a RangeError, and
- * an unknown currency throws as `fromMinor` does.
+ * precision 2: ¥5, not ¥500); `m.round('unnecessary')` brings it to the currency's exponent,
+ * throwing rather than dropping a digit. `amount` must be a safe integer or a bigint, and `precision` a valid scale (an
+ * integer from 0 to 1000); all three fields are required. A value of the wrong type throws a
+ * TypeError, one out of range (a fraction, beyond 2^53 - 1, a bad precision) a RangeError, and an
+ * unknown currency throws as `fromMinor` does.
  */
 export function fromDineroObject<C extends CurrencyInput>(object: {
   readonly amount: number | bigint;
@@ -368,12 +370,16 @@ export function fromDineroObject<C extends CurrencyInput>(object: {
   readonly precision: number;
 }): Money<C> {
   if (object === null || typeof object !== 'object') {
-    throw new RangeError('Expected { amount, currency, precision }');
+    throw new TypeError('Expected { amount, currency, precision }');
   }
   const { amount, currency, precision } = object;
   if (typeof amount !== 'bigint' && !Number.isSafeInteger(amount)) {
-    throw new RangeError(`A dinero.js amount must be a safe integer or a bigint, got ${amount}`);
+    throw new (typeof amount === 'number' ? RangeError : TypeError)(
+      `A dinero.js amount must be a safe integer or a bigint, got ${String(amount)}`,
+    );
   }
-  // checkScale refuses a missing precision, so fromMinor never falls back to the ISO exponent
+  if (typeof precision !== 'number') {
+    throw new TypeError(`A dinero.js precision must be a number, got ${String(precision)}`);
+  }
   return fromMinor(amount, currency, checkScale(precision));
 }
