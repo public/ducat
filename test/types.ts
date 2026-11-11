@@ -102,6 +102,30 @@ assertCurrency(asserted, 'EUR');
 const afterAssert: Money<'EUR'> = asserted.add(eur);
 void notYet;
 void afterAssert;
+// --- a Money<string> (a database row) meets a literal currency: checked at run time (#219)
+declare const fromDatabase: Money<string>;
+declare const eurOrUsd: Money<'EUR' | 'USD'>;
+const literalPlusString: Money<'EUR'> = eur.add(fromDatabase);
+const literalPlusStringFn: Money<'EUR'> = add(eur, fromDatabase);
+const stringPlusLiteral: Money<string> = fromDatabase.add(eur);
+// @ts-expect-error the literal stays: EUR + string is Money<'EUR'>, not Money<'USD'>
+const notUsd: Money<'USD'> = eur.add(fromDatabase);
+// @ts-expect-error a string result is not known to be EUR
+const stringIsNotEur: Money<'EUR'> = fromDatabase.add(eur);
+// @ts-expect-error a different literal currency is still a compile error
+eur.add(usd);
+// @ts-expect-error and so is a union that may hold another currency: narrow it first
+eur.add(eurOrUsd);
+const comparedWithString: -1 | 0 | 1 = eur.compare(fromDatabase);
+const lessThanString: boolean = eur.lessThan(fromDatabase);
+const maxWithStrings: Money<'EUR'> = eur.max(fromDatabase, eur);
+const clampedWithStrings: Money<'EUR'> = eur.clamp(fromDatabase, fromDatabase);
+const subtractedFn: Money<'EUR'> =
+  compare(eur, fromDatabase) > 0 ? eur.subtract(fromDatabase) : eur;
+// @ts-expect-error compare across literals
+compare(eur, usd);
+void [literalPlusString, literalPlusStringFn, stringPlusLiteral, notUsd, stringIsNotEur];
+void [comparedWithString, lessThanString, maxWithStrings, clampedWithStrings, subtractedFn];
 // --- with() keeps the operation's result type
 const withResult: Money<'EUR'> = eur.with((value) => value.negate());
 const withString: string = eur.with((value) => value.toDecimal());
