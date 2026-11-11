@@ -7,6 +7,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `addTaxExact()` and `extractTaxExact()` in `/exact`: tax splits as unrounded `ExactMoney`
+  parts (net + tax is exactly gross), so a report can sum the rows and round once (#218).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day

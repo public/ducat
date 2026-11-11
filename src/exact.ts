@@ -176,6 +176,49 @@ export function sumExact<C extends string>(
   return sum;
 }
 
+/** A tax split in exact amounts: net + tax is exactly gross, and nothing is rounded yet. */
+export interface ExactTaxBreakdown<C extends string> {
+  readonly net: ExactMoney<C>;
+  readonly tax: ExactMoney<C>;
+  readonly gross: ExactMoney<C>;
+}
+
+const asExact = <C extends string>(amount: Money<C> | ExactMoney<C>): ExactMoney<C> =>
+  amount instanceof ExactMoney ? amount : exact(amount);
+
+/**
+ * Tax-exclusive, exactly: adds percent% tax to a net amount and rounds nothing.
+ * addTaxExact(EUR 10.01, '7.7') -> net 10.01, tax 0.77077, gross 10.78077. Sum the parts over many
+ * rows and round each total once.
+ */
+export function addTaxExact<C extends string>(
+  net: Money<C> | ExactMoney<C>,
+  percent: Factor,
+): ExactTaxBreakdown<C> {
+  const exactNet = asExact(net);
+  const percentRatio = ratio(percent);
+  const tax = exactNet.multiply(ratio(percentRatio.num, percentRatio.den * 100n));
+  return { net: exactNet, tax, gross: exactNet.add(tax) };
+}
+
+/**
+ * Tax-inclusive, exactly: the net is gross / (1 + percent/100), unrounded, and the tax the exact
+ * rest. extractTaxExact(EUR 12, '20') -> net 10, tax 2; with 7.7% the net doesn't terminate, so a
+ * report sums the exact nets and rounds once.
+ */
+export function extractTaxExact<C extends string>(
+  gross: Money<C> | ExactMoney<C>,
+  percent: Factor,
+): ExactTaxBreakdown<C> {
+  const exactGross = asExact(gross);
+  const percentRatio = ratio(percent);
+  // 1 / (1 + p/100) = 100 den / (100 den + num)
+  const net = exactGross.multiply(
+    ratio(100n * percentRatio.den, 100n * percentRatio.den + percentRatio.num),
+  );
+  return { net, tax: exactGross.subtract(net), gross: exactGross };
+}
+
 /** Whether `value` is an ExactMoney. */
 export function isExactMoney(value: unknown): value is ExactMoney {
   return value instanceof ExactMoney;
