@@ -15,6 +15,7 @@
     "../../src/entries/adyen-fx.ts",
     "../../src/entries/boc.ts",
     "../../src/entries/boe.ts",
+    "../../src/entries/context.ts",
     "../../src/entries/crypto.ts",
     "../../src/entries/currencies.ts",
     "../../src/entries/drizzle-mysql.ts",

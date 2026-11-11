@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `currencyContext(currency, { locale, parse? })` (`@ducatjs/money/context`, and `/fn`):
+  `money`, `fromMinor`, `zero`, `format` and `is` bound to one currency and locale, as a frozen
+  plain object, for single-currency apps, plus `parse` when it is passed in; `MoneyOf<typeof ctx>`
+  is its Money type. Nothing global is set, and a `/fn` program using one carries only the
+  currencies it imports (#216).
 - `hasFraction()` (method and `/fn`): whether the amount has a non-zero fractional part, true for
   12.34 EUR and false for 12.00 EUR at any scale; dinero.js calls it `hasSubUnits` (#208).
 - `@ducatjs/money/typeorm`: TypeORM column transformers, exact both ways:
@@ -30,6 +35,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `ExactMoney#toNumber()` too (#206).
 - `addTaxExact()` and `extractTaxExact()` in `/exact`: tax splits as unrounded `ExactMoney`
   parts (net + tax is exactly gross), so a report can sum the rows and round once (#218).
+- `ExactMoney` has the helpers `Money` has: `abs`, `isPositive`, `isNegative`, `lessThan` and the
+  other comparisons, `min`, `max`, `clamp`, `percentage` and `ratioOf`. `add`, `subtract`,
+  `compare`, `equals` and these accept a `Money` of the same currency, exactly, and `round` and
+  `roundWithResidual` take a rounding policy as well as a mode (#202).
 
 ## [0.3.0] - 2026-11-09
 
