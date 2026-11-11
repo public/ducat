@@ -50,6 +50,18 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   hold the product, never below the amount's, throwing a `RoundingError` when it doesn't
   terminate; and `ExactMoney#toMoney()`, the exact value as Money by the same rule (#223).
 
+### Changed
+
+- **Breaking:** `ExactMoney`'s `num` and `den` are getters now, not own fields. They are still
+  the reduced bigints, but spreading (`{ ...e }.num`), `Object.keys`/`entries` and copies no
+  longer carry them, and `toEqual` compares the new own fields `numerator` and `denominator`
+  (numbers or bigints). **Upgrading:** read `e.num` and `e.den` directly, and don't spread or copy
+  an ExactMoney; to store one, `round()` it or use `toMoney()` (#224).
+- `ExactMoney` is 2–6× faster on everyday amounts: it works on numbers while its numerator and
+  denominator are safe integers, and on bigints beyond, as Money does. Values beyond 2^53 are about
+  5–10% slower. `JSON.stringify` of an ExactMoney throws a TypeError naming `round()`, where it
+  already failed on the bigints (#224).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day

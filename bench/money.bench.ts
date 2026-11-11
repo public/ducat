@@ -32,6 +32,7 @@ import { parse } from '../src/parse.ts';
 import { ratio } from '../src/decimal.ts';
 import { fromAdyen, toAdyen } from '../src/adyen.ts';
 import { fromScaled } from '../src/fixed.ts';
+import { exact, sumExact } from '../src/exact.ts';
 import { fromStripe, toStripe } from '../src/stripe.ts';
 
 const N = 1000;
@@ -49,6 +50,8 @@ const formatted = eur.map((m) => format(m, 'de-DE'));
 const rate = ratio('1.075');
 const eurUsd = exchangeRate('EUR', 'USD', '1.0832');
 const fiveCents = money('0.05', 'CHF');
+const exacts = eur.map((m) => exact(m));
+const thirds = exacts.map((value) => value.divide(3));
 // exact inputs: every division below leaves no remainder, so rounding returns before the mode is used
 const eurBy4 = cents.map((c) => fromMinor(c * 4, 'EUR'));
 const eurScale3 = cents.map((c) => fromMinor(c * 10, 'EUR', 3));
@@ -215,6 +218,35 @@ describe('fixed', () => {
   });
   bench("Fixed multiply by '1.075'", () => {
     for (let i = 0; i < N; i++) sink = fixeds[i]!.multiply('1.075', 'halfEven');
+  });
+});
+
+describe('ExactMoney', () => {
+  bench('exact()', () => {
+    for (let i = 0; i < N; i++) sink = exact(eur[i]!);
+  });
+  bench('ExactMoney add', () => {
+    for (let i = 1; i < N; i++) sink = exacts[i]!.add(exacts[i - 1]!);
+  });
+  bench("ExactMoney multiply by '1.075'", () => {
+    for (let i = 0; i < N; i++) sink = exacts[i]!.multiply(rate);
+  });
+  bench('ExactMoney divide by 3', () => {
+    for (let i = 0; i < N; i++) sink = exacts[i]!.divide(3);
+  });
+  bench('ExactMoney chain ÷3 ×1.19 +x, rounded once', () => {
+    for (let i = 1; i < N; i++) {
+      sink = exacts[i]!.divide(3)
+        .multiply('1.19')
+        .add(exacts[i - 1]!)
+        .round('halfEven');
+    }
+  });
+  bench('ExactMoney round', () => {
+    for (let i = 0; i < N; i++) sink = thirds[i]!.round('halfEven');
+  });
+  bench('sumExact of thirds', () => {
+    sink = sumExact(thirds);
   });
 });
 
