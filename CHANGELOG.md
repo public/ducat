@@ -46,6 +46,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   hold the product, never below the amount's, throwing a `RoundingError` when it doesn't
   terminate; and `ExactMoney#toMoney()`, the exact value as Money by the same rule (#223).
 
+### Changed
+
+- A `Money<string>` (a currency known only at run time) is accepted beside a literal
+  `Money<'EUR'>` in `add`, `subtract`, `compare`, the comparisons, `min`, `max`, `clamp`,
+  `ratioOf`, `divideToIntegral` and `remainder`, as functions and methods. The currency is checked
+  at run time, and the result keeps the literal. A different literal or a union is still a compile
+  error. The operand type is exported as `MoneyOperand` (#219).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day

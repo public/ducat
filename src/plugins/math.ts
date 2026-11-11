@@ -7,18 +7,18 @@ import './iso.js';
 import type { Ratio } from '../decimal.js';
 import { divideToIntegral, ratioOf, remainder, trimScale } from '../math.js';
 import type { Money } from '../index.js';
-import { extendMoney } from '../money.js';
+import { extendMoney, type MoneyOperand } from '../money.js';
 
 export * from '../math.js';
 
 declare module '../index.js' {
   interface Money<C extends string> {
     /** The exact ratio this / other, e.g. `part.ratioOf(total)` */
-    ratioOf(other: Money<C>): Ratio;
+    ratioOf<O extends string = C>(other: MoneyOperand<C, O>): Ratio;
     /** How many whole times `divisor` fits into this, truncated toward zero */
-    divideToIntegral(divisor: Money<C>): number | bigint;
+    divideToIntegral<O extends string = C>(divisor: MoneyOperand<C, O>): number | bigint;
     /** What is left after taking `divisor` out a whole number of times (this amount's sign) */
-    remainder(divisor: Money<C>): Money<C>;
+    remainder<O extends string = C>(divisor: MoneyOperand<C, O>): Money<C>;
     /** The smallest scale, not below `minimumScale` (default the ISO exponent), that is exact */
     trimScale(minimumScale?: number): Money<C>;
   }
