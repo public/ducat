@@ -15,7 +15,7 @@ Builds a rule that moves a computed price to a retail ending: the allowed prices
 - `ending`: what prices end in, in major units, as a decimal string or an integer (`'0.99'`; `'9.90'` with `step: 10`; `0` with `step: 5`). At least 0 and less than `step`.
 - `step`: the distance between allowed prices, in major units (default 1).
 - `rounding`: `'ceil'` (default) the next allowed price at or above, `'floor'` the next at or below, `'halfCeil'` the nearest (ties go up), or any other mode applied to the count of steps. `'unnecessary'` throws unless the price already has the ending.
-- **Throws:** when built, `RangeError` for an ending outside `[0, step)`, a step that isn't positive, a number that isn't a valid decimal, or an invalid mode; `TypeError` for an ending or step of another type. When applied, `RangeError` when the ending or step has more decimals than the price (0.99 for a whole-yen price), and `RoundingError` for `'unnecessary'`.
+- **Throws:** when built, `RangeError` for an ending outside `[0, step)`, a step that isn't positive, a number that isn't a safe integer (pass `'0.99'`, not `0.99`), or an invalid mode; `SyntaxError` for a string outside the decimal-string grammar (`'.99'`); `TypeError` for an ending or step of another type. When applied, `RangeError` when the ending or step has more decimals than the price (0.99 for a whole-yen price), and `RoundingError` for `'unnecessary'`.
 
 ```ts
 import { money } from '@ducatjs/money';
@@ -41,7 +41,7 @@ The price of `quantity` under tiers in the style of Stripe's, exactly, with the 
 - **Rounds:** the exact total once, with `rounding` (default `'halfExpand'`, to the currency's exponent) or a policy. Each line's `amount` is the rounded running total minus the rounded running total before it, so the lines sum exactly to the total.
 - **Beyond a bounded last tier:** throws by default; `beyondLastTier: 'cap'` charges as if the quantity were the last `upTo`. A `chargeQuantity` is not capped.
 - **`chargeQuantity`** (volume mode only): the quantity the chosen tier's `unitAmount` multiplies, when it isn't the quantity that chose the tier. The tier's `flatAmount` is charged once. Tiers with only a `flatAmount` give flat-fee pricing, chosen by the quantity.
-- **Throws:** `RangeError` for no tiers, a tier with neither amount, bounds that don't increase (the message names the tier), an open tier that isn't last, a negative quantity, a quantity past a bounded last tier without `'cap'`, or an invalid `mode` or `beyondLastTier`; `TypeError` for `chargeQuantity` in graduated mode; `CurrencyMismatchError` for tiers in more than one currency.
+- **Throws:** `RangeError` for no tiers, tiers none of which has a `unitAmount` or a `flatAmount` (a single tier without either charges nothing), bounds that don't increase (the message names the tier), an open tier that isn't last, a negative quantity, a quantity past a bounded last tier without `'cap'`, or an invalid `mode` or `beyondLastTier`; `TypeError` for `chargeQuantity` in graduated mode; `CurrencyMismatchError` for tiers in more than one currency.
 
 ```ts
 import { money } from '@ducatjs/money';

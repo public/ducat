@@ -28,7 +28,7 @@ A BIGINT column of minor units in a fixed currency (`1234` is 12.34 EUR), exact 
 
 A NUMERIC/DECIMAL column (TEXT in SQLite) holding the exact decimal as a string. Trailing zeros (`12.3400` from NUMERIC(19,4)) are fine. Give it the column's size, as in `{ type: 'decimal', precision: 19, scale: 4, transformer: decimalTransformer('EUR', { precision: 19, scale: 4 }) }`: without it, MySQL outside strict mode clamps a value that doesn't fit instead of failing.
 
-- **Throws:** on write, for another currency, and `RangeError` for a value the size would round or clamp; on read, `TypeError` for a number (it has been through a float), and an error for `NaN`, `Infinity` or more decimals than the currency has.
+- **Throws:** on write, `CurrencyMismatchError` for another currency, and `RangeError` for Money not at the currency's exponent (`round()` it first; this applies even when the column could hold it) or a value the size would round or clamp; on read, `TypeError` for a number (it has been through a float), and an error for `NaN`, `Infinity` or more decimals than the currency has.
 
 ### jsonTransformer
 

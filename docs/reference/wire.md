@@ -34,7 +34,7 @@ Reads `google.type.Money` exactly: `{ currencyCode: 'USD', units: '12', nanos: 3
 The amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`: `{ Ccy: 'EUR', value: '12.34' }`. It is written with the currency's decimals, as the payment networks' rules (CBPR+, HVPS+) require for ActiveCurrencyAndAmount, whatever the Money's scale: 12.3400 EUR at scale 4 is written `'12.34'`, and JPY `'1000'`.
 
 - **Rounds:** only with `rounding`, to the currency's decimals (or `options.scale`).
-- **Throws:** `RoundingError` for more decimals without `rounding`; `RangeError` for a negative amount (the direction goes in the credit/debit indicator), more than 18 digits, a scale outside 0–5, or a code that isn't ISO 4217.
+- **Throws:** `RoundingError` for more decimals without `rounding`; `RangeError` for a negative amount (the direction goes in the credit/debit indicator), more than 18 digits, a scale outside 0–5, or a currency code that isn't three capital letters (a registered non-ISO code such as `BTC` is written).
 
 ### fromIso20022Amount
 
@@ -61,7 +61,7 @@ Reads an ISO 20022 amount exactly. The text must be plain digits with an optiona
 
 Reads `{ value, currency }` in ISO 4217 minor units.
 
-- **Throws:** `RangeError` when `value` isn't a safe integer or a bigint, or the object isn't `{ value, currency }`.
+- **Throws:** `RangeError` when `value` is a number that isn't a safe integer, or the object isn't `{ value, currency }`; `TypeError` when `value` is neither a number nor a bigint (a string from JSON, for example).
 
 ## dinero.js objects
 
@@ -79,7 +79,7 @@ dinero.js 1's `toObject()` shape, which many APIs and databases written with din
 
 Reads `{ amount, currency, precision }` exactly, at its precision. dinero.js gives every currency precision 2 unless told otherwise, so `{ amount: 500, currency: 'JPY', precision: 2 }` reads as 5.00 JPY (¥5, not ¥500). To bring a value to the currency's exponent, `round()` it: `m.round('unnecessary')` throws rather than drop a digit, and another mode rounds. All three fields are required.
 
-- **Throws:** `TypeError` for a missing field or a value of the wrong type; `RangeError` for an `amount` that is a fraction or beyond 2^53 − 1, or a `precision` that isn't an integer from 0 to 1000; and as `fromMinor` does for an unknown currency.
+- **Throws:** `TypeError` for a missing or wrongly typed `amount` or `precision`; `RangeError` for a missing `currency`, as `fromMinor` does for an unknown currency; `RangeError` for an `amount` that is a fraction or beyond 2^53 − 1, or a `precision` that isn't an integer from 0 to 1000; and as `fromMinor` does for an unknown currency.
 
 ```ts
 import { fromDineroObject, toIso20022Amount } from '@ducatjs/money/wire';

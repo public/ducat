@@ -17,7 +17,7 @@ Method: `m.allocate(weights, options?)`.
 Splits `money` into one part per weight, proportional to the weights. A zero weight gets zero. Weights are integers, bigints or decimal strings (`'33.3'`), read exactly; multiplying every weight by the same positive number changes nothing.
 
 - **Remainder:** the units the proportional shares leave over go where `options.remainder` says (default `'largest'`). With `'largest'` each part is less than one unit from its exact share; with `'first'` and `'last'`, at most one unit.
-- **Throws:** `RangeError` for no weights, a negative weight, all weights zero, or an unknown remainder strategy.
+- **Throws:** `RangeError` for no weights, a negative weight, all weights zero, or an unknown remainder strategy; `SyntaxError` for a string weight outside the decimal-string grammar.
 
 ```ts
 import { money } from '@ducatjs/money';
@@ -64,7 +64,7 @@ Method: `total.schedule(tranches)`.
 
 One part per tranche, in order: a fixed `amount`, a `percent` of the total (optionally with a `cap`), or the `rest`. Percentages are computed together by largest-remainder allocation, so no rounding mode is needed.
 
-- **Throws:** `RangeError` for more than one rest tranche, percentages over 100, tranches that exceed the total, or a leftover without a rest tranche.
+- **Throws:** `RangeError` for more than one rest tranche, percentages over 100, tranches that exceed the total, or a leftover without a rest tranche; `CurrencyMismatchError` for a tranche amount or cap in another currency.
 
 ```ts
 import { money } from '@ducatjs/money';
@@ -81,7 +81,7 @@ Method: `total.chunk(max)`.
 
 Tranches of at most `max`: every one but the last is exactly `max`, and the last is positive. A zero total gives one zero tranche.
 
-- **Throws:** `RangeError` when `max` isn't positive or `total` is negative.
+- **Throws:** `RangeError` when `max` isn't positive or `total` is negative; `CurrencyMismatchError` for a `max` in another currency.
 
 ```ts
 import { money } from '@ducatjs/money';

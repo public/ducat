@@ -38,7 +38,7 @@ exchangeRate('EUR', 'USD', '1.1165').convert(money('100', 'EUR'), 'halfEven'); /
 Converts like `convert` with a `Rate`, and also returns what rounding left out: `value + residual` is exactly `money × rate`, so a ledger can book the difference. With a rounding policy, `value` is on the policy's scale and increment, and `residual` is still the exact difference.
 
 - **Rounds:** `value` once, as `convert` does. `residual` is an unrounded `ExactMoney`.
-- **Throws:** as `convert` with a `Rate`.
+- **Throws:** as `convert` with a `Rate`, except that with a rounding mode `strictValidity` is ignored: `RateExpiredError` is thrown only when a rounding policy is passed.
 
 ### multiplyByRatioAtScale
 

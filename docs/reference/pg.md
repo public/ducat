@@ -76,7 +76,7 @@ Money from the composite type's text, `(12.34,EUR)`. The amount keeps the scale 
 
 The exact decimal for a `NUMERIC(p, s)` parameter. Postgres rounds extra decimals silently on insert, which is why the guard exists. Any scale up to the column's is accepted, and trailing zeros beyond it are dropped, since they don't change the value.
 
-- **Throws:** `RangeError` where Postgres would change the value: more decimals than `size.scale` (that aren't zeros), or more integer digits than the column holds.
+- **Throws:** `RangeError` where Postgres would change the value: more decimals than `size.scale` (that aren't zeros), or more integer digits than the column holds. Also `RangeError` for an invalid size, or a `size.scale` smaller than the currency's exponent, even when this value's extra decimals are zeros (`toNumeric(money('12', 'EUR'), { precision: 10, scale: 0 })` throws).
 
 ```ts
 import { money } from '@ducatjs/money';

@@ -17,7 +17,7 @@ Reads a locale-formatted amount in `currency`. The currency comes from the argum
 - **Accepts:** the locale's group and decimal separators; NBSP and narrow NBSP, Swiss `’`; Arabic-Indic, Persian, Devanagari and Thai digits; a minus sign (ASCII or U+2212) or accounting parentheses in the affixes, which make it negative.
 - **Group separators** must be where the locale puts them (`1.234,50` in de-DE, `1,23,456.78` in en-IN), because a misplaced one is usually another locale's decimal separator. `{ lenient: true }` accepts them anywhere.
 - **Scale and rounding:** as `money()`, with `options.scale` and `options.rounding`.
-- **Throws:** `SyntaxError` for no digits, unexpected characters, more than one decimal separator, or group separators in the wrong places; `RangeError` for a locale the runtime has no Intl data for; `RoundingError` for more decimals than the scale without `rounding`.
+- **Throws:** `SyntaxError` for no digits, unexpected characters, more than one decimal separator, or group separators in the wrong places; `RangeError` for a malformed locale tag (from `Intl`); `RoundingError` for more decimals than the scale without `rounding`. A locale the runtime has no data for isn't detected: `parse` uses the runtime's fallback separators (`parseMoney` rejects it).
 
 ### parseMoney
 
@@ -29,7 +29,7 @@ Reads a formatted amount and detects its currency from the text, without guessin
 - **Shared symbols** (`$`, `kr`, and also `£` and `¥`, which other currencies use as narrow symbols) need a `hint`, or a `symbols` entry such as `{ $: 'CAD' }`, even where the locale "owns" the symbol: `$` in en-CA is usually CAD, but a Canadian text can mean USD.
 - `currencies` limits what is detected (default: every ISO 4217 currency), and can include codes registered with `defineCurrency`.
 - `lenient: true` accepts any grouping, and a bare number when a `hint` is given. It never makes the currency a guess.
-- **Throws:** `SyntaxError` when a currency in the text contradicts the `hint`, when the text names two currencies, when text around the number isn't a currency (`"about 100 USD"`), when a shared symbol has no `hint`, or for group separators in the wrong places for the locale (`1,234,567`; `12,34,567` in en-IN); `RangeError` for a locale the runtime has no Intl data for; `RoundingError` as `parse`.
+- **Throws:** `SyntaxError` when the text has no currency at all (unless a `hint` and `lenient: true` are given), when a currency in the text contradicts the `hint`, when the text names two currencies, when text around the number isn't a currency (`"about 100 USD"`), when a shared symbol has no `hint`, or for group separators in the wrong places for the locale (`1,234,567`; `12,34,567` in en-IN); `RangeError` for a locale the runtime has no Intl data for; `RoundingError` as `parse`.
 
 ```ts
 import { parse, parseMoney } from '@ducatjs/money/parse';
