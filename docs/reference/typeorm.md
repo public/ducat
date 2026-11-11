@@ -40,7 +40,7 @@ A `json`/`jsonb` column (`simple-json` in SQLite) holding `{"amount":"12.34","cu
 
 ## Find operators
 
-Find operators (`MoreThan(m)`, `In([...])`, `Between(a, b)`) and plain `where` values take Money, which goes through the same checks. MySQL compares a BIGINT or DECIMAL column with a string parameter as doubles, so there they are exact only up to 2^53 minor units and 15 significant digits; compare larger amounts in SQL with a cast (`CAST(:total AS SIGNED)`).
+Find operators (`MoreThan(m)`, `In([...])`, `Between(a, b)`) and plain `where` values take Money, which goes through the same checks. The amounts go to the driver as strings, and Postgres, SQLite and MySQL 8.4 compare them with BIGINT and DECIMAL columns exactly, beyond 2^53 minor units and 15 significant digits too (tested in CI). Older MySQL versions and MariaDB are untested; there, compare large amounts in SQL with a cast (`CAST(:total AS SIGNED)`).
 
 ## Raw queries
 

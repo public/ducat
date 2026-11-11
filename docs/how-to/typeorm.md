@@ -68,7 +68,7 @@ await dataSource.destroy();
 
 ## Filter with find operators
 
-Find operators (`MoreThan(m)`, `In([...])`, `Between(a, b)`) and plain `where` values take Money. If you're on MySQL, compare amounts beyond 2^53 minor units or 15 significant digits in SQL with a cast (`CAST(:total AS SIGNED)`): MySQL compares a BIGINT or DECIMAL column with a string parameter as doubles.
+Find operators (`MoreThan(m)`, `In([...])`, `Between(a, b)`) and plain `where` values take Money, exactly on Postgres, SQLite and MySQL 8.4, beyond 2^53 minor units and 15 significant digits too. If you're on an older MySQL or on MariaDB (untested), compare large amounts in SQL with a cast (`CAST(:total AS SIGNED)`).
 
 ## Read raw query results
 

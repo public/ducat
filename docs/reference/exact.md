@@ -1,6 +1,6 @@
 # `@ducatjs/money/exact`
 
-`ExactMoney`, an exact rational amount for chained calculations that round once at the end. **Installs:** `exact`, `addTaxExact` and `extractTaxExact` on `Money`.
+`ExactMoney`, an exact rational amount for chained calculations that round once at the end. **Installs:** `exact`, `addTaxExact`, `extractTaxExact` and `multiplyExact` on `Money`.
 
 Related: [How to add and extract tax](../how-to/add-and-extract-tax.md) · [How to convert currencies](../how-to/convert-currencies.md) · [About rounding](../explanation/rounding.md)
 
@@ -37,6 +37,26 @@ Tax-exclusive, rounding nothing: `tax = net × percent/100` and `gross = net + t
 Method: `gross.extractTaxExact(percent)`.
 
 Tax-inclusive, rounding nothing: `net = gross / (1 + percent/100)` and `tax = gross − net`, exactly. Sum the parts over many rows and round each total once.
+
+### multiplyExact
+
+`multiplyExact<C extends string>(money: Money<C>, factor: Factor): Money<C>`
+
+Method: `m.multiplyExact(factor)`.
+
+`money × factor` exactly, as Money: the scale grows to hold every digit, never below the amount's own, so 10.00 EUR × 1.0775 is 10.775 EUR and 10.00 EUR × 2 stays 20.00 EUR.
+
+- **Rounds:** never.
+- **Throws:** `RoundingError` when the product has no finite decimal form (a factor such as 1/3; use `multiply` with a rounding mode, or `exact()`, then); `RangeError` when it needs more than 1000 decimal places.
+
+```ts
+import { money } from '@ducatjs/money';
+import { multiplyExact } from '@ducatjs/money/exact';
+
+multiplyExact(money('10.00', 'EUR'), '1.0775'); // → 10.775 EUR
+money('10.00', 'EUR').multiplyExact(2); // → 20.00 EUR
+money('10.00', 'EUR').multiplyExact('1/3'); // throws RoundingError
+```
 
 ### isExactMoney
 
@@ -80,6 +100,7 @@ Arguments typed `ExactMoney<C> | Money<C>` take either, exactly; Money in anothe
 
 - `round(rounding?: RoundingMode, scale?: number): Money<C>`, or `round(policy: RoundingPolicy): Money<C>`: rounds once, to `scale` (default: the currency's exponent) with `rounding` (default `'halfExpand'`), or to the policy's scale and increment. **Throws:** `RoundingError` for `'unnecessary'` when inexact; `RangeError` for an invalid scale.
 - `roundWithResidual(rounding?: RoundingMode, scale?: number): Rounded<C>`, or `roundWithResidual(policy: RoundingPolicy): Rounded<C>`: rounds as `round` and also returns what rounding left out, for booking it (an "FX rounding" ledger line).
+- `toMoney(minimumScale?: number): Money<C>`: the exact value as Money, at the smallest scale that holds it but at least `minimumScale` (default: the currency's exponent): 1/8 EUR is 0.125 EUR. **Rounds:** never. **Throws:** `RoundingError` when the value has no finite decimal form (10/3); `RangeError` when it needs more than 1000 decimal places.
 - `toNumber(): number`: the amount in major units as the nearest double, rounded once (10/3 EUR is 3.3333333333333335); ±Infinity beyond the largest double. Lossy on purpose.
 - `toString(): string`: `'10/3 EUR'`, or `'10 EUR'` for a whole amount, for debugging.
 - Numeric coercion (`a + b`, `a > b`) throws a `TypeError`: round first.
