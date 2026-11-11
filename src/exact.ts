@@ -5,6 +5,7 @@ import { currencyExponent } from './currency.js';
 import {
   checkScale,
   MAX_DECIMAL_SCALE,
+  POW10,
   pow10n,
   ratio,
   type Factor,
@@ -21,6 +22,7 @@ import {
 import type { Rate } from './rate.js';
 import {
   DEFAULT_ROUNDING,
+  divideAndRound,
   divideAndRoundBigint,
   RoundingError,
   type RoundingMode,
@@ -34,26 +36,95 @@ export interface Rounded<C extends string> {
   readonly residual: ExactMoney<C>;
 }
 
+/** A safe integer: |value| <= 2^53 - 1, so arithmetic on it is exact. */
+const isSafe = Number.isSafeInteger;
+
+/** gcd of two safe integers (the second positive), on doubles. */
+function gcdNumber(value: number, positive: number): number {
+  let left = value < 0 ? -value : value;
+  let right = positive;
+  while (right !== 0) {
+    const remainder = left % right;
+    left = right;
+    right = remainder;
+  }
+  return left;
+}
+
 /**
  * An exact amount of `currency`: num/den major units, reduced, den > 0. Build it with `exact()`.
  */
 export class ExactMoney<C extends string = string> {
   readonly currency: C;
-  readonly num: bigint;
-  readonly den: bigint;
+  /**
+   * @internal The reduced numerator and denominator (d > 0), each a number while it is a safe
+   * integer and a bigint beyond, like Money's `minor`. Read them as `num` and `den`.
+   */
+  readonly numerator: number | bigint;
+  /** @internal see `numerator` */
+  readonly denominator: number | bigint;
 
   /** @internal use exact() */
-  constructor(currency: C, numerator: bigint, denominator: bigint) {
-    const reduced = ratio(numerator, denominator); // reduces and makes the denominator positive
+  constructor(currency: C, numeratorIn: number | bigint, denominatorIn: number | bigint) {
     this.currency = currency;
-    this.num = reduced.num;
-    this.den = reduced.den;
+    if (typeof numeratorIn === 'number' && typeof denominatorIn === 'number') {
+      // Callers pass safe integers on this path, with a non-zero denominator.
+      let num = numeratorIn;
+      let den = denominatorIn;
+      if (den < 0) {
+        num = -num;
+        den = -den;
+      }
+      const divisor = den === 1 ? 1 : gcdNumber(num, den);
+      // + 0 turns -0 (from 0 × -5 or -(0)) into 0
+      this.numerator = (divisor === 1 ? num : num / divisor) + 0;
+      this.denominator = divisor === 1 ? den : den / divisor;
+      return;
+    }
+    const reduced = ratio(BigInt(numeratorIn), BigInt(denominatorIn)); // reduces, den > 0
+    this.numerator = isSafe(reduced.n) ? reduced.n : reduced.num;
+    this.denominator = isSafe(reduced.d) ? reduced.d : reduced.den;
+  }
+
+  /** The reduced numerator, as a bigint. */
+  get num(): bigint {
+    return BigInt(this.numerator);
+  }
+
+  /** The denominator, positive and reduced against `num`, as a bigint. */
+  get den(): bigint {
+    return BigInt(this.denominator);
   }
 
   /** this + other, exactly; `other` may be a Money of the same currency. */
   add(other: ExactMoney<C> | Money<C>): ExactMoney<C> {
     const right = toExact(other);
     assertSameCurrency(this, right);
+    const { numerator: leftNum, denominator: leftDen } = this;
+    const { numerator: rightNum, denominator: rightDen } = right;
+    if (
+      typeof leftNum === 'number' &&
+      typeof leftDen === 'number' &&
+      typeof rightNum === 'number' &&
+      typeof rightDen === 'number'
+    ) {
+      if (leftDen === rightDen) {
+        const sum = leftNum + rightNum;
+        if (isSafe(sum)) {
+          return new ExactMoney(this.currency, sum, leftDen);
+        }
+      } else {
+        // Every intermediate must be safe: two overflowed products can sum to a safe-looking
+        // wrong value.
+        const leftPart = leftNum * rightDen;
+        const rightPart = rightNum * leftDen;
+        const den = leftDen * rightDen;
+        const sum = leftPart + rightPart;
+        if (isSafe(leftPart) && isSafe(rightPart) && isSafe(den) && isSafe(sum)) {
+          return new ExactMoney(this.currency, sum, den);
+        }
+      }
+    }
     const numerator = this.num * right.den + right.num * this.den;
     return new ExactMoney(this.currency, numerator, this.den * right.den);
   }
@@ -65,13 +136,16 @@ export class ExactMoney<C extends string = string> {
 
   /** −this. */
   negate(): ExactMoney<C> {
-    return new ExactMoney(this.currency, -this.num, this.den);
+    const { numerator: num, denominator: den } = this;
+    // −num of a safe integer is safe, and the value stays reduced
+    return typeof num === 'number' && typeof den === 'number'
+      ? new ExactMoney(this.currency, -num, den)
+      : new ExactMoney(this.currency, -BigInt(num), BigInt(den));
   }
 
   /** this × factor, exactly. */
   multiply(factor: Factor): ExactMoney<C> {
-    const factorRatio = ratio(factor);
-    return new ExactMoney(this.currency, this.num * factorRatio.num, this.den * factorRatio.den);
+    return this.times(ratio(factor), this.currency);
   }
 
   /** this ÷ divisor, exactly. */
@@ -80,7 +154,25 @@ export class ExactMoney<C extends string = string> {
     if (divisorRatio.num === 0n) {
       throw new RangeError('Division by zero');
     }
-    return new ExactMoney(this.currency, this.num * divisorRatio.den, this.den * divisorRatio.num);
+    // the reciprocal of a reduced ratio is reduced; the constructor fixes the sign
+    return this.times(
+      { num: divisorRatio.den, den: divisorRatio.num, n: divisorRatio.d, d: divisorRatio.n },
+      this.currency,
+    );
+  }
+
+  /** @internal this × factor in `currency`, on numbers while every product is safe. */
+  private times<To extends string>(factor: Ratio, currency: To): ExactMoney<To> {
+    const { numerator: num, denominator: den } = this;
+    if (typeof num === 'number' && typeof den === 'number') {
+      // NaN (an unsafe factor part) fails isSafe, so it takes the bigint path
+      const numerator = num * factor.n;
+      const denominator = den * factor.d;
+      if (isSafe(numerator) && isSafe(denominator)) {
+        return new ExactMoney(currency, numerator, denominator);
+      }
+    }
+    return new ExactMoney(currency, this.num * factor.num, this.den * factor.den);
   }
 
   /** Converts exactly at `rate`; nothing is rounded. */
@@ -88,12 +180,12 @@ export class ExactMoney<C extends string = string> {
     if (rate.from !== this.currency) {
       throw new CurrencyMismatchError(rate.from, this.currency);
     }
-    return new ExactMoney(rate.to, this.num * rate.ratio.num, this.den * rate.ratio.den);
+    return this.times(rate.ratio, rate.to);
   }
 
   /** |this|. */
   abs(): ExactMoney<C> {
-    return this.num < 0n ? this.negate() : this;
+    return this.numerator < 0 ? this.negate() : this;
   }
 
   /** percent% of this, exactly: `exact(m).percentage('7.7')`. */
@@ -116,9 +208,25 @@ export class ExactMoney<C extends string = string> {
   compare(other: ExactMoney<C> | Money<C>): -1 | 0 | 1 {
     const operand = toExact(other);
     assertSameCurrency(this, operand);
-    // Both denominators are positive, so cross-multiplying keeps the order.
-    const left = this.num * operand.den;
-    const right = operand.num * this.den;
+    const { numerator: leftNum, denominator: leftDen } = this;
+    const { numerator: rightNum, denominator: rightDen } = operand;
+    let left: number | bigint;
+    let right: number | bigint;
+    if (
+      typeof leftNum === 'number' &&
+      typeof leftDen === 'number' &&
+      typeof rightNum === 'number' &&
+      typeof rightDen === 'number' &&
+      isSafe(leftNum * rightDen) &&
+      isSafe(rightNum * leftDen)
+    ) {
+      left = leftNum * rightDen;
+      right = rightNum * leftDen;
+    } else {
+      // Both denominators are positive, so cross-multiplying keeps the order.
+      left = this.num * operand.den;
+      right = operand.num * this.den;
+    }
     if (left < right) {
       return -1;
     }
@@ -132,7 +240,9 @@ export class ExactMoney<C extends string = string> {
   equals(other: ExactMoney | Money): boolean {
     const operand = toExact(other);
     return (
-      this.currency === operand.currency && this.num === operand.num && this.den === operand.den
+      this.currency === operand.currency &&
+      this.numerator === operand.numerator &&
+      this.denominator === operand.denominator
     );
   }
 
@@ -178,10 +288,10 @@ export class ExactMoney<C extends string = string> {
 
   /** −1, 0 or 1. */
   sign(): -1 | 0 | 1 {
-    if (this.num > 0n) {
+    if (this.numerator > 0) {
       return 1;
     }
-    if (this.num < 0n) {
+    if (this.numerator < 0) {
       return -1;
     }
     return 0;
@@ -189,21 +299,29 @@ export class ExactMoney<C extends string = string> {
 
   /** Whether the amount is zero. */
   isZero(): boolean {
-    return this.num === 0n;
+    // zero is always the number 0: a part is a bigint only beyond the safe range
+    return this.numerator === 0;
   }
 
   /** Whether the amount is above zero. */
   isPositive(): boolean {
-    return this.num > 0n;
+    return this.numerator > 0;
   }
 
   /** Whether the amount is below zero. */
   isNegative(): boolean {
-    return this.num < 0n;
+    return this.numerator < 0;
   }
 
   /** Whether the amount fits `scale` (default: the currency's exponent) without rounding. */
   isExact(scale: number = currencyExponent(this.currency)): boolean {
+    const { numerator: num, denominator: den } = this;
+    if (typeof num === 'number' && typeof den === 'number' && scale <= 15) {
+      const scaled = num * POW10[checkScale(scale)]!;
+      if (isSafe(scaled)) {
+        return scaled % den === 0;
+      }
+    }
     return (this.num * pow10n(checkScale(scale))) % this.den === 0n;
   }
 
@@ -217,6 +335,13 @@ export class ExactMoney<C extends string = string> {
       return roundWithPolicy(make(this.currency, this.num, 0), ratio(1n, this.den), rounding);
     }
     const resultScale = scale ?? currencyExponent(this.currency);
+    const { numerator: num, denominator: den } = this;
+    if (typeof num === 'number' && typeof den === 'number' && resultScale <= 15) {
+      const scaled = num * POW10[checkScale(resultScale)]!;
+      if (isSafe(scaled)) {
+        return make(this.currency, divideAndRound(scaled, den, rounding), resultScale);
+      }
+    }
     const minor = divideAndRoundBigint(
       this.num * pow10n(checkScale(resultScale)),
       this.den,
@@ -253,12 +378,19 @@ export class ExactMoney<C extends string = string> {
    * Beyond the largest double it is ±Infinity, as Number() gives.
    */
   toNumber(): number {
-    const magnitude = this.num < 0n ? -this.num : this.num;
+    const { numerator, denominator } = this;
+    if (typeof numerator === 'number' && typeof denominator === 'number') {
+      // Both are exact doubles, and IEEE division rounds their quotient once.
+      return numerator / denominator;
+    }
+    const num = this.num;
+    const den = this.den;
+    const magnitude = num < 0n ? -num : num;
     // Shift so the quotient has 65 or 66 bits: Number() then rounds it to 53 bits exactly once,
     // with a sticky low bit standing for a non-zero remainder, so no tie is invented.
-    const shift = 65 - magnitude.toString(2).length + this.den.toString(2).length;
+    const shift = 65 - magnitude.toString(2).length + den.toString(2).length;
     const scaled = shift > 0 ? magnitude << BigInt(shift) : magnitude;
-    const divisor = shift > 0 ? this.den : this.den << BigInt(-shift);
+    const divisor = shift > 0 ? den : den << BigInt(-shift);
     const quotient = scaled / divisor;
     const half = -shift >> 1;
     // Two power-of-two steps, since 2 ** -shift alone can overflow or underflow; both are exact
@@ -267,15 +399,20 @@ export class ExactMoney<C extends string = string> {
       Number(quotient * divisor === scaled ? quotient : quotient | 1n) *
       2 ** half *
       2 ** (-shift - half);
-    return this.num < 0n ? -value : value;
+    return num < 0n ? -value : value;
   }
 
   /** "10/3 EUR", for debugging only. */
   toString(): string {
-    if (this.den === 1n) {
-      return `${this.num} ${this.currency}`;
+    if (this.denominator === 1) {
+      return `${this.numerator} ${this.currency}`;
     }
-    return `${this.num}/${this.den} ${this.currency}`;
+    return `${this.numerator}/${this.denominator} ${this.currency}`;
+  }
+
+  /** Throws: ExactMoney has no JSON form on purpose; round() it to Money first. */
+  toJSON(): never {
+    throw new TypeError('ExactMoney has no JSON form; round() it to Money first');
   }
 
   /** Blocks `a + b` and `a > b`: round() first. */
@@ -336,7 +473,12 @@ function assertSameCurrency(money: ExactMoney, other: ExactMoney): void {
  * The exact value of `money`, for chained arithmetic: `exact(price).divide(3).round('halfEven')`.
  */
 export function exact<C extends string>(money: Money<C>): ExactMoney<C> {
-  return new ExactMoney(money.currency, BigInt(money.minor), pow10n(money.scale));
+  const minor = money.minor;
+  // Money's scale is at most 1000, and 10^15 is the largest power of ten that is a safe integer.
+  if (typeof minor === 'number' && money.scale <= 15) {
+    return new ExactMoney(money.currency, minor, POW10[money.scale]!);
+  }
+  return new ExactMoney(money.currency, BigInt(minor), pow10n(money.scale));
 }
 
 /**
@@ -350,7 +492,7 @@ export function sumExact<C extends string>(
   if (sumCurrency === undefined) {
     throw new RangeError('sumExact of an empty list needs a currency');
   }
-  let sum = new ExactMoney(sumCurrency, 0n, 1n);
+  let sum = new ExactMoney(sumCurrency, 0, 1);
   for (const item of items) {
     sum = sum.add(item);
   }
