@@ -174,9 +174,8 @@ export function typeormScenario(
         // SQLite compares TEXT decimals as text, so only the other two order them numerically
         expect(await ids({ price: MoreThan(money('2.00', 'EUR')) })).toEqual([2, 3]);
       }
-      if (dialect !== 'mysql') {
-        // 2^53 + 1 and 2^53 + 2 cents round to the same double. MySQL compares a BIGINT with a
-        // string parameter as doubles, so there, compare beyond 2^53 in SQL with a CAST.
+      {
+        // 2^53 + 1 and 2^53 + 2 cents round to the same double (#258)
         await orders.save([
           { id: 5, total: money('90071992547409.93', 'EUR'), price: null, refund: null, fee: null },
           { id: 6, total: money('90071992547409.94', 'EUR'), price: null, refund: null, fee: null },

@@ -404,6 +404,37 @@ describe('Drizzle on MySQL (mysql2)', () => {
       expect(show(readBack)).toEqual(show(rows));
     });
 
+    it('how MySQL compares string parameters beyond 2^53 (#258)', async () => {
+      // 2^53 cents, which no row holds; as a double it equals row 5's 2^53 + 1
+      const between = '9007199254740992';
+      const decimal = '90071992547409.92';
+      const ids = (rows: unknown) => (rows as { id: number }[]).map((row) => Number(row.id));
+      const where = 'SELECT id FROM ducat_drizzle_orders WHERE';
+      const results = {
+        // mysql2 query(): the client interpolates a quoted literal
+        queryMinor: ids((await connection.query(`${where} total_minor = ?`, [between]))[0]),
+        queryDecimal: ids((await connection.query(`${where} price = ?`, [decimal]))[0]),
+        // mysql2 execute(): a server-side prepared statement with a string parameter
+        executeMinor: ids((await connection.execute(`${where} total_minor = ?`, [between]))[0]),
+        executeDecimal: ids((await connection.execute(`${where} price = ?`, [decimal]))[0]),
+        executeRange: ids(
+          (
+            await connection.execute(`${where} total_minor > ? AND total_minor < ?`, [
+              '9007199254740991',
+              '9007199254740993',
+            ])
+          )[0],
+        ),
+      };
+      expect(results).toEqual({
+        queryMinor: [],
+        queryDecimal: [],
+        executeMinor: [],
+        executeDecimal: [],
+        executeRange: [],
+      });
+    });
+
     // the assertions are in expectExactComparisons
     // oxlint-disable-next-line vitest/expect-expect
     it('compares beyond 2^53 exactly in SQL', async () => {
