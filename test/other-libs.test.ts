@@ -267,6 +267,17 @@ describe('large values', () => {
   it('prints high-precision values exactly', () => {
     expect(toDecimal(fromMinor(100000n * 10n ** 18n, 'EUR', 18))).toBe('100000.000000000000000000');
   });
+
+  // dinero.js 1 #84 (as a number) and dinero.js 2 #294: toUnit divided as a float, and couldn't say
+  // that 10000000000000000.50 USD has no exact double. toNumber rounds once, by name.
+  it('converts to a number only by name, rounding once', () => {
+    expect(fromMinor(100000n * 10n ** 18n, 'EUR', 18).toNumber()).toBe(100000);
+    expect(fromMinor(1000000000000000050n, 'USD').toNumber()).toBe(Number('10000000000000000.50'));
+    expect(() => fromMinor(1000000000000000050n, 'USD').toMinorNumber()).toThrow(RangeError);
+    expect(fromMinor(1000000000000000050n, 'USD').toMinorNumber({ lossy: true })).toBe(
+      Number(1000000000000000050n),
+    );
+  });
 });
 
 describe('parsing is strict', () => {

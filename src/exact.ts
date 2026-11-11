@@ -1,6 +1,6 @@
 // ExactMoney: an exact rational amount for chains of arithmetic that should round once, at the end.
 // It has no formatting, JSON or minor units on purpose: it must be rounded back to Money before it
-// leaves the process.
+// leaves the process. The one exception is toNumber(), an explicitly lossy double for display.
 import { currencyExponent } from './currency.js';
 import { checkScale, pow10n, ratio, type Factor } from './decimal.js';
 import { CurrencyMismatchError, make, type Money } from './money.js';
@@ -126,6 +126,28 @@ export class ExactMoney<C extends string = string> {
     const value = this.round(rounding, scale);
     const residual = this.subtract(exact(value));
     return { value, residual };
+  }
+
+  /**
+   * The amount in major units as the nearest double: 10/3 EUR is 3.3333333333333335. Lossy on
+   * purpose, for display, charts and APIs that take numbers; never do arithmetic on the result.
+   */
+  toNumber(): number {
+    const magnitude = this.num < 0n ? -this.num : this.num;
+    // Shift so the quotient has 65 or 66 bits: Number() then rounds it to 53 bits exactly once,
+    // with a sticky low bit standing for a non-zero remainder, so no tie is invented.
+    const shift = 65 - magnitude.toString(2).length + this.den.toString(2).length;
+    const scaled = shift > 0 ? magnitude << BigInt(shift) : magnitude;
+    const divisor = shift > 0 ? this.den : this.den << BigInt(-shift);
+    const quotient = scaled / divisor;
+    const half = -shift >> 1;
+    // Two power-of-two steps, since 2 ** -shift alone can overflow or underflow; both are exact
+    // unless the result is subnormal (below 2^-1022), far below any amount.
+    const value =
+      Number(quotient * divisor === scaled ? quotient : quotient | 1n) *
+      2 ** half *
+      2 ** (-shift - half);
+    return this.num < 0n ? -value : value;
   }
 
   /** "10/3 EUR", for debugging only. */

@@ -930,21 +930,47 @@ export function toMinor(money: Money): bigint {
   return scaled / divisor;
 }
 
+/** Options for `toMinorNumber`. */
+export interface ToMinorNumberOptions {
+  /**
+   * Return the nearest double instead of throwing a RangeError beyond 2^53 (Number.MAX_SAFE_INTEGER):
+   * lossy on purpose, for charts and APIs that take numbers. Digits below the minor unit still
+   * throw a RoundingError; round() first.
+   */
+  readonly lossy?: boolean;
+}
+
 /**
  * Like `toMinor`, as a number. Throws RoundingError for digits below the minor unit, and a
- * RangeError when the result isn't a safe integer.
+ * RangeError when the result isn't a safe integer, unless `{ lossy: true }` asks for the nearest
+ * double instead.
  */
-export function toMinorNumber(money: Money): number {
+export function toMinorNumber(money: Money, options?: ToMinorNumberOptions): number {
   // The common case, a number at the currency's exponent, needs no conversion.
   if (typeof money.minor === 'number' && money.scale === currencyExponent(money.currency)) {
     return money.minor;
   }
 
-  const minor = normalizeMinor(toMinor(money));
+  const exactMinor = toMinor(money);
+  const minor = normalizeMinor(exactMinor);
   if (typeof minor === 'bigint') {
+    if (options?.lossy === true) {
+      // Number(bigint) rounds to the nearest double, ties to even.
+      return Number(exactMinor);
+    }
     throw new RangeError(`${money} does not fit in a safe integer; use toMinor()`);
   }
   return minor;
+}
+
+/**
+ * The amount in major units as the nearest double: 12.34 for 12.34 EUR. Lossy on purpose, for
+ * display, charts and APIs that take numbers; beyond a double's 15 to 17 significant digits the
+ * value is rounded (once, to the nearest double). Never do arithmetic on the result.
+ */
+export function toNumber(money: Money): number {
+  // Parsing the exact decimal string is correctly rounded; dividing minor by 10^scale rounds twice.
+  return Number(formatScaled(money.minor, money.scale));
 }
 
 /**

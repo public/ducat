@@ -30,7 +30,9 @@ import {
   subtract,
   toMinor,
   toMinorNumber,
+  toNumber,
   toScale,
+  type ToMinorNumberOptions,
   type RoundingInput,
   type RoundingPolicy,
 } from '../money.js';
@@ -96,8 +98,13 @@ declare module '../index.js' {
      * any scale; throws RoundingError if the amount has non-zero digits below the minor unit.
      */
     toMinor(): bigint;
-    /** Like `toMinor()`, as a number; also throws a RangeError beyond 2^53. */
-    toMinorNumber(): number;
+    /**
+     * Like `toMinor()`, as a number; also throws a RangeError beyond 2^53, unless `{ lossy: true }`
+     * asks for the nearest double.
+     */
+    toMinorNumber(options?: ToMinorNumberOptions): number;
+    /** The amount in major units as the nearest double (12.34): lossy, for display and charts. */
+    toNumber(): number;
     /** Units of 10^-scale as a bigint: 12340n for 12.340 EUR at scale 3. Pair it with the scale. */
     toScaledUnits(): bigint;
   }
@@ -186,8 +193,11 @@ installCoreMethods({
   toMinor(this: Money) {
     return toMinor(this);
   },
-  toMinorNumber(this: Money) {
-    return toMinorNumber(this);
+  toMinorNumber(this: Money, options?: ToMinorNumberOptions) {
+    return toMinorNumber(this, options);
+  },
+  toNumber(this: Money) {
+    return toNumber(this);
   },
   toScaledUnits(this: Money) {
     return toBigInt(this.minor);

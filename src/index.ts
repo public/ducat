@@ -26,6 +26,7 @@ export {
   type Money,
   type MoneyJSON,
   type MoneyOptions,
+  type ToMinorNumberOptions,
   type CurrencyInput,
   type Factor,
   type Ratio,

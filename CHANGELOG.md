@@ -7,6 +7,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `toNumber()` (method and `/fn`) and `toMinorNumber({ lossy: true })`: explicitly lossy number
+  conversions that round once to the nearest double, for charts and APIs that take numbers.
+  `ExactMoney#toNumber()` too (#206).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day
