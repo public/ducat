@@ -10,8 +10,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 ### Added
 
 - `/wire`: dinero.js 1's `{ amount, currency, precision }` shape (`toDineroObject`,
-  `fromDineroObject`), exact both ways and at the object's precision. `amount` must be a safe
-  integer or a bigint and `precision` a valid scale (#217).
+  `fromDineroObject`), exact both ways and at the object's precision; `m.round('unnecessary')`
+  brings a value to the currency's exponent. `amount` must be a safe integer or a bigint and
+  `precision` a valid scale: a value of the wrong type throws a `TypeError`, one out of range a
+  `RangeError` (#217).
 
 ## [0.3.0] - 2026-11-09
 
