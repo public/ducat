@@ -7,6 +7,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `hasFraction()` (method and `/fn`): whether the amount has a non-zero fractional part, true for
+  12.34 EUR and false for 12.00 EUR at any scale; dinero.js calls it `hasSubUnits` (#208).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day

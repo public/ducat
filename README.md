@@ -436,6 +436,7 @@ money('12.345', 'EUR', { scale: 3 }).toMinor(); // throws RoundingError: round()
 money('12.345', 'EUR', { scale: 3 }).toScaledUnits(); // → 12345n (pair it with scale 3)
 ```
 
+- `hasFraction(m)` is whether the amount has a non-zero fractional part (true for 12.34 EUR, false for 12.00 EUR at any scale), for display code that drops ".00" from whole amounts; dinero.js calls it `hasSubUnits`.
 - `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
 
