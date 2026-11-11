@@ -51,6 +51,8 @@ The same 41 correctness vectors, the same benchmark and the same bundle snippet 
 other libraries' bugs, the fixed-point libraries and the money libraries in other languages are in
 [docs/COMPARISON.md](https://github.com/public/ducat/blob/main/docs/COMPARISON.md), regenerated from [compare/](https://github.com/public/ducat/tree/main/compare) for each release.
 
+Coming from dinero.js? [How to migrate from dinero.js](https://github.com/public/ducat/blob/main/docs/how-to/migrate-from-dinero.md) maps its API, rounding defaults and stored data to ducat.
+
 | library                            | correct (of 41) | wrong, silently |        bundle (gzip) |
 | ---------------------------------- | --------------: | --------------: | -------------------: |
 | **ducat**                          |          **41** |           **0** |              4.5 KiB |
