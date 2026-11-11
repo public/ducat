@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `periodicRate(annual, { perYear, digits })` and `annualRate(periodic, { perYear })` in
+  `/finance`: the periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear)
+  − 1`, and its inverse. `annualRate` is an exact `Ratio`; `periodicRate` is found like `irr`, to
+  `digits` places floored by exact bisection, with `lower` and `upper` 10^−digits apart around
+  the root and `exact` when the root is rational (#199).
 - A guide, [How to migrate from dinero.js](https://github.com/public/ducat/blob/main/docs/how-to/migrate-from-dinero.md):
   the API of dinero.js 1 and 2, their rounding defaults, stored amounts and the names that changed
   meaning (#209).
