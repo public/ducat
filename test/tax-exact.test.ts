@@ -74,7 +74,12 @@ describe('extractTaxExact', () => {
     expect(() => extractTax(money('1', 'EUR'), -100, 'halfEven')).toThrow(
       'extractTax: percent must be greater than -100, got -100',
     );
-    expect(() => extractTax(money('1', 'EUR'), ratio(-201, 2))).toThrow(RangeError);
+    expect(() => extractTax(money('1', 'EUR'), ratio(-201, 2))).toThrow(
+      'extractTax: percent must be greater than -100, got -100.5',
+    );
+    expect(() => extractTaxExact(money('1', 'EUR'), ratio(-301, 3))).toThrow(
+      'extractTaxExact: percent must be greater than -100, got -301/3',
+    );
     expect(extractTax(money('1', 'EUR'), '-99.99', 'halfEven').net.toString()).toBe('10000.00 EUR');
     expect(extractTaxExact(money('1', 'EUR'), '-50').net.toString()).toBe('2 EUR');
   });

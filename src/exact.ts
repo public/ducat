@@ -8,6 +8,7 @@ import {
   POW10,
   pow10n,
   ratio,
+  ratioToDecimal,
   type Factor,
   type Ratio,
 } from './decimal.js';
@@ -546,7 +547,9 @@ export function extractTaxExact<C extends string>(
   // 1 / (1 + p/100) = 100 den / (100 den + num)
   const grossShare = 100n * percentRatio.den + percentRatio.num;
   if (grossShare <= 0n) {
-    throw new RangeError(`extractTaxExact: percent must be greater than -100, got ${percent}`);
+    throw new RangeError(
+      `extractTaxExact: percent must be greater than -100, got ${ratioToDecimal(percentRatio) ?? `${percentRatio.num}/${percentRatio.den}`}`,
+    );
   }
   const net = exactGross.multiply(ratio(100n * percentRatio.den, grossShare));
   return { net, tax: exactGross.subtract(net), gross: exactGross };
