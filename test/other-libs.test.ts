@@ -415,7 +415,8 @@ describe('more from dinero.js’s issue history', () => {
     expect(toScale(divide(money('222.00', 'EUR'), '1.5555555'), 0).toString()).toBe('143 EUR');
   });
 
-  // dinero.js 1 #157: documented as half away from zero, rounded half to even
+  // dinero.js 1 #157: toFormat's docs say half away from zero, but multiply (half to even, its
+  // documented default) had already rounded 3.025 to 3.02
   it('rounds half away from zero by default, and half to even when asked', () => {
     // 50 × 0.0605 = 3.025
     expect(multiply(money('50', 'EUR'), '0.0605').toString()).toBe('3.03 EUR');
