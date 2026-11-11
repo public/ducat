@@ -5,7 +5,7 @@ import { exchangeRate } from '../src/rate.js';
 import { fromScaled } from '../src/fixed.js';
 import { fromStripe } from '../src/stripe.js';
 import { fromAdyen } from '../src/adyen.js';
-import { fromMinorUnits } from '../src/wire.js';
+import { fromDineroObject, fromMinorUnits } from '../src/wire.js';
 
 // A code no test registers, so the shared registry (Bun runs every file in one process) can't
 // make it valid.
@@ -42,6 +42,9 @@ describe('every constructor checks the currency, with or without an explicit sca
       /QQV is not in Adyen's currency table/,
     );
     expect(() => fromMinorUnits({ value: 100, currency: UNKNOWN })).toThrow(unknown);
+    expect(() => fromDineroObject({ amount: 100, currency: UNKNOWN, precision: 2 })).toThrow(
+      unknown,
+    );
   });
   it('known currencies still accept any scale', () => {
     expect(fromMinor(1234, 'EUR', 3).toString()).toBe('1.234 EUR');

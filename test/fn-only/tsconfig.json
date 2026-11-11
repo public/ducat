@@ -37,6 +37,7 @@
     "../../src/entries/testing-index.ts",
     "../../src/entries/testing-jest.ts",
     "../../src/entries/testing-vitest.ts",
+    "../../src/entries/typeorm.ts",
     "../../src/entries/valibot.ts",
     "../../src/entries/wire.ts",
     "../../src/entries/zod.ts",

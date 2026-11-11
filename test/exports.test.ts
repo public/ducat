@@ -32,9 +32,11 @@ const METHOD_FORMS = [
   'clamp',
   'majorPart',
   'minorPart',
+  'hasFraction',
   'toDecimal',
   'toMinor',
   'toMinorNumber',
+  'toNumber',
   'toScaledUnits',
 ];
 
@@ -147,7 +149,7 @@ describe('package entries', () => {
     expect(missing).toEqual([]);
   });
 
-  it('only /drizzle, /zod, /valibot, /kysely and the /testing helpers reach their peer libraries', async () => {
+  it('only /drizzle, /zod, /valibot, /kysely and the /testing helpers reach their peer libraries (/typeorm needs none)', async () => {
     const actual: Record<string, string[]> = {};
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
@@ -177,6 +179,15 @@ describe('package entries', () => {
         'moneyHelpers',
         'setDecimalMoney',
         'setMoney',
+      ],
+      // TypeORM transformers are plain objects: the entry never imports typeorm
+      './typeorm': [
+        'DEFAULT_DECIMAL_SIZE',
+        'decimalTransformer',
+        'fromRawDecimal',
+        'fromRawMinor',
+        'jsonTransformer',
+        'minorTransformer',
       ],
       './pg': [
         'DEFAULT_DECIMAL_SIZE',

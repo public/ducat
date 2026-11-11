@@ -5,6 +5,7 @@ import { runs } from './fc-config.js';
 import {
   equals,
   fromMinor,
+  hasFraction,
   identical,
   majorPart,
   minorPart,
@@ -121,5 +122,42 @@ describe('with', () => {
     const total = money('10.00', 'CHF').multiply('1.077').with(toFiveCents);
     expect(total.toString()).toBe('10.75 CHF');
     expect(money('3', 'EUR').with((value) => value.toDecimal())).toBe('3.00');
+  });
+});
+
+describe('hasFraction', () => {
+  it('is true when the amount is not a whole number of major units', () => {
+    expect(hasFraction(money('12.34', 'EUR'))).toBe(true);
+    expect(hasFraction(money('-0.05', 'EUR'))).toBe(true);
+    expect(hasFraction(money('1.005', 'EUR', { scale: 3 }))).toBe(true);
+    expect(hasFraction(fromMinor(10005n * 10n ** 20n + 1n, 'EUR', 22))).toBe(true);
+  });
+
+  it('is false for whole amounts at any scale, zero included', () => {
+    expect(hasFraction(money('12.00', 'EUR'))).toBe(false);
+    expect(hasFraction(money('12', 'EUR', { scale: 3 }))).toBe(false);
+    expect(hasFraction(money('-3', 'EUR'))).toBe(false);
+    expect(hasFraction(money('1234', 'JPY'))).toBe(false);
+    expect(hasFraction(fromMinor(0, 'EUR'))).toBe(false);
+    expect(hasFraction(fromMinor(10005n * 10n ** 22n, 'EUR', 22))).toBe(false);
+  });
+
+  it('is the method too', () => {
+    expect(money('9.99', 'USD').hasFraction()).toBe(true);
+    expect(money('10', 'USD').hasFraction()).toBe(false);
+  });
+
+  it('agrees with minorPart at every scale', () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(10n ** 30n), max: 10n ** 30n }),
+        fc.integer({ min: 0, max: 24 }),
+        (minor, scale) => {
+          const value = fromMinor(minor, 'EUR', scale);
+          expect(hasFraction(value)).toBe(BigInt(minorPart(value)) !== 0n);
+        },
+      ),
+      { numRuns: runs(200) },
+    );
   });
 });

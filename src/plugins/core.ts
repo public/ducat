@@ -23,6 +23,7 @@ import {
   max,
   min,
   minorPart,
+  hasFraction,
   multiply,
   negate,
   round,
@@ -30,7 +31,9 @@ import {
   subtract,
   toMinor,
   toMinorNumber,
+  toNumber,
   toScale,
+  type ToMinorNumberOptions,
   type RoundingInput,
   type RoundingPolicy,
 } from '../money.js';
@@ -89,6 +92,8 @@ declare module '../index.js' {
     majorPart(): number | bigint;
     /** The rest in 10^-scale units, with the amount's sign: 34 for 12.34 EUR, -34 for -12.34. */
     minorPart(): number | bigint;
+    /** Whether the amount has a non-zero fractional part: true for 12.34 EUR, false for 12.00. */
+    hasFraction(): boolean;
     /** Exact decimal string in major units: "12.34" */
     toDecimal(): string;
     /**
@@ -96,8 +101,13 @@ declare module '../index.js' {
      * any scale; throws RoundingError if the amount has non-zero digits below the minor unit.
      */
     toMinor(): bigint;
-    /** Like `toMinor()`, as a number; also throws a RangeError beyond 2^53. */
-    toMinorNumber(): number;
+    /**
+     * Like `toMinor()`, as a number; also throws a RangeError beyond 2^53, unless `{ lossy: true }`
+     * asks for the nearest double.
+     */
+    toMinorNumber(options?: ToMinorNumberOptions): number;
+    /** The amount in major units as the nearest double (12.34): lossy, for display and charts. */
+    toNumber(): number;
     /** Units of 10^-scale as a bigint: 12340n for 12.340 EUR at scale 3. Pair it with the scale. */
     toScaledUnits(): bigint;
   }
@@ -180,14 +190,20 @@ installCoreMethods({
   minorPart(this: Money) {
     return minorPart(this);
   },
+  hasFraction(this: Money) {
+    return hasFraction(this);
+  },
   toDecimal(this: Money) {
     return formatScaled(this.minor, this.scale);
   },
   toMinor(this: Money) {
     return toMinor(this);
   },
-  toMinorNumber(this: Money) {
-    return toMinorNumber(this);
+  toMinorNumber(this: Money, options?: ToMinorNumberOptions) {
+    return toMinorNumber(this, options);
+  },
+  toNumber(this: Money) {
+    return toNumber(this);
   },
   toScaledUnits(this: Money) {
     return toBigInt(this.minor);
