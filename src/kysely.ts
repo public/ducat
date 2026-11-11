@@ -202,7 +202,8 @@ function jsonObjectWith(functionName: string) {
   };
 }
 
-// MySQL compares a DECIMAL with a string as doubles, so parameters are cast to its widest DECIMAL
+// Parameters are cast to MySQL's widest DECIMAL, so a comparison never depends on how the server
+// converts a string (MySQL 8.4 compares string parameters exactly; older servers are untested)
 const MYSQL_DECIMAL_INTEGER_DIGITS = 35;
 const MYSQL_DECIMAL_SCALE = 30;
 

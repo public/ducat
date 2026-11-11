@@ -1,7 +1,7 @@
 // Drizzle ORM columns against real databases: SQLite (better-sqlite3) always, Postgres and MySQL
 // when DUCAT_PG_URL and DUCAT_MYSQL_URL are set (CI runs both as service containers).
 import Database from 'better-sqlite3';
-import { asc, eq, relations, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, lt, relations, sql, type SQL } from 'drizzle-orm';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
 import { drizzle as drizzleMysql, type MySql2Database } from 'drizzle-orm/mysql2';
 import { int, mysqlTable } from 'drizzle-orm/mysql-core';
@@ -110,6 +110,30 @@ function show(rows: Row[]): string[][] {
   ]);
 }
 
+type OrdersTable = typeof pgOrders | typeof mysqlOrders | typeof sqliteOrders;
+
+/**
+ * Comparisons in SQL beyond 2^53 minor units and 15 significant digits, on the sample rows (id 5 is
+ * 2^53 + 1 cents). As doubles, 2^53 + 1 and 2^53 cents are the same number, so a driver or server
+ * that compares through doubles matches the wrong rows (#258).
+ */
+async function expectExactComparisons(
+  orders: OrdersTable,
+  ids: (where: SQL | undefined) => Promise<number[]>,
+): Promise<void> {
+  const { total, price } = orders as typeof pgOrders;
+  const above = money('90071992547409.93', 'EUR'); // 2^53 + 1 cents, row 5
+  const between = money('90071992547409.92', 'EUR'); // 2^53 cents, no row
+  expect(await ids(eq(total, above))).toEqual([5]);
+  expect(await ids(eq(total, between))).toEqual([]);
+  expect(await ids(and(gt(total, money('90071992547409.91', 'EUR')), lt(total, above)))).toEqual(
+    [],
+  );
+  expect(await ids(and(gt(total, between), lt(total, money('1e15', 'EUR'))))).toEqual([5]);
+  expect(await ids(eq(price, above))).toEqual([5]);
+  expect(await ids(eq(price, between))).toEqual([]);
+}
+
 describe('Drizzle column types', () => {
   it('declare the SQL types each dialect needs', () => {
     expect(pgOrders.total.getSQLType()).toBe('bigint');
@@ -196,6 +220,20 @@ describe('Drizzle on SQLite (better-sqlite3)', () => {
     await expect((async () => await huge)()).rejects.toThrow(/safe integer/);
   });
 
+  // the assertions are in expectExactComparisons
+  // oxlint-disable-next-line vitest/expect-expect
+  it('compares beyond 2^53 exactly in SQL', async () => {
+    await expectExactComparisons(sqliteOrders, async (where) =>
+      (
+        await db
+          .select({ id: sqliteOrders.id })
+          .from(sqliteOrders)
+          .where(where)
+          .orderBy(asc(sqliteOrders.id))
+      ).map((row) => Number(row.id)),
+    );
+  });
+
   it('filters by a Money value through the column mapping', async () => {
     const found = await db
       .select({ id: sqliteOrders.id })
@@ -270,6 +308,16 @@ describe('Drizzle on Postgres (node-postgres)', () => {
       await db.insert(pgOrders).values(rows);
       const readBack = await db.select().from(pgOrders).orderBy(asc(pgOrders.id));
       expect(show(readBack)).toEqual(show(rows));
+    });
+
+    // the assertions are in expectExactComparisons
+    // oxlint-disable-next-line vitest/expect-expect
+    it('compares beyond 2^53 exactly in SQL', async () => {
+      await expectExactComparisons(pgOrders, async (where) =>
+        (
+          await db.select({ id: pgOrders.id }).from(pgOrders).where(where).orderBy(asc(pgOrders.id))
+        ).map((row) => Number(row.id)),
+      );
     });
 
     it('round-trips JPY and KWD, the ends of the exponent range', async () => {
@@ -354,6 +402,51 @@ describe('Drizzle on MySQL (mysql2)', () => {
       await db.insert(mysqlOrders).values(rows);
       const readBack = await db.select().from(mysqlOrders).orderBy(asc(mysqlOrders.id));
       expect(show(readBack)).toEqual(show(rows));
+    });
+
+    it('how MySQL compares string parameters beyond 2^53 (#258)', async () => {
+      // 2^53 cents, which no row holds; as a double it equals row 5's 2^53 + 1
+      const between = '9007199254740992';
+      const decimal = '90071992547409.92';
+      const ids = (rows: unknown) => (rows as { id: number }[]).map((row) => Number(row.id));
+      const where = 'SELECT id FROM ducat_drizzle_orders WHERE';
+      const results = {
+        // mysql2 query(): the client interpolates a quoted literal
+        queryMinor: ids((await connection.query(`${where} total_minor = ?`, [between]))[0]),
+        queryDecimal: ids((await connection.query(`${where} price = ?`, [decimal]))[0]),
+        // mysql2 execute(): a server-side prepared statement with a string parameter
+        executeMinor: ids((await connection.execute(`${where} total_minor = ?`, [between]))[0]),
+        executeDecimal: ids((await connection.execute(`${where} price = ?`, [decimal]))[0]),
+        executeRange: ids(
+          (
+            await connection.execute(`${where} total_minor > ? AND total_minor < ?`, [
+              '9007199254740991',
+              '9007199254740993',
+            ])
+          )[0],
+        ),
+      };
+      expect(results).toEqual({
+        queryMinor: [],
+        queryDecimal: [],
+        executeMinor: [],
+        executeDecimal: [],
+        executeRange: [],
+      });
+    });
+
+    // the assertions are in expectExactComparisons
+    // oxlint-disable-next-line vitest/expect-expect
+    it('compares beyond 2^53 exactly in SQL', async () => {
+      await expectExactComparisons(mysqlOrders, async (where) =>
+        (
+          await db
+            .select({ id: mysqlOrders.id })
+            .from(mysqlOrders)
+            .where(where)
+            .orderBy(asc(mysqlOrders.id))
+        ).map((row) => Number(row.id)),
+      );
     });
 
     it('outside strict mode, where MySQL clips a BIGINT, an out-of-range amount still throws', async () => {
