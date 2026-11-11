@@ -812,6 +812,19 @@ sumExact(rows.map((row) => row.extractTaxExact('7.7').net)).round('halfEven'); /
 extractTaxExact(money('12', 'EUR'), '20'); // → { net: 10 EUR, tax: 2 EUR, gross: 12 EUR }
 ```
 
+`ExactMoney` has the helpers `Money` has, so a chain needn't round to compare or clamp: `abs`, `isPositive`, `isNegative`, `isZero`, `compare`, `lessThan` and the other comparisons, `min`, `max`, `clamp`, `percentage` and `ratioOf`. `add`, `subtract`, the comparisons, `min`, `max` and `clamp` take a `Money` of the same currency as well, exactly. `round` takes a rounding policy as well as a mode, so a chain can end on a cash increment:
+
+```ts
+import { money } from '@ducatjs/money';
+import { cashPolicy } from '@ducatjs/money/cash';
+import { exact } from '@ducatjs/money/exact';
+
+const share = exact(money('10.03', 'CHF')).divide(3); // → 1003/300 CHF
+share.add(money('0.50', 'CHF')).max(money('3.50', 'CHF')); // → 1153/300 CHF
+share.lessThan(money('3.35', 'CHF')); // → true
+share.round(cashPolicy('CHF')); // → 3.35 CHF
+```
+
 **Totals in several currencies.** `bag(...amounts)` keeps per-currency totals, and `bag.total('EUR', fx, 'halfEven')` converts every entry exactly, sums and rounds once. To order amounts in different currencies, `comparator(fx, { base: 'USD' })` compares them through one base currency. With one rate per currency the order is consistent. Pairwise rates are not: with bid/ask or slightly inconsistent mid rates, A < B < C < A can happen, and `Array#sort` then gives engine-dependent results. `sortByValue(list, fx, { base })` looks every rate up before it reorders anything.
 
 ### Fixed-point decimals

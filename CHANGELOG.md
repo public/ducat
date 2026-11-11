@@ -35,6 +35,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `ExactMoney#toNumber()` too (#206).
 - `addTaxExact()` and `extractTaxExact()` in `/exact`: tax splits as unrounded `ExactMoney`
   parts (net + tax is exactly gross), so a report can sum the rows and round once (#218).
+- `ExactMoney` has the helpers `Money` has: `abs`, `isPositive`, `isNegative`, `lessThan` and the
+  other comparisons, `min`, `max`, `clamp`, `percentage` and `ratioOf`. `add`, `subtract`,
+  `compare`, `equals` and these accept a `Money` of the same currency, exactly, and `round` and
+  `roundWithResidual` take a rounding policy as well as a mode (#202).
 
 ## [0.3.0] - 2026-11-09
 
