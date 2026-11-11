@@ -45,11 +45,15 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
-- `ExactMoney` is 2–3.5× faster: it works on numbers while its numerator and denominator are safe
-  integers, and on bigints beyond, as Money does (#224). `num` and `den` are still the reduced
-  bigints, now read through getters; the own fields are `numerator` and `denominator` (numbers or
-  bigints), so a structural comparison such as `toEqual` sees those instead. `JSON.stringify` of an
-  ExactMoney throws a TypeError naming `round()`, as it already failed on the bigints before.
+- **Breaking:** `ExactMoney`'s `num` and `den` are getters now, not own fields. They are still
+  the reduced bigints, but spreading (`{ ...e }.num`), `Object.keys`/`entries` and copies no
+  longer carry them, and `toEqual` compares the new own fields `numerator` and `denominator`
+  (numbers or bigints). **Upgrading:** read `e.num` and `e.den` directly, and don't spread or copy
+  an ExactMoney; to store one, `round()` it or use `toMoney()` (#224).
+- `ExactMoney` is 2–6× faster on everyday amounts: it works on numbers while its numerator and
+  denominator are safe integers, and on bigints beyond, as Money does. Values beyond 2^53 are about
+  5–10% slower. `JSON.stringify` of an ExactMoney throws a TypeError naming `round()`, where it
+  already failed on the bigints (#224).
 
 ## [0.3.0] - 2026-11-09
 
