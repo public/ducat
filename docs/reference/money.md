@@ -156,7 +156,7 @@ Every parameter typed `Factor` (`multiply`, `divide`, tax and percentage functio
 
 ### add
 
-`add<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): Money<C>`
+`add<C extends string, O extends string = C>(money: Money<C>, other: MoneyOperand<NoInfer<C>, O>): Money<C>`
 
 `money + other`, exactly, at the larger of the two scales.
 
@@ -164,7 +164,7 @@ Every parameter typed `Factor` (`multiply`, `divide`, tax and percentage functio
 
 ### subtract
 
-`subtract<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): Money<C>`
+`subtract<C extends string, O extends string = C>(money: Money<C>, other: MoneyOperand<NoInfer<C>, O>): Money<C>`
 
 `money − other`, exactly, at the larger of the two scales. Throws as `add`.
 
@@ -243,13 +243,13 @@ Comparisons work across scales and across number and bigint minor units.
 
 ### compare
 
-`compare<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): -1 | 0 | 1`
+`compare<C extends string, O extends string = C>(money: Money<C>, other: MoneyOperand<NoInfer<C>, O>): -1 | 0 | 1`
 
 - **Throws:** `CurrencyMismatchError` for another currency.
 
 ### lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual
 
-`lessThan<C extends string>(money: Money<C>, other: Money<NoInfer<C>>): boolean`, and `lessThanOrEqual`, `greaterThan` and `greaterThanOrEqual` with the same signature. Throw as `compare`.
+`lessThan<C extends string, O extends string = C>(money: Money<C>, other: MoneyOperand<NoInfer<C>, O>): boolean`, and `lessThanOrEqual`, `greaterThan` and `greaterThanOrEqual` with the same signature. Throw as `compare`.
 
 ### equals
 
@@ -278,13 +278,13 @@ one.equals(money('1', 'USD')); // → false
 
 ### min, max
 
-`min<C extends string>(first: Money<C>, ...rest: Money<NoInfer<C>>[]): Money<C>`, and `max` with the same signature: the smallest or largest amount; the first wins ties.
+`min<C extends string, O extends string = C>(first: Money<C>, ...rest: MoneyOperand<NoInfer<C>, O>[]): Money<C>`, and `max` with the same signature: the smallest or largest amount; the first wins ties.
 
 - **Throws:** `CurrencyMismatchError` for mixed currencies.
 
 ### clamp
 
-`clamp<C extends string>(money: Money<C>, lo: Money<NoInfer<C>>, hi: Money<NoInfer<C>>): Money<C>`
+`clamp<C extends string, O extends string = C>(money: Money<C>, lo: MoneyOperand<NoInfer<C>, O>, hi: MoneyOperand<NoInfer<C>, O>): Money<C>`
 
 `money` limited to `[lo, hi]`.
 
@@ -443,6 +443,8 @@ Adds methods to every Money, non-enumerable like class methods. This is how the 
 - **Throws:** `TypeError` for a name Money already has (its own methods, or one another owner added), and for a reserved name (the names every object inherits).
 
 ## Types
+
+- `MoneyOperand<C, O>`: the other operand of `add`, `subtract`, `compare`, the comparisons, `min`, `max`, `clamp`, and of `ratioOf`, `divideToIntegral` and `remainder` in `/math`: a `Money<C>` of the same currency type, or a `Money<string>`, whose currency is only known at run time and is checked then (a mismatch throws `CurrencyMismatchError`). The result keeps the literal currency. Another literal, or a union such as `Money<'EUR' | 'USD'>`, is a compile error; narrow it with `isMoneyIn` or `assertCurrency`. See [Decisions](../explanation/decisions.md).
 
 - `Money<C>`: see [Money](#money).
 - `MoneyJSON<C>`: `{ amount: string; currency: C }`, the JSON form; `amount` is an exact decimal string in major units.

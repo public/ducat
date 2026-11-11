@@ -52,6 +52,19 @@ Call `amortise(loan, { rate, perYear, periods })` for an annuity, linear or inte
 
 Charge the used part of a period with `prorate(price, { period, used })` (by the day, or with `unit: 'second'` by the second). To split a period's price at plan changes, use `splitPeriod(price, { period, at })`; the pieces sum exactly to it.
 
+## Convert between annual and periodic rates
+
+If a product quotes an effective annual rate and you need the monthly rate that compounds to it (a savings plan, say), use `periodicRate`. The root is irrational in general, so ask for the digits you need; the result is floored and bracketed, as `irr`'s is. `annualRate` goes the other way, exactly:
+
+```ts
+import { annualRate, periodicRate } from '@ducatjs/money/finance';
+
+periodicRate('0.05', { perYear: 12, digits: 8 }).rate; // → '0.00407412'
+annualRate('0.1', { perYear: 2 }); // → { num: 21n, den: 100n, n: 21, d: 100 }
+```
+
+Neither is `rate / perYear`, the nominal split that `compound` and `amortise` use. If your contract states a nominal rate, pass it to those directly.
+
 ## Related
 
 - Reference: [`@ducatjs/money/finance`](../reference/finance.md)

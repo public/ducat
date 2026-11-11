@@ -181,6 +181,8 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
 ### 3a. Periodic and annual rates (v0.4.0, #199)
 
 ```ts
+import { annualRate, periodicRate } from '@ducatjs/money/finance';
+
 periodicRate('0.05', { perYear: 12, digits: 12 });
 // { rate: '0.004074123783', lower: '0.004074123783', upper: '0.004074123784' }
 periodicRate('0.21', { perYear: 2 }); // exact: ratio(1, 10), and rate '0.1000000000'

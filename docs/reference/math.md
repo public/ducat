@@ -16,7 +16,7 @@ The exact sum divided by the count, rounded once at the largest scale in the lis
 
 ### ratioOf
 
-`ratioOf<C extends string>(money: Money<C>, other: Money<C>): Ratio`
+`ratioOf<C extends string, O extends string = C>(money: Money<C>, other: MoneyOperand<NoInfer<C>, O>): Ratio`
 
 Method: `part.ratioOf(total)`.
 
@@ -26,7 +26,7 @@ The exact share `money / other`, reduced, for any scales. A `Ratio` goes straigh
 
 ### divideToIntegral
 
-`divideToIntegral<C extends string>(money: Money<C>, divisor: Money<C>): number | bigint`
+`divideToIntegral<C extends string, O extends string = C>(money: Money<C>, divisor: MoneyOperand<NoInfer<C>, O>): number | bigint`
 
 Method: `m.divideToIntegral(divisor)`.
 
@@ -36,7 +36,7 @@ How many whole times `divisor` fits into `money`, truncated toward zero: a numbe
 
 ### remainder
 
-`remainder<C extends string>(money: Money<C>, divisor: Money<C>): Money<C>`
+`remainder<C extends string, O extends string = C>(money: Money<C>, divisor: MoneyOperand<NoInfer<C>, O>): Money<C>`
 
 Method: `m.remainder(divisor)`.
 

@@ -92,6 +92,30 @@ Excel's IRR: the rate at which the NPV of flows at periods 0, 1, 2… is zero, e
 
 - **Throws:** `RangeError` where Excel guesses: when the flows never change sign (Excel's #NUM!), and when they change sign more than once unless a `bracket` (in place of Excel's `guess`) selects one root. Also `RangeError` for a bracket that isn't two increasing rates above −1, a bracket whose ends have NPVs of the same sign, and an IRR within 10^−digits of −1.
 
+### periodicRate
+
+`periodicRate(annual: Factor, options: PeriodicRateOptions): PeriodicRateResult`
+
+The periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear) − 1` (the monthly rate of a savings plan). The root is irrational in general, so, as `irr` does, it is found to `digits` places (default 10, at most 100), floored, by exact bisection: `(1 + lower)^perYear ≤ 1 + annual < (1 + upper)^perYear`, with `upper = lower + 10^−digits` and `rate` equal to `lower`. `exact` is set when the root is rational (the reduced numerator and denominator of `1 + annual` are both perfect `perYear`th powers): `'0.21'` with `perYear: 2` gives 1/10, and `periodicRate(annualRate(p)).exact` is `p`. It isn't `rate / perYear`, the nominal split that `compound` and `amortise` use, and it isn't an Excel name (Excel's RRI and EFFECT compute the same values from other arguments).
+
+- **Throws:** `RangeError` for an annual rate at or below −1, a `perYear` that isn't a positive integer, `digits` outside 0–100 or `digits × perYear` over 50,000, and when the periodic rate is within 10^−digits of −1 (ask for more digits).
+
+### annualRate
+
+`annualRate(periodic: Factor, options: AnnualRateOptions): Ratio`
+
+The effective annual rate of a periodic rate, `(1 + periodic)^perYear − 1`, exactly, as a reduced `Ratio`. The inverse of `periodicRate`.
+
+- **Throws:** `RangeError` for a `perYear` that isn't a positive integer up to 100,000, or a periodic rate at or below −1.
+
+```ts
+import { annualRate, periodicRate } from '@ducatjs/money/finance';
+
+periodicRate('0.05', { perYear: 12, digits: 8 }); // → { rate: '0.00407412', lower: '0.00407412', upper: '0.00407413' }
+periodicRate('0.21', { perYear: 2 }).exact; // → { num: 1n, den: 10n, n: 1, d: 10 }
+annualRate('0.1', { perYear: 2 }); // → { num: 21n, den: 100n, n: 21, d: 100 }
+```
+
 ## Proration
 
 ### prorate
@@ -135,6 +159,9 @@ yearFraction('2026-07-15', '2026-01-15', 'ACT/360'); // throws RangeError
 - `AmortisationRow<C>`: `{ period: number; date?: string; payment; interest; principal; balance: Money<C>; days?: number; yearFraction?: Ratio }`. `date` is set when `firstPayment` is given; `days` and `yearFraction` are reserved and not set yet.
 - `IrrOptions`: `{ digits?: number; bracket?: readonly [Factor, Factor] }`.
 - `IrrResult`: `{ rate: string; lower: string; upper: string }`, decimal strings with `digits` places.
+- `PeriodicRateOptions`: `{ perYear: number; digits?: number }`; `perYear` is the periods per year (12 for monthly), `digits` the decimal places of the result (default 10, at most 100; `digits × perYear` at most 50,000).
+- `AnnualRateOptions`: `{ perYear: number }`, a positive integer up to 100,000.
+- `PeriodicRateResult`: `{ rate: string; lower: string; upper: string; exact?: Ratio }`, as `IrrResult`, with `exact` when the rate is rational.
 - `ProrationInstant`: a `CalendarDate` (midnight UTC), or with `unit: 'second'` an ISO date-time in UTC (`'2026-03-11T09:30:00Z'`) or a Unix time in whole seconds.
 - `ProrationPeriod`: `{ start: ProrationInstant; end: ProrationInstant }`, `end` exclusive.
 - `ProrationUnit`: `'day'` (the default) or `'second'`.

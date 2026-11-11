@@ -38,6 +38,7 @@ New to ducat? Start with [Your first program with ducat](tutorials/first-steps.m
 
 **Input and output**
 
+- [How to format amounts for display](how-to/format-amounts.md)
 - [How to parse amounts people type](how-to/parse-user-input.md)
 - [How to validate amounts at an API boundary](how-to/validate-api-input.md)
 - [How to exchange amounts in other systems' formats](how-to/exchange-wire-formats.md)
@@ -54,6 +55,7 @@ New to ducat? Start with [Your first program with ducat](tutorials/first-steps.m
 - [How to keep bundles small](how-to/keep-bundles-small.md)
 - [How to use ducat from CommonJS](how-to/use-from-commonjs.md)
 - [How to add your own methods to Money](how-to/add-your-own-methods.md)
+- [How to migrate from dinero.js](how-to/migrate-from-dinero.md)
 
 ## Reference
 
