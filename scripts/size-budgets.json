@@ -95,6 +95,10 @@
       "code": "import { fromMinor, add, multiply, toDecimal } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(multiply(add(a, a), '1.075', 'halfEven')));",
       "gzipped": 2.7
     },
+    "functions: one Ratio operation tree-shakes alone": {
+      "code": "import { ratioComplement } from '@ducatjs/money/fn'; console.log(ratioComplement('0.15').num);",
+      "gzipped": 9
+    },
     "functions: fromMinor, add, toDecimal": {
       "code": "import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
       "gzipped": 1.37

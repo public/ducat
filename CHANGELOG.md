@@ -7,6 +7,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- Arithmetic on `Ratio` values in `/math`: `ratioAdd`, `ratioSubtract`, `ratioMultiply`,
+  `ratioDivide`, `ratioNegate`, `ratioComplement` (1 − r) and `ratioCompare`, exact and reduced,
+  taking any factor (Ratio, Fixed, decimal string, integer) on either side (#201).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day
