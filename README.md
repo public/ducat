@@ -555,13 +555,14 @@ territoryCurrencies('DE', { on: '2001-06-01' }).map((use) => use.currency); // �
 
 ### One currency: a context
 
-ducat has no global default currency, precision or locale, on purpose. An app that works in one currency can bind the plain functions to it instead: `currencyContext('EUR', { locale })` from `@ducatjs/money/context` (or `/fn`) returns a frozen plain object with `money`, `fromMinor`, `zero`, `parse`, `format` and `is`, all in that currency. Nothing global changes, two contexts never interfere, and tests stay isolated. `MoneyOf<typeof eur>` is `Money<'EUR'>`.
+ducat has no global default currency, precision or locale, on purpose. An app that works in one currency can bind the plain functions to it instead: `currencyContext('EUR', { locale })` from `@ducatjs/money/context` (or `/fn`) returns a frozen plain object with `money`, `fromMinor`, `zero`, `format` and `is`, all in that currency, and `parse` when you pass it in (it is about 1 kB, so a context that only formats doesn't carry it). Nothing global changes, two contexts never interfere, and tests stay isolated. `MoneyOf<typeof eur>` is `Money<'EUR'>`.
 
 ```ts
 import { money } from '@ducatjs/money';
 import { currencyContext, type MoneyOf } from '@ducatjs/money/context';
+import { parse } from '@ducatjs/money/parse';
 
-const eur = currencyContext('EUR', { locale: 'en-IE' });
+const eur = currencyContext('EUR', { locale: 'en-IE', parse });
 type Eur = MoneyOf<typeof eur>; // Money<'EUR'>
 
 const price: Eur = eur.money('1234.5');
@@ -572,9 +573,10 @@ eur.parse('€1,234.50'); // → 1234.50 EUR
 eur.is(money('5', 'USD')); // → false
 eur.format(money('5', 'USD')); // compile error, and throws
 currencyContext('EUR', { locale: 'not a locale' }); // throws RangeError
+currencyContext('EUR').parse('5'); // compile error, and throws
 ```
 
-The currency and the locale are checked when the context is made. Its functions are the plain ones, so a `/fn` program that uses a context installs no methods and carries only the currencies it imports (`import '@ducatjs/money/iso/EUR'` before making it). `format` and `parse` take the same options as the functions they bind (`eur.format(m, { currencyDisplay: 'code' })`, `eur.parse(text, { lenient: true })`).
+The currency and the locale are checked when the context is made. Its functions are the plain ones, so a `/fn` program that uses a context installs no methods and carries only the currencies it imports (`import '@ducatjs/money/iso/EUR'` before making it). `format` and `parse` take the same options as the functions they bind (`eur.format(m, { currencyDisplay: 'code' })`, `eur.parse(text, { lenient: true })`). As a `/fn` program, a context with `/iso/EUR`, `money` and `format` is 3.0 kB gzipped, and passing `parse` adds 1.1 kB.
 
 ### Interest, loans, NPV and proration
 

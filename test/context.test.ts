@@ -15,7 +15,7 @@ import {
   type MoneyOf,
 } from '../src/fn.js';
 
-const eur = currencyContext('EUR', { locale: 'nl-NL' });
+const eur = currencyContext('EUR', { locale: 'nl-NL', parse });
 
 describe('currencyContext', () => {
   it('binds the plain functions to its currency', () => {
@@ -92,9 +92,21 @@ describe('currencyContext', () => {
     expect(equals(currencyContext('EUR').money('1'), eur.money('1'))).toBe(true);
   });
 
-  it('checks the currency and the locale when it is made', () => {
+  it('parses only when given parse', () => {
+    const formatOnly = currencyContext('EUR', { locale: 'nl-NL' });
+    expect('parse' in formatOnly).toBe(false);
+    // @ts-expect-error no parse without { parse }
+    expect(formatOnly.parse).toBe(undefined);
+    expectTypeOf(eur.parse('1')).toEqualTypeOf<Money<'EUR'>>();
+    expect(Object.keys(eur).sort()).toEqual(
+      ['currency', 'format', 'fromMinor', 'is', 'locale', 'money', 'parse', 'zero'].sort(),
+    );
+  });
+
+  it('checks the currency, the locale and parse when it is made', () => {
     expect(() => currencyContext('QQV' as never)).toThrow('Unknown currency');
     expect(() => currencyContext('EUR', { locale: 'not a locale' })).toThrow(RangeError);
+    expect(() => currencyContext('EUR', { parse: 'yes' as never })).toThrow(TypeError);
   });
 
   it('types its values as Money in its currency', () => {
