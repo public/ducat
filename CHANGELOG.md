@@ -76,6 +76,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   at run time, and the result keeps the literal. A different literal or a union is still a compile
   error. The operand type is exported as `MoneyOperand` (#219).
 
+### Fixed
+
+- `convertDetailed(m, rate, mode, { strictValidity: true })` refuses an expired rate, as `convert`
+  and `convertDetailed` with a policy already did: both now share the rate's validity check
+  (#270).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day
