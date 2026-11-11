@@ -7,6 +7,20 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Documentation
+
+- The documentation is rebuilt on [Diátaxis](https://diataxis.fr), in `docs/`: two tutorials (a
+  first program and a checkout), how-to guides for each task (databases, payment processors,
+  currency conversion with dated rates, tax, cash rounding, allocation, parsing, validation,
+  testing, bundle size and more), a reference page for every entry, with each function's signature,
+  rounding and errors, and explanation pages for the representation, rounding, exactness, modules,
+  storage, the proofs and the decisions. The README is now the front door, with links into each
+  part. Nothing was removed: every section moved to its page. `docs/COMPARISON.md` and
+  `docs/FINANCE.md` moved to `docs/explanation/`, and the old paths link forward.
+- Every TypeScript block in `docs/` runs as a doctest, as the README's do. A test fails when an
+  export, type or method is missing from the reference, and another when a link or anchor in the
+  docs doesn't resolve.
+
 ### Added
 
 - A guide, [How to migrate from dinero.js](https://github.com/public/ducat/blob/main/docs/how-to/migrate-from-dinero.md):
