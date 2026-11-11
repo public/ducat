@@ -98,8 +98,9 @@ export function decimalTransformer<const C extends CurrencyInput>(
 /**
  * A `json` or `jsonb` column (`simple-json` in SQLite) holding `{"amount":"12.34","currency":
  * "EUR"}`, with the currency in each value. TypeORM serialises those column types itself, so `to`
- * returns the object, not its text. Pass a currency to fix it: then another currency throws, on
- * write and on read.
+ * returns the object, not its text. Money at a scale other than its currency's throws on write:
+ * `round()` it first. Pass a currency to fix it: then another currency throws, on write and on
+ * read.
  *
  *     @Column({ type: 'jsonb', nullable: true, transformer: jsonTransformer() })
  */
