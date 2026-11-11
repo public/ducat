@@ -146,7 +146,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                         |
 | `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`, `ratioAdd` and the other Ratio arithmetic   |
 | `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                  |
-| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                         |
+| `@ducatjs/money/exact`              | `exact`, `addTaxExact`, `extractTaxExact`                          | `ExactMoney`, `sumExact`, `addTaxExact`, `extractTaxExact`       |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                  |
 | `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                    |
 | `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                          |
@@ -266,7 +266,7 @@ money('1,000', 'EUR'); // throws SyntaxError
 - `multiply(m, factor, rounding?)`, `divide(m, divisor, rounding?)`
 - `round(m, rounding, scale = ISO exponent)`, `toScale(m, scale, rounding?)`
 - `percentage(m, percent, rounding?)`, `discount(price, percent, rounding?)`
-- `addTax(net, percent, rounding?)` and `extractTax(gross, percent, rounding?)` both return `{ net, tax, gross }`, and net + tax is always exactly gross.
+- `addTax(net, percent, rounding?)` and `extractTax(gross, percent, rounding?)` both return `{ net, tax, gross }`, and net + tax is always exactly gross. `addTaxExact` and `extractTaxExact` in `@ducatjs/money/exact` return the same parts as unrounded `ExactMoney`, for reports that sum many rows and round once.
 - `convert(m, to, rate, rounding?, { scale? })` at a decimal-string rate, or `convert(m, exchangeRate(...), rounding?)`. See [Currency conversion](#currency-conversion).
 - `m.with(operation)` applies a function to the amount and returns its result, so a rounding step or a conversion reads as one link of a chain.
 
@@ -771,6 +771,19 @@ const eurUsd = exchangeRate('EUR', 'USD', '1.1165');
 const { value, residual } = convertDetailed(money('0.07', 'EUR'), eurUsd, 'halfEven');
 value; // → 0.08 USD
 residual; // → -369/200000 USD (value + residual is the exact conversion)
+```
+
+`extractTaxExact(gross, percent)` and `addTaxExact(net, percent)` split an amount (Money or ExactMoney) into exact `{ net, tax, gross }` parts. A report that rounds each row's net and then sums them drifts; summing the exact nets and rounding once doesn't:
+
+```ts
+import { money } from '@ducatjs/money';
+import { extractTaxExact, sumExact } from '@ducatjs/money/exact'; // also adds the methods
+import '@ducatjs/money/tax';
+
+const rows = Array.from({ length: 7 }, () => money('1.00', 'CHF'));
+rows.map((row) => row.extractTax('7.7', 'halfEven').net); // seven times 0.93 CHF: 6.51 in total
+sumExact(rows.map((row) => row.extractTaxExact('7.7').net)).round('halfEven'); // → 6.50 CHF
+extractTaxExact(money('12', 'EUR'), '20'); // → { net: 10 EUR, tax: 2 EUR, gross: 12 EUR }
 ```
 
 **Totals in several currencies.** `bag(...amounts)` keeps per-currency totals, and `bag.total('EUR', fx, 'halfEven')` converts every entry exactly, sums and rounds once. To order amounts in different currencies, `comparator(fx, { base: 'USD' })` compares them through one base currency. With one rate per currency the order is consistent. Pairwise rates are not: with bid/ask or slightly inconsistent mid rates, A < B < C < A can happen, and `Array#sort` then gives engine-dependent results. `sortByValue(list, fx, { base })` looks every rate up before it reorders anything.

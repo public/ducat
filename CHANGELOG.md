@@ -28,6 +28,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `toNumber()` (method and `/fn`) and `toMinorNumber({ lossy: true })`: explicitly lossy number
   conversions that round once to the nearest double, for charts and APIs that take numbers.
   `ExactMoney#toNumber()` too (#206).
+- `addTaxExact()` and `extractTaxExact()` in `/exact`: tax splits as unrounded `ExactMoney`
+  parts (net + tax is exactly gross), so a report can sum the rows and round once (#218).
 
 ## [0.3.0] - 2026-11-09
 
