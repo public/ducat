@@ -9,6 +9,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `format(m, locale, { digits, rounding })` (and `formatToParts`, and the methods): rounds once,
+  exactly, to `digits` decimals with `rounding` (default `'halfExpand'`), then shows that many
+  fraction digits, exact at any size and in any of ducat's rounding modes; Intl's own
+  fraction-digit options can't be combined with it (#207).
 - A guide, [How to migrate from dinero.js](https://github.com/public/ducat/blob/main/docs/how-to/migrate-from-dinero.md):
   the API of dinero.js 1 and 2, their rounding defaults, stored amounts and the names that changed
   meaning (#209).
@@ -48,6 +52,15 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Breaking:** `ExactMoney`'s `num` and `den` are getters now, not own fields. They are still
+  the reduced bigints, but spreading (`{ ...e }.num`), `Object.keys`/`entries` and copies no
+  longer carry them, and `toEqual` compares the new own fields `numerator` and `denominator`
+  (numbers or bigints). **Upgrading:** read `e.num` and `e.den` directly, and don't spread or copy
+  an ExactMoney; to store one, `round()` it or use `toMoney()` (#224).
+- `ExactMoney` is 2–6× faster on everyday amounts: it works on numbers while its numerator and
+  denominator are safe integers, and on bigints beyond, as Money does. Values beyond 2^53 are about
+  5–10% slower. `JSON.stringify` of an ExactMoney throws a TypeError naming `round()`, where it
+  already failed on the bigints (#224).
 - A `Money<string>` (a currency known only at run time) is accepted beside a literal
   `Money<'EUR'>` in `add`, `subtract`, `compare`, the comparisons, `min`, `max`, `clamp`,
   `ratioOf`, `divideToIntegral` and `remainder`, as functions and methods. The currency is checked
