@@ -146,7 +146,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                         |
 | `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`                                              |
 | `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                  |
-| `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`, `addTaxExact`, `extractTaxExact`       |
+| `@ducatjs/money/exact`              | `exact`, `addTaxExact`, `extractTaxExact`                          | `ExactMoney`, `sumExact`, `addTaxExact`, `extractTaxExact`       |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                  |
 | `.../convert/history`               | nothing                                                            | `rateHistory`, `quotedTable`, `rateFromQuote`                    |
 | `.../convert/boc`                   | nothing                                                            | `parseBankOfCanadaJson`                                          |
@@ -749,12 +749,12 @@ residual; // → -369/200000 USD (value + residual is the exact conversion)
 
 ```ts
 import { money } from '@ducatjs/money';
-import { extractTaxExact, sumExact } from '@ducatjs/money/exact';
+import { extractTaxExact, sumExact } from '@ducatjs/money/exact'; // also adds the methods
 import '@ducatjs/money/tax';
 
 const rows = Array.from({ length: 7 }, () => money('1.00', 'CHF'));
 rows.map((row) => row.extractTax('7.7', 'halfEven').net); // seven times 0.93 CHF: 6.51 in total
-sumExact(rows.map((row) => extractTaxExact(row, '7.7').net)).round('halfEven'); // → 6.50 CHF
+sumExact(rows.map((row) => row.extractTaxExact('7.7').net)).round('halfEven'); // → 6.50 CHF
 extractTaxExact(money('12', 'EUR'), '20'); // → { net: 10 EUR, tax: 2 EUR, gross: 12 EUR }
 ```
 
