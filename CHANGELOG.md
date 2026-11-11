@@ -9,6 +9,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `format(m, locale, { digits, rounding })` (and `formatToParts`, and the methods): rounds once,
+  exactly, to `digits` decimals with `rounding` (default `'halfExpand'`), then shows that many
+  fraction digits, exact at any size and in any of ducat's rounding modes; Intl's own
+  fraction-digit options can't be combined with it (#207).
 - A guide, [How to migrate from dinero.js](https://github.com/public/ducat/blob/main/docs/how-to/migrate-from-dinero.md):
   the API of dinero.js 1 and 2, their rounding defaults, stored amounts and the names that changed
   meaning (#209).

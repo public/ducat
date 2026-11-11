@@ -1,5 +1,17 @@
 import { POW10 } from './decimal.js';
-import { toDecimal, type Money } from './money.js';
+import { toDecimal, toScale, type Money } from './money.js';
+import type { RoundingMode } from './rounding.js';
+
+/**
+ * Intl's options, plus `digits` and `rounding`: round once, exactly, to `digits` decimal places
+ * with `rounding` (default 'halfExpand'), then show that many fraction digits.
+ */
+export interface FormatOptions extends Intl.NumberFormatOptions {
+  /** Decimal places to show; the amount is rounded (or padded) to exactly this many first. */
+  readonly digits?: number;
+  /** How `digits` rounds (default 'halfExpand'). Ducat rounds, not Intl, so it is exact. */
+  readonly rounding?: RoundingMode;
+}
 
 const cache = /* @__PURE__ */ new Map<string, Intl.NumberFormat>();
 // one-entry memo in front of the Map: formatting in a loop is almost always the same
@@ -93,9 +105,33 @@ function formatter(
  *
  *     format(money('1234.5', 'EUR'), 'de-DE')               // "1.234,50 €"
  *     format(money('1234.5', 'EUR'), 'en-GB', { currencyDisplay: 'code' })
+ *     format(money('0.123456', 'EUR', { scale: 6 }), 'en', { digits: 4 })   // "€0.1235"
  */
-export function format(money: Money, locale?: string, options?: Intl.NumberFormatOptions): string {
+export function format(money: Money, locale?: string, options?: FormatOptions): string {
+  if (options?.digits !== undefined || options?.rounding !== undefined) {
+    const [rounded, rest] = withDigits(money, options);
+    return formatter(rounded, locale, rest).format(intlValue(rounded));
+  }
   return formatter(money, locale, options).format(intlValue(money));
+}
+
+/**
+ * The amount rounded once to `digits`, and the other Intl options. Intl's fraction digits beside
+ * `digits` would round a second time, on a double, so they throw.
+ */
+function withDigits(
+  money: Money,
+  options: FormatOptions,
+): [Money, Intl.NumberFormatOptions | undefined] {
+  const { digits, rounding, ...rest } = options;
+  if (
+    digits === undefined ||
+    rest.minimumFractionDigits !== undefined ||
+    rest.maximumFractionDigits !== undefined
+  ) {
+    throw new TypeError('format: digits replaces the fraction-digit options; rounding needs it');
+  }
+  return [toScale(money, digits, rounding), Object.keys(rest).length > 0 ? rest : undefined];
 }
 
 /**
@@ -119,7 +155,11 @@ function intlValue(money: Money): number {
 export function formatToParts(
   money: Money,
   locale?: string,
-  options?: Intl.NumberFormatOptions,
+  options?: FormatOptions,
 ): Intl.NumberFormatPart[] {
+  if (options?.digits !== undefined || options?.rounding !== undefined) {
+    const [rounded, rest] = withDigits(money, options);
+    return formatter(rounded, locale, rest).formatToParts(intlValue(rounded));
+  }
   return formatter(money, locale, options).formatToParts(intlValue(money));
 }
