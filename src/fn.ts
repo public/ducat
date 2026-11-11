@@ -42,6 +42,7 @@ export {
   clamp,
   majorPart,
   minorPart,
+  hasFraction,
   toDecimal,
   toMinor,
   toMinorNumber,

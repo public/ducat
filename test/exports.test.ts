@@ -32,6 +32,7 @@ const METHOD_FORMS = [
   'clamp',
   'majorPart',
   'minorPart',
+  'hasFraction',
   'toDecimal',
   'toMinor',
   'toMinorNumber',

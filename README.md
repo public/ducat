@@ -436,6 +436,7 @@ money('12.345', 'EUR', { scale: 3 }).toMinor(); // throws RoundingError: round()
 money('12.345', 'EUR', { scale: 3 }).toScaledUnits(); // → 12345n (pair it with scale 3)
 ```
 
+- `hasFraction(m)` is whether the amount has a non-zero fractional part (true for 12.34 EUR, false for 12.00 EUR at any scale), for display code that drops ".00" from whole amounts; dinero.js calls it `hasSubUnits`.
 - `toNumber(m)` gives the amount in major units as the nearest double, and `toMinorNumber(m, { lossy: true })` the minor units as the nearest double instead of throwing beyond 2^53. Both are lossy on purpose and named so; `lossy: true` waives only the 2^53 check, so digits below the minor unit still throw a `RoundingError` (use `toNumber()` for a float), and beyond the largest double both give ±Infinity, as `Number()` and `Fixed#toNumber()` do. They are for charts, PDFs and APIs that take numbers; ducat never uses them itself, and arithmetic on the result loses the exactness. Each rounds once, so `toNumber` of 100000 at scale 18 is 100000, not the 99999.99999999999 of dividing by 10^18 as a float. `ExactMoney#toNumber()` does the same for an exact amount.
 
 ```ts
