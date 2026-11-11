@@ -9,6 +9,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- A guide, [How to migrate from dinero.js](https://github.com/public/ducat/blob/main/docs/how-to/migrate-from-dinero.md):
+  the API of dinero.js 1 and 2, their rounding defaults, stored amounts and the names that changed
+  meaning (#209).
 - `currencyContext(currency, { locale, parse? })` (`@ducatjs/money/context`, and `/fn`):
   `money`, `fromMinor`, `zero`, `format` and `is` bound to one currency and locale, as a frozen
   plain object, for single-currency apps, plus `parse` when it is passed in; `MoneyOf<typeof ctx>`
