@@ -1,6 +1,7 @@
 import '../src/plugins/iso.js';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { ratio } from '../src/decimal.js';
 import { addTaxExact, exact, extractTaxExact, sumExact } from '../src/exact.js';
 import { fromMinor, identical, money } from '../src/fn.js';
 import { addTax, extractTax } from '../src/tax.js';
@@ -63,8 +64,19 @@ describe('extractTaxExact', () => {
     );
   });
 
-  it('throws for a rate of -100%', () => {
-    expect(() => extractTaxExact(money('1', 'EUR'), -100)).toThrow(RangeError);
+  it('throws a RangeError naming the percent at -100% or below', () => {
+    expect(() => extractTaxExact(money('1', 'EUR'), -100)).toThrow(
+      'extractTaxExact: percent must be greater than -100, got -100',
+    );
+    expect(() => extractTaxExact(money('1', 'EUR'), '-150.5')).toThrow(
+      'extractTaxExact: percent must be greater than -100, got -150.5',
+    );
+    expect(() => extractTax(money('1', 'EUR'), -100, 'halfEven')).toThrow(
+      'extractTax: percent must be greater than -100, got -100',
+    );
+    expect(() => extractTax(money('1', 'EUR'), ratio(-201, 2))).toThrow(RangeError);
+    expect(extractTax(money('1', 'EUR'), '-99.99', 'halfEven').net.toString()).toBe('10000.00 EUR');
+    expect(extractTaxExact(money('1', 'EUR'), '-50').net.toString()).toBe('2 EUR');
   });
 });
 

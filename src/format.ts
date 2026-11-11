@@ -116,8 +116,9 @@ export function format(money: Money, locale?: string, options?: FormatOptions): 
 }
 
 /**
- * The amount rounded once to `digits`, and the other Intl options. Intl's fraction digits beside
- * `digits` would round a second time, on a double, so they throw.
+ * The amount rounded once to `digits`, and the other Intl options. Intl's fraction or significant
+ * digits, or its rounding increment, beside `digits` would round a second time, on a double, so
+ * they throw.
  */
 function withDigits(
   money: Money,
@@ -127,9 +128,14 @@ function withDigits(
   if (
     digits === undefined ||
     rest.minimumFractionDigits !== undefined ||
-    rest.maximumFractionDigits !== undefined
+    rest.maximumFractionDigits !== undefined ||
+    rest.minimumSignificantDigits !== undefined ||
+    rest.maximumSignificantDigits !== undefined ||
+    rest.roundingIncrement !== undefined
   ) {
-    throw new TypeError('format: digits replaces the fraction-digit options; rounding needs it');
+    throw new TypeError(
+      'format: digits replaces Intl’s digit and rounding options; rounding needs it',
+    );
   }
   return [toScale(money, digits, rounding), Object.keys(rest).length > 0 ? rest : undefined];
 }
