@@ -1,4 +1,4 @@
-import { ratio, ratioToDecimal, type Factor, type Ratio } from './decimal.js';
+import { ratio, describeFactor, type Factor, type Ratio } from './decimal.js';
 import {
   add,
   multiplyByRatio,
@@ -77,7 +77,7 @@ export function extractTax<C extends string>(
   const grossShare = 100n * percentAsRatio.den + percentAsRatio.num;
   if (grossShare <= 0n) {
     throw new RangeError(
-      `extractTax: percent must be greater than -100, got ${ratioToDecimal(percentAsRatio) ?? `${percentAsRatio.num}/${percentAsRatio.den}`}`,
+      `extractTax: percent must be greater than -100, got ${describeFactor(percent)}`,
     );
   }
   const net = multiplyByRatio(gross, ratio(100n * percentAsRatio.den, grossShare), rounding);

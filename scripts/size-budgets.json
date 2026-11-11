@@ -3,7 +3,7 @@
   "overCoreTolerance": 0.02,
   "overCore": {
     "@ducatjs/money/allocate": 1.55,
-    "@ducatjs/money/tax": 0.25,
+    "@ducatjs/money/tax": 0.3,
     "@ducatjs/money/math": 0.53,
     "@ducatjs/money/convert": 4.54,
     "@ducatjs/money/convert/ecb": 4.15,
@@ -13,7 +13,7 @@
     "@ducatjs/money/convert/hmrc": 3.02,
     "@ducatjs/money/convert/history": 2.75,
     "@ducatjs/money/convert/boc": 3.1,
-    "@ducatjs/money/exact": 1.57,
+    "@ducatjs/money/exact": 1.61,
     "@ducatjs/money/policy": 0.4,
     "@ducatjs/money/pricing": 2.82,
     "@ducatjs/money/cash": 3.1,
