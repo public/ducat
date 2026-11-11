@@ -64,7 +64,8 @@ export function addTax<C extends string>(
  * Tax-inclusive: extracts percent% tax contained in a gross amount (VAT extraction).
  * net = gross / (1 + percent/100) rounded; tax = gross - net, so the parts always add up.
  * extractTax(EUR 12, '20', 'halfEven') -> net 10.00, tax 2.00. A rounding policy rounds the net; the
- * tax is on the policy's increment too whenever the gross is.
+ * tax is on the policy's increment too whenever the gross is. A percent of -100 or below throws a
+ * RangeError: no net amount has that gross.
  */
 export function extractTax<C extends string>(
   gross: Money<C>,
@@ -73,11 +74,11 @@ export function extractTax<C extends string>(
 ): TaxBreakdown<C> {
   const percentAsRatio = ratio(percent);
   // 1 / (1 + p/100) = 100 den / (100 den + num)
-  const net = multiplyByRatio(
-    gross,
-    ratio(100n * percentAsRatio.den, 100n * percentAsRatio.den + percentAsRatio.num),
-    rounding,
-  );
+  const grossShare = 100n * percentAsRatio.den + percentAsRatio.num;
+  if (grossShare <= 0n) {
+    throw new RangeError(`extractTax: percent must be greater than -100, got ${percent}`);
+  }
+  const net = multiplyByRatio(gross, ratio(100n * percentAsRatio.den, grossShare), rounding);
   return { net, tax: subtract(gross, net), gross };
 }
 

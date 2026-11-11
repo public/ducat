@@ -18,7 +18,7 @@ The amount formatted as currency in `locale` (default: the runtime's). The digit
 
 - Below 10^15 minor units the value is passed to Intl as `minor / 10^scale`, a single correctly rounded division bit-identical to `Number(toDecimal(m))`. Larger values go as the exact decimal string, which needs Intl.NumberFormat v3 (Node 19+, Safari 15.4+, Firefox 116+); Node 18 loses digits beyond 2^53 there.
 - **Rounds:** only with `digits`, once, with `rounding`. Without it nothing is rounded.
-- **Throws:** `TypeError` for `minimumFractionDigits` or `maximumFractionDigits` beside `digits`, or `rounding` without `digits` (Intl would round a second time, on a double); `RangeError` for an invalid locale or options, as `Intl.NumberFormat` does.
+- **Throws:** `TypeError` for Intl's digit or rounding options (`minimumFractionDigits`, `maximumFractionDigits`, `minimumSignificantDigits`, `maximumSignificantDigits`, `roundingIncrement`) beside `digits`, or `rounding` without `digits` (Intl would round a second time, on a double); `RangeError` for an invalid locale or options, as `Intl.NumberFormat` does.
 
 ### formatToParts
 

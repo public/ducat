@@ -38,6 +38,8 @@ Method: `gross.extractTaxExact(percent)`.
 
 Tax-inclusive, rounding nothing: `net = gross / (1 + percent/100)` and `tax = gross − net`, exactly. Sum the parts over many rows and round each total once.
 
+- **Throws:** `RangeError` for a percent of −100 or below.
+
 ### multiplyExact
 
 `multiplyExact<C extends string>(money: Money<C>, factor: Factor): Money<C>`

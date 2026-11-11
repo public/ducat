@@ -43,6 +43,7 @@ Method: `gross.extractTax(percent, rounding?)`.
 Tax-inclusive (VAT extraction): `net = gross / (1 + percent/100)`, rounded, and `tax = gross − net`, so the parts always add up.
 
 - **Rounds:** the net, with a mode or a policy. With a policy, the tax is on the policy's increment too whenever the gross is.
+- **Throws:** `RangeError` for a percent of −100 or below: no net amount has that gross.
 
 All four throw what `multiply` throws ([money.md](money.md#multiply)): `RoundingError` for `'unnecessary'` when the result is inexact, `TypeError` or `RangeError` for a value that isn't a factor, and `CurrencyMismatchError` for a policy restricted to another currency.
 

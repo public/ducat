@@ -39,7 +39,7 @@ unitPrice.format('en', { digits: 4, rounding: 'floor' }); // → '€0.1234'
 money('12.3', 'EUR').format('en', { digits: 4 }); // → '€12.3000'
 ```
 
-Don't use Intl's `minimumFractionDigits` or `maximumFractionDigits` for this: Intl would round the double it is given, a second time. With `digits` they throw a `TypeError`.
+Don't use Intl's fraction-digit, significant-digit or `roundingIncrement` options for this: Intl would round the double it is given, a second time. With `digits` they throw a `TypeError`.
 
 ## Style the parts separately
 

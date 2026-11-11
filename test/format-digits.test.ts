@@ -53,11 +53,23 @@ describe('format with digits', () => {
   it('refuses Intl digit options beside digits, and rounding without digits', () => {
     expect(() =>
       format(money('1', 'EUR'), 'en-US', { digits: 2, maximumFractionDigits: 3 }),
-    ).toThrow('format: digits replaces the fraction-digit options; rounding needs it');
+    ).toThrow('format: digits replaces Intl’s digit and rounding options; rounding needs it');
     expect(() => format(money('1', 'EUR'), 'en-US', { rounding: 'floor' })).toThrow(
-      'format: digits replaces the fraction-digit options; rounding needs it',
+      'format: digits replaces Intl’s digit and rounding options; rounding needs it',
     );
     expect(() => format(money('1', 'EUR'), 'en-US', { digits: -1 })).toThrow(/Invalid scale -1/);
+    for (const intlOption of [
+      { minimumFractionDigits: 1 },
+      { maximumSignificantDigits: 3 },
+      { minimumSignificantDigits: 1 },
+      { roundingIncrement: 5 as const },
+    ]) {
+      expect(() => format(money('1', 'EUR'), 'en-US', { digits: 2, ...intlOption })).toThrow(
+        TypeError,
+      );
+    }
+    // without digits, Intl's own options pass through as before
+    expect(format(money('1234.5', 'EUR'), 'en-US', { maximumSignificantDigits: 2 })).toBe('€1,200');
   });
 
   it('is format of the amount rounded with toScale', () => {
