@@ -1,11 +1,13 @@
 import '../src/plugins/core.js'; // the tests below use the Money methods
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { fromMinor, money, RoundingError, type Money } from '../src/fn.js';
+import { fromMinor, identical, money, RoundingError, type Money } from '../src/fn.js';
 import {
+  fromDineroObject,
   fromGoogleMoney,
   fromIso20022Amount,
   fromMinorUnits,
+  toDineroObject,
   toGoogleMoney,
   toIso20022Amount,
   toMinorUnits,
@@ -184,5 +186,105 @@ describe('{ value, currency } in minor units', () => {
     expect(() => toMinorUnits(fromMinor(2n ** 60n, 'EUR'))).toThrow(RangeError);
     expect(() => fromMinorUnits({ value: 12.5, currency: 'EUR' })).toThrow(RangeError);
     expect(() => fromMinorUnits(null as never)).toThrow('Expected { value, currency }');
+  });
+});
+
+describe("dinero.js 1's { amount, currency, precision }", () => {
+  it('writes the Money as it is, at its scale', () => {
+    expect(toDineroObject(money('12.34', 'EUR'))).toEqual({
+      amount: 1234,
+      currency: 'EUR',
+      precision: 2,
+    });
+    expect(toDineroObject(money('1.2340', 'EUR', { scale: 4 }))).toEqual({
+      amount: 12340,
+      currency: 'EUR',
+      precision: 4,
+    });
+    expect(toDineroObject(money('500', 'JPY'))).toEqual({
+      amount: 500,
+      currency: 'JPY',
+      precision: 0,
+    });
+    expect(toDineroObject(money('-1.234', 'KWD')).amount).toBe(-1234);
+    expect(Object.is(toDineroObject(money('-0', 'EUR')).amount, 0)).toBe(true);
+    expect(() => toDineroObject(fromMinor(2n ** 60n, 'EUR'))).toThrow(RangeError);
+    expect(toDineroObject(fromMinor(2 ** 53 - 1, 'EUR')).amount).toBe(2 ** 53 - 1);
+  });
+
+  it('reads at the precision it was written with', () => {
+    expect(show(fromDineroObject({ amount: 1234, currency: 'EUR', precision: 2 }))).toBe(
+      '12.34 EUR',
+    );
+    // dinero.js 1 gives every currency precision 2 unless told otherwise
+    const yen = fromDineroObject({ amount: 500, currency: 'JPY', precision: 2 });
+    expect(show(yen)).toBe('5.00 JPY');
+    expect(yen.scale).toBe(2);
+    expect(show(fromDineroObject({ amount: 12345, currency: 'EUR', precision: 4 }))).toBe(
+      '1.2345 EUR',
+    );
+    expect(show(fromDineroObject({ amount: 7, currency: 'EUR', precision: 0 }))).toBe('7 EUR');
+    expect(show(fromDineroObject({ amount: 10n ** 20n, currency: 'EUR', precision: 2 }))).toBe(
+      '1000000000000000000.00 EUR',
+    );
+  });
+
+  it('checks every field', () => {
+    const invalid: unknown[] = [
+      null,
+      'EUR 12.34',
+      { amount: 12.5, currency: 'EUR', precision: 2 },
+      { amount: '1234', currency: 'EUR', precision: 2 },
+      { amount: 2 ** 53, currency: 'EUR', precision: 2 },
+      { amount: Number.NaN, currency: 'EUR', precision: 2 },
+      { amount: null, currency: 'EUR', precision: 2 },
+      { currency: 'EUR', precision: 2 },
+      { amount: 1234, precision: 2 },
+      { amount: 1234, currency: 42, precision: 2 },
+      { amount: 1234, currency: 'EUR' },
+      { amount: 1234, currency: 'JPY' },
+      { amount: 1234, currency: 'EUR', precision: -1 },
+      { amount: 1234, currency: 'EUR', precision: 1.5 },
+      { amount: 1234, currency: 'EUR', precision: '2' },
+      { amount: 1234, currency: 'EUR', precision: 1001 },
+      { amount: 1234, currency: 'EUR', precision: Number.NaN },
+    ];
+    for (const value of invalid) {
+      expect(() => fromDineroObject(value as never)).toThrow(RangeError);
+    }
+    expect(() => fromDineroObject({ amount: 1234, currency: 'EUR' } as never)).toThrow(
+      'Invalid scale undefined',
+    );
+    expect(() => fromDineroObject({ amount: 1234, currency: 'EUR', precision: 1001 })).toThrow(
+      'Invalid scale 1001',
+    );
+  });
+
+  it('round-trips exactly, scale included', () => {
+    const currencies = ['EUR', 'JPY', 'KWD', 'CLF'] as const;
+    fc.assert(
+      fc.property(
+        fc.maxSafeInteger(),
+        fc.constantFrom(...currencies),
+        fc.integer({ min: 0, max: 30 }),
+        (amount, currency, precision) => {
+          const object = { amount, currency, precision };
+          const read = fromDineroObject(object);
+          expect(toDineroObject(read)).toEqual({ amount: amount + 0, currency, precision });
+          expect(identical(fromDineroObject(toDineroObject(read)), read)).toBe(true);
+        },
+      ),
+    );
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(2n ** 52n), max: 2n ** 52n }),
+        fc.constantFrom(...currencies),
+        fc.integer({ min: 0, max: 30 }),
+        (minor, currency, scale) => {
+          const value = fromMinor(minor, currency, scale);
+          expect(identical(fromDineroObject(toDineroObject(value)), value)).toBe(true);
+        },
+      ),
+    );
   });
 });

@@ -9,6 +9,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `/wire`: dinero.js 1's `{ amount, currency, precision }` shape (`toDineroObject`,
+  `fromDineroObject`), exact both ways and at the object's precision. `amount` must be a safe
+  integer or a bigint and `precision` a valid scale (#217).
 - `toNumber()` (method and `/fn`) and `toMinorNumber({ lossy: true })`: explicitly lossy number
   conversions that round once to the nearest double, for charts and APIs that take numbers.
   `ExactMoney#toNumber()` too (#206).
