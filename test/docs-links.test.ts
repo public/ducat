@@ -53,7 +53,10 @@ function linkTargets(markdown: string): string[] {
 }
 
 /** A link as a repository path and anchor, or undefined for a link outside the repository. */
-function resolve(from: string, target: string): { path: string; anchor?: string } | undefined {
+function resolve(
+  from: string,
+  target: string,
+): { path: string; anchor: string | undefined } | undefined {
   let pathAndAnchor: string;
   if (target.startsWith(`${REPO_URL.slice(0, -1)}#`)) {
     // the repository's front page shows README.md

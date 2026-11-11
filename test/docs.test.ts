@@ -66,7 +66,9 @@ function examplesIn(file: string, markdown: string): Example[] {
       }
       example.code.push(...earlier.code);
       example.lines.push(...earlier.lines);
-      example.setup = earlier.setup;
+      if (earlier.setup !== undefined) {
+        example.setup = earlier.setup;
+      }
     } else if (directive?.[1] === 'setup') {
       example.setup = directive[2] ?? '';
     } else if (directive?.[1] === 'skip') {
