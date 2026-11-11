@@ -98,6 +98,9 @@
       "wire": [
         "./dist/entries/wire.d.ts"
       ],
+      "context": [
+        "./dist/entries/context.d.ts"
+      ],
       "crypto": [
         "./dist/entries/crypto.d.ts"
       ],
@@ -206,6 +209,9 @@
       "kysely": [
         "./dist/entries/kysely.d.ts"
       ],
+      "typeorm": [
+        "./dist/entries/typeorm.d.ts"
+      ],
       "all": [
         "./dist/plugins/all.d.ts"
       ]
@@ -295,6 +301,10 @@
     "./wire": {
       "types": "./dist/entries/wire.d.ts",
       "default": "./dist/entries/wire.js"
+    },
+    "./context": {
+      "types": "./dist/entries/context.d.ts",
+      "default": "./dist/entries/context.js"
     },
     "./crypto": {
       "types": "./dist/entries/crypto.d.ts",
@@ -440,6 +450,10 @@
       "types": "./dist/entries/kysely.d.ts",
       "default": "./dist/entries/kysely.js"
     },
+    "./typeorm": {
+      "types": "./dist/entries/typeorm.d.ts",
+      "default": "./dist/entries/typeorm.js"
+    },
     "./all": {
       "types": "./dist/plugins/all.d.ts",
       "default": "./dist/plugins/all.js"
@@ -502,6 +516,7 @@
     "pg-cursor": "2.22.1",
     "rollup": "4.67.5",
     "ts-money": "^0.4.8",
+    "typeorm": "1.1.2",
     "typescript": "^5.9.3",
     "valibot": "1.5.0",
     "vitest": "^4.1.12",
@@ -511,6 +526,7 @@
     "drizzle-orm": ">=0.45.0 <1",
     "fast-check": "^4.0.0",
     "kysely": ">=0.28.0 <1",
+    "typeorm": ">=0.3.0 <2",
     "valibot": "^1.0.0",
     "vitest": ">=3.2.0 <5",
     "zod": "^4.0.0"
@@ -523,6 +539,9 @@
       "optional": true
     },
     "kysely": {
+      "optional": true
+    },
+    "typeorm": {
       "optional": true
     },
     "valibot": {

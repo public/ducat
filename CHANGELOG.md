@@ -9,6 +9,36 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `currencyContext(currency, { locale, parse? })` (`@ducatjs/money/context`, and `/fn`):
+  `money`, `fromMinor`, `zero`, `format` and `is` bound to one currency and locale, as a frozen
+  plain object, for single-currency apps, plus `parse` when it is passed in; `MoneyOf<typeof ctx>`
+  is its Money type. Nothing global is set, and a `/fn` program using one carries only the
+  currencies it imports (#216).
+- `hasFraction()` (method and `/fn`): whether the amount has a non-zero fractional part, true for
+  12.34 EUR and false for 12.00 EUR at any scale; dinero.js calls it `hasSubUnits` (#208).
+- `@ducatjs/money/typeorm`: TypeORM column transformers, exact both ways:
+  `minorTransformer(currency, { scale? })` for BIGINT minor units, `decimalTransformer(currency,
+  size?)` for NUMERIC/DECIMAL and `jsonTransformer(currency?)` for `json`, `jsonb` and
+  `simple-json`, which also work in find operators; and `fromRawMinor` and `fromRawDecimal` for
+  aggregates from raw queries. `typeorm` is an optional peer dependency, and the entry doesn't
+  import it (#215).
+- `/wire`: dinero.js 1's `{ amount, currency, precision }` shape (`toDineroObject`,
+  `fromDineroObject`), exact both ways and at the object's precision; `m.round('unnecessary')`
+  brings a value to the currency's exponent. `amount` must be a safe integer or a bigint and
+  `precision` a valid scale: a value of the wrong type throws a `TypeError`, one out of range a
+  `RangeError` (#217).
+- Arithmetic on `Ratio` values in `/math`: `ratioAdd`, `ratioSubtract`, `ratioMultiply`,
+  `ratioDivide`, `ratioNegate`, `ratioComplement` (1 − r) and `ratioCompare`, exact and reduced,
+  taking any factor (Ratio, Fixed, decimal string, integer) on either side (#201).
+- `toNumber()` (method and `/fn`) and `toMinorNumber({ lossy: true })`: explicitly lossy number
+  conversions that round once to the nearest double, for charts and APIs that take numbers.
+  `ExactMoney#toNumber()` too (#206).
+- `addTaxExact()` and `extractTaxExact()` in `/exact`: tax splits as unrounded `ExactMoney`
+  parts (net + tax is exactly gross), so a report can sum the rows and round once (#218).
+- `ExactMoney` has the helpers `Money` has: `abs`, `isPositive`, `isNegative`, `lessThan` and the
+  other comparisons, `min`, `max`, `clamp`, `percentage` and `ratioOf`. `add`, `subtract`,
+  `compare`, `equals` and these accept a `Money` of the same currency, exactly, and `round` and
+  `roundWithResidual` take a rounding policy as well as a mode (#202).
 - `multiplyExact()` (function and method, in `/exact`): an exact multiply whose scale grows to
   hold the product, never below the amount's, throwing a `RoundingError` when it doesn't
   terminate; and `ExactMoney#toMoney()`, the exact value as Money by the same rule (#223).

@@ -1,7 +1,8 @@
 // Aggregates, ratios and integral division between amounts: average, ratioOf, divideToIntegral,
-// remainder and trimScale. Everything is exact; only `average` rounds, once, after an exact sum.
+// remainder and trimScale, and exact arithmetic on Ratio values (ratioAdd, ratioCompare...).
+// Everything is exact; only `average` rounds, once, after an exact sum.
 import { currencyExponent } from './currency.js';
-import { checkScale, ratio, type Ratio } from './decimal.js';
+import { checkScale, ratio, type Factor, type Ratio } from './decimal.js';
 import {
   CurrencyMismatchError,
   divide,
@@ -164,4 +165,67 @@ export function trimScale<C extends string>(money: Money<C>, minimumScale?: numb
     scale--;
   }
   return scale === money.scale ? money : make(money.currency, minor, scale);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Arithmetic on Ratio values: exact and reduced. Each side is any Factor (a Ratio, a Fixed, a
+// decimal or 'a/b' string, a number or a bigint), read exactly as `ratio()` reads it.
+// ---------------------------------------------------------------------------------------------
+
+/** left + right, exactly: `ratioAdd('0.19', ratio(1, 3))` is 157/300. */
+export function ratioAdd(left: Factor, right: Factor): Ratio {
+  const leftRatio = ratio(left);
+  const rightRatio = ratio(right);
+  return ratio(
+    leftRatio.num * rightRatio.den + rightRatio.num * leftRatio.den,
+    leftRatio.den * rightRatio.den,
+  );
+}
+
+/** left − right, exactly. */
+export function ratioSubtract(left: Factor, right: Factor): Ratio {
+  const leftRatio = ratio(left);
+  const rightRatio = ratio(right);
+  return ratio(
+    leftRatio.num * rightRatio.den - rightRatio.num * leftRatio.den,
+    leftRatio.den * rightRatio.den,
+  );
+}
+
+/** left × right, exactly. */
+export function ratioMultiply(left: Factor, right: Factor): Ratio {
+  const leftRatio = ratio(left);
+  const rightRatio = ratio(right);
+  return ratio(leftRatio.num * rightRatio.num, leftRatio.den * rightRatio.den);
+}
+
+/** left ÷ right, exactly; a zero `right` throws a RangeError. */
+export function ratioDivide(left: Factor, right: Factor): Ratio {
+  const leftRatio = ratio(left);
+  const rightRatio = ratio(right);
+  return ratio(leftRatio.num * rightRatio.den, leftRatio.den * rightRatio.num);
+}
+
+/** −value. */
+export function ratioNegate(value: Factor): Ratio {
+  const valueRatio = ratio(value);
+  return ratio(-valueRatio.num, valueRatio.den);
+}
+
+/** 1 − value: the complement of a share or rate, e.g. `ratioComplement(ratioOf(paid, total))`. */
+export function ratioComplement(value: Factor): Ratio {
+  const valueRatio = ratio(value);
+  return ratio(valueRatio.den - valueRatio.num, valueRatio.den);
+}
+
+/** −1, 0 or 1 as left is less than, equal to or greater than right. */
+export function ratioCompare(left: Factor, right: Factor): -1 | 0 | 1 {
+  const leftRatio = ratio(left);
+  const rightRatio = ratio(right);
+  // Both denominators are positive, so cross-multiplying keeps the order.
+  const difference = leftRatio.num * rightRatio.den - rightRatio.num * leftRatio.den;
+  if (difference < 0n) {
+    return -1;
+  }
+  return difference > 0n ? 1 : 0;
 }

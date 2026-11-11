@@ -38,26 +38,27 @@ export function checkCurrency(money: Money, currency: string | undefined): void 
 }
 
 /**
- * Throws unless the money is at its currency's exponent. Columns store amounts at the currency's
- * scale, so a value with sub-minor digits would have to be rounded, and the caller should choose how.
+ * Throws unless the money is at its currency's exponent (or the column's `scale`). Columns store
+ * amounts at one scale, so a value with more digits would have to be rounded, and the caller should
+ * choose how.
  */
-export function checkIsoScale(money: Money): void {
-  const exponent = currencyExponent(money.currency);
-  if (money.scale !== exponent) {
+export function checkIsoScale(money: Money, scale = currencyExponent(money.currency)): void {
+  if (money.scale !== scale) {
     throw new RangeError(
-      `${money} has scale ${money.scale}; round() it to ${exponent} decimals before storing it`,
+      `${money} has scale ${money.scale}; round() it to ${scale} decimals before storing it`,
     );
   }
 }
 
 /**
- * Minor units for a BIGINT column, as a bigint. Throws beyond the column's range, ±9.2·10^18:
- * MySQL outside strict mode would store the nearest limit instead.
+ * Minor units for a BIGINT column, as a bigint: units of 10^-scale when the column has a `scale`,
+ * else the currency's minor units. Throws beyond the column's range, ±9.2·10^18: MySQL outside
+ * strict mode would store the nearest limit instead.
  */
-export function minorToDriver(money: Money, currency: string | undefined): bigint {
+export function minorToDriver(money: Money, currency: string | undefined, scale?: number): bigint {
   checkCurrency(money, currency);
-  checkIsoScale(money);
-  const minor = toMinor(money);
+  checkIsoScale(money, scale);
+  const minor = scale === undefined ? toMinor(money) : BigInt(money.minor);
 
   if (minor < BIGINT_MIN || minor > BIGINT_MAX) {
     throw new RangeError(`${money} is ${minor} minor units, beyond the range of a BIGINT column`);
@@ -70,15 +71,19 @@ export function minorToDriver(money: Money, currency: string | undefined): bigin
  * (node-postgres returns int8 as a string). A number beyond 2^53 has already lost digits, so it
  * throws.
  */
-export function minorFromDriver<C extends string>(value: unknown, currency: C): Money<C> {
+export function minorFromDriver<C extends string>(
+  value: unknown,
+  currency: C,
+  scale?: number,
+): Money<C> {
   if (typeof value === 'string') {
     if (!INTEGER_TEXT.test(value)) {
       throw new SyntaxError(`Expected an integer from a BIGINT column, got "${value}"`);
     }
-    return fromMinor(BigInt(value), currency);
+    return fromMinor(BigInt(value), currency, scale);
   }
   if (typeof value === 'number' || typeof value === 'bigint') {
-    return fromMinor(value, currency);
+    return fromMinor(value, currency, scale);
   }
   throw new TypeError(`Expected an integer from a BIGINT column, got ${typeof value}`);
 }
