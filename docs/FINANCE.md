@@ -28,7 +28,7 @@ that reconcile to the cent.
   off-by-one-day interest bugs happen. Day arithmetic is proleptic Gregorian, done in integers.
 - **Opt-in, free functions.** One entry point, `@ducatjs/money/finance`, with functions only (no
   `Money` methods). Every function takes an options object, which suits functions rather than
-  methods. Nothing global, nothing network. Size: about +5 kB gzipped over the core
+  methods. Nothing global, nothing network. Size: about +6 kB gzipped over the core
   (the module, `allocate` and `ExactMoney`).
 
 ## Scope
@@ -191,7 +191,7 @@ annualRate('0.01', { perYear: 12 }); // ratio(126825030131969720661201, 10^24), 
   `1 + annual = num / den`, is `1 + lower`, so `(1 + lower)^perYear ≤ 1 + annual <
   (1 + upper)^perYear` with `upper = lower + 10^−digits`, and `rate` is `lower` (floored). The
   bracket starts at [1, 1 + annual/perYear] for a positive rate (Bernoulli: `(1 + a/n)^n ≥ 1 + a`)
-  and at [0, 1] for a negative one, so bisection takes about `3.3 × digits` steps.
+  and at [0, 1] for a negative one, so bisection takes at most about `3.3 × digits` steps.
 - When the root is rational (the reduced `num` and `den` are both perfect `perYear`th powers),
   `exact` holds it as a `Ratio`: `'0.21'` with `perYear: 2` gives 1/10, and
   `periodicRate(annualRate(p)).exact` is `p`.

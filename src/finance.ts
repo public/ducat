@@ -495,8 +495,8 @@ function exactRoot(value: bigint, power: bigint): bigint | undefined {
  * decimals: `rate` is `lower`, and the exact root lies in [`lower`, `upper`), 10^−digits apart,
  * since `(1 + lower)^perYear ≤ 1 + annual < (1 + upper)^perYear`. When the root is rational,
  * `exact` holds it. Each step raises a `digits`-place decimal to the `perYear`th power, so the cost
- * grows with `digits × perYear`, which may be at most 50,000: monthly at 10 digits is about 34
- * steps on 400-bit integers, daily at 100 digits about 330 steps on 120,000-bit integers (0.3 s).
+ * grows with `digits × perYear`, which may be at most 50,000: monthly at 10 digits is at most about
+ * 34 steps on 400-bit integers, daily at 100 digits 330 steps on 120,000-bit integers (0.3 s).
  *
  * It throws a RangeError for an annual rate at or below −1 (everything lost), and when the
  * periodic rate is within 10^−digits of −1: ask for more digits.

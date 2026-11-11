@@ -870,6 +870,9 @@ describe('periodicRate and annualRate', () => {
     expect(() => periodicRate(almostAll, { perYear: 2, digits: 10 })).toThrow(
       'ask for more digits',
     );
+    // with no places, every negative rate is within 1 of −1, as with irr
+    expect(() => periodicRate('-0.05', { perYear: 12, digits: 0 })).toThrow('ask for more digits');
+    expect(periodicRate('0.05', { perYear: 12, digits: 0 }).rate).toBe('0');
     expect(periodicRate(almostAll, { perYear: 2, digits: 15 }).exact).toEqual(
       ratio(1n - 10n ** 15n, 10n ** 15n),
     );
@@ -926,8 +929,9 @@ describe('periodicRate and annualRate', () => {
 
   it('fewer digits truncate more digits', () => {
     fc.assert(
-      fc.property(annualRates, perYears, fc.integer({ min: 0, max: 15 }), (annual, n, digits) => {
-        fc.pre(ratio(annual).num > -ratio(annual).den / 2n);
+      // above −1/2 and with a digit, the periodic rate is never within 10^−digits of −1
+      fc.property(annualRates, perYears, fc.integer({ min: 1, max: 15 }), (annual, n, digits) => {
+        fc.pre(ratio(annual).num * 2n > -ratio(annual).den);
         const fine = periodicRate(annual, { perYear: n, digits: 20 }).lower;
         const coarse = periodicRate(annual, { perYear: n, digits }).lower;
         const scaled = ratio(fine).num * 10n ** BigInt(digits);
