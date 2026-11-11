@@ -908,6 +908,19 @@ export function minorPart(money: Money): number | bigint {
 }
 
 /**
+ * Whether the amount has a non-zero fractional part: true for 12.34 EUR, -0.05 EUR and 1.005 EUR,
+ * false for 12.00 EUR and for 12.000 EUR at scale 3. Display code uses it to drop ".00" from whole
+ * amounts; dinero.js calls it `hasSubUnits`.
+ */
+export function hasFraction(money: Money): boolean {
+  const minor = money.minor;
+  if (typeof minor === 'number' && money.scale <= 15) {
+    return minor % POW10[money.scale]! !== 0;
+  }
+  return toBigInt(minor) % pow10n(money.scale) !== 0n;
+}
+
+/**
  * Units of the currency's minor unit (cents for EUR) as a bigint, for BIGINT columns and APIs that
  * take ISO 4217 minor units. Exact at any scale: 1.5 EUR at scale 1 is 150n, and 12.340 EUR at
  * scale 3 is 1234n. Throws RoundingError when the amount has non-zero digits below the minor unit
