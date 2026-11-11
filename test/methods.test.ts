@@ -109,6 +109,8 @@ describe('Money methods', () => {
       'discountedSum',
       'discountedSumExact',
       'irr',
+      'periodicRate',
+      'annualRate',
       'prorate',
       'splitPeriod',
       // /pricing: takes a quantity and a tier table, not an amount

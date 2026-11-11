@@ -418,6 +418,167 @@ export function compound<C extends string>(
 }
 
 // ---------------------------------------------------------------------------------------------
+// Effective rates per period
+// ---------------------------------------------------------------------------------------------
+
+/** Options for `periodicRate`. */
+export interface PeriodicRateOptions {
+  /** Periods per year (12 for monthly): a positive integer. */
+  readonly perYear: number;
+  /** Decimal places of the result (default 10, at most 100; `digits × perYear` at most 50,000). */
+  readonly digits?: number;
+}
+
+/** Options for `annualRate`. */
+export interface AnnualRateOptions {
+  /** Periods per year (12 for monthly): a positive integer, at most 100,000. */
+  readonly perYear: number;
+}
+
+/** The result of `periodicRate`: decimal strings with `digits` places, and the exact rate when it is rational. */
+export interface PeriodicRateResult {
+  /** The periodic rate floored to `digits` places: the same as `lower`. */
+  readonly rate: string;
+  /** The periodic rate rounded down to `digits` places: `(1 + lower)^perYear ≤ 1 + annual`. */
+  readonly lower: string;
+  /** `lower` plus 10^−digits: `(1 + upper)^perYear > 1 + annual`. */
+  readonly upper: string;
+  /**
+   * The exact periodic rate, when it is rational: when the reduced numerator and denominator of
+   * `1 + annual` are both perfect `perYear`th powers (`'0.21'` with `perYear: 2` gives 1/10).
+   */
+  readonly exact?: Ratio;
+}
+
+/**
+ * The most `digits × perYear` that `periodicRate` takes: each step raises a `digits`-place decimal
+ * to the `perYear`th power, so this bounds the integers to about 170,000 bits (daily to 100 places
+ * takes about 0.3 s).
+ */
+const MAX_ROOT_SIZE = 50_000;
+
+/** 1 + rate as a reduced ratio, checked to be positive. */
+function onePlus(rate: Factor, name: string): Ratio {
+  const rateRatio = ratio(rate);
+  // num + den over den is reduced when num over den is: they share the same gcd
+  const growth = ratio(rateRatio.num + rateRatio.den, rateRatio.den);
+  if (growth.num <= 0n) {
+    throw new RangeError(`The ${name} rate must be above -1; got ${String(rate)}`);
+  }
+  return growth;
+}
+
+/** The integer `power`th root of a positive integer, if it is a perfect `power`th power. */
+function exactRoot(value: bigint, power: bigint): bigint | undefined {
+  // value has `bits` bits, so its root lies in [2^⌊(bits−1)/power⌋, 2^(⌊(bits−1)/power⌋ + 1))
+  const shift = BigInt(value.toString(2).length - 1) / power;
+  let low = 1n << shift;
+  let high = low << 1n;
+  while (high - low > 1n) {
+    const middle = (low + high) >> 1n;
+    if (middle ** power <= value) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+  return low ** power === value ? low : undefined;
+}
+
+/**
+ * The periodic rate equivalent to an effective annual rate: `(1 + annual)^(1/perYear) − 1`, the
+ * monthly rate that compounds to the annual one with `perYear: 12`. This converts effective rates;
+ * it isn't the nominal `rate / perYear` that `compound` and `amortise` use, nor Excel's NOMINAL.
+ *
+ * The root is irrational in general, so like `irr` the rate is found to `digits` decimal places
+ * (default 10), floored, by bisection in exact integer arithmetic on the grid of `digits`-place
+ * decimals: `rate` is `lower`, and the exact root lies in [`lower`, `upper`), 10^−digits apart,
+ * since `(1 + lower)^perYear ≤ 1 + annual < (1 + upper)^perYear`. When the root is rational,
+ * `exact` holds it. Each step raises a `digits`-place decimal to the `perYear`th power, so the cost
+ * grows with `digits × perYear`, which may be at most 50,000: monthly at 10 digits is at most about
+ * 34 steps on 400-bit integers, daily at 100 digits 330 steps on 120,000-bit integers (0.3 s).
+ *
+ * It throws a RangeError for an annual rate at or below −1 (everything lost), and when the
+ * periodic rate is within 10^−digits of −1: ask for more digits.
+ *
+ *     periodicRate('0.05', { perYear: 12, digits: 12 })
+ *     // { rate: '0.004074123783', lower: '0.004074123783', upper: '0.004074123784' }
+ */
+export function periodicRate(annual: Factor, options: PeriodicRateOptions): PeriodicRateResult {
+  const perYear = options.perYear;
+  if (!(Number.isInteger(perYear) && perYear >= 1 && perYear <= MAX_ROOT_SIZE)) {
+    invalid('perYear', perYear);
+  }
+  const digits = options.digits ?? 10;
+  if (!(Number.isInteger(digits) && digits >= 0 && digits <= 100)) {
+    invalid('digits', digits);
+  }
+  if (digits * perYear > MAX_ROOT_SIZE) {
+    throw new RangeError(
+      `digits × perYear must be at most ${MAX_ROOT_SIZE}; got ${digits} × ${perYear}`,
+    );
+  }
+  const growth = onePlus(annual, 'annual');
+  const power = BigInt(perYear);
+  const unit = pow10n(digits);
+
+  // The largest G with (G / unit)^n ≤ growth, so the rate's grid point is G − unit. G = 0 always
+  // qualifies; above, unit·(1 + annual/n) + 1 never does, since (1 + a/n)^n ≥ 1 + a (Bernoulli).
+  const target = growth.num * unit ** power;
+  const fits = (grid: bigint) => grid ** power * growth.den <= target;
+  let low: bigint;
+  let high: bigint;
+  if (growth.num >= growth.den) {
+    low = unit;
+    high = unit + ((growth.num - growth.den) * unit) / (growth.den * power) + 1n;
+  } else {
+    low = 0n;
+    high = unit;
+  }
+  while (high - low > 1n) {
+    const middle = (low + high) >> 1n;
+    if (fits(middle)) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+  if (low === 0n) {
+    throw new RangeError(`The periodic rate is within 10^-${digits} of -1; ask for more digits`);
+  }
+
+  const lower = formatScaled(low - unit, digits);
+  const upper = formatScaled(low - unit + 1n, digits);
+  const rootNum = perYear === 1 ? growth.num : exactRoot(growth.num, power);
+  const rootDen = perYear === 1 ? growth.den : exactRoot(growth.den, power);
+  if (rootNum === undefined || rootDen === undefined) {
+    return { rate: lower, lower, upper };
+  }
+  // the roots of coprime integers are coprime, so this is reduced
+  return { rate: lower, lower, upper, exact: ratio(rootNum - rootDen, rootDen) };
+}
+
+/**
+ * The effective annual rate a periodic rate compounds to: `(1 + periodic)^perYear − 1`, exact (an
+ * integer power of a rational), as a reduced `Ratio`. It inverts `periodicRate`: the annual rate of
+ * `periodicRate(a).exact` is `a`, and `a` lies between the annual rates of `lower` and `upper`.
+ * It isn't Excel's EFFECT, which takes a nominal rate.
+ *
+ *     annualRate('0.01', { perYear: 12 }) // 126825030131969720661201 / 10^24, about 12.68%
+ */
+export function annualRate(periodic: Factor, options: AnnualRateOptions): Ratio {
+  const perYear = options.perYear;
+  if (!(Number.isInteger(perYear) && perYear >= 1 && perYear <= MAX_PERIODS)) {
+    invalid('perYear', perYear);
+  }
+  const growth = onePlus(periodic, 'periodic');
+  const exponent = BigInt(perYear);
+  // a power of a reduced ratio is reduced, and so is one minus it, so no gcd is needed
+  const denominator = growth.den ** exponent;
+  return unreducedRatio(growth.num ** exponent - denominator, denominator);
+}
+
+// ---------------------------------------------------------------------------------------------
 // Amortisation
 // ---------------------------------------------------------------------------------------------
 
@@ -628,7 +789,7 @@ export function amortise<C extends string>(
     options.firstPayment === undefined
       ? undefined
       : paymentDates(options.firstPayment, perYear, periods);
-  const periodicRate = ratio(rateRatio.num, rateRatio.den * BigInt(perYear));
+  const ratePerPeriod = ratio(rateRatio.num, rateRatio.den * BigInt(perYear));
 
   const rows: AmortisationRow<C>[] = [];
   const pushRow = (
@@ -657,7 +818,7 @@ export function amortise<C extends string>(
     for (let i = 0; i < periods; i++) {
       const isLast = i === periods - 1;
       const principal = isLast ? balance : parts[i]!;
-      const interestPart = multiplyAndRound(balance, periodicRate, rounding);
+      const interestPart = multiplyAndRound(balance, ratePerPeriod, rounding);
       balance = subtract(balance, principal);
       pushRow(add(principal, interestPart), interestPart, principal, balance);
     }
@@ -665,7 +826,7 @@ export function amortise<C extends string>(
   }
 
   if (method === 'interestOnly') {
-    const interestPart = multiplyAndRound(loan, periodicRate, rounding);
+    const interestPart = multiplyAndRound(loan, ratePerPeriod, rounding);
     for (let i = 0; i < periods; i++) {
       const isLast = i === periods - 1;
       const principal = isLast ? loan : zeroAmount;
@@ -682,18 +843,18 @@ export function amortise<C extends string>(
   const loanMinor = BigInt(loan.minor) * pow10n(scale - loan.scale);
   const balloonMinor = BigInt(balloon.minor) * pow10n(scale - balloon.scale);
   const exponent = BigInt(periods);
-  const growthPower = (periodicRate.num + periodicRate.den) ** exponent;
-  const basePower = periodicRate.den ** exponent;
+  const growthPower = (ratePerPeriod.num + ratePerPeriod.den) ** exponent;
+  const basePower = ratePerPeriod.den ** exponent;
   const payment = roundQuotient(
     currency,
-    (loanMinor * growthPower - balloonMinor * basePower) * periodicRate.num,
-    pow10n(scale) * periodicRate.den * (growthPower - basePower),
+    (loanMinor * growthPower - balloonMinor * basePower) * ratePerPeriod.num,
+    pow10n(scale) * ratePerPeriod.den * (growthPower - basePower),
     rounding,
   );
 
   let balance = loan;
   for (let i = 0; i < periods; i++) {
-    const interestPart = multiplyAndRound(balance, periodicRate, rounding);
+    const interestPart = multiplyAndRound(balance, ratePerPeriod, rounding);
     const isLast = i === periods - 1;
     const owed = add(balance, interestPart);
     // the last payment, or a regular payment that would clear more than is owed, settles the loan

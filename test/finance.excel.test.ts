@@ -1,4 +1,5 @@
-// Functions named after Excel's (npv, irr) must give Excel's values. Ground truth: Microsoft's
+// Functions named after Excel's (npv, irr) must give Excel's values; periodicRate and annualRate
+// aren't Excel names, but must agree with Excel's RRI and EFFECT examples and Calc's POWER. Ground truth: Microsoft's
 // worked examples (test/fixtures/excel/microsoft.json, copied from the function pages), then a broad
 // set computed by LibreOffice Calc (test/vectors/finance-calc.json, scripts/gen-calc-vectors.py).
 // Spreadsheets compute in doubles, so values are compared at 15 significant digits, and IRR at
@@ -9,7 +10,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ratio, type Ratio } from '../src/decimal.js';
 import type { ExactMoney } from '../src/exact.js';
-import { discountedSumExact, irr, npv, npvExact } from '../src/finance.js';
+import {
+  annualRate,
+  discountedSumExact,
+  irr,
+  npv,
+  npvExact,
+  periodicRate,
+} from '../src/finance.js';
 import { abs, add, money, type Money } from '../src/money.js';
 
 interface Microsoft {
@@ -28,12 +36,22 @@ interface Microsoft {
     accuracy: string;
     examples: { formula: string; values: string[]; guess?: string; result: string }[];
   };
+  rri: {
+    source: string;
+    examples: { formula: string; nper: string; pv: string; fv: string; result: string }[];
+  };
+  effect: {
+    source: string;
+    examples: { formula: string; nominal: string; npery: string; result: string }[];
+  };
 }
 
 interface Calc {
   calc: string;
   npv: { rate: string; flows: string[]; calc: string }[];
   irr: { flows: string[]; calc: string }[];
+  periodicRate: { annual: string; perYear: number; calc: string; calcOnePlus: string }[];
+  annualRate: { periodic: string; perYear: number; calc: string }[];
 }
 
 const microsoft = JSON.parse(
@@ -120,6 +138,30 @@ describe("Microsoft's documented examples", () => {
       expect([example.formula, shown]).toEqual([example.formula, example.result]);
     }
   });
+
+  it(`RRI as periodicRate (${microsoft.rri.source})`, () => {
+    for (const example of microsoft.rri.examples) {
+      // RRI(n, pv, fv) = (fv / pv)^(1/n) − 1: the periodic rate of an annual growth of fv / pv − 1
+      const growth = ratio(BigInt(example.fv) - BigInt(example.pv), BigInt(example.pv));
+      const { lower } = periodicRate(growth, { perYear: Number(example.nper), digits: 15 });
+      expect([example.formula, roundDecimal(ratio(lower), 7)]).toEqual([
+        example.formula,
+        example.result,
+      ]);
+    }
+  });
+
+  it(`EFFECT as annualRate (${microsoft.effect.source})`, () => {
+    for (const example of microsoft.effect.examples) {
+      // EFFECT(nominal, n) = (1 + nominal / n)^n − 1
+      const periodic = ratio(example.nominal, example.npery);
+      const effective = annualRate(periodic, { perYear: Number(example.npery) });
+      expect([example.formula, roundDecimal(effective, 7)]).toEqual([
+        example.formula,
+        example.result,
+      ]);
+    }
+  });
 });
 
 describe(`LibreOffice Calc (${calc.calc})`, () => {
@@ -190,6 +232,90 @@ describe(`LibreOffice Calc (${calc.calc})`, () => {
     expect(mismatches).toEqual([]);
   });
 });
+
+describe(`LibreOffice Calc's POWER (${calc.calc})`, () => {
+  /** |left − right| ≤ bound */
+  const within = (left: Ratio, right: Ratio, bound: Ratio) => {
+    const difference = subtract(left, right);
+    const size = difference.num < 0n ? ratio(-difference.num, difference.den) : difference;
+    return !isGreater(size, bound);
+  };
+  const calcRatio = (text: string) => ratio(text.replace(/E\+?/, 'e'));
+  const ulp = ratio(1n, 2n ** 52n);
+  /** Half a unit in the 15th significant digit of Calc's text, which is rounded there. */
+  const textRounding = (text: string): Ratio => {
+    const exponent = Number(/E([+-]\d+)$/.exec(text)?.[1]) - 14;
+    return exponent >= 0
+      ? ratio(5n * 10n ** BigInt(exponent), 10n)
+      : ratio(5n, 10n ** BigInt(1 - exponent));
+  };
+  const addRatios = (left: Ratio, right: Ratio): Ratio =>
+    ratio(left.num * right.den + right.num * left.den, left.den * right.den);
+  /** a · 2^-52, the size of `count` units in the last place of a double near 1 */
+  const ulps = (count: number): Ratio => ratio(BigInt(count), 2n ** 52n);
+
+  it('periodicRate: 1 + rate at 15 significant digits, and the rate within a double', () => {
+    let strict = 0;
+    const mismatches = calc.periodicRate.filter((vector) => {
+      // at 25 places the floor doesn't reach Calc's digits
+      const { lower, upper } = periodicRate(vector.annual, {
+        perYear: vector.perYear,
+        digits: 25,
+      });
+      const onePlusLower = add1(ratio(lower));
+      // the root is in [lower, upper): when both ends agree at 15 digits, so does the root
+      const ours = significant15(onePlusLower);
+      if (
+        ours === significant15(add1(ratio(upper))) &&
+        ours === calcSignificant15(vector.calcOnePlus)
+      ) {
+        strict++;
+      } else {
+        // Calc's POWER is within a few units in the last place of 1 + rate (which is below 3, so
+        // its unit is at most 2^-51), and its text is rounded to 15 digits
+        const bound = addRatios(ulps(8), textRounding(vector.calcOnePlus));
+        if (!within(onePlusLower, calcRatio(vector.calcOnePlus), bound)) {
+          return true;
+        }
+      }
+      // the rate itself: Calc's subtraction is exact, so the same absolute error bounds it
+      const bound = addRatios(ulps(8), textRounding(vector.calc));
+      return !within(ratio(lower), calcRatio(vector.calc), bound);
+    });
+    expect(calc.periodicRate.length).toBe(150);
+    expect(strict).toBeGreaterThan(130);
+    expect(mismatches).toEqual([]);
+  });
+
+  it('annualRate: at 15 significant digits, or within the error of a double power', () => {
+    let strict = 0;
+    const mismatches = calc.annualRate.filter((vector) => {
+      const ours = annualRate(vector.periodic, { perYear: vector.perYear });
+      if (significant15(ours) === calcSignificant15(vector.calc)) {
+        strict++;
+        return false;
+      }
+      // 1 + p is rounded to a double (relative error 2^-53), the power multiplies that by n, and
+      // POWER adds a unit in the last place: (n + 2) · 2^-52 · (1 + annual), plus the subtraction
+      const size = add1(ours);
+      const doubleError = ratio(
+        size.num * BigInt(vector.perYear + 2) + size.den,
+        size.den * ulp.den,
+      );
+      const bound = addRatios(doubleError, textRounding(vector.calc));
+      return !within(ours, calcRatio(vector.calc), bound);
+    });
+    expect(calc.annualRate.length).toBe(150);
+    // a power of n ≤ 400 in doubles can be off by n units in the last place, so fewer agree to
+    // every digit Calc shows than for NPV
+    expect(strict).toBeGreaterThan(80);
+    expect(mismatches).toEqual([]);
+  });
+});
+
+function add1(value: Ratio): Ratio {
+  return ratio(value.num + value.den, value.den);
+}
 
 function subtract(left: Ratio, right: Ratio): Ratio {
   return ratio(left.num * right.den - right.num * left.den, left.den * right.den);

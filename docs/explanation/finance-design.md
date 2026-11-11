@@ -28,7 +28,7 @@ that reconcile to the cent.
   off-by-one-day interest bugs happen. Day arithmetic is proleptic Gregorian, done in integers.
 - **Opt-in, free functions.** One entry point, `@ducatjs/money/finance`, with functions only (no
   `Money` methods). Every function takes an options object, which suits functions rather than
-  methods. Nothing global, nothing network. Size: about +5 kB gzipped over the core
+  methods. Nothing global, nothing network. Size: about +6 kB gzipped over the core
   (the module, `allocate` and `ExactMoney`).
 
 ## Scope
@@ -177,6 +177,41 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
 - `XNPV` and `XIRR` (flows on arbitrary dates) are **not** in the first version: their discount
   factors `(1 + r)^(days/365)` are fractional powers, so even XNPV isn't exact. They are planned
   for v0.4.0, as results to a stated precision with a proven error bound.
+
+### 3a. Periodic and annual rates (v0.4.0, #199)
+
+```ts
+periodicRate('0.05', { perYear: 12, digits: 12 });
+// { rate: '0.004074123783', lower: '0.004074123783', upper: '0.004074123784' }
+periodicRate('0.21', { perYear: 2 }); // exact: ratio(1, 10), and rate '0.1000000000'
+annualRate('0.01', { perYear: 12 }); // ratio(126825030131969720661201, 10^24), exact
+```
+
+- `periodicRate(annual, { perYear, digits })` is the periodic rate equivalent to an effective
+  annual rate, `(1 + annual)^(1/perYear) − 1`; `annualRate(periodic, { perYear })` is the inverse,
+  `(1 + periodic)^perYear − 1`. They convert effective rates: neither is the nominal
+  `rate / perYear` that `compound` and `amortise` use, and they aren't Excel names (Excel's RRI
+  and EFFECT compute the same values from other arguments, and the tests check their documented
+  examples). The option is `perYear`, as everywhere in this module.
+- `annualRate` is an integer power of a rational, so it is exact: a reduced `Ratio`.
+- `periodicRate` is a root, irrational in general, so it is found the way `irr` is: by bisection
+  on the grid of `digits`-place decimals (default 10, at most 100) in exact integer arithmetic.
+  The largest grid point `G / 10^digits` with `G^perYear · den ≤ num · 10^(digits·perYear)`, where
+  `1 + annual = num / den`, is `1 + lower`, so `(1 + lower)^perYear ≤ 1 + annual <
+  (1 + upper)^perYear` with `upper = lower + 10^−digits`, and `rate` is `lower` (floored). The
+  bracket starts at [1, 1 + annual/perYear] for a positive rate (Bernoulli: `(1 + a/n)^n ≥ 1 + a`)
+  and at [0, 1] for a negative one, so bisection takes at most about `3.3 × digits` steps.
+- When the root is rational (the reduced `num` and `den` are both perfect `perYear`th powers),
+  `exact` holds it as a `Ratio`: `'0.21'` with `perYear: 2` gives 1/10, and
+  `periodicRate(annualRate(p)).exact` is `p`.
+- Each step raises a `digits`-place decimal to the `perYear`th power, so `digits × perYear` is
+  capped at 50,000 (daily to 100 places takes about 0.3 s, monthly to 10 places microseconds).
+- It throws a RangeError for an annual rate at or below −1, and when the periodic rate is within
+  10^−digits of −1, as `irr` does: ask for more digits.
+- Tests: Microsoft's RRI and EFFECT examples, and 150 cases each against LibreOffice Calc's
+  `POWER(1 + r; 1/n) − 1` and `POWER(1 + p; n) − 1`. `1 + rate` is compared at 15 significant
+  digits (the subtraction in doubles loses digits of the rate itself), or within Calc's double
+  error where its last digit is off.
 
 ### 4. Subscription proration
 
