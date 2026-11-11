@@ -16,6 +16,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   brings a value to the currency's exponent. `amount` must be a safe integer or a bigint and
   `precision` a valid scale: a value of the wrong type throws a `TypeError`, one out of range a
   `RangeError` (#217).
+- Arithmetic on `Ratio` values in `/math`: `ratioAdd`, `ratioSubtract`, `ratioMultiply`,
+  `ratioDivide`, `ratioNegate`, `ratioComplement` (1 − r) and `ratioCompare`, exact and reduced,
+  taking any factor (Ratio, Fixed, decimal string, integer) on either side (#201).
 - `toNumber()` (method and `/fn`) and `toMinorNumber({ lossy: true })`: explicitly lossy number
   conversions that round once to the nearest double, for charts and APIs that take numbers.
   `ExactMoney#toNumber()` too (#206).

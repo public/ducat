@@ -144,7 +144,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money`                    | the core: arithmetic, rounding, comparison, `toDecimal`, `toJSON`… | `money`, `fromMinor`, `zero`, `sum`, `fromJSON`, ISO exponents   |
 | `@ducatjs/money/allocate`           | `allocate`, `split`, `instalments`, `schedule`, `chunk`            | the same as plain functions                                      |
 | `@ducatjs/money/tax`                | `percentage`, `discount`, `addTax`, `extractTax`                   | the same                                                         |
-| `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`                                              |
+| `@ducatjs/money/math`               | `ratioOf`, `divideToIntegral`, `remainder`, `trimScale`            | the same, `average`, `ratioAdd` and the other Ratio arithmetic   |
 | `@ducatjs/money/convert`            | `convert`                                                          | `exchangeRate`, providers, `bag`, `comparator`…                  |
 | `@ducatjs/money/exact`              | `exact`                                                            | `ExactMoney`, `sumExact`                                         |
 | `.../convert/ecb`                   | nothing                                                            | `parseEcbXml`, `parseEcbCsv`, `parseEcbSdmxCsv`                  |
@@ -287,6 +287,18 @@ money('25', 'EUR').ratioOf(money('100', 'EUR')); // → { num: 1n, den: 4n, n: 1
 money('9.99', 'EUR').divideToIntegral(money('2.50', 'EUR')); // → 3
 money('9.99', 'EUR').remainder(money('2.50', 'EUR')); // → 2.49 EUR
 money('1.2300', 'EUR', { scale: 4 }).trimScale(); // → 1.23 EUR
+```
+
+**Arithmetic on ratios** (`@ducatjs/money/math`). `ratioAdd`, `ratioSubtract`, `ratioMultiply`, `ratioDivide`, `ratioNegate`, `ratioComplement` (1 − r) and `ratioCompare` compose rates and shares exactly, without going through strings. Each side may be a `Ratio`, a `Fixed`, a decimal or `'a/b'` string, or an integer; the result is a reduced `Ratio`, which every factor parameter accepts.
+
+```ts
+import { money, ratio } from '@ducatjs/money';
+import { ratioAdd, ratioCompare, ratioComplement } from '@ducatjs/money/math';
+
+const afterDiscount = ratioComplement('0.15'); // → { num: 17n, den: 20n, n: 17, d: 20 }
+money('80.00', 'EUR').multiply(afterDiscount); // → 68.00 EUR
+ratioAdd('0.19', ratio(1, 3)); // → { num: 157n, den: 300n, n: 157, d: 300 }
+ratioCompare('1/3', '0.3333'); // → 1
 ```
 
 **Compare**
