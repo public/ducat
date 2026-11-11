@@ -43,6 +43,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   hold the product, never below the amount's, throwing a `RoundingError` when it doesn't
   terminate; and `ExactMoney#toMoney()`, the exact value as Money by the same rule (#223).
 
+### Changed
+
+- `ExactMoney` is 2–3.5× faster: it works on numbers while its numerator and denominator are safe
+  integers, and on bigints beyond, as Money does (#224). `num` and `den` are still the reduced
+  bigints, now read through getters; the own fields are `numerator` and `denominator` (numbers or
+  bigints), so a structural comparison such as `toEqual` sees those instead. `JSON.stringify` of an
+  ExactMoney throws a TypeError naming `round()`, as it already failed on the bigints before.
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day
