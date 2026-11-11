@@ -162,7 +162,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/crypto`             | nothing                                                            | `defineCryptoCurrencies`, `toBaseUnits`, `fromBaseUnits`         |
 | `@ducatjs/money/currencies`         | nothing                                                            | numeric codes, `minorUnit`, `currencyName`, `currencySymbol`     |
 | `@ducatjs/money/territories`        | nothing                                                            | `territoryCurrencies`, `currencyTerritories` (CLDR)              |
-| `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022 amounts, minor-unit JSON          |
+| `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022, minor units, dinero.js objects   |
 | `@ducatjs/money/words`              | nothing                                                            | `amountInWords`, `spellOut` (CLDR rules, no Money loaded)        |
 | `@ducatjs/money/words/<language>`   | nothing                                                            | `english`, `german`, `french`, `spanish`, `italian`…             |
 | `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `discountedSum`…       |
@@ -448,6 +448,7 @@ money('12.345', 'EUR', { scale: 3 }).toMinor(); // throws RoundingError: round()
 money('12.345', 'EUR', { scale: 3 }).toScaledUnits(); // → 12345n (pair it with scale 3)
 ```
 
+- `hasFraction(m)` is whether the amount has a non-zero fractional part (true for 12.34 EUR, false for 12.00 EUR at any scale), for display code that drops ".00" from whole amounts; dinero.js calls it `hasSubUnits`.
 - `majorPart(m)` and `minorPart(m)` split the amount at the decimal point, truncating toward zero, and both keep its sign: `money('-12.34', 'EUR').majorPart()` is `-12` and `.minorPart()` is `-34`. Each is a number while it is a safe integer and a bigint beyond, like `minor`.
 - `JSON.stringify(m)` gives `{"amount":"12.34","currency":"EUR"}`, and `fromJSON` reverses it. The amount is a string so it survives JSON parsers that turn numbers into floats.
 
@@ -853,13 +854,16 @@ Signs follow each processor's docs and are checked after rounding. Checkout.com 
 - `toGoogleMoney(m)` and `fromGoogleMoney(value)`: `google.type.Money` in its proto3 JSON form (`currencyCode`, `units` as an int64 string, `nanos` with the same sign), as Google APIs and many gRPC services use. More than 9 decimals, or units beyond int64, don't fit.
 - `toIso20022Amount(m)` and `fromIso20022Amount({ Ccy, value })`: the amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`. It is written with the currency's decimals, as the payment networks' rules (CBPR+, HVPS+) require, whatever the Money's scale. The schema allows at most 5 decimals and 18 digits, and no negative amounts (the direction goes in the credit/debit indicator).
 - `toMinorUnits(m)` and `fromMinorUnits({ value, currency })`: an integer count of ISO 4217 minor units, the JSON several processors and ledgers use. Where a processor's exponents differ from ISO, use its own view (`toAdyen`, `toCheckout`, ...).
+- `toDineroObject(m)` and `fromDineroObject({ amount, currency, precision })`: dinero.js 1's `toObject()` shape, which many APIs and databases written with dinero.js carry. `precision` is the Money's scale both ways, so nothing is rounded: dinero.js gives every currency precision 2 unless told otherwise, and `{ amount: 500, currency: 'JPY', precision: 2 }` reads as 5.00 JPY (¥5, not ¥500). To bring a value to the currency's exponent, `round()` it: `m.round('unnecessary')` throws rather than drop a digit, and another mode rounds. `amount` is a safe integer (or a bigint, when reading), and all three fields are required.
 
-The readers return Money at the currency's exponent, and throw a RoundingError for extra decimals unless `{ scale }` or `{ rounding }` says what to do.
+The other readers return Money at the currency's exponent, and throw a RoundingError for extra decimals unless `{ scale }` or `{ rounding }` says what to do.
 
 ```ts
 import { money } from '@ducatjs/money';
 import {
+  fromDineroObject,
   fromGoogleMoney,
+  toDineroObject,
   toGoogleMoney,
   toIso20022Amount,
   toMinorUnits,
@@ -870,6 +874,12 @@ fromGoogleMoney({ currencyCode: 'USD', units: '12', nanos: 340000000 }); // → 
 toIso20022Amount(money('12.34', 'EUR')); // → { Ccy: 'EUR', value: '12.34' }
 toIso20022Amount(money('-5', 'EUR')); // throws RangeError: use the credit/debit indicator
 toMinorUnits(money('500', 'JPY')); // → { value: 500, currency: 'JPY' }
+toDineroObject(money('12.34', 'EUR')); // → { amount: 1234, currency: 'EUR', precision: 2 }
+fromDineroObject({ amount: 12345, currency: 'EUR', precision: 4 }); // → 1.2345 EUR
+fromDineroObject({ amount: 500, currency: 'JPY', precision: 2 }); // → 5.00 JPY
+fromDineroObject({ amount: 500, currency: 'JPY', precision: 2 }).round('unnecessary'); // → 5 JPY
+fromDineroObject({ amount: 550, currency: 'JPY', precision: 2 }).round('unnecessary'); // throws RoundingError
+fromDineroObject({ amount: 12.5, currency: 'EUR', precision: 2 }); // throws RangeError
 ```
 
 ### Amounts in words

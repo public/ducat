@@ -9,6 +9,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `hasFraction()` (method and `/fn`): whether the amount has a non-zero fractional part, true for
+  12.34 EUR and false for 12.00 EUR at any scale; dinero.js calls it `hasSubUnits` (#208).
+- `/wire`: dinero.js 1's `{ amount, currency, precision }` shape (`toDineroObject`,
+  `fromDineroObject`), exact both ways and at the object's precision; `m.round('unnecessary')`
+  brings a value to the currency's exponent. `amount` must be a safe integer or a bigint and
+  `precision` a valid scale: a value of the wrong type throws a `TypeError`, one out of range a
+  `RangeError` (#217).
 - Arithmetic on `Ratio` values in `/math`: `ratioAdd`, `ratioSubtract`, `ratioMultiply`,
   `ratioDivide`, `ratioNegate`, `ratioComplement` (1 − r) and `ratioCompare`, exact and reduced,
   taking any factor (Ratio, Fixed, decimal string, integer) on either side (#201).

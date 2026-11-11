@@ -5,13 +5,15 @@
  * - ISO 20022 amounts (`<InstdAmt Ccy="EUR">12.34</InstdAmt>`): a non-negative decimal with at
  *   most 5 decimals and 18 digits;
  * - `{ value, currency }` with an integer count of ISO 4217 minor units, the JSON several
- *   processors and ledgers use.
+ *   processors and ledgers use;
+ * - dinero.js 1's `toObject()` shape, `{ amount, currency, precision }`, which many APIs and
+ *   databases written with dinero.js carry.
  *
  * Every reader checks the format strictly, and every writer throws rather than send a value the
  * format can't hold.
  */
 import { currencyExponent } from './currency.js';
-import { formatScaled, parseDecimal } from './decimal.js';
+import { checkScale, formatScaled, parseDecimal } from './decimal.js';
 import { fromMinor, toScale, type CurrencyInput, type Money } from './money.js';
 import { fromProcessorAmount, toProcessorAmount } from './processor.js';
 import { RoundingError, type RoundingMode } from './rounding.js';
@@ -319,4 +321,65 @@ export function fromMinorUnits<C extends CurrencyInput>(amount: {
     amount.currency,
     currencyExponent(amount.currency),
   );
+}
+
+// ---------------------------------------------------------------------------------------------
+// dinero.js 1's { amount, currency, precision }
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * dinero.js 1's `toObject()` shape: `amount` an integer count of 10^-`precision` units of
+ * `currency`. `{ amount: 1234, currency: 'EUR', precision: 2 }` is 12.34 EUR.
+ */
+export interface DineroObject {
+  readonly amount: number;
+  readonly currency: string;
+  readonly precision: number;
+}
+
+/**
+ * Money as dinero.js 1's `{ amount, currency, precision }`, exactly: `toDineroObject(money('12.34',
+ * 'EUR'))` is `{ amount: 1234, currency: 'EUR', precision: 2 }`. `precision` is the Money's scale,
+ * so 1.2340 EUR at scale 4 is `{ amount: 12340, currency: 'EUR', precision: 4 }`; nothing is
+ * rounded. dinero.js amounts are numbers, so beyond 2^53 - 1 units it throws a RangeError.
+ */
+export function toDineroObject(money: Money): DineroObject {
+  const { minor } = money;
+  if (typeof minor !== 'number') {
+    throw new RangeError(
+      `${money.toString()} has more than 2^53 - 1 units, the most a dinero.js amount holds`,
+    );
+  }
+  // `+ 0` turns -0 into 0
+  return { amount: minor + 0, currency: money.currency, precision: money.scale };
+}
+
+/**
+ * Reads dinero.js 1's `{ amount, currency, precision }`, exactly and at its precision:
+ * `fromDineroObject({ amount: 1234, currency: 'EUR', precision: 2 })` is 12.34 EUR, and `{ amount:
+ * 500, currency: 'JPY', precision: 2 }` is 5.00 JPY (dinero.js defaults every currency to
+ * precision 2: ¥5, not ¥500); `m.round('unnecessary')` brings it to the currency's exponent,
+ * throwing rather than dropping a digit. `amount` must be a safe integer or a bigint, and `precision` a valid scale (an
+ * integer from 0 to 1000); all three fields are required. A value of the wrong type throws a
+ * TypeError, one out of range (a fraction, beyond 2^53 - 1, a bad precision) a RangeError, and an
+ * unknown currency throws as `fromMinor` does.
+ */
+export function fromDineroObject<C extends CurrencyInput>(object: {
+  readonly amount: number | bigint;
+  readonly currency: C;
+  readonly precision: number;
+}): Money<C> {
+  if (object === null || typeof object !== 'object') {
+    throw new TypeError('Expected { amount, currency, precision }');
+  }
+  const { amount, currency, precision } = object;
+  if (typeof amount !== 'bigint' && !Number.isSafeInteger(amount)) {
+    throw new (typeof amount === 'number' ? RangeError : TypeError)(
+      `A dinero.js amount must be a safe integer or a bigint, got ${String(amount)}`,
+    );
+  }
+  if (typeof precision !== 'number') {
+    throw new TypeError(`A dinero.js precision must be a number, got ${String(precision)}`);
+  }
+  return fromMinor(amount, currency, checkScale(precision));
 }

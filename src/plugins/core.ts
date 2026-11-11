@@ -23,6 +23,7 @@ import {
   max,
   min,
   minorPart,
+  hasFraction,
   multiply,
   negate,
   round,
@@ -89,6 +90,8 @@ declare module '../index.js' {
     majorPart(): number | bigint;
     /** The rest in 10^-scale units, with the amount's sign: 34 for 12.34 EUR, -34 for -12.34. */
     minorPart(): number | bigint;
+    /** Whether the amount has a non-zero fractional part: true for 12.34 EUR, false for 12.00. */
+    hasFraction(): boolean;
     /** Exact decimal string in major units: "12.34" */
     toDecimal(): string;
     /**
@@ -179,6 +182,9 @@ installCoreMethods({
   },
   minorPart(this: Money) {
     return minorPart(this);
+  },
+  hasFraction(this: Money) {
+    return hasFraction(this);
   },
   toDecimal(this: Money) {
     return formatScaled(this.minor, this.scale);

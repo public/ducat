@@ -82,6 +82,8 @@ describe('Money methods', () => {
       'fromIso20022Amount',
       'toMinorUnits',
       'fromMinorUnits',
+      'toDineroObject',
+      'fromDineroObject',
       'currencyTerritories',
       // the historic currency table: lookups and registration by code, not by amount
       'historicCurrency',
