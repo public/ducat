@@ -7,6 +7,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `ExactMoney` has the helpers `Money` has: `abs`, `isPositive`, `isNegative`, `lessThan` and the
+  other comparisons, `min`, `max`, `clamp`, `percentage` and `ratioOf`. `add`, `subtract`,
+  `compare`, `equals` and these accept a `Money` of the same currency, exactly, and `round` and
+  `roundWithResidual` take a rounding policy as well as a mode (#202).
+
 ## [0.3.0] - 2026-11-09
 
 Finance, pricing, currency data and a much smaller `/fn`. New opt-in entries: `/finance` (day

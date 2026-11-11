@@ -2,8 +2,15 @@
 // It has no formatting, JSON or minor units on purpose: it must be rounded back to Money before it
 // leaves the process.
 import { currencyExponent } from './currency.js';
-import { checkScale, pow10n, ratio, type Factor } from './decimal.js';
-import { CurrencyMismatchError, make, type Money } from './money.js';
+import { checkScale, pow10n, ratio, type Factor, type Ratio } from './decimal.js';
+import {
+  CurrencyMismatchError,
+  make,
+  roundWithPolicy,
+  type Money,
+  type RoundingInput,
+  type RoundingPolicy,
+} from './money.js';
 import type { Rate } from './rate.js';
 import { DEFAULT_ROUNDING, divideAndRoundBigint, type RoundingMode } from './rounding.js';
 
@@ -31,16 +38,17 @@ export class ExactMoney<C extends string = string> {
     this.den = reduced.den;
   }
 
-  /** this + other, exactly. */
-  add(other: ExactMoney<C>): ExactMoney<C> {
-    assertSameCurrency(this, other);
-    const numerator = this.num * other.den + other.num * this.den;
-    return new ExactMoney(this.currency, numerator, this.den * other.den);
+  /** this + other, exactly; `other` may be a Money of the same currency. */
+  add(other: ExactMoney<C> | Money<C>): ExactMoney<C> {
+    const right = toExact(other);
+    assertSameCurrency(this, right);
+    const numerator = this.num * right.den + right.num * this.den;
+    return new ExactMoney(this.currency, numerator, this.den * right.den);
   }
 
-  /** this − other, exactly. */
-  subtract(other: ExactMoney<C>): ExactMoney<C> {
-    return this.add(other.negate());
+  /** this − other, exactly; `other` may be a Money of the same currency. */
+  subtract(other: ExactMoney<C> | Money<C>): ExactMoney<C> {
+    return this.add(toExact(other).negate());
   }
 
   /** −this. */
@@ -71,12 +79,34 @@ export class ExactMoney<C extends string = string> {
     return new ExactMoney(rate.to, this.num * rate.ratio.num, this.den * rate.ratio.den);
   }
 
-  /** −1, 0 or 1. */
-  compare(other: ExactMoney<C>): -1 | 0 | 1 {
-    assertSameCurrency(this, other);
+  /** |this|. */
+  abs(): ExactMoney<C> {
+    return this.num < 0n ? this.negate() : this;
+  }
+
+  /** percent% of this, exactly: `exact(m).percentage('7.7')`. */
+  percentage(percent: Factor): ExactMoney<C> {
+    const percentRatio = ratio(percent);
+    return this.multiply(ratio(percentRatio.num, percentRatio.den * 100n));
+  }
+
+  /** The exact share this / total as a Ratio (same currency), as `ratioOf` in `/math`. */
+  ratioOf(total: ExactMoney<C> | Money<C>): Ratio {
+    const right = toExact(total);
+    assertSameCurrency(this, right);
+    if (right.num === 0n) {
+      throw new RangeError('Division by zero');
+    }
+    return ratio(this.num * right.den, this.den * right.num);
+  }
+
+  /** −1, 0 or 1; `other` may be a Money of the same currency. */
+  compare(other: ExactMoney<C> | Money<C>): -1 | 0 | 1 {
+    const operand = toExact(other);
+    assertSameCurrency(this, operand);
     // Both denominators are positive, so cross-multiplying keeps the order.
-    const left = this.num * other.den;
-    const right = other.num * this.den;
+    const left = this.num * operand.den;
+    const right = operand.num * this.den;
     if (left < right) {
       return -1;
     }
@@ -86,9 +116,52 @@ export class ExactMoney<C extends string = string> {
     return 0;
   }
 
-  /** Same currency and the same exact value. */
-  equals(other: ExactMoney): boolean {
-    return this.currency === other.currency && this.num === other.num && this.den === other.den;
+  /** Same currency and the same exact value; `other` may be a Money (at any scale). */
+  equals(other: ExactMoney | Money): boolean {
+    const operand = toExact(other);
+    return (
+      this.currency === operand.currency && this.num === operand.num && this.den === operand.den
+    );
+  }
+
+  lessThan(other: ExactMoney<C> | Money<C>): boolean {
+    return this.compare(other) < 0;
+  }
+
+  lessThanOrEqual(other: ExactMoney<C> | Money<C>): boolean {
+    return this.compare(other) <= 0;
+  }
+
+  greaterThan(other: ExactMoney<C> | Money<C>): boolean {
+    return this.compare(other) > 0;
+  }
+
+  greaterThanOrEqual(other: ExactMoney<C> | Money<C>): boolean {
+    return this.compare(other) >= 0;
+  }
+
+  /** The smallest of this and `others` (same currency); the first one wins ties. */
+  min(...others: (ExactMoney<C> | Money<C>)[]): ExactMoney<C> {
+    return others.reduce<ExactMoney<C>>((smallest, other) => {
+      const candidate = toExact(other);
+      return candidate.compare(smallest) < 0 ? candidate : smallest;
+    }, this);
+  }
+
+  /** The largest of this and `others` (same currency); the first one wins ties. */
+  max(...others: (ExactMoney<C> | Money<C>)[]): ExactMoney<C> {
+    return others.reduce<ExactMoney<C>>((largest, other) => {
+      const candidate = toExact(other);
+      return candidate.compare(largest) > 0 ? candidate : largest;
+    }, this);
+  }
+
+  /** Limits this to [lo, hi]. */
+  clamp(lo: ExactMoney<C> | Money<C>, hi: ExactMoney<C> | Money<C>): ExactMoney<C> {
+    if (toExact(lo).compare(hi) > 0) {
+      throw new RangeError('clamp: lo > hi');
+    }
+    return this.max(lo).min(hi);
   }
 
   /** −1, 0 or 1. */
@@ -107,23 +180,45 @@ export class ExactMoney<C extends string = string> {
     return this.num === 0n;
   }
 
+  /** Whether the amount is above zero. */
+  isPositive(): boolean {
+    return this.num > 0n;
+  }
+
+  /** Whether the amount is below zero. */
+  isNegative(): boolean {
+    return this.num < 0n;
+  }
+
   /** Whether the amount fits `scale` (default: the currency's exponent) without rounding. */
   isExact(scale: number = currencyExponent(this.currency)): boolean {
     return (this.num * pow10n(checkScale(scale))) % this.den === 0n;
   }
 
   /** Rounds once to `scale` (default: the currency's exponent). */
-  round(
-    rounding: RoundingMode = DEFAULT_ROUNDING,
-    scale: number = currencyExponent(this.currency),
-  ): Money<C> {
-    const minor = divideAndRoundBigint(this.num * pow10n(checkScale(scale)), this.den, rounding);
-    return make(this.currency, minor, scale);
+  round(rounding?: RoundingMode, scale?: number): Money<C>;
+  /** Rounds once to a policy's scale and increment: `exact(m).divide(3).round(cashPolicy('CHF'))`. */
+  round(policy: RoundingPolicy): Money<C>;
+  round(rounding: RoundingInput = DEFAULT_ROUNDING, scale?: number): Money<C> {
+    if (typeof rounding === 'function') {
+      // num/den is num units at scale 0 times 1/den: the policy rounds that product once.
+      return roundWithPolicy(make(this.currency, this.num, 0), ratio(1n, this.den), rounding);
+    }
+    const resultScale = scale ?? currencyExponent(this.currency);
+    const minor = divideAndRoundBigint(
+      this.num * pow10n(checkScale(resultScale)),
+      this.den,
+      rounding,
+    );
+    return make(this.currency, minor, resultScale);
   }
 
   /** Rounds once and reports the difference, for booking it (e.g. an "FX rounding" ledger line). */
-  roundWithResidual(rounding: RoundingMode = DEFAULT_ROUNDING, scale?: number): Rounded<C> {
-    const value = this.round(rounding, scale);
+  roundWithResidual(rounding?: RoundingMode, scale?: number): Rounded<C>;
+  roundWithResidual(policy: RoundingPolicy): Rounded<C>;
+  roundWithResidual(rounding: RoundingInput = DEFAULT_ROUNDING, scale?: number): Rounded<C> {
+    const value =
+      typeof rounding === 'function' ? this.round(rounding) : this.round(rounding, scale);
     const residual = this.subtract(exact(value));
     return { value, residual };
   }
@@ -143,6 +238,10 @@ export class ExactMoney<C extends string = string> {
     }
     throw new TypeError('ExactMoney cannot be converted to a number; round() it first');
   }
+}
+
+function toExact<C extends string>(amount: ExactMoney<C> | Money<C>): ExactMoney<C> {
+  return amount instanceof ExactMoney ? amount : exact(amount);
 }
 
 function assertSameCurrency(money: ExactMoney, other: ExactMoney): void {
