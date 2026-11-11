@@ -67,8 +67,8 @@ const factor = fc.oneof(
   fc.bigInt({ min: -50n, max: 50n }).map((offset) => ratio(SAFE + offset, 3n)),
 );
 const step = fc.oneof(
-  fc.record({ op: fc.constant('add' as const), minor, scale }),
-  fc.record({ op: fc.constant('subtract' as const), minor, scale }),
+  fc.record({ op: fc.constant('add' as const), minor, scale, asMoney: fc.boolean() }),
+  fc.record({ op: fc.constant('subtract' as const), minor, scale, asMoney: fc.boolean() }),
   fc.record({ op: fc.constant('addSelf' as const) }),
   fc.record({ op: fc.constant('negate' as const) }),
   fc.record({ op: fc.constant('multiply' as const), factor }),
