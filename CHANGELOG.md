@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `periodicRate(annual, { perYear, digits })` and `annualRate(periodic, { perYear })` in
+  `/finance`: the periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear)
+  − 1`, and its inverse. `annualRate` is an exact `Ratio`; `periodicRate` is found like `irr`, to
+  `digits` places floored by exact bisection, with `lower` and `upper` 10^−digits apart around
+  the root and `exact` when the root is rational (#199).
 - `format(m, locale, { digits, rounding })` (and `formatToParts`, and the methods): rounds once,
   exactly, to `digits` decimals with `rounding` (default `'halfExpand'`), then shows that many
   fraction digits, exact at any size and in any of ducat's rounding modes; Intl's own
