@@ -156,6 +156,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `.../convert/fetch`                 | nothing                                                            | `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada` (network I/O)   |
 | `.../stripe-fx`, `adyen-fx`         | nothing                                                            | `stripeRate`, `stripeImpliedRate`, `adyenRate`                   |
 | `@ducatjs/money/policy`             | nothing                                                            | `roundingPolicy`, `isoPolicy`, `assertScale`                     |
+| `@ducatjs/money/context`            | nothing                                                            | `currencyContext` (one currency and locale, nothing global)      |
 | `@ducatjs/money/pricing`            | nothing                                                            | `priceEnding` (.99, .95, the nearest 5), `tieredPrice` (tiers)   |
 | `@ducatjs/money/cash`               | `cashRound`, `roundToIncrement`                                    | the same, `cashPolicy`, `cashRule`, `currencyDigits`             |
 | `@ducatjs/money/historic`           | nothing                                                            | `defineHistoricCurrencies`, `historicCurrency` (withdrawn codes) |
@@ -551,6 +552,29 @@ currencySymbol('USD', 'en-CA'); // → 'US$'
 cashUnit('CHF'); // → '0.05'
 territoryCurrencies('DE', { on: '2001-06-01' }).map((use) => use.currency); // → ['EUR', 'DEM']
 ```
+
+### One currency: a context
+
+ducat has no global default currency, precision or locale, on purpose. An app that works in one currency can bind the plain functions to it instead: `currencyContext('EUR', { locale })` from `@ducatjs/money/context` (or `/fn`) returns a frozen plain object with `money`, `fromMinor`, `zero`, `parse`, `format` and `is`, all in that currency. Nothing global changes, two contexts never interfere, and tests stay isolated. `MoneyOf<typeof eur>` is `Money<'EUR'>`.
+
+```ts
+import { money } from '@ducatjs/money';
+import { currencyContext, type MoneyOf } from '@ducatjs/money/context';
+
+const eur = currencyContext('EUR', { locale: 'en-IE' });
+type Eur = MoneyOf<typeof eur>; // Money<'EUR'>
+
+const price: Eur = eur.money('1234.5');
+eur.fromMinor(1234); // → 12.34 EUR
+eur.zero(); // → 0.00 EUR
+eur.format(price); // → '€1,234.50'
+eur.parse('€1,234.50'); // → 1234.50 EUR
+eur.is(money('5', 'USD')); // → false
+eur.format(money('5', 'USD')); // compile error, and throws
+currencyContext('EUR', { locale: 'not a locale' }); // throws RangeError
+```
+
+The currency and the locale are checked when the context is made. Its functions are the plain ones, so a `/fn` program that uses a context installs no methods and carries only the currencies it imports (`import '@ducatjs/money/iso/EUR'` before making it). `format` and `parse` take the same options as the functions they bind (`eur.format(m, { currencyDisplay: 'code' })`, `eur.parse(text, { lenient: true })`).
 
 ### Interest, loans, NPV and proration
 

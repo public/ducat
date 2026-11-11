@@ -84,6 +84,8 @@ describe('Money methods', () => {
       'fromMinorUnits',
       'toDineroObject',
       'fromDineroObject',
+      // a currency context binds the plain functions; it takes a currency, not an amount
+      'currencyContext',
       'currencyTerritories',
       // the historic currency table: lookups and registration by code, not by amount
       'historicCurrency',

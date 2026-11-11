@@ -98,6 +98,9 @@
       "wire": [
         "./dist/entries/wire.d.ts"
       ],
+      "context": [
+        "./dist/entries/context.d.ts"
+      ],
       "crypto": [
         "./dist/entries/crypto.d.ts"
       ],
@@ -298,6 +301,10 @@
     "./wire": {
       "types": "./dist/entries/wire.d.ts",
       "default": "./dist/entries/wire.js"
+    },
+    "./context": {
+      "types": "./dist/entries/context.d.ts",
+      "default": "./dist/entries/context.js"
     },
     "./crypto": {
       "types": "./dist/entries/crypto.d.ts",
