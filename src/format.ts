@@ -116,28 +116,22 @@ export function format(money: Money, locale?: string, options?: FormatOptions): 
 }
 
 /**
- * The amount rounded once to `digits` and the remaining Intl options. Intl's own fraction-digit
- * and rounding options would round a second time, in floating point, so they can't be combined.
+ * The amount rounded once to `digits`, and the other Intl options. Intl's fraction digits beside
+ * `digits` would round a second time, on a double, so they throw.
  */
 function withDigits(
   money: Money,
   options: FormatOptions,
 ): [Money, Intl.NumberFormatOptions | undefined] {
   const { digits, rounding, ...rest } = options;
-  if (digits === undefined) {
-    throw new TypeError('format: rounding needs digits');
-  }
   if (
+    digits === undefined ||
     rest.minimumFractionDigits !== undefined ||
-    rest.maximumFractionDigits !== undefined ||
-    rest.maximumSignificantDigits !== undefined ||
-    rest.minimumSignificantDigits !== undefined ||
-    rest.roundingIncrement !== undefined
+    rest.maximumFractionDigits !== undefined
   ) {
-    throw new TypeError('format: digits sets the fraction digits; drop Intl’s digit options');
+    throw new TypeError('format: digits replaces the fraction-digit options; rounding needs it');
   }
-  const rounded = toScale(money, digits, rounding);
-  return [rounded, Object.keys(rest).length === 0 ? undefined : rest];
+  return [toScale(money, digits, rounding), Object.keys(rest).length > 0 ? rest : undefined];
 }
 
 /**

@@ -26,7 +26,7 @@ describe('format with digits', () => {
     expect(format(money('5', 'JPY'), 'en-US', { digits: 2 })).toBe('¥5.00');
   });
 
-  it('rounds exactly, where a float would not: 1.005 half up is 1.01', () => {
+  it('rounds the exact decimal, at any size', () => {
     expect(format(money('1.005', 'EUR', { scale: 3 }), 'en-US', { digits: 2 })).toBe('€1.01');
     expect(format(money('-1.005', 'EUR', { scale: 3 }), 'en-US', { digits: 2 })).toBe('-€1.01');
     // beyond 2^53, through Intl's string input
@@ -53,9 +53,9 @@ describe('format with digits', () => {
   it('refuses Intl digit options beside digits, and rounding without digits', () => {
     expect(() =>
       format(money('1', 'EUR'), 'en-US', { digits: 2, maximumFractionDigits: 3 }),
-    ).toThrow('format: digits sets the fraction digits; drop Intl’s digit options');
+    ).toThrow('format: digits replaces the fraction-digit options; rounding needs it');
     expect(() => format(money('1', 'EUR'), 'en-US', { rounding: 'floor' })).toThrow(
-      'format: rounding needs digits',
+      'format: digits replaces the fraction-digit options; rounding needs it',
     );
     expect(() => format(money('1', 'EUR'), 'en-US', { digits: -1 })).toThrow(/Invalid scale -1/);
   });
