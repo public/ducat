@@ -116,6 +116,9 @@ const stringIsNotEur: Money<'EUR'> = fromDatabase.add(eur);
 eur.add(usd);
 // @ts-expect-error and so is a union that may hold another currency: narrow it first
 eur.add(eurOrUsd);
+// a union receiver takes a Money of one of its currencies, as before (checked at run time)
+const unionPlusEur: Money<'EUR' | 'USD'> = eurOrUsd.add(eur);
+const unionPlusEurFn: Money<'EUR' | 'USD'> = add(eurOrUsd, eur);
 const comparedWithString: -1 | 0 | 1 = eur.compare(fromDatabase);
 const lessThanString: boolean = eur.lessThan(fromDatabase);
 const maxWithStrings: Money<'EUR'> = eur.max(fromDatabase, eur);
@@ -125,7 +128,15 @@ const subtractedFn: Money<'EUR'> =
 // @ts-expect-error compare across literals
 compare(eur, usd);
 void [literalPlusString, literalPlusStringFn, stringPlusLiteral, notUsd, stringIsNotEur];
-void [comparedWithString, lessThanString, maxWithStrings, clampedWithStrings, subtractedFn];
+void [
+  unionPlusEur,
+  unionPlusEurFn,
+  comparedWithString,
+  lessThanString,
+  maxWithStrings,
+  clampedWithStrings,
+  subtractedFn,
+];
 // --- with() keeps the operation's result type
 const withResult: Money<'EUR'> = eur.with((value) => value.negate());
 const withString: string = eur.with((value) => value.toDecimal());

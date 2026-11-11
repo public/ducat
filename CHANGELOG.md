@@ -52,6 +52,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- `extractTax` and `extractTaxExact` throw a RangeError naming the percent for -100% or below,
+  where no net amount has that gross; -100% used to fail inside `ratio()` with "Division by zero".
+  `format(m, locale, { digits })` also refuses Intl's significant digits and `roundingIncrement`,
+  which would round a second time, on a double.
 - **Breaking:** `ExactMoney`'s `num` and `den` are getters now, not own fields. They are still
   the reduced bigints, but spreading (`{ ...e }.num`), `Object.keys`/`entries` and copies no
   longer carry them, and `toEqual` compares the new own fields `numerator` and `denominator`
