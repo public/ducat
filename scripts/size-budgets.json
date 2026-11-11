@@ -41,6 +41,7 @@
     "@ducatjs/money/testing/jest": 0.88,
     "@ducatjs/money/testing/arbitraries": 0.57,
     "@ducatjs/money/kysely": 2.22,
+    "@ducatjs/money/typeorm": 0.85,
     "@ducatjs/money/historic": 1.28,
     "@ducatjs/money/crypto": 0.76,
     "@ducatjs/money/currencies": 1.5,

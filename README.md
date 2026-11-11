@@ -177,6 +177,7 @@ Engine notes (V8 vs JSC vs SpiderMonkey):
 | `@ducatjs/money/prisma`             | `toDecimalValue`                                                   | the same, `fromDecimal`, the field helpers                       |
 | `.../drizzle/pg`, `mysql`, `sqlite` | nothing                                                            | `moneyMinor`, `moneyDecimal`, `moneyJson` Drizzle columns        |
 | `@ducatjs/money/kysely`             | nothing                                                            | `moneyHelpers`, `setMoney`, `MoneyResultPlugin`                  |
+| `@ducatjs/money/typeorm`            | nothing                                                            | `minorTransformer`, `decimalTransformer`, `jsonTransformer`      |
 | `@ducatjs/money/pg`                 | nothing                                                            | `exactTypes`, `moneyTypeSql`, `toNumeric`, composite I/O         |
 | `@ducatjs/money/fixed`              | nothing                                                            | `Fixed`, `fixed`, `fromScaled`, `isFixed` (without Money)        |
 | `@ducatjs/money/fixed/money`        | `toFixedPoint`, and `Fixed#toMoney`                                | `/fixed`, plus `moneyToFixed`, `fixedToMoney`                    |
@@ -1083,6 +1084,71 @@ The columns check what the types can't: writing another currency, a value at a s
 - **Currency per row:** a Drizzle column can't read a sibling column, so there is no "minor units plus a currency column" type. Use `moneyJson()`, which stores the currency in each value, or select both columns and build the Money with `fromMinor(row.amountMinor, row.currency)`.
 - **Relational queries** (`db.query...findMany({ with: ... })`) return nested rows through JSON, where Postgres and MySQL turn NUMERIC and BIGINT values into JSON numbers. A nested `moneyDecimal` column then throws, and so does a nested `moneyMinor` beyond 2^53 minor units, rather than return a rounded amount. Top-level columns are not affected. For nested money, use `moneyJson`, or a join with `select`.
 - **SQLite decimals are TEXT**, so in SQL they compare and sort as text (`'10.00' < '9.00'`), and `sum()` over them is a REAL. Use `moneyMinor` for columns you sort, compare or add up in SQL. For the same reason `/drizzle/sqlite`'s `moneyDecimal` takes no column size.
+
+### TypeORM
+
+`@ducatjs/money/typeorm` gives TypeORM column transformers, so entities hold `Money` and repositories, `save()` and `find()` take it. They are plain `ValueTransformer` objects for a column's `transformer` option, with decorators or with `EntitySchema`, and the entry doesn't import `typeorm`.
+
+| transformer                 | Postgres         | MySQL            | SQLite        | value                                                      |
+| --------------------------- | ---------------- | ---------------- | ------------- | ---------------------------------------------------------- |
+| `minorTransformer('EUR')`   | `bigint`         | `bigint`         | `bigint`      | minor units; `{ scale: 4 }` for ten-thousandths            |
+| `decimalTransformer('EUR')` | `numeric(19, 4)` | `decimal(19, 4)` | `text`        | the exact decimal; pass `{ precision, scale }` to check it |
+| `jsonTransformer()`         | `jsonb`          | `json`           | `simple-json` | `{"amount":"12.34","currency":"EUR"}`, any currency        |
+
+```ts
+import Database from 'better-sqlite3';
+import { DataSource, EntitySchema, MoreThan } from 'typeorm';
+import { money, type Money } from '@ducatjs/money';
+import { fromRawMinor, jsonTransformer, minorTransformer } from '@ducatjs/money/typeorm';
+
+interface Order {
+  id: number;
+  total: Money<'EUR'>;
+  refund: Money | null;
+}
+
+const Orders = new EntitySchema<Order>({
+  name: 'Order',
+  columns: {
+    id: { type: 'int', primary: true },
+    total: { type: 'bigint', transformer: minorTransformer('EUR') },
+    refund: { type: 'simple-json', nullable: true, transformer: jsonTransformer() },
+  },
+});
+
+const dataSource = new DataSource({
+  type: 'better-sqlite3',
+  database: ':memory:',
+  driver: Database,
+  // integers as bigint, exact beyond 2^53
+  prepareDatabase: (db: Database.Database) => {
+    db.defaultSafeIntegers(true);
+  },
+  entities: [Orders],
+  synchronize: true,
+});
+await dataSource.initialize();
+const orders = dataSource.getRepository(Orders);
+
+await orders.save([
+  { id: 1, total: money('92233720368547758.07', 'EUR'), refund: null },
+  { id: 2, total: money('12.34', 'EUR'), refund: money('1.234', 'KWD') },
+]);
+(await orders.findOneByOrFail({ id: 1 })).total; // → 92233720368547758.07 EUR
+(await orders.findBy({ total: MoreThan(money('100', 'EUR')) })).length; // → 1
+const { cents } = await orders
+  .createQueryBuilder('o')
+  .select('SUM(o.total)', 'cents')
+  .where('o.id = 2')
+  .getRawOne();
+fromRawMinor(cents, 'EUR'); // → 12.34 EUR
+await dataSource.destroy();
+```
+
+- **Checks:** writing another currency, a value at another scale (`round()` it first) or one a `{ precision, scale }` column would round or clamp throws, and so does a driver value that may have lost digits: a BIGINT returned as a number beyond 2^53 (better-sqlite3's default; TypeORM's MySQL driver and node-postgres return strings), a DECIMAL returned as a number, `NaN` or `Infinity`. An unknown currency or a bad `scale` throws where the column is declared. `null` passes through, for nullable columns.
+- **Find operators** (`MoreThan(m)`, `In([...])`, `Between(a, b)`) and plain `where` values take Money, which goes through the same checks. MySQL compares a BIGINT or DECIMAL column with a string parameter as doubles, so there they are exact only up to 2^53 minor units and 15 significant digits; compare larger amounts in SQL with a cast (`CAST(:total AS SIGNED)`).
+- **Raw queries:** `fromRawMinor(value, currency, { scale? })` and `fromRawDecimal(value, currency)` read what `getRawOne()` and `query()` return, which no transformer sees: Postgres sums BIGINT and NUMERIC to NUMERIC text, MySQL to DECIMAL text, SQLite to an integer. NULL, which `SUM()` returns over no rows, throws: `COALESCE(SUM(...), 0)` it. SQLite sums TEXT decimals as floats, so `fromRawDecimal` refuses those; sum minor units instead.
+- `jsonTransformer().to` returns the object, not its text, because TypeORM serialises `json`, `jsonb` and `simple-json` columns itself. Pass a currency (`jsonTransformer('EUR')`) to refuse others on write and on read. `typeorm` is an optional peer dependency (0.3 or later).
 
 ---
 
