@@ -1641,6 +1641,37 @@ describe('xnpv and xirr (Excel)', () => {
     expect(xnpv('1', cancel, cancelDates, {}, 'halfExpand').toDecimal()).toBe('1.01');
   });
 
+  it('finds an exact root on the grid off whole years, where the grid rate needs a rational root', () => {
+    // −100 then +100 200 days later: the IRR is exactly 0, as Excel's. The grid rates are passed as
+    // (unit + grid)/unit, and 10^10/10^10 must be seen as 1, whose 73rd root is exact
+    const zero = xirr([usd('-100'), usd('100')], ['2020-01-01', '2020-07-19']);
+    expect([zero.rate, zero.upper]).toEqual(['0.0000000000', '0.0000000001']);
+    // 1.1^5 = 1.61051: flows 73 days (a fifth of a year) apart, −100 then +110, have the IRR
+    // 0.61051 exactly, whose growth's 5th root is the rational 1.1
+    expect(xirr([usd('-100'), usd('110')], ['2021-01-01', '2021-03-15']).rate).toBe('0.6105100000');
+    // and a negative one: 0.9^5 = 0.59049, so −100 then +90 have the IRR −0.40951
+    expect(xirr([usd('-100'), usd('90')], ['2021-01-01', '2021-03-15']).rate).toBe('-0.4095100000');
+    expect(xirr([usd('-100'), usd('90')], ['2021-01-01', '2021-03-15'], { digits: 3 }).lower).toBe(
+      '-0.410',
+    );
+    // the same through xnpvBounds and xnpv: exactly 0 at those rates
+    for (const [discountRate, last] of [
+      ['0', '100'],
+      ['0.61051', '110'],
+      ['-0.40951', '90'],
+    ] as const) {
+      const flows = [usd('-100'), usd(last)];
+      const days =
+        discountRate === '0' ? ['2020-01-01', '2020-07-19'] : ['2021-01-01', '2021-03-15'];
+      expect(xnpvBounds(discountRate, flows, days)).toEqual({
+        lower: ratio(0n),
+        upper: ratio(0n),
+        exact: true,
+      });
+      expect(xnpv(discountRate, flows, days, {}, 'unnecessary').toDecimal()).toBe('0.00');
+    }
+  });
+
   it('refuses flows that cancel or never change sign once combined by date', () => {
     const sameDay = ['2020-01-01', '2020-01-01'];
     expect(() => xirr([usd('-5'), usd('5')], sameDay)).toThrow('every rate is a root');
