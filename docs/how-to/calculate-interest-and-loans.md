@@ -1,20 +1,13 @@
 # How to calculate interest, loan schedules, NPV, IRR and proration
 
-This guide shows you how to compute interest between two dates, build an amortisation schedule, take a net present value or an internal rate of return, and prorate a subscription, all in exact arithmetic with one rounding per amount paid or booked. The functions are in `@ducatjs/money/finance`.
+This guide shows you how to compute interest between two dates, build an amortisation schedule, take a net present value or an internal rate of return, and prorate a subscription, all in exact arithmetic with one rounding per amount paid or booked. ducat's own calculations are in `@ducatjs/money/finance`; Excel's financial functions (NPV, IRR, FV, PV, PMT, NPER and RATE), with Excel's arguments and sign convention, are in `@ducatjs/money/excel`.
 
 Write dates as `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`.
 
 ```ts
 import { money } from '@ducatjs/money';
-import {
-  amortise,
-  interest,
-  irr,
-  npv,
-  discountedSum,
-  prorate,
-  splitPeriod,
-} from '@ducatjs/money/finance';
+import { irr, npv } from '@ducatjs/money/excel';
+import { amortise, interest, discountedSum, prorate, splitPeriod } from '@ducatjs/money/finance';
 
 const period = { from: '2026-01-15', to: '2026-07-15', dayCount: 'ACT/365F' } as const;
 interest(money('10000', 'EUR'), '0.05', period, 'halfEven'); // → 247.95 EUR
@@ -51,6 +44,24 @@ Call `amortise(loan, { rate, perYear, periods })` for an annuity, linear or inte
 ## Prorate a subscription
 
 Charge the used part of a period with `prorate(price, { period, used })` (by the day, or with `unit: 'second'` by the second). To split a period's price at plan changes, use `splitPeriod(price, { period, at })`; the pieces sum exactly to it.
+
+## Solve for a payment, a term or a rate as Excel does
+
+`pmt`, `fv`, `pv`, `nper` and `rate` in `@ducatjs/money/excel` are Excel's PMT, FV, PV, NPER and RATE, with Excel's arguments and sign convention: money you pay out is negative. Pass the rate per period, so 8% a year paid monthly is `ratio('0.08', 12)`:
+
+```ts
+import { money, ratio } from '@ducatjs/money';
+import { fv, nper, pmt, rate } from '@ducatjs/money/excel';
+
+const usd = (amount: string) => money(amount, 'USD');
+pmt(ratio('0.08', 12), 10, usd('10000')); // → -1037.03 USD (the monthly payment on a 10,000 loan)
+pmt('0.005', 216, usd('0'), { fv: usd('50000') }); // → -129.08 USD (save 50,000 in 18 years)
+fv('0.01', 12, usd('-1000')); // → 12682.50 USD
+nper('0.01', usd('-100'), usd('-1000'), { fv: usd('10000'), type: 1, digits: 4 }).nper; // → '59.6738'
+rate(48, usd('-200'), usd('8000'), { digits: 6 }).rate; // → '0.007701'
+```
+
+`fv`, `pv` and `pmt` are exact and rounded once (`pmtExact` and the others give the exact value). `nper` and `rate` are irrational in general, so ask for the digits you need: they come back floored, with the bracket around the true value. Where Excel picks one of several possible rates by its `guess`, `rate` throws until you pass a `bracket`.
 
 ## Convert between annual and periodic rates
 

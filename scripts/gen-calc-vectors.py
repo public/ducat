@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Spreadsheet reference vectors for /finance's Excel-named functions (npv, irr), computed by
-LibreOffice Calc's NPV and IRR, and for periodicRate and annualRate, computed by Calc's POWER, all
-written to test/vectors/finance-calc.json, which test/finance.excel.test.ts checks.
+LibreOffice Calc's NPV and IRR, for fv, pv, pmt, nper and rate, computed by Calc's FV, PV, PMT,
+NPER and RATE, and for periodicRate and annualRate, computed by Calc's POWER, all written to
+test/vectors/finance-calc.json, which test/finance.excel.test.ts checks.
 
 Calc computes in doubles, so its results are compared at 15 significant digits (NPV) and at the
 spreadsheet's stated IRR accuracy. This needs LibreOffice (`soffice`) and is not run in CI: the
@@ -10,6 +11,7 @@ JSON file is the record. Regenerate with
 Deterministic inputs: the same seed always writes the same cases.
 """
 import csv
+from fractions import Fraction
 import json
 import random
 import shutil
@@ -92,6 +94,76 @@ def rate_cases(rng: random.Random) -> tuple:
     return periodic, annual
 
 
+def cents_text(cents: int) -> str:
+    sign = "-" if cents < 0 else ""
+    return f"{sign}{abs(cents) // 100}.{abs(cents) % 100:02d}"
+
+
+def annuity_cases(rng: random.Random) -> dict:
+    """inputs for FV, PV and PMT (any signs), NPER (payments that settle) and RATE (one sign change)"""
+    def periodic_rate() -> str:
+        return "0" if rng.random() < 0.1 else decimal_rate(rng, -1, 3)
+
+    def amount(limit: int) -> str:
+        return "0" if rng.random() < 0.1 else cents_text(rng.randint(-limit, limit))
+
+    general = []
+    for _ in range(150):
+        general.append({
+            "rate": periodic_rate(),
+            "nper": rng.choice([1, 12, 60, 360, rng.randint(1, 480)]),
+            "pmt": amount(10**7),
+            "pv": amount(10**9),
+            "fv": amount(10**9),
+            "type": rng.randint(0, 1),
+        })
+    nper = []
+    for _ in range(75):
+        rate = "0" if rng.random() < 0.1 else decimal_rate(rng, 0, 1)
+        loan = rng.randint(10**4, 10**9)
+        units, places = rate.replace("-", "").split(".") if "." in rate else (rate, "")
+        # an interest charge below the payment, so the loan is paid off; or a savings plan
+        interest = loan * int(units + places) // 10 ** len(places)
+        payment = interest + rng.randint(1, max(2, loan // 12))
+        if rng.random() < 0.5:
+            case = {"pmt": cents_text(-payment), "pv": cents_text(loan), "fv": "0"}
+        else:
+            case = {"pmt": cents_text(-payment), "pv": cents_text(-rng.randint(0, loan)), "fv": cents_text(loan * rng.randint(1, 20))}
+        case.update({"rate": rate, "type": rng.randint(0, 1)})
+        nper.append(case)
+    # any signs and rates from -5% to 10%, kept where NPER has a value (its log's argument is
+    # positive), so negative rates and negative numbers of periods are covered
+    while len(nper) < 150:
+        rate = decimal_rate(rng, -1, 1)
+        timing = rng.randint(0, 1)
+        pmt, pv, fv = (rng.randint(-10**7, 10**7) for _ in range(3))
+        r = Fraction(rate)
+        paid = pmt * (1 + r * timing)
+        top, bottom = paid - fv * r, paid + pv * r
+        if r == 0 or pmt == 0 or top == 0 or bottom == 0 or (top > 0) != (bottom > 0):
+            continue
+        nper.append({"pmt": cents_text(pmt), "pv": cents_text(pv), "fv": cents_text(fv), "rate": rate, "type": timing})
+    # Microsoft's RATE example first, then loans (some with a balloon left, as a negative fv) and
+    # savings plans (paid out, then a positive fv), at either timing: one sign change each
+    rate_cases_ = [{"nper": 48, "pmt": "-200", "pv": "8000", "fv": "0", "type": 0}]
+    while len(rate_cases_) < 150:
+        periods = rng.choice([12, 36, 60, 360, rng.randint(2, 480)])
+        timing = rng.randint(0, 1)
+        amount = rng.randint(10**4, 10**9)
+        if rng.random() < 0.6:
+            balloon = 0 if rng.random() < 0.5 else rng.randint(0, amount // 2)
+            # payments totalling from 0.6 to 4 times the loan: a rate from about -8% upwards
+            payment = (amount - balloon) * rng.randint(60, 400) // (100 * periods) + 1
+            if timing == 1 and payment >= amount:
+                continue
+            rate_cases_.append({"nper": periods, "pmt": cents_text(-payment), "pv": cents_text(amount), "fv": cents_text(-balloon), "type": timing})
+        else:
+            start = rng.randint(0, amount // 4)
+            payment = amount * rng.randint(30, 150) // (100 * periods) + 1
+            rate_cases_.append({"nper": periods, "pmt": cents_text(-payment), "pv": cents_text(-start), "fv": cents_text(amount), "type": timing})
+    return {"fv": general, "pv": general, "pmt": general, "nper": nper, "rate": rate_cases_}
+
+
 def cell(value: str) -> str:
     return f'<table:table-cell office:value-type="float" office:value={quoteattr(value)}/>'
 
@@ -100,7 +172,7 @@ def formula_cell(formula: str) -> str:
     return f'<table:table-cell table:formula={quoteattr("of:=" + formula)} office:value-type="string"/>'
 
 
-def sheet(npv: list, irr: list, periodic: list, annual: list) -> str:
+def sheet(npv: list, irr: list, periodic: list, annual: list, annuities: dict) -> str:
     rows = []
     last = column(MAX_FLOWS)  # column of the last flow (flows start in column B)
     for i, case in enumerate(npv, start=1):
@@ -127,6 +199,23 @@ def sheet(npv: list, irr: list, periodic: list, annual: list) -> str:
         cells += ["<table:table-cell/>"] * (MAX_FLOWS + 1 - len(cells))
         cells.append(formula_cell(f'TEXT({formula.format(i=k)};"{SCIENTIFIC}")'))
         rows.append("<table:table-row>" + "".join(cells) + "</table:table-row>")
+    # Excel's argument order for each function, from columns A to E
+    order = {
+        "fv": ("rate", "nper", "pmt", "pv", "type"),
+        "pv": ("rate", "nper", "pmt", "fv", "type"),
+        "pmt": ("rate", "nper", "pv", "fv", "type"),
+        "nper": ("rate", "pmt", "pv", "fv", "type"),
+        "rate": ("nper", "pmt", "pv", "fv", "type"),
+    }
+    row = offset + len(irr) + len(formulas)
+    for name, arguments in order.items():
+        for case in annuities[name]:
+            row += 1
+            cells = [cell(str(case[argument])) for argument in arguments]
+            cells += ["<table:table-cell/>"] * (MAX_FLOWS + 1 - len(cells))
+            refs = ";".join(f"[.{column(index)}{row}]" for index in range(len(arguments)))
+            cells.append(formula_cell(f'TEXT({name.upper()}({refs});"{SCIENTIFIC}")'))
+            rows.append("<table:table-row>" + "".join(cells) + "</table:table-row>")
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
   xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
@@ -194,8 +283,10 @@ def main() -> None:
     irr = microsoft_irr + irr_cases(rng)
     # a generator of their own, so adding these cases left the npv and irr ones as they were
     periodic, annual = rate_cases(random.Random(SEED + 1))
-    results = run_calc(sheet(npv, irr, periodic, annual))
+    annuities = annuity_cases(random.Random(SEED + 2))
+    results = run_calc(sheet(npv, irr, periodic, annual, annuities))
     expected = len(npv) + len(irr) + 2 * len(periodic) + len(annual)
+    expected += sum(len(cases) for cases in annuities.values())
     if len(results) != expected:
         sys.exit(f"expected {expected} results, got {len(results)}")
     for case, result in zip(npv, results):
@@ -208,6 +299,12 @@ def main() -> None:
         case["calcOnePlus"] = rest[2 * index + 1]
     for case, result in zip(annual, rest[2 * len(periodic):]):
         case["calc"] = result
+    rest = rest[2 * len(periodic) + len(annual):]
+    annuity_vectors = {}
+    for name, cases in annuities.items():
+        # fv, pv and pmt share their inputs: each gets its own copies with its own result
+        annuity_vectors[name] = [dict(case, calc=result) for case, result in zip(cases, rest)]
+        rest = rest[len(cases):]
     vectors = {
         "comment": "Generated by scripts/gen-calc-vectors.py with LibreOffice Calc; do not edit.",
         "calc": version(),
@@ -215,6 +312,7 @@ def main() -> None:
         "irr": irr,
         "periodicRate": periodic,
         "annualRate": annual,
+        **annuity_vectors,
     }
     OUT.write_text(json.dumps(vectors, indent=1) + "\n")
     print(f"wrote {OUT}")
