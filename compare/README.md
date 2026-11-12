@@ -52,8 +52,9 @@ benchmark and size tables (under "Fixed-point decimal libraries" in `RESULTS.md`
 Only operations every library supports are compared: parse a decimal string, add, multiply and
 divide rounded to a scale, round, compare and toString, each with an explicit rounding mode
 (half-even or half-up). A library without a given mode shows n/a; dnum and ethers have no
-half-even, and @formatjs/bigdecimal cannot round to a number of decimals. `fixed/vectors.ts` holds
-the 28 vectors: the money battery's ties, float traps, amounts beyond 2^53, division and scale
+half-even, and @formatjs/bigdecimal cannot round to a number of decimals. The 28 vectors are
+`vectors/fixed/battery.json` in @ducatjs/money-spec (the repository's `spec/`), and
+`fixed/vectors.ts` runs them: the money battery's ties, float traps, amounts beyond 2^53, division and scale
 changes, without currencies. CI runs it on Node, Bun and Deno like the money battery.
 
 ethers' `FixedNumber.round()` is its only rounding, so the adapter uses it for half-up. It rounds
@@ -63,9 +64,13 @@ for half-up would get.
 
 ## Correctness battery
 
-`battery/vectors.ts` holds 41 vectors: currency exponents, allocation, tax, rounding at .5
+The battery holds 41 vectors: currency exponents, allocation, tax, rounding at .5
 boundaries, float traps, amounts beyond 2^53, negatives, float input and currency mismatches.
-The ducat test suite (`test/battery.test.ts`) runs the same vectors, so the two cannot drift.
+They are language-neutral data, `vectors/core/battery.json` in @ducatjs/money-spec (the
+repository's `spec/`). `battery/vectors.ts` maps each operation to the adapters and holds the
+comparison's own reading of other libraries' answers (lossy, or wrong by design). The ducat test
+suite runs the same vectors (`test/battery.test.ts` and `test/spec.test.ts`), so the two cannot
+drift.
 
 ```sh
 pnpm compare          # run both batteries, write results/*battery.json, regenerate the tables

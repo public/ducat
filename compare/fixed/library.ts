@@ -1,6 +1,7 @@
 // The interface every fixed-point decimal library is driven through, shared by the fixed-point
-// battery (fixed/vectors.ts) and benchmark (fixed/bench.ts). Rounding modes are the two that
-// matter for money; a library that cannot round a given way throws NotSupported ("n/a").
+// battery (fixed/vectors.ts, with vectors from @ducatjs/money-spec) and benchmark (fixed/bench.ts).
+// Rounding modes are the two that matter for money; a library that cannot round a given way throws
+// NotSupported ("n/a").
 
 export type FixedRounding = 'halfEven' | 'halfExpand';
 

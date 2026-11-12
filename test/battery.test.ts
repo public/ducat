@@ -1,5 +1,6 @@
-// The cross-library correctness battery (compare/battery/vectors.ts, the same vectors `pnpm compare`
-// runs against the other money and decimal libraries), run against ducat, plus explicit regressions
+// The cross-library correctness battery (@ducatjs/money-spec's vectors/core/battery.json, through
+// compare/battery/vectors.ts: the same vectors `pnpm compare` runs against the other money and
+// decimal libraries), run against ducat through the comparison's adapter, plus explicit regressions
 // for each bug found in those libraries, so ducat never acquires one. Expected values are exact
 // decimal strings worked out by hand, not taken from any library.
 import { describe, expect, it } from 'vitest';

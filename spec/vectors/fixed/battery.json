@@ -1,0 +1,412 @@
+{
+ "$schema": "../../schema/vectors.schema.json",
+ "format": 1,
+ "area": "fixed",
+ "name": "battery",
+ "description": "The fixed-point battery: the money battery's cases that do not depend on currencies (ties in both modes and signs, binary floating-point traps, amounts beyond 2^53, exact division, scale changes), stated for plain decimals.",
+ "provenance": {
+  "source": "hand",
+  "generator": null,
+  "method": "Each expected value was worked out by hand from the exact decimal arithmetic in the description; none was taken from a library."
+ },
+ "checkedAgainst": "0.4.0",
+ "cases": [
+  {
+   "id": "tie-even",
+   "group": "rounding",
+   "description": "0.25 × 0.5 = 0.125 → half-even 0.12",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "0.25",
+    "factor": "0.5",
+    "scale": 2,
+    "mode": "halfEven"
+   },
+   "expect": {
+    "decimal": "0.12"
+   }
+  },
+  {
+   "id": "tie-even-neg",
+   "group": "rounding",
+   "description": "-0.25 × 0.5 = -0.125 → half-even -0.12",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "-0.25",
+    "factor": "0.5",
+    "scale": 2,
+    "mode": "halfEven"
+   },
+   "expect": {
+    "decimal": "-0.12"
+   }
+  },
+  {
+   "id": "tie-up",
+   "group": "rounding",
+   "description": "0.25 × 0.5 = 0.125 → half-up 0.13",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "0.25",
+    "factor": "0.5",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "0.13"
+   }
+  },
+  {
+   "id": "tie-up-neg",
+   "group": "rounding",
+   "description": "-0.25 × 0.5 = -0.125 → half-up (away from 0) -0.13",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "-0.25",
+    "factor": "0.5",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "-0.13"
+   }
+  },
+  {
+   "id": "tie-even-odd",
+   "group": "rounding",
+   "description": "0.35 × 0.5 = 0.175 → half-even 0.18",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "0.35",
+    "factor": "0.5",
+    "scale": 2,
+    "mode": "halfEven"
+   },
+   "expect": {
+    "decimal": "0.18"
+   }
+  },
+  {
+   "id": "float-mul-1.15",
+   "group": "float",
+   "description": "0.50 × 1.15 = 0.575 → half-up 0.58 (float gives 0.57499…)",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "0.50",
+    "factor": "1.15",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "0.58"
+   }
+  },
+  {
+   "id": "float-mul-0.7",
+   "group": "float",
+   "description": "0.45 × 0.7 = 0.315 → half-up 0.32 (float gives 0.31499…)",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "0.45",
+    "factor": "0.7",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "0.32"
+   }
+  },
+  {
+   "id": "float-mul-1.1",
+   "group": "float",
+   "description": "1.15 × 1.1 = 1.265 → half-even 1.26 (float gives 1.26500…01)",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "1.15",
+    "factor": "1.1",
+    "scale": 2,
+    "mode": "halfEven"
+   },
+   "expect": {
+    "decimal": "1.26"
+   }
+  },
+  {
+   "id": "dec-add",
+   "group": "float",
+   "description": "0.10 + 0.20 = 0.30 exactly",
+   "op": "fixed.add",
+   "args": {
+    "first": "0.10",
+    "second": "0.20"
+   },
+   "expect": {
+    "decimal": "0.30"
+   }
+  },
+  {
+   "id": "big-2^53+1",
+   "group": "large",
+   "description": "90071992547409.93 (2^53+1 hundredths) round-trips",
+   "op": "fixed.roundTrip",
+   "args": {
+    "value": "90071992547409.93"
+   },
+   "expect": {
+    "decimal": "90071992547409.93"
+   }
+  },
+  {
+   "id": "add-trailing-zeros",
+   "group": "arithmetic",
+   "description": "1.00 + 80.19 = 81.19 (the first operand has trailing zeros)",
+   "op": "fixed.add",
+   "args": {
+    "first": "1.00",
+    "second": "80.19"
+   },
+   "expect": {
+    "decimal": "81.19"
+   }
+  },
+  {
+   "id": "big-add",
+   "group": "large",
+   "description": "90071992547409.92 + 0.01 = 90071992547409.93",
+   "op": "fixed.add",
+   "args": {
+    "first": "90071992547409.92",
+    "second": "0.01"
+   },
+   "expect": {
+    "decimal": "90071992547409.93"
+   }
+  },
+  {
+   "id": "bigint-max",
+   "group": "large",
+   "description": "92233720368547758.07 (BIGINT max hundredths) round-trips",
+   "op": "fixed.roundTrip",
+   "args": {
+    "value": "92233720368547758.07"
+   },
+   "expect": {
+    "decimal": "92233720368547758.07"
+   }
+  },
+  {
+   "id": "big-mul",
+   "group": "large",
+   "description": "123456789012345678.90 × 1.1 = 135802467913580246.79 (half-up)",
+   "op": "fixed.multiply",
+   "args": {
+    "value": "123456789012345678.90",
+    "factor": "1.1",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "135802467913580246.79"
+   }
+  },
+  {
+   "id": "div-exact",
+   "group": "division",
+   "description": "12.00 ÷ 1.2 = 10.00",
+   "op": "fixed.divide",
+   "args": {
+    "value": "12.00",
+    "divisor": "1.2",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "10.00"
+   }
+  },
+  {
+   "id": "div-119",
+   "group": "division",
+   "description": "119.00 ÷ 1.19 = 100.00",
+   "op": "fixed.divide",
+   "args": {
+    "value": "119.00",
+    "divisor": "1.19",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "100.00"
+   }
+  },
+  {
+   "id": "div-tie-even",
+   "group": "division",
+   "description": "9.99 ÷ 1.2 = 8.325 → half-even 8.32",
+   "op": "fixed.divide",
+   "args": {
+    "value": "9.99",
+    "divisor": "1.2",
+    "scale": 2,
+    "mode": "halfEven"
+   },
+   "expect": {
+    "decimal": "8.32"
+   }
+  },
+  {
+   "id": "div-tie-up",
+   "group": "division",
+   "description": "9.99 ÷ 1.2 = 8.325 → half-up 8.33",
+   "op": "fixed.divide",
+   "args": {
+    "value": "9.99",
+    "divisor": "1.2",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "8.33"
+   }
+  },
+  {
+   "id": "div-third",
+   "group": "division",
+   "description": "1 ÷ 3 → 0.33 (half-up)",
+   "op": "fixed.divide",
+   "args": {
+    "value": "1",
+    "divisor": "3",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "0.33"
+   }
+  },
+  {
+   "id": "div-neg-third",
+   "group": "division",
+   "description": "-2 ÷ 3 → -0.67 (half-up)",
+   "op": "fixed.divide",
+   "args": {
+    "value": "-2",
+    "divisor": "3",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "-0.67"
+   }
+  },
+  {
+   "id": "div-eighth",
+   "group": "division",
+   "description": "1 ÷ 8 = 0.125 at 3 decimals, exactly",
+   "op": "fixed.divide",
+   "args": {
+    "value": "1",
+    "divisor": "8",
+    "scale": 3,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "0.125"
+   }
+  },
+  {
+   "id": "round-even",
+   "group": "scale",
+   "description": "1.005 to 2 decimals, half-even → 1.00",
+   "op": "fixed.round",
+   "args": {
+    "value": "1.005",
+    "scale": 2,
+    "mode": "halfEven"
+   },
+   "expect": {
+    "decimal": "1.00"
+   }
+  },
+  {
+   "id": "round-up",
+   "group": "scale",
+   "description": "1.005 to 2 decimals, half-up → 1.01",
+   "op": "fixed.round",
+   "args": {
+    "value": "1.005",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "1.01"
+   }
+  },
+  {
+   "id": "round-up-neg",
+   "group": "scale",
+   "description": "-1.005 to 2 decimals, half-up → -1.01",
+   "op": "fixed.round",
+   "args": {
+    "value": "-1.005",
+    "scale": 2,
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "decimal": "-1.01"
+   }
+  },
+  {
+   "id": "round-integer-even",
+   "group": "scale",
+   "description": "2.5 to 0 decimals, half-even → 2",
+   "op": "fixed.round",
+   "args": {
+    "value": "2.5",
+    "scale": 0,
+    "mode": "halfEven"
+   },
+   "expect": {
+    "decimal": "2"
+   }
+  },
+  {
+   "id": "cmp-trailing-zero",
+   "group": "compare",
+   "description": "compare(1.10, 1.1) = 0",
+   "op": "fixed.compare",
+   "args": {
+    "first": "1.10",
+    "second": "1.1"
+   },
+   "expect": {
+    "integer": 0
+   }
+  },
+  {
+   "id": "cmp-neg",
+   "group": "compare",
+   "description": "compare(-0.01, 0) = -1",
+   "op": "fixed.compare",
+   "args": {
+    "first": "-0.01",
+    "second": "0"
+   },
+   "expect": {
+    "integer": -1
+   }
+  },
+  {
+   "id": "neg-small",
+   "group": "compare",
+   "description": "-0.05 round-trips as \"-0.05\"",
+   "op": "fixed.roundTrip",
+   "args": {
+    "value": "-0.05"
+   },
+   "expect": {
+    "decimal": "-0.05"
+   }
+  }
+ ]
+}
