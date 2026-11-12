@@ -22,7 +22,7 @@ import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { documentedErrorClass, failures } from './doctest.js';
 import { MUTATION } from './fc-config.js';
 
@@ -195,6 +195,12 @@ describe('documentation examples', () => {
   for (const { path, example } of files) {
     it(`the example at ${example.file}:${example.line} returns what its comments say`, async () => {
       failures.length = 0;
+      // A fresh module registry, so the example gets its own Money class and currency registry: a
+      // method or ISO code another example's import installed doesn't leak into this one (#278).
+      // bun test shares one registry and has no resetModules; there the examples aren't isolated.
+      if (typeof vi.resetModules === 'function') {
+        vi.resetModules();
+      }
       await import(pathToFileURL(path).href);
       const report = failures.map(
         (failure) => `${example.file}:${failure.line}: ${failure.message}`,
@@ -202,6 +208,23 @@ describe('documentation examples', () => {
       expect(report.join('\n\n')).toBe('');
     });
   }
+
+  // #278: one example's side-effect import must not install methods or currencies for the next
+  it.skipIf(typeof vi.resetModules !== 'function')(
+    'runs each example in its own module registry',
+    async () => {
+      const src = (path: string) => pathToFileURL(join(ROOT, 'src', path)).href;
+      vi.resetModules();
+      await import(src('plugins/tax.ts'));
+      const withTax = (await import(src('index.ts'))) as typeof import('../src/index.js');
+      expect(typeof (withTax.money('1', 'EUR') as { addTax?: unknown }).addTax).toBe('function');
+      vi.resetModules();
+      const fresh = (await import(src('fn.ts'))) as typeof import('../src/fn.js');
+      expect(fresh.isCurrency('EUR')).toBe(false);
+      const root = (await import(src('index.ts'))) as typeof import('../src/index.js');
+      expect(typeof (root.money('1', 'EUR') as { addTax?: unknown }).addTax).toBe('undefined');
+    },
+  );
 
   it.skipIf(MUTATION)(
     'the examples type-check',
