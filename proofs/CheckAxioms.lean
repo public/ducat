@@ -56,3 +56,8 @@ unless they are only Lean's standard three: `propext`, `Classical.choice` and `Q
 #print axioms Ducat.Xnpv.quotient_bounds
 #print axioms Ducat.Xnpv.sum_bounds
 #print axioms Ducat.Xnpv.xnpv_rounds
+#print axioms Ducat.Search.newton_spec
+#print axioms Ducat.Search.newton_eq_nthRoot
+#print axioms Ducat.Search.floorRoot_spec
+#print axioms Ducat.Search.bisect_spec
+#print axioms Ducat.Search.bisectRate_spec
