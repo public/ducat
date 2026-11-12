@@ -3,7 +3,7 @@
 import '../src/plugins/iso.js';
 import { describe, expect, it } from 'vitest';
 import { allocate, chunk, instalments, schedule, split } from '../src/allocate.js';
-import { fromMinor, money, toDecimal, type Money } from '../src/fn.js';
+import { CurrencyMismatchError, fromMinor, money, toDecimal, type Money } from '../src/fn.js';
 
 const eur = (amount: string, scale?: number) =>
   money(amount, 'EUR', scale === undefined ? {} : { scale });
@@ -93,7 +93,7 @@ describe('split and instalments', () => {
 
   it('instalments check the unit', () => {
     expect(() => instalments(eur('10'), 3, { unit: money('1', 'USD') as never })).toThrow(
-      new TypeError('Currency mismatch: EUR vs USD'),
+      new CurrencyMismatchError('EUR', 'USD'),
     );
     for (const unit of [eur('0'), eur('-1')]) {
       expect(() => instalments(eur('10'), 3, { unit })).toThrow(
