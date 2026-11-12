@@ -80,3 +80,7 @@ Not triaged yet.
 | `Rate#inverse`                              | `type !== undefined` as `true`                                                                                                                                  | `OPPOSITE_SIDE[undefined] ?? undefined` is undefined.                                                                        |
 | `isExpired`, `checkValidity`                | the `validUntil` checks as `true` or `false`                                                                                                                    | `hasEnded` with no `validUntil` is false.                                                                                    |
 | `keepDigits`                                | the last-character check as `true`                                                                                                                              | The pattern itself requires a trailing 0; the check only saves the regular expression for most rates.                        |
+
+## Database adapters
+
+The mutation run includes the database tests in `test/db/`, but without `DUCAT_PG_URL` and `DUCAT_MYSQL_URL` only their SQLite parts run. Code that only Postgres or MySQL reaches is covered by the CI database job, which runs those tests against real servers, but it is not mutation-tested, and its mutants show as "no coverage": `drizzle/pg.ts`, `drizzle/mysql.ts`, and the Postgres and MySQL branches of `pg.ts` and `kysely.ts`.
