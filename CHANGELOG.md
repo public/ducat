@@ -9,6 +9,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `fv`, `pv`, `pmt`, `nper` and `rate` in `/finance`: Excel's FV, PV, PMT, NPER and RATE, with
+  Excel's arguments, sign convention and `type`, and Excel's values. `fv`, `pv` and `pmt` are exact
+  and rounded once (`fvExact`, `pvExact`, `pmtExact` return the `ExactMoney`); `nper` is to
+  `digits` places from rigorous logarithm bounds, with `exact` when it is rational; `rate` is
+  `irr` of the implied flows. They throw where Excel would give another kind of answer: a
+  fractional `nper`, a rate at or below −1, and several possible rates without a `bracket` (#200).
 - `periodicRate(annual, { perYear, digits })` and `annualRate(periodic, { perYear })` in
   `/finance`: the periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear)
   − 1`, and its inverse. `annualRate` is an exact `Ratio`; `periodicRate` is found like `irr`, to
