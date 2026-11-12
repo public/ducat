@@ -32,7 +32,7 @@ money('10.00', 'CHF').multiply('1.077').with(toFiveRappen); // → 10.75 CHF
 
 ## Show the cash amount with the right decimals
 
-`currencyDigits(code, { usage: 'cash', country? })` gives the decimals a cash amount is shown with: `currencyDigits('SEK', { usage: 'cash' })` is 0, CHF and DKK stay at 2. The smallest coin is `cashUnit(code, { country? })`.
+`currencyDigits(code, { usage: 'cash', country? })` gives the decimals a cash amount is shown with: `currencyDigits('SEK', { usage: 'cash' })` is 0, CHF and DKK stay at 2. The smallest coin is `cashUnit(code, { country? })`. [Where money arithmetic goes wrong](../explanation/footguns.md#currencies-with-other-exponents-and-cash-rounding) shows what goes wrong when a library assumes two decimals for every currency.
 
 ## Related
 

@@ -7,6 +7,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Documentation
+
+- A new explanation page, [Where money arithmetic goes wrong](docs/explanation/footguns.md), shows each class of money bug in other JavaScript libraries (floats, rounding at every step, negative halves, lost cents, overflow past 2⁵³, lenient parsing and more) with the result the library returns and what ducat does instead, linked from the README, the comparison and the how-to guides where each one bites.
+
 ## [0.4.0] - 2026-11-12
 
 Excel's financial functions in their own entry, exact everywhere, and three new integrations. New
