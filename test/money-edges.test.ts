@@ -338,11 +338,17 @@ describe('installed methods are like class methods', () => {
     const toLocaleString = function (this: Money) {
       return `localised ${toDecimal(this)}`;
     };
+    // a formatting module may have installed one already (Bun runs every file in one process)
+    const previous = Object.getOwnPropertyDescriptor(proto, 'toLocaleString');
+    Reflect.deleteProperty(proto, 'toLocaleString');
     try {
-      extendMoney({ toLocaleString }, { owner: 'money-edges.test' });
+      extendMoney({ toLocaleString });
       expect(eur('1.50').toLocaleString()).toBe('localised 1.50');
     } finally {
       Reflect.deleteProperty(proto, 'toLocaleString');
+      if (previous !== undefined) {
+        Object.defineProperty(proto, 'toLocaleString', previous);
+      }
     }
   });
 });
