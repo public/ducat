@@ -21,11 +21,17 @@ Models of the integer steps `xnpvBounds`, `xnpv` and `xirr` in `src/excel.ts` ta
   other way round for `v < 0`), and flooring and ceiling to the grid keeps it inside.
 * `sum_bounds`: the terms' bounds sum to bounds on the sum.
 
-So `[Σ lowᵢ, Σ highᵢ] / S` contains XNPV: the interval `xnpvBounds` returns is sound at every
-precision, which is the error bound. Not proved here, and stated in docs/explanation/finance-design.md
-§3d: the exponent identity `n = W·m + Σ r·(m/q)` behind the split (the code checks it at run time),
-the real-power law `g^(n/m) = g^W·Π g^(r/q)` it then relies on, and that rounding is monotone in every
-mode (so two ends that round alike pin the rounded value).
+The theorems are integer and rational (ℚ) inequalities: `root_bracket` is the integer inequality
+`R^q·b ≤ a·S^q < (R + 1)^q·b`, and the bound lemmas take rational targets. Argued in
+docs/explanation/finance-design.md §3d, not proved here (#308 is to formalize them over ℝ):
+
+* that the integer inequality puts the real root `g^(1/q)` in `[R/S, (R + 1)/S)`, and that the ℚ
+  lemmas carry over to the irrational factors, their products and `C/F` (they hold in any ordered
+  field);
+* the exponent identity `n = W·m + Σ r·(m/q)` behind the split (the code checks it at run time)
+  and the real-power law `g^(n/m) = g^W·Π g^(r/q)` it relies on;
+* the exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder;
+* that rounding is monotone in every mode, so two ends that round alike pin the rounded value.
 -/
 
 namespace Ducat.Xnpv

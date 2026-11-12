@@ -69,10 +69,12 @@ These are stated over the proved kernel (`divRound`):
 | a group's term `C / F` between `C / F_high` and `C / F_low` (swapped for `C < 0`), floored and ceiled to the grid | `quotient_bounds`, `grid_bounds`                                         |
 | the groups' bounds summed                                                                                         | `sum_bounds`                                                             |
 
-So the interval `xnpvBounds` returns contains XNPV at every precision. **Not proved:**
+These are integer and rational (ℚ) inequalities: the first row proves `R^q·b ≤ a·S^q < (R + 1)^q·b` in integers, and the bound lemmas take rational targets. **Argued, not proved** (#308 is to formalize them over ℝ):
 
-- The exponent identity `n = W·m + Σ r·(m/q)` behind the split. The code computes it by the CRT and checks it at run time.
-- The real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on. It is standard, but not formalized here.
+- That the integer inequality puts the real root `g^(1/q)` in `[R/S, (R + 1)/S)`, and that the ℚ lemmas carry over to the irrational factors, their products and `C / F`. They hold in any ordered field.
+- The exponent identity `n = W·m + Σ r·(m/q)` behind the split, which the code computes by the CRT and checks at run time.
+- The real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on.
+- The exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder.
 - That rounding is monotone in every mode, so two ends that round alike pin `xnpv`'s rounded value. This is argued in [the finance design](finance-design.md).
 
 ## Tested, not proved
