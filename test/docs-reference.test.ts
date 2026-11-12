@@ -100,6 +100,39 @@ const mentions = (text: string, name: string): boolean =>
   text.includes(name) &&
   new RegExp(`\`[^\`\\n]*(?<![\\w$])${name.replace(/\$/g, '\\$')}(?![\\w$])[^\`\\n]*\``).test(text);
 
+/**
+ * `Class#member` for every class member in src/ that TypeScript marks `private` or whose JSDoc says
+ * `@internal`: those are on the prototype at run time but aren't part of the documented API.
+ */
+function internalMembers(classNames: readonly string[]): Set<string> {
+  const wanted = new Set(classNames);
+  const found = new Set<string>();
+  for (const file of ts.sys.readDirectory(join(ROOT, 'src'), ['.ts'])) {
+    const source = ts.createSourceFile(
+      file,
+      readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    source.forEachChild(function visit(node) {
+      if (ts.isClassDeclaration(node) && node.name !== undefined && wanted.has(node.name.text)) {
+        for (const member of node.members) {
+          const name =
+            member.name !== undefined && ts.isIdentifier(member.name) ? member.name.text : '';
+          const isPrivate =
+            ts.getCombinedModifierFlags(member as ts.Declaration) & ts.ModifierFlags.Private;
+          const isInternal = ts.getJSDocTags(member).some((tag) => tag.tagName.text === 'internal');
+          if (name !== '' && (isPrivate || isInternal)) {
+            found.add(`${node.name.text}#${name}`);
+          }
+        }
+      }
+      node.forEachChild(visit);
+    });
+  }
+  return found;
+}
+
 describe('the reference names everything the package exports', () => {
   it('every entry has a reference page', () => {
     const missing = entries.filter(({ key }) => PAGES[key] === undefined).map(({ key }) => key);
@@ -224,7 +257,7 @@ describe('the reference names everything the package exports', () => {
       MoneyBag: [bag(), () => 'convert.md'],
     };
     // private or @internal in TypeScript, but visible on the prototype at run time
-    const internal = new Set(['ExactMoney#times', 'Rate#checkValidity']);
+    const internal = internalMembers(Object.keys(instances));
     const problems: string[] = [];
     for (const [className, [instance, home]] of Object.entries(instances)) {
       for (
