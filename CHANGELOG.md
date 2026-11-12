@@ -31,6 +31,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Added
 
+- `savingsPlan(options)` in `/finance`: a savings schedule with a fixed `contribution` or a
+  `target`, paid at the end or the start of each period. Each period's interest is rounded once,
+  and with a target, the regular contribution is Excel's PMT rounded and the last contribution
+  takes the residual, so the plan ends exactly on the target (#200).
 - `@ducatjs/money/excel`, a new entry for Excel's financial functions, under the Excel rule:
   Excel's arguments and sign convention, and Excel's value at 15 significant digits wherever
   Excel's double evaluation is well conditioned (the exact value or root where it isn't). It has

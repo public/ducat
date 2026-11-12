@@ -54,6 +54,7 @@ export function parsePlainDecimal(
   let i = 0;
   let neg = false;
   let code = input.charCodeAt(0);
+  // Stryker disable next-line BlockStatement,LogicalOperator: a null result falls back to parseDecimal
   if (code === 45 /* - */ || code === 43 /* + */) {
     neg = code === 45;
     i = 1;
@@ -61,17 +62,22 @@ export function parsePlainDecimal(
   let acc = 0;
   let digitsSeen = 0;
   let scale = -1;
+  // Stryker disable next-line BooleanLiteral: the bigint branch reads the same digits
   let big = false;
   const start = i;
+  // Stryker disable next-line BlockStatement,ConditionalExpression,EqualityOperator,UpdateOperator: a null result falls back to parseDecimal
   for (; i < len; i++) {
     code = input.charCodeAt(i);
+    // Stryker disable next-line BlockStatement: a null result falls back to parseDecimal
     if (code >= 48 && code <= 57) {
       digitsSeen++;
+      // Stryker disable next-line BlockStatement,EqualityOperator: a null result falls back to parseDecimal
       if (scale >= 0) {
         scale++;
       }
       if (!big) {
         // 15 digits always fit exactly in a double; beyond that use BigInt
+        // Stryker disable next-line EqualityOperator: the bigint branch reads the same digits
         if (digitsSeen > 15) {
           big = true;
         } else {
@@ -245,6 +251,7 @@ export const describeFactor = (factor: Factor): string =>
 export function ratio(value: Factor, den?: Factor): Ratio {
   if (den !== undefined) {
     // two bigints (divide, percentages, tax): one reduction instead of three
+    // Stryker disable next-line BlockStatement,StringLiteral: shortcut, the general path builds the same ratio
     if (typeof value === 'bigint' && typeof den === 'bigint') {
       return makeRatio(value, den);
     }
@@ -270,6 +277,7 @@ export function ratio(value: Factor, den?: Factor): Ratio {
     const scale = (value as Partial<Fixed> | null)?.scale;
     if (
       (typeof scaled === 'bigint' || Number.isSafeInteger(scaled)) &&
+      // Stryker disable next-line ConditionalExpression: the scale checks below reject a non-number
       typeof scale === 'number' &&
       scale >>> 0 === scale &&
       scale <= MAX_DECIMAL_SCALE
@@ -279,7 +287,9 @@ export function ratio(value: Factor, den?: Factor): Ratio {
     throw notAFactor(value);
   }
   if (typeof value === 'number') {
+    // Stryker disable next-line BlockStatement: a safe integer parses to the same ratio
     if (Number.isSafeInteger(value)) {
+      // Stryker disable next-line BlockStatement,ConditionalExpression,EqualityOperator,LogicalOperator: a cache only saves time
       if (value >= 0 && value < 128) {
         return (INT_RATIOS[value] ??= makeRatio(BigInt(value), 1n));
       }
@@ -305,9 +315,11 @@ export function ratio(value: Factor, den?: Factor): Ratio {
       const { digits, scale } = parseDecimal(value);
       cached = makeRatio(digits, pow10n(scale));
     }
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: a cache only saves time
     if (cache.size >= 1024) {
       cache.clear();
     }
+    // Stryker disable next-line CallExpression: a cache only saves time
     cache.set(value, cached);
   }
   return cached;
