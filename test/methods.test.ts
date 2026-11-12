@@ -119,6 +119,7 @@ describe('Money methods', () => {
       'pmtExact',
       'nper',
       'rate',
+      'savingsPlan',
       'prorate',
       'splitPeriod',
       // /pricing: takes a quantity and a tier table, not an amount
