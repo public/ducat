@@ -231,6 +231,10 @@ function notAFactor(value: unknown): TypeError {
 const cache = /* @__PURE__ */ new Map<string, Ratio>();
 const INT_RATIOS: Ratio[] = [];
 
+/** A factor as its caller wrote it, for error messages: '-150.5', 12, or 301/3 for a Ratio. */
+export const describeFactor = (factor: Factor): string =>
+  typeof factor === 'object' && 'num' in factor ? `${factor.num}/${factor.den}` : String(factor);
+
 /**
  * Builds an exact ratio. `ratio('1.075')`, `ratio(3, 4)`, `ratio(10n)`, `ratio('1/3')`.
  * Numbers are taken at their shortest decimal representation: `ratio(0.1)` is exactly 1/10. One

@@ -163,6 +163,23 @@ const implementations: Record<string, Implementation> = {
     compare: ducat.compare,
     notes: 'free functions',
   },
+  // Exact rational amounts that round once, at the end: the same operations on ExactMoney. A value
+  // stays exact through add, compare and allocation (thirds, which sum exactly); mulRatio and
+  // format round half-even to cents, as the other rows do.
+  'ducat ExactMoney': {
+    fromMinor: (amount) => ducat.exact(ducat.fromMinor(amount, 'EUR')),
+    parse: (decimal) => ducat.exact(ducat.money(decimal, 'EUR')),
+    add: (first, second) => first.add(second),
+    mulRatio: (value) => value.multiply(ducatRatio).round('halfEven'),
+    allocate3: (value) => {
+      const third = value.divide(3);
+      return [third, third, third];
+    },
+    toDecimal: (value) => value.toMoney().toDecimal(),
+    format: (value) => value.round('halfEven').format('en-US'),
+    compare: (first, second) => first.compare(second),
+    notes: 'ExactMoney methods: exact until rounded; allocate is three exact thirds',
+  },
   'dinero.js 2': {
     fromMinor: (amount) => Dinero2.dinero({ amount, currency: Dinero2Eur }),
     // no parser in dinero.js: strip the "." and pass minor units
