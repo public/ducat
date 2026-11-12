@@ -108,6 +108,57 @@ describe('divideAndRound at the top of the safe range, with no bigint fallback',
   });
 });
 
+describe("divideAndRound's generated switch where 2|remainder| leaves the safe range, and at ties", () => {
+  /** Every mode against the proved kernel, for a and -a. */
+  const expectKernel = (magnitude: number, b: number) => {
+    for (const a of [magnitude, -magnitude]) {
+      for (const mode of MODES) {
+        const expected = Number(divideAndRoundBigint(BigInt(a), BigInt(b), mode));
+        expect([a, b, mode, divideAndRound(a, b, mode)]).toEqual([a, b, mode, expected]);
+      }
+    }
+  };
+
+  it('2|r| > 2^53 - 1 (only with a quotient of 0): exact, and never a tie', () => {
+    for (const b of [2 ** 52 + 1, 2 ** 52 + 2, 2 ** 53 - 2, MAX]) {
+      // the region the proof's second case covers: |a| < b, so the quotient is 0 and r = a
+      for (const magnitude of [2 ** 52, 2 ** 52 + 1, b - 1].filter((m) => m < b)) {
+        expect(2 * magnitude > MAX).toBe(true);
+        expectKernel(magnitude, b);
+      }
+    }
+  });
+
+  it('ties and near-ties, on inputs the old |a| + b bound sent to the bigint kernel', () => {
+    let ties = 0;
+    // b even: r = b / 2 is a tie; with quotient 0 (even) and 1 (odd), and r = b / 2 +- 1
+    for (const b of [2 ** 53 - 2, 2 ** 52 + 2, 2 ** 52 + 6]) {
+      for (const q of [0, 1]) {
+        for (const r of [b / 2 - 1, b / 2, b / 2 + 1]) {
+          const magnitude = q * b + r;
+          if (magnitude <= MAX) {
+            ties += 2 * r === b ? 1 : 0;
+            expectKernel(magnitude, b);
+          }
+        }
+      }
+    }
+    // every even b has a tie at quotient 0, and 2^52 + 2 and 2^52 + 6 at quotient 1 too
+    expect(ties).toBe(5);
+    // b odd: no exact tie; r = (b - 1) / 2 and (b + 1) / 2 sit either side of it
+    for (const b of [MAX, 2 ** 52 + 1, 2 ** 52 + 3]) {
+      for (const q of [0, 1]) {
+        for (const r of [(b - 1) / 2, (b + 1) / 2]) {
+          const magnitude = q * b + r;
+          if (magnitude <= MAX) {
+            expectKernel(magnitude, b);
+          }
+        }
+      }
+    }
+  });
+});
+
 describe("allocate's number path at minor * max weight = 2^53 - 1 - total", () => {
   const WEIGHT_SETS = [
     [1],

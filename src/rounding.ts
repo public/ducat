@@ -101,11 +101,22 @@ export function divideAndRound(dividend: number, divisor: number, mode: Rounding
   if (divisor === 1) {
     return dividend + 0; // + 0 normalises -0 (0 * -1 from a caller)
   }
-  // Exact for every safe dividend and divisor >= 2, with no correction step and no bigint fallback:
-  // rounding a / b up to the next integer k + 1 needs P = (k + 1) * b to satisfy
-  // P - |a| <= P * 2^-53 and P - |a| >= 1, so P = 2^53 and both k + 1 and b are powers of two,
-  // where the quotient is exact. So the truncated double quotient is the exact truncated
-  // quotient, quotient * divisor (at most |dividend|) is exact, and so is the remainder.
+  // Exact for every safe dividend a and divisor b >= 2, with no correction and no bigint fallback.
+  // It relies on IEEE 754 doubles: division is correctly rounded (ties to even), so it is monotone
+  // and odd in a, and every integer of magnitude <= 2^53 is a double. Take a >= 0 (a < 0 mirrors it).
+  // Lemma 1, the quotient: Math.trunc(a / b) = k = floor(a / b).
+  // - k <= a and k + 1 <= 2^53 are doubles and k <= a / b < k + 1, so k <= fl(a / b) <= k + 1.
+  // - fl(a / b) = k + 1 needs the gap d / b, with d = (k + 1)b - a >= 1 an integer, to be at most h,
+  //   half the distance from k + 1 down to the next double: h = (k + 1)2^-54 if k + 1 is a power of
+  //   two, else h < (k + 1)2^-53. Either way d * 2^53 <= (k + 1)b = a + d <= 2^53 - 1 + d, so d = 1
+  //   and (k + 1)b = 2^53. Then k + 1 is a power of two and h = 1 / 2b < 1 / b = d / b. So no.
+  // - Then k * b <= a and the remainder r = a - k * b, 0 <= r < b, are exact safe integers.
+  // Lemma 2, the generated switch (the proved bigint kernel printed for numbers; its obligation is
+  // exact integer arithmetic, see proofs/Ducat/Kernel.lean). It computes 2r, compares it with b,
+  // takes k % 2 and k +- 1. |k| + 1 <= 2^52 + 1 (b >= 2) is safe. If 2r <= 2^53 - 1, all is safe.
+  // Otherwise k = 0 (k >= 1 would give a >= b + r > 2r), and 2r < 2^54 is an even integer, so a
+  // double: exact. Since 2r > 2^53 - 1 >= b, every comparison of 2r with b is decided, so no tie.
+  // test/unreachable-guards.test.ts checks d = 1 (a = 2^53 - 1, b = 2^m), 2r > 2^53 - 1, and ties.
   const quotient = Math.trunc(dividend / divisor);
   const remainder = dividend - quotient * divisor;
 
