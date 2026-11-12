@@ -563,33 +563,7 @@ export function sum<C extends string>(
   if (currency !== undefined && total.currency !== currency) {
     throw new CurrencyMismatchError(currency, total.currency);
   }
-  const itemCurrency = total.currency;
-  const scale = total.scale;
-
-  // Fast loop on plain numbers: each partial sum of safe integers is exact while it stays within
-  // MAX_SAFE_MINOR. It falls back to add() at the first bigint, scale change or overflow. NaN marks
-  // "no fast total".
-  let fastTotal = typeof total.minor === 'number' ? total.minor : NaN;
-  let i = 1;
-  for (; i < count && fastTotal === fastTotal; i++) {
-    const item = items[i]!;
-    if (item.currency !== itemCurrency) {
-      mismatch(total, item);
-    }
-    if (typeof item.minor !== 'number' || item.scale !== scale) {
-      break;
-    }
-    const next = fastTotal + item.minor;
-    if (!(next <= MAX_SAFE_MINOR && next >= -MAX_SAFE_MINOR)) {
-      break;
-    }
-    fastTotal = next;
-  }
-  if (fastTotal === fastTotal) {
-    total = new Money(itemCurrency, fastTotal, scale);
-  }
-
-  for (; i < count; i++) {
+  for (let i = 1; i < count; i++) {
     total = add(total, items[i]!);
   }
   return total;
