@@ -391,7 +391,7 @@ describe('tieredPrice: a tier needs a price', () => {
   ];
   it.each<TiersMode>(['graduated', 'volume'])('throws naming the tier in %s mode', (mode) => {
     expect(() => tieredPrice(15, { mode, tiers: priced })).toThrow(
-      'Tier 1 has neither a unitAmount nor a flatAmount; write a free tier as unitAmount 0',
+      "Tier 1 has neither a unitAmount nor a flatAmount; write a free tier as unitAmount: money('0', currency)",
     );
     expect(() => tieredPrice(5, { mode, tiers: priced })).toThrow(RangeError);
   });

@@ -169,7 +169,7 @@ export function tieredPrice<C extends string>(
     // A tier with no price is almost always a mistake (Stripe refuses one too); a free tier says so.
     if (tier.unitAmount === undefined && tier.flatAmount === undefined) {
       throw new RangeError(
-        `Tier ${index} has neither a unitAmount nor a flatAmount; write a free tier as unitAmount 0`,
+        `Tier ${index} has neither a unitAmount nor a flatAmount; write a free tier as unitAmount: money('0', currency)`,
       );
     }
     for (const price of [tier.unitAmount, tier.flatAmount]) {

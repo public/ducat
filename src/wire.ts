@@ -12,7 +12,8 @@
  * Every reader checks the format strictly, and every writer throws rather than send a value the
  * format can't hold.
  */
-import { currencyExponent } from './currency.js';
+import { currencyExponent, ISO_EXPONENTS, ISO_NON_MONETARY } from './currency.js';
+import { REGISTERED_WITHDRAWN_ISO } from './withdrawn.js';
 import { checkScale, formatScaled, parseDecimal } from './decimal.js';
 import { fromMinor, toScale, type CurrencyInput, type Money } from './money.js';
 import { fromProcessorAmount, toProcessorAmount } from './processor.js';
@@ -191,6 +192,24 @@ function fitsIso20022(integer: string, fraction: string): boolean {
   );
 }
 
+/**
+ * Throws unless `code` is an ISO 4217 code, as ISO 20022's ActiveOrHistoricCurrencyCode requires:
+ * in the current table (List One, including the codes with no minor unit, such as XAU and XDR,
+ * which a program registers with `defineCurrency` to hold), or withdrawn (List Three) and registered with `defineHistoricCurrencies` from
+ * `@ducatjs/money/historic`. A code ISO never published, such as BTC or CNH, is refused.
+ */
+function requireIso4217(code: string): void {
+  if (
+    !Object.hasOwn(ISO_EXPONENTS, code) &&
+    !(ISO_NON_MONETARY as readonly string[]).includes(code) &&
+    !REGISTERED_WITHDRAWN_ISO.has(code)
+  ) {
+    throw new RangeError(
+      `ISO 20022 amounts need an ISO 4217 code, got ${code} (a withdrawn code needs defineHistoricCurrencies)`,
+    );
+  }
+}
+
 /** Options for `toIso20022Amount`. */
 export interface Iso20022WriteOptions {
   /**
@@ -215,9 +234,7 @@ export function toIso20022Amount(
   rounding: RoundingMode = 'unnecessary',
   options?: Iso20022WriteOptions,
 ): Iso20022Amount {
-  if (!CURRENCY_CODE.test(money.currency)) {
-    throw new RangeError(`ISO 20022 amounts need an ISO 4217 code, got ${money.currency}`);
-  }
+  requireIso4217(money.currency);
   const scale = options?.scale ?? currencyExponent(money.currency);
   if (!Number.isInteger(scale) || scale < 0 || scale > ISO_20022_MAX_DECIMALS) {
     throw new RangeError(`ISO 20022 amounts have 0 to 5 decimals, not ${scale}`);
@@ -264,6 +281,7 @@ export function fromIso20022Amount<C extends CurrencyInput>(
   if (typeof currency !== 'string' || !CURRENCY_CODE.test(currency)) {
     throw new SyntaxError(`Invalid ISO 20022 currency ${JSON.stringify(currency)}`);
   }
+  requireIso4217(currency);
   const match = typeof value === 'string' ? ISO_20022_AMOUNT.exec(value) : null;
   if (match === null || !fitsIso20022(match[1]!, match[2] ?? '')) {
     throw new SyntaxError(
