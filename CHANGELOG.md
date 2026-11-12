@@ -7,6 +7,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `@ducatjs/money-spec`, a private workspace package in `spec/`: ducat's test vectors as
+  language-neutral JSON, with a JSON Schema, provenance on every file, and the rules for running
+  them from any language. The cross-library battery's 41 vectors and the fixed-point battery's 28
+  are the first areas; `compare/` reads them from the package, and `test/spec.test.ts` runs every
+  vector against ducat (#321).
+
 ## [0.4.0] - 2026-11-12
 
 Excel's financial functions in their own entry, exact everywhere, and three new integrations. New
