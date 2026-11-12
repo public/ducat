@@ -40,7 +40,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   fractional powers are bracketed in exact integer arithmetic into a guaranteed interval
   (`xnpvBounds`); `xnpv` rounds once, when the interval fixes the rounded value, and is exact where
   the value is rational; `xirr` bisects on XNPV's sign with `irr`'s bracket and multiple-root
-  rules. `dayCount` takes the non-Excel conventions (#136).
+  rules, and finds a root exactly on the grid exactly, such as a rate of 0 with flows that aren't
+  whole years apart. `dayCount` takes the non-Excel conventions (#136).
 - `savingsPlan(options)` in `/finance`: a savings schedule with a fixed `contribution` or a
   `target`, paid at the end or the start of each period. Each period's interest is rounded once,
   and with a target, the regular contribution is Excel's PMT rounded and the last contribution
