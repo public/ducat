@@ -62,7 +62,7 @@ These are stated over the proved kernel (`divRound`):
 
 | step in `src/excel.ts`                                                                                            | theorem                                                                  |
 | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| each prime power `q`'s root: `R = ⌊qth root of ⌊a·S^q / b⌋⌋`, so `R/S ≤ g^(1/q) < (R + 1)/S`                      | `root_floor_inside`, `root_bracket`                                      |
+| each prime power `q`'s root `R = ⌊qth root of ⌊a·S^q / b⌋⌋`: the integer inequality `R^q·b ≤ a·S^q < (R + 1)^q·b` | `root_floor_inside`, `root_bracket`                                      |
 | `g^(r/q)` by square-and-multiply, every product floored (or ceiled)                                               | `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil` |
 | a flow's factors `Π g^(r/q)` multiplied left to right, floored (or ceiled)                                        | `fold_floor_le`, `le_fold_ceil`                                          |
 | flows with the same irrational part summed first as one coefficient, a zero coefficient dropped                   | `sum_regroup`, `group_common_factor`                                     |
