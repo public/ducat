@@ -110,7 +110,6 @@ export class Fixed {
       throw new TypeError('Use fixed() or fromScaled() to create a Fixed');
     }
     // `+ 0` turns -0 into 0, so no operation can leak a negative zero.
-    // Stryker disable next-line ArithmeticOperator: every caller passes a value already free of -0
     this.value = typeof value === 'bigint' ? normalizeMinor(value) : value + 0;
     this.scale = scale;
   }
