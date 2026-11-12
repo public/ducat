@@ -57,8 +57,8 @@ On 2026-11-11, before the triage, the nightly report had these survivors in the 
 - The benchmarks in `bench/` are for quick local comparisons; on a shared machine their run-to-run variation is often
   ±20–30%.
 - Bundle size (esbuild, minified + gzip; `pnpm size` checks every entry point and snippet against `scripts/size-budgets.json`):
-  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.5 KiB**, of which about 0.55 KiB is the ISO table. 0.3 grew it from 4.0 KiB, and the core from 4.9: stricter input validation and clearer errors (the port-test fixes), and the root entry installing the methods and currencies so that `/fn` programs can leave them out
-  - the core entry point: 5.5 KiB; everything (`@ducatjs/money/all`): 50.5 KiB
+  - `money('1.00', 'EUR').add(…).multiply('1.075', 'halfEven').toDecimal()`: **4.6 KiB**, of which about 0.55 KiB is the ISO table. 0.3 grew it from 4.0 KiB, and the core from 4.9: stricter input validation and clearer errors (the port-test fixes), and the root entry installing the methods and currencies so that `/fn` programs can leave them out
+  - the core entry point: 5.5 KiB; everything (`@ducatjs/money/all`): 57.8 KiB
   - `Fixed` alone (`fixed('1.00')`, add, multiply, toString): 3.5 KiB
   - the same snippet with dinero.js (EUR only): 1.8 KiB
   - the same snippet through `/fn`, with `import '@ducatjs/money/iso/EUR'`: 3.0 KiB; create, add and print only: 1.3 KiB
