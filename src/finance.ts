@@ -889,10 +889,17 @@ export interface SavingsPlanRow<C extends string> {
   readonly contribution: Money<C>;
   /**
    * This period's interest: the balance it earns on times the periodic rate, rounded. That is the
-   * balance before the period, plus this period's contribution when it is paid at the start.
+   * balance before the period, plus this period's contribution when it is paid at the start, in
+   * every row.
    */
   readonly interest: Money<C>;
-  /** The balance after the period: the previous balance plus the contribution and the interest. */
+  /**
+   * Only on the last row of a start-timed target plan, and only when no whole-unit contribution
+   * reaches the target exactly (the rounded interest skipped it): the unit left over, paid at the
+   * end of the period, after interest. It counts in `totalContributions`.
+   */
+  readonly adjustment?: Money<C>;
+  /** The balance after the period: the previous balance plus the contribution, the interest and any adjustment. */
   readonly balance: Money<C>;
 }
 
@@ -911,6 +918,46 @@ export interface SavingsPlan<C extends string> {
 }
 
 /**
+ * The last contribution c of a start-timed target plan, paid at the start of the period, so that
+ * balance + c + round((balance + c)·r) is the target: interest is then credited only on what was
+ * paid in. Over the unit grid that sum rises by one unit, or two when the rounded interest steps up
+ * too (one or none at a negative rate), so the target can fall in a gap. Then c is the largest
+ * contribution that stays below it, and the unit left over is an `adjustment` paid at the end of
+ * the period, after interest.
+ */
+function settleAtStart<C extends string>(
+  balance: Money<C>,
+  target: Money<C>,
+  periodic: Ratio,
+  unit: Money<C>,
+  rounding: RoundingInput,
+): [Money<C>, Money<C> | undefined] {
+  const needed = subtract(target, balance);
+  const reached = (contribution: Money<C>) =>
+    add(contribution, multiplyAndRound(add(balance, contribution), periodic, rounding));
+  // start near (needed − balance·r) / (1 + r), then step by units to the target
+  const growth = ratio(periodic.num + periodic.den, periodic.den);
+  let contribution = multiplyAndRound(
+    subtract(needed, multiplyAndRound(balance, periodic, rounding)),
+    ratio(growth.den, growth.num),
+    rounding,
+  );
+  // below the target from the start, then up while the next step doesn't pass it
+  while (compare(reached(contribution), needed) > 0) {
+    contribution = subtract(contribution, unit);
+  }
+  for (;;) {
+    const next = add(contribution, unit);
+    if (compare(reached(next), needed) > 0) {
+      break;
+    }
+    contribution = next;
+  }
+  const short = subtract(needed, reached(contribution));
+  return [contribution, BigInt(short.minor) === 0n ? undefined : short];
+}
+
+/**
  * A savings plan: a regular contribution every period, earning interest at `rate / perYear`, with
  * each period's interest rounded once from the exact balance it earns on, as a bank credits it.
  * Nothing else is rounded, so the final balance is exactly `initial + totalContributions +
@@ -920,8 +967,10 @@ export interface SavingsPlan<C extends string> {
  * contribution is Excel's PMT for the target (`−pmtExact(rate / perYear, periods, −initial, { fv:
  * target, type })`), rounded once, and the last contribution takes the residual the rounding
  * leaves, so the final balance is exactly the target, as `amortise` settles a loan on its last
- * payment. With `timing: 'start'`, the last period's interest is on the regular contribution, and
- * the last contribution is then adjusted. At a rate of 0 there is no interest, and the
+ * payment. With `timing: 'start'`, the last contribution c is solved so that the balance plus c
+ * plus the rounded interest on both is the target, so interest is only ever credited on what was
+ * paid in; where the rounding skips the target, the unit left over is an `adjustment` paid at the
+ * end of the period. At a rate of 0 there is no interest, and the
  * regular contribution is `(target − initial) / periods`, rounded, the residual on the last.
  *
  * The amounts share one currency and are multiples of the rounding's unit. The rate may be
@@ -984,18 +1033,33 @@ export function savingsPlan<C extends string>(options: SavingsPlanOptions<C>): S
   const rows: SavingsPlanRow<C>[] = [];
   let balance = initial;
   for (let period = 1; period <= periods; period++) {
-    const earning = timing === 'start' ? add(balance, regular) : balance;
+    let contribution = regular;
+    let adjustment: Money<C> | undefined;
+    if (target !== undefined && period === periods) {
+      // the last contribution of a target plan settles it exactly
+      [contribution, adjustment] =
+        timing === 'start'
+          ? settleAtStart(balance, target, periodic, unit, rounding)
+          : [
+              subtract(subtract(target, balance), multiplyAndRound(balance, periodic, rounding)),
+              undefined,
+            ];
+    }
+    // interest on what is actually in the account during the period
+    const earning = timing === 'start' ? add(balance, contribution) : balance;
     const interestPart = multiplyAndRound(earning, periodic, rounding);
-    // the last contribution of a target plan settles it exactly
-    const contribution =
-      target !== undefined && period === periods
-        ? subtract(subtract(target, balance), interestPart)
-        : regular;
     balance = add(add(balance, contribution), interestPart);
-    const row: SavingsPlanRow<C> =
-      dates === undefined
-        ? { period, contribution, interest: interestPart, balance }
-        : { period, date: dates[period - 1]!, contribution, interest: interestPart, balance };
+    if (adjustment !== undefined) {
+      balance = add(balance, adjustment);
+    }
+    const row: SavingsPlanRow<C> = {
+      period,
+      ...(dates === undefined ? {} : { date: dates[period - 1]! }),
+      contribution,
+      interest: interestPart,
+      ...(adjustment === undefined ? {} : { adjustment }),
+      balance,
+    };
     rows.push(row);
   }
   const column = (pick: (row: SavingsPlanRow<C>) => Money<C>) =>
@@ -1006,7 +1070,9 @@ export function savingsPlan<C extends string>(options: SavingsPlanOptions<C>): S
   return {
     contribution: regular,
     rows,
-    totalContributions: column((row) => row.contribution),
+    totalContributions: column((row) =>
+      row.adjustment === undefined ? row.contribution : add(row.contribution, row.adjustment),
+    ),
     totalInterest: column((row) => row.interest),
     balance,
   };

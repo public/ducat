@@ -277,8 +277,13 @@ amounts are positive when paid in.
   `−pmtExact(rate / perYear, periods, −initial, { fv: target, type })`, rounded once, and the last
   contribution is `target − balance − interest`, so the plan ends on exactly the target. This is
   the savings counterpart of `amortise`'s `residual: 'lastPayment'`. With `timing: 'start'`, the
-  last period's interest is computed on the regular contribution before the last contribution is
-  adjusted, so the adjustment doesn't feed back into its own interest.
+  last contribution earns interest in its own period, so it is solved: the `c` with
+  `balance + c + round((balance + c)·r) = target`, found by stepping over the unit grid from
+  `(target − balance − round(balance·r))/(1 + r)`. Interest is then only ever credited on money
+  that was paid in. Over the grid that sum rises by one unit, or two when the rounded interest
+  steps up too, so the target can fall in a gap (a few percent of plans at 5% a month, far fewer
+  at ordinary rates). There `c` is the largest contribution below it, and the unit left over is an
+  `adjustment`, paid at the end of the period, after interest, and counted with the contributions.
 - **Against Excel's FV.** The rounded credits drift from Excel's unrounded FV by at most half a
   unit per credit, compounded: below `periods · (1 + |r|)^periods` half units. A property test
   checks that bound.

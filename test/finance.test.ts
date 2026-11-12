@@ -1277,6 +1277,51 @@ describe('savingsPlan', () => {
     ]);
   });
 
+  it('settles a start-timed target on what is actually paid in', () => {
+    // the last contribution is solved so its own interest counts: 31.75 paid at the start earns
+    // the interest on the last row, and nothing is credited on money that never went in
+    const plan = savingsPlan({
+      rate: '0.6',
+      perYear: 12,
+      periods: 3,
+      target: usd('105.20'),
+      timing: 'start',
+    });
+    const last = plan.rows.at(-1)!;
+    const before = plan.rows.at(-2)!.balance;
+    expect(last.interest).toEqual(
+      exact(add(before, last.contribution)).multiply('0.05').round('halfExpand'),
+    );
+    expect([last.adjustment, plan.balance.toDecimal()]).toEqual([undefined, '105.20']);
+    // where the rounded interest steps over the target, the unit left over is paid after interest
+    const skipped = savingsPlan({
+      rate: '0.6',
+      perYear: 12,
+      periods: 3,
+      target: usd('100.90'),
+      timing: 'start',
+    });
+    const lastRow = skipped.rows.at(-1)!;
+    expect(
+      decimals([lastRow.contribution, lastRow.interest, lastRow.adjustment!, skipped.balance]),
+    ).toEqual(['30.49', '4.80', '0.01', '100.90']);
+    // one cent more contribution would overshoot: 30.50 earns 4.81 (or the target would be reached)
+    expect(
+      add(
+        add(skipped.rows.at(-2)!.balance, usd('30.50')),
+        exact(add(skipped.rows.at(-2)!.balance, usd('30.50')))
+          .multiply('0.05')
+          .round('halfExpand'),
+      ).toDecimal(),
+    ).toBe('100.91');
+    expect(skipped.totalContributions).toEqual(
+      add(
+        skipped.rows.slice(0, -1).reduce((total, row) => add(total, row.contribution), usd('0')),
+        add(lastRow.contribution, lastRow.adjustment!),
+      ),
+    );
+  });
+
   it('at a rate of 0, contributes the target over the periods, the residual on the last', () => {
     const plan = savingsPlan({ rate: '0', perYear: 12, periods: 7, target: usd('100') });
     // 100 / 7 = 14.2857… rounds to 14.29; the last takes 100 − 6 × 14.29
@@ -1382,9 +1427,24 @@ describe('savingsPlan', () => {
     fc.assert(
       fc.property(plans, (settings) => {
         const plan = build(settings);
+        const periodic = ratio(settings.rateUnits, BigInt(settings.perYear) * 10n ** 6n);
         let balance = fromMinor(settings.initial, 'USD');
         for (const row of plan.rows) {
+          // interest only on what was actually in the account: the previous balance, plus this
+          // row's own contribution when it is paid at the start
+          const earning = settings.timing === 'start' ? add(balance, row.contribution) : balance;
+          expect(row.interest).toEqual(exact(earning).multiply(periodic).round('halfExpand'));
           balance = add(add(balance, row.contribution), row.interest);
+          if (row.adjustment !== undefined) {
+            // only a start-timed target plan's last row, and only a unit that rounding skipped
+            expect([settings.byTarget, settings.timing, row.period]).toEqual([
+              true,
+              'start',
+              plan.rows.length,
+            ]);
+            expect(row.adjustment.minor).toBe(1);
+            balance = add(balance, row.adjustment);
+          }
           expect(row.balance).toEqual(balance);
         }
         expect(plan.balance).toEqual(
