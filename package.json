@@ -498,6 +498,7 @@
   },
   "devDependencies": {
     "@codspeed/vitest-plugin": "6.1.1",
+    "@ducatjs/money-spec": "workspace:*",
     "@playwright/test": "1.65.0",
     "@prisma/client": "^6.19.3",
     "@rollup/plugin-node-resolve": "16.0.3",
@@ -507,6 +508,7 @@
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.6.6",
     "@types/pg": "8.23.1",
+    "ajv": "8.20.0",
     "better-sqlite3": "13.0.3",
     "big.js": "^7.0.1",
     "currency.js": "^2.0.4",

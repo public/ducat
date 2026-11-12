@@ -13,6 +13,7 @@
     "package-lock.json",
     "compare/results",
     "compare/RESULTS.md",
-    "test/vectors"
+    "test/vectors",
+    "spec/vectors"
   ]
 }

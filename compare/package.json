@@ -10,6 +10,7 @@
     "tables:check": "node tables.ts --check"
   },
   "dependencies": {
+    "@ducatjs/money-spec": "workspace:*",
     "@formatjs/bigdecimal": "0.2.10",
     "@prisma/client": "7.10.1",
     "@screeny05/ts-money": "1.2.0",

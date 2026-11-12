@@ -1,0 +1,22 @@
+{
+  "name": "@ducatjs/money-spec",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Language-neutral conformance vectors for @ducatjs/money: JSON test cases with their provenance, a JSON Schema, and the rules for running them.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/public/ducat.git",
+    "directory": "spec"
+  },
+  "files": [
+    "vectors",
+    "schema",
+    "README.md"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./schema/*": "./schema/*",
+    "./vectors/*": "./vectors/*"
+  }
+}
