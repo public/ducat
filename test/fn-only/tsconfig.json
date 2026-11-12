@@ -22,6 +22,7 @@
     "../../src/entries/drizzle-pg.ts",
     "../../src/entries/drizzle-sqlite.ts",
     "../../src/entries/ecb.ts",
+    "../../src/entries/excel.ts",
     "../../src/entries/fed.ts",
     "../../src/entries/fetch.ts",
     "../../src/entries/finance.ts",

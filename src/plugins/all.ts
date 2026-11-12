@@ -66,6 +66,7 @@ export * from '../words/nl.js';
 export * from '../words/pt.js';
 export * from '../territories.js';
 export * from '../finance.js';
+export * from '../excel.js';
 export * from './format.js';
 export * from '../parse.js';
 export * from './stripe.js';

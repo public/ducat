@@ -1,6 +1,7 @@
 /**
- * `@ducatjs/money/finance`: day counts, simple and compound interest, loan schedules, NPV and IRR,
- * and subscription proration, in exact arithmetic. Every amount that is paid or booked is rounded
+ * `@ducatjs/money/finance`: day counts, simple and compound interest, periodic and annual rates,
+ * loan schedules, discounted sums and subscription proration, in exact arithmetic, under ducat's
+ * own names (Excel's functions, with Excel's semantics, are in `@ducatjs/money/excel`). Every amount that is paid or booked is rounded
  * once from its exact value; nothing in between is rounded, and no floats are used. Dates are
  * calendar dates ('YYYY-MM-DD' or `{ year, month, day }`, so a `Temporal.PlainDate` works), never
  * `Date`. Free functions only: nothing is added to Money.
@@ -9,18 +10,21 @@ import { currencyExponent } from './currency.js';
 import { formatScaled, pow10n, ratio, type Factor, type Ratio } from './decimal.js';
 import { ExactMoney, exact } from './exact.js';
 import { allocate, instalments, type Remainder } from './allocate.js';
-import {
-  add,
-  compare,
-  CurrencyMismatchError,
-  make,
-  multiplyByRatio,
-  subtract,
-  sum,
-  type Money,
-  type RoundingInput,
-} from './money.js';
+import { add, compare, make, subtract, sum, type Money, type RoundingInput } from './money.js';
 import { DEFAULT_ROUNDING } from './rounding.js';
+import {
+  MAX_PERIODS,
+  assertPeriods,
+  assertPositiveInteger,
+  assertSameCurrency,
+  discountedValue,
+  exactRoot,
+  invalid,
+  isMultipleOf,
+  multiplyAndRound,
+  roundQuotient,
+  unreducedRatio,
+} from './finance-shared.js';
 
 // ---------------------------------------------------------------------------------------------
 // Calendar dates
@@ -255,78 +259,6 @@ function actualActualIsda(from: DateFields, to: DateFields): Ratio {
 // Rounding helpers
 // ---------------------------------------------------------------------------------------------
 
-/**
- * numerator / denominator major units (denominator > 0) rounded once: with a mode, to the
- * currency's exponent; with a policy, to the policy's scale and increment. The fraction is not
- * reduced first: rounding divides once either way, and a gcd of the thousands-of-bits integers a
- * long schedule or NPV builds would cost more than everything else.
- */
-function roundQuotient<C extends string>(
-  currency: C,
-  numerator: bigint,
-  denominator: bigint,
-  rounding: RoundingInput,
-): Money<C> {
-  // one major unit times the fraction, so the rounding applies to the fraction itself
-  return multiplyAndRound(make(currency, 1, 0), unreducedRatio(numerator, denominator), rounding);
-}
-
-/** money × factor rounded once, at the currency's exponent or the policy's scale. */
-function multiplyAndRound<C extends string>(
-  money: Money<C>,
-  factor: Ratio,
-  rounding: RoundingInput,
-): Money<C> {
-  return multiplyByRatio(money, factor, rounding, currencyExponent(money.currency));
-}
-
-/**
- * A ratio built without a gcd, for rounding once: multiplyByRatio divides by it, which gives the
- * same result for any representation of the fraction.
- */
-function unreducedRatio(numerator: bigint, denominator: bigint): Ratio {
-  const toNumber = (value: bigint) =>
-    value <= 9_007_199_254_740_991n && value >= -9_007_199_254_740_991n ? Number(value) : NaN;
-  return { num: numerator, den: denominator, n: toNumber(numerator), d: toNumber(denominator) };
-}
-
-/**
- * The most periods a schedule or compounding may have: (1 + r)^n has about n times the bits of
- * 1 + r, so this bounds the integers (a 30-year daily schedule is about 11,000 periods).
- */
-const MAX_PERIODS = 100_000;
-
-function assertPeriods(periods: number, minimum: number): void {
-  if (!(Number.isInteger(periods) && periods >= minimum && periods <= MAX_PERIODS)) {
-    invalid('periods', periods);
-  }
-}
-
-/** Whether `money` is a whole number of `unit`s (both of one currency, unit positive). */
-function isMultipleOf(money: Money, unit: Money): boolean {
-  const scale = Math.max(money.scale, unit.scale);
-  const minor = BigInt(money.minor) * pow10n(scale - money.scale);
-  const unitMinor = BigInt(unit.minor) * pow10n(scale - unit.scale);
-  return minor % unitMinor === 0n;
-}
-
-/** Throws a RangeError naming the option and the value it was given. */
-function invalid(name: string, value: unknown): never {
-  throw new RangeError(`Invalid ${name} ${String(value)}`);
-}
-
-function assertPositiveInteger(value: number, name: string): void {
-  if (!(Number.isSafeInteger(value) && value >= 1)) {
-    invalid(name, value);
-  }
-}
-
-function assertSameCurrency(money: Money, other: Money): void {
-  if (money.currency !== other.currency) {
-    throw new CurrencyMismatchError(money.currency, other.currency);
-  }
-}
-
 // ---------------------------------------------------------------------------------------------
 // Interest
 // ---------------------------------------------------------------------------------------------
@@ -347,11 +279,11 @@ export interface InterestPeriod extends YearFractionOptions {
  */
 export function interestExact<C extends string>(
   principal: Money<C>,
-  rate: Factor,
+  yearlyRate: Factor,
   period: InterestPeriod,
 ): ExactMoney<C> {
   const fraction = yearFraction(period.from, period.to, period.dayCount, period);
-  return exact(principal).multiply(rate).multiply(fraction);
+  return exact(principal).multiply(yearlyRate).multiply(fraction);
 }
 
 /**
@@ -363,12 +295,12 @@ export function interestExact<C extends string>(
  */
 export function interest<C extends string>(
   principal: Money<C>,
-  rate: Factor,
+  yearlyRate: Factor,
   period: InterestPeriod,
   rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
   const fraction = yearFraction(period.from, period.to, period.dayCount, period);
-  const rateRatio = ratio(rate);
+  const rateRatio = ratio(yearlyRate);
   return multiplyAndRound(
     principal,
     ratio(rateRatio.num * fraction.num, rateRatio.den * fraction.den),
@@ -385,13 +317,13 @@ export interface CompoundOptions {
 }
 
 /** (1 + rate/perYear) as a reduced ratio, checked to be positive. */
-function growthFactor(rate: Factor, perYear: number): Ratio {
+function growthFactor(yearlyRate: Factor, perYear: number): Ratio {
   assertPositiveInteger(perYear, 'perYear');
-  const rateRatio = ratio(rate);
+  const rateRatio = ratio(yearlyRate);
   const perYearBig = BigInt(perYear);
   const growth = ratio(rateRatio.num + rateRatio.den * perYearBig, rateRatio.den * perYearBig);
   if (growth.num <= 0n) {
-    throw new RangeError(`A rate of ${rate} per year loses everything in one period`);
+    throw new RangeError(`A rate of ${yearlyRate} per year loses everything in one period`);
   }
   return growth;
 }
@@ -404,13 +336,13 @@ function growthFactor(rate: Factor, perYear: number): Ratio {
  */
 export function compound<C extends string>(
   principal: Money<C>,
-  rate: Factor,
+  yearlyRate: Factor,
   options: CompoundOptions,
   rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
   const periods = options.periods;
   assertPeriods(periods, 0);
-  const growth = growthFactor(rate, options.perYear);
+  const growth = growthFactor(yearlyRate, options.perYear);
   const exponent = BigInt(periods);
   // a power of a reduced ratio is reduced, so no gcd is needed on the large integers
   const power = unreducedRatio(growth.num ** exponent, growth.den ** exponent);
@@ -431,7 +363,10 @@ export interface PeriodicRateOptions {
 
 /** Options for `annualRate`. */
 export interface AnnualRateOptions {
-  /** Periods per year (12 for monthly): a positive integer, at most 100,000. */
+  /**
+   * Periods per year (12 for monthly): a positive integer, at most 100,000. That is more than
+   * `periodicRate` takes, whose root costs grow with `digits × perYear` (at most 50,000).
+   */
   readonly perYear: number;
 }
 
@@ -458,31 +393,14 @@ export interface PeriodicRateResult {
 const MAX_ROOT_SIZE = 50_000;
 
 /** 1 + rate as a reduced ratio, checked to be positive. */
-function onePlus(rate: Factor, name: string): Ratio {
-  const rateRatio = ratio(rate);
+function onePlus(value: Factor, name: string): Ratio {
+  const rateRatio = ratio(value);
   // num + den over den is reduced when num over den is: they share the same gcd
   const growth = ratio(rateRatio.num + rateRatio.den, rateRatio.den);
   if (growth.num <= 0n) {
-    throw new RangeError(`The ${name} rate must be above -1; got ${String(rate)}`);
+    throw new RangeError(`The ${name} rate must be above -1; got ${String(value)}`);
   }
   return growth;
-}
-
-/** The integer `power`th root of a positive integer, if it is a perfect `power`th power. */
-function exactRoot(value: bigint, power: bigint): bigint | undefined {
-  // value has `bits` bits, so its root lies in [2^⌊(bits−1)/power⌋, 2^(⌊(bits−1)/power⌋ + 1))
-  const shift = BigInt(value.toString(2).length - 1) / power;
-  let low = 1n << shift;
-  let high = low << 1n;
-  while (high - low > 1n) {
-    const middle = (low + high) >> 1n;
-    if (middle ** power <= value) {
-      low = middle;
-    } else {
-      high = middle;
-    }
-  }
-  return low ** power === value ? low : undefined;
 }
 
 /**
@@ -894,53 +812,16 @@ function finish<C extends string>(rows: AmortisationRow<C>[], currency: C): Amor
 // NPV and IRR
 // ---------------------------------------------------------------------------------------------
 
-/** The flows' minor units at one common scale, checked to share a currency. */
-function flowMinors<C extends string>(
-  flows: readonly Money<C>[],
-): { minors: bigint[]; scale: number } {
-  if (flows.length === 0) {
-    throw new RangeError('At least one cash flow is needed');
-  }
-  const first = flows[0]!;
-  let scale = 0;
-  for (const flow of flows) {
-    assertSameCurrency(first, flow);
-    if (flow.scale > scale) {
-      scale = flow.scale;
-    }
-  }
-  const minors = flows.map((flow) => BigInt(flow.minor) * pow10n(scale - flow.scale));
-  return { minors, scale };
-}
-
-/**
- * Σ flowₜ · bᵗ · q^(n−t) for a rate of (q − b)/b: the NPV times q^n, by Horner's rule. q^n is
- * positive for a rate above −1, so this has the NPV's sign.
- */
-function scaledPresentValue(
-  minors: readonly bigint[],
-  growthNumerator: bigint,
-  base: bigint,
-): bigint {
-  let accumulator = minors[0]!;
-  let basePower = 1n;
-  for (let i = 1; i < minors.length; i++) {
-    basePower *= base;
-    accumulator = accumulator * growthNumerator + minors[i]! * basePower;
-  }
-  return accumulator;
-}
-
 /**
  * The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`, exactly: the textbook
  * NPV, with the first flow (an initial outlay, say) not discounted. `npvExact` is Excel's form. (Not
  * Excel's PV, which is an annuity's present value.)
  */
 export function discountedSumExact<C extends string>(
-  rate: Factor,
+  discountRate: Factor,
   flows: readonly Money<C>[],
 ): ExactMoney<C> {
-  const [numerator, denominator] = discountedValue(rate, flows, false);
+  const [numerator, denominator] = discountedValue(discountRate, flows, false);
   return new ExactMoney(flows[0]!.currency, numerator, denominator);
 }
 
@@ -953,295 +834,12 @@ export function discountedSumExact<C extends string>(
  *       money('500', 'EUR')], 'halfEven')   // 17.63 EUR
  */
 export function discountedSum<C extends string>(
-  rate: Factor,
+  discountRate: Factor,
   flows: readonly Money<C>[],
   rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
-  const [numerator, denominator] = discountedValue(rate, flows, false);
+  const [numerator, denominator] = discountedValue(discountRate, flows, false);
   return roundQuotient(flows[0]!.currency, numerator, denominator, rounding);
-}
-
-/**
- * Excel's NPV, exactly: `Σ flowᵢ / (1 + rate)ⁱ` for i = 1, 2…, so the first flow is at the end of
- * period 1 and is discounted once. Like Excel, an initial outlay at period 0 goes outside:
- * `flows[0] + npv(rate, rest)`, or use `discountedSumExact`.
- */
-export function npvExact<C extends string>(
-  rate: Factor,
-  flows: readonly Money<C>[],
-): ExactMoney<C> {
-  const [numerator, denominator] = discountedValue(rate, flows, true);
-  return new ExactMoney(flows[0]!.currency, numerator, denominator);
-}
-
-/**
- * Excel's NPV: flows at the ends of periods 1, 2…, exact and rounded once (to the currency's
- * exponent with a mode, or to a policy's scale; default 'halfExpand'), so it matches Excel to the
- * cent. Like Excel, an initial outlay at period 0 goes outside: `flows[0] + npv(rate, rest)`, or use
- * `discountedSum`, which takes flows from period 0.
- *
- *     npv('0.1', [money('-10000', 'USD'), money('3000', 'USD'), money('4200', 'USD'),
- *       money('6800', 'USD')])   // 1188.44 USD, as Excel's NPV(10%, -10000, 3000, 4200, 6800)
- */
-export function npv<C extends string>(
-  rate: Factor,
-  flows: readonly Money<C>[],
-  rounding: RoundingInput = DEFAULT_ROUNDING,
-): Money<C> {
-  const [numerator, denominator] = discountedValue(rate, flows, true);
-  return roundQuotient(flows[0]!.currency, numerator, denominator, rounding);
-}
-
-/**
- * The flows' discounted value in major units as an unreduced fraction (denominator positive), the
- * first flow at period 0, or at period 1 when `fromPeriodOne`.
- */
-function discountedValue(
-  rate: Factor,
-  flows: readonly Money[],
-  fromPeriodOne: boolean,
-): [bigint, bigint] {
-  const { minors, scale } = flowMinors(flows);
-  const rateRatio = ratio(rate);
-  const growthNumerator = rateRatio.num + rateRatio.den;
-  if (growthNumerator <= 0n) {
-    throw new RangeError(`The rate must be above -1; got ${rate}`);
-  }
-  let numerator = scaledPresentValue(minors, growthNumerator, rateRatio.den);
-  let denominator = growthNumerator ** BigInt(minors.length - 1) * pow10n(scale);
-  if (fromPeriodOne) {
-    // one more period: divide by 1 + rate = growthNumerator / den
-    numerator *= rateRatio.den;
-    denominator *= growthNumerator;
-  }
-  return [numerator, denominator];
-}
-
-/** Options for `irr`. */
-export interface IrrOptions {
-  /** Decimal places of the result (default 10). */
-  readonly digits?: number;
-  /**
-   * Rates the IRR lies between (inclusive), with NPVs of opposite signs at the two ends, taken at
-   * the exact rates given. Needed when the flows change sign more than once, since they can then
-   * have several IRRs; it replaces Excel's `guess`.
-   */
-  readonly bracket?: readonly [Factor, Factor];
-}
-
-/** The result of `irr`: decimal strings with `digits` places. */
-export interface IrrResult {
-  /** The IRR floored to `digits` places: the same as `lower`. */
-  readonly rate: string;
-  /**
-   * The IRR rounded down to `digits` places. Without a bracket, the NPV at `lower` has the
-   * opposite sign to the NPV at `upper`, or is zero.
-   */
-  readonly lower: string;
-  /** `lower` plus 10^−digits. */
-  readonly upper: string;
-}
-
-function signOf(value: bigint): -1 | 0 | 1 {
-  if (value > 0n) {
-    return 1;
-  }
-  if (value < 0n) {
-    return -1;
-  }
-  return 0;
-}
-
-/** Sign changes in the flows, zeros skipped, and the sign of the first non-zero flow. */
-function signChanges(minors: readonly bigint[]): { changes: number; firstSign: -1 | 0 | 1 } {
-  let changes = 0;
-  let firstSign: -1 | 0 | 1 = 0;
-  let previous: -1 | 0 | 1 = 0;
-  for (const minor of minors) {
-    const sign = signOf(minor);
-    if (sign === 0) {
-      continue;
-    }
-    if (firstSign === 0) {
-      firstSign = sign;
-    }
-    if (previous !== 0 && sign !== previous) {
-      changes++;
-    }
-    previous = sign;
-  }
-  return { changes, firstSign };
-}
-
-/**
- * Excel's IRR, exactly: the rate at which the NPV of flows at periods 0, 1, 2… (the first value
- * undiscounted, as in Excel's IRR) is zero. The rate is exact to `digits` decimal places (default
- * 10), floored: `rate` is `lower`, the IRR rounded down, and the IRR lies between `lower` and
- * `upper`, 10^−digits apart. It is a polynomial root, irrational in general, so it is found by
- * bisection in exact integer arithmetic on the grid of `digits`-place decimals, with no floats and
- * no Newton steps; each step checks the NPV's sign alone, by Horner's rule on integers.
- *
- * Where Excel guesses, this throws a RangeError. The flows never change sign: there is no IRR
- * (Excel returns #NUM!). They change sign more than once: there can be several IRRs, and Excel
- * returns whichever its Newton iteration from `guess` finds; here a `bracket`, which replaces
- * `guess`, must select one, and the IRR returned is one inside it. The IRR is within 10^−digits of
- * −1, where the NPV is undefined: ask for more digits.
- *
- *     irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500', 'EUR')],
- *       { digits: 8 })   // { rate: '0.08896339', lower: '0.08896339', upper: '0.08896340' }
- */
-export function irr(flows: readonly Money[], options?: IrrOptions): IrrResult {
-  const digits = options?.digits ?? 10;
-  if (!(Number.isInteger(digits) && digits >= 0 && digits <= 100)) {
-    invalid('digits', digits);
-  }
-  const { minors } = flowMinors(flows);
-  const { changes, firstSign } = signChanges(minors);
-  const bracket = options?.bracket;
-  if (changes === 0) {
-    throw new RangeError('The cash flows never change sign, so they have no IRR');
-  }
-  if (changes > 1 && bracket === undefined) {
-    throw new RangeError(
-      `The cash flows change sign ${changes} times, so they can have several IRRs; pass a bracket`,
-    );
-  }
-
-  // A rate of m / 10^digits: its growth factor's numerator is 10^digits + m over 10^digits.
-  const unit = pow10n(digits);
-  const signAt = (grid: bigint): -1 | 0 | 1 =>
-    signOf(scaledPresentValue(minors, unit + grid, unit));
-  const result = (grid: bigint): IrrResult => {
-    // the NPV is undefined at -1, so a lower end there is no answer
-    if (grid <= -unit) {
-      throw new RangeError(`The IRR is within 10^-${digits} of -1; ask for more digits`);
-    }
-    const lower = formatScaled(grid, digits);
-    return { rate: lower, lower, upper: formatScaled(grid + 1n, digits) };
-  };
-
-  let low: bigint;
-  let high: bigint;
-  let lowSign: -1 | 0 | 1;
-  if (bracket !== undefined) {
-    const bracketed = bracketToGrid(bracket, minors, unit, signAt);
-    if (typeof bracketed === 'bigint') {
-      return result(bracketed);
-    }
-    [low, high, lowSign] = bracketed;
-  } else {
-    // One sign change: exactly one IRR above −1 (Descartes' rule in 1/(1 + rate)). The NPV has the
-    // first flow's sign for large rates and the last flow's sign near −1.
-    const zeroSign = signAt(0n);
-    if (zeroSign === 0) {
-      return result(0n);
-    }
-    if (zeroSign === firstSign) {
-      // the IRR is negative: between −1 (excluded, where the NPV has the last flow's sign) and 0
-      low = -unit;
-      high = 0n;
-      lowSign = -firstSign as -1 | 1;
-    } else {
-      // the IRR is positive: double the upper end until the NPV takes the first flow's sign
-      low = 0n;
-      high = unit;
-      lowSign = zeroSign;
-      for (;;) {
-        const highSign = signAt(high);
-        if (highSign === 0) {
-          return result(high);
-        }
-        if (highSign !== lowSign) {
-          break;
-        }
-        low = high;
-        high *= 2n;
-      }
-    }
-  }
-
-  // Bisection on the grid: the bracket's ends stay `digits`-place decimals, so the integers stay
-  // bounded by the digits asked for, and each step halves the bracket.
-  while (high - low > 1n) {
-    const middle = (low + high) / 2n;
-    const middleSign = signAt(middle);
-    if (middleSign === 0) {
-      return result(middle);
-    }
-    if (middleSign === lowSign) {
-      low = middle;
-    } else {
-      high = middle;
-    }
-  }
-  return result(low);
-}
-
-/**
- * The caller's bracket narrowed to the grid of `unit`ths: the NPV's signs are taken at the exact
- * bracket ends first, so the root found is one inside the bracket. Returns the grid point at or
- * below the root when the root is already pinned to one grid step, else the grid bracket to bisect
- * and the sign at its lower end.
- */
-function bracketToGrid(
-  bracket: readonly [Factor, Factor],
-  minors: readonly bigint[],
-  unit: bigint,
-  signAt: (grid: bigint) => -1 | 0 | 1,
-): bigint | [bigint, bigint, -1 | 1] {
-  const lowRate = ratio(bracket[0]);
-  const highRate = ratio(bracket[1]);
-  if (!(lowRate.num * highRate.den < highRate.num * lowRate.den)) {
-    throw new RangeError('The bracket must be two increasing rates');
-  }
-  if (lowRate.num + lowRate.den <= 0n) {
-    throw new RangeError('The bracket must be above -1');
-  }
-  const signAtRate = (rate: Ratio) =>
-    signOf(scaledPresentValue(minors, rate.num + rate.den, rate.den));
-  const lowSign = signAtRate(lowRate);
-  const highSign = signAtRate(highRate);
-  // an end that is itself a root: the grid point at or below it
-  if (lowSign === 0) {
-    return floorDivide(lowRate.num * unit, lowRate.den);
-  }
-  if (highSign === 0) {
-    return floorDivide(highRate.num * unit, highRate.den);
-  }
-  if (lowSign === highSign) {
-    throw new RangeError('The NPV has the same sign at both ends of the bracket');
-  }
-
-  // the grid points inside the bracket
-  const gridLow = -floorDivide(-lowRate.num * unit, lowRate.den);
-  const gridHigh = floorDivide(highRate.num * unit, highRate.den);
-  if (gridLow > gridHigh) {
-    // no grid point inside: the root is between the two around the bracket
-    return gridHigh;
-  }
-  const gridLowSign = signAt(gridLow);
-  if (gridLowSign === 0) {
-    return gridLow;
-  }
-  if (gridLowSign !== lowSign) {
-    // the sign changes between the bracket's low end and the first grid point
-    return gridLow - 1n;
-  }
-  const gridHighSign = gridHigh === gridLow ? gridLowSign : signAt(gridHigh);
-  if (gridHighSign === 0) {
-    return gridHigh;
-  }
-  if (gridHighSign === lowSign) {
-    // the sign changes between the last grid point and the bracket's high end
-    return gridHigh;
-  }
-  return [gridLow, gridHigh, lowSign];
-}
-
-function floorDivide(dividend: bigint, divisor: bigint): bigint {
-  const quotient = dividend / divisor;
-  // bigint division truncates; step down when a negative quotient left a remainder
-  return dividend % divisor !== 0n && dividend < 0n !== divisor < 0n ? quotient - 1n : quotient;
 }
 
 // ---------------------------------------------------------------------------------------------
