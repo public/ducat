@@ -45,32 +45,6 @@ Equivalent mutants are recorded in one of two places:
 
 On 2026-11-11, before the triage, the nightly report had these survivors in the core files (survived / no coverage): money.ts 164 / 5, parse.ts 129 / 26, fixed.ts 118 / 18, decimal.ts 101 / 8, allocate.ts 95 / 17, rate.ts 70 / 0, rounding.ts 32 / 12, exact.ts 16 / 0, currency.ts 9 / 4, convert.ts 2 / 0. The latest numbers are in the newest `mutation-report`.
 
-## Mutation testing
-
-`pnpm test:mutation` runs [Stryker](https://stryker-mutator.io) over `src/`: it changes the code one small edit at a time (a `<` for a `<=`, a condition for `true`, a block emptied, a message blanked) and runs the tests against each change, called a mutant. A mutant the tests fail on is killed; one they pass on survived. CI runs it nightly and keeps the report as the `mutation-report` artifact.
-
-Every surviving mutant is either killed by a test that would catch a real bug of that shape, or is equivalent: no input can tell it from the original. Most equivalent mutants are in fast paths, where a guard sends a call to a safe-integer `number` path and otherwise to the general `bigint` path. Breaking the guard only sends more calls down the general path, which gives the same answer more slowly. Error messages are tested where they name the problem or the fix; elsewhere a test checks the error class and the key phrase.
-
-Equivalent mutants are recorded in one of two places:
-
-- At the site, as `// Stryker disable next-line <mutator>: <reason>`, when every mutant of that kind on that line is equivalent. Stryker then reports them as ignored.
-- In [Equivalent mutants](equivalent-mutants.md), when the same line also has mutants of that kind that the tests kill. Stryker can't disable a single mutant, so these stay "survived" in the report; the page says why each one can't change the result.
-
-On 2026-11-11, before the triage, the nightly report had these survivors in the core files (survived / no coverage): money.ts 164 / 5, parse.ts 129 / 26, fixed.ts 118 / 18, decimal.ts 101 / 8, allocate.ts 95 / 17, rate.ts 70 / 0, rounding.ts 32 / 12, exact.ts 16 / 0, currency.ts 9 / 4, convert.ts 2 / 0. The latest numbers are in the newest `mutation-report`.
-
-## Mutation testing
-
-`pnpm test:mutation` runs [Stryker](https://stryker-mutator.io) over `src/`: it changes the code one small edit at a time (a `<` for a `<=`, a condition for `true`, a block emptied, a message blanked) and runs the tests against each change, called a mutant. A mutant the tests fail on is killed; one they pass on survived. CI runs it nightly and keeps the report as the `mutation-report` artifact.
-
-Every surviving mutant is either killed by a test that would catch a real bug of that shape, or is equivalent: no input can tell it from the original. Most equivalent mutants are in fast paths, where a guard sends a call to a safe-integer `number` path and otherwise to the general `bigint` path. Breaking the guard only sends more calls down the general path, which gives the same answer more slowly. Error messages are tested where they name the problem or the fix; elsewhere a test checks the error class and the key phrase.
-
-Equivalent mutants are recorded in one of two places:
-
-- At the site, as `// Stryker disable next-line <mutator>: <reason>`, when every mutant of that kind on that line is equivalent. Stryker then reports them as ignored.
-- In [Equivalent mutants](equivalent-mutants.md), when the same line also has mutants of that kind that the tests kill. Stryker can't disable a single mutant, so these stay "survived" in the report; the page says why each one can't change the result.
-
-On 2026-11-11, before the triage, the nightly report had these survivors in the core files (survived / no coverage): money.ts 164 / 5, parse.ts 129 / 26, fixed.ts 118 / 18, decimal.ts 101 / 8, allocate.ts 95 / 17, rate.ts 70 / 0, rounding.ts 32 / 12, exact.ts 16 / 0, currency.ts 9 / 4, convert.ts 2 / 0. The latest numbers are in the newest `mutation-report`.
-
 ## Benchmarks
 
 - Clean-machine numbers against the other money and fixed-point libraries are in [How it compares](https://github.com/public/ducat#how-it-compares) and
