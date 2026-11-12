@@ -56,7 +56,7 @@
     "@ducatjs/money/words/nl": 0.64,
     "@ducatjs/money/words/pt": 0.99,
     "@ducatjs/money/territories": 4.7,
-    "@ducatjs/money/finance": 6.85,
+    "@ducatjs/money/finance": 7.65,
     "@ducatjs/money/excel": 4.25,
     "@ducatjs/money/iso": 0.01,
     "@ducatjs/money/iso/EUR": 0.01
@@ -125,6 +125,10 @@
     "excel: pmt alone": {
       "code": "import { money } from '@ducatjs/money'; import { pmt } from '@ducatjs/money/excel'; console.log(pmt('0.005', 360, money('200000', 'EUR')).toDecimal());",
       "gzipped": 5.45
+    },
+    "finance: savingsPlan alone": {
+      "code": "import { money } from '@ducatjs/money'; import { savingsPlan } from '@ducatjs/money/finance'; console.log(savingsPlan({ rate: '0.05', perYear: 12, periods: 216, target: money('50000', 'EUR') }).balance.toDecimal());",
+      "gzipped": 7.0
     }
   }
 }
