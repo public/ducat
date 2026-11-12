@@ -342,7 +342,7 @@ describe('installed methods are like class methods', () => {
       extendMoney({ toLocaleString }, { owner: 'money-edges.test' });
       expect(eur('1.50').toLocaleString()).toBe('localised 1.50');
     } finally {
-      delete proto.toLocaleString;
+      Reflect.deleteProperty(proto, 'toLocaleString');
     }
   });
 });
