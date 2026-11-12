@@ -294,3 +294,15 @@ jobs:
       - name: Rebuild the proofs and check the generated kernel byte for byte
         if: steps.proofs.outputs.present == 'true'
         run: pnpm gen:kernel:check
+        env:
+          DUCAT_GENERATED_DIR: ${{ runner.temp }}/generated
+      # what the proofs generated, when it differs from the committed files: lets a change to the
+      # models be committed from a machine without Lean
+      - name: Upload the generated files that differ
+        if: failure() && steps.proofs.outputs.present == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: generated-files
+          path: ${{ runner.temp }}/generated
+          retention-days: 7
+          if-no-files-found: ignore

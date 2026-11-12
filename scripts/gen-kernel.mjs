@@ -20,7 +20,7 @@
 // (`cd proofs && lake exe cache get`).
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -235,10 +235,17 @@ if (mode === '--verify') {
   console.log('no sorry or axiom in proofs/; generated files match the Lean sources');
 } else if (mode === '--check') {
   let ok = true;
+  // DUCAT_GENERATED_DIR: where to write the generated files when they differ (CI uploads them, so
+  // the files can be committed from a machine without Lean)
+  const out = process.env.DUCAT_GENERATED_DIR;
   for (const [file, text] of Object.entries(regenerate())) {
     if (readFileSync(join(root, file), 'utf8') !== text) {
       console.error(`${file} differs from what the proofs generate: run \`pnpm gen:kernel\``);
       ok = false;
+      if (out) {
+        mkdirSync(dirname(join(out, file)), { recursive: true });
+        writeFileSync(join(out, file), text);
+      }
     }
   }
   if (!ok) {
