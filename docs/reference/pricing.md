@@ -35,13 +35,13 @@ charm.ending; // → '0.99'
 
 The price of `quantity` under tiers in the style of Stripe's, exactly, with the total rounded once and a line per tier.
 
-- **Tiers:** each covers quantities above the previous tier's `upTo`, up to and including its own. The last may be open (`upTo: 'inf'`, `null` or `Infinity`). Each has a `unitAmount` (sub-cent amounts are fine), a `flatAmount`, or both.
+- **Tiers:** each covers quantities above the previous tier's `upTo`, up to and including its own. The last may be open (`upTo: 'inf'`, `null` or `Infinity`). Each has a `unitAmount` (sub-cent amounts are fine), a `flatAmount`, or both; a free tier is `unitAmount: money('0', …)`.
 - **Modes:** `'graduated'`: each tier prices the units that fall in it, and the charges add up; a tier's flat amount is charged once the quantity reaches it. `'volume'`: the tier the whole quantity falls in prices every unit.
 - **Quantity 0** falls in the first tier, so its flat amount is charged.
 - **Rounds:** the exact total once, with `rounding` (default `'halfExpand'`, to the currency's exponent) or a policy. Each line's `amount` is the rounded running total minus the rounded running total before it, so the lines sum exactly to the total.
 - **Beyond a bounded last tier:** throws by default; `beyondLastTier: 'cap'` charges as if the quantity were the last `upTo`. A `chargeQuantity` is not capped.
 - **`chargeQuantity`** (volume mode only): the quantity the chosen tier's `unitAmount` multiplies, when it isn't the quantity that chose the tier. The tier's `flatAmount` is charged once. Tiers with only a `flatAmount` give flat-fee pricing, chosen by the quantity.
-- **Throws:** `RangeError` for no tiers, tiers none of which has a `unitAmount` or a `flatAmount` (a single tier without either charges nothing), bounds that don't increase (the message names the tier), an open tier that isn't last, a negative quantity, a quantity past a bounded last tier without `'cap'`, or an invalid `mode` or `beyondLastTier`; `TypeError` for `chargeQuantity` in graduated mode; `CurrencyMismatchError` for tiers in more than one currency.
+- **Throws:** `RangeError` for no tiers, a tier with neither a `unitAmount` nor a `flatAmount` (the message names the tier), bounds that don't increase (the message names the tier), an open tier that isn't last, a negative quantity, a quantity past a bounded last tier without `'cap'`, or an invalid `mode` or `beyondLastTier`; `TypeError` for `chargeQuantity` in graduated mode; `CurrencyMismatchError` for tiers in more than one currency.
 
 ```ts
 import { money } from '@ducatjs/money';
