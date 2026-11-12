@@ -690,7 +690,7 @@ def xnpv_vector(currency: str, exponent: int, rate: str, minors: list, dates: li
         case["exact"] = to_text(exact)
         case["rounded"] = {mode: str(round_major(exact, exponent, mode)) for mode in ROUNDING}
     else:
-        # bounds 10^-(digits + 20) wide, inside which ducat's interval must lie, and narrow
+        # bounds 10^-(digits + 20) wide, which must lie inside ducat's interval, and narrow
         # enough that every rounding is settled
         width = Fraction(1, 10 ** (digits + 20))
 
