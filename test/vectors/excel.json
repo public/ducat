@@ -20156,6 +20156,34 @@
     "floor": "-3740"
    },
    "note": "leap days"
+  },
+  {
+   "currency": "USD",
+   "rate": "0.61051",
+   "values": [
+    "-10000",
+    "11000",
+    "5000"
+   ],
+   "dates": [
+    "2021-01-01",
+    "2021-03-15",
+    "2022-08-08"
+   ],
+   "digits": 10,
+   "exact": "5000000000/214358881",
+   "rounded": {
+    "halfEven": "2333",
+    "halfExpand": "2333",
+    "halfTrunc": "2333",
+    "halfCeil": "2333",
+    "halfFloor": "2333",
+    "expand": "2333",
+    "trunc": "2332",
+    "ceil": "2333",
+    "floor": "2332"
+   },
+   "note": "a rational 5th root: 1.1^5, 73 days apart"
   }
  ],
  "xirr": [
@@ -21972,6 +22000,48 @@
    "digits": 12,
    "note": "flows on one date that cancel",
    "lower": "137369697679"
+  },
+  {
+   "currency": "USD",
+   "values": [
+    "-10000",
+    "10000"
+   ],
+   "dates": [
+    "2020-01-01",
+    "2020-07-19"
+   ],
+   "digits": 12,
+   "note": "a rate of exactly 0, not whole years apart",
+   "lower": "0"
+  },
+  {
+   "currency": "USD",
+   "values": [
+    "-10000",
+    "11000"
+   ],
+   "dates": [
+    "2021-01-01",
+    "2021-03-15"
+   ],
+   "digits": 12,
+   "note": "a rate of exactly 0.61051 (1.1^5), 73 days apart",
+   "lower": "610510000000"
+  },
+  {
+   "currency": "USD",
+   "values": [
+    "-10000",
+    "9000"
+   ],
+   "dates": [
+    "2021-01-01",
+    "2021-03-15"
+   ],
+   "digits": 12,
+   "note": "a rate of exactly -0.40951 (0.9^5), 73 days apart",
+   "lower": "-409510000000"
   }
  ]
 }

@@ -892,7 +892,7 @@ describe(`LibreOffice Calc on the edge cases (${calc.calc})`, () => {
         }
       }
     }
-    expect(Object.values(calc.edge).flat().length).toBe(83);
+    expect(Object.values(calc.edge).flat().length).toBe(87);
     expect(unexpected).toEqual([]);
   });
 });

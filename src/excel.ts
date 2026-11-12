@@ -752,12 +752,17 @@ function splitExponent(years: Ratio): SplitExponent {
   return { whole: (years.num - covered) / order, parts };
 }
 
-/** g^(1/q) for g = num/den: rational when num and den are perfect qth powers, else bracketed. */
+/**
+ * g^(1/q) for g = num/den: rational when g's reduced numerator and denominator are perfect qth
+ * powers, else bracketed. Reduced here, so a caller passing g unreduced (xirr's grid rates, as
+ * (unit + grid)/unit) still finds a rational root: 10^6/10^6 is 1, whose root is exact.
+ */
 type RootBracket = { readonly low: bigint } | { readonly num: bigint; readonly den: bigint };
 
 function rootBracket(num: bigint, den: bigint, order: bigint, bits: number): RootBracket {
-  const rootNum = exactRoot(num, order);
-  const rootDen = exactRoot(den, order);
+  const divisor = greatestCommonDivisor(num, den);
+  const rootNum = exactRoot(num / divisor, order);
+  const rootDen = exactRoot(den / divisor, order);
   if (rootNum !== undefined && rootDen !== undefined) {
     return { num: rootNum, den: rootDen };
   }
