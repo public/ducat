@@ -1,10 +1,10 @@
 # `@ducatjs/money/finance`
 
-Day counts, interest, loan schedules, NPV, IRR and proration, in exact arithmetic. **Installs:** nothing; every function is a free function.
+Day counts, interest, periodic and annual rates, loan schedules, discounted sums and proration, in exact arithmetic, under ducat's own names. Excel's financial functions are in [`@ducatjs/money/excel`](excel.md). **Installs:** nothing; every function is a free function.
 
 Related: [How to calculate interest and loans](../how-to/calculate-interest-and-loans.md) · [The finance module's design](../explanation/finance-design.md) · [About rounding](../explanation/rounding.md)
 
-Every amount that is paid or booked is rounded once from its exact value, with a rounding mode (to the currency's exponent) or a rounding policy (to its scale and increment); the default is `'halfExpand'`. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. Functions named after Excel's (NPV, IRR) give Excel's values; others have other names.
+Every amount that is paid or booked is rounded once from its exact value, with a rounding mode (to the currency's exponent) or a rounding policy (to its scale and increment); the default is `'halfExpand'`. Dates are `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`. None of these is an Excel name: Excel's NPV, IRR, FV, PV, PMT, NPER and RATE, with Excel's semantics, are in [`@ducatjs/money/excel`](excel.md).
 
 All functions throw `RangeError` for an invalid date (not `YYYY-MM-DD`, out of range, or not in the ISO calendar), and `CurrencyMismatchError` for flows in more than one currency.
 
@@ -52,31 +52,16 @@ An annuity, linear or interest-only repayment schedule. Each period's interest i
 - **Rounds:** every payment and interest charge, once each, with `options.rounding`.
 - **Throws:** `RangeError` when the loan isn't positive, the balloon isn't between zero and the loan, an `'interestOnly'` loan has a balloon, the loan or the balloon isn't a multiple of the rounding's unit (0.01 EUR, or a policy's increment), the rate is negative, `residual: 'lastInterest'` is used on anything but an annuity with a non-zero rate, there are more than 100,000 periods, or the payment dates run past the year 9999.
 
-## Present value and IRR
-
-### npv
-
-`npv<C extends string>(rate: Factor, flows: readonly Money<C>[], rounding?: RoundingInput): Money<C>`
-
-Excel's NPV: `Σ flowᵢ / (1 + rate)ⁱ` for i = 1, 2…, so the first flow is at the end of period 1. Like Excel, an initial outlay at period 0 goes outside: `flows[0] + npv(rate, rest)`, or use `discountedSum`.
-
-- **Rounds:** once, so it matches Excel to the cent.
-- **Throws:** `RangeError` for no flows, or a rate not above −1.
-
-### npvExact
-
-`npvExact<C extends string>(rate: Factor, flows: readonly Money<C>[]): ExactMoney<C>`
-
-Excel's NPV, unrounded.
+## Discounted sums and rates
 
 ### discountedSum
 
 `discountedSum<C extends string>(rate: Factor, flows: readonly Money<C>[], rounding?: RoundingInput): Money<C>`
 
-The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`: the textbook NPV, with the first flow not discounted. It is `flows[0] + npv(rate, flows.slice(1))`. (Not Excel's PV, which is an annuity's present value.)
+The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`: the textbook NPV, with the first flow not discounted. It is `flows[0] + npv(rate, flows.slice(1))` with `/excel`'s `npv`. (Not Excel's PV, which is an annuity's present value.)
 
 - **Rounds:** once.
-- **Throws:** as `npv`.
+- **Throws:** `RangeError` for no flows, or a rate not above −1.
 
 ### discountedSumExact
 
@@ -84,19 +69,11 @@ The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`:
 
 The same, unrounded.
 
-### irr
-
-`irr(flows: readonly Money<string>[], options?: IrrOptions): IrrResult`
-
-Excel's IRR: the rate at which the NPV of flows at periods 0, 1, 2… is zero, exact to `digits` places (default 10), floored. `rate` is `lower`, and the IRR lies between `lower` and `upper`, 10^−digits apart. It bisects in exact integer arithmetic on the grid of `digits`-place decimals: no floats and no Newton steps.
-
-- **Throws:** `RangeError` where Excel guesses: when the flows never change sign (Excel's #NUM!), and when they change sign more than once unless a `bracket` (in place of Excel's `guess`) selects one root. Also `RangeError` for a bracket that isn't two increasing rates above −1, a bracket whose ends have NPVs of the same sign, and an IRR within 10^−digits of −1.
-
 ### periodicRate
 
 `periodicRate(annual: Factor, options: PeriodicRateOptions): PeriodicRateResult`
 
-The periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear) − 1` (the monthly rate of a savings plan). The root is irrational in general, so, as `irr` does, it is found to `digits` places (default 10, at most 100), floored, by exact bisection: `(1 + lower)^perYear ≤ 1 + annual < (1 + upper)^perYear`, with `upper = lower + 10^−digits` and `rate` equal to `lower`. `exact` is set when the root is rational (the reduced numerator and denominator of `1 + annual` are both perfect `perYear`th powers): `'0.21'` with `perYear: 2` gives 1/10, and `periodicRate(annualRate(p)).exact` is `p`. It isn't `rate / perYear`, the nominal split that `compound` and `amortise` use, and it isn't an Excel name (Excel's RRI and EFFECT compute the same values from other arguments).
+The periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear) − 1` (the monthly rate of a savings plan). The root is irrational in general, so, as `/excel`'s `irr` does, it is found to `digits` places (default 10, at most 100), floored, by exact bisection: `(1 + lower)^perYear ≤ 1 + annual < (1 + upper)^perYear`, with `upper = lower + 10^−digits` and `rate` equal to `lower`. `exact` is set when the root is rational (the reduced numerator and denominator of `1 + annual` are both perfect `perYear`th powers): `'0.21'` with `perYear: 2` gives 1/10, and `periodicRate(annualRate(p)).exact` is `p`. It isn't `rate / perYear`, the nominal split that `compound` and `amortise` use, and it isn't an Excel name (Excel's RRI and EFFECT compute the same values from other arguments).
 
 - **Throws:** `RangeError` for an annual rate at or below −1, a `perYear` that isn't a positive integer, `digits` outside 0–100 or `digits × perYear` over 50,000, and when the periodic rate is within 10^−digits of −1 (ask for more digits).
 
@@ -115,6 +92,10 @@ periodicRate('0.05', { perYear: 12, digits: 8 }); // → { rate: '0.00407412', l
 periodicRate('0.21', { perYear: 2 }).exact; // → { num: 1n, den: 10n, n: 1, d: 10 }
 annualRate('0.1', { perYear: 2 }); // → { num: 21n, den: 100n, n: 21, d: 100 }
 ```
+
+## Deprecated re-exports
+
+`npv`, `npvExact` and `irr`, and the types `IrrOptions` and `IrrResult`, moved to [`@ducatjs/money/excel`](excel.md) in 0.4. `/finance` still re-exports them in 0.4, marked `@deprecated`, so imports from 0.3 keep working; they are removed in 0.5. Import them from `@ducatjs/money/excel`.
 
 ## Proration
 
@@ -157,8 +138,6 @@ yearFraction('2026-07-15', '2026-01-15', 'ACT/360'); // throws RangeError
 - `AmortisationResidual`: `'lastPayment'` (the default, which most lenders use) or `'lastInterest'`, which keeps the last payment equal to the others.
 - `Amortisation<C>`: `{ payment: Money<C>; rows: AmortisationRow<C>[]; totalInterest: Money<C> }`. `payment` is the regular payment: for `'annuity'` every payment but possibly the last, for `'linear'` the first (the largest), for `'interestOnly'` the interest payment.
 - `AmortisationRow<C>`: `{ period: number; date?: string; payment; interest; principal; balance: Money<C>; days?: number; yearFraction?: Ratio }`. `date` is set when `firstPayment` is given; `days` and `yearFraction` are reserved and not set yet.
-- `IrrOptions`: `{ digits?: number; bracket?: readonly [Factor, Factor] }`.
-- `IrrResult`: `{ rate: string; lower: string; upper: string }`, decimal strings with `digits` places.
 - `PeriodicRateOptions`: `{ perYear: number; digits?: number }`; `perYear` is the periods per year (12 for monthly), `digits` the decimal places of the result (default 10, at most 100; `digits × perYear` at most 50,000).
 - `AnnualRateOptions`: `{ perYear: number }`, a positive integer up to 100,000.
 - `PeriodicRateResult`: `{ rate: string; lower: string; upper: string; exact?: Ratio }`, as `IrrResult`, with `exact` when the rate is rational.
