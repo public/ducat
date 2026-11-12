@@ -43,13 +43,12 @@ export const normalizeMinor = (value: bigint): number | bigint =>
   value <= MAXN && value >= -MAXN ? Number(value) : value;
 
 /**
- * Parses a plain decimal string ("-12.345", "+7", "0.50") into digits/10^scale. Returns the integer
- * of all digits (number when safe, else bigint) and the count of fraction digits. Hand-rolled (no
- * regex, no BigInt for short inputs): this is the hot path of `money("12.34", ...)`.
+ * Parses a plain decimal string of at most 15 digits ("-12.345", "+7", "0.50") into
+ * digits/10^scale: the integer of all digits and the count of fraction digits. Returns null for
+ * anything else, longer input included, which the caller passes to parseDecimal. Hand-rolled (no
+ * regex, no BigInt): this is the hot path of `money("12.34", ...)`.
  */
-export function parsePlainDecimal(
-  input: string,
-): { digits: number | bigint; scale: number } | null {
+export function parsePlainDecimal(input: string): { digits: number; scale: number } | null {
   const len = input.length;
   let i = 0;
   let neg = false;
@@ -61,23 +60,17 @@ export function parsePlainDecimal(
   let acc = 0;
   let digitsSeen = 0;
   let scale = -1;
-  let big = false;
-  const start = i;
   for (; i < len; i++) {
     code = input.charCodeAt(i);
     if (code >= 48 && code <= 57) {
-      digitsSeen++;
+      // 15 digits always fit exactly in a double; longer input is left to parseDecimal
+      if (++digitsSeen > 15) {
+        return null;
+      }
       if (scale >= 0) {
         scale++;
       }
-      if (!big) {
-        // 15 digits always fit exactly in a double; beyond that use BigInt
-        if (digitsSeen > 15) {
-          big = true;
-        } else {
-          acc = acc * 10 + (code - 48);
-        }
-      }
+      acc = acc * 10 + (code - 48);
     } else if (code === 46 /* . */ && scale < 0 && digitsSeen > 0) {
       scale = 0;
     } else {
@@ -88,19 +81,7 @@ export function parsePlainDecimal(
   if (digitsSeen === 0 || scale === 0) {
     return null;
   }
-  // parseDecimal reports fractions longer than MAX_DECIMAL_SCALE
-  if (scale > MAX_DECIMAL_SCALE) {
-    return null;
-  }
-  if (scale < 0) {
-    scale = 0;
-  }
-  if (big) {
-    const raw = input.slice(start).replace('.', '');
-    const value = BigInt(raw);
-    return { digits: normalizeMinor(neg ? -value : value), scale };
-  }
-  return { digits: neg ? 0 - acc : acc, scale };
+  return { digits: neg ? 0 - acc : acc, scale: scale < 0 ? 0 : scale };
 }
 
 const EXP_RE = /^([+-]?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/;
