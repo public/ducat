@@ -16,7 +16,8 @@ Method: `m.allocate(weights, options?)`.
 
 Splits `money` into one part per weight, proportional to the weights. A zero weight gets zero. Weights are integers, bigints or decimal strings (`'33.3'`), read exactly; multiplying every weight by the same positive number changes nothing.
 
-- **Remainder:** the units the proportional shares leave over go where `options.remainder` says (default `'largest'`). With `'largest'` each part is less than one unit from its exact share; with `'first'` and `'last'`, at most one unit.
+- **Remainder:** the units the proportional shares leave over go where `options.remainder` says (default `'largest'`). With `'largest'` each part is less than one unit from its exact share (proved: `alloc_near_largest`); with `'first'` and `'last'`, at most one unit.
+- **Why `'largest'` is the default:** among all splits into whole units that add up to the total, it is the one closest to the exact shares. Each part is its share rounded down or up, and the leftover units go to the parts with the largest fractional remainders. That minimises the total absolute error, the total squared error and the largest single error at once. It optimises absolute error, not error relative to each weight, so it can show the Alabama paradox: raising the total by one unit can, rarely, lower one part by one unit (below). Use `'first'`, `'last'`, `'toFirst'` or `'toLast'` when the leftover should land in a predictable place instead.
 - **Throws:** `RangeError` for no weights, a negative weight, all weights zero, or an unknown remainder strategy; `SyntaxError` for a string weight outside the decimal-string grammar.
 
 ```ts
@@ -26,6 +27,16 @@ import '@ducatjs/money/allocate';
 money('100', 'EUR').allocate([1, 1, 1]); // → [33.34 EUR, 33.33 EUR, 33.33 EUR]
 money('0.05', 'EUR').allocate(['70', '30']); // → [0.04 EUR, 0.01 EUR]
 money('-100', 'EUR').allocate([1, 1, 1]); // → [-33.34 EUR, -33.33 EUR, -33.33 EUR]
+```
+
+The Alabama paradox with the default `'largest'`: weights 1, 3 and 3 split three cents as one each, but four cents as 0, 2 and 2.
+
+```ts
+import { fromMinor } from '@ducatjs/money';
+import '@ducatjs/money/allocate';
+
+fromMinor(3, 'EUR').allocate([1, 3, 3]).map(String); // → ['0.01 EUR', '0.01 EUR', '0.01 EUR']
+fromMinor(4, 'EUR').allocate([1, 3, 3]).map(String); // → ['0.00 EUR', '0.02 EUR', '0.02 EUR']
 ```
 
 ### split

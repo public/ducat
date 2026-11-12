@@ -188,6 +188,16 @@ describe('documentation examples', () => {
     files.push({ path, example });
   }
 
+  // An indented fence (inside a list item) isn't picked up as an example, so it would go untested
+  it('has no indented ts blocks', () => {
+    const indented = DOCUMENTS.flatMap((document) =>
+      readFileSync(join(ROOT, document), 'utf8')
+        .split('\n')
+        .flatMap((text, index) => (/^\s+```ts\b/.test(text) ? [`${document}:${index + 1}`] : [])),
+    );
+    expect(indented).toEqual([]);
+  });
+
   it('has examples to run', () => {
     expect(files.length).toBeGreaterThan(0);
   });
