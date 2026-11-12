@@ -1356,31 +1356,43 @@ function wholePeriods(periods: number, minimum: number): bigint {
   return BigInt(periods);
 }
 
-/** The amount in major units as num / (den · 10^scale), negated: Excel's sign convention. */
+/**
+ * The amount in major units as num / (den · 10^scale), negated: Excel's sign convention. The
+ * rounded functions round this fraction directly, as `npv` does, so only the …Exact ones need
+ * ExactMoney.
+ */
 function annuityResult<C extends string>(
   parts: Annuity<C>,
   numerator: bigint,
   denominator: bigint,
-): ExactMoney<C> {
-  return new ExactMoney(parts.currency, -numerator, denominator * pow10n(parts.scale));
+): AnnuityValue<C> {
+  return [parts.currency, -numerator, denominator * pow10n(parts.scale)];
 }
 
-/**
- * Excel's FV, exactly: the future value of `pmt` paid every period for `nper` periods at `rate`
- * per period, on top of a present value `pv`, with Excel's sign convention (money paid out is
- * negative, so deposits give a positive future value):
- * `−(pv·(1 + rate)^nper + pmt·(1 + rate·type)·((1 + rate)^nper − 1)/rate)`, and at a rate of 0,
- * `−(pv + pmt·nper)`. `fv` rounds it once.
- *
- * Unlike Excel, `nper` must be a whole number (a fractional power is irrational), and a rate at or
- * below −1 throws a RangeError.
- */
-export function fvExact<C extends string>(
+/** A currency and an unreduced fraction of its major unit. */
+type AnnuityValue<C extends string> = readonly [C, bigint, bigint];
+
+function toExactMoney<C extends string>([
+  currency,
+  numerator,
+  denominator,
+]: AnnuityValue<C>): ExactMoney<C> {
+  return new ExactMoney(currency, numerator, denominator);
+}
+
+function roundedValue<C extends string>(
+  [currency, numerator, denominator]: AnnuityValue<C>,
+  rounding: RoundingInput,
+): Money<C> {
+  return roundQuotient(currency, numerator, denominator, rounding);
+}
+
+function fvValue<C extends string>(
   ratePerPeriod: Factor,
   periods: number,
   payment: Money<C>,
   options?: FvOptions<C>,
-): ExactMoney<C> {
+): AnnuityValue<C> {
   const count = wholePeriods(periods, 0);
   const parts = annuity(ratePerPeriod, options?.type, [payment, options?.pv]);
   const [paymentMinor, presentMinor] = parts.minors as [bigint, bigint];
@@ -1400,6 +1412,25 @@ export function fvExact<C extends string>(
 }
 
 /**
+ * Excel's FV, exactly: the future value of `pmt` paid every period for `nper` periods at `rate`
+ * per period, on top of a present value `pv`, with Excel's sign convention (money paid out is
+ * negative, so deposits give a positive future value):
+ * `−(pv·(1 + rate)^nper + pmt·(1 + rate·type)·((1 + rate)^nper − 1)/rate)`, and at a rate of 0,
+ * `−(pv + pmt·nper)`. `fv` rounds it once.
+ *
+ * Unlike Excel, `nper` must be a whole number (a fractional power is irrational), and a rate at or
+ * below −1 throws a RangeError.
+ */
+export function fvExact<C extends string>(
+  ratePerPeriod: Factor,
+  periods: number,
+  payment: Money<C>,
+  options?: FvOptions<C>,
+): ExactMoney<C> {
+  return toExactMoney(fvValue(ratePerPeriod, periods, payment, options));
+}
+
+/**
  * Excel's FV, rounded once (to the currency's exponent with a mode, or to a policy's scale;
  * default 'halfExpand'). See `fvExact`.
  *
@@ -1412,23 +1443,15 @@ export function fv<C extends string>(
   options?: FvOptions<C>,
   rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
-  const value = fvExact(ratePerPeriod, periods, payment, options);
-  return roundQuotient(value.currency, value.num, value.den, rounding);
+  return roundedValue(fvValue(ratePerPeriod, periods, payment, options), rounding);
 }
 
-/**
- * Excel's PV, exactly: the present value of `pmt` paid every period for `nper` periods at `rate`
- * per period, plus a future value `fv`, with Excel's sign convention:
- * `−(fv + pmt·(1 + rate·type)·((1 + rate)^nper − 1)/rate) / (1 + rate)^nper`, and at a rate of 0,
- * `−(fv + pmt·nper)`. `pv` rounds it once. As with `fvExact`, `nper` is a whole number and the rate
- * is above −1.
- */
-export function pvExact<C extends string>(
+function pvValue<C extends string>(
   ratePerPeriod: Factor,
   periods: number,
   payment: Money<C>,
   options?: PvOptions<C>,
-): ExactMoney<C> {
+): AnnuityValue<C> {
   const count = wholePeriods(periods, 0);
   const parts = annuity(ratePerPeriod, options?.type, [payment, options?.fv]);
   const [paymentMinor, futureMinor] = parts.minors as [bigint, bigint];
@@ -1447,6 +1470,22 @@ export function pvExact<C extends string>(
 }
 
 /**
+ * Excel's PV, exactly: the present value of `pmt` paid every period for `nper` periods at `rate`
+ * per period, plus a future value `fv`, with Excel's sign convention:
+ * `−(fv + pmt·(1 + rate·type)·((1 + rate)^nper − 1)/rate) / (1 + rate)^nper`, and at a rate of 0,
+ * `−(fv + pmt·nper)`. `pv` rounds it once. As with `fvExact`, `nper` is a whole number and the rate
+ * is above −1.
+ */
+export function pvExact<C extends string>(
+  ratePerPeriod: Factor,
+  periods: number,
+  payment: Money<C>,
+  options?: PvOptions<C>,
+): ExactMoney<C> {
+  return toExactMoney(pvValue(ratePerPeriod, periods, payment, options));
+}
+
+/**
  * Excel's PV, rounded once (to the currency's exponent with a mode, or to a policy's scale;
  * default 'halfExpand'). See `pvExact`.
  *
@@ -1459,22 +1498,15 @@ export function pv<C extends string>(
   options?: PvOptions<C>,
   rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
-  const value = pvExact(ratePerPeriod, periods, payment, options);
-  return roundQuotient(value.currency, value.num, value.den, rounding);
+  return roundedValue(pvValue(ratePerPeriod, periods, payment, options), rounding);
 }
 
-/**
- * Excel's PMT, exactly: the payment per period that pays off (or saves up to) the amounts over
- * `nper` periods at `rate` per period, with Excel's sign convention:
- * `−(pv·(1 + rate)^nper + fv)·rate / ((1 + rate·type)·((1 + rate)^nper − 1))`, and at a rate of 0,
- * `−(pv + fv)/nper`. `pmt` rounds it once. `nper` is a whole number from 1, and the rate is above −1.
- */
-export function pmtExact<C extends string>(
+function pmtValue<C extends string>(
   ratePerPeriod: Factor,
   periods: number,
   present: Money<C>,
   options?: PvOptions<C>,
-): ExactMoney<C> {
+): AnnuityValue<C> {
   const count = wholePeriods(periods, 1);
   const parts = annuity(ratePerPeriod, options?.type, [present, options?.fv]);
   const [presentMinor, futureMinor] = parts.minors as [bigint, bigint];
@@ -1493,6 +1525,21 @@ export function pmtExact<C extends string>(
 }
 
 /**
+ * Excel's PMT, exactly: the payment per period that pays off (or saves up to) the amounts over
+ * `nper` periods at `rate` per period, with Excel's sign convention:
+ * `−(pv·(1 + rate)^nper + fv)·rate / ((1 + rate·type)·((1 + rate)^nper − 1))`, and at a rate of 0,
+ * `−(pv + fv)/nper`. `pmt` rounds it once. `nper` is a whole number from 1, and the rate is above −1.
+ */
+export function pmtExact<C extends string>(
+  ratePerPeriod: Factor,
+  periods: number,
+  present: Money<C>,
+  options?: PvOptions<C>,
+): ExactMoney<C> {
+  return toExactMoney(pmtValue(ratePerPeriod, periods, present, options));
+}
+
+/**
  * Excel's PMT, rounded once (to the currency's exponent with a mode, or to a policy's scale;
  * default 'halfExpand'). See `pmtExact`. It is the exact payment rounded, so paying it every period
  * leaves a residual; `amortise` builds a schedule that settles it.
@@ -1506,8 +1553,7 @@ export function pmt<C extends string>(
   options?: PvOptions<C>,
   rounding: RoundingInput = DEFAULT_ROUNDING,
 ): Money<C> {
-  const value = pmtExact(ratePerPeriod, periods, present, options);
-  return roundQuotient(value.currency, value.num, value.den, rounding);
+  return roundedValue(pmtValue(ratePerPeriod, periods, present, options), rounding);
 }
 
 /**
