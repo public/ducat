@@ -342,19 +342,14 @@ export function formatScaled(minor: number | bigint, scale: number): string {
     if (scale === 0) {
       return String(minor);
     }
-    // integer/fraction split with exact integer arithmetic (the float quotient is corrected)
+    // Integer/fraction split in exact integer arithmetic: with magnitude + unit <= 2^53 - 1, the
+    // float quotient can't round up to the next integer (as in divideAndRound), so it needs no
+    // correction step.
     const magnitude = minor < 0 ? 0 - minor : minor;
     const unit = POW10[scale]!;
     if (magnitude + unit <= MAX_SAFE_MINOR) {
-      let whole = Math.floor(magnitude / unit);
-      let fraction = magnitude - whole * unit;
-      if (fraction < 0) {
-        whole -= 1;
-        fraction += unit;
-      } else if (fraction >= unit) {
-        whole += 1;
-        fraction -= unit;
-      }
+      const whole = Math.floor(magnitude / unit);
+      const fraction = magnitude - whole * unit;
       let fractionDigits = String(fraction);
       if (fractionDigits.length < scale) {
         fractionDigits = ZPAD[scale - fractionDigits.length] + fractionDigits;
