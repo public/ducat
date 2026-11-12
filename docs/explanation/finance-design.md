@@ -1,6 +1,6 @@
 # `@ducatjs/money/finance`: design
 
-Status: approved design (#54), implemented in v0.3.0 (#135). In v0.4.0 the Excel-named functions moved to their own entry, `@ducatjs/money/excel` (npv, npvExact and irr, with the new fv, pv, pmt, nper and rate; see decisions.md), and XNPV and XIRR are planned there (#136).
+Status: approved design (#54), implemented in v0.3.0 (#135). In v0.4.0 the Excel-named functions moved to their own entry, `@ducatjs/money/excel` (npv, npvExact and irr, with the new fv, pv, pmt, nper and rate; see decisions.md), and XNPV and XIRR are there too (#136, §3d).
 
 Billing and lending code keeps re-implementing the same few calculations, usually in floats: loan
 and amortisation schedules, interest between two dates under a day-count convention, net present
@@ -175,9 +175,9 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
     360 monthly periods at the default `digits: 10` takes 34 steps on integers of about 17,000
     bits (2 kB). An unoptimised exact-fraction prototype of the same arithmetic took 1.3 s in
     total; the implementation must beat that by a wide margin, and the benchmark tracks it.
-- `XNPV` and `XIRR` (flows on arbitrary dates) are **not** in the first version: their discount
-  factors `(1 + r)^(days/365)` are fractional powers, so even XNPV isn't exact. They are planned
-  for v0.4.0, as results to a stated precision with a proven error bound.
+- `XNPV` and `XIRR` (flows on arbitrary dates) were not in the first version: their discount
+  factors `(1 + r)^(days/365)` are fractional powers, so even XNPV isn't exact. v0.4.0 adds them
+  to `@ducatjs/money/excel` with guaranteed bounds (§3d).
 
 ### 3b. Annuities: Excel's FV, PV, PMT, NPER and RATE (v0.4.0, #200)
 
@@ -290,6 +290,94 @@ amounts are positive when paid in.
 - **Invariants** (property tests): `initial + Σ contributions + Σ interest = balance`, row by row;
   every contribution but a target plan's last equals the regular one; a target plan ends on its
   target.
+
+### 3d. XNPV and XIRR (v0.4.0, #136)
+
+`xnpv(rate, values, dates, options?, rounding?)`, `xnpvBounds(…)` and `xirr(values, dates, options?)`
+are Excel's XNPV and XIRR, in `@ducatjs/money/excel`, under the Excel rule: Excel's arguments (`values` and `dates` as two
+lists), d₀ the first date in the list, the other dates in any order but not before it, and Excel's
+values. XNPV is `Σ vᵢ / g^(yᵢ)` with `g = 1 + rate` and `yᵢ = (dᵢ − d₀)/365` (the `dayCount` option
+takes the other conventions, which aren't Excel's).
+
+**The bound.** Write `yᵢ = n/m` reduced and `g = a/b`.
+
+1. _The split._ By the CRT over `m`'s prime powers `q`, `n/m = W + Σ r_q/q` with `W` an integer and
+   `0 < r_q < q`. So `g^(n/m) = g^W · Π g^(r_q/q)`: `g^W` is an exact power, and each irrational
+   factor needs a root of order `q` only, 73 at most for days/365 = 5·73, and for ACT/ACT ISDA,
+   whose 365·366 is 2·3·5·61·73. (Before this split, ACT/ACT took roots of order 133,590.)
+2. _The root._ `R = ⌊qth root of ⌊a·2^(qP)/b⌋⌋` satisfies `R ≤ 2^P·g^(1/q) < R + 1`, because
+   flooring inside an integer root doesn't change the floor of the root: for integers,
+   `R^q ≤ ⌊X⌋ ⟺ R^q ≤ X`. The root is computed by integer Newton from above, which ends at the
+   floor exactly; a double only seeds the start, which is then raised until it is above the root,
+   so it never affects the result. One root per prime power and rate is shared by every flow, and
+   when `g` is a perfect `q`th power the root is exact.
+3. _The power and the product._ `fixedPower(R, r)` floors every product in fixed point at `2^−P`,
+   and `fixedPower(R + 1, r)` ceils every product; the factors of one flow are multiplied the same
+   way. Products of positive numbers are monotone, so by induction on the square-and-multiply
+   steps the floored result is a lower bound of `2^P·Π g^(r_q/q)`, and the ceiled one an upper
+   bound (proved in `proofs/Ducat/Xnpv.lean`).
+4. _Exact cancellation._ Flows with the same irrational part `Π g^(r_q/q)` are summed exactly
+   first, as `C = Σ vᵢ·g^(−Wᵢ)`. A group whose `C` is exactly 0 contributes exactly 0, so a zero
+   first value, flows on one date, or flows 365 days apart that cancel at the rate being tried
+   cost nothing and leave an exact value. When every irrational group cancels, XNPV is the
+   rational remainder, computed exactly: that is how a root on the `digits` grid is found exactly
+   by `xirr`, and how an exact tie (`xnpv('1', [1, 0.01, −10, 20], …)` is exactly 1.005) is
+   rounded as its mode says.
+5. _The term._ For `C ≥ 0`, `C/F` lies in `[C/F_high, C/F_low]`, and for `C < 0` the ends swap;
+   each end is floored or ceiled to the grid, so `low ≤ C/F ≤ high`.
+6. _The sum._ Adding the groups' bounds bounds the sum. While a factor's lower end floors to 0
+   (`g^(r/q)` below `2^−P`, a rate near −1 over decades), the attempt counts as unsettled, and more
+   bits are tried.
+
+The width is about `Σ |C|·r·2^−P / F` plus a unit per group, so doubling `P` (from 64 to at most
+2,048 bits) narrows it until it settles what is asked: a width of at most 10^−digits in major
+units for `xnpvBounds`, both ends rounding alike for `xnpv`, and the bounds excluding zero for
+`xirr`'s sign. Rounding is monotone in every mode, so when both ends round alike, every value
+between them does too, and that amount is the value rounded once (argued here, not proved in
+Lean). A value exactly on a rounding boundary is necessarily rational. Every rational value from
+cancellation (step 4) or rational roots is computed exactly, so it never needs settling. The one
+case left is a rational value hidden in an algebraic relation between different irrational
+parts. There, and for an irrational value closer to a boundary than 2,048 bits can resolve, each
+function throws rather than refine without end. Roots are also capped at an order times
+precision of 2^22 bits, and the split's exponent identity is checked; both are defensive, since no
+day count reaches them (its denominators' prime powers are at most 73), and
+[equivalent-mutants.md](equivalent-mutants.md) lists them.
+
+**What the Lean proofs cover** (`proofs/Ducat/Xnpv.lean`, listed in [What is proved](proofs.md)).
+The theorems are integer and rational (ℚ) inequalities:
+
+- step 2: `root_floor_inside` and `root_bracket`, the integer inequality
+  `R^q·b ≤ a·S^q < (R + 1)^q·b` for each prime power's root;
+- step 3: `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le` and `le_fixedPower_ceil` for each
+  power, and `fold_floor_le` and `le_fold_ceil` for composing a flow's factors, as bounds on
+  rational targets;
+- step 4: `sum_regroup` and `group_common_factor`;
+- steps 5 and 6: `quotient_bounds`, `grid_bounds` and `sum_bounds`.
+
+**Argued, not proved** (#308 is to formalize them over ℝ):
+
+- that the integer inequality puts the real root in `[R/S, (R + 1)/S)`, and that the ℚ lemmas
+  carry over to the irrational factors `g^(r/q)`, their products and `C/F` (they hold in any
+  ordered field);
+- step 1's exponent identity `n = W·m + Σ r·(m/q)`, which the code checks at run time and throws
+  if it fails, and the real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on;
+- the exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder (exact
+  bigint operations);
+- the monotonicity of rounding used for `xnpv`'s single rounding.
+
+**XIRR** bisects as `irr` does, on the grid of `digits`-place decimals, with `irr`'s bracket and
+multiple-root rules: the flows, combined by date and in date order, have one sign change (one
+root above −1, by Descartes' rule for exponents in increasing order) or need a `bracket`.
+Microsoft documents that XIRR stops within 0.000001 percent, so Excel's value lies within 10^−8 of
+[`lower`, `upper`]; the tests check that against Microsoft's example, and hold the 150
+LibreOffice vectors to 1e-13, since Calc's largest gap from the bracket is under 1e-15. XNPV is a closed form, so the bounds' midpoint matches Calc at 15 significant digits, or
+within Calc's double error where its last digit differs.
+
+Interface differences, all refusals: a rate at or below −1, an empty list, and values in more than
+one currency throw; where Excel guesses among several rates, `xirr` throws without a bracket; flows
+that cancel on every date (every rate is a root) or never change sign once combined by date throw.
+XNPV, like XIRR, needs a positive and a negative value: Microsoft's XNPV page requires it of
+`values`, though LibreOffice computes an all-positive XNPV.
 
 ### 3a. Periodic and annual rates (v0.4.0, #199)
 
