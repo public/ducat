@@ -1366,7 +1366,9 @@ function annuityResult<C extends string>(
   numerator: bigint,
   denominator: bigint,
 ): AnnuityValue<C> {
-  return [parts.currency, -numerator, denominator * pow10n(parts.scale)];
+  // a negative rate makes the denominator negative; rounding needs it positive
+  const scaled = denominator * pow10n(parts.scale);
+  return scaled < 0n ? [parts.currency, numerator, -scaled] : [parts.currency, -numerator, scaled];
 }
 
 /** A currency and an unreduced fraction of its major unit. */

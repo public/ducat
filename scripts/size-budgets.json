@@ -123,7 +123,7 @@
     },
     "finance: pmt alone": {
       "code": "import { money } from '@ducatjs/money'; import { pmt } from '@ducatjs/money/finance'; console.log(pmt('0.005', 360, money('200000', 'EUR')).toDecimal());",
-      "gzipped": 6.6
+      "gzipped": 5.3
     }
   }
 }

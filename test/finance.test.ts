@@ -981,6 +981,18 @@ describe('fv, pv, pmt, nper and rate (Excel)', () => {
     expect(pmt('0.1', 2, usd('1000')).toDecimal()).toBe('-576.19');
     expect(pmt('0.1', 2, usd('1000'), {}, 'ceil').toDecimal()).toBe('-576.19');
     expect(pmt('0.1', 2, usd('1000'), {}, 'floor').toDecimal()).toBe('-576.20');
+    // a negative rate makes Excel's denominators negative: every mode still rounds the exact value
+    for (const mode of ['floor', 'ceil', 'halfEven', 'trunc'] as const) {
+      expect(pmt('-0.01', 3, usd('100'), {}, mode)).toEqual(
+        pmtExact('-0.01', 3, usd('100')).round(mode),
+      );
+      expect(fv('-0.01', 3, usd('-100'), {}, mode)).toEqual(
+        fvExact('-0.01', 3, usd('-100')).round(mode),
+      );
+      expect(pv('-0.01', 3, usd('-100'), {}, mode)).toEqual(
+        pvExact('-0.01', 3, usd('-100')).round(mode),
+      );
+    }
     // nper 0: the future value is the present value, negated; the present value is −fv
     expect(fv('0.05', 0, usd('-100'), { pv: usd('1000') }).toDecimal()).toBe('-1000.00');
     expect(pv('0.05', 0, usd('-100'), { fv: usd('1000') }).toDecimal()).toBe('-1000.00');
