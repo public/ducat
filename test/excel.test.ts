@@ -113,6 +113,11 @@ interface Calc {
   rate: Omit<AnnuityVector, 'rate'>[];
   xnpv: { rate: string; values: string[]; dates: string[]; calc: string }[];
   xirr: { values: string[]; dates: string[]; calc: string }[];
+  /** scripts/excel_edge_cases.py: the same inputs as the edge cases in excel.json */
+  edge: Record<
+    'fv' | 'pv' | 'pmt' | 'nper' | 'rate' | 'xnpv' | 'xirr',
+    { note: string; calc: string }[]
+  >;
 }
 
 const microsoft = JSON.parse(
@@ -770,6 +775,125 @@ describe(`LibreOffice Calc's XNPV and XIRR (${calc.calc})`, () => {
     });
     expect(converged).toBeGreaterThan(140);
     expect(mismatches).toEqual([]);
+  });
+});
+
+describe(`LibreOffice Calc on the edge cases (${calc.calc})`, () => {
+  // The exact oracle's values for the same inputs (test/vectors/excel.json, which
+  // test/excel.oracle.test.ts holds ducat to): each as a [low, high] pair of fractions, a point
+  // where the value is exact, else the oracle's bounds or the grid step [lower, lower + 10^-digits).
+  interface Oracle {
+    annuities: { note?: string; results: Record<string, { exact: string }> }[];
+    nper: { note?: string; lower: string; digits: number; exact?: string }[];
+    rate: { note?: string; lower: string; digits: number }[];
+    xnpv: { note?: string; exact?: string; low?: string; high?: string }[];
+    xirr: { note?: string; lower: string; digits: number }[];
+  }
+  const oracle = JSON.parse(
+    readFileSync(join(import.meta.dirname, 'vectors', 'excel.json'), 'utf8'),
+  ) as Oracle;
+  const byNote = <T extends { note?: string }>(cases: T[], note: string): T =>
+    cases.find((vector) => vector.note === note)!;
+  const point = (text: string): [Ratio, Ratio] => {
+    const [num, den] = text.split('/');
+    const value = ratio(BigInt(num!), BigInt(den!));
+    return [value, value];
+  };
+  const step = (lower: string, digits: number): [Ratio, Ratio] => [
+    ratio(BigInt(lower), 10n ** BigInt(digits)),
+    ratio(BigInt(lower) + 1n, 10n ** BigInt(digits)),
+  ];
+  const bounds = (name: keyof Calc['edge'], note: string): [Ratio, Ratio] | 'throws' => {
+    switch (name) {
+      case 'fv':
+      case 'pv':
+      case 'pmt':
+        return point(byNote(oracle.annuities, note).results[name]!.exact);
+      case 'nper': {
+        const vector = byNote(oracle.nper, note);
+        if (vector.lower === 'throws') {
+          return 'throws';
+        }
+        return vector.exact === undefined ? step(vector.lower, vector.digits) : point(vector.exact);
+      }
+      case 'rate':
+      case 'xirr': {
+        const vector = byNote(oracle[name], note);
+        return step(vector.lower, vector.digits);
+      }
+      case 'xnpv': {
+        const vector = byNote(oracle.xnpv, note);
+        return vector.exact === undefined
+          ? [ratio(vector.low!), ratio(vector.high!)]
+          : point(vector.exact);
+      }
+    }
+  };
+
+  // Where Calc's doubles differ from the exact value by more than 1e-12 relative (ducat matches
+  // the oracle on every one of these), and why; and where Calc returns an error.
+  const differs: Record<string, string> = {
+    'fv: a tiny rate over 360 periods: (1 + r)^n - 1 cancels in doubles':
+      '(1 + r)^n − 1 at r = 1e-9 keeps about 7 digits: Calc is 5e-7 relative off',
+    'fv: a tiny rate, payments at the start': 'the same cancellation at r = 1e-7: 6e-10 relative',
+    'fv: a payment and values that cancel at this rate': 'exactly 0; Calc leaves 1.4e-13',
+    'pv: a tiny rate over 360 periods: (1 + r)^n - 1 cancels in doubles':
+      'the same cancellation: 8e-8 relative',
+    'pv: a tiny rate, payments at the start': 'the same cancellation: 2e-8 relative',
+    'nper: a tiny rate': 'ln(1 + r) at r = 1e-9 in doubles: 3e-10 relative',
+    'rate: a rate of exactly 0': 'the rate is exactly 0; Calc stops at 6e-11',
+    'rate: payments at the start, a balloon': "Calc's iteration stops early: 3.5e-12 relative",
+    'rate: ill-conditioned: a rate near 1e-9 over 360 periods': 'Calc is 2% off',
+    'rate: ill-conditioned: a rate near -1e-9 over 360 periods': 'Calc is 0.05% off',
+    'rate: ill-conditioned: a rate near 1e-10 over 480 periods, at the start':
+      'Calc returns 4.7e-10 for a rate of 8.7e-11, 5.4 times too large',
+  };
+  const refuses: Record<string, string> = {
+    'nper: payments that never settle the loan (no value)': 'both refuse: Calc #NUM!, ducat throws',
+    'xirr: a rate near -1': 'Calc returns Err:502; ducat brackets the rate, -0.999897451583',
+  };
+
+  it('agrees with the exact value to 1e-12 relative, except where its doubles are documented to differ', () => {
+    const tolerance = ratio(1n, 10n ** 12n);
+    const floor = ratio(1n, 10n ** 15n);
+    const magnitude = (value: Ratio) => (value.num < 0n ? ratio(-value.num, value.den) : value);
+    const times = (left: Ratio, right: Ratio) => ratio(left.num * right.num, left.den * right.den);
+    const plus = (left: Ratio, right: Ratio) =>
+      ratio(left.num * right.den + right.num * left.den, left.den * right.den);
+    const unexpected: string[] = [];
+    for (const [name, vectors] of Object.entries(calc.edge) as [
+      keyof Calc['edge'],
+      Calc['edge']['fv'],
+    ][]) {
+      for (const vector of vectors) {
+        const key = `${name}: ${vector.note}`;
+        const range = bounds(name, vector.note);
+        if (!/^-?\d/.test(vector.calc) || range === 'throws') {
+          if (!(key in refuses)) {
+            unexpected.push(
+              `${key}: Calc ${vector.calc}, oracle ${range === 'throws' ? 'throws' : 'a value'}`,
+            );
+          }
+          continue;
+        }
+        const [low, high] = range;
+        const theirs = ratio(vector.calc.replace(/E\+?/, 'e'));
+        const slack = plus(
+          times(
+            tolerance,
+            isGreater(magnitude(low), magnitude(high)) ? magnitude(low) : magnitude(high),
+          ),
+          floor,
+        );
+        const agrees =
+          !isGreater(subtract(low, slack), theirs) && !isGreater(theirs, plus(high, slack));
+        if (agrees === key in differs) {
+          unexpected.push(`${key}: Calc ${vector.calc} ${agrees ? 'agrees' : 'differs'}`);
+        }
+      }
+    }
+    expect(Object.values(calc.edge).flat().length).toBe(83);
+    expect(unexpected).toEqual([]);
   });
 });
 

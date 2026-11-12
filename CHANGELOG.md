@@ -9,6 +9,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Documentation
 
+- Every function in `@ducatjs/money/excel` is now checked against an independent exact oracle
+  (Python's `fractions`, with its own bounds from `decimal` where the value is irrational), on
+  random cases and on edge cases that LibreOffice Calc computes too; the reference says so, and
+  the tests record where Calc's doubles differ from the exact value (#313).
+
 - [How ducat is tested](docs/explanation/how-ducat-is-tested.md) explains the nightly mutation
   testing and lists the mutants that can't change a result, with the reason for each (#56).
 - The documentation is rebuilt on [Diátaxis](https://diataxis.fr), in `docs/`: two tutorials (a
