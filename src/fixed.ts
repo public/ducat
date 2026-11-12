@@ -146,7 +146,7 @@ export class Fixed {
     ) {
       const product = value * factor;
       if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
-        return make(product + 0, this.scale);
+        return make(product, this.scale);
       }
     }
 
@@ -419,7 +419,7 @@ function addAligned(first: Fixed, second: Fixed, sign: 1 | -1): Fixed {
   ) {
     const sum = sign === 1 ? firstValue + secondValue : firstValue - secondValue;
     if (sum <= MAX_SAFE_MINOR && sum >= -MAX_SAFE_MINOR) {
-      return make(sum + 0, first.scale);
+      return make(sum, first.scale);
     }
   }
 
@@ -528,7 +528,7 @@ export function fixed(value: FixedInput, options?: FixedOptions): Fixed {
 
   if (typeof value === 'number') {
     if (Number.isSafeInteger(value)) {
-      return scale === undefined ? make(value + 0, 0) : make(scaleUp(value + 0, scale), scale);
+      return scale === undefined ? make(value, 0) : make(scaleUp(value, scale), scale);
     }
     if (!Number.isFinite(value)) {
       throw new RangeError(`Invalid number ${value}`);
@@ -560,7 +560,7 @@ export function fromScaled(value: number | bigint, scale: number): Fixed {
           : `The scaled value must be an integer, got ${value}`,
       );
     }
-    return make(value + 0, scale);
+    return make(value, scale);
   }
   if (typeof value !== 'bigint') {
     throw new TypeError(`Invalid scaled value ${String(value)}`);

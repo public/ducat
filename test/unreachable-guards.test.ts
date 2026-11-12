@@ -12,7 +12,7 @@ import { divideAndRoundBigint } from '../src/generated/kernel.js';
 import { allocate, fromMinor, type RoundingMode } from '../src/fn.js';
 import { formatScaled } from '../src/decimal.js';
 import { divideAndRound, RoundingError } from '../src/rounding.js';
-import { fixed } from '../src/fixed.js';
+import { fixed, fromScaled } from '../src/fixed.js';
 
 const MAX = Number.MAX_SAFE_INTEGER;
 
@@ -164,5 +164,19 @@ describe("fixed()'s scale limit, which parseDecimal enforces", () => {
     expect(() => fixed(fraction(1001))).toThrow(RangeError);
     expect(() => fixed('0.5e-1000')).toThrow(RangeError);
     expect(() => fixed('1e-1001')).toThrow(RangeError);
+  });
+});
+
+describe("Fixed's constructor is the one place -0 becomes 0", () => {
+  const isNegativeZero = (value: number | bigint) => Object.is(value, -0);
+
+  it('normalises -0 from every number path that used to add its own + 0', () => {
+    expect(isNegativeZero(fixed(-0).toScaled().value)).toBe(false);
+    expect(isNegativeZero(fixed(-0, { scale: 2 }).toScaled().value)).toBe(false);
+    expect(isNegativeZero(fromScaled(-0, 3).toScaled().value)).toBe(false);
+    expect(isNegativeZero(fixed('0').multiply(-1).toScaled().value)).toBe(false);
+    expect(isNegativeZero(fixed('0.00').multiply(-5).toScaled().value)).toBe(false);
+    expect(isNegativeZero(fixed('-0').add(fixed('0')).toScaled().value)).toBe(false);
+    expect(isNegativeZero(fixed('0').subtract(fixed('0')).toScaled().value)).toBe(false);
   });
 });
