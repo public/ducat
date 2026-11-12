@@ -264,6 +264,33 @@ Tests: every worked example on Microsoft's FV, PV, PMT, NPER and RATE pages, and
 Calc vectors each (`scripts/gen-calc-vectors.py`): FV, PV and PMT at 15 significant digits or
 within the error of a double power, NPER the same, and RATE within its stated accuracy.
 
+### 3c. Savings plans (v0.4.0, #200)
+
+`savingsPlan` is the schedule half of #200: what a savings calculator shows period by period. It
+isn't an Excel name, so it follows the bank's practice, as `amortise` follows the lender's, and its
+amounts are positive when paid in.
+
+- **One rounding per credited amount.** Each period's interest is the exact balance it earns on
+  times `rate / perYear`, rounded once (a mode or a policy). The balance is a sum of rounded
+  amounts, so it needs no rounding of its own.
+- **A target settles exactly.** With a `target`, the regular contribution is
+  `−pmtExact(rate / perYear, periods, −initial, { fv: target, type })`, rounded once, and the last
+  contribution is `target − balance − interest`, so the plan ends on exactly the target. This is
+  the savings counterpart of `amortise`'s `residual: 'lastPayment'`. With `timing: 'start'`, the
+  last contribution earns interest in its own period, so it is solved: the `c` with
+  `balance + c + round((balance + c)·r) = target`, found by stepping over the unit grid from
+  `(target − balance − round(balance·r))/(1 + r)`. Interest is then only ever credited on money
+  that was paid in. Over the grid that sum rises by one unit, or two when the rounded interest
+  steps up too, so the target can fall in a gap (a few percent of plans at 5% a month, far fewer
+  at ordinary rates). There `c` is the largest contribution below it, and the unit left over is an
+  `adjustment`, paid at the end of the period, after interest, and counted with the contributions.
+- **Against Excel's FV.** The rounded credits drift from Excel's unrounded FV by at most half a
+  unit per credit, compounded: below `periods · (1 + |r|)^periods` half units. A property test
+  checks that bound.
+- **Invariants** (property tests): `initial + Σ contributions + Σ interest = balance`, row by row;
+  every contribution but a target plan's last equals the regular one; a target plan ends on its
+  target.
+
 ### 3a. Periodic and annual rates (v0.4.0, #199)
 
 ```ts

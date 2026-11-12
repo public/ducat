@@ -24,6 +24,7 @@ import {
   multiplyAndRound,
   roundQuotient,
   unreducedRatio,
+  pmtValue,
 } from './finance-shared.js';
 
 // ---------------------------------------------------------------------------------------------
@@ -840,6 +841,265 @@ export function discountedSum<C extends string>(
 ): Money<C> {
   const [numerator, denominator] = discountedValue(discountRate, flows, false);
   return roundQuotient(flows[0]!.currency, numerator, denominator, rounding);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Savings plans
+// ---------------------------------------------------------------------------------------------
+
+/** When each contribution is paid in: at the end of its period (the default) or at the start. */
+export type ContributionTiming = 'end' | 'start';
+
+/** Options for `savingsPlan`: a fixed `contribution`, or a `target` to save up to. */
+export interface SavingsPlanOptions<C extends string> {
+  /** The nominal annual rate, as a `Factor` ('0.03' for 3%): the periodic rate is `rate / perYear`. */
+  readonly rate: Factor;
+  /** Contributions per year (12 for monthly). */
+  readonly perYear: number;
+  /** The number of contributions. */
+  readonly periods: number;
+  /** The amount paid in every period. Give this or `target`. */
+  readonly contribution?: Money<C> | undefined;
+  /**
+   * The balance to reach after the last period. The regular contribution is Excel's PMT for it,
+   * rounded, and the last contribution takes the rounding residual, so the plan ends on exactly
+   * this. Give this or `contribution`.
+   */
+  readonly target?: Money<C> | undefined;
+  /** The balance before the first period (default zero). */
+  readonly initial?: Money<C> | undefined;
+  /** When contributions are paid in (default 'end', Excel's `type` 0; 'start' is `type` 1). */
+  readonly timing?: ContributionTiming | undefined;
+  /**
+   * How every interest credit (and a target's contribution) is rounded: a mode, to the currency's
+   * exponent, or a rounding policy (default 'halfExpand').
+   */
+  readonly rounding?: RoundingInput | undefined;
+  /** The date of the first contribution; the later ones follow as `amortise`'s `firstPayment`. */
+  readonly firstContribution?: CalendarDate | undefined;
+}
+
+/** One period of a savings plan. */
+export interface SavingsPlanRow<C extends string> {
+  /** 1 for the first period. */
+  readonly period: number;
+  /** The contribution date ('YYYY-MM-DD'), when `firstContribution` is given. */
+  readonly date?: string;
+  /** The amount paid in this period. */
+  readonly contribution: Money<C>;
+  /**
+   * This period's interest: the balance it earns on times the periodic rate, rounded. That is the
+   * balance before the period, plus this period's contribution when it is paid at the start, in
+   * every row.
+   */
+  readonly interest: Money<C>;
+  /**
+   * Only on the last row of a start-timed target plan, and only when no whole-unit contribution
+   * reaches the target exactly (the rounded interest skipped it): the unit left over, paid at the
+   * end of the period, after interest. It counts in `totalContributions`.
+   */
+  readonly adjustment?: Money<C>;
+  /** The balance after the period: the previous balance plus the contribution, the interest and any adjustment. */
+  readonly balance: Money<C>;
+}
+
+/** The result of `savingsPlan`. */
+export interface SavingsPlan<C extends string> {
+  /** The regular contribution (with a `target`, every one but possibly the last). */
+  readonly contribution: Money<C>;
+  /** One row per period. */
+  readonly rows: SavingsPlanRow<C>[];
+  /** The sum of the contribution column, exactly. */
+  readonly totalContributions: Money<C>;
+  /** The sum of the interest column, exactly. */
+  readonly totalInterest: Money<C>;
+  /** The balance after the last period: `initial + totalContributions + totalInterest`. */
+  readonly balance: Money<C>;
+}
+
+/** `count` units, as Money: unit × count, exactly. */
+function multiplyByUnits<C extends string>(unit: Money<C>, count: bigint): Money<C> {
+  return make(unit.currency, BigInt(unit.minor) * count, unit.scale);
+}
+
+/**
+ * The last contribution c of a start-timed target plan, paid at the start of the period, so that
+ * balance + c + round((balance + c)·r) is the target: interest is then credited only on what was
+ * paid in. Over the unit grid that sum rises by one unit, or two when the rounded interest steps up
+ * too (one or none at a negative rate), so the target can fall in a gap. Then c is the largest
+ * contribution that stays below it, and the unit left over is an `adjustment` paid at the end of
+ * the period, after interest.
+ */
+function settleAtStart<C extends string>(
+  balance: Money<C>,
+  target: Money<C>,
+  periodic: Ratio,
+  unit: Money<C>,
+  rounding: RoundingInput,
+): [Money<C>, Money<C> | undefined] {
+  const needed = subtract(target, balance);
+  const reached = (contribution: Money<C>) =>
+    add(contribution, multiplyAndRound(add(balance, contribution), periodic, rounding));
+  // start near (needed − balance·r) / (1 + r), then step by units to the target
+  const growth = ratio(periodic.num + periodic.den, periodic.den);
+  let contribution = multiplyAndRound(
+    subtract(needed, multiplyAndRound(balance, periodic, rounding)),
+    ratio(growth.den, growth.num),
+    rounding,
+  );
+  // reached() never decreases in the contribution, so find the largest whole-unit c with
+  // reached(c) ≤ needed by a bracket of doubling width around the estimate, then bisection: a few
+  // dozen evaluations, even near a rate of −1 where reached rises by only (1 + r) per unit
+  const at = (steps: bigint) => add(contribution, multiplyByUnits(unit, steps));
+  const fits = (steps: bigint) => compare(reached(at(steps)), needed) <= 0;
+  let low = -1n;
+  let high = 1n;
+  for (let doublings = 0; !fits(low); doublings++) {
+    if (doublings > 128) {
+      throw new RangeError('The last contribution of this savings plan cannot be settled');
+    }
+    high = low;
+    low *= 2n;
+  }
+  for (let doublings = 0; fits(high); doublings++) {
+    if (doublings > 128) {
+      throw new RangeError('The last contribution of this savings plan cannot be settled');
+    }
+    low = high;
+    high *= 2n;
+  }
+  while (high - low > 1n) {
+    const middle = (low + high) / 2n;
+    if (fits(middle)) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+  contribution = at(low);
+  const short = subtract(needed, reached(contribution));
+  return [contribution, BigInt(short.minor) === 0n ? undefined : short];
+}
+
+/**
+ * A savings plan: a regular contribution every period, earning interest at `rate / perYear`, with
+ * each period's interest rounded once from the exact balance it earns on, as a bank credits it.
+ * Nothing else is rounded, so the final balance is exactly `initial + totalContributions +
+ * totalInterest`.
+ *
+ * With a `contribution`, the plan pays it in every period. With a `target`, the regular
+ * contribution is Excel's PMT for the target (`−pmtExact(rate / perYear, periods, −initial, { fv:
+ * target, type })`), rounded once, and the last contribution takes the residual the rounding
+ * leaves, so the final balance is exactly the target, as `amortise` settles a loan on its last
+ * payment. With `timing: 'start'`, the last contribution c is solved so that the balance plus c
+ * plus the rounded interest on both is the target, so interest is only ever credited on what was
+ * paid in; where the rounding skips the target, the unit left over is an `adjustment` paid at the
+ * end of the period. At a rate of 0 there is no interest, and the
+ * regular contribution is `(target − initial) / periods`, rounded, the residual on the last.
+ *
+ * The amounts share one currency and are multiples of the rounding's unit. The rate may be
+ * negative, down to −perYear (everything lost in a period) excluded. Contributions may be negative
+ * (withdrawals), and a target below what the initial balance grows to gives them.
+ *
+ *     savingsPlan({ rate: '0.06', perYear: 12, periods: 10, contribution: money('200', 'USD'),
+ *       initial: money('500', 'USD'), timing: 'start' }).balance // 2581.40 USD
+ */
+export function savingsPlan<C extends string>(options: SavingsPlanOptions<C>): SavingsPlan<C> {
+  const periods = options.periods;
+  const perYear = options.perYear;
+  const rounding = options.rounding ?? DEFAULT_ROUNDING;
+  const timing = options.timing ?? 'end';
+  const { contribution: given, target } = options;
+  assertPeriods(periods, 1);
+  assertPositiveInteger(perYear, 'perYear');
+  if ((given === undefined) === (target === undefined)) {
+    throw new RangeError('Give a savings plan a contribution or a target, not both or neither');
+  }
+  if (timing !== 'end' && timing !== 'start') {
+    invalid('timing', timing);
+  }
+  const reference = (given ?? target)!;
+  const currency = reference.currency;
+  const zeroAmount = make(currency, 0, currencyExponent(currency));
+  const initial = options.initial ?? zeroAmount;
+  assertSameCurrency(reference, initial);
+  const unit = roundingUnit(currency, rounding);
+  for (const amount of [reference, initial]) {
+    if (!isMultipleOf(amount, unit)) {
+      throw new RangeError(`The amounts must be multiples of ${unit}; got ${amount}`);
+    }
+  }
+  const rateRatio = ratio(options.rate);
+  const periodic = ratio(rateRatio.num, rateRatio.den * BigInt(perYear));
+  if (periodic.num + periodic.den <= 0n) {
+    throw new RangeError(
+      `A rate of ${String(options.rate)} per year loses everything in one period`,
+    );
+  }
+  const dates =
+    options.firstContribution === undefined
+      ? undefined
+      : paymentDates(options.firstContribution, perYear, periods);
+
+  let regular: Money<C>;
+  if (given === undefined) {
+    // Excel's sign convention: the initial balance is paid out (negative), the target received
+    // (pmtValue rather than pmtExact, so a plan doesn't pull in ExactMoney)
+    const [, numerator, denominator] = pmtValue(periodic, periods, subtract(zeroAmount, initial), {
+      fv: target,
+      type: timing === 'start' ? 1 : 0,
+    });
+    regular = roundQuotient(currency, -numerator, denominator, rounding);
+  } else {
+    regular = given;
+  }
+
+  const rows: SavingsPlanRow<C>[] = [];
+  let balance = initial;
+  for (let period = 1; period <= periods; period++) {
+    let contribution = regular;
+    let adjustment: Money<C> | undefined;
+    if (target !== undefined && period === periods) {
+      // the last contribution of a target plan settles it exactly
+      [contribution, adjustment] =
+        timing === 'start'
+          ? settleAtStart(balance, target, periodic, unit, rounding)
+          : [
+              subtract(subtract(target, balance), multiplyAndRound(balance, periodic, rounding)),
+              undefined,
+            ];
+    }
+    // interest on what is actually in the account during the period
+    const earning = timing === 'start' ? add(balance, contribution) : balance;
+    const interestPart = multiplyAndRound(earning, periodic, rounding);
+    balance = add(add(balance, contribution), interestPart);
+    if (adjustment !== undefined) {
+      balance = add(balance, adjustment);
+    }
+    const row: SavingsPlanRow<C> = {
+      period,
+      ...(dates === undefined ? {} : { date: dates[period - 1]! }),
+      contribution,
+      interest: interestPart,
+      ...(adjustment === undefined ? {} : { adjustment }),
+      balance,
+    };
+    rows.push(row);
+  }
+  const column = (pick: (row: SavingsPlanRow<C>) => Money<C>) =>
+    sum(
+      rows.map((row) => pick(row) as Money<string>),
+      currency,
+    ) as Money<C>;
+  return {
+    contribution: regular,
+    rows,
+    totalContributions: column((row) =>
+      row.adjustment === undefined ? row.contribution : add(row.contribution, row.adjustment),
+    ),
+    totalInterest: column((row) => row.interest),
+    balance,
+  };
 }
 
 // ---------------------------------------------------------------------------------------------
