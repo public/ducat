@@ -71,6 +71,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Visible change:** `toIso20022Amount` and `fromIso20022Amount` accept only ISO 4217 codes, as
+  ISO 20022's `ActiveOrHistoricCurrencyCode` requires: current codes (including `XAU` and the other
+  codes without a minor unit) and withdrawn ones registered with `defineHistoricCurrencies`. A
+  registered non-ISO code such as `BTC` used to be written; it now throws a RangeError (#273).
 - **Visible change:** `parse(text, currency, locale)` throws a RangeError naming the locale when
   the runtime has no Intl data for its language and region (`xx-ZZ`, `de-XX`), as `parseMoney`
   already did. It used to read the amount with the fallback locale's separators, which can misread

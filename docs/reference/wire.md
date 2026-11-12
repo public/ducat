@@ -34,7 +34,9 @@ Reads `google.type.Money` exactly: `{ currencyCode: 'USD', units: '12', nanos: 3
 The amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`: `{ Ccy: 'EUR', value: '12.34' }`. It is written with the currency's decimals, as the payment networks' rules (CBPR+, HVPS+) require for ActiveCurrencyAndAmount, whatever the Money's scale: 12.3400 EUR at scale 4 is written `'12.34'`, and JPY `'1000'`.
 
 - **Rounds:** only with `rounding`, to the currency's decimals (or `options.scale`).
-- **Throws:** `RoundingError` for more decimals without `rounding`; `RangeError` for a negative amount (the direction goes in the credit/debit indicator), more than 18 digits, a scale outside 0–5, or a currency code that isn't three capital letters (a registered non-ISO code such as `BTC` is written).
+- **Throws:** `RoundingError` for more decimals without `rounding`; `RangeError` for a negative amount (the direction goes in the credit/debit indicator), more than 18 digits, a scale outside 0–5, or a currency that isn't ISO 4217 (see below).
+
+- **Currencies:** ISO 20022's `ActiveOrHistoricCurrencyCode` is ISO 4217, so only these are written or read: the current codes, including those with no minor unit such as `XAU` and `XDR` (which a program registers with `defineCurrency` to hold), and withdrawn codes (`HRK`) once `defineHistoricCurrencies` from `@ducatjs/money/historic` has registered them. A code ISO never published, such as `BTC` or `CNH`, throws.
 
 ### fromIso20022Amount
 
@@ -42,7 +44,7 @@ The amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`: `{ Ccy: 'EUR', value: '12.
 
 Reads an ISO 20022 amount exactly. The text must be plain digits with an optional decimal point, at most 5 decimals and 18 digits (not counting leading or trailing zeros, as XSD counts them), with no sign, exponent or spaces; trim XML whitespace in the XML reader.
 
-- **Throws:** `SyntaxError` for any other text or an invalid currency; `RoundingError` for more decimals than the currency has without `options` (KWD's 3 decimals fit; 12.345 EUR needs `{ scale: 3 }` or a rounding mode).
+- **Throws:** `SyntaxError` for any other text or a malformed currency; `RangeError` for a currency that isn't ISO 4217, by the same rule as `toIso20022Amount`; `RoundingError` for more decimals than the currency has without `options` (KWD's 3 decimals fit; 12.345 EUR needs `{ scale: 3 }` or a rounding mode).
 
 ## ISO minor units
 
