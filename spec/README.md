@@ -14,13 +14,20 @@ spec/
   vectors/<area>/<name>.json   the vectors, one area per directory
 ```
 
-| area    | file           | cases | what it covers                                                                |
-| ------- | -------------- | ----: | ----------------------------------------------------------------------------- |
-| `core`  | `battery.json` |    41 | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches |
-| `fixed` | `battery.json` |    28 | the same checks for plain decimals, without currencies                        |
+| area       | file                    | cases | source | what it covers                                                                |
+| ---------- | ----------------------- | ----: | ------ | ----------------------------------------------------------------------------- |
+| `core`     | `battery.json`          |    41 | hand   | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches |
+| `fixed`    | `battery.json`          |    28 | hand   | the same checks for plain decimals, without currencies                        |
+| `allocate` | `allocate-lean.json`    | 1,500 | Lean   | allocation by weights, every remainder strategy                               |
+| `allocate` | `instalments-lean.json` | 1,200 | Lean   | instalments with a unit, every remainder strategy                             |
+| `allocate` | `chunk-lean.json`       | 1,200 | Lean   | tranches of at most a maximum                                                 |
+| `allocate` | `schedule-lean.json`    | 1,500 | Lean   | fixed, percentage and rest tranches, and the ones that fail                   |
+| `cash`     | `increment-lean.json`   | 1,500 | Lean   | rounding to an increment, every rounding mode                                 |
+| `excel`    | `xnpv-lean.json`        |   120 | Lean   | XNPV's exact bounds and its rounded value in every mode                       |
+| `excel`    | `xirr-lean.json`        |    35 | Lean   | XIRR floored to a number of digits, or no root                                |
 
-The other areas the schema names (`rounding`, `allocate`, `tax`, `convert`, `cash`, `format`,
-`words`, `parse`, `exact`, `excel`, `finance`) are where ducat's remaining vectors move next.
+The other areas the schema names (`rounding`, `tax`, `convert`, `format`, `words`, `parse`, `exact`,
+`finance`) are where ducat's remaining vectors move next.
 
 ## Running the suite
 
@@ -223,6 +230,46 @@ drawn one after another from the same state. The battery's first allocation, fro
 The property `allocation-within-one-unit` holds when, for every allocation of the amount `A`
 (minor units) by weights `w` with total `W`, the parts `p` sum to `A`, have the currency's scale,
 and each satisfies `|p × W − A × w| ≤ W`: every part is within one minor unit of its exact share.
+
+## Table operations
+
+Each table operation names the fields of its rows. Unless a row has a `currency`, its amounts are
+integer strings of minor units of a currency with scale 2 (the Lean models work in integers, and
+EUR serves). `null` where a result is expected means the operation raises an error of the kind
+given.
+
+| op                        | inputs                                         | expected                                                                                                    |
+| ------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `allocate.byRemainder`    | `amount`, `weights` (integer strings ≥ 0)      | the parts, in order, for each remainder strategy: `largest`, `first`, `last`, `toFirst`, `toLast`           |
+| `instalments.byRemainder` | `total`, `count`, `unit`                       | the `count` instalments for each strategy: `first`, `last`, `toFirst`, `toLast`                             |
+| `chunk`                   | `total`, `max`                                 | `chunks`: every one `max` but the last, which is positive; `[0]` for a zero total                           |
+| `schedule`                | `total`, `tranches`                            | `result`: one part per tranche, or `null` (`range`)                                                         |
+| `roundToIncrement.byMode` | `amount`, `step`                               | the multiple of `step` for each rounding mode, by its name, or `null` (`rounding`, for `unnecessary`)       |
+| `xnpv.scaled`             | `currency`, `rate`, `days`, `values`, `digits` | `bounds` (an interval in major units, or `null`: `range`) and `rounded` (minor units by rounding mode)      |
+| `xirr.floor`              | `currency`, `days`, `values`, `digits`         | `lower`: the rate floored to `digits` places, as an integer string scaled by 10^digits, or `null` (`range`) |
+
+What the strategies mean:
+
+- **Remainder strategies.** An allocation first gives each part the floor of its exact share. The
+  units left over go:
+  - `largest` to the parts with the largest fractional remainders, ties to the earlier part
+    (Hamilton's method);
+  - `first` and `last` one each, to the first or last parts with a non-zero weight;
+  - `toFirst` and `toLast` all to the first or last part.
+
+  A negative amount is allocated as the negation of the positive one.
+
+- **Instalments** are `count` equal regular amounts, each a whole multiple of `unit`, with the
+  remainder placed by the strategy.
+- **Tranches** are `{ "amount": … }` (a fixed part), `{ "percent": "31.9", "cap": … }` (a share of
+  the total, at most `cap`) or `{ "rest": true }`. The percentages are allocated together by
+  largest remainder. It is a `range` error to have more than one rest tranche, percentages over
+  100, tranches that exceed the total, or a leftover with no rest tranche.
+- **XNPV** follows Excel: values on days counted from 2001-01-01, each discounted by
+  `(1 + rate)^(days / 365)`. `rate` is a reduced `[numerator, denominator]`. `bounds` is the
+  guaranteed interval, at most 10^−digits wide (`exact` when it is the rational value itself).
+  `rounded` is the value rounded to the currency's scale in each mode.
+- **XIRR** is the rate at which XNPV is zero, floored on the grid of `digits`-place decimals.
 
 ## Provenance
 
