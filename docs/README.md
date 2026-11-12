@@ -80,7 +80,7 @@ New to ducat? Start with [Your first program with ducat](tutorials/first-steps.m
 - [About modules](explanation/modules.md): opt-in modules, installed methods and `/fn`
 - [About storing amounts](explanation/storage.md): decimal strings, minor units and changing exponents
 - [What is proved](explanation/proofs.md): the Lean proofs and what is only tested
-- [How ducat is tested](explanation/how-ducat-is-tested.md)
+- [How ducat is tested](explanation/how-ducat-is-tested.md), and the [equivalent mutants](explanation/equivalent-mutants.md) its mutation run leaves
 - [Decisions](explanation/decisions.md): the product decisions, with their reasons
 - [How ducat compares](explanation/comparison.md): correctness, speed and size against other libraries
 - [The finance module's design](explanation/finance-design.md)
