@@ -116,6 +116,9 @@
       "finance": [
         "./dist/entries/finance.d.ts"
       ],
+      "excel": [
+        "./dist/entries/excel.d.ts"
+      ],
       "pricing": [
         "./dist/entries/pricing.d.ts"
       ],
@@ -325,6 +328,10 @@
     "./finance": {
       "types": "./dist/entries/finance.d.ts",
       "default": "./dist/entries/finance.js"
+    },
+    "./excel": {
+      "types": "./dist/entries/excel.d.ts",
+      "default": "./dist/entries/excel.js"
     },
     "./pricing": {
       "types": "./dist/entries/pricing.d.ts",

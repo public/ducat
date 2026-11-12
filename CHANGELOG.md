@@ -23,8 +23,26 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   export, type or method is missing from the reference, and another when a link or anchor in the
   docs doesn't resolve.
 
+### Deprecated
+
+- `npv`, `npvExact`, `irr`, `IrrOptions` and `IrrResult` from `@ducatjs/money/finance`: they
+  moved to `@ducatjs/money/excel`, where Excel-named functions live. `/finance` re-exports them
+  in 0.4, marked `@deprecated`; 0.5 removes them. Import them from `/excel` (#200).
+
 ### Added
 
+- `@ducatjs/money/excel`, a new entry for Excel's financial functions, under the Excel rule:
+  Excel's arguments and sign convention, and Excel's value at 15 significant digits wherever
+  Excel's double evaluation is well conditioned (the exact value or root where it isn't). It has
+  `npv`, `npvExact` and `irr`, moved from `/finance`, and the new functions below (#200).
+- `fv`, `pv`, `pmt`, `nper` and `rate` in `/excel`: Excel's FV, PV, PMT, NPER and RATE, with
+  Excel's arguments, sign convention and `type`, and Excel's value at 15 significant digits
+  wherever Excel's double evaluation is well conditioned (the exact value or root where it
+  isn't, which is the correct one). `fv`, `pv` and `pmt` are exact
+  and rounded once (`fvExact`, `pvExact`, `pmtExact` return the `ExactMoney`); `nper` is to
+  `digits` places from rigorous logarithm bounds, with `exact` when it is rational; `rate` is
+  `irr` of the implied flows. They throw where Excel would give another kind of answer: a
+  fractional `nper`, a rate at or below −1, and several possible rates without a `bracket` (#200).
 - `periodicRate(annual, { perYear, digits })` and `annualRate(periodic, { perYear })` in
   `/finance`: the periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear)
   − 1`, and its inverse. `annualRate` is an exact `Ratio`; `periodicRate` is found like `irr`, to
@@ -73,6 +91,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Visible change:** `irr` throws a RangeError for an IRR above 2^1024 per period, where it used to keep doubling its
+  search without limit; every rate solver in `/excel` and `/finance` now has a bounded number of steps (#200).
 - **Visible change:** `toIso20022Amount` and `fromIso20022Amount` accept only ISO 4217 codes, as
   ISO 20022's `ActiveOrHistoricCurrencyCode` requires: current codes (including `XAU` and the other
   codes without a minor unit) and withdrawn ones registered with `defineHistoricCurrencies`. A
@@ -105,6 +125,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   error. The operand type is exported as `MoneyOperand` (#219).
 
 ### Fixed
+
+- `money(-0, …)` with a number gives 0 minor units, not -0, like every other constructor. A test or
+  snapshot comparing with `toEqual` can see the change (Jest and Vitest tell 0 from -0).
 
 - `convertDetailed(m, rate, mode, { strictValidity: true })` refuses an expired rate, as `convert`
   and `convertDetailed` with a policy already did: both now share the rate's validity check

@@ -8,8 +8,6 @@ import {
   amortise,
   compound,
   interest,
-  irr,
-  npv,
   discountedSum,
   prorate,
   splitPeriod,
@@ -18,6 +16,7 @@ import {
   type AmortisationResidual,
   type DayCount,
 } from '../src/finance.js';
+import { irr, npv } from '../src/excel.js';
 import { fromMinor, type Money } from '../src/money.js';
 import type { RoundingMode } from '../src/rounding.js';
 
