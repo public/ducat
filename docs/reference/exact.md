@@ -105,6 +105,7 @@ Arguments typed `ExactMoney<C> | Money<C>` take either, exactly; Money in anothe
 - `toMoney(minimumScale?: number): Money<C>`: the exact value as Money, at the smallest scale that holds it but at least `minimumScale` (default: the currency's exponent): 1/8 EUR is 0.125 EUR. **Rounds:** never. **Throws:** `RoundingError` when the value has no finite decimal form (10/3); `RangeError` when it needs more than 1000 decimal places.
 - `toNumber(): number`: the amount in major units as the nearest double, rounded once (10/3 EUR is 3.3333333333333335); ±Infinity beyond the largest double. Lossy on purpose.
 - `toString(): string`: `'10/3 EUR'`, or `'10 EUR'` for a whole amount, for debugging.
+- `toJSON(): never`: throws a `TypeError`, so `JSON.stringify` of an `ExactMoney` fails. It has no JSON form on purpose; `round()` it to Money first.
 - Numeric coercion (`a + b`, `a > b`) throws a `TypeError`: round first.
 
 ```ts

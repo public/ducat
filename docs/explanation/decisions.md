@@ -18,13 +18,14 @@ The product decisions behind ducat, each with its reason. The topic pages ([the 
 - **Correctness and features come before bundle size.** The core keeps the currency table, the comparison methods, bigint support and exact string parsing; everything else is an opt-in module, and size budgets in CI stop either from growing.
 - **A `Money<string>` meets a literal currency at run time; another literal is a compile error.** Only a currency unknown at compile time (`string`) is accepted on the other side; a union means it may be another currency, so narrow it with `isMoneyIn` or `assertCurrency`. A literal type such as `Money<'EUR'>` is what the code knows; `Money<string>` is an amount whose currency is only known at run time, such as a database row or an API response. The other operand of `add`, `subtract`, `compare`, the comparisons, `min`, `max`, `clamp`, `ratioOf`, `divideToIntegral` and `remainder` is a `MoneyOperand<C>`: a Money of the same currency type, or a `Money<string>`, whose currency is checked at run time as before (a mismatch throws `CurrencyMismatchError`). The result keeps the literal. A different literal, or a union such as `Money<'EUR' | 'USD'>`, which says it may be the other currency, is still a compile error: `Argument of type 'Money<"USD">' is not assignable to parameter of type 'Money<"EUR">'`. Narrow those with `isMoneyIn` or `assertCurrency`. Requiring that narrowing for every `Money<string>` as well would mean an assertion on every row read from a database, which ports to ducat found was most of their type errors (#219).
 
-  ```ts
-  import { money, type Money } from '@ducatjs/money';
+```ts
+import { fromJSON, money, type Money } from '@ducatjs/money';
 
-  declare const fromDatabase: Money<string>;
-  const total: Money<'EUR'> = money('1', 'EUR').add(fromDatabase); // checked at run time
-  money('1', 'EUR').add(money('1', 'USD')); // compile error, and throws
-  ```
+const fromDatabase = fromJSON({ amount: '2', currency: 'EUR' as string }); // Money<string>
+const total: Money<'EUR'> = money('1', 'EUR').add(fromDatabase); // checked at run time
+total; // → 3.00 EUR
+money('1', 'EUR').add(money('1', 'USD')); // compile error, and throws
+```
 
 - **Default rounding is `'halfExpand'`** (ties away from zero) for arithmetic, the most common default. It is the default of decimal.js, Prisma.Decimal, big.js, bignumber.js and `Intl.NumberFormat`, and what currency.js, js-money and ts-money intend with `Math.round` (which differs for negative ties). The minority defaults: half-even (dinero.js 1, bigint-money), throw (monetra), truncate (dinero.js 2 `transformScale`). Parsing (`money('1.005','EUR')`, `fromDecimal`) and processor amounts (`toStripeAmount`, `toAdyen`) still throw unless a mode is passed, as ts-money and monetra do for input. The default is exported as `DEFAULT_ROUNDING`.
 - **Rounding policies are explicit values.** A policy (scale, increment and mode) is passed to each operation that rounds, the way a rounding mode is. It is never attached to an amount or installed as a global default: a stored or global policy would make the same expression round differently depending on where a value came from or what ran earlier, which is the kind of action at a distance a money library should rule out.
