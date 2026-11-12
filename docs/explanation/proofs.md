@@ -56,6 +56,27 @@ These are stated over the proved kernel (`divRound`):
 - `toScale_roundtrip`: raising the scale and lowering it again gives back the original value in every mode, and `unnecessary` does not throw.
 - `divRound_mul_left`: multiplying the numerator and denominator by the same positive number does not change the result. So reducing a rate by its gcd, or composing exact rates, cannot change a rounded result, provided it is computed as a single division of the exact product.
 
+## XNPV's bounds: proved model (`proofs/Ducat/Xnpv.lean`)
+
+`xnpvBounds`, `xnpv` and `xirr` in `@ducatjs/money/excel` bracket XNPV in integer arithmetic at a fixed-point scale `S = 2^bits`. Each step of `xnpvScaled` and its theorem:
+
+| step in `src/excel.ts`                                                                                            | theorem                                                                  |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| each prime power `q`'s root `R = ⌊qth root of ⌊a·S^q / b⌋⌋`: the integer inequality `R^q·b ≤ a·S^q < (R + 1)^q·b` | `root_floor_inside`, `root_bracket`                                      |
+| `g^(r/q)` by square-and-multiply, every product floored (or ceiled)                                               | `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil` |
+| a flow's factors `Π g^(r/q)` multiplied left to right, floored (or ceiled)                                        | `fold_floor_le`, `le_fold_ceil`                                          |
+| flows with the same irrational part summed first as one coefficient, a zero coefficient dropped                   | `sum_regroup`, `group_common_factor`                                     |
+| a group's term `C / F` between `C / F_high` and `C / F_low` (swapped for `C < 0`), floored and ceiled to the grid | `quotient_bounds`, `grid_bounds`                                         |
+| the groups' bounds summed                                                                                         | `sum_bounds`                                                             |
+
+These are integer and rational (ℚ) inequalities: the first row proves `R^q·b ≤ a·S^q < (R + 1)^q·b` in integers, and the bound lemmas take rational targets. **Argued, not proved** (#308 is to formalize them over ℝ):
+
+- That the integer inequality puts the real root `g^(1/q)` in `[R/S, (R + 1)/S)`, and that the ℚ lemmas carry over to the irrational factors, their products and `C / F`. They hold in any ordered field.
+- The exponent identity `n = W·m + Σ r·(m/q)` behind the split, which the code computes by the CRT and checks at run time.
+- The real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on.
+- The exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder.
+- That rounding is monotone in every mode, so two ends that round alike pin `xnpv`'s rounded value. This is argued in [the finance design](finance-design.md).
+
 ## Tested, not proved
 
 - **The printer** that turns the Lean kernels into TypeScript, and the `divideAndRoundBigint` dispatch in `src/rounding.ts`. The generated kernels are compared with an independent bigint oracle (`test/kernel.test.ts`).
