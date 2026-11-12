@@ -165,7 +165,13 @@ export function tieredPrice<C extends string>(
 
   // The currency comes from the tiers' amounts, which must all share it.
   let currency: C | undefined;
-  for (const tier of tiers) {
+  for (const [index, tier] of tiers.entries()) {
+    // A tier with no price is almost always a mistake (Stripe refuses one too); a free tier says so.
+    if (tier.unitAmount === undefined && tier.flatAmount === undefined) {
+      throw new RangeError(
+        `Tier ${index} has neither a unitAmount nor a flatAmount; write a free tier as unitAmount 0`,
+      );
+    }
     for (const price of [tier.unitAmount, tier.flatAmount]) {
       if (price === undefined) {
         continue;
@@ -177,9 +183,8 @@ export function tieredPrice<C extends string>(
       }
     }
   }
-  if (currency === undefined) {
-    throw new RangeError('The tiers need a unitAmount or a flatAmount');
-  }
+  // Every tier has a price, and there is at least one tier.
+  currency = currency as C;
 
   // Bounds: increasing, positive, and open only last.
   const bounds: (Ratio | undefined)[] = [];

@@ -119,7 +119,7 @@ describe('tieredPrice', () => {
     );
     expect(() => tieredPrice(1, { mode: 'volume', tiers: [] })).toThrow('at least one tier');
     expect(() => tieredPrice(1, { mode: 'volume', tiers: [{ upTo: 'inf' }] })).toThrow(
-      'unitAmount or a flatAmount',
+      'Tier 0 has neither a unitAmount nor a flatAmount',
     );
     expect(() =>
       tieredPrice(1, {
@@ -377,4 +377,37 @@ describe('tieredPrice properties', () => {
       { numRuns: runs(100) },
     );
   });
+});
+
+// #272: a tier with neither amount is a mistake, not a free tier.
+describe('tieredPrice: a tier needs a price', () => {
+  const priced: PriceTier<'USD'>[] = [
+    { upTo: 10, unitAmount: usd('1') },
+    { upTo: 20 },
+    { upTo: 'inf', flatAmount: usd('5') },
+  ];
+  it.each<TiersMode>(['graduated', 'volume'])('throws naming the tier in %s mode', (mode) => {
+    expect(() => tieredPrice(15, { mode, tiers: priced })).toThrow(
+      'Tier 1 has neither a unitAmount nor a flatAmount; write a free tier as unitAmount 0',
+    );
+    expect(() => tieredPrice(5, { mode, tiers: priced })).toThrow(RangeError);
+  });
+  it('throws for a lone priceless tier too', () => {
+    expect(() => tieredPrice(1, { mode: 'volume', tiers: [{ upTo: 'inf' }] })).toThrow(
+      /^Tier 0 has neither/,
+    );
+  });
+  it.each<TiersMode>(['graduated', 'volume'])(
+    'accepts a free tier as unitAmount 0 in %s mode',
+    (mode) => {
+      const free: PriceTier<'USD'>[] = [
+        { upTo: 10, unitAmount: usd('0') },
+        { upTo: 'inf', unitAmount: usd('2') },
+      ];
+      expect(show(tieredPrice(5, { mode, tiers: free }).total)).toBe('0.00 USD');
+      expect(show(tieredPrice(15, { mode, tiers: free }).total)).toBe(
+        mode === 'graduated' ? '10.00 USD' : '30.00 USD',
+      );
+    },
+  );
 });
