@@ -93,22 +93,19 @@ export function divideSafeByRatio(value: number, divisor: Ratio, mode: RoundingM
 }
 
 /**
- * dividend / divisor rounded with `mode`, for safe-integer dividends and divisor > 0. Exact: within
- * the bound below, the truncated float quotient is the exact truncated quotient.
+ * dividend / divisor rounded with `mode`, for a safe-integer dividend and a safe-integer divisor > 0
+ * (every caller establishes both). Exact: the truncated float quotient is the exact truncated
+ * quotient.
  */
 export function divideAndRound(dividend: number, divisor: number, mode: RoundingMode): number {
   if (divisor === 1) {
     return dividend + 0; // + 0 normalises -0 (0 * -1 from a caller)
   }
-  // The exactness argument below needs |dividend| + divisor <= MAX_SAFE_MINOR (2^53 - 1); beyond
-  // it, take the bigint path. test/unreachable-guards.test.ts checks the cases at this bound.
-  if (!(Math.abs(dividend) + divisor <= MAX_SAFE_MINOR)) {
-    return Number(divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode));
-  }
-
-  // Exact, with no correction step: with |dividend| + divisor <= 2^53 - 1, the double quotient
-  // can't round up to the next integer (that would need (q + 1) * divisor >= 2^53), so its
-  // truncation is the true truncated quotient, and the product below is exact too.
+  // Exact for every safe dividend and divisor >= 2, with no correction step and no bigint fallback:
+  // rounding a / b up to the next integer k + 1 needs P = (k + 1) * b to satisfy
+  // P - |a| <= P * 2^-53 and P - |a| >= 1, so P = 2^53 and both k + 1 and b are powers of two,
+  // where the quotient is exact. So the truncated double quotient is the exact truncated
+  // quotient, quotient * divisor (at most |dividend|) is exact, and so is the remainder.
   const quotient = Math.trunc(dividend / divisor);
   const remainder = dividend - quotient * divisor;
 

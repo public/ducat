@@ -1,9 +1,11 @@
 // Boundary tests for the float-quotient paths that have no correction step. Each takes a double
 // quotient of two non-negative safe integers a / b (or the sign-symmetric truncation) as the exact
-// integer quotient, which holds while a + b <= 2^53 - 1: rounding up to the next integer k + 1
-// would need (k + 1) * b >= 2^53, but (k + 1) * b <= a + b. The tests sit on each path's guard of
-// that bound, its neighbours on either side, and the largest quotients inside it, and check every
-// result against a bigint computation. A change to a guard that breaks the bound fails here.
+// integer quotient. That holds for every safe a and b >= 1: rounding up to the next integer k + 1
+// would need P = (k + 1) * b with P - a <= P * 2^-53 and P - a >= 1, so P = 2^53, where k + 1 and
+// b are powers of two and the quotient is exact. The paths below also keep a + b <= 2^53 - 1
+// (divideAndRound no longer does). The tests sit on each guard, its neighbours on either side, the
+// largest quotients inside it, and (for divideAndRound) the top of the safe range, and check every
+// result against a bigint computation.
 import '../src/plugins/all.js';
 import { describe, expect, it } from 'vitest';
 import { divideAndRoundBigint } from '../src/generated/kernel.js';
@@ -51,7 +53,7 @@ const DIVISORS = [
   MAX,
 ];
 
-describe('divideAndRound at |dividend| + divisor = 2^53 - 1', () => {
+describe('divideAndRound around |dividend| + divisor = 2^53 - 1, its former bigint bound', () => {
   it('matches the bigint kernel on, inside and beyond the bound, for both signs', () => {
     for (const b of DIVISORS) {
       for (const magnitude of dividendsAtBound(b)) {
@@ -74,6 +76,34 @@ describe('divideAndRound at |dividend| + divisor = 2^53 - 1', () => {
   it('never returns -0', () => {
     expect(Object.is(divideAndRound(-1, 3, 'trunc'), 0)).toBe(true);
     expect(Object.is(divideAndRound(-(MAX - 3), MAX - 2, 'ceil'), 0)).toBe(true);
+  });
+});
+
+describe('divideAndRound at the top of the safe range, with no bigint fallback', () => {
+  // every power of two and its neighbours (P = 2^53 is the only case the argument has to rule
+  // out), and the divisors above
+  const divisors = new Set(DIVISORS);
+  for (let m = 1; m <= 53; m++) {
+    for (const b of [2 ** m - 1, 2 ** m, 2 ** m + 1]) {
+      if (b <= MAX) {
+        divisors.add(b);
+      }
+    }
+  }
+
+  it('matches the bigint kernel for dividends up to 2^53 - 1, both signs, every mode', () => {
+    for (const b of divisors) {
+      const top = Math.floor(MAX / b) * b;
+      const dividends = [MAX, MAX - 1, MAX - 2, top, top - 1, top + 1].filter((a) => a <= MAX);
+      for (const magnitude of dividends) {
+        for (const a of [magnitude, -magnitude]) {
+          for (const mode of MODES) {
+            const expected = Number(divideAndRoundBigint(BigInt(a), BigInt(b), mode));
+            expect([a, b, mode, divideAndRound(a, b, mode)]).toEqual([a, b, mode, expected]);
+          }
+        }
+      }
+    }
   });
 });
 

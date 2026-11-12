@@ -689,8 +689,7 @@ export function divide<C extends string>(
   //   integer, so both parts are safe integers here;
   // - m and d are safe integers, so a float product beyond 2^53 - 1 cannot round back down into
   //   the safe range: the bound check below rejects every inexact product;
-  // - divideAndRound corrects its float quotient exactly (and takes the bigint kernel itself when
-  //   dividend + divisor exceeds the safe range).
+  // - divideAndRound's float quotient is exact for safe integers (see its comment).
   // A rounding policy (a function, not a mode string) must not take this path: it rounds to its own
   // scale and increment.
   // divideSafeByRatio in rounding.ts is the same steps as a function, for Fixed; a call here costs
