@@ -49,7 +49,6 @@ export const normalizeMinor = (value: bigint): number | bigint =>
  */
 export function parsePlainDecimal(
   input: string,
-  // Stryker disable next-line BlockStatement: a null result falls back to parseDecimal
 ): { digits: number | bigint; scale: number } | null {
   const len = input.length;
   let i = 0;
