@@ -292,7 +292,6 @@ theorem rounds_toReal (m : Mode) (p d q : Int) (hd : 0 < d) (h : Rounds m p d q)
   have hx : (p : ℝ) / d - q = (((p - d * q : ℤ)) : ℝ) / d := by
     push_cast
     field_simp
-    all_goals ring
   obtain ⟨e, he⟩ : ∃ e : ℤ, p - d * q = e := ⟨_, rfl⟩
   have ht : (e : ℝ) / d * d = e := div_mul_cancel₀ _ hd0
   cases m

@@ -72,12 +72,10 @@ theorem exponent_split (n W : ℤ) (m : ℕ) (hm : 0 < m) (parts : List (ℕ × 
       simp only [List.map_cons, List.sum_cons, Int.cast_add, Int.cast_mul, Int.cast_natCast]
       rw [ih (fun q hq => h q (List.mem_cons_of_mem _ hq)), ← hp']
       field_simp
-      all_goals ring
   have hid' := congrArg (fun z : ℤ => (z : ℝ)) hid
   simp only [Int.cast_add, Int.cast_mul, Int.cast_natCast] at hid'
   rw [hid', key parts hparts]
   field_simp
-  all_goals ring
 
 /-- `g` to a sum is the product of the powers. -/
 theorem rpow_list_sum {α : Type*} (g : ℝ) (hg : 0 < g) (f : α → ℝ) :
