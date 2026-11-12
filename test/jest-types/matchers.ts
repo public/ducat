@@ -1,4 +1,4 @@
-// Type check of the README's Jest typing snippet for @types/jest users (the global `jest`
+// Type check of the Jest typing snippet in docs/how-to/test-code-that-uses-money.md for @types/jest users (the global `jest`
 // namespace), in a project of its own: next to Vitest's types it would clash (TS2320).
 import { money } from '../../src/index.js';
 import type { MoneyMatchers } from '../../src/testing/index.js';

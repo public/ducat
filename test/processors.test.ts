@@ -93,7 +93,7 @@ describe('Adyen', () => {
   });
 });
 
-// The README's cross-processor table: the same 1000 major units on each processor's wire
+// The cross-processor table in docs/reference/processors.md: the same 1000 major units on each processor's wire
 // ('-' where the processor doesn't take the currency)
 const orDash = <T>(f: () => T): T | '-' => {
   try {
