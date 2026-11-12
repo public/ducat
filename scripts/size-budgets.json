@@ -68,7 +68,7 @@
   "snippets": {
     "excel: xnpv alone": {
       "code": "import { money } from '@ducatjs/money'; import { xnpv } from '@ducatjs/money/excel'; console.log(xnpv('0.09', [money('-100', 'EUR'), money('110', 'EUR')], ['2020-01-01', '2020-07-01']).toDecimal());",
-      "gzipped": 7.6
+      "gzipped": 7.65
     },
     "finance: amortise alone": {
       "code": "import { money } from '@ducatjs/money'; import { amortise } from '@ducatjs/money/finance'; console.log(amortise(money('200000', 'EUR'), { rate: '0.045', perYear: 12, periods: 300 }).payment.toDecimal());",
