@@ -98,9 +98,6 @@ export function divideSafeByRatio(value: number, divisor: Ratio, mode: RoundingM
  * is smaller than the divisor.
  */
 export function divideAndRound(dividend: number, divisor: number, mode: RoundingMode): number {
-  if (divisor === 1) {
-    return dividend + 0; // + 0 normalises -0 (0 * -1 from a caller)
-  }
   // Beyond MAX_SAFE_MINOR the product quotient * divisor below could round, so take the bigint
   // path.
   if (!(Math.abs(dividend) + divisor <= MAX_SAFE_MINOR)) {
@@ -129,11 +126,6 @@ export function divideAndRound(dividend: number, divisor: number, mode: Rounding
     remainder += divisor;
   }
 
-  // The generated switch handles a zero remainder too; returning here saves the call on the hottest
-  // path.
-  if (remainder === 0) {
-    return quotient + 0; // + 0 normalises -0
-  }
   // quotient and remainder are now the exact truncated quotient and remainder, as the generated
   // switch expects
   return roundTruncatedQuotient(dividend, divisor, quotient, remainder, mode) + 0;
