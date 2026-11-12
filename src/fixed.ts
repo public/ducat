@@ -64,7 +64,7 @@ export interface ScaledInteger {
 
 /** A number stays; a bigint becomes a number when it is safe (the representation invariant). */
 function normalize(value: number | bigint): number | bigint {
-  // Stryker disable next-line ConditionalExpression,EqualityOperator,StringLiteral: normalizeMinor returns a number unchanged
+  // Stryker disable next-line ConditionalExpression,EqualityOperator,StringLiteral: every result goes through make(), whose constructor normalises a bigint too
   return typeof value === 'bigint' ? normalizeMinor(value) : value;
 }
 

@@ -143,6 +143,18 @@ describe('errors name the problem', () => {
   });
 });
 
+describe('the representation', () => {
+  it('a bigint result that fits is a number again', () => {
+    const difference = fixed('9007199254740993').subtract(fixed('9007199254740992'));
+    expect(shape(difference)).toEqual(['number', '1', 0]);
+    expect(difference.equals(fixed('1'))).toBe(true);
+    expect(
+      shape(fixed('9007199254740993.5', { scale: 0, rounding: 'floor' }).subtract(2n ** 53n)),
+    ).toEqual(['number', '1', 0]);
+    expect(shape(fixed(2n ** 53n, { scale: 0 }).divide(2))).toEqual(['number', String(2 ** 52), 0]);
+  });
+});
+
 describe('fixed() of a Fixed and of a bigint', () => {
   it('returns a Fixed as it is, or at the scale asked for', () => {
     const f = fixed('1.5');
