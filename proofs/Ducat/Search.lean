@@ -176,7 +176,6 @@ theorem doubling_inl (signAt : ℤ → ℤ) (lowSign : ℤ) :
       subst heq
       exact h1
     · simp at heq
-    · simp at heq
   | succ f ih =>
     intro low high r heq
     simp only [doubling] at heq
@@ -201,7 +200,6 @@ theorem doubling_inr (signAt : ℤ → ℤ) (lowSign : ℤ) :
     · simp only [Option.some.injEq, Sum.inr.injEq, Prod.mk.injEq] at heq
       obtain ⟨rfl, rfl⟩ := heq
       exact ⟨h0, hlt, hs, h2, h1⟩
-    · simp at heq
   | succ f ih =>
     intro low high l h h0 hlt hs heq
     simp only [doubling] at heq
@@ -294,18 +292,18 @@ theorem bisectRate_spec (signAt : ℤ → ℤ) (unit firstSign : ℤ) (hunit : 0
   | some r' =>
     rw [hf] at h
     simp only at h
+    -- the branch with `r' ≤ -unit` gives `none = some r`, which `split_ifs` closes
     split_ifs at h with hle
-    · simp at h
-    · simp only [Option.some.injEq] at h
-      subst h
-      refine ⟨by omega, ?_⟩
-      rcases bisectFound_spec signAt unit firstSign hunit hfirst hrange r' hf with
-        h0 | ⟨s, hs, ha, hb, hc⟩
-      · exact Or.inl h0
-      · right
-        have hr : signAt r' = s := ha.resolve_right (by omega)
-        rw [hr]
-        rcases hrange (r' + 1) with e | e | e <;> rw [e] at hb hc ⊢ <;>
-          rcases hs with rfl | rfl <;> omega
+    simp only [Option.some.injEq] at h
+    subst h
+    refine ⟨by omega, ?_⟩
+    rcases bisectFound_spec signAt unit firstSign hunit hfirst hrange r' hf with
+      h0 | ⟨s, hs, ha, hb, hc⟩
+    · exact Or.inl h0
+    · right
+      have hr : signAt r' = s := ha.resolve_right (by omega)
+      rw [hr]
+      rcases hrange (r' + 1) with e | e | e <;> rw [e] at hb hc ⊢ <;>
+        rcases hs with rfl | rfl <;> omega
 
 end Ducat.Search
