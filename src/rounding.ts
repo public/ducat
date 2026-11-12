@@ -93,49 +93,32 @@ export function divideSafeByRatio(value: number, divisor: Ratio, mode: RoundingM
 }
 
 /**
- * dividend / divisor rounded with `mode`, for safe-integer dividends and divisor > 0. Exact: the
- * float quotient is only a first guess, corrected until the remainder has the dividend's sign and
- * is smaller than the divisor.
+ * dividend / divisor rounded with `mode`, for safe-integer dividends and divisor > 0. Exact: within
+ * the bound below, the truncated float quotient is the exact truncated quotient.
  */
 export function divideAndRound(dividend: number, divisor: number, mode: RoundingMode): number {
   if (divisor === 1) {
     return dividend + 0; // + 0 normalises -0 (0 * -1 from a caller)
   }
-  // Beyond MAX_SAFE_MINOR the product quotient * divisor below could round, so take the bigint
-  // path.
+  // The exactness argument below needs |dividend| + divisor <= MAX_SAFE_MINOR (2^53 - 1); beyond
+  // it, take the bigint path. test/unreachable-guards.test.ts checks the cases at this bound.
   if (!(Math.abs(dividend) + divisor <= MAX_SAFE_MINOR)) {
     return Number(divideAndRoundBigint(BigInt(dividend), BigInt(divisor), mode));
   }
 
-  let quotient = Math.trunc(dividend / divisor);
-  // exact: |quotient * divisor| <= |dividend| + divisor <= MAX_SAFE_MINOR
-  let remainder = dividend - quotient * divisor;
-
-  // The float quotient can be off by one ulp; fix it so the remainder has the dividend's sign and
-  // is smaller than the divisor in magnitude.
-  if (dividend >= 0) {
-    if (remainder < 0) {
-      quotient -= 1;
-      remainder += divisor;
-    } else if (remainder >= divisor) {
-      quotient += 1;
-      remainder -= divisor;
-    }
-  } else if (remainder > 0) {
-    quotient += 1;
-    remainder -= divisor;
-  } else if (remainder <= -divisor) {
-    quotient -= 1;
-    remainder += divisor;
-  }
+  // Exact, with no correction step: with |dividend| + divisor <= 2^53 - 1, the double quotient
+  // can't round up to the next integer (that would need (q + 1) * divisor >= 2^53), so its
+  // truncation is the true truncated quotient, and the product below is exact too.
+  const quotient = Math.trunc(dividend / divisor);
+  const remainder = dividend - quotient * divisor;
 
   // The generated switch handles a zero remainder too; returning here saves the call on the hottest
   // path.
   if (remainder === 0) {
     return quotient + 0; // + 0 normalises -0
   }
-  // quotient and remainder are now the exact truncated quotient and remainder, as the generated
-  // switch expects
+  // quotient and remainder are the exact truncated quotient and remainder, as the generated switch
+  // expects
   return roundTruncatedQuotient(dividend, divisor, quotient, remainder, mode) + 0;
 }
 
