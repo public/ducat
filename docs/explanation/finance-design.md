@@ -343,20 +343,26 @@ precision of 2^22 bits, and the split's exponent identity is checked; both are d
 day count reaches them (its denominators' prime powers are at most 73), and
 [equivalent-mutants.md](equivalent-mutants.md) lists them.
 
-**What the Lean proofs cover** (`proofs/Ducat/Xnpv.lean`, listed in [What is proved](proofs.md)):
+**What the Lean proofs cover** (`proofs/Ducat/Xnpv.lean`, listed in [What is proved](proofs.md)).
+The theorems are integer and rational (ℚ) inequalities:
 
-- step 2: `root_floor_inside` and `root_bracket`, for each prime power;
+- step 2: `root_floor_inside` and `root_bracket`, the integer inequality
+  `R^q·b ≤ a·S^q < (R + 1)^q·b` for each prime power's root;
 - step 3: `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le` and `le_fixedPower_ceil` for each
-  power, and `fold_floor_le` and `le_fold_ceil` for composing a flow's factors;
+  power, and `fold_floor_le` and `le_fold_ceil` for composing a flow's factors, as bounds on
+  rational targets;
 - step 4: `sum_regroup` and `group_common_factor`;
 - steps 5 and 6: `quotient_bounds`, `grid_bounds` and `sum_bounds`.
 
-**Not proved:**
+**Argued, not proved** (#308 is to formalize them over ℝ):
 
-- step 1's exponent identity `n = W·m + Σ r·(m/q)`, which the code checks at run time and throws if
-  it fails;
-- the real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on, which is standard but not
-  formalized;
+- that the integer inequality puts the real root in `[R/S, (R + 1)/S)`, and that the ℚ lemmas
+  carry over to the irrational factors `g^(r/q)`, their products and `C/F` (they hold in any
+  ordered field);
+- step 1's exponent identity `n = W·m + Σ r·(m/q)`, which the code checks at run time and throws
+  if it fails, and the real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on;
+- the exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder (exact
+  bigint operations);
 - the monotonicity of rounding used for `xnpv`'s single rounding.
 
 **XIRR** bisects as `irr` does, on the grid of `digits`-place decimals, with `irr`'s bracket and
