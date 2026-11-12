@@ -286,7 +286,8 @@ theorem rounds_toReal (m : Mode) (p d q : Int) (hd : 0 < d) (h : Rounds m p d q)
   have hd' : (0 : ℝ) < d := by exact_mod_cast hd
   have hd0 : (d : ℝ) ≠ 0 := hd'.ne'
   have hsign : (0 : ℝ) ≤ (p : ℝ) / d ↔ 0 ≤ p := by
-    rw [le_div_iff₀ hd', zero_mul, Int.cast_nonneg]
+    rw [le_div_iff₀ hd', zero_mul]
+    norm_cast
   -- the error `x - q` is `(p - d·q) / d`
   have hx : (p : ℝ) / d - q = (((p - d * q : ℤ)) : ℝ) / d := by
     push_cast
@@ -294,22 +295,34 @@ theorem rounds_toReal (m : Mode) (p d q : Int) (hd : 0 < d) (h : Rounds m p d q)
     all_goals ring
   obtain ⟨e, he⟩ : ∃ e : ℤ, p - d * q = e := ⟨_, rfl⟩
   have ht : (e : ℝ) / d * d = e := div_mul_cancel₀ _ hd0
-  cases m <;> simp only [Rounds, RoundsR, hsign, hx, he] at h ⊢ <;> (try split_ifs at h ⊢) <;>
-    generalize (e : ℝ) / d = t at * <;> rify at h <;>
-  first
-  | (obtain ⟨h1, h2⟩ := h; constructor <;> nlinarith)
-  | (obtain ⟨h1, h2, h3⟩ := h
-     refine ⟨by nlinarith, by nlinarith, ?_⟩
-     intro hor
-     apply h3
-     rcases hor with h4 | h4
-     · left
-       have h5 : (2 * e : ℝ) = d := by linear_combination (d : ℝ) * h4 - 2 * ht
-       exact_mod_cast h5
-     · right
-       have h5 : (2 * e : ℝ) = -d := by linear_combination (d : ℝ) * h4 - 2 * ht
-       exact_mod_cast h5)
-  | nlinarith
+  cases m
+  case halfEven =>
+    simp only [Rounds, RoundsR, hx, he] at h ⊢
+    generalize (e : ℝ) / d = t at *
+    obtain ⟨h1, h2, h3⟩ := h
+    have h1' : -(d : ℝ) ≤ 2 * e := by exact_mod_cast h1
+    have h2' : 2 * (e : ℝ) ≤ d := by exact_mod_cast h2
+    have h6 : -1 ≤ 2 * t := by nlinarith
+    have h7 : 2 * t ≤ 1 := by nlinarith
+    refine ⟨h6, h7, ?_⟩
+    intro hor
+    apply h3
+    rcases hor with h4 | h4
+    · left
+      have h5 : 2 * (e : ℝ) = d := by linear_combination (d : ℝ) * h4 - 2 * ht
+      exact_mod_cast h5
+    · right
+      have h5 : 2 * (e : ℝ) = -d := by linear_combination (d : ℝ) * h4 - 2 * ht
+      exact_mod_cast h5
+  all_goals
+    simp only [Rounds, RoundsR, hsign, hx, he] at h ⊢
+    (try split_ifs at h ⊢)
+    all_goals
+      generalize (e : ℝ) / d = t at *
+      rify at h
+      first
+      | (obtain ⟨h1, h2⟩ := h; constructor <;> nlinarith)
+      | nlinarith
 
 /-- Rounding is monotone in every mode. -/
 theorem roundsR_mono (m : Mode) (x y : ℝ) (q q' : Int) (hxy : x ≤ y) (h : RoundsR m x q)
