@@ -98,5 +98,31 @@
       { "formula": "=RATE(A2*12, A3, A4)", "nper": 48, "pmt": "-200", "pv": "8000", "places": 2, "result": "0.01" },
       { "formula": "=RATE(A2*12, A3, A4)*12", "nper": 48, "pmt": "-200", "pv": "8000", "times": 12, "places": 4, "result": "0.0924" }
     ]
+  },
+  "xnpv": {
+    "source": "https://support.microsoft.com/en-us/office/xnpv-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7",
+    "examples": [
+      {
+        "formula": "=XNPV(.09, A2:A6, B2:B6)",
+        "rate": "0.09",
+        "values": ["-10000", "2750", "4250", "3250", "2750"],
+        "dates": ["2008-01-01", "2008-03-01", "2008-10-30", "2009-02-15", "2009-04-01"],
+        "places": 2,
+        "result": "2086.65"
+      }
+    ]
+  },
+  "xirr": {
+    "source": "https://support.microsoft.com/en-us/office/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d",
+    "accuracy": "0.00000001",
+    "examples": [
+      {
+        "formula": "=XIRR(A3:A7, B3:B7, 0.1)",
+        "values": ["-10000", "2750", "4250", "3250", "2750"],
+        "dates": ["2008-01-01", "2008-03-01", "2008-10-30", "2009-02-15", "2009-04-01"],
+        "places": 9,
+        "result": "0.373362535"
+      }
+    ]
   }
 }

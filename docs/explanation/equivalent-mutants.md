@@ -88,6 +88,14 @@ Not triaged yet.
 | `isExpired`, `checkValidity`                | the `validUntil` checks as `true` or `false`                                                                                                                    | `hasEnded` with no `validUntil` is false.                                                                                    |
 | `keepDigits`                                | the last-character check as `true`                                                                                                                              | The pattern itself requires a trailing 0; the check only saves the regular expression for most rates.                        |
 
+## excel.ts
+
+| where                                                       | mutants                                    | why they are equivalent                                                                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `splitExponent`, the `power > MAX_ROOT_ORDER` check         | the check as `false`, or its block emptied | Defensive. Every day count's year fraction has a denominator dividing 360, 365, 366 or 365·366, whose prime powers are at most 73, so no input reaches it. |
+| `splitExponent`, the check that `m` divides `n − Σ r·(m/q)` | the check as `false`, or its block emptied | Defensive. By the CRT the remainder is always 0 (the bound relies on it, so it is checked rather than assumed), so no input reaches the throw.             |
+| `xnpvScaled`, the `order × bits > MAX_ROOT_BITS` check      | the check as `false`, or `>` as `>=`       | Defensive. With prime powers of at most 73 and at most 2,048 bits, `order × bits` is at most 149,504, far under 2^22.                                      |
+
 ## Database adapters
 
 The mutation run includes the database tests in `test/db/`, but without `DUCAT_PG_URL` and `DUCAT_MYSQL_URL` only their SQLite parts run. Code that only Postgres or MySQL reaches is covered by the CI database job, which runs those tests against real servers, but it is not mutation-tested, and its mutants show as "no coverage": `drizzle/pg.ts`, `drizzle/mysql.ts`, and the Postgres and MySQL branches of `pg.ts` and `kysely.ts`.

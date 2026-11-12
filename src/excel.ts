@@ -9,8 +9,13 @@
 
 import { formatScaled, pow10n, ratio, type Factor, type Ratio } from './decimal.js';
 import { ExactMoney } from './exact.js';
-
-import { type Money, type RoundingInput } from './money.js';
+import {
+  yearFraction,
+  type CalendarDate,
+  type DayCount,
+  type YearFractionOptions,
+} from './finance.js';
+import { compare, type Money, type RoundingInput } from './money.js';
 import { DEFAULT_ROUNDING } from './rounding.js';
 import {
   MAX_EXACT_POWER_BITS,
@@ -540,4 +545,589 @@ function atanhInterval(num: bigint, den: bigint, bits: number): [bigint, bigint]
   }
   // each term is at most 2 units low, and the tail is at most 2·(terms + 1) units
   return [sum, sum + 4n * terms + 4n];
+}
+
+// ---------------------------------------------------------------------------------------------
+// XNPV and XIRR
+// ---------------------------------------------------------------------------------------------
+
+/** Options for `xnpv` and `xnpvBounds`. */
+export interface XnpvOptions extends YearFractionOptions {
+  /**
+   * How a flow's time from the first date is counted, in years (default 'ACT/365F': days / 365, as
+   * Excel's XNPV and XIRR count it). Any other convention isn't Excel's.
+   */
+  readonly dayCount?: DayCount | undefined;
+}
+
+/** Options for `xnpvBounds`. */
+export interface XnpvBoundsOptions extends XnpvOptions {
+  /** The interval is at most 10^−digits wide, in major units (default 10, at most 100). */
+  readonly digits?: number | undefined;
+}
+
+/** Options for `xirr`. */
+export interface XirrOptions extends XnpvOptions {
+  /** Decimal places of the result (default 10, at most 100). */
+  readonly digits?: number | undefined;
+  /** Rates the result lies between, as for `irr`; it replaces Excel's `guess`. */
+  readonly bracket?: readonly [Factor, Factor] | undefined;
+}
+
+/** The result of `xnpvBounds`: the net present value lies in [`lower`, `upper`], in major units. */
+export interface XnpvBounds {
+  readonly lower: Ratio;
+  readonly upper: Ratio;
+  /** Whether the value is rational and `lower` and `upper` are it. */
+  readonly exact: boolean;
+}
+
+/** Flows grouped by time: each group's summed minor units and its exponent, years from d₀. */
+interface DatedFlows<C extends string> {
+  readonly currency: C;
+  readonly scale: number;
+  readonly minors: bigint[];
+  /** reduced exponents, increasing */
+  readonly years: Ratio[];
+  /** each exponent split by its denominator's prime powers */
+  readonly splits: SplitExponent[];
+}
+
+/**
+ * The most bits each discount factor and the sum are bracketed to: every step of a factor raises
+ * a number of about this many bits to the root's order (365 for days / 365).
+ */
+const MAX_X_BITS = 2048;
+
+function datedFlows<C extends string>(
+  values: readonly Money<C>[],
+  dates: readonly CalendarDate[],
+  options: XnpvOptions | undefined,
+  name: 'XNPV' | 'XIRR',
+): DatedFlows<C> {
+  if (values.length !== dates.length) {
+    throw new RangeError(
+      `values and dates must have the same length; got ${values.length} and ${dates.length}`,
+    );
+  }
+  const { minors: flowMinorList, scale } = flowMinors(values);
+  // Excel checks the values as given, before flows on one date are combined
+  if (!(flowMinorList.some((minor) => minor > 0n) && flowMinorList.some((minor) => minor < 0n))) {
+    throw new RangeError(`${name} needs at least one positive and one negative value`);
+  }
+  const convention = options?.dayCount ?? 'ACT/365F';
+  const byTime = new Map<string, { years: Ratio; minor: bigint }>();
+  dates.forEach((date, index) => {
+    let years: Ratio;
+    try {
+      // ACT/365F first: whatever the convention, it throws for a date before the first
+      yearFraction(dates[0]!, date, 'ACT/365F');
+      years = yearFraction(dates[0]!, date, convention, options);
+    } catch (error) {
+      if (error instanceof RangeError && /before the start date/.test(error.message)) {
+        // Excel's #NUM!: the first date starts the schedule
+        throw new RangeError(`dates[${index}] is before the first date, dates[0]`);
+      }
+      throw error;
+    }
+    const key = `${years.num}/${years.den}`;
+    const group = byTime.get(key);
+    if (group === undefined) {
+      byTime.set(key, { years, minor: flowMinorList[index]! });
+    } else {
+      group.minor += flowMinorList[index]!;
+    }
+  });
+  const groups = [...byTime.values()].sort((left, right) =>
+    left.years.num * right.years.den < right.years.num * left.years.den ? -1 : 1,
+  );
+  return {
+    currency: values[0]!.currency,
+    scale,
+    minors: groups.map((group) => group.minor),
+    years: groups.map((group) => group.years),
+    splits: groups.map((group) => splitExponent(group.years)),
+  };
+}
+
+/**
+ * The floor of the `order`th root of a positive integer, by integer Newton from above. The start
+ * comes from a double's estimate, raised until it is above the root; the steps then fall to the
+ * floor exactly, so the double only saves iterations.
+ */
+function floorRoot(value: bigint, order: bigint): bigint {
+  if (order === 1n) {
+    return value;
+  }
+  const bits = value.toString(2).length;
+  // value ≈ 2^bits · (leading digits); the estimate overshoots by a little on purpose
+  const leading = Number(value >> BigInt(Math.max(0, bits - 53))) / 2 ** Math.min(53, bits);
+  const logRoot = (Math.log2(leading) + bits) / Number(order);
+  const shift = Math.max(0, Math.floor(logRoot) - 52);
+  let guess = (BigInt(Math.ceil(2 ** (logRoot - shift) * (1 + 2 ** -40))) + 1n) << BigInt(shift);
+  while (guess ** order <= value) {
+    guess *= 2n;
+  }
+  const lower = order - 1n;
+  for (;;) {
+    const next = (lower * guess + value / guess ** lower) / order;
+    if (next >= guess) {
+      return guess;
+    }
+    guess = next;
+  }
+}
+
+/** The prime powers whose product is m (coprime, so the CRT applies), by trial division. */
+function primePowers(order: bigint): bigint[] {
+  const powers: bigint[] = [];
+  let rest = order;
+  for (let prime = 2n; prime * prime <= rest; prime++) {
+    if (rest % prime === 0n) {
+      let power = 1n;
+      while (rest % prime === 0n) {
+        rest /= prime;
+        power *= prime;
+      }
+      powers.push(power);
+    }
+  }
+  if (rest > 1n) {
+    powers.push(rest);
+  }
+  return powers;
+}
+
+/** x⁻¹ mod m, for x coprime to m. */
+function inverseMod(value: bigint, modulus: bigint): bigint {
+  let [oldRemainder, remainder] = [((value % modulus) + modulus) % modulus, modulus];
+  let [oldCoefficient, coefficient] = [1n, 0n];
+  while (remainder !== 0n) {
+    const quotient = oldRemainder / remainder;
+    [oldRemainder, remainder] = [remainder, oldRemainder - quotient * remainder];
+    [oldCoefficient, coefficient] = [coefficient, oldCoefficient - quotient * coefficient];
+  }
+  return ((oldCoefficient % modulus) + modulus) % modulus;
+}
+
+/**
+ * An exponent n/m split by its denominator's prime powers: n/m = whole + Σ r/q with 0 < r < q, by
+ * the CRT. g^whole is an exact power, and each g^(r/q) needs a root of order q only (73 at most
+ * for days/365 = 5·73, and for ACT/ACT ISDA's 365·366).
+ */
+interface SplitExponent {
+  readonly whole: bigint;
+  /** [q, r] pairs */
+  readonly parts: readonly (readonly [bigint, bigint])[];
+}
+
+/** The largest prime power a year fraction's denominator may have: its roots stay cheap. */
+const MAX_ROOT_ORDER = 1_000_000n;
+
+function splitExponent(years: Ratio): SplitExponent {
+  const order = years.den;
+  if (order === 1n) {
+    return { whole: years.num, parts: [] };
+  }
+  const parts: [bigint, bigint][] = [];
+  let covered = 0n;
+  for (const power of primePowers(order)) {
+    if (power > MAX_ROOT_ORDER) {
+      throw new RangeError(
+        `A year fraction's denominator, ${order}, is too large for XNPV's bounds`,
+      );
+    }
+    const cofactor = order / power;
+    const residue = (((years.num % power) + power) * inverseMod(cofactor, power)) % power;
+    if (residue !== 0n) {
+      parts.push([power, residue]);
+    }
+    covered += residue * cofactor;
+  }
+  // n = whole·m + Σ r·(m/q), exactly: by the CRT m divides n − Σ r·(m/q); checked, since the
+  // bound relies on it (and it isn't among the proved steps)
+  if ((years.num - covered) % order !== 0n) {
+    throw new RangeError(`XNPV's exponent split failed for ${years.num}/${order}`);
+  }
+  return { whole: (years.num - covered) / order, parts };
+}
+
+/** g^(1/q) for g = num/den: rational when num and den are perfect qth powers, else bracketed. */
+type RootBracket = { readonly low: bigint } | { readonly num: bigint; readonly den: bigint };
+
+function rootBracket(num: bigint, den: bigint, order: bigint, bits: number): RootBracket {
+  const rootNum = exactRoot(num, order);
+  const rootDen = exactRoot(den, order);
+  if (rootNum !== undefined && rootDen !== undefined) {
+    return { num: rootNum, den: rootDen };
+  }
+  // the floor of 2^bits · g^(1/q): the qth root of num · 2^(q·bits) / den, floored (flooring
+  // inside the root doesn't change the floor of the root)
+  return { low: floorRoot((num << (BigInt(bits) * order)) / den, order) };
+}
+
+/** A product in fixed point at 2^−bits, floored (`up` false) or ceiled. */
+function fixedProduct(left: bigint, right: bigint, bits: number, up: boolean): bigint {
+  const shift = BigInt(bits);
+  const product = left * right;
+  const quotient = product >> shift;
+  return up && quotient << shift !== product ? quotient + 1n : quotient;
+}
+
+/** x^n in fixed point at 2^−bits, each product floored (`up` false) or ceiled, by squaring. */
+function fixedPower(base: bigint, exponent: bigint, bits: number, up: boolean): bigint {
+  let result = 1n << BigInt(bits);
+  let square = base;
+  for (let rest = exponent; rest > 0n; rest >>= 1n) {
+    if ((rest & 1n) === 1n) {
+      result = fixedProduct(result, square, bits, up);
+    }
+    if (rest > 1n) {
+      square = fixedProduct(square, square, bits, up);
+    }
+  }
+  return result;
+}
+
+/** Floor and ceiling of a / b for b > 0. */
+function ceilDivide(dividend: bigint, divisor: bigint): bigint {
+  return -floorDivide(-dividend, divisor);
+}
+
+/**
+ * Σ minorᵢ / g^yearsᵢ times 2^bits, as integers [low, high] around it, and whether it is exact.
+ * Each term is v·g^(−whole) / Π g^(r/q): flows with the same irrational part Π g^(r/q) are summed
+ * exactly first, so terms that cancel (a zero first flow, flows on one date, a root on the grid)
+ * cancel exactly, and the value is exact when every irrational part's coefficient is 0. Each other
+ * group's factor F is bracketed by its roots' fixed-point powers and products, floored for the
+ * lower end and ceiled for the upper; C / F lies between C / F_high and C / F_low (swapped for
+ * C < 0), floored and ceiled to the grid. Undefined while a lower end floors to 0 (a factor below
+ * 2^−bits): more bits settle it.
+ */
+function xnpvScaled(
+  flows: DatedFlows<string>,
+  num: bigint,
+  den: bigint,
+  bits: number,
+): ScaledSum | undefined {
+  // the exact coefficient of each irrational part, keyed by its [q, r] pairs
+  const groups = new Map<
+    string,
+    { parts: readonly (readonly [bigint, bigint])[]; num: bigint; den: bigint }
+  >();
+  const roots = new Map<bigint, RootBracket>();
+  const rootOf = (order: bigint) => {
+    let root = roots.get(order);
+    if (root === undefined) {
+      if (order * BigInt(bits) > MAX_ROOT_BITS) {
+        throw new RangeError(`XNPV's roots would pass ${MAX_ROOT_BITS} bits; ask for fewer digits`);
+      }
+      root = rootBracket(num, den, order, bits);
+      roots.set(order, root);
+    }
+    return root;
+  };
+  // every term over one common denominator, num^A·den^B for the whole powers W in [Wmin, Wmax]:
+  // v·g^(−W) = v·den^(W + B)·num^(A − W) / (num^A·den^B), both exponents ≥ 0. So terms of a group
+  // add as integers, and the denominators don't multiply up across flows
+  let wholeMin = 0n;
+  let wholeMax = 0n;
+  flows.splits.forEach((split, index) => {
+    if (flows.minors[index] !== 0n) {
+      wholeMin = split.whole < wholeMin ? split.whole : wholeMin;
+      wholeMax = split.whole > wholeMax ? split.whole : wholeMax;
+    }
+  });
+  const numPowers = new Map<bigint, bigint>();
+  const denPowers = new Map<bigint, bigint>();
+  const power = (cache: Map<bigint, bigint>, base: bigint, exponent: bigint) => {
+    let value = cache.get(exponent);
+    if (value === undefined) {
+      value = base ** exponent;
+      cache.set(exponent, value);
+    }
+    return value;
+  };
+  const common = power(numPowers, num, wholeMax) * power(denPowers, den, -wholeMin);
+  flows.minors.forEach((minor, index) => {
+    if (minor === 0n) {
+      return;
+    }
+    const split = flows.splits[index]!;
+    // v · g^(−whole), over the common denominator
+    let termNum =
+      minor *
+      power(denPowers, den, split.whole - wholeMin) *
+      power(numPowers, num, wholeMax - split.whole);
+    let termDen = common;
+    const irrational: (readonly [bigint, bigint])[] = [];
+    for (const [order, residue] of split.parts) {
+      const root = rootOf(order);
+      if ('num' in root) {
+        // a rational root: divide by root^r exactly
+        termNum *= root.den ** residue;
+        termDen *= root.num ** residue;
+      } else {
+        irrational.push([order, residue]);
+      }
+    }
+    const key = irrational.map(([order, residue]) => `${order}:${residue}`).join(',');
+    const group = groups.get(key);
+    if (group === undefined) {
+      groups.set(key, { parts: irrational, num: termNum, den: termDen });
+    } else if (group.den === termDen) {
+      group.num += termNum;
+    } else {
+      // only with rational roots: add over the product, in lowest terms
+      const sumNum = group.num * termDen + termNum * group.den;
+      const sumDen = group.den * termDen;
+      const divisor = greatestCommonDivisor(sumNum < 0n ? -sumNum : sumNum, sumDen);
+      group.num = sumNum / divisor;
+      group.den = sumDen / divisor;
+    }
+  });
+  const unit = 1n << BigInt(bits);
+  let low = 0n;
+  let high = 0n;
+  let rationalNum = 0n;
+  let rationalDen = 1n;
+  let exact = true;
+  for (const group of groups.values()) {
+    if (group.num === 0n) {
+      continue; // cancelled exactly
+    }
+    if (group.parts.length === 0) {
+      rationalNum = rationalNum * group.den + group.num * rationalDen;
+      rationalDen *= group.den;
+      continue;
+    }
+    exact = false;
+    // F = Π g^(r/q) in [factorLow, factorHigh] / 2^bits
+    let factorLow = unit;
+    let factorHigh = unit;
+    for (const [order, residue] of group.parts) {
+      const root = rootOf(order) as { readonly low: bigint };
+      factorLow = fixedProduct(factorLow, fixedPower(root.low, residue, bits, false), bits, false);
+      factorHigh = fixedProduct(
+        factorHigh,
+        fixedPower(root.low + 1n, residue, bits, true),
+        bits,
+        true,
+      );
+    }
+    if (factorLow === 0n) {
+      return undefined;
+    }
+    // C / F = num·2^bits / (den·F), times 2^bits on the grid
+    const scaled = group.num * unit * unit;
+    const [small, large] = group.num >= 0n ? [factorHigh, factorLow] : [factorLow, factorHigh];
+    low += floorDivide(scaled, group.den * small);
+    high += ceilDivide(scaled, group.den * large);
+  }
+  if (exact) {
+    // every irrational part cancelled: the value is rationalNum / rationalDen
+    return { low: rationalNum, high: rationalNum, scale: rationalDen, exact: true };
+  }
+  low += floorDivide(rationalNum * unit, rationalDen);
+  high += ceilDivide(rationalNum * unit, rationalDen);
+  return { low, high, scale: unit, exact: false };
+}
+
+/** gcd(a, b) for non-negative a and positive b. */
+function greatestCommonDivisor(left: bigint, right: bigint): bigint {
+  let [first, second] = [left, right];
+  while (second !== 0n) {
+    [first, second] = [second, first % second];
+  }
+  return first === 0n ? 1n : first;
+}
+
+/** The most bits a root may work on (its order times the precision): 2^22. */
+const MAX_ROOT_BITS = 4_194_304n;
+
+/** [low, high] / scale bounds Σ minorᵢ / factorᵢ; exact when low = high is the value. */
+interface ScaledSum {
+  readonly low: bigint;
+  readonly high: bigint;
+  readonly scale: bigint;
+  readonly exact: boolean;
+}
+
+/** 1 + rate as num/den, checked to be above zero. */
+function growthOf(discountRate: Factor): [bigint, bigint] {
+  const rateRatio = ratio(discountRate);
+  const num = rateRatio.num + rateRatio.den;
+  if (num <= 0n) {
+    throw new RangeError(`The rate must be above -1; got ${String(discountRate)}`);
+  }
+  return [num, rateRatio.den];
+}
+
+/**
+ * Bounds on Excel's XNPV, the net present value of flows on arbitrary dates:
+ * `Σ valueᵢ / (1 + rate)^((dateᵢ − date₀)/365)`. The fractional powers are irrational in general,
+ * so this gives an interval [`lower`, `upper`] in major units, at most 10^−digits wide (default 10),
+ * guaranteed to contain the value: each discount factor is bracketed in exact integer arithmetic
+ * and each term's bounds are rounded outwards. Where the value is rational (a rate of 0, every
+ * date on the first, or whole years apart), `exact` is true and both ends are the value.
+ *
+ * It throws a RangeError where Excel returns #NUM!: a date before the first one, lists of different
+ * lengths, no positive or no negative value; and for a rate at or below −1, or when the interval
+ * can't be narrowed enough within 2,048 bits.
+ */
+export function xnpvBounds<C extends string>(
+  discountRate: Factor,
+  values: readonly Money<C>[],
+  dates: readonly CalendarDate[],
+  options?: XnpvBoundsOptions,
+): XnpvBounds {
+  const digits = options?.digits ?? 10;
+  if (!(Number.isInteger(digits) && digits >= 0 && digits <= 100)) {
+    invalid('digits', digits);
+  }
+  const flows = datedFlows(values, dates, options, 'XNPV');
+  const [num, den] = growthOf(discountRate);
+  const minorUnit = pow10n(flows.scale);
+  // the interval must be under 10^−digits major units: (high − low) / (2^bits · 10^scale)
+  return refine((bits) => {
+    const sum = xnpvScaled(flows, num, den, bits);
+    if (sum === undefined) {
+      return undefined;
+    }
+    const scale = sum.scale * minorUnit;
+    // (high − low) / scale major units, at most 10^−digits
+    if (sum.exact || (sum.high - sum.low) * pow10n(digits) <= scale) {
+      return {
+        lower: ratio(sum.low, scale),
+        upper: ratio(sum.high, scale),
+        exact: sum.exact,
+      };
+    }
+    return undefined;
+  }, 'the interval');
+}
+
+/** Runs `attempt` at more and more bits until it settles, up to MAX_X_BITS. */
+function refine<T>(attempt: (bits: number) => T | undefined, what: string): T {
+  for (let bits = 64; bits <= MAX_X_BITS; bits *= 2) {
+    const result = attempt(bits);
+    if (result !== undefined) {
+      return result;
+    }
+  }
+  throw new RangeError(`XNPV can't settle ${what} within ${MAX_X_BITS} bits`);
+}
+
+/**
+ * Excel's XNPV, `Σ valueᵢ / (1 + rate)^((dateᵢ − date₀)/365)`, rounded once (to the currency's
+ * exponent with a mode, or to a policy's scale; default 'halfExpand'). The value is irrational in
+ * general, so its bounds are narrowed until both round to the same amount, which is then the
+ * rounded value; where it is rational (a rate of 0, every date on the first, or whole years
+ * apart) it is rounded exactly. Throws where `xnpvBounds` does.
+ *
+ *     xnpv('0.09', [-10000, 2750, 4250, 3250, 2750].map((v) => money(String(v), 'USD')),
+ *       ['2008-01-01', '2008-03-01', '2008-10-30', '2009-02-15', '2009-04-01']) // 2086.65 USD
+ */
+export function xnpv<C extends string>(
+  discountRate: Factor,
+  values: readonly Money<C>[],
+  dates: readonly CalendarDate[],
+  options?: XnpvOptions,
+  rounding: RoundingInput = DEFAULT_ROUNDING,
+): Money<C> {
+  const flows = datedFlows(values, dates, options, 'XNPV');
+  const [num, den] = growthOf(discountRate);
+  const minorUnit = pow10n(flows.scale);
+  const currency = values[0]!.currency;
+  return refine((bits) => {
+    const sum = xnpvScaled(flows, num, den, bits);
+    if (sum === undefined) {
+      return undefined;
+    }
+    const scale = sum.scale * minorUnit;
+    const low = roundQuotient(currency, sum.low, scale, rounding);
+    if (sum.exact) {
+      return low;
+    }
+    // rounding is monotone, so when both ends round alike, so does everything between
+    return compare(low, roundQuotient(currency, sum.high, scale, rounding)) === 0 ? low : undefined;
+  }, 'the rounded value');
+}
+
+/** The sign of XNPV at 1 + rate = num/den, refined until the bounds exclude zero. */
+function xnpvSign(flows: DatedFlows<string>, num: bigint, den: bigint): -1 | 0 | 1 {
+  return refine((bits) => {
+    const sum = xnpvScaled(flows, num, den, bits);
+    if (sum === undefined) {
+      return undefined;
+    }
+    if (sum.exact) {
+      return signOf(sum.low);
+    }
+    if (sum.low > 0n) {
+      return 1;
+    }
+    if (sum.high < 0n) {
+      return -1;
+    }
+    return undefined;
+  }, 'the sign of the value');
+}
+
+/**
+ * Excel's XIRR: the rate at which `xnpv` is zero, exact to `digits` decimal places (default 10),
+ * floored, between `lower` and `upper`, like `irr`. It bisects on the grid of `digits`-place
+ * decimals, taking XNPV's sign from its guaranteed bounds at each step (refined until they exclude
+ * zero), so the root is bracketed, never guessed.
+ *
+ * Where Excel guesses, it throws a RangeError instead: the flows, in date order, change sign more
+ * than once (several rates can fit) without a `bracket`, which replaces Excel's `guess`; Excel
+ * returns whichever its iteration from `guess` finds. Microsoft documents that XIRR iterates until
+ * it is within 0.000001 percent, so Excel's value is that close to [`lower`, `upper`]. It also
+ * throws where Excel returns #NUM! (no positive or no negative value, a date before the first, lists
+ * of different lengths), for a rate within 10^−digits of −1, and when XNPV's sign can't be settled
+ * within 2,048 bits.
+ *
+ *     xirr([-10000, 2750, 4250, 3250, 2750].map((v) => money(String(v), 'USD')),
+ *       ['2008-01-01', '2008-03-01', '2008-10-30', '2009-02-15', '2009-04-01'], { digits: 9 })
+ *     // { rate: '0.373362533', … } (Excel: 0.373362535, within its 0.000001%)
+ */
+export function xirr<C extends string>(
+  values: readonly Money<C>[],
+  dates: readonly CalendarDate[],
+  options?: XirrOptions,
+): IrrResult {
+  const digits = options?.digits ?? 10;
+  if (!(Number.isInteger(digits) && digits >= 0 && digits <= 100)) {
+    invalid('digits', digits);
+  }
+  const flows = datedFlows(values, dates, options, 'XIRR');
+  const { changes, firstSign } = signChanges(flows.minors);
+  const bracket = options?.bracket;
+  // combined by date, the flows can cancel: then every rate fits, or none does
+  if (flows.minors.every((minor) => minor === 0n)) {
+    throw new RangeError('The cash flows cancel on every date, so every rate is a root');
+  }
+  if (changes === 0) {
+    throw new RangeError(
+      'The cash flows, combined by date, never change sign, so they have no rate',
+    );
+  }
+  if (changes > 1 && bracket === undefined) {
+    throw new RangeError(
+      `The cash flows change sign ${changes} times, so they can have several rates; pass a bracket`,
+    );
+  }
+  const unit = pow10n(digits);
+  const signAt = (grid: bigint): -1 | 0 | 1 => xnpvSign(flows, unit + grid, unit);
+  const result = (grid: bigint): IrrResult => {
+    if (grid <= -unit) {
+      throw new RangeError(`The rate is within 10^-${digits} of -1; ask for more digits`);
+    }
+    const lower = formatScaled(grid, digits);
+    return { rate: lower, lower, upper: formatScaled(grid + 1n, digits) };
+  };
+  return bisectRate(signAt, result, unit, firstSign, bracket, (candidate) =>
+    xnpvSign(flows, candidate.num + candidate.den, candidate.den),
+  );
 }

@@ -90,6 +90,23 @@ monthly.balance; // → 2581.40 USD
 
 Each period's interest is rounded once, as a bank credits it, so the final balance can differ by a few cents from Excel's FV, which never rounds. If the product quotes an effective annual rate, convert it with `periodicRate` first.
 
+## Value flows on arbitrary dates
+
+`xnpv` and `xirr` in `@ducatjs/money/excel` are Excel's XNPV and XIRR, for flows that aren't periodic. Pass the values and their dates as Excel does; the first date starts the schedule:
+
+```ts
+import { money } from '@ducatjs/money';
+import { xirr, xnpv, xnpvBounds } from '@ducatjs/money/excel';
+
+const values = ['-10000', '2750', '4250', '3250', '2750'].map((amount) => money(amount, 'USD'));
+const dates = ['2008-01-01', '2008-03-01', '2008-10-30', '2009-02-15', '2009-04-01'];
+xnpv('0.09', values, dates); // → 2086.65 USD
+xirr(values, dates, { digits: 6 }).rate; // → '0.373362'
+xnpvBounds('0.09', values, dates, { digits: 4 }).exact; // → false
+```
+
+The discount factors are fractional powers, irrational in general, so `xnpv` brackets the value and rounds it once, when the whole interval rounds to the same amount; `xnpvBounds` gives you the interval itself. If several rates fit (the flows change sign more than once), `xirr` throws until you pass a `bracket`.
+
 ## Convert between annual and periodic rates
 
 If a product quotes an effective annual rate and you need the monthly rate that compounds to it (a savings plan, say), use `periodicRate`. The root is irrational in general, so ask for the digits you need; the result is floored and bracketed, as `irr`'s is. `annualRate` goes the other way, exactly:
