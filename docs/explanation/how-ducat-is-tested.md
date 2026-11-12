@@ -85,7 +85,10 @@ Not triaged yet.
 
 #### convert.ts
 
-Not triaged yet.
+| where             | mutants                                        | why they are equivalent                                                                                                      |
+| ----------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `convert`         | `typeof roundingOrRate === 'object'` as `true` | Rebuilding a ratio from `ratio()` gives the same ratio.                                                                      |
+| `convertDetailed` | `typeof rounding === 'function'` as `true`     | With a rounding mode, `rate.convert` rounds the same way, and the residual is the exact product minus that value either way. |
 
 #### rate.ts
 
