@@ -15,6 +15,7 @@ import {
   fromMinor,
   max,
   min,
+  money,
   multiply,
   negate,
   percentage,
@@ -58,6 +59,20 @@ function expectNoNegativeZero(money: Money): void {
 }
 
 describe('no operation returns -0 minor units', () => {
+  // money(-0, ...) kept -0 through the safe-integer branch; the string, bigint and minor-unit
+  // constructors already normalised it
+  it('money(-0) with a number, at the currency scale and above it', () => {
+    for (const value of [
+      money(-0, 'EUR'),
+      money(-0, 'JPY'),
+      money(-0, 'EUR', { scale: 4 }),
+      money(-0, 'KWD', { scale: 0 }),
+    ]) {
+      expect(Object.is(value.minor, -0)).toBe(false);
+      expect(value.minor).toBe(0);
+    }
+  });
+
   it('fromMinor(-0)', () => {
     expect(Object.is(fromMinor(-0, 'EUR').minor, -0)).toBe(false);
   });
