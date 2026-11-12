@@ -7,6 +7,23 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-12
+
+Excel's financial functions in their own entry, exact everywhere, and three new integrations. New
+entries: `/excel` (Excel's NPV, IRR, FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Excel's
+arguments, matching Excel at 15 significant digits wherever Excel's double evaluation is well
+conditioned and exact otherwise; XNPV's bounds are proved in Lean), `/typeorm` (column
+transformers) and `/context` (the plain functions bound to one currency and locale). Also new:
+`savingsPlan`, `periodicRate` and `annualRate`, `multiplyExact`, Money's helpers and tax splits on
+`ExactMoney`, arithmetic on `Ratio` values, `hasFraction`, a lossy `toNumber`, `format` with
+`{ digits, rounding }`, dinero.js 1's objects in `/wire`, and a guide to migrating from dinero.js.
+The documentation is rebuilt as tutorials, how-to guides, reference and explanation.
+
+One change can break existing code: `ExactMoney`'s `num` and `den` are getters, not own fields
+(see **Changed**). `npv`, `npvExact` and `irr` move to `/excel`; `/finance` re-exports them,
+deprecated, until 0.5. Several functions now refuse input they used to misread or misprice, each
+listed under **Changed** as a visible change.
+
 ### Documentation
 
 - Every function in `@ducatjs/money/excel` is now checked against an independent exact oracle
@@ -119,9 +136,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - **Visible change:** `tieredPrice` throws a RangeError naming the tier when one has neither a
   `unitAmount` nor a `flatAmount`; it used to charge that tier 0. Write a free tier as
   `unitAmount: money('0', …)` (#272).
-- `extractTax` and `extractTaxExact` throw a RangeError naming the percent for -100% or below,
-  where no net amount has that gross. Before, -100% failed inside `ratio()` with "Division by
-  zero", and a percent below -100 returned a meaningless split (a net of −2 × gross at −150%).
+- **Visible change:** `extractTax` and `extractTaxExact` throw a RangeError naming the percent for
+  -100% or below, where no net amount has that gross. Before, -100% failed inside `ratio()` with
+  "Division by zero", and a percent below -100 returned a meaningless split (a net of −2 × gross at
+  −150%).
   `format(m, locale, { digits })` also refuses Intl's significant digits and `roundingIncrement`,
   which would round a second time, on a double.
 - **Breaking:** `ExactMoney`'s `num` and `den` are getters now, not own fields. They are still
@@ -546,7 +564,8 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/public/ducat/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/public/ducat/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/public/ducat/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/public/ducat/compare/v0.2.0...v0.2.1
