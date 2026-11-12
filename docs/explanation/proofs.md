@@ -5,7 +5,7 @@ This page explains what the Lean proofs in `proofs/` establish about ducat, and 
 `proofs/` holds [Lean 4](https://lean-lang.org) proofs (with Mathlib) of two kinds:
 
 - **Proved code.** The bigint rounding kernels are written once in Lean, as values of a small expression language (`proofs/Ducat/Kernel.lean`). The theorems are about those values, and `pnpm gen:kernel` prints the same values as TypeScript into `src/generated/kernel.ts`. They print as one function, `divideAndRoundBigint`: the steps every mode shares, then a `switch` with each mode's proved decision (`kernel_shared` states that the shared steps really are the same). The TypeScript `divideAndRoundBigint` in `src/rounding.ts` calls it; it is the bigint path of every rounded operation. What you have to trust is the printer (about 60 lines of Lean) and the fact that JS `bigint` `+ - * /` agree with Lean's `Int` (`/` truncates, as `Int.tdiv` does).
-- **Proved models.** Allocation, instalments, chunks, schedules, cash rounding, tax and scale changes are proved about Lean models of what the TypeScript does, not about the TypeScript itself. The allocation, instalment, chunk, schedule and increment models are compiled into an oracle that prints generated cases to `test/fixtures/<model>.oracle.json`. The tests require the TypeScript to match each one exactly (`allocate` on both its number and bigint paths). The TypeScript for tax, scale and conversion is tested, not proved (see below).
+- **Proved models.** Allocation, instalments, chunks, schedules, cash rounding, tax and scale changes are proved about Lean models of what the TypeScript does, not about the TypeScript itself. The allocation, instalment, chunk, schedule, increment, XNPV and XIRR models are compiled into an oracle that prints generated cases to `test/fixtures/<model>.oracle.json`. The tests require the TypeScript to match each one exactly (`allocate` on both its number and bigint paths). The TypeScript for tax, scale and conversion is tested, not proved (see below).
 
 `pnpm gen:check`, which runs in every check without Lean, fails in two cases. One is any unfinished proof (`sorry`, `admit`, a new `axiom`, `native_decide`). The other is a generated file that was edited by hand or not regenerated after `proofs/` changed: each generated file carries a hash of the Lean sources it came from. `pnpm gen:kernel:check` needs Lean, and CI runs it. It rebuilds the proofs, checks that the headline theorems depend only on Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`), and fails if either generated file differs from what the proofs print.
 
@@ -61,28 +61,35 @@ These are stated over the proved kernel (`divRound`):
 - `toScale_roundtrip`: raising the scale and lowering it again gives back the original value in every mode, and `unnecessary` does not throw.
 - `divRound_mul_left`: multiplying the numerator and denominator by the same positive number does not change the result. So reducing a rate by its gcd, or composing exact rates, cannot change a rounded result, provided it is computed as a single division of the exact product.
 
-## XNPV's bounds: proved model (`proofs/Ducat/Xnpv.lean`)
+## XNPV's bounds: proved model (`proofs/Ducat/Xnpv.lean`, `XnpvModel.lean`, `Search.lean`)
 
 `xnpvBounds`, `xnpv` and `xirr` in `@ducatjs/money/excel` bracket XNPV in integer arithmetic at a fixed-point scale `S = 2^bits`. Each step of `xnpvScaled` and its theorem:
 
-| step in `src/excel.ts`                                                                                            | theorem                                                                                    |
-| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| the split `n/m = W + Σ r/q` over `m`'s prime powers `q`, given the identity `n = W·m + Σ r·(m/q)` the code checks | `exponent_split`, and the real-power law `g^(n/m) = g^W·Π g^(r/q)`: `power_split`          |
-| each prime power `q`'s root `R = ⌊qth root of ⌊a·S^q / b⌋⌋`: the integer inequality `R^q·b ≤ a·S^q < (R + 1)^q·b` | `root_floor_inside`, `root_bracket`                                                        |
-| the real root: `R/S ≤ g^(1/q) < (R + 1)/S` for `g = a/b`                                                          | `real_root_bracket`                                                                        |
-| `g^(r/q)` by square-and-multiply, every product floored (or ceiled)                                               | `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil`, `factor_bracket` |
-| a flow's factors `Π g^(r/q)` multiplied left to right, floored (or ceiled)                                        | `fold_floor_le`, `le_fold_ceil`                                                            |
-| flows with the same irrational part summed first as one coefficient, a zero coefficient dropped                   | `sum_regroup`, `group_common_factor`                                                       |
-| a group's term `C / F` between `C / F_high` and `C / F_low` (swapped for `C < 0`), floored and ceiled to the grid | `quotient_bounds`, `grid_bounds`                                                           |
-| the groups' bounds summed                                                                                         | `sum_bounds`                                                                               |
-| `xnpv`'s single rounding: both ends round alike, so the value rounds to that amount                               | `xnpv_rounds` (from `rounds_between`)                                                      |
+| step in `src/excel.ts`                                                                                                           | theorem                                                                                                                         |
+| -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| the split `n/m = W + Σ r/q` over `m`'s prime powers `q`, given the identity `n = W·m + Σ r·(m/q)` the code checks                | `exponent_split`, and the real-power law `g^(n/m) = g^W·Π g^(r/q)`: `power_split`                                               |
+| each prime power `q`'s root `R = ⌊qth root of ⌊a·S^q / b⌋⌋` by integer Newton from above: the floor root from any start above it | `newton_spec`, `newton_eq_nthRoot`, `floorRoot_spec`                                                                            |
+| the integer inequality `R^q·b ≤ a·S^q < (R + 1)^q·b`                                                                             | `root_floor_inside`, `root_bracket`, `rootLow_bracket`                                                                          |
+| the real root: `R/S ≤ g^(1/q) < (R + 1)/S` for `g = a/b`                                                                         | `real_root_bracket`                                                                                                             |
+| `g^(r/q)` by square-and-multiply, every product floored (or ceiled)                                                              | `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil`, `factor_bracket`                                      |
+| a flow's factors `Π g^(r/q)` multiplied left to right, floored (or ceiled)                                                       | `fold_floor_le`, `le_fold_ceil`; for the model's own roots, powers and products, `factorLow_le`, `le_factorHigh`                |
+| flows with the same irrational part summed first as one coefficient, a zero coefficient dropped                                  | `sum_regroup`, `group_common_factor`                                                                                            |
+| a group's term `C / F` between `C / F_high` and `C / F_low` (swapped for `C < 0`), floored and ceiled to the grid                | `quotient_bounds`, `grid_bounds`                                                                                                |
+| the groups' bounds summed                                                                                                        | `sum_bounds`                                                                                                                    |
+| `xnpv`'s single rounding: both ends round alike, so the value rounds to that amount                                              | `xnpv_rounds` (from `rounds_between`)                                                                                           |
+| `xirr`, `irr` and `rate` without a bracket: from 0, below it to −1 or doubling above it, then bisection on the grid              | `bisect_spec`, `bisectRate_spec`: the result is a root on the grid, or the sign there is nonzero and opposite at the next point |
 
-The bounds are over ℝ, with `Real.rpow` for the roots, so they apply to the irrational factors `g^(r/q)`, their products and `C / F` themselves. **Not proved:**
+The bounds are over ℝ, with `Real.rpow` for the roots, so they apply to the irrational factors `g^(r/q)`, their products and `C / F` themselves.
 
+`XnpvModel.lean` is a model of `xnpvScaled`, `xnpvBounds`, `xnpv` and `xirr` (Excel's day count, no bracket) built from the definitions those theorems are about: `floorRoot`, the fixed-point powers and products, and `bisectRate`. `Oracle.lean` prints it on 120 XNPV and 30 XIRR cases (`test/fixtures/xnpv.oracle.json`, `xirr.oracle.json`). The TypeScript must give the same bounds at the same precision, the same `exact`, the same rounded value in every mode and the same floored rate, and throw where the model has no value.
+
+**Not proved:**
+
+- That the model's interval contains the real XNPV, as one statement: each group's factor is bracketed (`factorLow_le`, `le_factorHigh`), and the term and sum steps are proved separately, but they are not composed through the model's grouping into one theorem.
 - The CRT computation of the split. `splitExponent` checks the identity `n = W·m + Σ r·(m/q)` at run time and throws if it fails, so `power_split` takes the identity as a hypothesis.
-- The exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder: exact bigint operations, tested.
-- That the code's integer Newton search ends at the floor root: `root_bracket` assumes `R` is that root (argued in [the finance design](finance-design.md), step 2).
-- That `xnpvScaled` is this model. The steps are separate theorems, not one statement about the code, and the table above is their correspondence by reading. Unlike the models with oracle fixtures, the TypeScript is tested against Microsoft's and LibreOffice's XNPV and XIRR values and unit tests, not against the model.
+- That a root of the real function lies between two grid points of opposite sign: `bisectRate_spec` is about the signs at grid points, and the step to a root needs continuity.
+- A caller's `bracket` (`bracketToGrid`), other day counts and the defensive caps on root size: not in the model.
+- That the TypeScript is the model: as for the other proved models, the oracle fixtures test it on generated cases.
 
 ## Tested, not proved
 
