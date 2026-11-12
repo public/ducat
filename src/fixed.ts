@@ -483,11 +483,8 @@ function parseBoundedDecimal(text: string): { digits: bigint; scale: number } {
   if (exponent !== null && Math.abs(Number(exponent[1])) > MAX_SCALE) {
     throw new RangeError(`${text}: the exponent is beyond ±${MAX_SCALE}`);
   }
-  const parsed = parseDecimal(text);
-  if (parsed.scale > MAX_SCALE) {
-    throw new RangeError(`${text} has more than ${MAX_SCALE} decimal places`);
-  }
-  return parsed;
+  // parseDecimal itself refuses a scale beyond MAX_DECIMAL_SCALE, which is MAX_SCALE
+  return parseDecimal(text);
 }
 
 /**
@@ -523,10 +520,9 @@ export function fixed(value: FixedInput, options?: FixedOptions): Fixed {
   }
 
   if (typeof value === 'string') {
+    // Neither parser returns a scale beyond MAX_SCALE: parsePlainDecimal leaves a longer fraction to
+    // parseDecimal, which throws for it.
     const parsed = parsePlainDecimal(value) ?? parseBoundedDecimal(value);
-    if (parsed.scale > MAX_SCALE) {
-      throw new RangeError(`${value.slice(0, 40)}… has more than ${MAX_SCALE} decimal places`);
-    }
     return rescale(parsed.digits, parsed.scale, scale ?? parsed.scale, rounding, value);
   }
 

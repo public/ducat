@@ -12,6 +12,7 @@ import { divideAndRoundBigint } from '../src/generated/kernel.js';
 import { allocate, fromMinor, type RoundingMode } from '../src/fn.js';
 import { formatScaled } from '../src/decimal.js';
 import { divideAndRound, RoundingError } from '../src/rounding.js';
+import { fixed } from '../src/fixed.js';
 
 const MAX = Number.MAX_SAFE_INTEGER;
 
@@ -149,5 +150,19 @@ describe('formatScaled at magnitude + 10^scale = 2^53 - 1', () => {
         }
       }
     }
+  });
+});
+
+describe("fixed()'s scale limit, which parseDecimal enforces", () => {
+  // fixed() relies on parseDecimal (MAX_DECIMAL_SCALE) for its own limit of 1000 decimal places
+  const fraction = (digits: number) => `0.${'0'.repeat(digits - 1)}1`;
+
+  it('accepts 1000 decimal places and refuses 1001, written out or through an exponent', () => {
+    expect(fixed(fraction(1000)).scale).toBe(1000);
+    expect(fixed('1e-1000').scale).toBe(1000);
+    expect(fixed(`-${fraction(1000)}`).toString()).toBe(`-${fraction(1000)}`);
+    expect(() => fixed(fraction(1001))).toThrow(RangeError);
+    expect(() => fixed('0.5e-1000')).toThrow(RangeError);
+    expect(() => fixed('1e-1001')).toThrow(RangeError);
   });
 });
