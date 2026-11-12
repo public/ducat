@@ -1380,9 +1380,9 @@ function annuity<C extends string>(
  * which evaluates one at every bisection step. Monthly for 30 years at a 10-digit rate is about
  * 12,000 bits.
  */
-const MAX_POWER_BITS = 1 << 20;
-const MAX_EXACT_POWER_BITS = 1 << 17;
-const MAX_RATE_POWER_BITS = 1 << 19;
+const MAX_POWER_BITS = 1_048_576; // 2^20, a literal so bundlers drop it when unused
+const MAX_EXACT_POWER_BITS = 131_072; // 2^17
+const MAX_RATE_POWER_BITS = 524_288; // 2^19
 
 /** Throws when `base^count` would have more than `limit` bits. */
 function assertPowerSize(base: bigint, count: bigint, name: string, limit: number): void {
@@ -1799,7 +1799,7 @@ export function nper<C extends string>(
  * a rate as small as 10^-12 about 40 more, so this is reached only by a result within about
  * 2^-16000 of a grid point, which would otherwise take ever longer series.
  */
-const MAX_LOG_BITS = 1 << 14;
+const MAX_LOG_BITS = 16_384; // 2^14
 
 /** Whether growth = base^(p/q) exactly, for p/q reduced: base must be a perfect qth power. */
 function isPowerOf(growth: Ratio, base: Ratio, exponent: Ratio): boolean {
