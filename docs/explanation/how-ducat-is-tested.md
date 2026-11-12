@@ -24,9 +24,9 @@ This page describes the suites that keep ducat correct, fast and small: what eac
   - instalment sums, tax breakdowns that add up
   - `parse(format(x))` across 14 locales
   - the Intl hand-off being bit-identical
-- Independent oracles, generated offline and committed as JSON (`pnpm vectors:check` checks they are current):
-  - Python's `decimal` for rounding and `fractions` for `/finance` and every function in `/excel` (`scripts/gen-pydecimal-vectors.py`, `scripts/gen-finance-vectors.py`). Where an Excel value is irrational (NPER, RATE, XNPV, XIRR), the oracle bounds it from Python's correctly rounded `ln` and `exp`, widened well past their rounding, and raises the precision until the bounds settle every value it writes.
-  - LibreOffice Calc's results for the Excel functions (`scripts/gen-calc-vectors.py`), on random and edge cases. They are compared with the exact values, and the cases where Calc's doubles differ are listed in the test with the reason.
+- Independent oracles, generated offline and committed as JSON:
+  - Python's `decimal` for rounding and `fractions` for `/finance` and every function in `/excel` (`scripts/gen-pydecimal-vectors.py`, `scripts/gen-finance-vectors.py`; `pnpm vectors:check` checks the files are current). Where an Excel value is irrational (NPER, RATE, XNPV, XIRR), the oracle bounds it from Python's correctly rounded `ln` and `exp`, widened well past their rounding, and raises the precision until the bounds settle every value it writes.
+  - LibreOffice Calc's results for the Excel functions (`scripts/gen-calc-vectors.py`), on random and edge cases. That needs LibreOffice, so CI doesn't rerun it: the JSON file is the record. They are compared with the exact values, and the cases where Calc's doubles differ are listed in the test with the reason.
 - `pnpm typecheck` compiles `test/types.ts`. Its `@ts-expect-error` lines prove that currency mismatch, readonly fields and unknown rounding modes are compile errors.
 - `pnpm test:runtimes` runs:
   - the **full suite on Node 24, Bun 1.4 (via `bun test`) and Deno 2.9**: all pass

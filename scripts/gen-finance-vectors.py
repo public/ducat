@@ -602,20 +602,15 @@ def exact_root(value: int, order: int):
     """the integer `order`th root of value ≥ 0 when it is exact, else None"""
     if value < 2:
         return value
-    root = round(value ** (1 / order)) if value.bit_length() < 1000 else None
-    if root is None:
-        low, high = 0, 1 << (value.bit_length() // order + 1)
-        while low < high:
-            middle = (low + high + 1) // 2
-            if middle**order <= value:
-                low = middle
-            else:
-                high = middle - 1
-        root = low
-    for candidate in (root - 1, root, root + 1):
-        if candidate >= 0 and candidate**order == value:
-            return candidate
-    return None
+    # the floor of the root by bisection on integers
+    low, high = 0, 1 << (value.bit_length() // order + 1)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if middle**order <= value:
+            low = middle
+        else:
+            high = middle - 1
+    return low if low**order == value else None
 
 
 def rational_power(base: Fraction, exponent: Fraction):

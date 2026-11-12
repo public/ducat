@@ -16,7 +16,7 @@ import {
   type AmortisationResidual,
   type DayCount,
 } from '../src/finance.js';
-import { irr, npv } from '../src/excel.js';
+import { irr, npv, npvExact } from '../src/excel.js';
 import { fromMinor, type Money } from '../src/money.js';
 import type { RoundingMode } from '../src/rounding.js';
 
@@ -179,9 +179,10 @@ describe('finance matches the Python fractions oracle', () => {
       const flows = vector.flows.map((flow) => amount(flow, vector.currency));
       const actual = [
         npv(vector.rate, flows, vector.mode),
+        npvExact(vector.rate, flows).round(vector.mode),
         discountedSum(vector.rate, flows, vector.mode),
       ];
-      return actual.map(minorOf).join() !== [vector.npv, vector.discountedSum].join();
+      return actual.map(minorOf).join() !== [vector.npv, vector.npv, vector.discountedSum].join();
     });
     expect(mismatches).toEqual([]);
   });
