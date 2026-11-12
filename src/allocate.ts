@@ -168,16 +168,11 @@ export function allocate<C extends string>(
       const frac = new Array<number>(count);
       let rem = minor;
       for (let i = 0; i < count; i++) {
+        // Exact with no correction step: product >= 0 and product + total <= 2^53 - 1 (the guard
+        // above), so the float quotient can't round up to the next integer, as in divideAndRound.
         const product = minor * ws[i]!;
-        let quotient = Math.floor(product / total);
-        let remainder = product - quotient * total;
-        if (remainder < 0) {
-          quotient -= 1;
-          remainder += total;
-        } else if (remainder >= total) {
-          quotient += 1;
-          remainder -= total;
-        } // float-quotient fix-up
+        const quotient = Math.floor(product / total);
+        const remainder = product - quotient * total;
         shares[i] = quotient;
         frac[i] = remainder;
         rem -= quotient;
