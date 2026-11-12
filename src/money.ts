@@ -646,7 +646,6 @@ export function multiply<C extends string>(
     typeof minor === 'number' &&
     // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof rounding === 'string'
-    // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
   ) {
     const product = minor * factor;
     // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
@@ -675,7 +674,6 @@ export function multiplyByRatio<C extends string>(
     // Stryker disable next-line ConditionalExpression,EqualityOperator: a NaN part fails the bound check below
     factor.n === factor.n &&
     factor.d === factor.d
-    // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
   ) {
     // exact when |product| <= MAX_SAFE_MINOR (both factors are safe integers)
     const product = minor * factor.n;
@@ -731,7 +729,6 @@ export function divide<C extends string>(
     numerator === numerator &&
     // Stryker disable next-line ConditionalExpression,EqualityOperator: a NaN part fails the bound check below
     denominator === denominator
-    // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
   ) {
     let dividend = minor * denominator;
     // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
