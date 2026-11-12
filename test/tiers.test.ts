@@ -124,7 +124,10 @@ describe('tieredPrice', () => {
     expect(() =>
       tieredPrice(1, {
         mode: 'volume',
-        tiers: [{ upTo: 'inf', unitAmount: usd('1') }, { upTo: 5 }],
+        tiers: [
+          { upTo: 'inf', unitAmount: usd('1') },
+          { upTo: 5, unitAmount: usd('1') },
+        ],
       }),
     ).toThrow('Tier 0 is open (upTo inf), but only the last tier can be');
     expect(() =>
