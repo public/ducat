@@ -56,6 +56,17 @@ These are stated over the proved kernel (`divRound`):
 - `toScale_roundtrip`: raising the scale and lowering it again gives back the original value in every mode, and `unnecessary` does not throw.
 - `divRound_mul_left`: multiplying the numerator and denominator by the same positive number does not change the result. So reducing a rate by its gcd, or composing exact rates, cannot change a rounded result, provided it is computed as a single division of the exact product.
 
+## XNPV's bounds: proved model (`proofs/Ducat/Xnpv.lean`)
+
+`xnpvBounds`, `xnpv` and `xirr` in `@ducatjs/money/excel` bracket each discount factor `(1 + rate)^(n/m)` in integer arithmetic at a fixed-point scale `S = 2^bits` and sum the terms' bounds. The model states those steps; the loop is the one `fixedPower` runs, and the Calc and Microsoft tests compare the TypeScript with Excel's values.
+
+- `root_floor_inside`, `root_bracket`: flooring `a·S^m / b` before the integer `m`th root changes nothing, so the root `R` satisfies `R^m·b ≤ a·S^m < (R + 1)^m·b`, that is `R/S ≤ g^(1/m) < (R + 1)/S`.
+- `mulFloor_le`, `le_mulCeil`: a floored fixed-point product of lower bounds is a lower bound of the exact product, and a ceiled product of upper bounds an upper bound.
+- `fixedPower_floor_le`, `le_fixedPower_ceil`: the square-and-multiply loop with every product floored (or ceiled), started from a lower (or upper) bound of `X`, is a lower (or upper) bound of `X^n`, for every `n`. With `R` and `R + 1`, they bracket `g^(n/m)`.
+- `quotient_bounds`, `grid_bounds`, `sum_bounds`: a term `v / F` with `F` in `[Fl, Fh]` lies between `v / Fh` and `v / Fl` (swapped for `v < 0`), flooring and ceiling to the grid keeps it inside, and the terms' bounds sum to bounds on the sum.
+
+So the interval `xnpvBounds` returns contains XNPV at every precision. That `xnpv`'s rounded value is right then needs only that rounding is monotone (two ends that round alike pin everything between), which is argued in [the finance design](finance-design.md), not proved here.
+
 ## Tested, not proved
 
 - **The printer** that turns the Lean kernels into TypeScript, and the `divideAndRoundBigint` dispatch in `src/rounding.ts`. The generated kernels are compared with an independent bigint oracle (`test/kernel.test.ts`).

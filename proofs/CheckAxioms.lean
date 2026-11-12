@@ -34,3 +34,10 @@ unless they are only Lean's standard three: `propext`, `Classical.choice` and `Q
 #print axioms Ducat.increment_half
 #print axioms Ducat.increment_exact
 #print axioms Ducat.increment_idem
+#print axioms Ducat.Xnpv.root_bracket
+#print axioms Ducat.Xnpv.mulFloor_le
+#print axioms Ducat.Xnpv.le_mulCeil
+#print axioms Ducat.Xnpv.fixedPower_floor_le
+#print axioms Ducat.Xnpv.le_fixedPower_ceil
+#print axioms Ducat.Xnpv.quotient_bounds
+#print axioms Ducat.Xnpv.sum_bounds
