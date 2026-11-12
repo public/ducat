@@ -24,6 +24,9 @@ import {
   pvExact,
   rate,
   type PaymentTiming,
+  xirr,
+  xnpv,
+  xnpvBounds,
 } from '../src/excel.js';
 import { abs, add, money, type Money } from '../src/money.js';
 
@@ -60,6 +63,18 @@ interface Microsoft {
     accuracy: string;
     examples: (AnnuityExample & { places: number; times?: number })[];
   };
+  xnpv: { source: string; examples: DatedExample[] };
+  xirr: { source: string; accuracy: string; examples: DatedExample[] };
+}
+
+/** XNPV and XIRR examples: values and their dates, as printed. */
+interface DatedExample {
+  formula: string;
+  rate?: string;
+  values: string[];
+  dates: string[];
+  places: number;
+  result: string;
 }
 
 /** Excel's annuity arguments, as a spreadsheet cell holds them ('0.08/12' is A2/12). */
@@ -96,6 +111,8 @@ interface Calc {
   pmt: AnnuityVector[];
   nper: AnnuityVector[];
   rate: Omit<AnnuityVector, 'rate'>[];
+  xnpv: { rate: string; values: string[]; dates: string[]; calc: string }[];
+  xirr: { values: string[]; dates: string[]; calc: string }[];
 }
 
 const microsoft = JSON.parse(
@@ -253,6 +270,27 @@ describe("Microsoft's documented examples", () => {
         example.formula,
         example.result,
       ]);
+    }
+  });
+
+  it(`XNPV (${microsoft.xnpv.source})`, () => {
+    for (const example of microsoft.xnpv.examples) {
+      const result = xnpv(example.rate!, example.values.map(usd), example.dates);
+      expect([example.formula, result.toDecimal()]).toEqual([example.formula, example.result]);
+    }
+  });
+
+  it(`XIRR (${microsoft.xirr.source})`, () => {
+    // Excel stops within 0.000001 percent of the root, which lies in [lower, upper]
+    const accuracy = ratio(microsoft.xirr.accuracy);
+    for (const example of microsoft.xirr.examples) {
+      const { lower, upper } = xirr(example.values.map(usd), example.dates, { digits: 12 });
+      const shown = ratio(example.result);
+      expect([
+        example.formula,
+        isGreater(subtract(ratio(lower), shown), accuracy),
+        isGreater(subtract(shown, ratio(upper)), accuracy),
+      ]).toEqual([example.formula, false, false]);
     }
   });
 
@@ -669,6 +707,67 @@ describe(`LibreOffice Calc's FV, PV, PMT, NPER and RATE (${calc.calc})`, () => {
     expect(mismatches).toEqual([]);
     expect(strict).toBeGreaterThan(100);
     expect(atMinusOne).toBeLessThan(5);
+  });
+});
+
+describe(`LibreOffice Calc's XNPV and XIRR (${calc.calc})`, () => {
+  const calcRatio = (text: string) => ratio(text.replace(/E\+?/, 'e'));
+
+  it("XNPV: the bounds' midpoint at 15 significant digits, or within Calc's double error", () => {
+    let strict = 0;
+    const mismatches = calc.xnpv.filter((vector) => {
+      const { lower, upper } = xnpvBounds(vector.rate, vector.values.map(usd), vector.dates, {
+        digits: 20,
+      });
+      const middle = ratio(
+        lower.num * upper.den + upper.num * lower.den,
+        2n * lower.den * upper.den,
+      );
+      if (significant15(middle) === calcSignificant15(vector.calc)) {
+        strict++;
+        return false;
+      }
+      // each term in doubles, v / (1 + r)^(t/365): 1 + r is rounded (2^-53 relative), raised to at
+      // most ten years, and the sum adds a unit per term, so the error is below
+      // (n + 24) · 2^-52 · Σ |vᵢ| / (1 + r)^tᵢ, with the sizes estimated in doubles (an upper bound
+      // at a factor of two). Calc's text adds half a unit in its 15th digit.
+      const growth = 1 + Number(vector.rate);
+      const start = Date.parse(vector.dates[0]!);
+      const size = vector.values.reduce((total, value, index) => {
+        const years = (Date.parse(vector.dates[index]!) - start) / (365 * 86_400_000);
+        return total + Math.abs(Number(value)) / growth ** years;
+      }, 0);
+      const exponent = Number(/E([+-]\d+)$/.exec(vector.calc)?.[1]) - 14;
+      const textRounding = 5 * 10 ** (exponent - 1);
+      const bound = 2 * (vector.values.length + 24) * 2 ** -52 * size + textRounding;
+      const difference = Math.abs(
+        Number(middle.num) / Number(middle.den) -
+          Number(calcRatio(vector.calc).num) / Number(calcRatio(vector.calc).den),
+      );
+      return !(difference <= bound);
+    });
+    expect(calc.xnpv.length).toBe(150);
+    expect(strict).toBeGreaterThan(100);
+    expect(mismatches).toEqual([]);
+  });
+
+  it("XIRR: Calc's value lies within 0.000001 percent of [lower, upper]", () => {
+    const accuracy = ratio(microsoft.xirr.accuracy);
+    let converged = 0;
+    const mismatches = calc.xirr.filter((vector) => {
+      const { lower, upper } = xirr(vector.values.map(usd), vector.dates, { digits: 12 });
+      if (vector.calc.startsWith('Err')) {
+        return false;
+      }
+      converged++;
+      const theirs = calcRatio(vector.calc);
+      return (
+        isGreater(subtract(ratio(lower), theirs), accuracy) ||
+        isGreater(subtract(theirs, ratio(upper)), accuracy)
+      );
+    });
+    expect(converged).toBeGreaterThan(140);
+    expect(mismatches).toEqual([]);
   });
 });
 

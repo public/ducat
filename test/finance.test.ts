@@ -31,6 +31,9 @@ import {
   pv,
   pvExact,
   rate,
+  xirr,
+  xnpv,
+  xnpvBounds,
 } from '../src/excel.js';
 import { add, CurrencyMismatchError, fromMinor, money, sum, type Money } from '../src/money.js';
 import { roundingPolicy } from '../src/policy.js';
@@ -40,6 +43,9 @@ const eur = (amount: string): Money<'EUR'> => money(amount, 'EUR');
 const cents = (minor: number | bigint): Money<'EUR'> => fromMinor(minor, 'EUR');
 const text = (value: Ratio): string => `${value.num}/${value.den}`;
 const fraction = (num: number, den: number): string => text(ratio(BigInt(num), BigInt(den)));
+/** 2001-01-01 plus `days` days, as 'YYYY-MM-DD' */
+const dateFromDays = (days: number): string =>
+  new Date(Date.UTC(2001, 0, 1) + days * 86_400_000).toISOString().slice(0, 10);
 
 /** num/den of Strata's calc360(y1, m1, d1, y2, m2, d2): days already adjusted by the test. */
 function calc360(y1: number, m1: number, d1: number, y2: number, m2: number, d2: number): string {
@@ -1507,6 +1513,192 @@ describe('savingsPlan', () => {
         expect(size.num * bound.den <= bound.num * size.den).toBe(true);
       }),
       { numRuns: runs(100) },
+    );
+  });
+});
+
+describe('xnpv and xirr (Excel)', () => {
+  const usd = (amount: string): Money<'USD'> => money(amount, 'USD');
+  const values = ['-10000', '2750', '4250', '3250', '2750'].map(usd);
+  const dates = ['2008-01-01', '2008-03-01', '2008-10-30', '2009-02-15', '2009-04-01'];
+  const lessOrEqual = (left: Ratio, right: Ratio) => left.num * right.den <= right.num * left.den;
+
+  it("brackets Excel's XNPV and rounds it once", () => {
+    expect(xnpv('0.09', values, dates).toDecimal()).toBe('2086.65');
+    expect(xnpv('0.09', values, dates, {}, 'floor').toDecimal()).toBe('2086.64');
+    const bounds = xnpvBounds('0.09', values, dates, { digits: 12 });
+    const { lower, upper } = bounds;
+    expect(bounds.exact).toBe(false);
+    expect(lessOrEqual(lower, upper)).toBe(true);
+    // at most 10^-12 wide
+    expect(
+      lessOrEqual(
+        ratio(upper.num * lower.den - lower.num * upper.den, upper.den * lower.den),
+        ratio(1n, 10n ** 12n),
+      ),
+    ).toBe(true);
+    expect(text(ratio((lower.num * 100n) / lower.den))).toBe('208664/1');
+  });
+
+  it('is exact where the value is rational', () => {
+    // a rate of 0: the plain sum
+    expect(xnpvBounds('0', values, dates)).toEqual({
+      lower: ratio(3000n),
+      upper: ratio(3000n),
+      exact: true,
+    });
+    // every date on the first
+    const sameDay = xnpvBounds('0.09', [usd('-1'), usd('3')], ['2020-02-02', '2020-02-02']);
+    expect(sameDay).toEqual({ lower: ratio(2n), upper: ratio(2n), exact: true });
+    // whole years of 365 days: -100 + 121/1.1^2, exactly 0
+    const twoYears = xnpvBounds('0.1', [usd('-100'), usd('121')], ['2021-01-01', '2023-01-01']);
+    expect(twoYears).toEqual({ lower: ratio(0n), upper: ratio(0n), exact: true });
+    // an exact tie rounds as the mode says: 0.50 to whole dollars
+    const toDollars = (mode: 'halfEven' | 'halfExpand') =>
+      roundingPolicy({ scale: 0, rounding: mode });
+    const tie = [usd('-1'), usd('1.50')];
+    const tieDates = ['2020-01-01', '2020-06-01'];
+    expect(xnpv('0', tie, tieDates, {}, toDollars('halfEven')).toDecimal()).toBe('0');
+    expect(xnpv('0', tie, tieDates, {}, toDollars('halfExpand')).toDecimal()).toBe('1');
+  });
+
+  it('takes other day counts as options, and the first date as d0 whatever the order', () => {
+    // 30/360: 2020-01-01 to 2020-07-01 is half a year, and 1.21^(1/2) = 1.1 is rational
+    const half = xnpvBounds('0.21', [usd('-110'), usd('121')], ['2020-01-01', '2020-07-01'], {
+      dayCount: '30/360',
+    });
+    expect(half).toEqual({ lower: ratio(0n), upper: ratio(0n), exact: true });
+    const shuffled = [values[0]!, values[3]!, values[1]!, values[4]!, values[2]!];
+    const shuffledDates = [dates[0]!, dates[3]!, dates[1]!, dates[4]!, dates[2]!];
+    expect(xnpv('0.09', shuffled, shuffledDates)).toEqual(xnpv('0.09', values, dates));
+  });
+
+  it("finds Excel's XIRR by bisection on XNPV's sign", () => {
+    // Microsoft prints 0.373362535; Excel's iteration stops within 0.000001%
+    expect(xirr(values, dates, { digits: 9 })).toEqual({
+      rate: '0.373362533',
+      lower: '0.373362533',
+      upper: '0.373362534',
+    });
+    // exactly 10% over two 365-day years
+    expect(xirr([usd('-100'), usd('121')], ['2021-01-01', '2023-01-01'], { digits: 6 }).rate).toBe(
+      '0.100000',
+    );
+    // a negative rate
+    expect(xirr([usd('-100'), usd('81')], ['2021-01-01', '2023-01-01'], { digits: 4 }).rate).toBe(
+      '-0.1000',
+    );
+  });
+
+  it('needs a bracket where several rates can fit', () => {
+    const flows = [usd('-100'), usd('230'), usd('-132')];
+    const yearly = ['2021-01-01', '2022-01-01', '2023-01-01'];
+    expect(() => xirr(flows, yearly)).toThrow('pass a bracket');
+    expect(xirr(flows, yearly, { bracket: ['0.15', '0.5'], digits: 4 }).rate).toBe('0.2000');
+    expect(xirr(flows, yearly, { bracket: ['0', '0.15'], digits: 4 }).rate).toBe('0.1000');
+  });
+
+  it("throws where Excel returns #NUM!, and for what it can't settle", () => {
+    expect(() => xnpv('0.1', values, dates.slice(1))).toThrow('same length');
+    expect(() => xnpv('0.1', [usd('1'), usd('-1')], ['2020-02-01', '2020-01-01'])).toThrow(
+      'before the first date',
+    );
+    expect(() => xnpv('0.1', [usd('1'), usd('1')], ['2020-01-01', '2020-02-01'])).toThrow(
+      'one positive and one negative',
+    );
+    expect(() => xirr([usd('-1'), usd('-1')], ['2020-01-01', '2020-02-01'])).toThrow(
+      'one positive and one negative',
+    );
+    expect(() => xnpv('0.1', [], [])).toThrow('At least one cash flow');
+    expect(() => xnpv('-1', values, dates)).toThrow('must be above -1');
+    expect(() =>
+      xnpv('0.1', [usd('-1'), eur('2') as unknown as Money<'USD'>], ['2020-01-01', '2020-02-01']),
+    ).toThrow(CurrencyMismatchError);
+    expect(() => xnpvBounds('0.1', values, dates, { digits: 101 })).toThrow('Invalid digits 101');
+    expect(() => xirr(values, dates, { digits: -1 })).toThrow('Invalid digits -1');
+  });
+
+  it('gives up at its bit cap rather than refine without end', () => {
+    // a 10^-100-wide interval around amounts of 10^700 needs about 2,700 bits
+    const big = 10n ** 700n;
+    expect(() =>
+      xnpvBounds(
+        '0.1',
+        [fromMinor(-big, 'USD'), fromMinor(big + 1n, 'USD')],
+        ['2020-01-01', '2021-02-05'],
+        { digits: 100 },
+      ),
+    ).toThrow("can't settle the interval within 2048 bits");
+    // a root within about 10^-700 of 10%: XNPV's sign at 10% needs about 2,300 bits. A is
+    // 1.1^(400/365) floored to 700 places, by integer Newton from a double's estimate
+    const target = (11n ** 400n * 10n ** (700n * 365n)) / 10n ** 400n;
+    let guess = (BigInt(Math.ceil(1.1 ** (400 / 365) * 2 ** 50)) * big) >> 50n;
+    guess += guess >> 40n;
+    for (;;) {
+      const next = (364n * guess + target / guess ** 364n) / 365n;
+      if (next >= guess) {
+        break;
+      }
+      guess = next;
+    }
+    expect(() =>
+      xirr([fromMinor(-big, 'USD'), fromMinor(guess, 'USD')], ['2020-01-01', '2021-02-04'], {
+        digits: 1,
+      }),
+    ).toThrow("can't settle the sign of the value within 2048 bits");
+  });
+
+  it('agrees with discountedSum when the dates are whole 365-day years apart', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.bigInt({ min: -(10n ** 9n), max: 10n ** 9n }), { minLength: 1, maxLength: 8 }),
+        fc.bigInt({ min: -50_000n, max: 500_000n }),
+        (returns, rateUnits) => {
+          fc.pre(returns.some((value) => value > 0n));
+          const flows = [
+            fromMinor(-(10n ** 9n), 'USD'),
+            ...returns.map((value) => fromMinor(value, 'USD')),
+          ];
+          const days = flows.map((_, index) => dateFromDays(index * 365));
+          const discount = ratio(rateUnits, 10n ** 6n);
+          expect(xnpv(discount, flows, days, {}, 'halfEven')).toEqual(
+            discountedSum(discount, flows, 'halfEven'),
+          );
+        },
+      ),
+      { numRuns: runs(50) },
+    );
+  });
+
+  it('brackets: the bounds at different digits overlap, and xnpv rounds a point inside them', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.tuple(fc.bigInt({ min: 1n, max: 10n ** 9n }), fc.integer({ min: 1, max: 3650 })),
+          { minLength: 1, maxLength: 6 },
+        ),
+        fc.bigInt({ min: -50_000n, max: 500_000n }),
+        fc.integer({ min: 0, max: 14 }),
+        (returns, rateUnits, digits) => {
+          const flows = [
+            fromMinor(-(10n ** 9n), 'USD'),
+            ...returns.map(([value]) => fromMinor(value, 'USD')),
+          ];
+          const days = [dateFromDays(0), ...returns.map(([, day]) => dateFromDays(day))];
+          const discount = ratio(rateUnits, 10n ** 6n);
+          const coarse = xnpvBounds(discount, flows, days, { digits });
+          const fine = xnpvBounds(discount, flows, days, { digits: digits + 6 });
+          expect(
+            lessOrEqual(coarse.lower, fine.upper) && lessOrEqual(fine.lower, coarse.upper),
+          ).toBe(true);
+          const rounded = xnpv(discount, flows, days, {}, 'floor');
+          // floor of a value in [lower, upper]: at most lower, and above upper − 1 cent
+          const floored = ratio(BigInt(rounded.minor), 100n);
+          expect(lessOrEqual(floored, fine.upper)).toBe(true);
+          expect(lessOrEqual(fine.lower, ratio(BigInt(rounded.minor) + 1n, 100n))).toBe(true);
+        },
+      ),
+      { numRuns: runs(40) },
     );
   });
 });

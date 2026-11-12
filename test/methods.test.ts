@@ -120,6 +120,9 @@ describe('Money methods', () => {
       'nper',
       'rate',
       'savingsPlan',
+      'xnpv',
+      'xnpvBounds',
+      'xirr',
       'prorate',
       'splitPeriod',
       // /pricing: takes a quantity and a tier table, not an amount

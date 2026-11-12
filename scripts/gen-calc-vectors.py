@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Spreadsheet reference vectors for /finance's Excel-named functions (npv, irr), computed by
 LibreOffice Calc's NPV and IRR, for fv, pv, pmt, nper and rate, computed by Calc's FV, PV, PMT,
-NPER and RATE, and for periodicRate and annualRate, computed by Calc's POWER, all written to
+NPER and RATE, for xnpv and xirr, computed by Calc's XNPV and XIRR, and for periodicRate and annualRate, computed by Calc's POWER, all written to
 test/vectors/finance-calc.json, which test/finance.excel.test.ts checks.
 
 Calc computes in doubles, so its results are compared at 15 significant digits (NPV) and at the
@@ -164,6 +164,41 @@ def annuity_cases(rng: random.Random) -> dict:
     return {"fv": general, "pv": general, "pmt": general, "nper": nper, "rate": rate_cases_}
 
 
+def dated_cases(rng: random.Random) -> tuple:
+    """flows on dates for XNPV (any rate above -1) and XIRR (an outlay, then returns)"""
+    import datetime
+
+    def schedule(count: int) -> list:
+        start = datetime.date(2000, 1, 1) + datetime.timedelta(days=rng.randint(0, 9000))
+        # the first date starts the schedule; the others are later, in any order
+        later = [start + datetime.timedelta(days=rng.randint(1, 3650)) for _ in range(count - 1)]
+        return [start.isoformat()] + [day.isoformat() for day in later]
+
+    xnpv = []
+    for _ in range(150):
+        count = rng.randint(2, 20)
+        values = [cents_text(-rng.randint(1, 10**9))] + [cents_text(rng.randint(-10**8, 10**9)) for _ in range(count - 1)]
+        if not any(not value.startswith("-") and value != "0.00" for value in values[1:]):
+            values[-1] = cents_text(rng.randint(1, 10**9))
+        xnpv.append({"rate": decimal_rate(rng, -5, 10), "values": values, "dates": schedule(count)})
+    xirr = []
+    for _ in range(150):
+        count = rng.randint(2, 20)
+        outlay = rng.randint(10**4, 10**9)
+        # returns totalling 0.5 to 3 times the outlay, all after it: one sign change
+        total = outlay * rng.randint(50, 300) // 100
+        returns = [rng.randint(0, total // (count - 1) * 2) for _ in range(count - 1)]
+        if sum(returns) == 0:
+            returns[-1] = total
+        dates = schedule(count)
+        xirr.append({"values": [cents_text(-outlay)] + [cents_text(value) for value in returns], "dates": dates})
+    return xnpv, xirr
+
+
+def date_cell(value: str) -> str:
+    return f'<table:table-cell office:value-type="date" office:date-value={quoteattr(value)}/>'
+
+
 def cell(value: str) -> str:
     return f'<table:table-cell office:value-type="float" office:value={quoteattr(value)}/>'
 
@@ -172,7 +207,7 @@ def formula_cell(formula: str) -> str:
     return f'<table:table-cell table:formula={quoteattr("of:=" + formula)} office:value-type="string"/>'
 
 
-def sheet(npv: list, irr: list, periodic: list, annual: list, annuities: dict) -> str:
+def sheet(npv: list, irr: list, periodic: list, annual: list, annuities: dict, dated: tuple) -> str:
     rows = []
     last = column(MAX_FLOWS)  # column of the last flow (flows start in column B)
     for i, case in enumerate(npv, start=1):
@@ -215,6 +250,20 @@ def sheet(npv: list, irr: list, periodic: list, annual: list, annuities: dict) -
             cells += ["<table:table-cell/>"] * (MAX_FLOWS + 1 - len(cells))
             refs = ";".join(f"[.{column(index)}{row}]" for index in range(len(arguments)))
             cells.append(formula_cell(f'TEXT({name.upper()}({refs});"{SCIENTIFIC}")'))
+            rows.append("<table:table-row>" + "".join(cells) + "</table:table-row>")
+    # XNPV and XIRR: the rate in A, values from B, dates from V (20 columns each)
+    for name, cases in (("XNPV", dated[0]), ("XIRR", dated[1])):
+        for case in cases:
+            row += 1
+            count = len(case["values"])
+            cells = [cell(case.get("rate", "0"))]
+            cells += [cell(value) for value in case["values"]] + ["<table:table-cell/>"] * (20 - count)
+            cells += [date_cell(day) for day in case["dates"]] + ["<table:table-cell/>"] * (20 - count)
+            cells += ["<table:table-cell/>"] * (MAX_FLOWS + 1 - len(cells))
+            values = f"[.B{row}:.{column(count)}{row}]"
+            dates = f"[.V{row}:.{column(20 + count)}{row}]"
+            call = f"XNPV([.A{row}];{values};{dates})" if name == "XNPV" else f"XIRR({values};{dates})"
+            cells.append(formula_cell(f'TEXT({call};"{SCIENTIFIC}")'))
             rows.append("<table:table-row>" + "".join(cells) + "</table:table-row>")
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
@@ -284,9 +333,10 @@ def main() -> None:
     # a generator of their own, so adding these cases left the npv and irr ones as they were
     periodic, annual = rate_cases(random.Random(SEED + 1))
     annuities = annuity_cases(random.Random(SEED + 2))
-    results = run_calc(sheet(npv, irr, periodic, annual, annuities))
+    dated = dated_cases(random.Random(SEED + 3))
+    results = run_calc(sheet(npv, irr, periodic, annual, annuities, dated))
     expected = len(npv) + len(irr) + 2 * len(periodic) + len(annual)
-    expected += sum(len(cases) for cases in annuities.values())
+    expected += sum(len(cases) for cases in annuities.values()) + len(dated[0]) + len(dated[1])
     if len(results) != expected:
         sys.exit(f"expected {expected} results, got {len(results)}")
     for case, result in zip(npv, results):
@@ -303,6 +353,9 @@ def main() -> None:
     annuity_vectors = {}
     for name, cases in annuities.items():
         # fv, pv and pmt share their inputs: each gets its own copies with its own result
+        annuity_vectors[name] = [dict(case, calc=result) for case, result in zip(cases, rest)]
+        rest = rest[len(cases):]
+    for name, cases in (("xnpv", dated[0]), ("xirr", dated[1])):
         annuity_vectors[name] = [dict(case, calc=result) for case, result in zip(cases, rest)]
         rest = rest[len(cases):]
     vectors = {
