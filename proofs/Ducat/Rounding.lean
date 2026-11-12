@@ -19,6 +19,9 @@ import Ducat.Kernel
 * `kernel_sound`: whatever the kernel returns satisfies `Rounds`.
 * `kernel_fails_iff`: it fails exactly for `unnecessary` with an inexact division.
 * `rounds_unique`: `Rounds` determines `q`, so "satisfies the spec" means "is the right answer".
+
+`RoundsR` is the same spec for a real value; rounding is monotone in every mode (`roundsR_mono`,
+`rounds_mono`), and two ends that round alike pin every real value between them (`rounds_between`).
 -/
 
 namespace Ducat
@@ -246,5 +249,149 @@ theorem kernel_correct (m : Mode) (p d : Int) (hd : 0 < d) (q : Int) (hq : Round
     · exact absurd this.1 h
     · exact absurd h this.2
   | some q' => rw [rounds_unique m p d q' q hd (kernel_sound m p d hd q' hk) hq]
+
+/-! ## Rounding a real number, and monotonicity
+
+`RoundsR m x q` is `Rounds` for a real `x` in place of `p/d`: the error is `x - q`. A `Rounds` result
+for `p/d` is a `RoundsR` result for the real `p/d` (`rounds_toReal`), and by `roundsR_unique` the only
+one. Rounding is monotone in every mode
+(`roundsR_mono`, `rounds_mono`), and the values that round to one `q` form an interval
+(`roundsR_between`): so when the two ends of a bracket round alike, every real value between them
+rounds to that amount (`rounds_between`), and it is the only rounding of that value
+(`roundsR_unique`). -/
+
+/-- The specification for a real value `x`: `Rounds` with `p/d` replaced by `x`. -/
+noncomputable def RoundsR (m : Mode) (x : ℝ) (q : Int) : Prop :=
+  match m with
+  | .floor => 0 ≤ x - q ∧ x - q < 1
+  | .ceil => -1 < x - q ∧ x - q ≤ 0
+  | .trunc => if 0 ≤ x then 0 ≤ x - q ∧ x - q < 1 else -1 < x - q ∧ x - q ≤ 0
+  | .expand => if 0 ≤ x then -1 < x - q ∧ x - q ≤ 0 else 0 ≤ x - q ∧ x - q < 1
+  | .halfCeil => -1 ≤ 2 * (x - q) ∧ 2 * (x - q) < 1
+  | .halfFloor => -1 < 2 * (x - q) ∧ 2 * (x - q) ≤ 1
+  | .halfExpand =>
+    if 0 ≤ x then -1 ≤ 2 * (x - q) ∧ 2 * (x - q) < 1 else -1 < 2 * (x - q) ∧ 2 * (x - q) ≤ 1
+  | .halfTrunc =>
+    if 0 ≤ x then -1 < 2 * (x - q) ∧ 2 * (x - q) ≤ 1 else -1 ≤ 2 * (x - q) ∧ 2 * (x - q) < 1
+  | .halfEven =>
+    -1 ≤ 2 * (x - q) ∧ 2 * (x - q) ≤ 1 ∧ (2 * (x - q) = 1 ∨ 2 * (x - q) = -1 → 2 ∣ q)
+  | .unnecessary => x - q = 0
+
+/-- An integer is at most -1, 0, or at least 1, as reals. -/
+theorem int_cases_real (q : Int) : (q : ℝ) ≤ -1 ∨ (q : ℝ) = 0 ∨ 1 ≤ (q : ℝ) := by
+  rcases (by omega : q ≤ -1 ∨ q = 0 ∨ 1 ≤ q) with h | h | h
+  · left; exact_mod_cast h
+  · right; left; exact_mod_cast h
+  · right; right; exact_mod_cast h
+
+/-- A `Rounds` result for `p/d` is a `RoundsR` result for the real `p/d`. -/
+theorem rounds_toReal (m : Mode) (p d q : Int) (hd : 0 < d) (h : Rounds m p d q) :
+    RoundsR m ((p : ℝ) / d) q := by
+  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
+  have hd0 : (d : ℝ) ≠ 0 := hd'.ne'
+  have hsign : (0 : ℝ) ≤ (p : ℝ) / d ↔ 0 ≤ p := by
+    rw [le_div_iff₀ hd', zero_mul]
+    norm_cast
+  -- the error `x - q` is `(p - d·q) / d`
+  have hx : (p : ℝ) / d - q = (((p - d * q : ℤ)) : ℝ) / d := by
+    push_cast
+    field_simp
+  obtain ⟨e, he⟩ : ∃ e : ℤ, p - d * q = e := ⟨_, rfl⟩
+  have ht : (e : ℝ) / d * d = e := div_mul_cancel₀ _ hd0
+  cases m
+  case halfEven =>
+    simp only [Rounds, RoundsR, hx, he] at h ⊢
+    generalize (e : ℝ) / d = t at *
+    obtain ⟨h1, h2, h3⟩ := h
+    have h1' : -(d : ℝ) ≤ 2 * e := by exact_mod_cast h1
+    have h2' : 2 * (e : ℝ) ≤ d := by exact_mod_cast h2
+    have h6 : -1 ≤ 2 * t := by nlinarith
+    have h7 : 2 * t ≤ 1 := by nlinarith
+    refine ⟨h6, h7, ?_⟩
+    intro hor
+    apply h3
+    rcases hor with h4 | h4
+    · left
+      have h5 : 2 * (e : ℝ) = d := by linear_combination (d : ℝ) * h4 - 2 * ht
+      exact_mod_cast h5
+    · right
+      have h5 : 2 * (e : ℝ) = -d := by linear_combination (d : ℝ) * h4 - 2 * ht
+      exact_mod_cast h5
+  all_goals
+    simp only [Rounds, RoundsR, hsign, hx, he] at h ⊢
+    (try split_ifs at h ⊢)
+    all_goals
+      generalize (e : ℝ) / d = t at *
+      rify at h
+      first
+      | (obtain ⟨h1, h2⟩ := h; constructor <;> nlinarith)
+      | nlinarith
+
+/-- Rounding is monotone in every mode. -/
+theorem roundsR_mono (m : Mode) (x y : ℝ) (q q' : Int) (hxy : x ≤ y) (h : RoundsR m x q)
+    (h' : RoundsR m y q') : q ≤ q' := by
+  by_contra hlt
+  have hq1 : q' + 1 ≤ q := by omega
+  have hq : (q' : ℝ) + 1 ≤ q := by exact_mod_cast hq1
+  have hq0 := int_cases_real q
+  cases m
+  case halfEven =>
+    obtain ⟨a1, a2, a3⟩ := h
+    obtain ⟨b1, b2, b3⟩ := h'
+    have e1 : (q : ℝ) = q' + 1 := by linarith
+    have e2 : q = q' + 1 := by exact_mod_cast e1
+    have t1 : 2 * (x - q) = -1 := by linarith
+    have t2 : 2 * (y - q') = 1 := by linarith
+    have d1 := a3 (Or.inr t1)
+    have d2 := b3 (Or.inl t2)
+    omega
+  all_goals
+    simp only [RoundsR] at h h'
+    (try split_ifs at h h')
+    all_goals
+      (try obtain ⟨h1, h2⟩ := h)
+      (try obtain ⟨h3, h4⟩ := h')
+      rcases hq0 with h0 | h0 | h0 <;> linarith
+
+/-- The values that round to `q` form an interval: between two of them, every value rounds to `q`. -/
+theorem roundsR_between (m : Mode) (x y z : ℝ) (q : Int) (hxz : x ≤ z) (hzy : z ≤ y)
+    (hx : RoundsR m x q) (hy : RoundsR m y q) : RoundsR m z q := by
+  have hq0 := int_cases_real q
+  cases m
+  case halfEven =>
+    obtain ⟨a1, a2, a3⟩ := hx
+    obtain ⟨b1, b2, b3⟩ := hy
+    refine ⟨by linarith, by linarith, ?_⟩
+    rintro (t | t)
+    · exact b3 (Or.inl (by linarith))
+    · exact a3 (Or.inr (by linarith))
+  all_goals
+    simp only [RoundsR] at hx hy ⊢
+    (try split_ifs at hx hy ⊢)
+    all_goals
+      (try obtain ⟨h1, h2⟩ := hx)
+      (try obtain ⟨h3, h4⟩ := hy)
+      rcases hq0 with h0 | h0 | h0 <;> first | linarith | (constructor <;> linarith)
+
+/-- A real value has at most one rounding in each mode. -/
+theorem roundsR_unique (m : Mode) (x : ℝ) (q q' : Int) (h : RoundsR m x q) (h' : RoundsR m x q') :
+    q = q' :=
+  le_antisymm (roundsR_mono m x x q q' le_rfl h h') (roundsR_mono m x x q' q le_rfl h' h)
+
+/-- Rounding a fraction is monotone in every mode. -/
+theorem rounds_mono (m : Mode) (p p' d q q' : Int) (hd : 0 < d) (hp : p ≤ p')
+    (h : Rounds m p d q) (h' : Rounds m p' d q') : q ≤ q' := by
+  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
+  have hp' : (p : ℝ) ≤ p' := by exact_mod_cast hp
+  exact roundsR_mono m _ _ q q' (div_le_div_of_nonneg_right hp' hd'.le)
+    (rounds_toReal m p d q hd h) (rounds_toReal m p' d q' hd h')
+
+/-- When `low/d` and `high/d` both round to `q`, so does every real value between them: two ends
+that round alike pin the rounded value. -/
+theorem rounds_between (m : Mode) (low high d q : Int) (hd : 0 < d) (X : ℝ)
+    (hlow : (low : ℝ) / d ≤ X) (hhigh : X ≤ (high : ℝ) / d)
+    (hl : Rounds m low d q) (hh : Rounds m high d q) : RoundsR m X q :=
+  roundsR_between m _ _ X q hlow hhigh (rounds_toReal m low d q hd hl)
+    (rounds_toReal m high d q hd hh)
 
 end Ducat
