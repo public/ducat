@@ -333,8 +333,8 @@ The width is about `Σ |C|·r·2^−P / F` plus a unit per group, so doubling `P
 2,048 bits) narrows it until it settles what is asked: a width of at most 10^−digits in major
 units for `xnpvBounds`, both ends rounding alike for `xnpv`, and the bounds excluding zero for
 `xirr`'s sign. Rounding is monotone in every mode, so when both ends round alike, every value
-between them does too, and that amount is the value rounded once (argued here, not proved in
-Lean). A value exactly on a rounding boundary is necessarily rational. Every rational value from
+between them does too, and that amount is the value rounded once (`xnpv_rounds`, from
+`rounds_between` in `proofs/Ducat/Rounding.lean`). A value exactly on a rounding boundary is necessarily rational. Every rational value from
 cancellation (step 4) or rational roots is computed exactly, so it never needs settling. The one
 case left is a rational value hidden in an algebraic relation between different irrational
 parts. There, and for an irrational value closer to a boundary than 2,048 bits can resolve, each
@@ -344,26 +344,29 @@ day count reaches them (its denominators' prime powers are at most 73), and
 [equivalent-mutants.md](equivalent-mutants.md) lists them.
 
 **What the Lean proofs cover** (`proofs/Ducat/Xnpv.lean`, listed in [What is proved](proofs.md)).
-The theorems are integer and rational (ℚ) inequalities:
+The bounds are proved over ℝ, with `Real.rpow` for the roots, so they apply to the irrational
+factors themselves:
 
+- step 1: `exponent_split` and `power_split`, the real-power law `g^(n/m) = g^W·Π g^(r/q)` for
+  `g > 0`, given the exponent identity `n = W·m + Σ r·(m/q)`;
 - step 2: `root_floor_inside` and `root_bracket`, the integer inequality
-  `R^q·b ≤ a·S^q < (R + 1)^q·b` for each prime power's root;
-- step 3: `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le` and `le_fixedPower_ceil` for each
-  power, and `fold_floor_le` and `le_fold_ceil` for composing a flow's factors, as bounds on
-  rational targets;
+  `R^q·b ≤ a·S^q < (R + 1)^q·b` for each prime power's root, and `real_root_bracket`, which puts
+  the real root in `[R/S, (R + 1)/S)`;
+- step 3: `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil` and
+  `factor_bracket` for each power `g^(r/q)`, and `fold_floor_le` and `le_fold_ceil` for composing
+  a flow's factors;
 - step 4: `sum_regroup` and `group_common_factor`;
-- steps 5 and 6: `quotient_bounds`, `grid_bounds` and `sum_bounds`.
+- steps 5 and 6: `quotient_bounds`, `grid_bounds` and `sum_bounds`;
+- the single rounding: `xnpv_rounds`, from the monotonicity of rounding in every mode
+  (`roundsR_mono`, `rounds_between`).
 
-**Argued, not proved** (#308 is to formalize them over ℝ):
+**Not proved:**
 
-- that the integer inequality puts the real root in `[R/S, (R + 1)/S)`, and that the ℚ lemmas
-  carry over to the irrational factors `g^(r/q)`, their products and `C/F` (they hold in any
-  ordered field);
-- step 1's exponent identity `n = W·m + Σ r·(m/q)`, which the code checks at run time and throws
-  if it fails, and the real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on;
+- the CRT computation of step 1's split: the code checks the exponent identity at run time and
+  throws if it fails, and `power_split` takes it as a hypothesis;
 - the exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder (exact
-  bigint operations);
-- the monotonicity of rounding used for `xnpv`'s single rounding.
+  bigint operations, tested);
+- that the TypeScript follows the model, which is tested, as for the other proved models.
 
 **XIRR** bisects as `irr` does, on the grid of `digits`-place decimals, with `irr`'s bracket and
 multiple-root rules: the flows, combined by date and in date order, have one sign change (one

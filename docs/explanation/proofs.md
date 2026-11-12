@@ -18,6 +18,11 @@ This page explains what the Lean proofs in `proofs/` establish about ducat, and 
 - `kernel_fails_iff`: the kernel throws exactly for `unnecessary` on an inexact division, and never otherwise.
 - `kernel_correct`: so whenever a correctly rounded answer exists, the kernel returns it.
 
+`RoundsR m x q` is the same specification for a real value `x`, with the error `x − q`; `rounds_toReal` shows that `p/d` rounds the same either way. Rounding is monotone in every mode:
+
+- `roundsR_mono`, `rounds_mono`: if `x ≤ y`, then `x` rounded is at most `y` rounded, for reals and for fractions over a positive divisor.
+- `roundsR_between`, `rounds_between`: the values that round to `q` form an interval, so when two ends round to `q`, every real value between them rounds to `q` too. `roundsR_unique`: that `q` is the value's only rounding.
+
 ## Allocation: proved model (`proofs/Ducat/Allocate.lean`)
 
 The model takes an amount `x ≥ 0` and non-negative weights with a positive total `T`. Each bucket gets `⌊x·w/T⌋`, and the leftover units go to the non-zero buckets in the order the strategy fixes.
@@ -60,22 +65,23 @@ These are stated over the proved kernel (`divRound`):
 
 `xnpvBounds`, `xnpv` and `xirr` in `@ducatjs/money/excel` bracket XNPV in integer arithmetic at a fixed-point scale `S = 2^bits`. Each step of `xnpvScaled` and its theorem:
 
-| step in `src/excel.ts`                                                                                            | theorem                                                                  |
-| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| each prime power `q`'s root `R = ⌊qth root of ⌊a·S^q / b⌋⌋`: the integer inequality `R^q·b ≤ a·S^q < (R + 1)^q·b` | `root_floor_inside`, `root_bracket`                                      |
-| `g^(r/q)` by square-and-multiply, every product floored (or ceiled)                                               | `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil` |
-| a flow's factors `Π g^(r/q)` multiplied left to right, floored (or ceiled)                                        | `fold_floor_le`, `le_fold_ceil`                                          |
-| flows with the same irrational part summed first as one coefficient, a zero coefficient dropped                   | `sum_regroup`, `group_common_factor`                                     |
-| a group's term `C / F` between `C / F_high` and `C / F_low` (swapped for `C < 0`), floored and ceiled to the grid | `quotient_bounds`, `grid_bounds`                                         |
-| the groups' bounds summed                                                                                         | `sum_bounds`                                                             |
+| step in `src/excel.ts`                                                                                            | theorem                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| the split `n/m = W + Σ r/q` over `m`'s prime powers `q`, given the identity `n = W·m + Σ r·(m/q)` the code checks | `exponent_split`, and the real-power law `g^(n/m) = g^W·Π g^(r/q)`: `power_split`          |
+| each prime power `q`'s root `R = ⌊qth root of ⌊a·S^q / b⌋⌋`: the integer inequality `R^q·b ≤ a·S^q < (R + 1)^q·b` | `root_floor_inside`, `root_bracket`                                                        |
+| the real root: `R/S ≤ g^(1/q) < (R + 1)/S` for `g = a/b`                                                          | `real_root_bracket`                                                                        |
+| `g^(r/q)` by square-and-multiply, every product floored (or ceiled)                                               | `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil`, `factor_bracket` |
+| a flow's factors `Π g^(r/q)` multiplied left to right, floored (or ceiled)                                        | `fold_floor_le`, `le_fold_ceil`                                                            |
+| flows with the same irrational part summed first as one coefficient, a zero coefficient dropped                   | `sum_regroup`, `group_common_factor`                                                       |
+| a group's term `C / F` between `C / F_high` and `C / F_low` (swapped for `C < 0`), floored and ceiled to the grid | `quotient_bounds`, `grid_bounds`                                                           |
+| the groups' bounds summed                                                                                         | `sum_bounds`                                                                               |
+| `xnpv`'s single rounding: both ends round alike, so the value rounds to that amount                               | `xnpv_rounds` (from `rounds_between`)                                                      |
 
-These are integer and rational (ℚ) inequalities: the first row proves `R^q·b ≤ a·S^q < (R + 1)^q·b` in integers, and the bound lemmas take rational targets. **Argued, not proved** (#308 is to formalize them over ℝ):
+The bounds are over ℝ, with `Real.rpow` for the roots, so they apply to the irrational factors `g^(r/q)`, their products and `C / F` themselves. **Not proved:**
 
-- That the integer inequality puts the real root `g^(1/q)` in `[R/S, (R + 1)/S)`, and that the ℚ lemmas carry over to the irrational factors, their products and `C / F`. They hold in any ordered field.
-- The exponent identity `n = W·m + Σ r·(m/q)` behind the split, which the code computes by the CRT and checks at run time.
-- The real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on.
-- The exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder.
-- That rounding is monotone in every mode, so two ends that round alike pin `xnpv`'s rounded value. This is argued in [the finance design](finance-design.md).
+- The CRT computation of the split. `splitExponent` checks the identity `n = W·m + Σ r·(m/q)` at run time and throws if it fails, so `power_split` takes the identity as a hypothesis.
+- The exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder: exact bigint operations, tested.
+- That the TypeScript follows the model: as for the other proved models, this is tested, not proved.
 
 ## Tested, not proved
 
