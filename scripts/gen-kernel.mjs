@@ -31,7 +31,7 @@ const mode = process.argv[2] ?? '--write';
 
 const KERNEL_FILE = 'src/generated/kernel.ts';
 // one fixture per proved model that the TypeScript is checked against (proofs/Oracle.lean <model>)
-const ORACLE_MODELS = ['allocate', 'instalments', 'chunk', 'schedule', 'increment'];
+const ORACLE_MODELS = ['allocate', 'instalments', 'chunk', 'schedule', 'increment', 'xnpv', 'xirr'];
 const oracleFile = (model) => `test/fixtures/${model}.oracle.json`;
 
 const sha256 = (text) => createHash('sha256').update(text).digest('hex');
