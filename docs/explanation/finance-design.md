@@ -341,6 +341,22 @@ parts. There, and for an irrational value closer to a boundary than 2,048 bits c
 function throws rather than refine without end. Roots are also capped at an order times
 precision of 2^22 bits.
 
+**What the Lean proofs cover** (`proofs/Ducat/Xnpv.lean`, listed in [What is proved](proofs.md)):
+
+- step 2: `root_floor_inside` and `root_bracket`, for each prime power;
+- step 3: `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le` and `le_fixedPower_ceil` for each
+  power, and `fold_floor_le` and `le_fold_ceil` for composing a flow's factors;
+- step 4: `sum_regroup` and `group_common_factor`;
+- steps 5 and 6: `quotient_bounds`, `grid_bounds` and `sum_bounds`.
+
+**Not proved:**
+
+- step 1's exponent identity `n = W·m + Σ r·(m/q)`, which the code checks at run time and throws if
+  it fails;
+- the real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on, which is standard but not
+  formalized;
+- the monotonicity of rounding used for `xnpv`'s single rounding.
+
 **XIRR** bisects as `irr` does, on the grid of `digits`-place decimals, with `irr`'s bracket and
 multiple-root rules: the flows, combined by date and in date order, have one sign change (one
 root above −1, by Descartes' rule for exponents in increasing order) or need a `bracket`.

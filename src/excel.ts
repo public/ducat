@@ -744,7 +744,11 @@ function splitExponent(years: Ratio): SplitExponent {
     }
     covered += residue * cofactor;
   }
-  // n = whole·m + Σ r·(m/q), exactly
+  // n = whole·m + Σ r·(m/q), exactly: by the CRT m divides n − Σ r·(m/q); checked, since the
+  // bound relies on it (and it isn't among the proved steps)
+  if ((years.num - covered) % order !== 0n) {
+    throw new RangeError(`XNPV's exponent split failed for ${years.num}/${order}`);
+  }
   return { whole: (years.num - covered) / order, parts };
 }
 
