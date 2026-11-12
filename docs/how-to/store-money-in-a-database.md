@@ -11,6 +11,7 @@ This guide shows you how to choose a column layout for amounts, and how to write
 | **JSON**                             | `jsonb` `{amount: "12.34", currency}`                         | `JSON`            | `TEXT`                                                                          | `JSON.stringify(m)`, `fromJSON`                                                        |
 
 - BIGINT holds ±9.2·10^18 minor units, which is 92 quadrillion EUR. Postgres's `money` type is locale-dependent; don't use it.
+- Name the unit in the column (`amount_minor`, not `amount`): a bare number can be read as euros or as cents, and code that reads it into a JavaScript number past 2⁵³ loses digits. See [minor and major units mixed up](../explanation/footguns.md#minor-and-major-units-mixed-up) and [amounts past 2⁵³ minor units](../explanation/footguns.md#amounts-past-2⁵³-minor-units).
 - If you choose a decimal column, choose a NUMERIC scale of at least the largest exponent you store: 4 covers CLF/UYW, and 3 covers BHD/KWD.
 
 ## Write and read a BIGINT minor-units column

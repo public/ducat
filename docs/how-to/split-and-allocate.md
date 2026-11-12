@@ -16,7 +16,7 @@ money('100', 'EUR').allocate([1, 1, 1], { remainder: 'toLast' }); // → [33.33 
 money('-100', 'EUR').split(3); // → [-33.34 EUR, -33.33 EUR, -33.33 EUR]
 ```
 
-Weights can be integers, bigints or decimal strings. If a bucket should get nothing, give it weight zero. A negative amount is allocated as the mirror image of the positive one.
+Weights can be integers, bigints or decimal strings. If a bucket should get nothing, give it weight zero. A negative amount is allocated as the mirror image of the positive one. [Where money arithmetic goes wrong](../explanation/footguns.md#allocation-that-loses-or-invents-a-cent) shows how other libraries lose or invent a cent here.
 
 ## Plan instalments
 

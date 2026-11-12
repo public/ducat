@@ -22,7 +22,7 @@ Pass a rounding mode or a rounding policy as the last argument. With a policy, t
 
 ## Keep a report's totals exact
 
-If a report rounds each row's net and then sums them, it drifts. Use `extractTaxExact(gross, percent)` and `addTaxExact(net, percent)` from `@ducatjs/money/exact`, which split an amount (Money or ExactMoney) into exact `{ net, tax, gross }` parts, then sum the exact parts and round once:
+If a report rounds each row's net and then sums them, it drifts (see [Where money arithmetic goes wrong](../explanation/footguns.md#rounding-at-every-step-and-a-default-you-didnt-choose)). Use `extractTaxExact(gross, percent)` and `addTaxExact(net, percent)` from `@ducatjs/money/exact`, which split an amount (Money or ExactMoney) into exact `{ net, tax, gross }` parts, then sum the exact parts and round once:
 
 ```ts
 import { money } from '@ducatjs/money';
