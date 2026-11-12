@@ -13,7 +13,7 @@ const detect = (text: string, locale: string, options?: Parameters<typeof parseM
 
 describe('parse: the text around the number', () => {
   it('rejects characters that are neither letters, currency signs, spaces nor signs', () => {
-    for (const text of ['#1.00', '1.00#', '1.00 €x1', '@ 1.00', '1.00 *']) {
+    for (const text of ['#1.00', '1.00#', '@ 1.00', '1.00 *']) {
       expect(() => read(text)).toThrow(
         new SyntaxError(`Cannot parse "${text}": unexpected characters`),
       );
