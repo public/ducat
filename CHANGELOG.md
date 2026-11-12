@@ -34,7 +34,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   Excel's double evaluation is well conditioned (the exact value or root where it isn't). It has
   `npv`, `npvExact` and `irr`, moved from `/finance`, and the new functions below (#200).
 - `fv`, `pv`, `pmt`, `nper` and `rate` in `/excel`: Excel's FV, PV, PMT, NPER and RATE, with
-  Excel's arguments, sign convention and `type`, and Excel's values. `fv`, `pv` and `pmt` are exact
+  Excel's arguments, sign convention and `type`, and Excel's value at 15 significant digits
+  wherever Excel's double evaluation is well conditioned (the exact value or root where it
+  isn't, which is the correct one). `fv`, `pv` and `pmt` are exact
   and rounded once (`fvExact`, `pvExact`, `pmtExact` return the `ExactMoney`); `nper` is to
   `digits` places from rigorous logarithm bounds, with `exact` when it is rational; `rate` is
   `irr` of the implied flows. They throw where Excel would give another kind of answer: a

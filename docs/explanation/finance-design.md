@@ -371,6 +371,12 @@ The review took the recommendation on every fork:
    No other Excel-named function (YEARFRAC, PMT, DAYS360…) is added without matching Excel
    exactly.
 
+   Amended in v0.4.0: Excel-named functions live in `@ducatjs/money/excel` (Alex), and "never
+   returns a different value" is qualified. They match Excel at its 15 significant digits wherever
+   Excel's double evaluation is well conditioned; where it isn't (RATE for a tiny rate over many
+   periods), they return the exact value or root, which is the correct one, and Excel's double may
+   be further off.
+
 ## Design forks (as reviewed)
 
 1. **Dates.** I recommend strings and `{ year, month, day }` only. The alternative also accepts
