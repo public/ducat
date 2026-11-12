@@ -101,9 +101,11 @@ def exactRoot (v q : ℕ) : Option ℕ :=
 /-- The floor of `S·g^(1/q)` for `g = num/den`, `S = 2^bits`: the `q`th root of `⌊num·S^q / den⌋`. -/
 def rootLow (num den bits q : ℕ) : ℕ := floorRoot q (num * 2 ^ (bits * q) / den)
 
-/-- `rootBracket`: a rational root `a/b` when `num` and `den` are perfect `q`th powers. -/
+/-- `rootBracket`: a rational root `a/b` when `num/den`, reduced, has a perfect `q`th power for its
+numerator and its denominator (reduced first, so `xirr`'s unreduced grid rates find their exact
+roots). -/
 def rationalRoot (num den q : ℕ) : Option (ℕ × ℕ) :=
-  match exactRoot num q, exactRoot den q with
+  match exactRoot (num / Nat.gcd num den) q, exactRoot (den / Nat.gcd num den) q with
   | some a, some b => some (a, b)
   | _, _ => none
 

@@ -1,4 +1,4 @@
-{"leanSources":"9cb5dc65b9ba68d85ac42b4ba27d0217c5ae7c34b3bca8ca9e9da87ac31412bd","contentSha256":"6f27208de949056cced095dc5d172b77f6cccd30acd15db531211248db1e59c2","cases":
+{"leanSources":"20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca","contentSha256":"6f27208de949056cced095dc5d172b77f6cccd30acd15db531211248db1e59c2","cases":
 [
 {"amount":"-80132596","step":"50","halfEven":"-80132600","halfExpand":"-80132600","halfTrunc":"-80132600","halfCeil":"-80132600","halfFloor":"-80132600","expand":"-80132600","trunc":"-80132550","ceil":"-80132550","floor":"-80132600","unnecessary":null},
 {"amount":"-9007199254741081","step":"100","halfEven":"-9007199254741100","halfExpand":"-9007199254741100","halfTrunc":"-9007199254741100","halfCeil":"-9007199254741100","halfFloor":"-9007199254741100","expand":"-9007199254741100","trunc":"-9007199254741000","ceil":"-9007199254741000","floor":"-9007199254741100","unnecessary":null},
