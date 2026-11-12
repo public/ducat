@@ -51,6 +51,14 @@ describe('comparisons', () => {
     expect([half.greaterThan(third), half.greaterThanOrEqual(third)]).toEqual([true, true]);
   });
 
+  it('close fractions whose cross products pass 2^53 compare exactly', () => {
+    // a/7 and b/11 differ by 1/77: a × 11 − b × 7 = 1, but both products round to the same double
+    const left = yen(5731854068998871).divide(7);
+    const right = yen(9007199251283940).divide(11);
+    expect([left.compare(right), right.compare(left)]).toEqual([1, -1]);
+    expect([left.greaterThan(right), left.equals(right)]).toEqual([true, false]);
+  });
+
   it('equals compares numerator and denominator', () => {
     expect(half.equals(halfAgain)).toBe(true);
     // 1/2 and 1/3: the same numerator, another value
