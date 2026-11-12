@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/public/ducat/spec/schema/vectors.schema.json",
   "title": "A ducat conformance vector file",
-  "description": "One file of test vectors: provenance, then cases. Every value is JSON text that needs no programming language to read: amounts are exact decimal strings, never JSON numbers. See spec/README.md for the meaning of each operation and expectation.",
+  "description": "One file of test vectors: provenance, then either cases (each with its own operation, arguments and expectation) or tables (rows of one operation's inputs and expected results). Every value is JSON text that needs no programming language to read: amounts are exact decimal strings, never JSON numbers. See spec/README.md for the meaning of each operation and expectation.",
   "type": "object",
-  "required": ["format", "area", "name", "description", "provenance", "checkedAgainst", "cases"],
+  "required": ["format", "area", "name", "description", "provenance", "checkedAgainst"],
   "additionalProperties": false,
   "properties": {
     "$schema": {
@@ -33,11 +33,23 @@
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
     },
+    "contentSha256": {
+      "description": "For a generated file whose generator stamps it: the SHA-256 of the cases' or rows' text as the generator wrote it, so an edit by hand is detected.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "cases": {
       "type": "array",
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/case"
+      }
+    },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/table"
       }
     }
   },
@@ -1001,6 +1013,84 @@
           "type": "string"
         }
       }
+    },
+    "table": {
+      "description": "Rows of one table operation. Each row holds the operation's inputs and its expected results under the field names the operation defines (spec/README.md), so one row can check several results, such as one per rounding mode.",
+      "type": "object",
+      "required": ["op", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "$ref": "#/$defs/tableOp"
+        },
+        "description": {
+          "type": "string"
+        },
+        "source": {
+          "description": "Where this table's rows come from, when that differs by table: a documentation page's URL, for instance.",
+          "type": "string"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/rowsByOp"
+        }
+      ]
+    },
+    "tableOp": {
+      "description": "A table operation. Each one's row fields are defined in spec/README.md and checked by rowsByOp.",
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9]*(\\.[a-z][a-zA-Z0-9]*)+$"
+    },
+    "rowsByOp": {
+      "description": "The shape of each table operation's rows: one if/then per operation, added with the operation."
+    },
+    "rational": {
+      "description": "An exact rational number: a decimal, or numerator/denominator with a positive denominator.",
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)((\\.[0-9]+)|(/[1-9][0-9]*))?$"
+    },
+    "interval": {
+      "description": "An irrational result, given exactly: rationals lower and upper with lower <= value <= upper, and the tolerance an implementation's answer may differ from the true value by. exact is true when lower = upper is the value itself.",
+      "type": "object",
+      "required": ["lower", "upper"],
+      "additionalProperties": false,
+      "properties": {
+        "lower": {
+          "$ref": "#/$defs/rational"
+        },
+        "upper": {
+          "$ref": "#/$defs/rational"
+        },
+        "tolerance": {
+          "$ref": "#/$defs/rational"
+        },
+        "exact": {
+          "type": "boolean"
+        }
+      }
     }
-  }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "cases": true
+      },
+      "required": ["cases"]
+    },
+    {
+      "properties": {
+        "tables": true
+      },
+      "required": ["tables"]
+    }
+  ],
+  "$comment": "oneOf: a file has cases or tables, never both."
 }

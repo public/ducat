@@ -80,7 +80,7 @@ function vectorOf(specCase: SpecCase): FixedVector {
 }
 
 /** The fixed-point battery: @ducatjs/money-spec's vectors/fixed/battery.json, in its order. */
-export const FIXED_VECTORS: FixedVector[] = (fixedFile as unknown as SpecFile).cases.map(vectorOf);
+export const FIXED_VECTORS: FixedVector[] = (fixedFile as unknown as SpecFile).cases!.map(vectorOf);
 
 function describeError(error: unknown): string {
   const name = (error as Error)?.constructor?.name ?? 'Error';

@@ -61,7 +61,18 @@ export interface SpecFile {
   readonly description: string;
   readonly provenance: Provenance;
   readonly checkedAgainst: string;
-  readonly cases: readonly SpecCase[];
+  readonly contentSha256?: string;
+  /** a file has cases or tables, never both */
+  readonly cases?: readonly SpecCase[];
+  readonly tables?: readonly SpecTable[];
+}
+
+/** Rows of one table operation: each row holds its inputs and expected results by field name. */
+export interface SpecTable {
+  readonly op: string;
+  readonly description?: string;
+  readonly source?: string;
+  readonly rows: readonly Readonly<Record<string, unknown>>[];
 }
 
 /** The draws of a money.allocate.generated case, from its seeded generator. */

@@ -526,7 +526,7 @@ function vectorOf(specCase: SpecCase): Vector {
 }
 
 /** The battery's vectors: @ducatjs/money-spec's core battery, in its order. */
-export const VECTORS: Vector[] = (batteryFile as unknown as SpecFile).cases.map(vectorOf);
+export const VECTORS: Vector[] = (batteryFile as unknown as SpecFile).cases!.map(vectorOf);
 
 /** Every diagnosis names a vector that exists, so a renamed vector can't silently lose one. */
 export const DIAGNOSED_IDS: readonly string[] = Object.keys(DIAGNOSES);

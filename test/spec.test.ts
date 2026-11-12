@@ -273,8 +273,45 @@ function runCase(specCase: SpecCase): string {
 
 // --- the suite ---------------------------------------------------------------------------------------
 
+/**
+ * The operations of each table layout, by name. None yet: ducat's tables of generated cases move
+ * here with their files.
+ */
+const TABLE_OPERATIONS: Record<string, (row: Readonly<Record<string, unknown>>) => string> = {};
+
 function unknownOperations(file: SpecFile): string[] {
-  return file.cases.map((specCase) => specCase.op).filter((op) => !(op in OPERATIONS));
+  const caseOps = (file.cases ?? []).map((specCase) => specCase.op);
+  const unknownCaseOps = caseOps.filter((op) => !(op in OPERATIONS));
+  const tableOps = (file.tables ?? []).map((table) => table.op);
+  return [...unknownCaseOps, ...tableOps.filter((op) => !(op in TABLE_OPERATIONS))];
+}
+
+function caseCount(file: SpecFile): number {
+  const rows = (file.tables ?? []).reduce((total, table) => total + table.rows.length, 0);
+  return (file.cases?.length ?? 0) + rows;
+}
+
+/** The exact decimal value of a double: its significand times a power of two, in bigint. */
+function exactDecimalOf(double: number): string {
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, double);
+  const bits = view.getBigUint64(0);
+  const isNegative = bits >> 63n === 1n;
+  const biasedExponent = Number((bits >> 52n) & 0x7ffn);
+  const fraction = bits & ((1n << 52n) - 1n);
+  const significand = biasedExponent === 0 ? fraction : fraction | (1n << 52n);
+  const exponent = (biasedExponent === 0 ? 1 : biasedExponent) - 1075;
+
+  let digits: string;
+  if (exponent >= 0) {
+    digits = String(significand << BigInt(exponent));
+  } else {
+    // m / 2^k = m * 5^k / 10^k, exactly
+    const scale = -exponent;
+    const scaled = String(significand * 5n ** BigInt(scale)).padStart(scale + 1, '0');
+    digits = `${scaled.slice(0, -scale)}.${scaled.slice(-scale)}`.replace(/\.?0+$/, '');
+  }
+  return isNegative && digits !== '0' ? `-${digits}` : digits;
 }
 
 describe('@ducatjs/money-spec', () => {
@@ -294,7 +331,7 @@ describe('@ducatjs/money-spec', () => {
 
   it('every case id is unique within its file', () => {
     for (const [path, file] of files) {
-      const ids = (file as SpecFile).cases.map((specCase) => specCase.id);
+      const ids = ((file as SpecFile).cases ?? []).map((specCase) => specCase.id);
       expect({ path, unique: new Set(ids).size }).toEqual({ path, unique: ids.length });
     }
   });
@@ -302,15 +339,15 @@ describe('@ducatjs/money-spec', () => {
   it('keeps every case: the count per area', () => {
     const counts: Record<string, number> = {};
     for (const file of files.values()) {
-      const { area, cases } = file as SpecFile;
-      counts[area] = (counts[area] ?? 0) + cases.length;
+      const specFile = file as SpecFile;
+      counts[specFile.area] = (counts[specFile.area] ?? 0) + caseCount(specFile);
     }
     expect(counts).toEqual(CASES_PER_AREA);
   });
 
   it("names a real vector in each of compare/'s diagnoses", () => {
     const battery = files.get(join('core', 'battery.json')) as SpecFile;
-    const ids = new Set(battery.cases.map((specCase) => specCase.id));
+    const ids = new Set(battery.cases!.map((specCase) => specCase.id));
     expect(DIAGNOSED_IDS.filter((id) => !ids.has(id))).toEqual([]);
   });
 
@@ -343,15 +380,43 @@ describe('@ducatjs/money-spec', () => {
 
   it("draws the generated allocations spec/README.md's example names", () => {
     const battery = files.get(join('core', 'battery.json')) as SpecFile;
-    const generated = battery.cases.find((specCase) => specCase.op === 'money.allocate.generated')!;
+    const generated = battery.cases!.find(
+      (specCase) => specCase.op === 'money.allocate.generated',
+    )!;
     const draws = generatedAllocations(generated.args);
     expect(draws).toHaveLength(2000);
     expect(draws[0]).toEqual({ minor: 306932606n, weights: [925, 574, 179, 460, 193, 794, 311] });
   });
 
+  it('gives each binary64 input its exact value', () => {
+    for (const file of files.values()) {
+      for (const specCase of (file as SpecFile).cases ?? []) {
+        const value = specCase.args['value'] as { binary64?: string; exact?: string } | undefined;
+        if (value?.binary64 !== undefined) {
+          expect({ id: specCase.id, exact: exactDecimalOf(Number(value.binary64)) }).toEqual({
+            id: specCase.id,
+            exact: value.exact,
+          });
+        }
+      }
+    }
+  });
+
+  it("knows every operation the schema names, and the schema gives each one's arguments", () => {
+    const definitions = (schema as { $defs: Record<string, unknown> }).$defs;
+    const operations = (definitions['op'] as { enum: string[] }).enum;
+    const when = definitions['when'] as Record<string, { if: { properties: { op: object } } }>;
+    const withArguments = Object.values(when).flatMap((clause) => {
+      const op = clause.if.properties.op as { const?: string; enum?: string[] };
+      return op.enum ?? [op.const!];
+    });
+    expect(operations.toSorted()).toEqual(Object.keys(OPERATIONS).toSorted());
+    expect(withArguments.toSorted()).toEqual(operations.toSorted());
+  });
+
   it('rejects a file that breaks the schema, or has an operation the runner does not know', () => {
     const battery = files.get(join('core', 'battery.json')) as SpecFile;
-    const first = battery.cases[0]!;
+    const first = battery.cases![0]!;
 
     const withFloat = {
       ...battery,
@@ -362,6 +427,14 @@ describe('@ducatjs/money-spec', () => {
     const withoutProvenance = { ...battery, provenance: undefined };
     expect(validate(JSON.parse(JSON.stringify(withoutProvenance)))).toBe(false);
 
+    const withBothLayouts = { ...battery, tables: [{ op: 'lean.allocate', rows: [{}] }] };
+    expect(validate(withBothLayouts)).toBe(false);
+
+    const { cases: _cases, ...envelope } = battery;
+    const withUnknownTable = { ...envelope, tables: [{ op: 'lean.teleport', rows: [{}] }] };
+    expect(validate(withUnknownTable)).toBe(true);
+    expect(unknownOperations(withUnknownTable)).toEqual(['lean.teleport']);
+
     const withUnknownOp = { ...battery, cases: [{ ...first, op: 'money.teleport' }] };
     expect(validate(withUnknownOp)).toBe(false);
     expect(unknownOperations(withUnknownOp)).toEqual(['money.teleport']);
@@ -369,7 +442,7 @@ describe('@ducatjs/money-spec', () => {
 });
 
 for (const [path, file] of files) {
-  const { cases } = file as SpecFile;
+  const { cases = [] } = file as SpecFile;
   describe(`spec ${path}`, () => {
     it.each(
       cases.map((specCase) => [`${specCase.id}: ${specCase.description}`, specCase] as const),

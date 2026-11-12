@@ -72,6 +72,42 @@ fails the build.
 - `checkedAgainst` is the ducat version whose implementation passed every case when the file
   last changed (see [Versions](#versions)).
 
+### Two layouts: cases and tables
+
+A file has either `cases` or `tables`, never both.
+
+- **Cases** (above) suit hand-written vectors: each case names its operation, its arguments and
+  one expectation.
+- **Tables** suit generated vectors, thousands of rows of the same operation, where one row often
+  checks several results (one per rounding mode, say). A table names one table operation, and each
+  row holds that operation's inputs and expected results under the field names the operation
+  defines:
+
+```json
+{
+  "format": 1,
+  "area": "rounding",
+  "name": "increment",
+  "description": "…",
+  "provenance": { "source": "lean", "generator": { "name": "…", "version": "…" }, "method": "…" },
+  "checkedAgainst": "0.4.0",
+  "contentSha256": "…",
+  "tables": [
+    {
+      "op": "…",
+      "rows": [
+        { "amount": "-80132596", "step": "50", "halfEven": "-80132600", "trunc": "-80132550" }
+      ]
+    }
+  ]
+}
+```
+
+`contentSha256`, when a generator stamps its output, is the SHA-256 of the cases' or rows' text as
+the generator wrote it, so an edit by hand is caught. A table may also say where its rows come
+from (`source`, such as a documentation page). Each table operation's row fields are documented
+with the operation, and the schema checks them.
+
 ### Values
 
 Nothing in a file needs a particular language to read it. Above all, no amount is ever a JSON
@@ -88,6 +124,11 @@ number:
   that double's exact decimal value. Cases that use it check what an API does with a
   floating-point argument.
 - **Counts, scales and weights** are small JSON integers.
+- **Rational:** a decimal, or `"numerator/denominator"` with a positive denominator:
+  `"-1329887967/1000"`. Used where a result is an exact fraction.
+- **Interval:** an irrational result (a rate, a period count, XIRR) given exactly:
+  `{ "lower": "…", "upper": "…", "tolerance": "…" }`, rationals with lower ≤ value ≤ upper.
+  An implementation's answer passes when it lies within `tolerance` of the interval.
 
 ### Rounding modes
 
