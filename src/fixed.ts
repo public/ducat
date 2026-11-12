@@ -183,11 +183,7 @@ export class Fixed {
 
   /** −this */
   negate(): Fixed {
-    const value = this.value;
-    if (typeof value === 'number') {
-      return make(0 - value, this.scale);
-    }
-    return make(-value, this.scale);
+    return make(-this.value, this.scale);
   }
 
   /** |this| */
@@ -271,12 +267,7 @@ export class Fixed {
 
   /** The same value, at any scale: 1.0 equals 1.00. */
   equals(other: FixedInput): boolean {
-    const operand = toFixed(other);
-    if (this.scale === operand.scale) {
-      // == compares a number and a bigint exactly.
-      return this.value == operand.value;
-    }
-    return this.compare(operand) === 0;
+    return this.compare(other) === 0;
   }
 
   /** this < other */
