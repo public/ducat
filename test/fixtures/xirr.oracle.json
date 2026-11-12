@@ -1,4 +1,4 @@
-{"leanSources":"681a4492224a78675f22cbadd91cfbe734b8519d6807a392df79d25fc270e319","contentSha256":"83cb21edc0acad5aef651d34d82d1745d72ca6b7a44e6b9b43b0a20b8131f547","cases":
+{"leanSources":"e9be4c4b06e3e1bd138d20fb4686abe8372f8594bce717109a25b224511791b0","contentSha256":"83cb21edc0acad5aef651d34d82d1745d72ca6b7a44e6b9b43b0a20b8131f547","cases":
 [
 {"currency":"EUR","days":[0,1868,365],"values":["-222324159","93598271","85001503"],"digits":8,"lower":"-6425532"},
 {"currency":"EUR","days":[0,0,730,480,3615],"values":["-134853346","4920824","62392392","45643398","18038265"],"digits":6,"lower":"-10248"},

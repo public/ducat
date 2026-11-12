@@ -179,13 +179,14 @@ def jsonNats (xs : List Nat) : String := "[" ++ ",".intercalate (xs.map toString
 def ratJson (q : ℚ) : String := s!"\"{q.num}/{q.den}\""
 
 /-- `1 + rate` as `num/den` reduced: mostly up to 5 places from −0.5 to 0.3, sometimes a rate of
-0, 1 or 0.21 (whose square root is rational). -/
+0, 1 or 0.61051 (`1 + rate = 1.1^5`, whose 5th root is rational, so flows a multiple of 73 days
+apart have rational factors). -/
 def xnpvGrowth (st : Nat) : (Nat × Nat) × Nat :=
   let (kind, st) := draw st 8
   match kind with
   | 0 => ((1, 1), st)
   | 1 => ((2, 1), st)
-  | 2 => ((121, 100), st)
+  | 2 => ((161051, 100000), st)
   | _ =>
     let (places, st) := draw st 5
     let unit := 10 ^ (places + 1)
@@ -193,13 +194,14 @@ def xnpvGrowth (st : Nat) : (Nat × Nat) × Nat :=
     let num := unit / 2 + r
     ((num / Nat.gcd num unit, unit / Nat.gcd num unit), st)
 
-/-- `count` flows on days after the first: on the first day too, whole years apart, or any day in
-ten years; the first negative, the others either sign, with at least one positive. -/
+/-- `count` flows on days after the first: on the first day too, whole years apart, a multiple of
+73 days (a fifth of a year), or any day in ten years; the first negative, the others either sign,
+with at least one positive. -/
 def xnpvFlows (count : Nat) (start : Nat) : List (Nat × Int) × Nat := Id.run do
   let mut st := start
   let mut flows : List (Nat × Int) := []
   for i in [0:count] do
-    let (kind, s1) := draw st 6
+    let (kind, s1) := draw st 7
     let (raw, s2) := draw s1 3650
     let (mag, s3) := draw s2 1000000000
     let (sg, s4) := draw s3 3
@@ -207,6 +209,7 @@ def xnpvFlows (count : Nat) (start : Nat) : List (Nat × Int) × Nat := Id.run d
     let day := if i == 0 then 0 else match kind with
       | 0 => 0
       | 1 => 365 * (raw % 10 + 1)
+      | 2 => 73 * (raw % 50 + 1)
       | _ => raw + 1
     let v : Int := if i == 0 then -(Int.ofNat mag + 1) else if sg == 0 then -Int.ofNat mag else Int.ofNat mag
     flows := flows ++ [(day, v)]
@@ -226,7 +229,9 @@ def xnpvCases : IO Unit := do
     let (count, st) := draw st 7
     let (flows, st) := xnpvFlows (count + 2) st
     let (cur, st) := draw st 3
-    let (digits, _) := draw st 13
+    let (digitsKind, st) := draw st 4
+    let (digitsRaw, _) := draw st 13
+    let digits := if digitsKind == 0 then digitsRaw + 28 else digitsRaw
     let currency : String × Nat := match cur with
       | 0 => ("EUR", 2)
       | 1 => ("JPY", 0)
@@ -244,12 +249,18 @@ def xnpvCases : IO Unit := do
     IO.println s!"\{\"currency\":\"{currency.1}\",\"rate\":{rate},\"days\":{jsonNats (flows.map (·.1))},\"values\":{jsonInts (flows.map (·.2))},\"digits\":{digits},\"bounds\":{bounds},\"rounded\":\{{",".intercalate rounded}}}{sep}"
   IO.println "]"
 
+/-- Cases for `xirr`'s other paths: a root exactly on the grid (10%, a year apart, and with a zero
+flow between), a rate of exactly 0, a rate high enough to double many times, and a negative rate. -/
+def xirrFixed : List (List Nat × List Int × Nat) :=
+  [([0, 365], [-10000, 11000], 10), ([0, 365, 730], [-10000, 0, 12100], 8), ([0, 200], [-10000, 10000], 6),
+    ([0, 60], [-10000, 50000], 8), ([0, 400], [-10000, 5000], 9)]
+
 /-- `xirr` without a bracket: an outlay, then returns (on the first day too, whole years apart, or
-any day in ten years); the floored rate as a count of `10^−digits`, `null` where it throws. -/
+any day in ten years), and the cases above; the floored rate as a count of `10^−digits`, `null`
+where it throws. -/
 def xirrCases : IO Unit := do
-  IO.println "["
-  let n := 30
-  for k in [0:n] do
+  let mut cases : List (List Nat × List Int × Nat) := []
+  for k in [0:30] do
     let (count, st0) := draw (lcg (k + 9001)) 5
     let (outlay, st1) := draw st0 1000000000
     let mut flows : List (Nat × Int) := [(0, -(Int.ofNat outlay + 10000))]
@@ -265,12 +276,17 @@ def xirrCases : IO Unit := do
         | _ => raw + 1
       flows := flows ++ [(day, Int.ofNat mag)]
     let (digitsRaw, _) := draw st 9
-    let digits := digitsRaw + 2
-    let lower := match Ducat.XnpvModel.xirr digits flows with
+    cases := cases ++ [(flows.map (·.1), flows.map (·.2), digitsRaw + 2)]
+  cases := cases ++ xirrFixed
+  IO.println "["
+  let n := cases.length
+  for i in [0:n] do
+    let (days, values, digits) := cases[i]!
+    let lower := match Ducat.XnpvModel.xirr digits (days.zip values) with
       | some r => s!"\"{r}\""
       | none => "null"
-    let sep := if k + 1 == n then "" else ","
-    IO.println s!"\{\"currency\":\"EUR\",\"days\":{jsonNats (flows.map (·.1))},\"values\":{jsonInts (flows.map (·.2))},\"digits\":{digits},\"lower\":{lower}}{sep}"
+    let sep := if i + 1 == n then "" else ","
+    IO.println s!"\{\"currency\":\"EUR\",\"days\":{jsonNats days},\"values\":{jsonInts values},\"digits\":{digits},\"lower\":{lower}}{sep}"
   IO.println "]"
 
 def models : List (String × IO Unit) :=

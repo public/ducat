@@ -16,9 +16,11 @@ import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
   grid. Whatever it returns is a grid point where the sign is 0, or where the sign is nonzero and
   the next grid point has the opposite sign.
 
-Not modelled: the path with a caller's `bracket` (`bracketToGrid`). The theorems are about signs at
-grid points; that a root of the real function lies between two points of opposite sign needs its
-continuity, which is not proved here.
+The theorems hold for any sign function with values in {−1, 0, 1}; that a solver's `signAt` is the
+sign of its NPV is the caller's part (for `xirr`, `Ducat/XnpvModel.lean` models it; `irr` and `rate`
+have no model here). Not modelled: the path with a caller's `bracket` (`bracketToGrid`). That a
+root of the real function lies between two points of opposite sign needs its continuity, which is
+not proved here.
 -/
 
 namespace Ducat.Search

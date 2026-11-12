@@ -374,7 +374,9 @@ fixture, and the TypeScript must match it exactly on 120 XNPV and 30 XIRR cases.
   the term and sum steps are proved, but they aren't composed through the grouping;
 - the CRT computation of step 1's split: the code checks the exponent identity at run time and
   throws if it fails, and `power_split` takes it as a hypothesis;
-- that a root lies between two grid points of opposite sign (continuity);
+- that a root lies between two grid points of opposite sign (continuity), that each solver's
+  sign is its NPV's sign (`bisectRate_spec` holds for any sign function), and models of `irr`
+  and `rate`, which share the search;
 - a caller's `bracket`, other day counts and the defensive caps, which the model leaves out;
 - that the TypeScript is the model, which the oracle fixtures test.
 
