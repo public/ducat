@@ -135,6 +135,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `parseMoney` reads currency symbols that contain a space, such as "F CFA" (XOF and XAF in
+  `fr-SN`), which it used to split into "F" and "CFA" and refuse (#310). It also reads "US $".
+  Custom `symbols` match without regard to spaces.
+
 - `money(-0, …)` with a number gives 0 minor units, not -0, like every other constructor. A test or
   snapshot comparing with `toEqual` can see the change (Jest and Vitest tell 0 from -0).
 

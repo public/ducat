@@ -330,8 +330,13 @@ function meaningsOf(
   if (/^[A-Z]{3}$/.test(piece) && isCandidate(piece)) {
     return [piece];
   }
-  if (customSymbols !== undefined && Object.hasOwn(customSymbols, piece)) {
-    return [customSymbols[piece]!];
+  if (customSymbols !== undefined) {
+    // matched like the locale's symbols, ignoring spaces: { 'F CFA': 'XOF' } reads "F CFA" and "FCFA"
+    for (const [symbol, code] of Object.entries(customSymbols)) {
+      if (normalizeSymbol(symbol) === piece) {
+        return [code];
+      }
+    }
   }
   // The locale's own symbols first, then English ones (US$, CA$, A$...), which many texts use.
   for (const source of [locale, ...ENGLISH_SYMBOL_LOCALES]) {
@@ -456,14 +461,27 @@ export function parseMoney<C extends string = string>(
   if (first < 0) {
     throw new SyntaxError(`Cannot parse "${input}": no digits`);
   }
-  const affix = `${chars.slice(0, first).join('')} ${chars.slice(last + 1).join('')}`;
-
   // Each piece of the affix must be a sign or a currency, and every currency must agree. A lone
-  // separator next to the number (".50 USD") belongs to the number, which parse reads.
+  // separator next to the number (".50 USD") belongs to the number, which parse reads. Text between
+  // signs is first looked up whole, without its spaces, so a symbol with a space in it ("F CFA" for
+  // XOF in fr-SN, as the symbol table stores it, #310) is read as one; only if that isn't a currency
+  // is it split on spaces into separate pieces ("EUR €").
+  const isSeparator = (piece: string) => piece === '' || /^[.,٫]$/u.test(piece);
+  const pieces: string[] = [];
+  for (const side of [chars.slice(0, first).join(''), chars.slice(last + 1).join('')]) {
+    for (const run of side.split(/[()+\-−]+/u)) {
+      const whole = normalizeSymbol(run);
+      if (isSeparator(whole)) {
+        continue;
+      }
+      if (meaningsOf(whole, locale, candidates, options?.symbols).length > 0) {
+        pieces.push(whole);
+      } else {
+        pieces.push(...run.split(/[\s\p{Z}\p{Cf}]+/u).filter((piece) => !isSeparator(piece)));
+      }
+    }
+  }
   let detected: string | undefined;
-  const pieces = affix
-    .split(/[\s\p{Z}\p{Cf}()+\-−]+/u)
-    .filter((piece) => piece !== '' && !/^[.,٫]$/u.test(piece));
   for (const piece of pieces) {
     const meanings = meaningsOf(piece, locale, candidates, options?.symbols);
     let currency: string;
