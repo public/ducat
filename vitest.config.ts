@@ -1,4 +1,5 @@
 import codspeedPlugin from '@codspeed/vitest-plugin';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 // deep property runs (pnpm test:deep) take minutes per property
@@ -13,6 +14,11 @@ if (isDeepRun && !process.env.DUCAT_SEED) {
 export default defineConfig({
   // measures bench/ under CodSpeed in CI; outside CodSpeed's runner it leaves vitest unchanged
   plugins: [codspeedPlugin()],
+  // the conformance vectors (spec/), imported by name as a consumer of the package would; ducat's
+  // own package.json doesn't depend on the private package, so nothing unpublished is named there
+  resolve: {
+    alias: { '@ducatjs/money-spec': fileURLToPath(new URL('spec', import.meta.url)) },
+  },
   test: {
     include: ['test/**/*.test.ts'],
     exclude: ['test/db/**', 'test/browser/**'],

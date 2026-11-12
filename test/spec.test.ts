@@ -2,7 +2,6 @@
 // It checks every vector file against the schema, maps each neutral operation to ducat's API, and
 // runs every case. A file with an operation this runner doesn't know, or one that breaks the
 // schema, fails the suite; so does a drop in the number of cases in any area.
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
@@ -26,7 +25,7 @@ import {
   type SpecFile,
   type SpecMoney,
 } from './spec/format.ts';
-import { loadVectorFiles, specDirectory } from './spec/load.ts';
+import { loadVectorFiles, vectorSchema } from './spec/load.ts';
 
 /** Cases per area. A vector may be added (raise the count), never silently lost. */
 const CASES_PER_AREA: Record<string, number> = {
@@ -34,9 +33,7 @@ const CASES_PER_AREA: Record<string, number> = {
   fixed: 28,
 };
 
-const schema = JSON.parse(
-  readFileSync(join(specDirectory(), 'schema', 'vectors.schema.json'), 'utf8'),
-) as object;
+const schema = vectorSchema;
 const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
 
 const files = loadVectorFiles();
