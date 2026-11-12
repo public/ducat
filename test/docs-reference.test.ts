@@ -42,6 +42,7 @@ const PAGES: Record<string, string> = {
   './pricing': 'pricing.md',
   './context': 'context.md',
   './finance': 'finance.md',
+  './excel': 'excel.md',
   './format': 'format.md',
   './parse': 'parse.md',
   './stripe': 'processors.md',
