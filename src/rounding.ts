@@ -98,6 +98,7 @@ export function divideSafeByRatio(value: number, divisor: Ratio, mode: RoundingM
  * is smaller than the divisor.
  */
 export function divideAndRound(dividend: number, divisor: number, mode: RoundingMode): number {
+  // Stryker disable next-line BlockStatement: shortcut, the general path gives the same quotient
   if (divisor === 1) {
     return dividend + 0; // + 0 normalises -0 (0 * -1 from a caller)
   }
@@ -131,6 +132,7 @@ export function divideAndRound(dividend: number, divisor: number, mode: Rounding
 
   // The generated switch handles a zero remainder too; returning here saves the call on the hottest
   // path.
+  // Stryker disable next-line BlockStatement: shortcut, roundTruncatedQuotient returns the quotient for a zero remainder
   if (remainder === 0) {
     return quotient + 0; // + 0 normalises -0
   }
@@ -149,6 +151,7 @@ export function divideAndRoundBigint(
   divisor: bigint,
   mode: RoundingMode,
 ): bigint {
+  // Stryker disable next-line BlockStatement: shortcut, the kernel gives the same quotient for 1n
   if (divisor === 1n) {
     return dividend;
   }
