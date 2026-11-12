@@ -23,7 +23,7 @@ If the text can have more decimals than the currency, pass `{ rounding }` (or `{
 
 ## Parse text formatted for a locale
 
-If the text has grouping, symbols or another locale's separators, import `@ducatjs/money/parse` and call `parse(text, currency, locale)`, for example `parse('1.234,50 €', 'EUR', 'de-DE')`. It takes the currency from its argument and never guesses it from the text. Group separators must be where the locale puts them: `parse('78.00', 'EUR', 'de-DE')` throws instead of becoming 7800.00. If you accept looser input, pass `{ lenient: true }`.
+If the text has grouping, symbols or another locale's separators, import `@ducatjs/money/parse` and call `parse(text, currency, locale)`, for example `parse('1.234,50 €', 'EUR', 'de-DE')`. It takes the currency from its argument and never guesses it from the text. Group separators must be where the locale puts them: `parse('78.00', 'EUR', 'de-DE')` throws instead of becoming 7800.00. If you accept looser input, pass `{ lenient: true }`, which brings back the misreading strict parsing prevents (`1.5` in de-DE becomes 15.00); [Where money arithmetic goes wrong](../explanation/footguns.md#lenient-parsing-that-misreads-input) shows what lenient parsers do with junk.
 
 ## Detect the currency from the text
 

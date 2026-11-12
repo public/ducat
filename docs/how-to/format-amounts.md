@@ -4,7 +4,7 @@ This guide shows you how to turn an amount into the text a person reads: in thei
 
 ## Format in a locale
 
-Import `@ducatjs/money/format` and pass a locale. The digits shown are the amount's own, whatever the engine's default for the currency:
+Import `@ducatjs/money/format` and pass a locale. The digits shown are the amount's own, whatever the engine's default for the currency, and the locale places the symbol (hand-written format masks get both wrong: see [Where money arithmetic goes wrong](../explanation/footguns.md#formatting-that-drops-decimals-or-misplaces-symbols)):
 
 ```ts
 import { money } from '@ducatjs/money';

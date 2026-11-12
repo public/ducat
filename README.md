@@ -50,7 +50,7 @@ Coming from dinero.js? [How to migrate from dinero.js](https://github.com/public
 
 Choosing a money library for JavaScript today means choosing which problem to live with.
 
-- **Wrong, to varying degrees.** On the same 41 correctness vectors, no other money library passes more than 34, and most return some wrong answers without an error: multiplying through floats turns 0.50 × 1.15 into 0.57, splitting −100.00 three ways loses a cent, amounts past 2⁵³ minor units drift, and a decimal string from another locale can parse as 100 times the amount. Their issue trackers are full of these bugs, some open for years.
+- **Wrong, to varying degrees.** On the same 41 correctness vectors, no other money library passes more than 34, and most return some wrong answers without an error: multiplying through floats turns 0.50 × 1.15 into 0.57, splitting −100.00 three ways loses a cent, amounts past 2⁵³ minor units drift, and a decimal string from another locale can parse as 100 times the amount. Their issue trackers are full of these bugs, some open for years; [Where money arithmetic goes wrong](https://github.com/public/ducat/blob/main/docs/explanation/footguns.md) shows each class with code.
 - **Slow.** The libraries that get the arithmetic right pay for it in speed: dinero.js 2, the most careful of them, is 1.6× to 27× slower than ducat on the operations ducat leads.
 - **Missing features.** Most stop at add, multiply, allocate and format. Exact currency conversion, rounding modes beyond half up, cash rounding, the amounts payment processors expect and database storage are left to you, and that hand-written code is where the bugs come back.
 

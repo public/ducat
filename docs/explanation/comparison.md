@@ -86,7 +86,7 @@ The vectors cover:
 EUR + USD simply adds. The decimal libraries' one wrong result is float input: `0.1 + 0.2` is accepted and keeps the
 float's error (`0.30000000000000004`) instead of being rejected.
 
-**Issues found in other libraries** (reported here neutrally; each has a regression test in ducat's suite):
+**Issues found in other libraries** (reported here neutrally; each has a regression test in ducat's suite). [Where money arithmetic goes wrong](footguns.md) shows each class with code and the result it returns:
 
 - **monetra 2.3.0:** allocating a negative amount loses minor units: −100.00 split three ways gives −33.33 × 3.
 - **@screeny05/ts-money 1.2.0:** `allocate` throws when the amount is smaller than the number of parts (1 cent split three ways).

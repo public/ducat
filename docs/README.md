@@ -83,4 +83,5 @@ New to ducat? Start with [Your first program with ducat](tutorials/first-steps.m
 - [How ducat is tested](explanation/how-ducat-is-tested.md), and the [equivalent mutants](explanation/equivalent-mutants.md) its mutation run leaves
 - [Decisions](explanation/decisions.md): the product decisions, with their reasons
 - [How ducat compares](explanation/comparison.md): correctness, speed and size against other libraries
+- [Where money arithmetic goes wrong](explanation/footguns.md): floats, double rounding, lost cents, overflow and lenient parsing in other libraries, with code
 - [The finance module's design](explanation/finance-design.md)
