@@ -195,7 +195,7 @@ import { Money } from '@screeny05/ts-money';
 new Money(1, 'EUR').allocate([1, 1, 1]); // throws TypeError: Cannot read properties of undefined (reading 'amount')
 ```
 
-Which part gets the remainder is a choice, not a bug, as long as the parts add up: dinero.js 1.9.1 gives it to the first parts, and dinero.js 2.0.2 gives it to the largest fractional shares ([dinero.js #776](https://github.com/dinerojs/dinero.js/issues/776)). ducat's parts always sum to the whole, a zero weight always gets zero, a negative amount is the mirror of the positive one, and the remainder goes to the largest shares unless you pick another strategy:
+Which part gets the remainder is a choice, not a bug, as long as the parts add up: dinero.js 1.9.1 gives it to the first parts, and dinero.js 2.0.2 gives it to the largest fractional shares ([dinero.js #776](https://github.com/dinerojs/dinero.js/issues/776)). ducat's parts always sum to the whole, a zero weight always gets zero, a negative amount is the mirror of the positive one, and the remainder goes to the parts with the largest fractional remainders (Hamilton's method) unless you pick another strategy:
 
 ```ts
 import { money } from '@ducatjs/money';
