@@ -22,7 +22,7 @@ eurUsd.andThen(usdJpy); // EUR → JPY, exact, with both rates kept in `derivedF
 eurUsd.withMargin('-0.02'); // 2% less USD per EUR, exactly
 ```
 
-Inverses and chains of rates are exact too: nothing is rounded until an amount is converted. If you only have a rate as a string, `m.convert('JPY', '162.457')` (from the README's first example) converts at it directly. The result is always at the target currency's scale, rounded once; [Where money arithmetic goes wrong](../explanation/footguns.md#conversions-at-the-wrong-scale) shows a library where it isn't.
+Inverses and chains of rates are exact too: nothing is rounded until an amount is converted. If you only have a rate as a string, `m.convert('JPY', '162.457')` (from the README's first example) converts at it directly. By default the result is at the target currency's scale, rounded once; [Where money arithmetic goes wrong](../explanation/footguns.md#conversions-at-the-wrong-scale) shows a library where it isn't.
 
 ## Land a conversion on a cash increment or a fixed number of decimals
 

@@ -98,7 +98,7 @@ money('50', 'EUR').multiply('0.0605'); // → 3.03 EUR
 money('50', 'EUR').multiply('0.0605', 'halfEven'); // → 3.02 EUR
 ```
 
-The decimal libraries round to a configured number of significant digits, 20 by default in decimal.js, even when adding. That is documented (`Decimal.precision`), and easy to forget when amounts get long:
+decimal.js and decimal.js-light round every result to a configured number of significant digits, 20 by default, even when adding (big.js and bignumber.js add exactly). That is documented (`Decimal.precision`), and easy to forget when amounts get long:
 
 ```js
 // decimal.js 10.6.0
@@ -195,7 +195,7 @@ import { Money } from '@screeny05/ts-money';
 new Money(1, 'EUR').allocate([1, 1, 1]); // throws TypeError: Cannot read properties of undefined (reading 'amount')
 ```
 
-Which part gets the remainder is a choice, not a bug, as long as the parts add up: dinero.js 1.9.1 gives it to the first parts, and dinero.js 2 changed to the largest fractional shares ([dinero.js #776](https://github.com/dinerojs/dinero.js/issues/776)). ducat's parts always sum to the whole, a zero weight always gets zero, a negative amount is the mirror of the positive one, and the remainder goes to the largest shares unless you pick another strategy:
+Which part gets the remainder is a choice, not a bug, as long as the parts add up: dinero.js 1.9.1 gives it to the first parts, and dinero.js 2.0.2 gives it to the largest fractional shares ([dinero.js #776](https://github.com/dinerojs/dinero.js/issues/776)). ducat's parts always sum to the whole, a zero weight always gets zero, a negative amount is the mirror of the positive one, and the remainder goes to the largest shares unless you pick another strategy:
 
 ```ts
 import { money } from '@ducatjs/money';
@@ -212,7 +212,7 @@ money('0.01', 'EUR').split(3); // → [0.01 EUR, 0.00 EUR, 0.00 EUR]
 
 An allocation computes `amount × weight ÷ total`. Even when every input and every output is a safe integer, the product in the middle can pass 2⁵³ and be rounded as a double.
 
-dinero.js 2.0.2's number calculator splits 3 cents by these weights into 3, 0 and 0; the exact shares are 1.99…, 0.66… and 0.33…, so the right answer is 2, 1 and 0 ([dinero.js #892](https://github.com/dinerojs/dinero.js/issues/892), open). Its bigint calculator doesn't have this problem:
+dinero.js 2.0.2's number calculator splits 3 cents by these weights into 3, 0 and 0; the exact shares are 1.99…, 0.66… and 0.33…, so the right answer is 2, 1 and 0 ([dinero.js #892](https://github.com/dinerojs/dinero.js/issues/892), open). Its bigint calculator (`dinero.js/bigint`) returns 2, 1 and 0 for the same weights:
 
 ```js
 // dinero.js 2.0.2
@@ -345,7 +345,7 @@ money('1000.5', 'JPY'); // throws RoundingError
 money('1000.5', 'JPY', { rounding: 'halfExpand' }); // → 1001 JPY
 ```
 
-Cash is another exponent again: a Swiss price is in rappen, but coins go down to 0.05 CHF. None of the other money libraries measured round cash; [How to round cash payments](../how-to/round-cash.md#round-a-cash-amount) shows ducat's rules, and [How to use other currencies](../how-to/use-other-currencies.md) covers codes ISO doesn't list.
+Cash is another exponent again: a Swiss price is in rappen, but coins go down to 0.05 CHF. None of the other money libraries measured has per-country cash rules (currency.js's `increment`, above, rounds only the display); [How to round cash payments](../how-to/round-cash.md#round-a-cash-amount) shows ducat's rules, and [How to use other currencies](../how-to/use-other-currencies.md) covers codes ISO doesn't list.
 
 ## The case of currency codes
 
@@ -403,7 +403,7 @@ money('-0.01', 'EUR').multiply('0.4').format('en-US'); // → '€0.00'
 
 Zero is neither positive nor negative, but a test written as `amount >= 0` says otherwise, and code that branches on "positive" then charges or refunds nothing.
 
-dinero.js 1.9.1's `isPositive` returns true for zero, as its documentation says; dinero.js 2 changed it to false ([dinero.js #728](https://github.com/dinerojs/dinero.js/pull/728)). decimal.js 10.6.0 follows signed zero, so `isPositive` is true for 0 and `isNegative` true for −0, also documented:
+dinero.js 1.9.1's `isPositive` returns true for zero, as its documentation says; dinero.js 2 changed it to false ([dinero.js #728](https://github.com/dinerojs/dinero.js/pull/728)). decimal.js 10.6.0 follows signed zero, so `isPositive` is true for 0 and `isNegative` true for −0:
 
 ```js
 // dinero.js 1.9.1
@@ -505,7 +505,7 @@ const yen = convert(dinero({ amount: 1234, currency: KWD }), JPY, {
 toDecimal(yen); // → '598.641782'
 ```
 
-ducat's `convert` lands on the target currency's scale, rounding once with the mode you give (half away from zero by default):
+ducat's `convert` lands on the target currency's scale by default, rounding once with the mode you give (half away from zero by default):
 
 ```ts
 import { money } from '@ducatjs/money';
@@ -522,4 +522,4 @@ If you need the unrounded result, or the residual to book, see [How to convert c
 Two classes from other libraries' trackers are left out because the installed versions don't reproduce them:
 
 - **Catastrophic backtracking in a format mask.** [dinero.js #837](https://github.com/dinerojs/dinero.js/issues/837) reported it against dinero.js 1's `toFormat`; the maintainers pointed out that v2 removed the mask parser. The report's own input formats in milliseconds on 1.9.1 here.
-- **Values that only look like money.** Checks by shape rather than by class, and `instanceof` across two installed copies of a package, are a known hazard, but none of the libraries measured showed a clear wrong result. ducat's `isMoney` is also `false` for Money from a second installed copy; it ships a single ES module build so that one install doesn't have two copies (see [Decisions](decisions.md)).
+- **Values that only look like money.** Checks by shape rather than by class, and `instanceof` across two installed copies of a package, are a known hazard, but this page has no reproduced example of a wrong result from one. ducat's `isMoney` is also `false` for Money from a second installed copy; it ships a single ES module build so that one install doesn't have two copies (see [Decisions](decisions.md)).

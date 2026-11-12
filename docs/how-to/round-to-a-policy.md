@@ -43,7 +43,7 @@ money('12345.60', 'CHF').round('floor', -2); // throws RangeError
 
 ## Keep intermediate values exact and round once
 
-Rounding at every step adds up the errors: 99.99 ÷ 119 × 100 is 84.00 on `Money` and 84.03 exactly ([Where money arithmetic goes wrong](../explanation/footguns.md#rounding-at-every-step-and-a-default-you-didnt-choose)). If a calculation has several steps, keep the intermediate amount as `ExactMoney` (`@ducatjs/money/exact`), a rational amount, and round only at the end. It has the helpers Money has (`abs`, `isPositive`, `isNegative`, `isZero`, the comparisons, `min`, `max`, `clamp`, `percentage` and `ratioOf`), `add`, `subtract`, the comparisons, `min`, `max` and `clamp` take a Money of the same currency as well, and `round` takes a policy:
+Rounding at every step adds up the errors: 99.99 ÷ 119 × 100 is 84.00 on `Money`, rounded at each step, and 84.03 rounded once ([Where money arithmetic goes wrong](../explanation/footguns.md#rounding-at-every-step-and-a-default-you-didnt-choose)). If a calculation has several steps, keep the intermediate amount as `ExactMoney` (`@ducatjs/money/exact`), a rational amount, and round only at the end. It has the helpers Money has (`abs`, `isPositive`, `isNegative`, `isZero`, the comparisons, `min`, `max`, `clamp`, `percentage` and `ratioOf`), `add`, `subtract`, the comparisons, `min`, `max` and `clamp` take a Money of the same currency as well, and `round` takes a policy:
 
 ```ts
 import { money } from '@ducatjs/money';
