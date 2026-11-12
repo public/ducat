@@ -981,7 +981,33 @@ describe('fv, pv, pmt, nper and rate (Excel)', () => {
     expect(pmt('0.1', 2, usd('1000')).toDecimal()).toBe('-576.19');
     expect(pmt('0.1', 2, usd('1000'), {}, 'ceil').toDecimal()).toBe('-576.19');
     expect(pmt('0.1', 2, usd('1000'), {}, 'floor').toDecimal()).toBe('-576.20');
-    // a negative rate makes Excel's denominators negative: every mode still rounds the exact value
+    // a negative rate makes Excel's denominators negative: every mode and policy still rounds the
+    // exact value, ties included
+    const modes = [
+      'floor',
+      'ceil',
+      'trunc',
+      'expand',
+      'halfEven',
+      'halfExpand',
+      'halfTrunc',
+      'halfCeil',
+      'halfFloor',
+    ] as const;
+    // at -50% over one period, pmt = −(pv/2 + fv): 0.01 gives −0.005, a tie
+    for (const mode of modes) {
+      for (const present of ['0.01', '-0.01', '0.03', '100']) {
+        expect([mode, present, pmt('-0.5', 1, usd(present), {}, mode)]).toEqual([
+          mode,
+          present,
+          pmtExact('-0.5', 1, usd(present)).round(mode),
+        ]);
+      }
+    }
+    const nickels = roundingPolicy({ increment: 5, rounding: 'halfEven' });
+    expect(pmt('-0.01', 3, usd('100'), {}, nickels)).toEqual(
+      pmtExact('-0.01', 3, usd('100')).round(nickels),
+    );
     for (const mode of ['floor', 'ceil', 'halfEven', 'trunc'] as const) {
       expect(pmt('-0.01', 3, usd('100'), {}, mode)).toEqual(
         pmtExact('-0.01', 3, usd('100')).round(mode),
@@ -1128,6 +1154,34 @@ describe('fv, pv, pmt, nper and rate (Excel)', () => {
     const near = 10n ** 300n;
     const nearOptions = { fv: fromMinor(121n * (near / 100n) + 1n, 'USD'), digits: 0 };
     expect(nper('0.1', usd('0'), fromMinor(-near, 'USD'), nearOptions).nper).toBe('2');
+  });
+
+  it('throw rather than compute powers too large to finish', () => {
+    // (1 + r)^nper must stay under 2^20 bits (2^17 for the exact forms, 2^19 for rate)
+    expect(() => fv('1e-100', 100_000, usd('-1'))).toThrow("fv's power (1 + rate)^nper would pass");
+    expect(() => fvExact('0.0123456789', 10_000, usd('-1'))).toThrow('would pass 131072 bits');
+    expect(fv('0.0123456789', 10_000, usd('-1')).isPositive()).toBe(true);
+    expect(() => rate(3000, usd('-200'), usd('450000'), { digits: 100 })).toThrow(
+      "rate's power (1 + rate)^nper would pass 524288 bits",
+    );
+    // a rate above 2^1024 per period: the search for a positive root stops
+    expect(() =>
+      rate(1, usd('0'), usd('-0.01'), { fv: money(`1${'0'.repeat(400)}`, 'USD') }),
+    ).toThrow('above 2^1024');
+    expect(() => irr([usd('-0.01'), money(`1${'0'.repeat(400)}`, 'USD')])).toThrow('above 2^1024');
+    // ln(1 + r) for r = 10^-5000 can't be told from 0 within the bits nper allows
+    expect(() => nper(ratio(1n, 10n ** 5000n), usd('-100'), usd('1000'))).toThrow(
+      'too close to 0 to bound ln(1 + rate)',
+    );
+  });
+
+  it('nper at digits 0 checks exactness without huge powers', () => {
+    // a floor on an integer used to raise the root to that integer (13 million here)
+    const start = Date.now();
+    expect(
+      nper('5e-8', usd('-0.46'), usd('-8884310.72'), { fv: usd('9822.64'), digits: 0 }).nper,
+    ).toBe('-13495484');
+    expect(Date.now() - start).toBeLessThan(2000);
   });
 
   it('reject what Excel computes differently', () => {

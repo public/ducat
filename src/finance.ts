@@ -1131,12 +1131,37 @@ function irrOfMinors(minors: readonly bigint[], options?: IrrOptions): IrrResult
     const lower = formatScaled(grid, digits);
     return { rate: lower, lower, upper: formatScaled(grid + 1n, digits) };
   };
+  const signAtRate = (candidate: Ratio) =>
+    signOf(scaledPresentValue(minors, candidate.num + candidate.den, candidate.den));
+  return bisectRate(signAt, result, unit, firstSign, bracket, signAtRate);
+}
 
+/**
+ * The most times `bisectRate` doubles its upper end looking for a positive root: a rate above
+ * 2^1024 (a 10^308-fold return per period) throws rather than search on.
+ */
+const MAX_DOUBLINGS = 1024;
+
+/**
+ * The bisection the rate solvers share, on the grid of `unit`ths: from the caller's bracket, or
+ * with one sign change from 0 (the root is negative when the value at 0 has the first flow's sign,
+ * else positive, found by doubling, at most 1,024 times). Each bisection step halves an interval
+ * of at most 2^1024 · unit grid points, so the steps are bounded too. `signAt` takes a grid point,
+ * `signAtRate` an exact rate.
+ */
+function bisectRate<R>(
+  signAt: (grid: bigint) => -1 | 0 | 1,
+  result: (grid: bigint) => R,
+  unit: bigint,
+  firstSign: -1 | 0 | 1,
+  bracket: readonly [Factor, Factor] | undefined,
+  signAtRate: (rate: Ratio) => -1 | 0 | 1,
+): R {
   let low: bigint;
   let high: bigint;
   let lowSign: -1 | 0 | 1;
   if (bracket !== undefined) {
-    const bracketed = bracketToGrid(bracket, minors, unit, signAt);
+    const bracketed = bracketToGrid(bracket, signAtRate, unit, signAt);
     if (typeof bracketed === 'bigint') {
       return result(bracketed);
     }
@@ -1158,6 +1183,7 @@ function irrOfMinors(minors: readonly bigint[], options?: IrrOptions): IrrResult
       low = 0n;
       high = unit;
       lowSign = zeroSign;
+      let doublings = 0;
       for (;;) {
         const highSign = signAt(high);
         if (highSign === 0) {
@@ -1165,6 +1191,9 @@ function irrOfMinors(minors: readonly bigint[], options?: IrrOptions): IrrResult
         }
         if (highSign !== lowSign) {
           break;
+        }
+        if (++doublings > MAX_DOUBLINGS) {
+          throw new RangeError('The rate is above 2^1024; no root was found below it');
         }
         low = high;
         high *= 2n;
@@ -1197,7 +1226,7 @@ function irrOfMinors(minors: readonly bigint[], options?: IrrOptions): IrrResult
  */
 function bracketToGrid(
   bracket: readonly [Factor, Factor],
-  minors: readonly bigint[],
+  signAtRate: (rate: Ratio) => -1 | 0 | 1,
   unit: bigint,
   signAt: (grid: bigint) => -1 | 0 | 1,
 ): bigint | [bigint, bigint, -1 | 1] {
@@ -1209,8 +1238,6 @@ function bracketToGrid(
   if (lowRate.num + lowRate.den <= 0n) {
     throw new RangeError('The bracket must be above -1');
   }
-  const signAtRate = (candidate: Ratio) =>
-    signOf(scaledPresentValue(minors, candidate.num + candidate.den, candidate.den));
   const lowSign = signAtRate(lowRate);
   const highSign = signAtRate(highRate);
   // an end that is itself a root: the grid point at or below it
@@ -1346,6 +1373,27 @@ function annuity<C extends string>(
   };
 }
 
+/**
+ * The most bits an annuity's power (1 + r)^nper may have before it throws rather than take
+ * seconds to minutes: 2^20 for fv, pv and pmt (about 20 ms there), 2^17 for their …Exact forms
+ * (an ExactMoney reduces its fraction, which is quadratic: about 0.5 s there), and 2^19 for rate,
+ * which evaluates one at every bisection step. Monthly for 30 years at a 10-digit rate is about
+ * 12,000 bits.
+ */
+const MAX_POWER_BITS = 1 << 20;
+const MAX_EXACT_POWER_BITS = 1 << 17;
+const MAX_RATE_POWER_BITS = 1 << 19;
+
+/** Throws when `base^count` would have more than `limit` bits. */
+function assertPowerSize(base: bigint, count: bigint, name: string, limit: number): void {
+  const magnitude = base < 0n ? -base : base;
+  if (BigInt(magnitude.toString(2).length) * count > BigInt(limit)) {
+    throw new RangeError(
+      `${name}'s power (1 + rate)^nper would pass ${limit} bits; use fewer periods or a shorter rate`,
+    );
+  }
+}
+
 /** A whole number of periods for fv, pv and pmt: Excel takes fractions, whose powers are irrational. */
 function wholePeriods(periods: number, minimum: number): bigint {
   if (!(Number.isInteger(periods) && periods >= minimum && periods <= MAX_PERIODS)) {
@@ -1394,11 +1442,13 @@ function fvValue<C extends string>(
   periods: number,
   payment: Money<C>,
   options?: FvOptions<C>,
+  limit: number = MAX_POWER_BITS,
 ): AnnuityValue<C> {
   const count = wholePeriods(periods, 0);
   const parts = annuity(ratePerPeriod, options?.type, [payment, options?.pv]);
   const [paymentMinor, presentMinor] = parts.minors as [bigint, bigint];
   const { a, b, type } = parts;
+  assertPowerSize(a + b > b ? a + b : b, count, 'fv', limit);
   if (a === 0n) {
     return annuityResult(parts, presentMinor + paymentMinor * count, 1n);
   }
@@ -1429,7 +1479,7 @@ export function fvExact<C extends string>(
   payment: Money<C>,
   options?: FvOptions<C>,
 ): ExactMoney<C> {
-  return toExactMoney(fvValue(ratePerPeriod, periods, payment, options));
+  return toExactMoney(fvValue(ratePerPeriod, periods, payment, options, MAX_EXACT_POWER_BITS));
 }
 
 /**
@@ -1453,11 +1503,13 @@ function pvValue<C extends string>(
   periods: number,
   payment: Money<C>,
   options?: PvOptions<C>,
+  limit: number = MAX_POWER_BITS,
 ): AnnuityValue<C> {
   const count = wholePeriods(periods, 0);
   const parts = annuity(ratePerPeriod, options?.type, [payment, options?.fv]);
   const [paymentMinor, futureMinor] = parts.minors as [bigint, bigint];
   const { a, b, type } = parts;
+  assertPowerSize(a + b > b ? a + b : b, count, 'pv', limit);
   if (a === 0n) {
     return annuityResult(parts, futureMinor + paymentMinor * count, 1n);
   }
@@ -1484,7 +1536,7 @@ export function pvExact<C extends string>(
   payment: Money<C>,
   options?: PvOptions<C>,
 ): ExactMoney<C> {
-  return toExactMoney(pvValue(ratePerPeriod, periods, payment, options));
+  return toExactMoney(pvValue(ratePerPeriod, periods, payment, options, MAX_EXACT_POWER_BITS));
 }
 
 /**
@@ -1508,11 +1560,13 @@ function pmtValue<C extends string>(
   periods: number,
   present: Money<C>,
   options?: PvOptions<C>,
+  limit: number = MAX_POWER_BITS,
 ): AnnuityValue<C> {
   const count = wholePeriods(periods, 1);
   const parts = annuity(ratePerPeriod, options?.type, [present, options?.fv]);
   const [presentMinor, futureMinor] = parts.minors as [bigint, bigint];
   const { a, b, type } = parts;
+  assertPowerSize(a + b > b ? a + b : b, count, 'pmt', limit);
   if (a === 0n) {
     return annuityResult(parts, presentMinor + futureMinor, count);
   }
@@ -1538,7 +1592,7 @@ export function pmtExact<C extends string>(
   present: Money<C>,
   options?: PvOptions<C>,
 ): ExactMoney<C> {
-  return toExactMoney(pmtValue(ratePerPeriod, periods, present, options));
+  return toExactMoney(pmtValue(ratePerPeriod, periods, present, options, MAX_EXACT_POWER_BITS));
 }
 
 /**
@@ -1578,25 +1632,62 @@ export function rate<C extends string>(
   present: Money<C>,
   options?: RateOptions<C>,
 ): IrrResult {
-  const count = Number(wholePeriods(periods, 1));
+  const count = wholePeriods(periods, 1);
+  const digits = options?.digits ?? 10;
+  if (!(Number.isInteger(digits) && digits >= 0 && digits <= 100)) {
+    invalid('digits', digits);
+  }
   const parts = annuity(0, options?.type, [payment, present, options?.fv]);
   const [paymentMinor, presentMinor, futureMinor] = parts.minors as [bigint, bigint, bigint];
-  const minors = Array.from<bigint>({ length: count + 1 }).fill(paymentMinor);
-  if (parts.type === 1n) {
-    minors[0] = presentMinor + paymentMinor;
-    minors[count] = futureMinor;
-  } else {
-    minors[0] = presentMinor;
-    minors[count] = paymentMinor + futureMinor;
+  const type = parts.type;
+  const unit = pow10n(digits);
+  assertPowerSize(unit * 2n, count, 'rate', MAX_RATE_POWER_BITS);
+  // The flows RATE implies, for the sign rules: pv (+ pmt) at 0, pmt between, pmt (or 0) + fv at
+  // nper. Their sign changes don't depend on nper beyond 2, so three stand for them all.
+  const implied =
+    type === 1n
+      ? [presentMinor + paymentMinor, paymentMinor, futureMinor]
+      : [presentMinor, paymentMinor, paymentMinor + futureMinor];
+  if (count === 1n) {
+    implied.splice(1, 1);
   }
-  const irrOptions: { digits?: number; bracket?: readonly [Factor, Factor] } = {};
-  if (options?.digits !== undefined) {
-    irrOptions.digits = options.digits;
+  const { changes, firstSign } = signChanges(implied);
+  const bracket = options?.bracket;
+  if (changes === 0) {
+    throw new RangeError('The cash flows never change sign, so they have no rate');
   }
-  if (options?.bracket !== undefined) {
-    irrOptions.bracket = options.bracket;
+  if (changes > 1 && bracket === undefined) {
+    throw new RangeError(
+      `The cash flows change sign ${changes} times, so they can have several rates; pass a bracket`,
+    );
   }
-  return irrOfMinors(minors, irrOptions);
+  // The NPV of those flows is f / (1 + r)^n with f = pv·G + pmt·(1 + r·type)·(G − 1)/r + fv and
+  // G = (1 + r)^n, so it has f's sign. For r = a/b, f·a·b^(n+1) is
+  // H = pv·a·(a + b)^n + pmt·(b + a·type)·((a + b)^n − b^n) + fv·a·b^n, an integer by squaring
+  // (no Horner's rule over nper flows), so sign(f) = sign(H)·sign(a), and pv + pmt·n + fv at 0.
+  const signAtRate = (candidate: Ratio): -1 | 0 | 1 => {
+    const rateNum = candidate.num;
+    const rateDen = candidate.den;
+    if (rateNum === 0n) {
+      return signOf(presentMinor + paymentMinor * count + futureMinor);
+    }
+    const growth = (rateNum + rateDen) ** count;
+    const base = rateDen ** count;
+    const scaled =
+      presentMinor * rateNum * growth +
+      paymentMinor * (rateDen + rateNum * type) * (growth - base) +
+      futureMinor * rateNum * base;
+    return (signOf(scaled) * signOf(rateNum)) as -1 | 0 | 1;
+  };
+  const signAt = (grid: bigint) => signAtRate({ num: grid, den: unit, n: NaN, d: NaN });
+  const result = (grid: bigint): IrrResult => {
+    if (grid <= -unit) {
+      throw new RangeError(`The rate is within 10^-${digits} of -1; ask for more digits`);
+    }
+    const lower = formatScaled(grid, digits);
+    return { rate: lower, lower, upper: formatScaled(grid + 1n, digits) };
+  };
+  return bisectRate(signAt, result, unit, firstSign, bracket, signAtRate);
 }
 
 /**
@@ -1663,12 +1754,14 @@ export function nper<C extends string>(
   const base = ratio(a + b, b);
 
   // Bound ln(growth) / ln(base) by intervals, with more bits until the floor on the grid is fixed.
+  let separated = false;
   for (let bits = 64 + 4 * digits; bits <= MAX_LOG_BITS; bits *= 2) {
     const [growthLow, growthHigh] = lnInterval(growth, bits);
     const [baseLow, baseHigh] = lnInterval(base, bits);
     if (baseLow <= 0n && baseHigh >= 0n) {
       continue; // ln(base) not yet separated from 0
     }
+    separated = true;
     // the quotient's extremes are among the four ratios of the ends
     let low: bigint | undefined;
     let high: bigint | undefined;
@@ -1694,7 +1787,11 @@ export function nper<C extends string>(
       }
     }
   }
-  throw new RangeError(`The number of periods is too close to a ${digits}-place decimal to settle`);
+  throw new RangeError(
+    separated
+      ? `The number of periods is too close to a ${digits}-place decimal to settle`
+      : `The rate is too close to 0 to bound ln(1 + rate) within ${MAX_LOG_BITS} bits`,
+  );
 }
 
 /**
@@ -1715,7 +1812,15 @@ function isPowerOf(growth: Ratio, base: Ratio, exponent: Ratio): boolean {
     return false;
   }
   const power = exponent.num < 0n ? -exponent.num : exponent.num;
-  // the root's powers have about `power / q` times the bits of base, so this stays small
+  const [targetNum, targetDen] =
+    exponent.num < 0n ? [growth.den, growth.num] : [growth.num, growth.den];
+  // root^power has at least (bits(root) − 1)·power bits: when that is more than the target has,
+  // they can't be equal, and the power (nper times the root's size) is never computed
+  const tooBig = (root: bigint, target: bigint) =>
+    BigInt(root.toString(2).length - 1) * power > BigInt(target.toString(2).length);
+  if (tooBig(rootNum, targetNum) || tooBig(rootDen, targetDen)) {
+    return false;
+  }
   const [num, den] =
     exponent.num < 0n ? [rootDen ** power, rootNum ** power] : [rootNum ** power, rootDen ** power];
   return num === growth.num && den === growth.den;

@@ -212,7 +212,7 @@ as for `interest` and `npv`. Amounts are `Money` of one currency; the rate is a 
   most `j + 1` units low), each term at most 2 units low, and the tail bounded once the power
   reaches 0, so the true value is within `4·terms + 4` units above the sum. The quotient's
   interval comes from the four ratios of the ends, and the bits are doubled (from
-  `64 + 4·digits`, up to 65,536) until the interval fixes the floor on the grid of `digits`-place
+  `64 + 4·digits`, up to 16,384) until the interval fixes the floor on the grid of `digits`-place
   decimals. The result is `{ nper, lower, upper, exact? }` like `irr`'s, floored: `nper` lies in
   [`lower`, `upper`). `exact` is set when `nper` is rational: always at a rate of 0
   (`−(pv + fv)/pmt`), and otherwise when the grid point `p/q` satisfies `A = (1 + r)^(p/q)`
@@ -222,8 +222,18 @@ as for `interest` and `npv`. Amounts are `Money` of one currency; the rate is a 
   error where the last digit differs.
 - `rate` is RATE's equation divided by `(1 + r)^nper`, which is the NPV of the flows it implies:
   `pv` at period 0, `pmt` at periods 1 to `nper` (0 to `nper − 1` with `type: 1`), and `fv` at
-  period `nper`. So it is `irr` of those flows, with `irr`'s guarantees and rules: exact to
-  `digits` places (default 10), floored, between `lower` and `upper`.
+  period `nper`. So it has `irr`'s guarantees and rules: exact to `digits` places (default 10),
+  floored, between `lower` and `upper`, by `irr`'s bisection. Each step takes the sign of RATE's
+  closed form, `pv·a·(a + b)^n + pmt·(b + a·type)·((a + b)^n − b^n) + fv·a·b^n` for `r = a/b`
+  (times the sign of `a`), with the powers by squaring, rather than Horner's rule over `nper + 1`
+  flows, whose cost grew with `nper²`.
+- **Limits, so nothing runs away.** The power `(1 + r)^nper` may have at most 2^20 bits for `fv`,
+  `pv` and `pmt` (about 20 ms there), 2^17 for their `…Exact` forms (an `ExactMoney` reduces its
+  fraction, quadratically: about 0.5 s), and 2^19 for `rate`, which evaluates one per step;
+  monthly for 30 years at a 10-digit rate is about 12,000 bits. Past them they throw. The search
+  for a positive rate doubles at most 1,024 times (a rate above 2^1024 throws), so every
+  bisection has a bounded number of steps. `nper` refines its logarithms to at most 16,384 bits,
+  and its exactness check compares sizes before raising anything to the result's power.
 
 Interface differences, all of them refusals rather than other values:
 
@@ -235,8 +245,11 @@ Interface differences, all of them refusals rather than other values:
   than once, so that several rates fit, it throws unless a bracket selects one: Excel returns
   whichever root its iteration from `guess` reaches. Where they never change sign, it throws
   (Excel's #NUM!). Microsoft documents that RATE iterates until it is within 0.0000001, so
-  Excel's value is only that close to the root: the tests check it lies within 0.0000001 of
-  [`lower`, `upper`].
+  Excel's value is only that close to the root. The tests are tighter: Calc's value is within
+  1e-12 relative of [`lower`, `upper`], or, where its Newton iteration stops early (LibreOffice
+  stops once a step is below 1e-10; ill-conditioned cases such as a 1e-9 rate over 360 periods),
+  within 1e-10. With payments at the start, RATE's equation also has a root at exactly −1, where
+  the NPV is undefined; Calc can converge to it, and ducat never returns it.
 - `nper` throws where Excel returns #NUM! or #DIV/0!: the logarithm of a number at or below 0
   (the payments never settle the amounts) and no payment at a rate of 0.
 

@@ -11,6 +11,7 @@ JSON file is the record. Regenerate with
 Deterministic inputs: the same seed always writes the same cases.
 """
 import csv
+from fractions import Fraction
 import json
 import random
 import shutil
@@ -117,7 +118,7 @@ def annuity_cases(rng: random.Random) -> dict:
             "type": rng.randint(0, 1),
         })
     nper = []
-    for _ in range(150):
+    for _ in range(75):
         rate = "0" if rng.random() < 0.1 else decimal_rate(rng, 0, 1)
         loan = rng.randint(10**4, 10**9)
         units, places = rate.replace("-", "").split(".") if "." in rate else (rate, "")
@@ -130,13 +131,36 @@ def annuity_cases(rng: random.Random) -> dict:
             case = {"pmt": cents_text(-payment), "pv": cents_text(-rng.randint(0, loan)), "fv": cents_text(loan * rng.randint(1, 20))}
         case.update({"rate": rate, "type": rng.randint(0, 1)})
         nper.append(case)
-    rate_cases_ = []
-    for _ in range(150):
+    # any signs and rates from -5% to 10%, kept where NPER has a value (its log's argument is
+    # positive), so negative rates and negative numbers of periods are covered
+    while len(nper) < 150:
+        rate = decimal_rate(rng, -1, 1)
+        timing = rng.randint(0, 1)
+        pmt, pv, fv = (rng.randint(-10**7, 10**7) for _ in range(3))
+        r = Fraction(rate)
+        paid = pmt * (1 + r * timing)
+        top, bottom = paid - fv * r, paid + pv * r
+        if r == 0 or pmt == 0 or top == 0 or bottom == 0 or (top > 0) != (bottom > 0):
+            continue
+        nper.append({"pmt": cents_text(pmt), "pv": cents_text(pv), "fv": cents_text(fv), "rate": rate, "type": timing})
+    # Microsoft's RATE example first, then loans (some with a balloon left, as a negative fv) and
+    # savings plans (paid out, then a positive fv), at either timing: one sign change each
+    rate_cases_ = [{"nper": 48, "pmt": "-200", "pv": "8000", "fv": "0", "type": 0}]
+    while len(rate_cases_) < 150:
         periods = rng.choice([12, 36, 60, 360, rng.randint(2, 480)])
-        loan = rng.randint(10**4, 10**9)
-        # payments totalling from 0.6 to 4 times the loan: a rate from about -8% to well above 0
-        payment = loan * rng.randint(60, 400) // (100 * periods) + 1
-        rate_cases_.append({"nper": periods, "pmt": cents_text(-payment), "pv": cents_text(loan), "fv": "0", "type": 0})
+        timing = rng.randint(0, 1)
+        amount = rng.randint(10**4, 10**9)
+        if rng.random() < 0.6:
+            balloon = 0 if rng.random() < 0.5 else rng.randint(0, amount // 2)
+            # payments totalling from 0.6 to 4 times the loan: a rate from about -8% upwards
+            payment = (amount - balloon) * rng.randint(60, 400) // (100 * periods) + 1
+            if timing == 1 and payment >= amount:
+                continue
+            rate_cases_.append({"nper": periods, "pmt": cents_text(-payment), "pv": cents_text(amount), "fv": cents_text(-balloon), "type": timing})
+        else:
+            start = rng.randint(0, amount // 4)
+            payment = amount * rng.randint(30, 150) // (100 * periods) + 1
+            rate_cases_.append({"nper": periods, "pmt": cents_text(-payment), "pv": cents_text(-start), "fv": cents_text(amount), "type": timing})
     return {"fv": general, "pv": general, "pmt": general, "nper": nper, "rate": rate_cases_}
 
 

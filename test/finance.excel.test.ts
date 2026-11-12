@@ -602,22 +602,57 @@ describe(`LibreOffice Calc's FV, PV, PMT, NPER and RATE (${calc.calc})`, () => {
     expect(mismatches).toEqual([]);
   });
 
-  it("RATE: Calc's value lies within RATE's stated 0.0000001 of [lower, upper]", () => {
+  it("RATE: within 1e-12 relative, or within Calc's own stopping tolerance where it stops early", () => {
+    // Excel documents only that RATE stops within 0.0000001, which is far looser than most rates
+    // (the smallest here is about 1e-9), so the test is tighter. Most of Calc's values agree with
+    // ducat's exact bracket to 1e-12 relative. The rest are where Calc's Newton iteration stops
+    // early: LibreOffice's RATE stops once a step is below 1e-10, so those lie within 1e-10 of
+    // the root (all are within 2e-12 here; ill-conditioned ones, such as a 1e-9 rate over 360
+    // periods, differ relatively by more, and ducat's value is the right one: it matches irr on
+    // the implied flows to every digit). With payments at the start, RATE's equation also has a
+    // root at exactly -1, where the NPV is undefined: Calc can converge to it, and those are
+    // counted apart, as irr's test counts Newton going past -1.
     const accuracy = ratio(microsoft.rate.accuracy);
+    const relative = ratio(1n, 10n ** 12n);
+    const stopping = ratio(1n, 10n ** 10n);
+    let strict = 0;
+    let atMinusOne = 0;
     const mismatches = calc.rate.filter((vector) => {
+      const theirs = calcRatio(vector.calc);
+      if (vector.type === 1 && !isGreater(theirs, ratio('-0.999999'))) {
+        atMinusOne++;
+        return false;
+      }
+      // enough places for 1e-12 relative at the smallest rates
+      const places = 14 + Math.max(0, Math.ceil(-Math.log10(Math.abs(Number(vector.calc)))));
       const { lower, upper } = rate(vector.nper, usd(vector.pmt), usd(vector.pv), {
         fv: usd(vector.fv),
         type: vector.type,
-        digits: 12,
+        digits: Math.min(places, 40),
       });
-      const theirs = calcRatio(vector.calc);
+      const distance = magnitude(subtract(ratio(lower), theirs));
+      if (
+        !isGreater(
+          distance,
+          ratio(
+            magnitude(ratio(lower)).num * relative.num,
+            magnitude(ratio(lower)).den * relative.den,
+          ),
+        )
+      ) {
+        strict++;
+        return false;
+      }
       return (
+        isGreater(distance, stopping) ||
         isGreater(subtract(ratio(lower), theirs), accuracy) ||
         isGreater(subtract(theirs, ratio(upper)), accuracy)
       );
     });
     expect(calc.rate.length).toBe(150);
     expect(mismatches).toEqual([]);
+    expect(strict).toBeGreaterThan(100);
+    expect(atMinusOne).toBeLessThan(5);
   });
 });
 

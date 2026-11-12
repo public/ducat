@@ -90,7 +90,7 @@ The same, unrounded.
 
 Excel's IRR: the rate at which the NPV of flows at periods 0, 1, 2… is zero, exact to `digits` places (default 10), floored. `rate` is `lower`, and the IRR lies between `lower` and `upper`, 10^−digits apart. It bisects in exact integer arithmetic on the grid of `digits`-place decimals: no floats and no Newton steps.
 
-- **Throws:** `RangeError` where Excel guesses: when the flows never change sign (Excel's #NUM!), and when they change sign more than once unless a `bracket` (in place of Excel's `guess`) selects one root. Also `RangeError` for a bracket that isn't two increasing rates above −1, a bracket whose ends have NPVs of the same sign, and an IRR within 10^−digits of −1.
+- **Throws:** `RangeError` where Excel guesses: when the flows never change sign (Excel's #NUM!), and when they change sign more than once unless a `bracket` (in place of Excel's `guess`) selects one root. Also `RangeError` for a bracket that isn't two increasing rates above −1, a bracket whose ends have NPVs of the same sign, an IRR within 10^−digits of −1, and an IRR above 2^1024 (the search for a positive root doubles at most 1,024 times).
 
 ### periodicRate
 
@@ -127,7 +127,7 @@ Excel's names, so Excel's arguments, sign convention (money paid out is negative
 Excel's FV: the future value of `pmt` every period for `nper` periods, on top of `pv`: `−(pv·(1 + rate)^nper + pmt·(1 + rate·type)·((1 + rate)^nper − 1)/rate)`, and at a rate of 0, `−(pv + pmt·nper)`. Exact, then rounded once.
 
 - **Rounds:** once; it is `fvExact(…).round(rounding)`.
-- **Throws:** `RangeError` for an `nper` that isn't a whole number from 0 to 100,000, a rate at or below −1, or a `type` other than 0 or 1.
+- **Throws:** `RangeError` for an `nper` that isn't a whole number from 0 to 100,000, a rate at or below −1, a `type` other than 0 or 1, or when `(1 + rate)^nper` would pass 2^20 bits (2^17 for the `…Exact` forms, which reduce their fraction).
 
 ### fvExact
 
@@ -171,7 +171,7 @@ The same, unrounded.
 
 Excel's NPER: `ln((pmt·(1 + rate·type) − fv·rate) / (pmt·(1 + rate·type) + pv·rate)) / ln(1 + rate)`, and at a rate of 0, `−(pv + fv)/pmt`. It can be fractional or negative, as in Excel. The logarithms are irrational in general, so the result is to `digits` places (default 10, at most 100), floored, from rigorous rational bounds on each logarithm: the number of periods lies in [`lower`, `upper`), and `exact` is set when it is rational. Excel's value is a double within its own rounding of that interval.
 
-- **Throws:** `RangeError` where Excel returns #NUM! or #DIV/0! (the payments never settle the amounts, or no payment at a rate of 0), for `digits` outside 0–100, and when the result is too close to a `digits`-place decimal to settle within 16,384 bits.
+- **Throws:** `RangeError` where Excel returns #NUM! or #DIV/0! (the payments never settle the amounts, or no payment at a rate of 0), for `digits` outside 0–100, when the result is too close to a `digits`-place decimal to settle within 16,384 bits, and for a rate too close to 0 for `ln(1 + rate)` to be bounded away from 0 within them.
 
 ### rate
 
@@ -179,7 +179,7 @@ Excel's NPER: `ln((pmt·(1 + rate·type) − fv·rate) / (pmt·(1 + rate·type) 
 
 Excel's RATE, as `irr` of the flows it implies: `pv` at period 0, `pmt` at periods 1 to `nper` (0 to `nper − 1` with `type: 1`), and `fv` at period `nper`. Exact to `digits` places, floored, between `lower` and `upper`. A `bracket` replaces Excel's `guess`. Microsoft documents that RATE iterates until it is within 0.0000001, so Excel's value is that close to [`lower`, `upper`].
 
-- **Throws:** `RangeError` where Excel guesses: when the implied flows change sign more than once (several rates fit) unless a `bracket` selects one, and when they never change sign (Excel's #NUM!); and for an `nper` that isn't a whole number from 1 to 100,000. Otherwise as `irr`.
+- **Throws:** `RangeError` where Excel guesses: when the implied flows change sign more than once (several rates fit) unless a `bracket` selects one, and when they never change sign (Excel's #NUM!); for an `nper` that isn't a whole number from 1 to 100,000, `digits` outside 0–100, `(1 + rate)^nper` past 2^19 bits at `digits` places, and a rate above 2^1024. Otherwise as `irr`.
 
 ```ts
 import { money, ratio } from '@ducatjs/money';

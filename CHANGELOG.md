@@ -77,6 +77,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- `irr` throws a RangeError for an IRR above 2^1024 per period, where it used to keep doubling its
+  search without limit; every rate solver in `/finance` now has a bounded number of steps (#200).
 - **Visible change:** `parse(text, currency, locale)` throws a RangeError naming the locale when
   the runtime has no Intl data for its language and region (`xx-ZZ`, `de-XX`), as `parseMoney`
   already did. It used to read the amount with the fallback locale's separators, which can misread
