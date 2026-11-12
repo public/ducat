@@ -187,14 +187,9 @@ function makeRatio(num: bigint, den: bigint): Ratio {
     num = -num;
     den = -den;
   }
-  // an integer (den 1) is already in lowest terms
-  if (den !== 1n) {
-    const divisor = gcd(num, den);
-    if (divisor > 1n) {
-      num /= divisor;
-      den /= divisor;
-    }
-  }
+  const divisor = gcd(num, den);
+  num /= divisor;
+  den /= divisor;
   return { num, den, n: safeNumberOrNaN(num), d: safeNumberOrNaN(den) };
 }
 
@@ -225,10 +220,6 @@ export const describeFactor = (factor: Factor): string =>
  */
 export function ratio(value: Factor, den?: Factor): Ratio {
   if (den !== undefined) {
-    // two bigints (divide, percentages, tax): one reduction instead of three
-    if (typeof value === 'bigint' && typeof den === 'bigint') {
-      return makeRatio(value, den);
-    }
     const numeratorRatio = ratio(value);
     const denominatorRatio = ratio(den);
     return makeRatio(

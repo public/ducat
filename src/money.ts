@@ -414,10 +414,7 @@ function fromScaled<C extends string>(
   if (typeof digits === 'bigint') {
     digits = normalizeMinor(digits);
   }
-  if (from === to) {
-    return new Money(currency, digits, to);
-  }
-  if (from < to) {
+  if (from <= to) {
     return make(currency, scaleUp(digits, to - from), to);
   }
   try {
@@ -734,10 +731,7 @@ export function toScale<C extends string>(
   if (scale === money.scale) {
     return money;
   }
-  if (!isValidScale(scale)) {
-    checkScale(scale); // throws the shared message
-  }
-  if (scale > money.scale) {
+  if (checkScale(scale) > money.scale) {
     return make(money.currency, scaleUp(money.minor, scale - money.scale), scale);
   }
   return make(money.currency, scaleDown(money.minor, money.scale - scale, rounding), scale);
@@ -775,10 +769,6 @@ export function compare<C extends string, O extends string = C>(
 export function equals(money: Money, other: Money): boolean {
   if (money.currency !== other.currency) {
     return false;
-  }
-  if (money.scale === other.scale) {
-    // == compares number and bigint exactly
-    return money.minor == other.minor;
   }
   return compare(money, other) === 0;
 }
