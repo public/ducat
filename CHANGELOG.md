@@ -124,6 +124,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `money(-0, …)` with a number gives 0 minor units, not -0, like every other constructor. A test or
+  snapshot comparing with `toEqual` can see the change (Jest and Vitest tell 0 from -0).
+
 - `convertDetailed(m, rate, mode, { strictValidity: true })` refuses an expired rate, as `convert`
   and `convertDetailed` with a policy already did: both now share the rate's validity check
   (#270).
