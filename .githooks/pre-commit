@@ -10,4 +10,5 @@ if [ -n "$code" ]; then
   pnpm exec oxlint --deny-warnings $code
 fi
 # shellcheck disable=SC2086
-pnpm exec oxfmt --check $files
+# a commit of only format-ignored files (generated vectors, say) has nothing to check
+pnpm exec oxfmt --check --no-error-on-unmatched-pattern $files
