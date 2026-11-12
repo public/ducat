@@ -366,7 +366,7 @@ factors themselves:
   is a root on the grid or a grid point whose sign is nonzero and opposite at the next point.
 
 The model of `xnpvScaled`, `xnpvBounds`, `xnpv` and `xirr` (`XnpvModel.lean`) prints an oracle
-fixture, and the TypeScript must match it exactly on 120 XNPV and 30 XIRR cases.
+fixture, and the TypeScript must match it exactly on 120 XNPV and 35 XIRR cases.
 
 **Not proved:**
 

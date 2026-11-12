@@ -81,7 +81,7 @@ These are stated over the proved kernel (`divRound`):
 
 The bounds are over ℝ, with `Real.rpow` for the roots, so they apply to the irrational factors `g^(r/q)`, their products and `C / F` themselves.
 
-`XnpvModel.lean` is a model of `xnpvScaled`, `xnpvBounds`, `xnpv` and `xirr` (Excel's day count, no bracket) built from the definitions those theorems are about: `floorRoot`, the fixed-point powers and products, and `bisectRate`. `Oracle.lean` prints it on 120 XNPV and 30 XIRR cases (`test/fixtures/xnpv.oracle.json`, `xirr.oracle.json`). The TypeScript must give the same bounds at the same precision, the same `exact`, the same rounded value in every mode and the same floored rate, and throw where the model has no value.
+`XnpvModel.lean` is a model of `xnpvScaled`, `xnpvBounds`, `xnpv` and `xirr` (Excel's day count, no bracket) built from the definitions those theorems are about: `floorRoot`, the fixed-point powers and products, and `bisectRate`. `Oracle.lean` prints it on 120 XNPV and 35 XIRR cases (`test/fixtures/xnpv.oracle.json`, `xirr.oracle.json`). The TypeScript must give the same bounds at the same precision, the same `exact`, the same rounded value in every mode and the same floored rate, and throw where the model has no value.
 
 **Not proved:**
 
