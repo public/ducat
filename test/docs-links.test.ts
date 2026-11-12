@@ -12,6 +12,7 @@ const REPO_URL = 'https://github.com/public/ducat/';
 const DOCUMENTS = [
   'README.md',
   'CONTRIBUTING.md',
+  'CHANGELOG.md',
   ...readdirSync(join(ROOT, 'docs'), { recursive: true, encoding: 'utf8' })
     .filter((path) => path.endsWith('.md'))
     .map((path) => `docs/${path.split('\\').join('/')}`),

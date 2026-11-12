@@ -99,11 +99,6 @@ const page = (name: string): string => readFileSync(join(ROOT, 'docs', 'referenc
 const mentions = (text: string, name: string): boolean =>
   text.includes(name) &&
   new RegExp(`\`[^\`\\n]*(?<![\\w$])${name.replace(/\$/g, '\\$')}(?![\\w$])[^\`\\n]*\``).test(text);
-const allReference = (): string =>
-  Object.values(PAGES)
-    .filter((name, index, list) => list.indexOf(name) === index)
-    .map(page)
-    .join('\n');
 
 describe('the reference names everything the package exports', () => {
   it('every entry has a reference page', () => {
@@ -151,7 +146,7 @@ describe('the reference names everything the package exports', () => {
   });
 
   it.skipIf(MUTATION)(
-    'every exported type is named in the reference',
+    'every exported type is on its page',
     () => {
       const program = ts.createProgram(
         entries.map(({ source }) => source),
@@ -164,7 +159,9 @@ describe('the reference names everything the package exports', () => {
         },
       );
       const checker = program.getTypeChecker();
-      const text = allReference();
+      // the pages of the entries that export each type: a re-export counts on its origin's page
+      const exportsOf = new Map<string, { name: string; target: ts.Symbol }[]>();
+      const homes = new Map<ts.Symbol, Set<string>>();
       const problems = new Set<string>();
       for (const { key, source } of entries) {
         const file = program.getSourceFile(source);
@@ -173,19 +170,28 @@ describe('the reference names everything the package exports', () => {
           problems.add(`${source} did not load`);
           continue;
         }
-        for (const exported of checker.getExportsOfModule(symbol)) {
-          const target =
-            exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported;
-          if (target.flags & ts.SymbolFlags.Value) {
-            continue;
+        const types = checker
+          .getExportsOfModule(symbol)
+          .map((exported) => ({
+            name: exported.name,
+            target:
+              exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported,
+          }))
+          .filter(({ target }) => !(target.flags & ts.SymbolFlags.Value));
+        exportsOf.set(key, types);
+        if (!AGGREGATES.has(key)) {
+          for (const { target } of types) {
+            homes.set(target, (homes.get(target) ?? new Set()).add(PAGES[key]!));
           }
-          if (!mentions(text, exported.name)) {
-            const home = AGGREGATES.has(key)
-              ? 'the page of the entry it comes from'
-              : `docs/reference/${PAGES[key]}`;
-            problems.add(
-              `type \`${exported.name}\` (from @ducatjs/money${key.slice(1)}): add it to ${home}`,
-            );
+        }
+      }
+      for (const { key } of entries) {
+        for (const { name, target } of exportsOf.get(key) ?? []) {
+          const pages = [...(homes.get(target) ?? [])];
+          if (pages.length === 0) {
+            problems.add(`type \`${name}\` (from @ducatjs/money${key.slice(1)}) has no home entry`);
+          } else if (!pages.some((candidate) => mentions(page(candidate), name))) {
+            problems.add(`type \`${name}\`: add it to docs/reference/${pages[0]}`);
           }
         }
       }
@@ -194,15 +200,31 @@ describe('the reference names everything the package exports', () => {
     120_000,
   );
 
-  it('every method of the library classes is in the reference', () => {
-    const instances: Record<string, [object, string]> = {
-      Money: [money('1', 'EUR'), 'money.md (or the page of the module that installs it)'],
-      Fixed: [fixed('1'), 'fixed.md'],
-      ExactMoney: [exact(money('1', 'EUR')), 'exact.md'],
-      Rate: [exchangeRate('EUR', 'USD', '1.1'), 'convert.md'],
-      MoneyBag: [bag(), 'convert.md'],
+  it('every method of the library classes is on its page', () => {
+    // a module's Money methods are declared in its `interface Money` augmentation
+    const moneyMethodPage = new Map<string, string>();
+    for (const { key, source } of entries) {
+      if (AGGREGATES.has(key)) {
+        continue;
+      }
+      const text = readFileSync(source, 'utf8');
+      for (const block of text.matchAll(
+        /interface Money<C extends string> \{([\s\S]*?)\n {2}\}/g,
+      )) {
+        for (const method of block[1]!.matchAll(/^ {4}(\w+)\s*[<(]/gm)) {
+          moneyMethodPage.set(method[1]!, PAGES[key]!);
+        }
+      }
+    }
+    const instances: Record<string, [object, (name: string) => string]> = {
+      Money: [money('1', 'EUR'), (name) => moneyMethodPage.get(name) ?? 'money.md'],
+      Fixed: [fixed('1'), () => 'fixed.md'],
+      ExactMoney: [exact(money('1', 'EUR')), () => 'exact.md'],
+      Rate: [exchangeRate('EUR', 'USD', '1.1'), () => 'convert.md'],
+      MoneyBag: [bag(), () => 'convert.md'],
     };
-    const text = allReference();
+    // private in TypeScript, but visible on the prototype at run time
+    const internal = new Set(['ExactMoney#times']);
     const problems: string[] = [];
     for (const [className, [instance, home]] of Object.entries(instances)) {
       for (
@@ -218,8 +240,8 @@ describe('the reference names everything the package exports', () => {
           ) {
             continue;
           }
-          if (!mentions(text, name)) {
-            problems.push(`${className}#${name}: add it to docs/reference/${home}`);
+          if (!internal.has(`${className}#${name}`) && !mentions(page(home(name)), name)) {
+            problems.push(`${className}#${name}: add it to docs/reference/${home(name)}`);
           }
         }
       }
