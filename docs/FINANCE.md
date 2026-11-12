@@ -169,6 +169,69 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
   factors `(1 + r)^(days/365)` are fractional powers, so even XNPV isn't exact. They are planned
   for v0.4.0, as results to a stated precision with a proven error bound.
 
+### 3b. Annuities: Excel's FV, PV, PMT, NPER and RATE (v0.4.0, #200)
+
+```ts
+const usd = (amount: string) => money(amount, 'USD');
+pmt(ratio('0.08', 12), 10, usd('10000')); // -1037.03 USD, as Excel's PMT(8%/12, 10, 10000)
+fv('0.005', 10, usd('-200'), { pv: usd('-500'), type: 1 }); // 2581.40 USD
+pv(ratio('0.08', 12), 240, usd('500')); // -59777.15 USD
+nper('0.01', usd('-100'), usd('-1000'), { fv: usd('10000'), type: 1 });
+// { nper: '59.6738656742', lower: '59.6738656742', upper: '59.6738656743' }
+rate(48, usd('-200'), usd('8000')); // { rate: '0.0077014724', … }
+```
+
+These are Excel names, so they follow the Excel rule: Excel's arguments, sign convention
+(money paid out is negative) and `type` (0 = payments at the end of each period, the default;
+1 = at the start), and Excel's value. Excel's required arguments are positional in Excel's order;
+the optional ones (`pv` or `fv`, `type`) go in an options object, and the rounding comes last,
+as for `interest` and `npv`. Amounts are `Money` of one currency; the rate is a `Factor`.
+
+- `fv`, `pv` and `pmt` are rational for a whole `nper`: Excel's closed forms, computed exactly
+  with `(1 + r)^n = (a + b)^n / b^n` for `r = a/b`, and rounded once (the currency's exponent or a
+  policy; default `'halfExpand'`). `fvExact`, `pvExact` and `pmtExact` return the `ExactMoney`,
+  and the rounded forms are exactly `exact.round(rounding)`. At a rate of 0, Excel switches to
+  `fv = −(pv + pmt·nper)`, `pv = −(fv + pmt·nper)` and `pmt = −(pv + fv)/nper`, whatever the
+  `type`, and so do these.
+- `nper` is `ln((pmt·(1 + r·type) − fv·r) / (pmt·(1 + r·type) + pv·r)) / ln(1 + r)`, a ratio of
+  logarithms, irrational in general. Each logarithm is bounded by integers over `2^bits`:
+  `ln x = k·ln 2 + 2·atanh(z)` with `x / 2^k` in (1/2, 2), so `|z| < 1/3`, and `ln 2 = 2·atanh(1/3)`.
+  The series `Σ z^(2j+1)/(2j+1)` is summed in fixed point, each power floored from the last (at
+  most `j + 1` units low), each term at most 2 units low, and the tail bounded once the power
+  reaches 0, so the true value is within `4·terms + 4` units above the sum. The quotient's
+  interval comes from the four ratios of the ends, and the bits are doubled (from
+  `64 + 4·digits`, up to 65,536) until the interval fixes the floor on the grid of `digits`-place
+  decimals. The result is `{ nper, lower, upper, exact? }` like `irr`'s, floored: `nper` lies in
+  [`lower`, `upper`). `exact` is set when `nper` is rational: always at a rate of 0
+  (`−(pv + fv)/pmt`), and otherwise when the grid point `p/q` satisfies `A = (1 + r)^(p/q)`
+  exactly, which needs `1 + r` to be a perfect `q`th power (`'0.21'` grows by 10% in half a
+  period). Excel's NPER is a closed form in doubles, so Excel's value lies within its own double
+  error of [`lower`, `upper`), and the tests check that at 15 significant digits, or within that
+  error where the last digit differs.
+- `rate` is RATE's equation divided by `(1 + r)^nper`, which is the NPV of the flows it implies:
+  `pv` at period 0, `pmt` at periods 1 to `nper` (0 to `nper − 1` with `type: 1`), and `fv` at
+  period `nper`. So it is `irr` of those flows, with `irr`'s guarantees and rules: exact to
+  `digits` places (default 10), floored, between `lower` and `upper`.
+
+Interface differences, all of them refusals rather than other values:
+
+- `nper` must be a whole number from 0 (1 for `pmt` and `rate`) to 100,000 for `fv`, `pv`, `pmt`
+  and `rate`. Excel takes a fractional `nper`, whose power is irrational.
+- A rate at or below −1 throws a RangeError.
+- `type` is 0 or 1 only.
+- `rate` takes a `bracket` in place of Excel's `guess`. Where the implied flows change sign more
+  than once, so that several rates fit, it throws unless a bracket selects one: Excel returns
+  whichever root its iteration from `guess` reaches. Where they never change sign, it throws
+  (Excel's #NUM!). Microsoft documents that RATE iterates until it is within 0.0000001, so
+  Excel's value is only that close to the root: the tests check it lies within 0.0000001 of
+  [`lower`, `upper`].
+- `nper` throws where Excel returns #NUM! or #DIV/0!: the logarithm of a number at or below 0
+  (the payments never settle the amounts) and no payment at a rate of 0.
+
+Tests: every worked example on Microsoft's FV, PV, PMT, NPER and RATE pages, and 150 LibreOffice
+Calc vectors each (`scripts/gen-calc-vectors.py`): FV, PV and PMT at 15 significant digits or
+within the error of a double power, NPER the same, and RATE within its stated accuracy.
+
 ### 3a. Periodic and annual rates (v0.4.0, #199)
 
 ```ts

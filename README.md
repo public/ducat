@@ -588,20 +588,25 @@ The currency and the locale are checked when the context is made. Its functions 
 - `amortise(loan, options)` builds an annuity, linear or interest-only schedule. Each period's interest is the balance times `rate / perYear`, rounded; the principal parts sum exactly to the loan and the balance ends at zero, because the rounding residual goes to the last payment (or, with `residual: 'lastInterest'`, to the last interest). It takes a `balloon` and a `firstPayment` date.
 - Functions named after Excel's give Excel's values. `npv(rate, flows)` is Excel's NPV: the first flow is at the end of period 1, so, like Excel, an initial outlay at period 0 goes outside, `flows[0] + npv(rate, rest)`. `discountedSum(rate, flows)` takes flows from period 0. Both are exact and rounded once, so `npv` matches Excel to the cent.
 - `irr(flows, { digits })` is Excel's IRR, exact to `digits` places (floored): it bisects in exact integer arithmetic, the IRR lies between `lower` and `upper`, 10^−digits apart, and `rate` is `lower`. Where Excel guesses, it throws: with no sign change (Excel's #NUM!), and with more than one unless a `bracket` (in place of Excel's `guess`) selects one root.
+- `fv`, `pv`, `pmt`, `nper` and `rate` are Excel's FV, PV, PMT, NPER and RATE, with Excel's arguments (`rate, nper, pmt` positional, the optional `pv` or `fv` and `type`, 0 for payments at the end of each period and 1 at the start, in an options object), Excel's sign convention (money paid out is negative) and Excel's values. `fv`, `pv` and `pmt` are exact and rounded once (`fvExact`, `pvExact` and `pmtExact` return the `ExactMoney`); `nper` (a ratio of logarithms) is to `digits` places, floored, from rigorous bounds; `rate` is `irr` of the flows the arguments imply. Where they differ from Excel, they throw rather than give another value: `nper` must be a whole number for `fv`, `pv`, `pmt` and `rate`, a rate at or below −1 is refused, and `rate` needs a `bracket` (in place of `guess`) where several rates fit.
 - `periodicRate(annual, { perYear, digits })` is the periodic rate equivalent to an effective annual rate, `(1 + annual)^(1/perYear) − 1` (the monthly rate of a savings plan), and `annualRate(periodic, { perYear })` is the inverse, `(1 + periodic)^perYear − 1`, an exact `Ratio`. The root is irrational in general, so like `irr` it is found to `digits` places (floored) by exact bisection, between `lower` and `upper`, with `exact` set when it is rational. Neither is `rate / perYear`, the nominal split that `compound` and `amortise` use.
 - `prorate(price, { period, used })` charges the used part of a period (by the day, or with `unit: 'second'` by the second), and `splitPeriod(price, { period, at })` splits a period's price at plan changes into pieces that sum exactly to it.
 
 ```ts
-import { money } from '@ducatjs/money';
+import { money, ratio } from '@ducatjs/money';
 import {
   amortise,
   annualRate,
+  fv,
   interest,
   irr,
   npv,
+  nper,
   discountedSum,
   periodicRate,
+  pmt,
   prorate,
+  rate,
   splitPeriod,
 } from '@ducatjs/money/finance';
 
@@ -623,6 +628,12 @@ irr(['-100', '230', '-132'].map((amount) => money(amount, 'EUR'))); // throws Ra
 periodicRate('0.05', { perYear: 12, digits: 8 }); // → { rate: '0.00407412', lower: '0.00407412', upper: '0.00407413' }
 periodicRate('0.21', { perYear: 2 }).exact; // → { num: 1n, den: 10n, n: 1, d: 10 }
 annualRate('0.1', { perYear: 2 }); // → { num: 21n, den: 100n, n: 21, d: 100 }
+
+const usd = (amount: string) => money(amount, 'USD');
+pmt(ratio('0.08', 12), 10, usd('10000')); // → -1037.03 USD (Excel's PMT(8%/12, 10, 10000))
+fv('0.005', 10, usd('-200'), { pv: usd('-500'), type: 1 }); // → 2581.40 USD
+nper('0.01', usd('-100'), usd('-1000'), { fv: usd('10000'), type: 1, digits: 7 }).nper; // → '59.6738656'
+rate(48, usd('-200'), usd('8000'), { digits: 8 }).rate; // → '0.00770147' (Excel: 1% a month)
 
 const march = { start: '2026-03-01', end: '2026-04-01' };
 prorate(money('30', 'EUR'), { period: march, used: { start: '2026-03-11', end: '2026-04-01' } }); // → 20.32 EUR
