@@ -25,11 +25,15 @@ import {
   type SpecMoney,
 } from './spec/format.ts';
 import { loadVectorFiles, vectorSchema } from './spec/load.ts';
+import { TABLE_OPERATIONS } from './spec/tables.ts';
 
 /** Cases per area. A vector may be added (raise the count), never silently lost. */
 const CASES_PER_AREA: Record<string, number> = {
   core: 41,
   fixed: 28,
+  allocate: 5400,
+  cash: 1500,
+  excel: 155,
 };
 
 const schema = vectorSchema;
@@ -269,12 +273,6 @@ function runCase(specCase: SpecCase): string {
 
 // --- the suite ---------------------------------------------------------------------------------------
 
-/**
- * The operations of each table layout, by name. None yet: ducat's tables of generated cases move
- * here with their files.
- */
-const TABLE_OPERATIONS: Record<string, (row: Readonly<Record<string, unknown>>) => string> = {};
-
 function unknownOperations(file: SpecFile): string[] {
   const caseOps = (file.cases ?? []).map((specCase) => specCase.op);
   const unknownCaseOps = caseOps.filter((op) => !(op in OPERATIONS));
@@ -408,6 +406,11 @@ describe('@ducatjs/money-spec', () => {
     });
     expect(operations.toSorted()).toEqual(Object.keys(OPERATIONS).toSorted());
     expect(withArguments.toSorted()).toEqual(operations.toSorted());
+
+    const tableOperations = (definitions['tableOp'] as { enum: string[] }).enum;
+    const rowShapes = Object.keys(definitions['rows'] as object);
+    expect(tableOperations.toSorted()).toEqual(Object.keys(TABLE_OPERATIONS).toSorted());
+    expect(rowShapes.toSorted()).toEqual(tableOperations.toSorted());
   });
 
   it('rejects a file that breaks the schema, or has an operation the runner does not know', () => {
@@ -428,7 +431,7 @@ describe('@ducatjs/money-spec', () => {
 
     const { cases: _cases, ...envelope } = battery;
     const withUnknownTable = { ...envelope, tables: [{ op: 'lean.teleport', rows: [{}] }] };
-    expect(validate(withUnknownTable)).toBe(true);
+    expect(validate(withUnknownTable)).toBe(false);
     expect(unknownOperations(withUnknownTable)).toEqual(['lean.teleport']);
 
     const withUnknownOp = { ...battery, cases: [{ ...first, op: 'money.teleport' }] };
@@ -438,8 +441,20 @@ describe('@ducatjs/money-spec', () => {
 });
 
 for (const [path, file] of files) {
-  const { cases = [] } = file as SpecFile;
+  const { cases = [], tables = [] } = file as SpecFile;
   describe(`spec ${path}`, () => {
+    it.each(tables.map((table, index) => [`table ${index + 1}: ${table.op}`, table] as const))(
+      '%s',
+      (_, table) => {
+        const operation = TABLE_OPERATIONS[table.op]!;
+        const mismatches = [
+          ...(operation.checkTable?.(table.rows) ?? []),
+          ...table.rows.flatMap((row, index) => operation.checkRow(row, index)),
+        ];
+        expect(mismatches.slice(0, 5)).toEqual([]);
+      },
+    );
+
     it.each(
       cases.map((specCase) => [`${specCase.id}: ${specCase.description}`, specCase] as const),
     )('%s', (_, specCase) => {
