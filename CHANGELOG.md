@@ -9,6 +9,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Documentation
 
+- [How ducat is tested](docs/explanation/how-ducat-is-tested.md) explains the nightly mutation
+  testing and lists the mutants that can't change a result, with the reason for each (#56).
 - The documentation is rebuilt on [Diátaxis](https://diataxis.fr), in `docs/`: two tutorials (a
   first program and a checkout), how-to guides for each task (databases, payment processors,
   currency conversion with dated rates, tax, cash rounding, allocation, parsing, validation,
@@ -127,6 +129,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   error. The operand type is exported as `MoneyOperand` (#219).
 
 ### Fixed
+
+- `money(-0, …)` with a number gives 0 minor units, not -0, like every other constructor. A test or
+  snapshot comparing with `toEqual` can see the change (Jest and Vitest tell 0 from -0).
 
 - `convertDetailed(m, rate, mode, { strictValidity: true })` refuses an expired rate, as `convert`
   and `convertDetailed` with a policy already did: both now share the rate's validity check
