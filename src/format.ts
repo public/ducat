@@ -20,9 +20,6 @@ let lastLocale: string | undefined;
 let lastCurrency = '';
 let lastScale = -1;
 let lastFormatter: Intl.NumberFormat | undefined;
-// the same for calls with options, keyed by the options' JSON
-let lastOptionsKey = '';
-let lastOptionsFormatter: Intl.NumberFormat | undefined;
 
 let stringInput: boolean | undefined;
 /** ES2023 Intl.NumberFormat v3 formats decimal strings exactly; older engines convert to Number. */
@@ -66,9 +63,6 @@ function formatter(
   // the spread below lets it override our fraction digits, where a missing key doesn't.
   const base = `${locale}|${money.currency}|${money.scale}`;
   const key = options === undefined ? base : `${base}|${JSON.stringify(options, keepUndefined)}`;
-  if (options !== undefined && key === lastOptionsKey && lastOptionsFormatter !== undefined) {
-    return lastOptionsFormatter;
-  }
   let numberFormat = cache.get(key);
   if (numberFormat === undefined) {
     numberFormat = new Intl.NumberFormat(locale, {
@@ -91,9 +85,6 @@ function formatter(
     lastCurrency = money.currency;
     lastScale = money.scale;
     lastFormatter = numberFormat;
-  } else {
-    lastOptionsKey = key;
-    lastOptionsFormatter = numberFormat;
   }
   return numberFormat;
 }
