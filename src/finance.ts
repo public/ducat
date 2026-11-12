@@ -431,7 +431,10 @@ export interface PeriodicRateOptions {
 
 /** Options for `annualRate`. */
 export interface AnnualRateOptions {
-  /** Periods per year (12 for monthly): a positive integer, at most 100,000. */
+  /**
+   * Periods per year (12 for monthly): a positive integer, at most 100,000. That is more than
+   * `periodicRate` takes, whose root costs grow with `digits × perYear` (at most 50,000).
+   */
   readonly perYear: number;
 }
 
