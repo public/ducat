@@ -182,23 +182,7 @@ export function allocate<C extends string>(
         frac[i] = remainder;
         rem -= quotient;
       }
-      if (rem > 0) {
-        if (mode === 'largest' && count <= 32) {
-          // selection instead of sort: rem < number of non-zero weights, n small
-          for (; rem > 0; rem--) {
-            let best = -1;
-            for (let i = 0; i < count; i++) {
-              if (ws[i]! > 0 && frac[i]! >= 0 && (best < 0 || frac[i]! > frac[best]!)) {
-                best = i;
-              }
-            }
-            shares[best]! += 1;
-            frac[best] = -1;
-          }
-        } else {
-          distribute(shares, rem, ws, frac, mode, 1);
-        }
-      }
+      distribute(shares, rem, ws, frac, mode, 1);
       const out = new Array<Money<C>>(count);
       for (let i = 0; i < count; i++) {
         out[i] = make(money.currency, shares[i]!, money.scale);
