@@ -71,6 +71,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Visible change:** `parse(text, currency, locale)` throws a RangeError naming the locale when
+  the runtime has no Intl data for its language and region (`xx-ZZ`, `de-XX`), as `parseMoney`
+  already did. It used to read the amount with the fallback locale's separators, which can misread
+  it. Pass a supported locale, or the base language (`de`) (#271).
 - **Visible change:** `tieredPrice` throws a RangeError naming the tier when one has neither a
   `unitAmount` nor a `flatAmount`; it used to charge that tier 0. Write a free tier as
   `unitAmount: money('0', …)` (#272).

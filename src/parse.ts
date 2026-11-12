@@ -18,6 +18,10 @@ function symbols(locale: string | undefined, currency: string): Symbols {
   const key = `${locale ?? ''}|${currency}`;
   let found = symCache.get(key);
   if (!found) {
+    // Checked once per locale and currency, on a cache miss, so the hot path pays nothing.
+    if (locale !== undefined) {
+      requireLocaleData(locale);
+    }
     const parts = separatorParts(locale, currency);
     found = {
       group: parts.find((part) => part.type === 'group')?.value ?? ',',
@@ -254,7 +258,7 @@ function languageAndRegion(tag: string): string {
  * another locale (an unsupported tag, or a runtime with reduced ICU data), and that locale's
  * separators and symbols would then decide the amount and the currency.
  */
-function requireLocaleData(input: string, locale: string): void {
+function requireLocaleData(locale: string): void {
   let isSupported = supportedLocales.get(locale);
   if (isSupported === undefined) {
     const resolved = new Intl.NumberFormat(locale).resolvedOptions().locale;
@@ -265,9 +269,7 @@ function requireLocaleData(input: string, locale: string): void {
     supportedLocales.set(locale, isSupported);
   }
   if (!isSupported) {
-    throw new RangeError(
-      `Cannot parse "${input}": this runtime has no Intl data for the locale ${locale}`,
-    );
+    throw new RangeError(`This runtime has no Intl data for the locale ${locale}`);
   }
 }
 
@@ -437,7 +439,7 @@ export function parseMoney<C extends string = string>(
   const lenient = options?.lenient === true;
   const candidates =
     options?.currencies === undefined ? undefined : new Set<string>(options.currencies);
-  requireLocaleData(input, locale);
+  requireLocaleData(locale);
 
   // The text around the number: everything before the first digit and after the last.
   const chars = Array.from(input);

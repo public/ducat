@@ -111,7 +111,7 @@
     },
     "functions: a currency context with parse": {
       "code": "import { currencyContext, parse } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const eur = currencyContext('EUR', { locale: 'nl-NL', parse }); console.log(eur.format(eur.parse('1.234,50')));",
-      "gzipped": 4.33
+      "gzipped": 4.47
     },
     "functions with every ISO code: /iso, fromMinor, add, toDecimal": {
       "code": "import '@ducatjs/money/iso'; import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
