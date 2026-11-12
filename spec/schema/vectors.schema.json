@@ -1,0 +1,1006 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/public/ducat/spec/schema/vectors.schema.json",
+  "title": "A ducat conformance vector file",
+  "description": "One file of test vectors: provenance, then cases. Every value is JSON text that needs no programming language to read: amounts are exact decimal strings, never JSON numbers. See spec/README.md for the meaning of each operation and expectation.",
+  "type": "object",
+  "required": ["format", "area", "name", "description", "provenance", "checkedAgainst", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "const": 1,
+      "description": "The version of this file format."
+    },
+    "area": {
+      "$ref": "#/$defs/area"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "checkedAgainst": {
+      "description": "The ducat version (semver) whose TypeScript implementation passed every case in this file.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "area": {
+      "enum": [
+        "core",
+        "rounding",
+        "allocate",
+        "tax",
+        "convert",
+        "cash",
+        "format",
+        "words",
+        "parse",
+        "fixed",
+        "exact",
+        "excel",
+        "finance"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source", "generator", "method"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "description": "Where the expected values come from. Never from ducat's own output.",
+          "enum": [
+            "hand",
+            "lean",
+            "python-fractions",
+            "python-decimal",
+            "libreoffice-calc",
+            "microsoft-documentation",
+            "dectest",
+            "icu"
+          ]
+        },
+        "generator": {
+          "description": "The program that wrote the file, or null for values written by hand or copied from documentation.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": ["name", "version"],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "description": "The versions of reference data the expected values depend on.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "iso4217": {
+              "description": "ISO 4217 List One publication date.",
+              "$ref": "#/$defs/date"
+            },
+            "cldr": {
+              "description": "CLDR release.",
+              "type": "string"
+            },
+            "icu": {
+              "description": "ICU release.",
+              "type": "string"
+            },
+            "runtimeIntl": {
+              "description": "Set when the results also depend on the runtime's own Intl or ICU data: what depends on it.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "required": ["id", "description", "op", "args", "expect"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "group": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "op": {
+          "$ref": "#/$defs/op"
+        },
+        "args": {
+          "type": "object"
+        },
+        "expect": {
+          "$ref": "#/$defs/expectation"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/argsByOp"
+        }
+      ]
+    },
+    "op": {
+      "enum": [
+        "currency.exponent",
+        "money.fromMinor",
+        "money.fromDecimal",
+        "money.fromBinary64",
+        "money.roundTrip",
+        "money.add",
+        "money.subtract",
+        "money.multiply",
+        "money.divide",
+        "money.convert",
+        "money.split",
+        "money.allocate",
+        "money.allocate.generated",
+        "money.compare",
+        "money.equals",
+        "fixed.roundTrip",
+        "fixed.add",
+        "fixed.multiply",
+        "fixed.divide",
+        "fixed.round",
+        "fixed.compare"
+      ]
+    },
+    "argsByOp": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/when/currency.exponent"
+        },
+        {
+          "$ref": "#/$defs/when/money.fromMinor"
+        },
+        {
+          "$ref": "#/$defs/when/money.fromDecimal"
+        },
+        {
+          "$ref": "#/$defs/when/money.fromBinary64"
+        },
+        {
+          "$ref": "#/$defs/when/money.roundTrip"
+        },
+        {
+          "$ref": "#/$defs/when/money.binary"
+        },
+        {
+          "$ref": "#/$defs/when/money.convert"
+        },
+        {
+          "$ref": "#/$defs/when/money.split"
+        },
+        {
+          "$ref": "#/$defs/when/money.allocate"
+        },
+        {
+          "$ref": "#/$defs/when/money.allocate.generated"
+        },
+        {
+          "$ref": "#/$defs/when/fixed.roundTrip"
+        },
+        {
+          "$ref": "#/$defs/when/fixed.binary"
+        },
+        {
+          "$ref": "#/$defs/when/fixed.round"
+        },
+        {
+          "$ref": "#/$defs/when/money.multiply"
+        },
+        {
+          "$ref": "#/$defs/when/money.divide"
+        },
+        {
+          "$ref": "#/$defs/when/fixed.multiply"
+        },
+        {
+          "$ref": "#/$defs/when/fixed.divide"
+        }
+      ]
+    },
+    "when": {
+      "currency.exponent": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "currency.exponent"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/currency"
+            }
+          }
+        }
+      },
+      "money.fromMinor": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.fromMinor"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/fromMinor"
+            }
+          }
+        }
+      },
+      "money.fromDecimal": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.fromDecimal"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/fromDecimal"
+            }
+          }
+        }
+      },
+      "money.fromBinary64": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.fromBinary64"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/fromBinary64"
+            }
+          }
+        }
+      },
+      "money.roundTrip": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.roundTrip"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/oneMoney"
+            }
+          }
+        }
+      },
+      "money.binary": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "enum": ["money.add", "money.subtract", "money.compare", "money.equals"]
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/twoMoneys"
+            }
+          }
+        }
+      },
+      "money.convert": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.convert"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/convert"
+            }
+          }
+        }
+      },
+      "money.split": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.split"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/split"
+            }
+          }
+        }
+      },
+      "money.allocate": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.allocate"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/allocate"
+            }
+          }
+        }
+      },
+      "money.allocate.generated": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.allocate.generated"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/allocateGenerated"
+            }
+          }
+        }
+      },
+      "fixed.roundTrip": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "fixed.roundTrip"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/oneFixed"
+            }
+          }
+        }
+      },
+      "fixed.binary": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "enum": ["fixed.add", "fixed.compare"]
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/twoFixed"
+            }
+          }
+        }
+      },
+      "fixed.round": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "fixed.round"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/fixedRound"
+            }
+          }
+        }
+      },
+      "money.multiply": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.multiply"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/moneyTimes"
+            }
+          }
+        }
+      },
+      "money.divide": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "money.divide"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/moneyOver"
+            }
+          }
+        }
+      },
+      "fixed.multiply": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "fixed.multiply"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/fixedTimes"
+            }
+          }
+        }
+      },
+      "fixed.divide": {
+        "if": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "fixed.divide"
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/args/fixedOver"
+            }
+          }
+        }
+      }
+    },
+    "args": {
+      "currency": {
+        "type": "object",
+        "required": ["currency"],
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          }
+        }
+      },
+      "fromMinor": {
+        "type": "object",
+        "required": ["minor", "currency"],
+        "additionalProperties": false,
+        "properties": {
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          }
+        }
+      },
+      "fromDecimal": {
+        "type": "object",
+        "required": ["amount", "currency"],
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          }
+        }
+      },
+      "fromBinary64": {
+        "type": "object",
+        "required": ["value", "currency"],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/binary64"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          }
+        }
+      },
+      "oneMoney": {
+        "type": "object",
+        "required": ["money"],
+        "additionalProperties": false,
+        "properties": {
+          "money": {
+            "$ref": "#/$defs/money"
+          }
+        }
+      },
+      "twoMoneys": {
+        "type": "object",
+        "required": ["first", "second"],
+        "additionalProperties": false,
+        "properties": {
+          "first": {
+            "$ref": "#/$defs/money"
+          },
+          "second": {
+            "$ref": "#/$defs/money"
+          }
+        }
+      },
+      "convert": {
+        "type": "object",
+        "required": ["money", "to", "rate", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "money": {
+            "$ref": "#/$defs/money"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          }
+        }
+      },
+      "split": {
+        "type": "object",
+        "required": ["money", "count"],
+        "additionalProperties": false,
+        "properties": {
+          "money": {
+            "$ref": "#/$defs/money"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "allocate": {
+        "type": "object",
+        "required": ["money", "weights"],
+        "additionalProperties": false,
+        "properties": {
+          "money": {
+            "$ref": "#/$defs/money"
+          },
+          "weights": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "allocateGenerated": {
+        "type": "object",
+        "required": ["currency", "count", "generator", "draws"],
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "generator": {
+            "$ref": "#/$defs/lcg"
+          },
+          "draws": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/draw",
+                "properties": {
+                  "name": {
+                    "const": "minor"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "$ref": "#/$defs/draw",
+                "properties": {
+                  "name": {
+                    "const": "weightCount"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "$ref": "#/$defs/draw",
+                "required": ["repeat"],
+                "properties": {
+                  "name": {
+                    "const": "weights"
+                  }
+                },
+                "type": "object"
+              }
+            ],
+            "items": false,
+            "minItems": 3
+          }
+        }
+      },
+      "oneFixed": {
+        "type": "object",
+        "required": ["value"],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/decimal"
+          }
+        }
+      },
+      "twoFixed": {
+        "type": "object",
+        "required": ["first", "second"],
+        "additionalProperties": false,
+        "properties": {
+          "first": {
+            "$ref": "#/$defs/decimal"
+          },
+          "second": {
+            "$ref": "#/$defs/decimal"
+          }
+        }
+      },
+      "fixedRound": {
+        "type": "object",
+        "required": ["value", "scale", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/decimal"
+          },
+          "scale": {
+            "$ref": "#/$defs/scale"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          }
+        }
+      },
+      "moneyTimes": {
+        "type": "object",
+        "required": ["money", "factor", "mode"],
+        "properties": {
+          "money": {
+            "$ref": "#/$defs/money"
+          },
+          "factor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          }
+        },
+        "additionalProperties": false
+      },
+      "moneyOver": {
+        "type": "object",
+        "required": ["money", "divisor", "mode"],
+        "properties": {
+          "money": {
+            "$ref": "#/$defs/money"
+          },
+          "divisor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          }
+        },
+        "additionalProperties": false
+      },
+      "fixedTimes": {
+        "type": "object",
+        "required": ["value", "factor", "scale", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/decimal"
+          },
+          "factor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "scale": {
+            "$ref": "#/$defs/scale"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          }
+        }
+      },
+      "fixedOver": {
+        "type": "object",
+        "required": ["value", "divisor", "scale", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/decimal"
+          },
+          "divisor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "scale": {
+            "$ref": "#/$defs/scale"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          }
+        }
+      }
+    },
+    "expectation": {
+      "description": "Exactly one key: what the operation must return, or the error it must raise, or any one of several alternatives.",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "money": {
+          "$ref": "#/$defs/money"
+        },
+        "moneyList": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/money"
+          }
+        },
+        "moneyMultiset": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/money"
+          }
+        },
+        "sumOfParts": {
+          "$ref": "#/$defs/money"
+        },
+        "decimal": {
+          "$ref": "#/$defs/decimal"
+        },
+        "integer": {
+          "type": "integer"
+        },
+        "boolean": {
+          "type": "boolean"
+        },
+        "error": {
+          "$ref": "#/$defs/errorKind"
+        },
+        "property": {
+          "enum": ["allocation-within-one-unit"]
+        },
+        "anyOf": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/expectation"
+          }
+        }
+      }
+    },
+    "errorKind": {
+      "enum": ["rounding", "currency-mismatch", "range", "syntax", "type"]
+    },
+    "roundingMode": {
+      "enum": [
+        "halfEven",
+        "halfExpand",
+        "halfTrunc",
+        "halfCeil",
+        "halfFloor",
+        "expand",
+        "trunc",
+        "ceil",
+        "floor",
+        "unnecessary"
+      ]
+    },
+    "decimal": {
+      "description": "An exact decimal: an optional minus sign, digits, and an optional fraction. No exponent, no plus sign.",
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "integerString": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)$"
+    },
+    "scale": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "money": {
+      "description": "An amount of money: the exact decimal amount, written with exactly `scale` fraction digits, its currency and its scale.",
+      "type": "object",
+      "required": ["amount", "currency", "scale"],
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "$ref": "#/$defs/decimal"
+        },
+        "currency": {
+          "$ref": "#/$defs/currency"
+        },
+        "scale": {
+          "$ref": "#/$defs/scale"
+        }
+      }
+    },
+    "binary64": {
+      "description": "An IEEE 754 binary64 input: its shortest round-trip decimal form, and the exact decimal value of that double.",
+      "type": "object",
+      "required": ["binary64", "exact"],
+      "additionalProperties": false,
+      "properties": {
+        "binary64": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        },
+        "exact": {
+          "$ref": "#/$defs/decimal"
+        }
+      }
+    },
+    "lcg": {
+      "description": "A linear congruential generator in exact integer arithmetic: state = (state * multiplier + increment) mod modulus, starting from seed.",
+      "type": "object",
+      "required": ["kind", "seed", "multiplier", "increment", "modulus"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "lcg"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "multiplier": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "increment": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modulus": {
+          "type": "integer",
+          "minimum": 2
+        }
+      }
+    },
+    "draw": {
+      "description": "One draw from the generator: advance it once, then value = (state mod limit) + offset. With repeat, the draw is made as many times as the named earlier draw's value.",
+      "type": "object",
+      "required": ["name", "limit", "offset"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "offset": {
+          "type": "integer"
+        },
+        "repeat": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
