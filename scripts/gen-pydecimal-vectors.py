@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Reference vectors from Python's decimal module (an implementation of the General Decimal Arithmetic
-specification), written to test/vectors/pydecimal.json and checked by test/pydecimal.test.ts.
+specification), written as tables of @ducatjs/money-spec (spec/vectors/rounding/pydecimal.json,
+convert/pydecimal.json and tax/pydecimal.json) and checked by test/spec.test.ts.
 
 Deterministic: the same seed always writes the same file. Regenerate with
     python3 scripts/gen-pydecimal-vectors.py
@@ -9,6 +10,7 @@ and check that nothing changed with --check.
 Rounding modes: decimal has no half-ceil or half-floor, so those two are built from half-up and
 half-down by the sign of the value (ties toward +infinity / -infinity). Every other mode is decimal's own.
 """
+import hashlib
 import json
 import random
 import sys
@@ -28,7 +30,25 @@ from pathlib import Path
 
 SEED = 20261107
 COUNT_PER_OP = 250
-OUT = Path(__file__).resolve().parent.parent / "test" / "vectors" / "pydecimal.json"
+ROOT = Path(__file__).resolve().parent.parent
+# bumped when the output's layout changes; the values depend only on the seed
+GENERATOR_VERSION = "2"
+# each operation's spec area and table operation (spec/README.md, "Table operations")
+AREAS = {
+    "multiply": "rounding",
+    "divide": "rounding",
+    "toScale": "rounding",
+    "convert": "convert",
+    "percentage": "tax",
+    "addTax": "tax",
+    "extractTax": "tax",
+    "discount": "tax",
+}
+DESCRIPTIONS = {
+    "rounding": "Multiplying, dividing and rescaling money in minor units, rounded once in every mode, by Python's decimal module.",
+    "convert": "Converting money between currencies at a rate, rounded once in every mode, by Python's decimal module.",
+    "tax": "Percentages, discounts, and adding and extracting tax, rounded once in every mode, by Python's decimal module.",
+}
 CURRENCIES = [("JPY", 0), ("EUR", 2), ("KWD", 3), ("CLF", 4)]
 MODES = {
     "halfEven": ROUND_HALF_EVEN,
@@ -76,7 +96,7 @@ def make_case(rng: random.Random, operation: str) -> dict:
     currency, exponent, minor = random_amount()
     mode = rng.choice(list(MODES))
     amount = Decimal(minor).scaleb(-exponent)
-    case = {"op": operation, "currency": currency, "minor": str(minor), "mode": mode}
+    case = {"currency": currency, "minor": str(minor), "mode": mode}
 
     if operation == "multiply":
         factor = random_decimal(-(10**12), 10**12, 8)
@@ -118,14 +138,62 @@ def make_case(rng: random.Random, operation: str) -> dict:
         elif operation == "discount":
             case["want"] = minor_units(amount - share, exponent)
         elif operation == "addTax":
-            # [tax, gross]
-            case["want"] = [minor_units(share, exponent), minor_units(amount + share, exponent)]
+            case["tax"] = minor_units(share, exponent)
+            case["gross"] = minor_units(amount + share, exponent)
         else:
-            # extractTax: [net, tax]
+            # extractTax
             net = round_to_scale(amount / (1 + percent / 100), exponent, mode)
-            case["want"] = [minor_units(net, exponent), minor_units(amount - net, exponent)]
+            case["net"] = minor_units(net, exponent)
+            case["tax"] = minor_units(amount - net, exponent)
 
     return case
+
+
+def out_path(area: str) -> Path:
+    return ROOT / "spec" / "vectors" / area / "pydecimal.json"
+
+
+def rows_text(tables: list) -> str:
+    """the tables, one row per line, so a regeneration diff shows exactly which vectors changed"""
+    parts = []
+    for op, rows in tables:
+        body = ",\n".join(json.dumps(row, separators=(",", ":")) for row in rows)
+        parts.append(f'{{"op":"{op}","rows":[\n{body}\n]}}')
+    return "[\n" + ",\n".join(parts) + "\n]"
+
+
+def checked_against(area: str, content_hash: str) -> str:
+    """the ducat version when the rows last changed: kept while they stay the same"""
+    path = out_path(area)
+    if path.exists():
+        existing = json.loads(path.read_text())
+        if existing.get("contentSha256") == content_hash:
+            return existing["checkedAgainst"]
+    return json.loads((ROOT / "package.json").read_text())["version"]
+
+
+def file_text(area: str, tables: list) -> str:
+    rows = rows_text(tables)
+    content_hash = hashlib.sha256(rows.encode()).hexdigest()
+    envelope = {
+        "$schema": "../../schema/vectors.schema.json",
+        "format": 1,
+        "area": area,
+        "name": "pydecimal",
+        "description": DESCRIPTIONS[area],
+        "provenance": {
+            "source": "python-decimal",
+            "generator": {
+                "name": "scripts/gen-pydecimal-vectors.py",
+                "version": f"{GENERATOR_VERSION} (seed {SEED})",
+            },
+            "method": "Python's decimal module at 400 digits, rounded once with each rounding mode; half-ceil and half-floor are half-up or half-down by the value's sign.",
+        },
+        "checkedAgainst": checked_against(area, content_hash),
+        "contentSha256": content_hash,
+    }
+    header = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))[:-1]
+    return f'{header},"tables":{rows}}}\n'
 
 
 def main() -> None:
@@ -133,24 +201,26 @@ def main() -> None:
     operations = ["multiply", "divide", "toScale", "convert", "percentage", "addTax", "extractTax", "discount"]
 
     # 400 digits: every exact product fits, and no 400-digit quotient lies on a rounding boundary
-    cases = []
+    tables_by_area: dict = {}
     with localcontext(Context(prec=400, Emax=10**6, Emin=-(10**6))):
         for operation in operations:
-            for _ in range(COUNT_PER_OP):
-                cases.append(make_case(rng, operation))
+            rows = [make_case(rng, operation) for _ in range(COUNT_PER_OP)]
+            tables_by_area.setdefault(AREAS[operation], []).append((f"minor.{operation}", rows))
 
-    # one case per line, so a regeneration diff shows exactly which vectors changed
-    body = ",\n".join(json.dumps(case, separators=(",", ":")) for case in cases)
-    text = f'{{"generator":"scripts/gen-pydecimal-vectors.py","seed":{SEED},"cases":[\n{body}\n]}}\n'
+    texts = {area: file_text(area, tables) for area, tables in tables_by_area.items()}
 
     if "--check" in sys.argv:
-        if not OUT.exists() or OUT.read_text() != text:
-            sys.exit(f"{OUT} is out of date; run python3 scripts/gen-pydecimal-vectors.py")
+        for area, text in texts.items():
+            path = out_path(area)
+            if not path.exists() or path.read_text() != text:
+                sys.exit(f"{path} is out of date; run python3 scripts/gen-pydecimal-vectors.py")
         return
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(text)
-    print(f"wrote {len(cases)} cases to {OUT}")
+    for area, text in texts.items():
+        path = out_path(area)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        print(f"wrote {path}")
 
 
 if __name__ == "__main__":

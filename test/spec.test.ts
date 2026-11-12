@@ -34,6 +34,9 @@ const CASES_PER_AREA: Record<string, number> = {
   allocate: 5400,
   cash: 1500,
   excel: 155,
+  rounding: 750,
+  convert: 250,
+  tax: 1000,
 };
 
 const schema = vectorSchema;
@@ -411,6 +414,25 @@ describe('@ducatjs/money-spec', () => {
     const rowShapes = Object.keys(definitions['rows'] as object);
     expect(tableOperations.toSorted()).toEqual(Object.keys(TABLE_OPERATIONS).toSorted());
     expect(rowShapes.toSorted()).toEqual(tableOperations.toSorted());
+  });
+
+  it("covers every operation and rounding mode in Python decimal's tables", () => {
+    const pydecimal = ['rounding', 'convert', 'tax'].map(
+      (area) => files.get(`${area}/pydecimal.json`) as SpecFile,
+    );
+    const tables = pydecimal.flatMap((file) => file.tables ?? []);
+    expect(tables.map((table) => table.op).toSorted()).toEqual([
+      'minor.addTax',
+      'minor.convert',
+      'minor.discount',
+      'minor.divide',
+      'minor.extractTax',
+      'minor.multiply',
+      'minor.percentage',
+      'minor.toScale',
+    ]);
+    const modes = new Set(tables.flatMap((table) => table.rows.map((row) => row['mode'])));
+    expect(modes.size).toBe(9);
   });
 
   it('rejects a file that breaks the schema, or has an operation the runner does not know', () => {

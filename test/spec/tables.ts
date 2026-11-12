@@ -7,13 +7,21 @@ import '../../src/plugins/iso.js';
 import { ratio, type Ratio } from '../../src/decimal.js';
 import { xirr, xnpv, xnpvBounds } from '../../src/excel.js';
 import {
+  addTax,
   allocate,
   chunk,
+  convert,
+  discount,
+  divide,
+  extractTax,
   fromMinor,
   instalments,
+  multiply,
+  percentage,
   roundToIncrement,
   RoundingError,
   schedule,
+  toScale,
   type Money,
   type Remainder,
   type RoundingMode,
@@ -227,6 +235,26 @@ function checkXirr(row: Row, index: number): string[] {
   return actual === row['lower'] ? [] : [`row ${index}: ${actual}, expected ${row['lower']}`];
 }
 
+// --- money in minor units, from Python's decimal -----------------------------------------------------
+
+/** The amount in minor units at its own scale. */
+const minorOf = (amount: Money): string => amount.toScaledUnits().toString();
+
+/** One minor.* operation: ducat's results by field name, compared exactly with the row's. */
+function minorOperation(compute: (amount: Money, row: Row) => Record<string, string>) {
+  return {
+    checkRow(row: Row): string[] {
+      const amount = fromMinor(BigInt(row['minor'] as string), row['currency'] as string);
+      const actual = compute(amount, row);
+      const differs = Object.entries(actual).some(([field, value]) => row[field] !== value);
+      return differs ? [`${JSON.stringify(row)} -> got ${JSON.stringify(actual)}`] : [];
+    },
+  };
+}
+
+const modeOf = (row: Row) => row['mode'] as RoundingMode;
+const text = (row: Row, field: string) => row[field] as string;
+
 export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'allocate.byRemainder': { checkRow: checkAllocation },
   'instalments.byRemainder': { checkRow: checkInstalments },
@@ -237,6 +265,32 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   },
   'roundToIncrement.byMode': { checkRow: checkIncrement },
   'xnpv.scaled': { checkRow: checkXnpv },
+  'minor.multiply': minorOperation((amount, row) => ({
+    want: minorOf(multiply(amount, text(row, 'factor'), modeOf(row))),
+  })),
+  'minor.divide': minorOperation((amount, row) => ({
+    want: minorOf(divide(amount, text(row, 'divisor'), modeOf(row))),
+  })),
+  'minor.toScale': minorOperation((amount, row) => ({
+    want: minorOf(toScale(amount, row['scale'] as number, modeOf(row))),
+  })),
+  'minor.convert': minorOperation((amount, row) => ({
+    want: minorOf(convert(amount, text(row, 'to'), text(row, 'rate'), modeOf(row))),
+  })),
+  'minor.percentage': minorOperation((amount, row) => ({
+    want: minorOf(percentage(amount, text(row, 'percent'), modeOf(row))),
+  })),
+  'minor.discount': minorOperation((amount, row) => ({
+    want: minorOf(discount(amount, text(row, 'percent'), modeOf(row))),
+  })),
+  'minor.addTax': minorOperation((amount, row) => {
+    const breakdown = addTax(amount, text(row, 'percent'), modeOf(row));
+    return { tax: minorOf(breakdown.tax), gross: minorOf(breakdown.gross) };
+  }),
+  'minor.extractTax': minorOperation((amount, row) => {
+    const breakdown = extractTax(amount, text(row, 'percent'), modeOf(row));
+    return { net: minorOf(breakdown.net), tax: minorOf(breakdown.tax) };
+  }),
   'xirr.floor': {
     checkRow: checkXirr,
     checkTable: (rows) => {

@@ -1030,6 +1030,10 @@
           "description": "Where this table's rows come from, when that differs by table: a documentation page's URL, for instance.",
           "type": "string"
         },
+        "comparison": {
+          "description": "How a result is judged against the row's expected values, when it isn't exact equality: spec/README.md defines each name.",
+          "enum": ["exact"]
+        },
         "rows": {
           "type": "array",
           "minItems": 1,
@@ -1053,7 +1057,15 @@
         "schedule",
         "roundToIncrement.byMode",
         "xnpv.scaled",
-        "xirr.floor"
+        "xirr.floor",
+        "minor.multiply",
+        "minor.divide",
+        "minor.toScale",
+        "minor.convert",
+        "minor.percentage",
+        "minor.discount",
+        "minor.addTax",
+        "minor.extractTax"
       ]
     },
     "rowsByOp": {
@@ -1201,6 +1213,174 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/xirr.floor"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.multiply"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.multiply"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.divide"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.divide"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.toScale"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.toScale"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.convert"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.convert"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.percentage"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.percentage"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.discount"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.discount"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.addTax"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.addTax"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.extractTax"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.extractTax"
                 }
               }
             }
@@ -1629,6 +1809,191 @@
                 "type": "null"
               }
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.multiply": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "factor", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "factor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.divide": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "divisor", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "divisor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.toScale": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "scale", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "scale": {
+            "$ref": "#/$defs/scale"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.convert": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "to", "rate", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.percentage": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.discount": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.addTax": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "tax", "gross"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "tax": {
+            "$ref": "#/$defs/integerString"
+          },
+          "gross": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.extractTax": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "net", "tax"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "net": {
+            "$ref": "#/$defs/integerString"
+          },
+          "tax": {
+            "$ref": "#/$defs/integerString"
           }
         },
         "additionalProperties": false
