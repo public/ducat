@@ -1,6 +1,6 @@
 # `@ducatjs/money/finance`: design
 
-Status: approved design (#54), implemented in v0.3.0 (#135). XNPV and XIRR are planned for v0.4.0 (#136).
+Status: approved design (#54), implemented in v0.3.0 (#135). In v0.4.0 the Excel-named functions moved to their own entry, `@ducatjs/money/excel` (npv, npvExact and irr, with the new fv, pv, pmt, nper and rate; see decisions.md), and XNPV and XIRR are planned there (#136).
 
 Billing and lending code keeps re-implementing the same few calculations, usually in floats: loan
 and amortisation schedules, interest between two dates under a day-count convention, net present
@@ -121,7 +121,8 @@ plan.totalInterest; // exact sum of the interest column
 
 ```ts
 import { money } from '@ducatjs/money';
-import { discountedSum, irr, npv } from '@ducatjs/money/finance';
+import { irr, npv } from '@ducatjs/money/excel';
+import { discountedSum } from '@ducatjs/money/finance';
 
 discountedSum(
   '0.08',
@@ -177,6 +178,91 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
 - `XNPV` and `XIRR` (flows on arbitrary dates) are **not** in the first version: their discount
   factors `(1 + r)^(days/365)` are fractional powers, so even XNPV isn't exact. They are planned
   for v0.4.0, as results to a stated precision with a proven error bound.
+
+### 3b. Annuities: Excel's FV, PV, PMT, NPER and RATE (v0.4.0, #200)
+
+```ts
+import { money, ratio } from '@ducatjs/money';
+import { fv, nper, pmt, pv, rate } from '@ducatjs/money/excel';
+
+const usd = (amount: string) => money(amount, 'USD');
+pmt(ratio('0.08', 12), 10, usd('10000')); // -1037.03 USD, as Excel's PMT(8%/12, 10, 10000)
+fv('0.005', 10, usd('-200'), { pv: usd('-500'), type: 1 }); // 2581.40 USD
+pv(ratio('0.08', 12), 240, usd('500')); // -59777.15 USD
+nper('0.01', usd('-100'), usd('-1000'), { fv: usd('10000'), type: 1 });
+// { nper: '59.6738656742', lower: '59.6738656742', upper: '59.6738656743' }
+rate(48, usd('-200'), usd('8000')); // { rate: '0.0077014724', … }
+```
+
+These are Excel names, so they follow the Excel rule: Excel's arguments, sign convention
+(money paid out is negative) and `type` (0 = payments at the end of each period, the default;
+1 = at the start), and Excel's value. Excel's required arguments are positional in Excel's order;
+the optional ones (`pv` or `fv`, `type`) go in an options object, and the rounding comes last,
+as for `interest` and `npv`. Amounts are `Money` of one currency; the rate is a `Factor`.
+
+- `fv`, `pv` and `pmt` are rational for a whole `nper`: Excel's closed forms, computed exactly
+  with `(1 + r)^n = (a + b)^n / b^n` for `r = a/b`, and rounded once (the currency's exponent or a
+  policy; default `'halfExpand'`). `fvExact`, `pvExact` and `pmtExact` return the `ExactMoney`,
+  and the rounded forms are exactly `exact.round(rounding)`. At a rate of 0, Excel switches to
+  `fv = −(pv + pmt·nper)`, `pv = −(fv + pmt·nper)` and `pmt = −(pv + fv)/nper`, whatever the
+  `type`, and so do these.
+- `nper` is `ln((pmt·(1 + r·type) − fv·r) / (pmt·(1 + r·type) + pv·r)) / ln(1 + r)`, a ratio of
+  logarithms, irrational in general. Each logarithm is bounded by integers over `2^bits`:
+  `ln x = k·ln 2 + 2·atanh(z)` with `x / 2^k` in (1/2, 2), so `|z| < 1/3`, and `ln 2 = 2·atanh(1/3)`.
+  The series `Σ z^(2j+1)/(2j+1)` is summed in fixed point, each power floored from the last (at
+  most `j + 1` units low), each term at most 2 units low, and the tail bounded once the power
+  reaches 0, so the true value is within `4·terms + 4` units above the sum. The quotient's
+  interval comes from the four ratios of the ends, and the bits are doubled (from
+  `64 + 4·digits`, up to 16,384) until the interval fixes the floor on the grid of `digits`-place
+  decimals. The result is `{ nper, lower, upper, exact? }` like `irr`'s, floored: `nper` lies in
+  [`lower`, `upper`). `exact` is set when `nper` is rational: always at a rate of 0
+  (`−(pv + fv)/pmt`), and otherwise when the grid point `p/q` satisfies `A = (1 + r)^(p/q)`
+  exactly, which needs `1 + r` to be a perfect `q`th power (`'0.21'` grows by 10% in half a
+  period). Excel's NPER is a closed form in doubles, so Excel's value lies within its own double
+  error of [`lower`, `upper`), and the tests check that at 15 significant digits, or within that
+  error where the last digit differs.
+- `rate` is RATE's equation divided by `(1 + r)^nper`, which is the NPV of the flows it implies:
+  `pv` at period 0, `pmt` at periods 1 to `nper` (0 to `nper − 1` with `type: 1`), and `fv` at
+  period `nper`. So it has `irr`'s guarantees and rules: exact to `digits` places (default 10),
+  floored, between `lower` and `upper`, by `irr`'s bisection. Each step takes the sign of RATE's
+  closed form, `pv·a·(a + b)^n + pmt·(b + a·type)·((a + b)^n − b^n) + fv·a·b^n` for `r = a/b`
+  (times the sign of `a`), with the powers by squaring, rather than Horner's rule over `nper + 1`
+  flows, whose cost grew with `nper²`.
+- **Limits, so nothing runs away.** The power `(1 + r)^nper` may have at most 2^20 bits for `fv`,
+  `pv` and `pmt` (about 20 ms there), 2^16 for their `…Exact` forms (an `ExactMoney` reduces its
+  fraction, quadratically: 0.1 s to about 1 s, by engine), and 2^19 for `rate`, checked at every
+  rate the bisection tries (grid points, the doubling search and a bracket's ends);
+  monthly for 30 years at a 10-digit rate is about 12,000 bits. Past them they throw. The search
+  for a positive rate doubles at most 1,024 times (a rate above 2^1024 throws), so every
+  bisection has a bounded number of steps. `nper` refines its logarithms to at most 16,384 bits,
+  and its exactness check compares sizes before raising anything to the result's power.
+
+Interface differences, all of them refusals rather than other values, except one:
+
+- Where Excel's own double evaluation is ill-conditioned (RATE for a tiny rate over many periods,
+  say, which loses digits to cancellation or stops iterating early), ducat returns the exact root
+  to `digits` places, which is the correct answer, and Excel's value may be further off. Wherever
+  Excel's evaluation is well conditioned, they agree at its 15 significant digits.
+
+- `nper` must be a whole number from 0 (1 for `pmt` and `rate`) to 100,000 for `fv`, `pv`, `pmt`
+  and `rate`. Excel takes a fractional `nper`, whose power is irrational.
+- A rate at or below −1 throws a RangeError.
+- `type` is 0 or 1 only.
+- `rate` takes a `bracket` in place of Excel's `guess`. Where the implied flows change sign more
+  than once, so that several rates fit, it throws unless a bracket selects one: Excel returns
+  whichever root its iteration from `guess` reaches. Where they never change sign, it throws
+  (Excel's #NUM!). Microsoft documents that RATE iterates until it is within 0.0000001, so
+  Excel's value is only that close to the root. The tests are tighter: Calc's value is within
+  1e-12 relative of [`lower`, `upper`], or, where its Newton iteration stops early (LibreOffice
+  stops once a step is below 1e-10; ill-conditioned cases such as a 1e-9 rate over 360 periods),
+  within 1e-10. With payments at the start, RATE's equation also has a root at exactly −1, where
+  the NPV is undefined; Calc can converge to it, and ducat never returns it.
+- `nper` throws where Excel returns #NUM! or #DIV/0!: the logarithm of a number at or below 0
+  (the payments never settle the amounts) and no payment at a rate of 0.
+
+Tests: every worked example on Microsoft's FV, PV, PMT, NPER and RATE pages, and 150 LibreOffice
+Calc vectors each (`scripts/gen-calc-vectors.py`): FV, PV and PMT at 15 significant digits or
+within the error of a double power, NPER the same, and RATE within its stated accuracy.
 
 ### 3a. Periodic and annual rates (v0.4.0, #199)
 
@@ -284,6 +370,12 @@ The review took the recommendation on every fork:
    payments are positive and its interest is rounded every period, unlike PMT, IPMT and PPMT.
    No other Excel-named function (YEARFRAC, PMT, DAYS360…) is added without matching Excel
    exactly.
+
+   Amended in v0.4.0: Excel-named functions live in `@ducatjs/money/excel` (Alex), and "never
+   returns a different value" is qualified. They match Excel at its 15 significant digits wherever
+   Excel's double evaluation is well conditioned; where it isn't (RATE for a tiny rate over many
+   periods), they return the exact value or root, which is the correct one, and Excel's double may
+   be further off.
 
 ## Design forks (as reviewed)
 
