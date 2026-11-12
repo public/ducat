@@ -64,10 +64,12 @@ export interface ScaledInteger {
 
 /** A number stays; a bigint becomes a number when it is safe (the representation invariant). */
 function normalize(value: number | bigint): number | bigint {
+  // Stryker disable next-line ConditionalExpression,EqualityOperator,StringLiteral: normalizeMinor returns a number unchanged
   return typeof value === 'bigint' ? normalizeMinor(value) : value;
 }
 
 function toBigInt(value: number | bigint): bigint {
+  // Stryker disable next-line StringLiteral: BigInt() of a bigint is the same bigint
   return typeof value === 'bigint' ? value : BigInt(value);
 }
 
@@ -108,6 +110,7 @@ export class Fixed {
       throw new TypeError('Use fixed() or fromScaled() to create a Fixed');
     }
     // `+ 0` turns -0 into 0, so no operation can leak a negative zero.
+    // Stryker disable next-line ArithmeticOperator: every caller passes a value already free of -0
     this.value = typeof value === 'bigint' ? normalizeMinor(value) : value + 0;
     this.scale = scale;
   }
@@ -140,12 +143,16 @@ export class Fixed {
     // An integer factor keeps the scale and can't need rounding, so a safe product is the answer.
     if (
       scale === this.scale &&
+      // Stryker disable next-line ConditionalExpression,EqualityOperator,StringLiteral: fast path, the bigint path agrees
       typeof factor === 'number' &&
       Number.isSafeInteger(factor) &&
+      // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
       typeof value === 'number'
     ) {
       const product = value * factor;
+      // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
       if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
+        // Stryker disable next-line ArithmeticOperator: the constructor turns -0 into 0 as well
         return make(product + 0, this.scale);
       }
     }
@@ -171,8 +178,10 @@ export class Fixed {
     // The fast path Money's divide takes: a safe-integer value and a divisor whose ratio parts are
     // safe integers, at this value's scale, without building the inverse ratio.
     const value = this.value;
+    // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
     if (typeof value === 'number' && scale === this.scale) {
       const quotient = divideSafeByRatio(value, divisorRatio, rounding);
+      // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
       if (quotient === quotient) {
         return make(quotient, scale);
       }
@@ -184,6 +193,7 @@ export class Fixed {
   /** −this */
   negate(): Fixed {
     const value = this.value;
+    // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
     if (typeof value === 'number') {
       return make(0 - value, this.scale);
     }
@@ -208,6 +218,7 @@ export class Fixed {
    */
   toScale(scale: number, rounding: RoundingMode = DEFAULT_ROUNDING): Fixed {
     checkScale(scale);
+    // Stryker disable next-line BlockStatement: shortcut, scaling by 10^0 agrees
     if (scale === this.scale) {
       return this;
     }
@@ -227,6 +238,7 @@ export class Fixed {
     checkScale(minimumScale);
     let value = this.value;
     let scale = this.scale;
+    // Stryker disable next-line BlockStatement: shortcut, the loop below stops at once
     if (scale <= minimumScale) {
       return this;
     }
@@ -272,6 +284,7 @@ export class Fixed {
   /** The same value, at any scale: 1.0 equals 1.00. */
   equals(other: FixedInput): boolean {
     const operand = toFixed(other);
+    // Stryker disable next-line BlockStatement: shortcut, compare() agrees
     if (this.scale === operand.scale) {
       // == compares a number and a bigint exactly.
       return this.value == operand.value;
@@ -384,12 +397,15 @@ function multiplyByRatio(
   // Fast path: both factors are safe integers, so a product within the safe range is exact, and
   // divideAndRound then rounds the exact quotient.
   if (
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof value === 'number' &&
     scale === fixedValue.scale &&
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: a NaN part fails the bound check below
     rate.n === rate.n &&
     rate.d === rate.d
   ) {
     const product = value * rate.n;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
       return make(divideAndRound(product, rate.d, rounding), scale);
     }
@@ -413,12 +429,16 @@ function addAligned(first: Fixed, second: Fixed, sign: 1 | -1): Fixed {
 
   // Fast path: two safe integers at one scale have an exact sum whenever it is itself safe.
   if (
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof firstValue === 'number' &&
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof secondValue === 'number' &&
     first.scale === second.scale
   ) {
     const sum = sign === 1 ? firstValue + secondValue : firstValue - secondValue;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (sum <= MAX_SAFE_MINOR && sum >= -MAX_SAFE_MINOR) {
+      // Stryker disable next-line ArithmeticOperator: the constructor turns -0 into 0 as well
       return make(sum + 0, first.scale);
     }
   }
@@ -434,6 +454,7 @@ function addAligned(first: Fixed, second: Fixed, sign: 1 | -1): Fixed {
 
 /** A factor as an exact ratio; a Fixed is value / 10^scale. */
 function factorRatio(factor: Factor): Ratio {
+  // Stryker disable next-line BlockStatement: ratio() reads a Fixed the same way
   if (factor instanceof Fixed) {
     return ratio(toBigInt(factor.value), pow10n(factor.scale));
   }
@@ -443,6 +464,7 @@ function factorRatio(factor: Factor): Ratio {
 }
 
 function toFixed(input: FixedInput): Fixed {
+  // Stryker disable next-line BlockStatement: fixed() returns a Fixed unchanged
   if (input instanceof Fixed) {
     return input;
   }
@@ -457,6 +479,7 @@ function rescale(
   rounding: RoundingMode,
   input: unknown,
 ): Fixed {
+  // Stryker disable next-line BlockStatement: shortcut, scaling by 10^0 agrees
   if (fromScale === targetScale) {
     return make(digits, targetScale);
   }
@@ -484,7 +507,9 @@ function parseBoundedDecimal(text: string): { digits: bigint; scale: number } {
     throw new RangeError(`${text}: the exponent is beyond ±${MAX_SCALE}`);
   }
   const parsed = parseDecimal(text);
+  // Stryker disable next-line BlockStatement: unreachable: parseDecimal refuses more than 1000 decimals
   if (parsed.scale > MAX_SCALE) {
+    // Stryker disable next-line StringLiteral: unreachable: parseDecimal refuses more than 1000 decimals
     throw new RangeError(`${text} has more than ${MAX_SCALE} decimal places`);
   }
   return parsed;
@@ -524,14 +549,18 @@ export function fixed(value: FixedInput, options?: FixedOptions): Fixed {
 
   if (typeof value === 'string') {
     const parsed = parsePlainDecimal(value) ?? parseBoundedDecimal(value);
+    // Stryker disable next-line BlockStatement: unreachable: parseDecimal refuses more than 1000 decimals
     if (parsed.scale > MAX_SCALE) {
+      // Stryker disable next-line MethodExpression,StringLiteral: unreachable: parseDecimal refuses more than 1000 decimals
       throw new RangeError(`${value.slice(0, 40)}… has more than ${MAX_SCALE} decimal places`);
     }
     return rescale(parsed.digits, parsed.scale, scale ?? parsed.scale, rounding, value);
   }
 
   if (typeof value === 'number') {
+    // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
     if (Number.isSafeInteger(value)) {
+      // Stryker disable next-line ArithmeticOperator: the constructor turns -0 into 0 as well
       return scale === undefined ? make(value + 0, 0) : make(scaleUp(value + 0, scale), scale);
     }
     if (!Number.isFinite(value)) {
@@ -564,6 +593,7 @@ export function fromScaled(value: number | bigint, scale: number): Fixed {
           : `The scaled value must be an integer, got ${value}`,
       );
     }
+    // Stryker disable next-line ArithmeticOperator: the constructor turns -0 into 0 as well
     return make(value + 0, scale);
   }
   if (typeof value !== 'bigint') {
