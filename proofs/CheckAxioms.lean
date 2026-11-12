@@ -39,5 +39,9 @@ unless they are only Lean's standard three: `propext`, `Classical.choice` and `Q
 #print axioms Ducat.Xnpv.le_mulCeil
 #print axioms Ducat.Xnpv.fixedPower_floor_le
 #print axioms Ducat.Xnpv.le_fixedPower_ceil
+#print axioms Ducat.Xnpv.fold_floor_le
+#print axioms Ducat.Xnpv.le_fold_ceil
+#print axioms Ducat.Xnpv.sum_regroup
+#print axioms Ducat.Xnpv.group_common_factor
 #print axioms Ducat.Xnpv.quotient_bounds
 #print axioms Ducat.Xnpv.sum_bounds

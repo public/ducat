@@ -6,20 +6,26 @@ import Mathlib.Tactic
 Models of the integer steps `xnpvBounds`, `xnpv` and `xirr` in `src/excel.ts` take to bracket
 `Σ vᵢ / g^(nᵢ/mᵢ)` for `g = a/b`, at a fixed-point scale `S = 2^P`:
 
-* `root_floor_inside`: flooring `a·S^m / b` before the integer `m`th root changes nothing, so the
-  root `R` the code finds satisfies `R^m·b ≤ a·S^m < (R + 1)^m·b`, i.e. `R/S ≤ g^(1/m) < (R + 1)/S`.
+* `root_floor_inside`: flooring `a·S^m / b` before the integer `m`th root changes nothing (for each
+  prime power `m = q` of a year fraction's denominator), so the root `R` the code finds satisfies `R^m·b ≤ a·S^m < (R + 1)^m·b`, i.e. `R/S ≤ g^(1/m) < (R + 1)/S`.
 * `mulFloor_le`, `le_mulCeil`: one fixed-point product, floored or ceiled, is a lower or an upper
   bound of the exact product of what its factors bound.
 * `loop_floor_le`, `le_loop_ceil`: the square-and-multiply loop `fixedPower` runs, with every product
   floored (or ceiled), is a lower (or upper) bound of `X^n` when it starts from a lower (or upper)
   bound of `X`. With `R` and `R + 1`, they bracket `g^(n/m)`.
+* `fold_floor_le`, `le_fold_ceil`: a flow's factors, multiplied left to right with every product
+  floored (or ceiled), bound their product: the composition of the prime-power roots' brackets.
+* `sum_regroup`, `group_common_factor`: summing the flows with the same irrational part first, as one
+  coefficient over that part, is exact, so a group whose coefficient is 0 contributes exactly 0.
 * `quotient_bounds`: a term `v / F` with `F` in `[Fl, Fh]` lies between `v / Fh` and `v / Fl` (or the
   other way round for `v < 0`), and flooring and ceiling to the grid keeps it inside.
 * `sum_bounds`: the terms' bounds sum to bounds on the sum.
 
 So `[Σ lowᵢ, Σ highᵢ] / S` contains XNPV: the interval `xnpvBounds` returns is sound at every
-precision, which is the error bound. That rounding is monotone in every mode (so two ends that
-round alike pin the rounded value) is argued in docs/explanation/finance-design.md §3d.
+precision, which is the error bound. Not proved here, and stated in docs/explanation/finance-design.md
+§3d: the exponent identity `n = W·m + Σ r·(m/q)` behind the split (the code checks it at run time),
+the real-power law `g^(n/m) = g^W·Π g^(r/q)` it then relies on, and that rounding is monotone in every
+mode (so two ends that round alike pin the rounded value).
 -/
 
 namespace Ducat.Xnpv
@@ -200,6 +206,61 @@ theorem le_fixedPower_ceil (S x n : ℕ) (hS : 0 < S) (X : ℚ) (hX : X ≤ (x :
     X ^ n ≤ (loop (mulCeil S) S x n : ℚ) / S := by
   have hS' : (S : ℚ) ≠ 0 := by exact_mod_cast hS.ne'
   simpa using le_loop_ceil S hS n S x 1 X zero_le_one hX0 (by rw [div_self hS']) hX
+
+/-! ## Composing the brackets of one flow's factors
+
+A flow's irrational factor is a product `Π g^(r/q)` over its denominator's prime powers. `xnpvScaled`
+starts from `S` (1.0) and multiplies in each factor's lower bound with a floored product (and each
+upper bound with a ceiled one), left to right: a left fold. -/
+
+/-- The floored left fold of fixed-point products is a lower bound of the product of the bounds. -/
+theorem fold_floor_le (S : ℕ) (hS : 0 < S) :
+    ∀ (xs : List (ℕ × ℚ)) (acc : ℕ) (A : ℚ), 0 ≤ A → (acc : ℚ) / S ≤ A →
+      (∀ p ∈ xs, (p.1 : ℚ) / S ≤ p.2 ∧ 0 ≤ p.2) →
+      ((xs.foldl (fun a p => mulFloor S a p.1) acc : ℕ) : ℚ) / S ≤ A * (xs.map Prod.snd).prod := by
+  intro xs
+  induction xs with
+  | nil => intro acc A _ hacc _; simpa using hacc
+  | cons p ps ih =>
+    intro acc A hA hacc hxs
+    have hp := hxs p (List.mem_cons_self ..)
+    have step := mulFloor_le S acc p.1 hS A p.2 hacc hp.1
+    have rest := ih (mulFloor S acc p.1) (A * p.2) (mul_nonneg hA hp.2) step
+      (fun q hq => hxs q (List.mem_cons_of_mem _ hq))
+    simpa [List.foldl, List.map, List.prod_cons, mul_assoc] using rest
+
+/-- The ceiled left fold of fixed-point products is an upper bound of the product of the bounds. -/
+theorem le_fold_ceil (S : ℕ) (hS : 0 < S) :
+    ∀ (xs : List (ℕ × ℚ)) (acc : ℕ) (A : ℚ), 0 ≤ A → A ≤ (acc : ℚ) / S →
+      (∀ p ∈ xs, p.2 ≤ (p.1 : ℚ) / S ∧ 0 ≤ p.2) →
+      A * (xs.map Prod.snd).prod ≤ ((xs.foldl (fun a p => mulCeil S a p.1) acc : ℕ) : ℚ) / S := by
+  intro xs
+  induction xs with
+  | nil => intro acc A _ hacc _; simpa using hacc
+  | cons p ps ih =>
+    intro acc A hA hacc hxs
+    have hp := hxs p (List.mem_cons_self ..)
+    have step := le_mulCeil S acc p.1 hS A p.2 hA hp.2 hacc hp.1
+    have rest := ih (mulCeil S acc p.1) (A * p.2) (mul_nonneg hA hp.2) step
+      (fun q hq => hxs q (List.mem_cons_of_mem _ hq))
+    simpa [List.foldl, List.map, List.prod_cons, mul_assoc] using rest
+
+/-! ## Exact cancellation
+
+`xnpvScaled` sums the flows with the same irrational part first, as one coefficient over that part,
+and drops a group whose coefficient is exactly 0. That is a regrouping of the sum and a common
+factor, both exact. -/
+
+/-- Regrouping a sum by a key (the irrational part) is exact. -/
+theorem sum_regroup {ι κ : Type*} [DecidableEq κ] (s : Finset ι) (key : ι → κ) (f : ι → ℚ) :
+    s.sum f = (s.image key).sum fun k => (s.filter fun i => key i = k).sum f :=
+  (Finset.sum_fiberwise_of_maps_to (fun i hi => Finset.mem_image_of_mem key hi) f).symm
+
+/-- Within a group, the terms share their factor: `Σ cᵢ / F = (Σ cᵢ) / F`, so a coefficient of
+exactly 0 contributes exactly 0. -/
+theorem group_common_factor {ι : Type*} (s : Finset ι) (c : ι → ℚ) (F : ℚ) :
+    (s.sum fun i => c i / F) = s.sum c / F :=
+  (Finset.sum_div s c F).symm
 
 /-! ## Terms and the sum -/
 

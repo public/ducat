@@ -58,14 +58,22 @@ These are stated over the proved kernel (`divRound`):
 
 ## XNPV's bounds: proved model (`proofs/Ducat/Xnpv.lean`)
 
-`xnpvBounds`, `xnpv` and `xirr` in `@ducatjs/money/excel` bracket each discount factor `(1 + rate)^(n/m)` in integer arithmetic at a fixed-point scale `S = 2^bits` and sum the terms' bounds. The model states those steps; the loop is the one `fixedPower` runs, and the Calc and Microsoft tests compare the TypeScript with Excel's values.
+`xnpvBounds`, `xnpv` and `xirr` in `@ducatjs/money/excel` bracket XNPV in integer arithmetic at a fixed-point scale `S = 2^bits`. Each step of `xnpvScaled` and its theorem:
 
-- `root_floor_inside`, `root_bracket`: flooring `a·S^m / b` before the integer `m`th root changes nothing, so the root `R` satisfies `R^m·b ≤ a·S^m < (R + 1)^m·b`, that is `R/S ≤ g^(1/m) < (R + 1)/S`.
-- `mulFloor_le`, `le_mulCeil`: a floored fixed-point product of lower bounds is a lower bound of the exact product, and a ceiled product of upper bounds an upper bound.
-- `fixedPower_floor_le`, `le_fixedPower_ceil`: the square-and-multiply loop with every product floored (or ceiled), started from a lower (or upper) bound of `X`, is a lower (or upper) bound of `X^n`, for every `n`. With `R` and `R + 1`, they bracket `g^(n/m)`.
-- `quotient_bounds`, `grid_bounds`, `sum_bounds`: a term `v / F` with `F` in `[Fl, Fh]` lies between `v / Fh` and `v / Fl` (swapped for `v < 0`), flooring and ceiling to the grid keeps it inside, and the terms' bounds sum to bounds on the sum.
+| step in `src/excel.ts`                                                                                            | theorem                                                                  |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| each prime power `q`'s root: `R = ⌊qth root of ⌊a·S^q / b⌋⌋`, so `R/S ≤ g^(1/q) < (R + 1)/S`                      | `root_floor_inside`, `root_bracket`                                      |
+| `g^(r/q)` by square-and-multiply, every product floored (or ceiled)                                               | `mulFloor_le`, `le_mulCeil`, `fixedPower_floor_le`, `le_fixedPower_ceil` |
+| a flow's factors `Π g^(r/q)` multiplied left to right, floored (or ceiled)                                        | `fold_floor_le`, `le_fold_ceil`                                          |
+| flows with the same irrational part summed first as one coefficient, a zero coefficient dropped                   | `sum_regroup`, `group_common_factor`                                     |
+| a group's term `C / F` between `C / F_high` and `C / F_low` (swapped for `C < 0`), floored and ceiled to the grid | `quotient_bounds`, `grid_bounds`                                         |
+| the groups' bounds summed                                                                                         | `sum_bounds`                                                             |
 
-So the interval `xnpvBounds` returns contains XNPV at every precision. That `xnpv`'s rounded value is right then needs only that rounding is monotone (two ends that round alike pin everything between), which is argued in [the finance design](finance-design.md), not proved here.
+So the interval `xnpvBounds` returns contains XNPV at every precision. **Not proved:**
+
+- The exponent identity `n = W·m + Σ r·(m/q)` behind the split. The code computes it by the CRT and checks it at run time.
+- The real-power law `g^(n/m) = g^W·Π g^(r/q)` that the split relies on. It is standard, but not formalized here.
+- That rounding is monotone in every mode, so two ends that round alike pin `xnpv`'s rounded value. This is argued in [the finance design](finance-design.md).
 
 ## Tested, not proved
 

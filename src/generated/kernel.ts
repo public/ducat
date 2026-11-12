@@ -1,4 +1,4 @@
-// lean-sources sha256:e4e9283164c8c1973647f3ad812ded633e60811f51d64b102173a2f06a2e056b content sha256:dc3d761f86eb9b865b2cfa6a6dba6e6b3853afdab3ec5c8811415f9942c6231c
+// lean-sources sha256:049d6ad78e309a8402a27eaf823ac704fb4a5c7890119dab9090cf626fb825bf content sha256:dc3d761f86eb9b865b2cfa6a6dba6e6b3853afdab3ec5c8811415f9942c6231c
 // GENERATED from proofs/Ducat/Rounding.lean by `pnpm gen:kernel`. Do not edit.
 import { RoundingError } from '../rounding-error.js';
 import type { RoundingMode } from '../rounding.js';

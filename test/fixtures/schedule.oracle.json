@@ -1,4 +1,4 @@
-{"leanSources":"e4e9283164c8c1973647f3ad812ded633e60811f51d64b102173a2f06a2e056b","contentSha256":"69b5e18ce525935b03b95ab1914a21bed0b7493c3ad9316acb966109fd2e9c9c","cases":
+{"leanSources":"049d6ad78e309a8402a27eaf823ac704fb4a5c7890119dab9090cf626fb825bf","contentSha256":"69b5e18ce525935b03b95ab1914a21bed0b7493c3ad9316acb966109fd2e9c9c","cases":
 [
 {"total":"237456","tranches":[{"percent":"31.9","cap":"226826"},{"amount":"194845"}],"result":null},
 {"total":"9007199254740941","tranches":[{"percent":"29.4"}],"result":null},
