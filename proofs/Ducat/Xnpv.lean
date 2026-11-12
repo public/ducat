@@ -33,10 +33,16 @@ Models of the integer steps `xnpvBounds`, `xnpv` and `xirr` in `src/excel.ts` ta
 * `xnpv_rounds`: when the two ends of the bracket round alike (`Rounds`, the proved kernels' spec),
   the real value rounds to that amount too (`RoundsR`, monotonicity in `Ducat/Rounding.lean`).
 
-Not proved here: the CRT computation of the split (`splitExponent` checks the identity at run time
-and throws if it fails, so the identity is a hypothesis of `power_split`), and the exact bigint
-arithmetic of `g^(−W)`, rational roots and the rational remainder. The TypeScript is checked
-against this model by tests, not by proof.
+Not proved here:
+
+* the CRT computation of the split (`splitExponent` checks the identity at run time and throws if
+  it fails, so the identity is a hypothesis of `power_split`);
+* that the integer Newton search in the code ends at the floor root (`root_bracket` assumes `R` is
+  it; argued in docs/explanation/finance-design.md §3d, step 2);
+* the exact bigint arithmetic of `g^(−W)`, rational roots and the rational remainder;
+* that `xnpvScaled` is this model. The steps are separate theorems, not one statement about the
+  code; each step's correspondence with its theorem is by reading, and the TypeScript is tested
+  against Excel's and LibreOffice's values, not against an oracle printed from this model.
 -/
 
 namespace Ducat.Xnpv

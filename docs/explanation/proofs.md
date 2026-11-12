@@ -18,7 +18,7 @@ This page explains what the Lean proofs in `proofs/` establish about ducat, and 
 - `kernel_fails_iff`: the kernel throws exactly for `unnecessary` on an inexact division, and never otherwise.
 - `kernel_correct`: so whenever a correctly rounded answer exists, the kernel returns it.
 
-`RoundsR m x q` is the same specification for a real value `x`, with the error `x − q`; `rounds_toReal` shows that `p/d` rounds the same either way. Rounding is monotone in every mode:
+`RoundsR m x q` is the same specification for a real value `x`, with the error `x − q`; `rounds_toReal`: a `Rounds` result for `p/d` is a `RoundsR` result for the real `p/d`, and by `roundsR_unique` the only one. Rounding is monotone in every mode:
 
 - `roundsR_mono`, `rounds_mono`: if `x ≤ y`, then `x` rounded is at most `y` rounded, for reals and for fractions over a positive divisor.
 - `roundsR_between`, `rounds_between`: the values that round to `q` form an interval, so when two ends round to `q`, every real value between them rounds to `q` too. `roundsR_unique`: that `q` is the value's only rounding.
@@ -81,7 +81,8 @@ The bounds are over ℝ, with `Real.rpow` for the roots, so they apply to the ir
 
 - The CRT computation of the split. `splitExponent` checks the identity `n = W·m + Σ r·(m/q)` at run time and throws if it fails, so `power_split` takes the identity as a hypothesis.
 - The exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder: exact bigint operations, tested.
-- That the TypeScript follows the model: as for the other proved models, this is tested, not proved.
+- That the code's integer Newton search ends at the floor root: `root_bracket` assumes `R` is that root (argued in [the finance design](finance-design.md), step 2).
+- That `xnpvScaled` is this model. The steps are separate theorems, not one statement about the code, and the table above is their correspondence by reading. Unlike the models with oracle fixtures, the TypeScript is tested against Microsoft's and LibreOffice's XNPV and XIRR values and unit tests, not against the model.
 
 ## Tested, not proved
 

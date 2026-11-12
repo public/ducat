@@ -19,6 +19,9 @@ import Ducat.Kernel
 * `kernel_sound`: whatever the kernel returns satisfies `Rounds`.
 * `kernel_fails_iff`: it fails exactly for `unnecessary` with an inexact division.
 * `rounds_unique`: `Rounds` determines `q`, so "satisfies the spec" means "is the right answer".
+
+`RoundsR` is the same spec for a real value; rounding is monotone in every mode (`roundsR_mono`,
+`rounds_mono`), and two ends that round alike pin every real value between them (`rounds_between`).
 -/
 
 namespace Ducat
@@ -249,8 +252,9 @@ theorem kernel_correct (m : Mode) (p d : Int) (hd : 0 < d) (q : Int) (hq : Round
 
 /-! ## Rounding a real number, and monotonicity
 
-`RoundsR m x q` is `Rounds` for a real `x` in place of `p/d`: the error is `x - q`. A fraction `p/d`
-rounds the same either way (`rounds_toReal`). Rounding is monotone in every mode
+`RoundsR m x q` is `Rounds` for a real `x` in place of `p/d`: the error is `x - q`. A `Rounds` result
+for `p/d` is a `RoundsR` result for the real `p/d` (`rounds_toReal`), and by `roundsR_unique` the only
+one. Rounding is monotone in every mode
 (`roundsR_mono`, `rounds_mono`), and the values that round to one `q` form an interval
 (`roundsR_between`): so when the two ends of a bracket round alike, every real value between them
 rounds to that amount (`rounds_between`), and it is the only rounding of that value
@@ -280,7 +284,7 @@ theorem int_cases_real (q : Int) : (q : ℝ) ≤ -1 ∨ (q : ℝ) = 0 ∨ 1 ≤ 
   · right; left; exact_mod_cast h
   · right; right; exact_mod_cast h
 
-/-- `p/d` rounded as a real is `p/d` rounded as a fraction. -/
+/-- A `Rounds` result for `p/d` is a `RoundsR` result for the real `p/d`. -/
 theorem rounds_toReal (m : Mode) (p d q : Int) (hd : 0 < d) (h : Rounds m p d q) :
     RoundsR m ((p : ℝ) / d) q := by
   have hd' : (0 : ℝ) < d := by exact_mod_cast hd

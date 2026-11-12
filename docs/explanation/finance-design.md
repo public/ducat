@@ -366,7 +366,10 @@ factors themselves:
   throws if it fails, and `power_split` takes it as a hypothesis;
 - the exact rational arithmetic of `g^(−W)`, rational roots and the rational remainder (exact
   bigint operations, tested);
-- that the TypeScript follows the model, which is tested, as for the other proved models.
+- that the integer Newton search ends at the floor root (step 2; `root_bracket` assumes it);
+- that `xnpvScaled` is this model: the steps are separate theorems, matched to the code by
+  reading, and the TypeScript is tested against Microsoft's and LibreOffice's values, not against
+  an oracle printed from the model.
 
 **XIRR** bisects as `irr` does, on the grid of `digits`-place decimals, with `irr`'s bracket and
 multiple-root rules: the flows, combined by date and in date order, have one sign change (one
