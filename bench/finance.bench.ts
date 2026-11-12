@@ -3,7 +3,8 @@
 // every ISO 4217 code: this file imports src modules directly, which register none
 import '../src/plugins/iso.js';
 import { bench, describe } from 'vitest';
-import { amortise, irr, npv, yearFraction } from '../src/finance.ts';
+import { amortise, yearFraction } from '../src/finance.ts';
+import { irr, npv } from '../src/excel.ts';
 import { fromMinor, money } from '../src/money.ts';
 
 const mortgage = [
