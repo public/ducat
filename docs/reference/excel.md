@@ -143,6 +143,7 @@ Excel's XNPV: `Σ valueᵢ / (1 + rate)^((dateᵢ − date₀)/365)`, the net pr
 The guaranteed interval around XNPV, in major units, at most 10^−digits wide (default 10, at most 100). Each discount factor `(1 + rate)^(n/m)` is split by the prime powers of `m` into an exact power and roots of small order. Those are bracketed on a `2^−bits` grid and raised and multiplied in fixed point, with every rounding outward, and the bits are doubled until the interval is narrow enough. Flows with the same irrational part are summed exactly first, so terms that cancel cancel exactly. `exact` is true where the value is rational that way, and then both ends are it.
 
 - **Throws:** as `xnpv`, and for `digits` outside 0–100.
+- **Cost:** it grows with the flows and the digits. Measured (bun, one core): a mortgage-sized schedule at the default 10 digits takes milliseconds, 2,001 flows at 10 digits take about 0.5 s, and 301 flows at 100 digits take under 0.1 s for `xnpvBounds`. `xirr` multiplies that by its bisection steps (about 3.3 per digit): 301 flows at 100 digits take about 6 s, and 2,001 flows at 30 digits about 1.6 s.
 
 ### xirr
 

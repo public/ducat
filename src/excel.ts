@@ -827,14 +827,39 @@ function xnpvScaled(
     }
     return root;
   };
+  // every term over one common denominator, num^A·den^B for the whole powers W in [Wmin, Wmax]:
+  // v·g^(−W) = v·den^(W + B)·num^(A − W) / (num^A·den^B), both exponents ≥ 0. So terms of a group
+  // add as integers, and the denominators don't multiply up across flows
+  let wholeMin = 0n;
+  let wholeMax = 0n;
+  flows.splits.forEach((split, index) => {
+    if (flows.minors[index] !== 0n) {
+      wholeMin = split.whole < wholeMin ? split.whole : wholeMin;
+      wholeMax = split.whole > wholeMax ? split.whole : wholeMax;
+    }
+  });
+  const numPowers = new Map<bigint, bigint>();
+  const denPowers = new Map<bigint, bigint>();
+  const power = (cache: Map<bigint, bigint>, base: bigint, exponent: bigint) => {
+    let value = cache.get(exponent);
+    if (value === undefined) {
+      value = base ** exponent;
+      cache.set(exponent, value);
+    }
+    return value;
+  };
+  const common = power(numPowers, num, wholeMax) * power(denPowers, den, -wholeMin);
   flows.minors.forEach((minor, index) => {
     if (minor === 0n) {
       return;
     }
     const split = flows.splits[index]!;
-    // v · g^(−whole), exactly
-    let termNum = minor * (split.whole >= 0n ? den ** split.whole : num ** -split.whole);
-    let termDen = split.whole >= 0n ? num ** split.whole : den ** -split.whole;
+    // v · g^(−whole), over the common denominator
+    let termNum =
+      minor *
+      power(denPowers, den, split.whole - wholeMin) *
+      power(numPowers, num, wholeMax - split.whole);
+    let termDen = common;
     const irrational: (readonly [bigint, bigint])[] = [];
     for (const [order, residue] of split.parts) {
       const root = rootOf(order);
@@ -850,9 +875,15 @@ function xnpvScaled(
     const group = groups.get(key);
     if (group === undefined) {
       groups.set(key, { parts: irrational, num: termNum, den: termDen });
+    } else if (group.den === termDen) {
+      group.num += termNum;
     } else {
-      group.num = group.num * termDen + termNum * group.den;
-      group.den *= termDen;
+      // only with rational roots: add over the product, in lowest terms
+      const sumNum = group.num * termDen + termNum * group.den;
+      const sumDen = group.den * termDen;
+      const divisor = greatestCommonDivisor(sumNum < 0n ? -sumNum : sumNum, sumDen);
+      group.num = sumNum / divisor;
+      group.den = sumDen / divisor;
     }
   });
   const unit = 1n << BigInt(bits);
@@ -900,6 +931,15 @@ function xnpvScaled(
   low += floorDivide(rationalNum * unit, rationalDen);
   high += ceilDivide(rationalNum * unit, rationalDen);
   return { low, high, scale: unit, exact: false };
+}
+
+/** gcd(a, b) for non-negative a and positive b. */
+function greatestCommonDivisor(left: bigint, right: bigint): bigint {
+  let [first, second] = [left, right];
+  while (second !== 0n) {
+    [first, second] = [second, first % second];
+  }
+  return first === 0n ? 1n : first;
 }
 
 /** The most bits a root may work on (its order times the precision): 2^22. */

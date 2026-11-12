@@ -339,7 +339,9 @@ cancellation (step 4) or rational roots is computed exactly, so it never needs s
 case left is a rational value hidden in an algebraic relation between different irrational
 parts. There, and for an irrational value closer to a boundary than 2,048 bits can resolve, each
 function throws rather than refine without end. Roots are also capped at an order times
-precision of 2^22 bits.
+precision of 2^22 bits, and the split's exponent identity is checked; both are defensive, since no
+day count reaches them (its denominators' prime powers are at most 73), and
+[equivalent-mutants.md](equivalent-mutants.md) lists them.
 
 **What the Lean proofs cover** (`proofs/Ducat/Xnpv.lean`, listed in [What is proved](proofs.md)):
 
