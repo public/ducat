@@ -4,7 +4,8 @@
     "noEmit": true,
     "rootDir": ".",
     "types": ["node"],
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true
   },
   "include": ["src", "test", "bench"],
   "exclude": [
