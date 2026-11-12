@@ -39,9 +39,11 @@ function weightsToBig(ws: readonly Weight[]): bigint[] {
 function weightsScaled(ws: readonly Weight[]): { ws: bigint[]; scale: number } {
   let scale = 0;
   const parsed = ws.map((weight) => {
+    // Stryker disable next-line BlockStatement,StringLiteral: parseDecimal reads a bigint weight the same
     if (typeof weight === 'bigint') {
       return { digits: weight, scale: 0 };
     }
+    // Stryker disable next-line BlockStatement,EqualityOperator,StringLiteral: parseDecimal reads a safe integer the same
     if (typeof weight === 'number' && Number.isSafeInteger(weight)) {
       return { digits: BigInt(weight), scale: 0 };
     }
@@ -72,6 +74,7 @@ function distribute<T extends number | bigint>(
   mode: Remainder,
   one: T,
 ): void {
+  // Stryker disable next-line BlockStatement: shortcut, no strategy adds anything for 0
   if (rem === 0) {
     return;
   }
@@ -147,24 +150,32 @@ export function allocate<C extends string>(
   const minor = money.minor;
 
   // fast path: integer weights whose products with the amount fit exactly in a double
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof minor === 'number') {
     let total = 0;
     let maxWeight = 0;
+    // Stryker disable next-line BooleanLiteral: fast path, the bigint path agrees
     let ok = true;
+    // Stryker disable next-line BlockStatement,ConditionalExpression,EqualityOperator,UpdateOperator: fast path, the bigint path agrees
     for (let i = 0; i < count; i++) {
       const weight = weights[i];
+      // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
       if (typeof weight !== 'number' || !(weight >= 0) || !Number.isSafeInteger(weight)) {
         ok = false;
         break;
       }
+      // Stryker disable next-line AssignmentOperator: fast path, the bigint path agrees
       total += weight;
       if (weight > maxWeight) {
         maxWeight = weight;
       }
     }
+    // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
     if (ok && total > 0 && total <= MAX_SAFE_MINOR && minor * maxWeight <= MAX_SAFE_MINOR - total) {
       const ws = weights as readonly number[];
+      // Stryker disable next-line ArrayDeclaration: a preallocated array only saves time
       const shares = new Array<number>(count);
+      // Stryker disable next-line ArrayDeclaration: a preallocated array only saves time
       const frac = new Array<number>(count);
       let rem = minor;
       for (let i = 0; i < count; i++) {
@@ -183,6 +194,7 @@ export function allocate<C extends string>(
         rem -= quotient;
       }
       if (rem > 0) {
+        // Stryker disable next-line StringLiteral: selection and the sort give the same order
         if (mode === 'largest' && count <= 32) {
           // selection instead of sort: rem < number of non-zero weights, n small
           for (; rem > 0; rem--) {
@@ -193,12 +205,14 @@ export function allocate<C extends string>(
               }
             }
             shares[best]! += 1;
+            // Stryker disable next-line UnaryOperator: a used bucket can't win again
             frac[best] = -1;
           }
         } else {
           distribute(shares, rem, ws, frac, mode, 1);
         }
       }
+      // Stryker disable next-line ArrayDeclaration: a preallocated array only saves time
       const out = new Array<Money<C>>(count);
       for (let i = 0; i < count; i++) {
         out[i] = make(money.currency, shares[i]!, money.scale);
@@ -216,7 +230,9 @@ export function allocate<C extends string>(
     throw new RangeError('Allocation weights must not all be zero');
   }
   const xb = BigInt(minor);
+  // Stryker disable next-line ArrayDeclaration: a preallocated array only saves time
   const shares: bigint[] = new Array(count);
+  // Stryker disable next-line ArrayDeclaration: a preallocated array only saves time
   const frac: bigint[] = new Array(count);
   let assigned = 0n;
   for (let i = 0; i < count; i++) {
@@ -283,6 +299,7 @@ export function instalments<C extends string>(
   const scaledTotal = toScale(total, scale);
   const unitMinor = BigInt(scaleUp(unit.minor, scale - unit.scale));
   const neg = scaledTotal.minor < 0;
+  // Stryker disable next-line ArithmeticOperator: x / ±1n is x × ±1n
   const tv = BigInt(scaledTotal.minor) * (neg ? -1n : 1n);
   const per = (tv / (unitMinor * BigInt(count))) * unitMinor;
   const parts = new Array<bigint>(count).fill(per);
@@ -330,6 +347,7 @@ export function schedule<C extends string>(
       restIdx = i;
     }
   });
+  // Stryker disable next-line ArrayDeclaration: a preallocated array only saves time
   const out: (Money<C> | undefined)[] = new Array(tranches.length);
   let left = total;
   if (pcts.length) {
