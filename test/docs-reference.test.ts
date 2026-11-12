@@ -223,8 +223,8 @@ describe('the reference names everything the package exports', () => {
       Rate: [exchangeRate('EUR', 'USD', '1.1'), () => 'convert.md'],
       MoneyBag: [bag(), () => 'convert.md'],
     };
-    // private in TypeScript, but visible on the prototype at run time
-    const internal = new Set(['ExactMoney#times']);
+    // private or @internal in TypeScript, but visible on the prototype at run time
+    const internal = new Set(['ExactMoney#times', 'Rate#checkValidity']);
     const problems: string[] = [];
     for (const [className, [instance, home]] of Object.entries(instances)) {
       for (
