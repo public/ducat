@@ -1,6 +1,6 @@
 # `@ducatjs/money/excel`
 
-Excel's financial functions, NPV, IRR, FV, PV, PMT, NPER and RATE, with Excel's arguments and sign convention, in exact arithmetic. **Installs:** nothing; every function is a free function.
+Excel's financial functions, NPV, IRR, FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Excel's arguments and sign convention, in exact arithmetic. **Installs:** nothing; every function is a free function.
 
 Related: [How to calculate interest and loans](../how-to/calculate-interest-and-loans.md) · [The finance module's design](../explanation/finance-design.md) · [`@ducatjs/money/finance`](finance.md), ducat's own calculations
 
@@ -10,8 +10,8 @@ These functions are named after Excel's, so they follow the Excel rule: Excel's 
 
 - `nper` must be a whole number for `fv`, `pv`, `pmt` and `rate` (Excel takes fractions, whose powers are irrational).
 - A rate at or below −1 throws, and `type` is 0 or 1.
-- `irr` and `rate` take a `bracket` in place of Excel's `guess`, and throw where the flows can have several rates and no bracket selects one: Excel returns whichever its iteration from `guess` reaches. They throw where the flows never change sign (Excel's #NUM!).
-- `nper` and `rate` return their result to `digits` places, floored, with the bracket around it, rather than a double.
+- `irr`, `rate` and `xirr` take a `bracket` in place of Excel's `guess`, and throw where the flows can have several rates and no bracket selects one: Excel returns whichever its iteration from `guess` reaches. They throw where the flows never change sign (Excel's #NUM!).
+- `nper`, `rate` and `xirr` return their result to `digits` places, floored, with the bracket around it, rather than a double; `xnpvBounds` gives XNPV's guaranteed interval.
 - Powers past a size limit throw rather than take minutes (see each function).
 
 All functions throw `CurrencyMismatchError` for amounts in more than one currency.
@@ -125,6 +125,43 @@ nper('0.01', usd('-100'), usd('-1000'), { fv: usd('10000'), type: 1, digits: 7 }
 rate(48, usd('-200'), usd('8000'), { digits: 8 }).rate; // → '0.00770147'
 ```
 
+## Flows on arbitrary dates: XNPV and XIRR
+
+### xnpv
+
+`xnpv<C extends string>(rate: Factor, values: readonly Money<C>[], dates: readonly CalendarDate[], options?: XnpvOptions, rounding?: RoundingInput): Money<C>`
+
+Excel's XNPV: `Σ valueᵢ / (1 + rate)^((dateᵢ − date₀)/365)`, the net present value of flows on arbitrary dates, with Excel's arguments: the first date in the list starts the schedule (not the earliest one), and the others may come in any order. The fractional powers are irrational in general, so the value is bracketed by guaranteed rational bounds, narrowed until both round to the same amount: that amount is the value rounded once. Where the value is rational (a rate of 0, every date on the first, or dates whole years apart) it is computed and rounded exactly. `dayCount` takes the other conventions, which aren't Excel's.
+
+- **Rounds:** once.
+- **Throws:** `RangeError` where Excel returns #NUM!: a date before the first, `values` and `dates` of different lengths, no positive or no negative value; also for an empty list, a rate at or below −1, and when the bounds can't settle the rounded value within 2,048 bits. `CurrencyMismatchError` for values in more than one currency.
+
+### xnpvBounds
+
+`xnpvBounds<C extends string>(rate: Factor, values: readonly Money<C>[], dates: readonly CalendarDate[], options?: XnpvBoundsOptions): XnpvBounds`
+
+The guaranteed interval around XNPV, in major units, at most 10^−digits wide (default 10, at most 100): each discount factor `(1 + rate)^(n/m)` is bracketed by an integer `m`th root on a `2^−bits` grid and raised to the `n`th power in fixed point, with every rounding outward, and the bits are doubled until the interval is narrow enough. `exact` is true where the value is rational, and then both ends are it.
+
+- **Throws:** as `xnpv`, and for `digits` outside 0–100.
+
+### xirr
+
+`xirr<C extends string>(values: readonly Money<C>[], dates: readonly CalendarDate[], options?: XirrOptions): IrrResult`
+
+Excel's XIRR: the rate at which XNPV is zero, exact to `digits` places (default 10), floored, between `lower` and `upper`, as `irr`'s. It bisects on the grid of `digits`-place decimals, taking XNPV's sign from its guaranteed bounds at each step, so the root is bracketed, never guessed. Microsoft documents that XIRR stops within 0.000001 percent, so Excel's value lies within 10^−8 of [`lower`, `upper`]. A `bracket` replaces Excel's `guess`.
+
+- **Throws:** `RangeError` where Excel guesses: when the flows, in date order, change sign more than once unless a `bracket` selects one rate. Where Excel returns #NUM!: no positive or no negative value, a date before the first, lists of different lengths. Also for a rate within 10^−digits of −1, `digits` outside 0–100, and when XNPV's sign can't be settled within 2,048 bits. Otherwise as `irr` for the bracket.
+
+```ts
+import { money } from '@ducatjs/money';
+import { xirr, xnpv } from '@ducatjs/money/excel';
+
+const values = ['-10000', '2750', '4250', '3250', '2750'].map((amount) => money(amount, 'USD'));
+const dates = ['2008-01-01', '2008-03-01', '2008-10-30', '2009-02-15', '2009-04-01'];
+xnpv('0.09', values, dates); // → 2086.65 USD
+xirr(values, dates, { digits: 9 }).rate; // → '0.373362533'
+```
+
 ## Types
 
 - `IrrOptions`: `{ digits?: number; bracket?: readonly [Factor, Factor] }`.
@@ -135,3 +172,7 @@ rate(48, usd('-200'), usd('8000'), { digits: 8 }).rate; // → '0.00770147'
 - `NperOptions<C>`: `PvOptions<C>` and `{ digits?: number }` (default 10, at most 100).
 - `RateOptions<C>`: `PvOptions<C>` and `{ digits?: number; bracket?: readonly [Factor, Factor] }`, as `IrrOptions`.
 - `NperResult`: `{ nper: string; lower: string; upper: string; exact?: Ratio }`, decimal strings with `digits` places: `nper` is `lower`, and `exact` is set when the number of periods is rational.
+- `XnpvOptions`: `YearFractionOptions` and `{ dayCount?: DayCount }`. The default, `'ACT/365F'`, is days / 365, as Excel counts; the other conventions aren't Excel's.
+- `XnpvBoundsOptions`: `XnpvOptions` and `{ digits?: number }`, the interval's width as 10^−digits major units (default 10, at most 100).
+- `XirrOptions`: `XnpvOptions` and `{ digits?: number; bracket?: readonly [Factor, Factor] }`, as `IrrOptions`.
+- `XnpvBounds`: `{ lower: Ratio; upper: Ratio; exact: boolean }`, in major units; `exact` when the value is rational and both ends are it.
