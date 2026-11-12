@@ -383,7 +383,8 @@ export function money<C extends CurrencyInput>(
   if (typeof amount === 'number') {
     // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
     if (Number.isSafeInteger(amount)) {
-      return make(currency, scaleUp(amount, scale), scale);
+      // `+ 0` turns -0 into 0, as every other constructor does
+      return make(currency, scaleUp(amount + 0, scale), scale);
     }
     if (!Number.isFinite(amount)) {
       throw new RangeError(`Invalid amount ${amount}`);

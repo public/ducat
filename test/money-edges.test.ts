@@ -159,7 +159,7 @@ describe('around 2^53 - 1', () => {
   });
 
   it('subtract never returns a -0 minor', () => {
-    // money(-0) keeps a -0 today; the difference must still be a plain 0
+    // whatever a -0 input might look like, the difference is a plain 0
     const difference = subtract(money(-0, 'EUR'), fromMinor(0, 'EUR'));
     expect(Object.is(difference.minor, 0)).toBe(true);
   });

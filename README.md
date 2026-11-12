@@ -134,7 +134,8 @@ Each module is an opt-in entry: importing it installs its methods on `Money` and
 | `@ducatjs/money/wire`               | nothing                                                            | `google.type.Money`, ISO 20022, minor units, dinero.js objects                                     |
 | `@ducatjs/money/words`              | nothing                                                            | `amountInWords`, `spellOut` (CLDR rules, no Money loaded)                                          |
 | `@ducatjs/money/words/<language>`   | nothing                                                            | `english`, `german`, `french`, `spanish`, `italian`…                                               |
-| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `npv`, `irr`, `periodicRate`…                                          |
+| `@ducatjs/money/finance`            | nothing                                                            | `yearFraction`, `amortise`, `periodicRate`, `discountedSum`…                                       |
+| `@ducatjs/money/excel`              | nothing                                                            | `npv`, `irr`, `pmt`, `fv`, `pv`, `nper`, `rate`…                                                   |
 | `@ducatjs/money/format`             | `format`, `formatToParts`                                          | the same                                                                                           |
 | `@ducatjs/money/parse`              | nothing                                                            | `parse`, `parseMoney`                                                                              |
 | `@ducatjs/money/stripe`             | `toStripe`, `toStripeAmount`                                       | the same, `fromStripe`, `stripeExponent`…                                                          |
