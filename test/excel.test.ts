@@ -739,7 +739,7 @@ describe(`LibreOffice Calc's XNPV and XIRR (${calc.calc})`, () => {
       }, 0);
       const exponent = Number(/E([+-]\d+)$/.exec(vector.calc)?.[1]) - 14;
       const textRounding = 5 * 10 ** (exponent - 1);
-      const bound = 2 * (vector.values.length + 24) * 2 ** -52 * size + textRounding;
+      const bound = (vector.values.length + 4) * 2 ** -52 * size + textRounding;
       const difference = Math.abs(
         Number(middle.num) / Number(middle.den) -
           Number(calcRatio(vector.calc).num) / Number(calcRatio(vector.calc).den),
@@ -751,8 +751,10 @@ describe(`LibreOffice Calc's XNPV and XIRR (${calc.calc})`, () => {
     expect(mismatches).toEqual([]);
   });
 
-  it("XIRR: Calc's value lies within 0.000001 percent of [lower, upper]", () => {
-    const accuracy = ratio(microsoft.xirr.accuracy);
+  it("XIRR: Calc's value lies within 1e-13 of [lower, upper]", () => {
+    // Microsoft documents only 0.000001 percent (1e-8), but Calc's values are far closer: its
+    // largest gap from ducat's bracket here is under 1e-15, so the test holds it to 1e-13
+    const accuracy = ratio(1n, 10n ** 13n);
     let converged = 0;
     const mismatches = calc.xirr.filter((vector) => {
       const { lower, upper } = xirr(vector.values.map(usd), vector.dates, { digits: 12 });

@@ -1618,6 +1618,47 @@ describe('xnpv and xirr (Excel)', () => {
     expect(() => xirr(values, dates, { digits: -1 })).toThrow('Invalid digits -1');
   });
 
+  it('settles values and roots that the bracketing alone could not (review of #306)', () => {
+    // a factor below 2^-64: (1 − 50%)^70, refined rather than divided by a floor of 0
+    const longAgo = ['2000-01-01', '2070-01-01'];
+    expect(xirr([usd('-1000'), usd('1')], longAgo, { digits: 12 }).rate).toBe('-0.093906471109');
+    expect(xnpv('-0.5', [usd('-1000'), usd('1')], longAgo).toDecimal()).toBe(
+      '1221644970469628875138.49',
+    );
+    // a root on the grid with irrational factors: a zero first value, then flows 365 days apart,
+    // whose irrational parts cancel exactly at 10%
+    const onGrid = ['2021-01-01', '2021-03-01', '2022-03-01'];
+    expect(xirr([usd('0'), usd('-1000'), usd('1100')], onGrid).rate).toBe('0.1000000000');
+    // irrational terms that cancel leave an exact value, here 1 + 0.01/2 = 1.005, a tie
+    const cancel = [usd('1'), usd('0.01'), usd('-10'), usd('20')];
+    const cancelDates = ['2020-01-01', '2020-12-31', '2020-04-10', '2021-04-10'];
+    expect(xnpvBounds('1', cancel, cancelDates)).toEqual({
+      lower: ratio(201n, 200n),
+      upper: ratio(201n, 200n),
+      exact: true,
+    });
+    expect(xnpv('1', cancel, cancelDates, {}, 'halfEven').toDecimal()).toBe('1.00');
+    expect(xnpv('1', cancel, cancelDates, {}, 'halfExpand').toDecimal()).toBe('1.01');
+  });
+
+  it('refuses flows that cancel or never change sign once combined by date', () => {
+    const sameDay = ['2020-01-01', '2020-01-01'];
+    expect(() => xirr([usd('-5'), usd('5')], sameDay)).toThrow('every rate is a root');
+    expect(() => xirr([usd('-5'), usd('5'), usd('1')], [...sameDay, '2021-01-01'])).toThrow(
+      'combined by date, never change sign',
+    );
+  });
+
+  it('stays fast with ACT/ACT ISDA and many digits: roots of the prime powers of 365·366', () => {
+    const started = Date.now();
+    const flows = [usd('-1000'), usd('300'), usd('900')];
+    const days = ['2019-03-01', '2020-07-15', '2021-11-20'];
+    expect(xirr(flows, days, { dayCount: 'ACT/ACT ISDA', digits: 30 }).rate).toBe(
+      '0.079874584175787183494040182095',
+    );
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
   it('gives up at its bit cap rather than refine without end', () => {
     // a 10^-100-wide interval around amounts of 10^700 needs about 2,700 bits
     const big = 10n ** 700n;
@@ -1646,6 +1687,24 @@ describe('xnpv and xirr (Excel)', () => {
         digits: 1,
       }),
     ).toThrow("can't settle the sign of the value within 2048 bits");
+    // a value within about 10^-700 above 0.005, a halfEven boundary at cents: B is
+    // 1.005 · 1.1^(80/73) to 700 places, rounded up, so XNPV at 10% is 0.005 plus less than 10^-700
+    const scale = 700n;
+    const power = 201n ** 73n * 11n ** 80n * 10n ** (scale * 73n);
+    const powerDen = 200n ** 73n * 10n ** 80n;
+    let root = (BigInt(Math.ceil(1.005 * 1.1 ** (80 / 73) * 2 ** 50)) * 10n ** scale) >> 50n;
+    root += root >> 40n;
+    for (;;) {
+      const next = (72n * root + power / powerDen / root ** 72n) / 73n;
+      if (next >= root) {
+        break;
+      }
+      root = next;
+    }
+    const tie = [usd('-1'), fromMinor(root + 1n, 'USD', 700)];
+    expect(() => xnpv('0.1', tie, ['2020-01-01', '2021-02-04'], {}, 'halfEven')).toThrow(
+      "can't settle the rounded value within 2048 bits",
+    );
   });
 
   it('agrees with discountedSum when the dates are whole 365-day years apart', () => {

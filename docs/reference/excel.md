@@ -134,13 +134,13 @@ rate(48, usd('-200'), usd('8000'), { digits: 8 }).rate; // → '0.00770147'
 Excel's XNPV: `Σ valueᵢ / (1 + rate)^((dateᵢ − date₀)/365)`, the net present value of flows on arbitrary dates, with Excel's arguments: the first date in the list starts the schedule (not the earliest one), and the others may come in any order. The fractional powers are irrational in general, so the value is bracketed by guaranteed rational bounds, narrowed until both round to the same amount: that amount is the value rounded once. Where the value is rational (a rate of 0, every date on the first, or dates whole years apart) it is computed and rounded exactly. `dayCount` takes the other conventions, which aren't Excel's.
 
 - **Rounds:** once.
-- **Throws:** `RangeError` where Excel returns #NUM!: a date before the first, `values` and `dates` of different lengths, no positive or no negative value; also for an empty list, a rate at or below −1, and when the bounds can't settle the rounded value within 2,048 bits. `CurrencyMismatchError` for values in more than one currency.
+- **Throws:** `RangeError` where Excel returns #NUM!: a date before the first, and `values` and `dates` of different lengths. Also where Microsoft's page requires a positive and a negative value; LibreOffice computes an all-positive XNPV, ducat refuses it. Also for an empty list, a rate at or below −1, and when the bounds can't settle the rounded value within 2,048 bits (an irrational value within about 2^−2048 of a rounding boundary). `CurrencyMismatchError` for values in more than one currency.
 
 ### xnpvBounds
 
 `xnpvBounds<C extends string>(rate: Factor, values: readonly Money<C>[], dates: readonly CalendarDate[], options?: XnpvBoundsOptions): XnpvBounds`
 
-The guaranteed interval around XNPV, in major units, at most 10^−digits wide (default 10, at most 100): each discount factor `(1 + rate)^(n/m)` is bracketed by an integer `m`th root on a `2^−bits` grid and raised to the `n`th power in fixed point, with every rounding outward, and the bits are doubled until the interval is narrow enough. `exact` is true where the value is rational, and then both ends are it.
+The guaranteed interval around XNPV, in major units, at most 10^−digits wide (default 10, at most 100). Each discount factor `(1 + rate)^(n/m)` is split by the prime powers of `m` into an exact power and roots of small order. Those are bracketed on a `2^−bits` grid and raised and multiplied in fixed point, with every rounding outward, and the bits are doubled until the interval is narrow enough. Flows with the same irrational part are summed exactly first, so terms that cancel cancel exactly. `exact` is true where the value is rational that way, and then both ends are it.
 
 - **Throws:** as `xnpv`, and for `digits` outside 0–100.
 
@@ -150,7 +150,7 @@ The guaranteed interval around XNPV, in major units, at most 10^−digits wide (
 
 Excel's XIRR: the rate at which XNPV is zero, exact to `digits` places (default 10), floored, between `lower` and `upper`, as `irr`'s. It bisects on the grid of `digits`-place decimals, taking XNPV's sign from its guaranteed bounds at each step, so the root is bracketed, never guessed. Microsoft documents that XIRR stops within 0.000001 percent, so Excel's value lies within 10^−8 of [`lower`, `upper`]. A `bracket` replaces Excel's `guess`.
 
-- **Throws:** `RangeError` where Excel guesses: when the flows, in date order, change sign more than once unless a `bracket` selects one rate. Where Excel returns #NUM!: no positive or no negative value, a date before the first, lists of different lengths. Also for a rate within 10^−digits of −1, `digits` outside 0–100, and when XNPV's sign can't be settled within 2,048 bits. Otherwise as `irr` for the bracket.
+- **Throws:** `RangeError` where Excel guesses: when the flows, in date order, change sign more than once unless a `bracket` selects one rate. Where Excel returns #NUM!: no positive or no negative value, a date before the first, lists of different lengths. Also for flows that cancel on every date (every rate is a root) or that never change sign once combined by date, a rate within 10^−digits of −1, `digits` outside 0–100, and when XNPV's sign can't be settled within 2,048 bits. Otherwise as `irr` for the bracket.
 
 ```ts
 import { money } from '@ducatjs/money';
