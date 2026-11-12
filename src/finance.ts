@@ -917,6 +917,11 @@ export interface SavingsPlan<C extends string> {
   readonly balance: Money<C>;
 }
 
+/** `count` units, as Money: unit × count, exactly. */
+function multiplyByUnits<C extends string>(unit: Money<C>, count: bigint): Money<C> {
+  return make(unit.currency, BigInt(unit.minor) * count, unit.scale);
+}
+
 /**
  * The last contribution c of a start-timed target plan, paid at the start of the period, so that
  * balance + c + round((balance + c)·r) is the target: interest is then credited only on what was
@@ -942,17 +947,36 @@ function settleAtStart<C extends string>(
     ratio(growth.den, growth.num),
     rounding,
   );
-  // below the target from the start, then up while the next step doesn't pass it
-  while (compare(reached(contribution), needed) > 0) {
-    contribution = subtract(contribution, unit);
-  }
-  for (;;) {
-    const next = add(contribution, unit);
-    if (compare(reached(next), needed) > 0) {
-      break;
+  // reached() never decreases in the contribution, so find the largest whole-unit c with
+  // reached(c) ≤ needed by a bracket of doubling width around the estimate, then bisection: a few
+  // dozen evaluations, even near a rate of −1 where reached rises by only (1 + r) per unit
+  const at = (steps: bigint) => add(contribution, multiplyByUnits(unit, steps));
+  const fits = (steps: bigint) => compare(reached(at(steps)), needed) <= 0;
+  let low = -1n;
+  let high = 1n;
+  for (let doublings = 0; !fits(low); doublings++) {
+    if (doublings > 128) {
+      throw new RangeError('The last contribution of this savings plan cannot be settled');
     }
-    contribution = next;
+    high = low;
+    low *= 2n;
   }
+  for (let doublings = 0; fits(high); doublings++) {
+    if (doublings > 128) {
+      throw new RangeError('The last contribution of this savings plan cannot be settled');
+    }
+    low = high;
+    high *= 2n;
+  }
+  while (high - low > 1n) {
+    const middle = (low + high) / 2n;
+    if (fits(middle)) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+  contribution = at(low);
   const short = subtract(needed, reached(contribution));
   return [contribution, BigInt(short.minor) === 0n ? undefined : short];
 }

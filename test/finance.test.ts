@@ -1322,6 +1322,26 @@ describe('savingsPlan', () => {
     );
   });
 
+  it('settles a start-timed target quickly even at a periodic rate near −1', () => {
+    // −0.999999 a period (−11.999988 a year, monthly): each unit of contribution raises the
+    // balance by only 10^-6 units, so stepping unit by unit would take about a million steps
+    const started = Date.now();
+    const plan = savingsPlan({
+      rate: '-11.999988',
+      perYear: 12,
+      periods: 2,
+      target: usd('100'),
+      timing: 'start',
+    });
+    expect(Date.now() - started).toBeLessThan(1000);
+    expect(plan.balance.toDecimal()).toBe('100.00');
+    const last = plan.rows.at(-1)!;
+    const before = plan.rows.at(-2)!.balance;
+    expect(last.interest).toEqual(
+      exact(add(before, last.contribution)).multiply('-0.999999').round('halfExpand'),
+    );
+  });
+
   it('at a rate of 0, contributes the target over the periods, the residual on the last', () => {
     const plan = savingsPlan({ rate: '0', perYear: 12, periods: 7, target: usd('100') });
     // 100 / 7 = 14.2857… rounds to 14.29; the last takes 100 − 6 × 14.29
