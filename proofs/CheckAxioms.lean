@@ -34,7 +34,17 @@ unless they are only Lean's standard three: `propext`, `Classical.choice` and `Q
 #print axioms Ducat.increment_half
 #print axioms Ducat.increment_exact
 #print axioms Ducat.increment_idem
+#print axioms Ducat.roundsR_mono
+#print axioms Ducat.roundsR_between
+#print axioms Ducat.roundsR_unique
+#print axioms Ducat.rounds_toReal
+#print axioms Ducat.rounds_mono
+#print axioms Ducat.rounds_between
+#print axioms Ducat.Xnpv.exponent_split
+#print axioms Ducat.Xnpv.power_split
 #print axioms Ducat.Xnpv.root_bracket
+#print axioms Ducat.Xnpv.real_root_bracket
+#print axioms Ducat.Xnpv.factor_bracket
 #print axioms Ducat.Xnpv.mulFloor_le
 #print axioms Ducat.Xnpv.le_mulCeil
 #print axioms Ducat.Xnpv.fixedPower_floor_le
@@ -45,3 +55,4 @@ unless they are only Lean's standard three: `propext`, `Classical.choice` and `Q
 #print axioms Ducat.Xnpv.group_common_factor
 #print axioms Ducat.Xnpv.quotient_bounds
 #print axioms Ducat.Xnpv.sum_bounds
+#print axioms Ducat.Xnpv.xnpv_rounds
