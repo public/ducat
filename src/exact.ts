@@ -107,21 +107,14 @@ export class ExactMoney<C extends string = string> {
       const leftDen = this.denominator as number;
       const rightNum = right.numerator;
       const rightDen = right.denominator as number;
-      if (leftDen === rightDen) {
-        const sum = leftNum + rightNum;
-        if (isSafe(sum)) {
-          return new ExactMoney(this.currency, sum, leftDen);
-        }
-      } else {
-        // Every intermediate must be safe: two overflowed products can sum to a safe-looking
-        // wrong value.
-        const leftPart = leftNum * rightDen;
-        const rightPart = rightNum * leftDen;
-        const den = leftDen * rightDen;
-        const sum = leftPart + rightPart;
-        if (isSafe(leftPart) && isSafe(rightPart) && isSafe(den) && isSafe(sum)) {
-          return new ExactMoney(this.currency, sum, den);
-        }
+      // Every intermediate must be safe: two overflowed products can sum to a safe-looking
+      // wrong value.
+      const leftPart = leftNum * rightDen;
+      const rightPart = rightNum * leftDen;
+      const den = leftDen * rightDen;
+      const sum = leftPart + rightPart;
+      if (isSafe(leftPart) && isSafe(rightPart) && isSafe(den) && isSafe(sum)) {
+        return new ExactMoney(this.currency, sum, den);
       }
     }
     const numerator = this.num * right.den + right.num * this.den;
