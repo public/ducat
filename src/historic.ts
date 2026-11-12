@@ -8,6 +8,7 @@
  *     historicCurrency('HRK')?.withdrawn; // '2023-01'
  */
 import { defineCurrency } from './currency.js';
+import { REGISTERED_WITHDRAWN_ISO } from './withdrawn.js';
 import { HISTORIC_CURRENCY_TABLE, ISO_4217_LIST_THREE_PUBLISHED } from './generated/historic.js';
 
 export { ISO_4217_LIST_THREE_PUBLISHED };
@@ -73,5 +74,9 @@ export function defineHistoricCurrencies(codes?: readonly HistoricCurrencyCode[]
 
   for (const code of selected) {
     defineCurrency(code, table[code]!.exponent);
+    // an ISO code (one ISO withdrew), so ISO 20022 amounts may name it
+    if (table[code]!.withdrawn !== undefined) {
+      REGISTERED_WITHDRAWN_ISO.add(code);
+    }
   }
 }

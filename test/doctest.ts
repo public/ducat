@@ -40,7 +40,11 @@ export interface Failure {
   line: number;
   message: string;
 }
-export const failures: Failure[] = [];
+// Shared through globalThis: each example runs in a fresh module registry (see test/docs.test.ts),
+// so it loads its own copy of this module, and its failures must still reach the test.
+export const failures: Failure[] = ((
+  globalThis as { ducatDoctestFailures?: Failure[] }
+).ducatDoctestFailures ??= []);
 
 /** The value must be what the comment starts with, followed by nothing or a note. */
 export function check(line: number, value: unknown, expected: string): void {

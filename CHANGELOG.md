@@ -79,10 +79,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 - `irr` throws a RangeError for an IRR above 2^1024 per period, where it used to keep doubling its
   search without limit; every rate solver in `/finance` now has a bounded number of steps (#200).
+- **Visible change:** `toIso20022Amount` and `fromIso20022Amount` accept only ISO 4217 codes, as
+  ISO 20022's `ActiveOrHistoricCurrencyCode` requires: current codes (including `XAU` and the other
+  codes without a minor unit) and withdrawn ones registered with `defineHistoricCurrencies`. A
+  registered non-ISO code such as `BTC` used to be written; it now throws a RangeError (#273).
 - **Visible change:** `parse(text, currency, locale)` throws a RangeError naming the locale when
   the runtime has no Intl data for its language and region (`xx-ZZ`, `de-XX`), as `parseMoney`
   already did. It used to read the amount with the fallback locale's separators, which can misread
   it. Pass a supported locale, or the base language (`de`) (#271).
+- **Visible change:** `tieredPrice` throws a RangeError naming the tier when one has neither a
+  `unitAmount` nor a `flatAmount`; it used to charge that tier 0. Write a free tier as
+  `unitAmount: money('0', …)` (#272).
 - `extractTax` and `extractTaxExact` throw a RangeError naming the percent for -100% or below,
   where no net amount has that gross. Before, -100% failed inside `ratio()` with "Division by
   zero", and a percent below -100 returned a meaningless split (a net of −2 × gross at −150%).
