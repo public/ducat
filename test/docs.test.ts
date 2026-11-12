@@ -1,4 +1,5 @@
-// Runs the TypeScript examples in README.md, like Python's doctest, so the README can't drift from the code.
+// Runs the TypeScript examples in README.md and docs/**/*.md, like Python's doctest, so the documentation
+// can't drift from the code.
 //
 // Every ```ts block is a module of its own, with `@ducatjs/money` imports pointed at src/. A statement on one
 // line whose comment starts with an arrow is checked against what it returns:
@@ -11,11 +12,13 @@
 // `const name = …; // → value` checks `name`. Values are written as `show()` prints them: Money as
 // `12.34 EUR`, Fixed as `12.34`, strings in single quotes, arrays in brackets and objects as `{ key: value }`.
 // Comments without an arrow are notes and aren't checked. An HTML comment just before a block can say
-// `<!-- doctest: skip (reason) -->` or `<!-- doctest: setup CODE -->` (hidden setup code, such as loading a
+// `<!-- doctest: continue -->` runs the block after the previous one in the same file, as one module, so
+// a tutorial's steps can build on each other. `<!-- doctest: skip (reason) -->` or
+// `<!-- doctest: setup CODE -->` (hidden setup code, such as loading a
 // fixture).
 //
 // The examples are type-checked too, so a `// @ts-expect-error` in an example must be a real error.
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
@@ -28,15 +31,19 @@ const OUT = join(ROOT, 'test', '.doctest');
 const PACKAGE_NAME = '@ducatjs/money';
 
 interface Example {
-  /** The line in README.md where the block's code starts. */
+  /** The markdown file, relative to the repo root. */
+  file: string;
+  /** The line in that file where the block's code starts. */
   line: number;
   code: string[];
+  /** The source line of each line of `code` (a continued block starts with the previous block's). */
+  lines: number[];
   skip?: boolean;
   setup?: string;
 }
 
 /** The ```ts blocks of a markdown file, with the doctest directive just before each one. */
-function examplesIn(markdown: string): Example[] {
+function examplesIn(file: string, markdown: string): Example[] {
   const lines = markdown.split('\n');
   const examples: Example[] = [];
   for (let i = 0; i < lines.length; i++) {
@@ -44,15 +51,25 @@ function examplesIn(markdown: string): Example[] {
       continue;
     }
 
-    const example: Example = { line: i + 2, code: [] };
+    const example: Example = { file, line: i + 2, code: [], lines: [] };
     // the directive is the last non-blank line before the block (the formatter adds a blank line after it)
     let previous = i - 1;
     while (previous > 0 && lines[previous] === '') {
       previous--;
     }
     const before = lines[previous] ?? '';
-    const directive = /^<!-- doctest: (skip|setup)\b ?(.*?) ?-->$/.exec(before);
-    if (directive?.[1] === 'setup') {
+    const directive = /^<!-- doctest: (skip|setup|continue)\b ?(.*?) ?-->$/.exec(before);
+    if (directive?.[1] === 'continue') {
+      const earlier = examples.at(-1);
+      if (earlier === undefined) {
+        throw new Error(`${file}:${example.line}: nothing to continue`);
+      }
+      example.code.push(...earlier.code);
+      example.lines.push(...earlier.lines);
+      if (earlier.setup !== undefined) {
+        example.setup = earlier.setup;
+      }
+    } else if (directive?.[1] === 'setup') {
       example.setup = directive[2] ?? '';
     } else if (directive?.[1] === 'skip') {
       example.skip = true;
@@ -60,9 +77,10 @@ function examplesIn(markdown: string): Example[] {
 
     for (i++; lines[i] !== '```'; i++) {
       if (i >= lines.length) {
-        throw new Error(`README.md:${example.line}: unclosed code block`);
+        throw new Error(`${file}:${example.line}: unclosed code block`);
       }
       example.code.push(lines[i] ?? '');
+      example.lines.push(i + 1);
     }
     examples.push(example);
   }
@@ -73,7 +91,23 @@ function examplesIn(markdown: string): Example[] {
 function sourceFor(specifier: string, fromDir: string): string {
   const exports = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).exports;
   const subpath = '.' + specifier.slice(PACKAGE_NAME.length);
-  const target = exports[subpath]?.default;
+  let target: string | undefined = exports[subpath]?.default;
+  if (target === undefined) {
+    // a wildcard export, such as ./iso/* for @ducatjs/money/iso/EUR
+    for (const [pattern, value] of Object.entries<{ default: string }>(exports)) {
+      const [prefix, suffix] = pattern.split('*');
+      if (
+        suffix !== undefined &&
+        subpath.startsWith(prefix!) &&
+        subpath.endsWith(suffix) &&
+        subpath.length > prefix!.length + suffix.length
+      ) {
+        const star = subpath.slice(prefix!.length, subpath.length - suffix.length);
+        target = value.default.replace('*', star);
+        break;
+      }
+    }
+  }
   if (target === undefined) {
     throw new Error(`${specifier} is not a package export`);
   }
@@ -92,7 +126,7 @@ function toModule(example: Example, dir: string): string {
     output.push(example.setup);
   }
   example.code.forEach((text, index) => {
-    const line = example.line + index;
+    const line = example.lines[index]!;
     const rewritten = text.replace(
       new RegExp(`'(${PACKAGE_NAME}(?:/[^']*)?)'`, 'g'),
       (_, specifier) => `'${sourceFor(specifier, dir)}'`,
@@ -111,7 +145,9 @@ function toModule(example: Example, dir: string): string {
     } else if (kind === 'throws') {
       const errorName = documentedErrorClass(expected ?? '');
       if (errorName === undefined) {
-        throw new Error(`README.md:${line}: name the error class, as in // throws RangeError`);
+        throw new Error(
+          `${example.file}:${line}: name the error class, as in // throws RangeError`,
+        );
       }
       output.push(`${indent}checkThrows(${line}, () => ${expression}, '${errorName}');`);
     } else if (name) {
@@ -124,33 +160,45 @@ function toModule(example: Example, dir: string): string {
   return output.join('\n') + '\n';
 }
 
-const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
-const examples = examplesIn(readme);
+/** README.md and every markdown file under docs/, relative to the repo root. */
+export const DOCUMENTS = [
+  'README.md',
+  ...readdirSync(join(ROOT, 'docs'), { recursive: true, encoding: 'utf8' })
+    .filter((path) => path.endsWith('.md'))
+    .map((path) => `docs/${path.split('\\').join('/')}`)
+    .sort(),
+];
 
-describe('README.md examples', () => {
+const examples = DOCUMENTS.flatMap((document) =>
+  examplesIn(document, readFileSync(join(ROOT, document), 'utf8')),
+);
+
+describe('documentation examples', () => {
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
 
-  const files: string[] = [];
+  const files: { path: string; example: Example }[] = [];
   for (const example of examples) {
     if (example.skip) {
       continue;
     }
-    const file = join(OUT, `line-${example.line}.ts`);
-    writeFileSync(file, toModule(example, OUT));
-    files.push(file);
+    const name = example.file.replace(/\.md$/, '').replace(/[^A-Za-z0-9]+/g, '-');
+    const path = join(OUT, `${name}-line-${example.line}.ts`);
+    writeFileSync(path, toModule(example, OUT));
+    files.push({ path, example });
   }
 
   it('has examples to run', () => {
     expect(files.length).toBeGreaterThan(0);
   });
 
-  for (const file of files) {
-    const line = Number(/line-(\d+)/.exec(file)![1]);
-    it(`the example at README.md:${line} returns what its comments say`, async () => {
+  for (const { path, example } of files) {
+    it(`the example at ${example.file}:${example.line} returns what its comments say`, async () => {
       failures.length = 0;
-      await import(pathToFileURL(file).href);
-      const report = failures.map((failure) => `README.md:${failure.line}: ${failure.message}`);
+      await import(pathToFileURL(path).href);
+      const report = failures.map(
+        (failure) => `${example.file}:${failure.line}: ${failure.message}`,
+      );
       expect(report.join('\n\n')).toBe('');
     });
   }
@@ -160,11 +208,12 @@ describe('README.md examples', () => {
     () => {
       const config = ts.readConfigFile(join(ROOT, 'tsconfig.test.json'), ts.sys.readFile).config;
       const { options } = ts.parseJsonConfigFileContent(config, ts.sys, ROOT);
-      const program = ts.createProgram(files, { ...options, noEmit: true, skipLibCheck: true });
+      const paths = files.map((file) => file.path);
+      const program = ts.createProgram(paths, { ...options, noEmit: true, skipLibCheck: true });
       const errors = ts
         .getPreEmitDiagnostics(program)
         .filter(
-          (diagnostic) => diagnostic.file === undefined || files.includes(diagnostic.file.fileName),
+          (diagnostic) => diagnostic.file === undefined || paths.includes(diagnostic.file.fileName),
         )
         .map((diagnostic) => {
           const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
@@ -179,6 +228,6 @@ describe('README.md examples', () => {
         });
       expect(errors.join('\n\n')).toBe('');
     },
-    60_000,
+    180_000,
   );
 });

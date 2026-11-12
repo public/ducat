@@ -69,7 +69,7 @@ describe('historic currency table', () => {
 
 describe('defineHistoricCurrencies', () => {
   // Bun runs every test file in one process with one currency registry, so these use codes no
-  // other test file registers (the README examples register HRK and ITL).
+  // other test file registers (the documentation examples register HRK and ITL).
   it('registers nothing until called, then lets Money hold the codes', () => {
     expect(isCurrency('PTE')).toBe(false);
     expect(() => money('1', 'PTE')).toThrow(RangeError);

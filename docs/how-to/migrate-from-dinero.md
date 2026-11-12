@@ -57,7 +57,7 @@ JSON.stringify(money('12.34', 'EUR')); // → '{"amount":"12.34","currency":"EUR
 
 `fromDineroObject` keeps the stored precision as the scale. `toDineroObject` writes the Money's scale and throws beyond 2^53 − 1 units, because dinero.js amounts are numbers. For dinero.js 2's `toSnapshot()`, use `fromMinor(snapshot.amount, snapshot.currency.code, snapshot.scale)`.
 
-**For new columns**, store minor units in a BIGINT next to a currency code, or a decimal in NUMERIC/DECIMAL or a JSON column. A value whose scale varies (from `convertPrecision` calls, for example) needs a scale column too. The README's [Databases](https://github.com/public/ducat#databases) section has the column types, and there are helpers for Prisma, Drizzle, Kysely, node-postgres and TypeORM. A BIGINT holds ±9.2·10^18 minor units, where a JavaScript number is exact only to 2^53.
+**For new columns**, store minor units in a BIGINT next to a currency code, or a decimal in NUMERIC/DECIMAL or a JSON column. A value whose scale varies (from `convertPrecision` calls, for example) needs a scale column too. [How to store money in a database](store-money-in-a-database.md) has the column types, and there are helpers for Prisma, Drizzle, Kysely, node-postgres and TypeORM. A BIGINT holds ±9.2·10^18 minor units, where a JavaScript number is exact only to 2^53.
 
 ## API mapping
 

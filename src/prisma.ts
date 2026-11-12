@@ -2,7 +2,7 @@
  * Prisma / SQL interop with no dependency on @prisma/client (works with any Decimal class that has
  * toFixed(): Prisma.Decimal, decimal.js, big.js).
  *
- * Storage options (see README "Databases"):
+ * Storage options (see docs/how-to/store-money-in-a-database.md):
  *  1. two columns: amount_minor BIGINT + currency CHAR(3)
  *     -> minorMoneyField / toMinorColumns
  *  2. a DECIMAL/NUMERIC column (+ a currency column or constant)

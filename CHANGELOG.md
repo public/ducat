@@ -7,6 +7,20 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Documentation
+
+- The documentation is rebuilt on [Diátaxis](https://diataxis.fr), in `docs/`: two tutorials (a
+  first program and a checkout), how-to guides for each task (databases, payment processors,
+  currency conversion with dated rates, tax, cash rounding, allocation, parsing, validation,
+  testing, bundle size and more), a reference page for every entry, with each function's signature,
+  rounding and errors, and explanation pages for the representation, rounding, exactness, modules,
+  storage, the proofs and the decisions. The README is now the front door, with links into each
+  part. Nothing was removed: every section moved to its page. `docs/COMPARISON.md` and
+  `docs/FINANCE.md` moved to `docs/explanation/`, and the old paths link forward.
+- Every TypeScript block in `docs/` runs as a doctest, as the README's do. A test fails when an
+  export, type or method is missing from the reference, and another when a link or anchor in the
+  docs doesn't resolve.
+
 ### Added
 
 - `periodicRate(annual, { perYear, digits })` and `annualRate(periodic, { perYear })` in
@@ -358,7 +372,7 @@ separators, and amounts in ten more currencies cash-round. The breaking changes 
   amount's scale next to its minor units, so any scale round-trips and stored amounts keep their
   meaning if an exponent changes. A bundled ISO 4217 exponent change is now documented as
   breaking: listed under Changed, and shipped only in a minor version before 1.0 and a major version
-  from 1.0. See [Databases](README.md#databases).
+  from 1.0. See [Databases](docs/how-to/store-money-in-a-database.md).
 - `isMoneyIn(value, currency)` and `assertCurrency(money, currency)` narrow a `Money<string>`
   (a currency known only at run time) to a literal `Money<'EUR'>` without a cast;
   `assertCurrency` throws `CurrencyMismatchError` for another currency.
@@ -373,14 +387,14 @@ separators, and amounts in ten more currencies cash-round. The breaking changes 
   `moneyJson()` (JSON), so selects return `Money` and inserts take it, with the currency in the
   column's type. Writes that a column would round, clamp or mislabel throw, and so do driver values
   that may have lost digits. `drizzle-orm` is an optional peer dependency.
-  See [Drizzle](README.md#drizzle).
+  See [Drizzle](docs/reference/drizzle.md).
 - **Kysely helpers** in `@ducatjs/money/kysely`: `moneyHelpers(dialect)` gives `selectMoney`
   and `selectDecimalMoney`, which select Money as a self-describing JSON value; `compareMoney`, which
   compares currency and amount together; and `sumMoney`, which throws across currencies.
   `setMoney` and `setDecimalMoney` give the columns for writes. `MoneyResultPlugin` converts only
   the marked values, wherever they appear (unions, CTEs, nested JSON, streams, `CamelCasePlugin`),
   so a raw column is never typed as Money. `kysely` is an optional peer dependency. See
-  [Kysely](README.md#kysely).
+  [Kysely](docs/reference/kysely.md).
 - **ECB Data Portal:** `parseEcbSdmxCsv` (and `parseEcbSdmxDecimals`) in
   `@ducatjs/money/convert/ecb` read the SDMX-CSV of the daily euro reference rates, any range back
   to 1999, with the published digits rebuilt from each series' `DECIMALS`.
@@ -396,7 +410,7 @@ separators, and amounts in ten more currencies cash-round. The breaking changes 
   and NUMERIC (and their arrays) as exact strings, rejecting `NaN` and `Infinity`. `moneyTypeSql()`
   creates a `(amount, currency)` composite type with a currency-checked `sum` aggregate, read and
   written as Money. `toNumeric` refuses values a `NUMERIC(p, s)` column would round silently. See
-  [node-postgres](README.md#node-postgres).
+  [node-postgres](docs/reference/pg.md).
 
 ### Changed
 
@@ -441,7 +455,7 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
   safe integer and a bigint beyond that, so ordinary amounts never allocate and huge amounts
   never lose a digit. The currency is a type parameter: mixing currencies is a compile-time
   error, and a `CurrencyMismatchError` at run time when the types are erased.
-  See [Design](README.md#design).
+  See [Design](docs/explanation/representation.md).
 - **Arithmetic and comparison:** `add`, `subtract`, `sum`, `multiply`, `divide`, `percentage`,
   `discount`, `negate`, `abs`, `compare`, `equals`, `min`, `max`, `clamp` and more, as methods
   on `Money`. The same operations are plain functions of the same name in `@ducatjs/money/fn`
@@ -467,16 +481,16 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **Fixed-point decimals:** `@ducatjs/money/fixed` adds `Fixed`, an exact decimal without a
   currency (unit prices, quantities, intermediate results), with the same strict input and
   rounding rules as `Money`. `Money#toFixedPoint()` and `moneyToFixed` convert between them.
-  See [Fixed-point decimals](README.md#fixed-point-decimals).
+  See [Fixed-point decimals](docs/reference/fixed.md).
 - **Payment processor views:** the amount each processor expects, with its own minor-unit
   exceptions, for Stripe, Adyen, Checkout.com, PayPal, Braintree and Klarna (`/stripe`,
   `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna`), plus Stripe and Adyen exchange
   rates (`/stripe-fx`, `/adyen-fx`).
-  See [Payment processors](README.md#payment-processors-the-amount-you-send).
+  See [Payment processors](docs/reference/processors.md).
 - **Database helpers** for Prisma (`/prisma`) and guidance for NUMERIC and BIGINT columns.
-  See [Databases](README.md#databases).
+  See [Databases](docs/how-to/store-money-in-a-database.md).
 - **Currency data** generated from the ISO 4217 list, with `defineCurrency` for codes that are
-  not in it. See [Currency data](README.md#currency-data-source-generation-verification).
+  not in it. See [Currency data](docs/reference/currency-data.md).
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
