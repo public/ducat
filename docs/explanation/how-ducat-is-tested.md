@@ -59,6 +59,38 @@ Equivalent mutants are recorded in one of two places:
 | `divide`                                                                                                                                                                                            | `numerator < 0` as `<= 0`                                                                                                                                                                                                                                 | A zero divisor has already thrown.                                                                                                                                                                                                                                                                   |
 | `majorPart`                                                                                                                                                                                         | `+ 0` as `- 0`                                                                                                                                                                                                                                            | `minor - (minor % unit)` is never −0: `x - x` is +0 for every x, −0 included.                                                                                                                                                                                                                        |
 
+#### rounding.ts
+
+Not triaged yet.
+
+#### allocate.ts
+
+Not triaged yet.
+
+#### decimal.ts
+
+Not triaged yet.
+
+#### parse.ts
+
+Not triaged yet.
+
+#### fixed.ts
+
+Not triaged yet.
+
+#### exact.ts
+
+Not triaged yet.
+
+#### convert.ts
+
+Not triaged yet.
+
+#### rate.ts
+
+Not triaged yet.
+
 ## Benchmarks
 
 - Clean-machine numbers against the other money and fixed-point libraries are in [How it compares](https://github.com/public/ducat#how-it-compares) and
