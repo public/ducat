@@ -65,18 +65,21 @@ nothing in bundle size.
   imported binding through an extra indirection). Check with the benchmarks.
 - **Generated code follows the same rules**, and goes through the formatter.
 
-## README examples
+## Documentation
 
-The TypeScript examples in the README are tests (`test/readme.test.ts`, like Python's doctest). Each
-block runs as its own module, so it needs its own imports, and the blocks are type-checked. Write a
-result as `// → value`, the way `show()` in `test/doctest.ts` prints it: `25.00 EUR` for Money, `'text'`
-for strings, `[...]` and `{ key: value }`, with any note after it. `// throws ClassName` (with an
-optional note, as in `// throws RoundingError: whole HUF only`) checks that the line throws an instance
-of that class; the class must be one `test/doctest.ts` knows. `// compile error` is checked as well. A comment without an arrow is a note. `<!-- doctest: skip (reason) -->` or
-`<!-- doctest: setup CODE -->` on the line before a block skips it or adds hidden setup code.
+The docs follow [Diátaxis](https://diataxis.fr): [tutorials](docs/tutorials), [how-to guides](docs/how-to), [reference](docs/reference) and [explanation](docs/explanation), indexed from [docs/README.md](docs/README.md). The README is the front door and the npm page: what ducat is, the module table and links into the docs. Its links to files outside the package must be absolute GitHub URLs (`test/readme-links.test.ts`).
+
+A change that adds or changes an API updates:
+
+- **the reference page** of its entry (`docs/reference/`, mapped in `PAGES` in `test/docs-reference.test.ts`): the signature, what it returns, how it rounds and what it throws. `test/docs-reference.test.ts` fails, naming the page, for any export, type or method of `Money`, `Fixed`, `ExactMoney`, `Rate` or `MoneyBag` that the reference doesn't mention;
+- **the README module table**, for a new entry;
+- **a how-to guide**, when the change makes a task possible (`docs/how-to/`, titled "How to …");
+- **[docs/explanation/decisions.md](docs/explanation/decisions.md)**, for a product decision, as plain prose with its reasons.
+
+The TypeScript examples in the README and in every file under `docs/` are tests (`test/docs.test.ts`, like Python's doctest). Each block runs as its own module, so it needs its own imports, and the blocks are type-checked. Write a result as `// → value`, the way `show()` in `test/doctest.ts` prints it: `25.00 EUR` for Money, `'text'` for strings, `[...]` and `{ key: value }`, with any note after it. `// throws ClassName` (with an optional note, as in `// throws RoundingError: whole HUF only`) checks that the line throws an instance of that class; the class must be one `test/doctest.ts` knows. `// compile error` is checked as well. A comment without an arrow is a note. On the line before a block, `<!-- doctest: skip (reason) -->` skips it, `<!-- doctest: setup CODE -->` adds hidden setup code, and `<!-- doctest: continue -->` runs it after the previous block in the same file, as one module (for tutorials). Code that isn't TypeScript for ducat (shell commands, another library's API) goes in a `sh` or `js` fence. `test/docs-links.test.ts` checks that every relative link and `#anchor` in the docs resolves.
 
 ## Pull requests
 
 Keep them small and focused, with a description that says what changes and why, and the before and
 after numbers for anything that touches speed or size. Product decisions are recorded as plain prose
-in the README's Decisions section.
+in [docs/explanation/decisions.md](docs/explanation/decisions.md).

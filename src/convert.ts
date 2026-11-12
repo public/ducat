@@ -165,6 +165,8 @@ export function convertDetailed<From extends string, To extends string>(
   rounding: RoundingInput = DEFAULT_ROUNDING,
   options?: ConvertOptions,
 ): DetailedConversion<From, To> {
+  // The same check as convert, before either branch: the policy branch repeats it in rate.convert.
+  rate.checkValidity(options);
   const converted = exact(money).convert(rate);
   if (typeof rounding === 'function') {
     // The policy rounds; the residual is still exactly what it left out.

@@ -1,7 +1,7 @@
 // Type-checks test/plugin-types/plugin.ts, a plugin written the way a user writes one. Only that
 // file's diagnostics count: augmenting Money also changes the type that the library's own method
 // bodies see, which the published .d.ts files don't have (the README examples are checked the same
-// way, in test/readme.test.ts).
+// way, in test/docs.test.ts).
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';

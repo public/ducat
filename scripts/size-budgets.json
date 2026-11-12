@@ -12,7 +12,7 @@
     "@ducatjs/money/convert/boe": 3.46,
     "@ducatjs/money/convert/hmrc": 3.02,
     "@ducatjs/money/convert/history": 2.75,
-    "@ducatjs/money/convert/boc": 3.1,
+    "@ducatjs/money/convert/boc": 3.13,
     "@ducatjs/money/exact": 1.61,
     "@ducatjs/money/policy": 0.4,
     "@ducatjs/money/pricing": 2.82,

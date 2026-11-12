@@ -6,7 +6,7 @@
 //   node scripts/gen-currencies.mjs --fetch   also download the live ISO 4217 list from SIX
 //                                             and report differences against the snapshot
 //
-// Sources (see README "Currency data"):
+// Sources (see docs/reference/currency-data.md):
 //   data/iso4217-list-one.xml  ISO 4217 List One, SIX Group (maintenance agency)
 //   data/stripe.json           curated from https://docs.stripe.com/currencies
 //   data/adyen.json            curated from https://docs.adyen.com/development-resources/currency-codes
