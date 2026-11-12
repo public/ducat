@@ -9,6 +9,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Documentation
 
+- [How ducat is tested](docs/explanation/how-ducat-is-tested.md) explains the nightly mutation
+  testing and lists the mutants that can't change a result, with the reason for each (#56).
 - The documentation is rebuilt on [Diátaxis](https://diataxis.fr), in `docs/`: two tutorials (a
   first program and a checkout), how-to guides for each task (databases, payment processors,
   currency conversion with dated rates, tax, cash rounding, allocation, parsing, validation,

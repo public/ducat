@@ -29,6 +29,7 @@ const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
 const MAX_SCALE = 1000;
 
 /** A valid scale: an integer from 0 to MAX_SCALE (`>>> 0` changes negatives, fractions and NaN). */
+// Stryker disable next-line ArrowFunction: checkScale makes the same decision
 const isValidScale = (scale: number): boolean => scale >>> 0 === scale && scale <= MAX_SCALE;
 
 /** Currency codes accepted by constructors: known codes autocomplete, any string is allowed. */
@@ -294,6 +295,7 @@ export function make<C extends string>(
   return new Money(currency, typeof minor === 'bigint' ? normalizeMinor(minor) : minor, scale);
 }
 
+// Stryker disable next-line StringLiteral: BigInt() of a bigint is the same bigint
 const toBigInt = (minor: number | bigint) => (typeof minor === 'bigint' ? minor : BigInt(minor));
 
 // scaleUp and scaleDown have a copy in src/scale.ts, for Fixed, which must not load this module;
@@ -301,11 +303,14 @@ const toBigInt = (minor: number | bigint) => (typeof minor === 'bigint' ? minor 
 
 /** v * 10^e exactly (e >= 0) */
 export function scaleUp(minor: number | bigint, exponent: number): number | bigint {
+  // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
   if (exponent === 0) {
     return minor;
   }
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof minor === 'number' && exponent <= 15) {
     const scaled = minor * POW10[exponent]!;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (scaled <= MAX_SAFE_MINOR && scaled >= -MAX_SAFE_MINOR) {
       return scaled;
     }
@@ -319,9 +324,11 @@ export function scaleDown(
   exponent: number,
   mode: RoundingMode,
 ): number | bigint {
+  // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
   if (exponent === 0) {
     return minor;
   }
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof minor === 'number' && exponent <= 15) {
     return divideAndRound(minor, POW10[exponent]!, mode);
   }
@@ -374,6 +381,7 @@ export function money<C extends CurrencyInput>(
     );
   }
   if (typeof amount === 'number') {
+    // Stryker disable next-line BlockStatement: fast path, the bigint path agrees
     if (Number.isSafeInteger(amount)) {
       // `+ 0` turns -0 into 0, as every other constructor does
       return make(currency, scaleUp(amount + 0, scale), scale);
@@ -415,6 +423,7 @@ function fromScaled<C extends string>(
   if (typeof digits === 'bigint') {
     digits = normalizeMinor(digits);
   }
+  // Stryker disable next-line BlockStatement: shortcut, scaling by 10^0 agrees
   if (from === to) {
     return new Money(currency, digits, to);
   }
@@ -510,9 +519,11 @@ export function add<C extends string, O extends string = C>(
   }
   const left = money.minor;
   const right = other.minor;
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof left === 'number' && typeof right === 'number' && money.scale === other.scale) {
     // exact whenever |sum| <= MAX_SAFE_MINOR: both inputs are safe integers
     const sum = left + right;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (sum <= MAX_SAFE_MINOR && sum >= -MAX_SAFE_MINOR) {
       return new Money(money.currency, sum, money.scale);
     }
@@ -530,8 +541,10 @@ export function subtract<C extends string, O extends string = C>(
   }
   const left = money.minor;
   const right = other.minor;
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof left === 'number' && typeof right === 'number' && money.scale === other.scale) {
     const difference = left - right;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (difference <= MAX_SAFE_MINOR && difference >= -MAX_SAFE_MINOR) {
       return new Money(money.currency, difference + 0, money.scale);
     }
@@ -570,6 +583,7 @@ export function sum<C extends string>(
   // Fast loop on plain numbers: each partial sum of safe integers is exact while it stays within
   // MAX_SAFE_MINOR. It falls back to add() at the first bigint, scale change or overflow. NaN marks
   // "no fast total".
+  // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
   let fastTotal = typeof total.minor === 'number' ? total.minor : NaN;
   let i = 1;
   for (; i < count && fastTotal === fastTotal; i++) {
@@ -577,10 +591,12 @@ export function sum<C extends string>(
     if (item.currency !== itemCurrency) {
       mismatch(total, item);
     }
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     if (typeof item.minor !== 'number' || item.scale !== scale) {
       break;
     }
     const next = fastTotal + item.minor;
+    // Stryker disable next-line UnaryOperator: fast path, the bigint path agrees
     if (!(next <= MAX_SAFE_MINOR && next >= -MAX_SAFE_MINOR)) {
       break;
     }
@@ -624,12 +640,16 @@ export function multiply<C extends string>(
   const minor = money.minor;
   // An integer product is exact at this scale, but a policy may ask for another scale or increment.
   if (
+    // Stryker disable next-line EqualityOperator,StringLiteral: fast path, the bigint path agrees
     typeof factor === 'number' &&
     Number.isSafeInteger(factor) &&
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof minor === 'number' &&
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof rounding === 'string'
   ) {
     const product = minor * factor;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
       return new Money(money.currency, product + 0, money.scale);
     }
@@ -649,13 +669,16 @@ export function multiplyByRatio<C extends string>(
   }
   const minor = money.minor;
   if (
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof minor === 'number' &&
     scale === money.scale &&
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: a NaN part fails the bound check below
     factor.n === factor.n &&
     factor.d === factor.d
   ) {
     // exact when |product| <= MAX_SAFE_MINOR (both factors are safe integers)
     const product = minor * factor.n;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (product <= MAX_SAFE_MINOR && product >= -MAX_SAFE_MINOR) {
       return new Money(money.currency, divideAndRound(product, factor.d, rounding), scale);
     }
@@ -700,12 +723,16 @@ export function divide<C extends string>(
   const numerator = divisorRatio.n;
   const denominator = divisorRatio.d;
   if (
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof minor === 'number' &&
+    // Stryker disable next-line StringLiteral: fast path, the bigint path agrees
     typeof rounding === 'string' &&
     numerator === numerator &&
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: a NaN part fails the bound check below
     denominator === denominator
   ) {
     let dividend = minor * denominator;
+    // Stryker disable next-line BlockStatement,UnaryOperator: fast path, the bigint path agrees
     if (dividend <= MAX_SAFE_MINOR && dividend >= -MAX_SAFE_MINOR) {
       // divideAndRound needs a positive divisor: (−p)/(−n) is the same quotient
       let positiveDivisor = numerator;
@@ -758,6 +785,7 @@ export function toScale<C extends string>(
   rounding: RoundingMode = DEFAULT_ROUNDING,
 ): Money<C> {
   // a value's own scale is always valid, so this needs no check
+  // Stryker disable next-line BlockStatement: shortcut, scaling by 10^0 agrees
   if (scale === money.scale) {
     return money;
   }
@@ -803,6 +831,7 @@ export function equals(money: Money, other: Money): boolean {
   if (money.currency !== other.currency) {
     return false;
   }
+  // Stryker disable next-line BlockStatement: shortcut, compare() agrees
   if (money.scale === other.scale) {
     // == compares number and bigint exactly
     return money.minor == other.minor;
@@ -917,6 +946,7 @@ export function toDecimal(money: Money): string {
  */
 export function majorPart(money: Money): number | bigint {
   const minor = money.minor;
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof minor === 'number' && money.scale <= 15) {
     // Taking the remainder out first leaves an exact multiple, so the division is exact. `+ 0`
     // turns -0 into 0.
@@ -933,6 +963,7 @@ export function majorPart(money: Money): number | bigint {
  */
 export function minorPart(money: Money): number | bigint {
   const minor = money.minor;
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof minor === 'number' && money.scale <= 15) {
     // % on safe integers is exact and keeps the dividend's sign; `+ 0` turns -0 into 0.
     return (minor % POW10[money.scale]!) + 0;
@@ -947,6 +978,7 @@ export function minorPart(money: Money): number | bigint {
  */
 export function hasFraction(money: Money): boolean {
   const minor = money.minor;
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof minor === 'number' && money.scale <= 15) {
     return minor % POW10[money.scale]! !== 0;
   }
@@ -994,6 +1026,7 @@ export interface ToMinorNumberOptions {
  */
 export function toMinorNumber(money: Money, options?: ToMinorNumberOptions): number {
   // The common case, a number at the currency's exponent, needs no conversion.
+  // Stryker disable next-line BlockStatement,StringLiteral: fast path, the bigint path agrees
   if (typeof money.minor === 'number' && money.scale === currencyExponent(money.currency)) {
     return money.minor;
   }
