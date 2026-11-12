@@ -13,10 +13,19 @@ import type { ExactMoney } from '../src/exact.js';
 import {
   annualRate,
   discountedSumExact,
+  fv,
+  fvExact,
   irr,
+  nper,
   npv,
   npvExact,
   periodicRate,
+  pmt,
+  pmtExact,
+  pv,
+  pvExact,
+  rate,
+  type PaymentTiming,
 } from '../src/finance.js';
 import { abs, add, money, type Money } from '../src/money.js';
 
@@ -44,6 +53,38 @@ interface Microsoft {
     source: string;
     examples: { formula: string; nominal: string; npery: string; result: string }[];
   };
+  fv: { source: string; examples: AnnuityExample[] };
+  pv: { source: string; examples: AnnuityExample[] };
+  pmt: { source: string; examples: AnnuityExample[] };
+  nper: { source: string; examples: AnnuityExample[] };
+  rate: {
+    source: string;
+    accuracy: string;
+    examples: (AnnuityExample & { places: number; times?: number })[];
+  };
+}
+
+/** Excel's annuity arguments, as a spreadsheet cell holds them ('0.08/12' is A2/12). */
+interface AnnuityExample {
+  formula: string;
+  rate?: string;
+  nper?: number;
+  pmt?: string;
+  pv?: string;
+  fv?: string;
+  type?: PaymentTiming;
+  result: string;
+}
+
+/** An annuity vector: Calc's inputs as text, and its result. */
+interface AnnuityVector {
+  rate: string;
+  nper: number;
+  pmt: string;
+  pv: string;
+  fv: string;
+  type: PaymentTiming;
+  calc: string;
 }
 
 interface Calc {
@@ -52,6 +93,11 @@ interface Calc {
   irr: { flows: string[]; calc: string }[];
   periodicRate: { annual: string; perYear: number; calc: string; calcOnePlus: string }[];
   annualRate: { periodic: string; perYear: number; calc: string }[];
+  fv: AnnuityVector[];
+  pv: AnnuityVector[];
+  pmt: AnnuityVector[];
+  nper: AnnuityVector[];
+  rate: Omit<AnnuityVector, 'rate'>[];
 }
 
 const microsoft = JSON.parse(
@@ -145,6 +191,67 @@ describe("Microsoft's documented examples", () => {
       const growth = ratio(BigInt(example.fv) - BigInt(example.pv), BigInt(example.pv));
       const { lower } = periodicRate(growth, { perYear: Number(example.nper), digits: 15 });
       expect([example.formula, roundDecimal(ratio(lower), 7)]).toEqual([
+        example.formula,
+        example.result,
+      ]);
+    }
+  });
+
+  /** '0.08/12' (a cell divided by 12, as the pages write it) as an exact ratio */
+  const cellRate = (text: string | undefined): Ratio => {
+    const [rateText, divisor] = (text ?? '0').split('/');
+    return ratio(rateText!, divisor ?? 1);
+  };
+  const optional = (amount: string | undefined) => (amount === undefined ? undefined : usd(amount));
+
+  it(`FV (${microsoft.fv.source})`, () => {
+    for (const example of microsoft.fv.examples) {
+      const options = { pv: optional(example.pv), type: example.type };
+      const result = fv(cellRate(example.rate), example.nper!, usd(example.pmt!), options);
+      expect([example.formula, result.toDecimal()]).toEqual([example.formula, example.result]);
+    }
+  });
+
+  it(`PV (${microsoft.pv.source})`, () => {
+    for (const example of microsoft.pv.examples) {
+      const options = { fv: optional(example.fv), type: example.type };
+      const result = pv(cellRate(example.rate), example.nper!, usd(example.pmt!), options);
+      expect([example.formula, result.toDecimal()]).toEqual([example.formula, example.result]);
+    }
+  });
+
+  it(`PMT (${microsoft.pmt.source})`, () => {
+    for (const example of microsoft.pmt.examples) {
+      const options = { fv: optional(example.fv), type: example.type };
+      const result = pmt(cellRate(example.rate), example.nper!, usd(example.pv!), options);
+      expect([example.formula, result.toDecimal()]).toEqual([example.formula, example.result]);
+    }
+  });
+
+  it(`NPER (${microsoft.nper.source})`, () => {
+    for (const example of microsoft.nper.examples) {
+      const places = example.result.split('.')[1]!.length;
+      const options = { fv: optional(example.fv), type: example.type, digits: places + 6 };
+      const { lower, upper } = nper(
+        cellRate(example.rate),
+        usd(example.pmt!),
+        usd(example.pv!),
+        options,
+      );
+      // the exact value lies in [lower, upper): both round to what the page shows
+      expect([
+        example.formula,
+        roundDecimal(ratio(lower), places),
+        roundDecimal(ratio(upper), places),
+      ]).toEqual([example.formula, example.result, example.result]);
+    }
+  });
+
+  it(`RATE (${microsoft.rate.source})`, () => {
+    for (const example of microsoft.rate.examples) {
+      const { lower } = rate(example.nper!, usd(example.pmt!), usd(example.pv!), { digits: 12 });
+      const shown = ratio(ratio(lower).num * BigInt(example.times ?? 1), ratio(lower).den);
+      expect([example.formula, roundDecimal(shown, example.places)]).toEqual([
         example.formula,
         example.result,
       ]);
@@ -309,6 +416,207 @@ describe(`LibreOffice Calc's POWER (${calc.calc})`, () => {
     // a power of n ≤ 400 in doubles can be off by n units in the last place, so fewer agree to
     // every digit Calc shows than for NPV
     expect(strict).toBeGreaterThan(80);
+    expect(mismatches).toEqual([]);
+  });
+});
+
+describe(`LibreOffice Calc's FV, PV, PMT, NPER and RATE (${calc.calc})`, () => {
+  const calcRatio = (text: string) => ratio(text.replace(/E\+?/, 'e'));
+  const epsilon = ratio(1n, 2n ** 52n);
+  const textRounding = (text: string): Ratio => {
+    const exponent = Number(/E([+-]\d+)$/.exec(text)?.[1]) - 14;
+    return exponent >= 0
+      ? ratio(5n * 10n ** BigInt(exponent), 10n)
+      : ratio(5n, 10n ** BigInt(1 - exponent));
+  };
+  const magnitude = (value: Ratio): Ratio =>
+    value.num < 0n ? ratio(-value.num, value.den) : value;
+  const times = (left: Ratio, right: Ratio): Ratio =>
+    ratio(left.num * right.num, left.den * right.den);
+  const plus = (left: Ratio, right: Ratio): Ratio =>
+    ratio(left.num * right.den + right.num * left.den, left.den * right.den);
+  const over = (left: Ratio, right: Ratio): Ratio =>
+    ratio(left.num * right.den, left.den * right.num);
+  const power = (value: Ratio, exponent: number): Ratio =>
+    ratio(value.num ** BigInt(exponent), value.den ** BigInt(exponent));
+  /** |ours − Calc's| ≤ count · 2^-52 · size + Calc's text rounding */
+  const close = (ours: Ratio, text: string, size: Ratio, count: number) =>
+    !isGreater(
+      magnitude(subtract(ours, calcRatio(text))),
+      plus(times(ratio(BigInt(count)), times(epsilon, size)), textRounding(text)),
+    );
+  const one = ratio(1n);
+
+  /**
+   * The parts of an annuity a double computation loses accuracy on: G = (1 + r)^n, |r|, the
+   * payment term's size |pmt|·(1 + |r|·type)·(G + 1)/|r| (or |pmt|·n at a rate of 0).
+   */
+  const sizes = (vector: AnnuityVector) => {
+    const periodic = ratio(vector.rate);
+    const growth = power(plus(one, periodic), vector.nper);
+    const absRate = magnitude(periodic);
+    const payment = magnitude(ratio(vector.pmt));
+    const paymentTerm =
+      periodic.num === 0n
+        ? times(payment, ratio(BigInt(vector.nper)))
+        : over(
+            times(
+              times(payment, plus(one, times(absRate, ratio(BigInt(vector.type))))),
+              plus(growth, one),
+            ),
+            absRate,
+          );
+    return { growth, paymentTerm };
+  };
+
+  /** compares at 15 significant digits, else within the double error bound */
+  const check = (
+    vectors: AnnuityVector[],
+    compute: (vector: AnnuityVector) => ExactMoney,
+    size: (vector: AnnuityVector) => Ratio,
+  ) => {
+    let strict = 0;
+    const mismatches = vectors.filter((vector) => {
+      const ours = exactRatio(compute(vector));
+      if (significant15(ours) === calcSignificant15(vector.calc)) {
+        strict++;
+        return false;
+      }
+      return !close(ours, vector.calc, size(vector), vector.nper + 8);
+    });
+    return { strict, mismatches };
+  };
+
+  it('FV, PV and PMT: at 15 significant digits, or within the error of doubles', () => {
+    const options = (vector: AnnuityVector, other: 'pv' | 'fv') => ({
+      [other]: usd(vector[other]),
+      type: vector.type,
+    });
+    const fvResult = check(
+      calc.fv,
+      (vector) => fvExact(vector.rate, vector.nper, usd(vector.pmt), options(vector, 'pv')),
+      (vector) => {
+        const { growth, paymentTerm } = sizes(vector);
+        return plus(times(magnitude(ratio(vector.pv)), growth), paymentTerm);
+      },
+    );
+    const pvResult = check(
+      calc.pv,
+      (vector) => pvExact(vector.rate, vector.nper, usd(vector.pmt), options(vector, 'fv')),
+      (vector) => {
+        const { growth, paymentTerm } = sizes(vector);
+        return over(plus(magnitude(ratio(vector.fv)), paymentTerm), growth);
+      },
+    );
+    const pmtResult = check(
+      calc.pmt,
+      (vector) => pmtExact(vector.rate, vector.nper, usd(vector.pv), options(vector, 'fv')),
+      (vector) => {
+        // −(pv·G + fv)·r / ((1 + r·type)·(G − 1)): the numerator's size over the denominator,
+        // times the relative error of G − 1, (G + 1)/|G − 1|, plus one
+        const periodic = ratio(vector.rate);
+        const { growth } = sizes(vector);
+        const top = plus(times(magnitude(ratio(vector.pv)), growth), magnitude(ratio(vector.fv)));
+        if (periodic.num === 0n) {
+          return over(top, ratio(BigInt(vector.nper)));
+        }
+        const bottom = magnitude(
+          times(plus(one, times(periodic, ratio(BigInt(vector.type)))), subtract(growth, one)),
+        );
+        const conditioning = plus(one, over(plus(growth, one), magnitude(subtract(growth, one))));
+        return times(over(times(top, magnitude(periodic)), bottom), conditioning);
+      },
+    );
+    for (const [name, result, vectors] of [
+      ['fv', fvResult, calc.fv],
+      ['pv', pvResult, calc.pv],
+      ['pmt', pmtResult, calc.pmt],
+    ] as const) {
+      expect([name, vectors.length, result.mismatches]).toEqual([name, 150, []]);
+    }
+    // most agree to every digit Calc shows; (1 + r)^n in doubles, for n up to 480, can be off by
+    // n units in the last place, so not all do
+    expect([fvResult.strict, pvResult.strict, pmtResult.strict].map((count) => count > 80)).toEqual(
+      [true, true, true],
+    );
+  });
+
+  it('FV, PV and PMT round their exact values once', () => {
+    for (const vector of calc.fv.slice(0, 40)) {
+      const pvOptions = { pv: usd(vector.pv), type: vector.type };
+      const fvOptions = { fv: usd(vector.fv), type: vector.type };
+      for (const mode of ['halfEven', 'floor'] as const) {
+        expect(fv(vector.rate, vector.nper, usd(vector.pmt), pvOptions, mode)).toEqual(
+          fvExact(vector.rate, vector.nper, usd(vector.pmt), pvOptions).round(mode),
+        );
+        expect(pv(vector.rate, vector.nper, usd(vector.pmt), fvOptions, mode)).toEqual(
+          pvExact(vector.rate, vector.nper, usd(vector.pmt), fvOptions).round(mode),
+        );
+        expect(pmt(vector.rate, vector.nper, usd(vector.pv), fvOptions, mode)).toEqual(
+          pmtExact(vector.rate, vector.nper, usd(vector.pv), fvOptions).round(mode),
+        );
+      }
+    }
+  });
+
+  it('NPER: the floor at 25 places agrees with Calc at 15 significant digits, or within doubles', () => {
+    let strict = 0;
+    const mismatches = calc.nper.filter((vector) => {
+      const options = { fv: usd(vector.fv), type: vector.type, digits: 25 };
+      const { lower, upper, exact } = nper(vector.rate, usd(vector.pmt), usd(vector.pv), options);
+      const ours = significant15(ratio(lower));
+      if (
+        exact !== undefined
+          ? significant15(exact) === calcSignificant15(vector.calc)
+          : ours === significant15(ratio(upper)) && ours === calcSignificant15(vector.calc)
+      ) {
+        strict++;
+        return false;
+      }
+      // Excel's closed form in doubles: ln(A) / ln(1 + r), with A's numerator and denominator
+      // each a difference, so their relative errors are 4·2^-52 times their terms' sizes over
+      // their values, and ln(1 + r) off by 2·2^-52 absolute: the error is below
+      // 4 · (errorOfA + 2·2^-52·|nper|) / |ln(1 + r)|, with ln(1 + r) estimated in doubles
+      const periodic = ratio(vector.rate);
+      const timing = plus(one, times(periodic, ratio(BigInt(vector.type))));
+      const paid = times(ratio(vector.pmt), timing);
+      const futureTerm = times(ratio(vector.fv), periodic);
+      const presentTerm = times(ratio(vector.pv), periodic);
+      const relative = (left: Ratio, right: Ratio, value: Ratio) =>
+        over(plus(magnitude(left), magnitude(right)), magnitude(value));
+      const errorOfA = plus(
+        relative(paid, futureTerm, subtract(paid, futureTerm)),
+        relative(paid, presentTerm, plus(paid, presentTerm)),
+      );
+      if (periodic.num === 0n) {
+        // −(pv + fv)/pmt: a few roundings, relative to the result
+        return !close(ratio(lower), vector.calc, magnitude(ratio(lower)), 8);
+      }
+      const logOfGrowth = Math.abs(Math.log1p(Number(vector.rate)));
+      const periods = magnitude(ratio(lower));
+      const size = over(plus(errorOfA, times(ratio(2n), periods)), ratio(String(logOfGrowth)));
+      return !close(ratio(lower), vector.calc, size, 8);
+    });
+    expect(calc.nper.length).toBe(150);
+    expect(strict).toBeGreaterThan(100);
+    expect(mismatches).toEqual([]);
+  });
+
+  it("RATE: Calc's value lies within RATE's stated 0.0000001 of [lower, upper]", () => {
+    const accuracy = ratio(microsoft.rate.accuracy);
+    const mismatches = calc.rate.filter((vector) => {
+      const { lower, upper } = rate(vector.nper, usd(vector.pmt), usd(vector.pv), {
+        fv: usd(vector.fv),
+        type: vector.type,
+        digits: 12,
+      });
+      const theirs = calcRatio(vector.calc);
+      return (
+        isGreater(subtract(ratio(lower), theirs), accuracy) ||
+        isGreater(subtract(theirs, ratio(upper)), accuracy)
+      );
+    });
+    expect(calc.rate.length).toBe(150);
     expect(mismatches).toEqual([]);
   });
 });

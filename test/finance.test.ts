@@ -8,12 +8,20 @@ import {
   amortise,
   annualRate,
   compound,
+  fv,
+  fvExact,
   interest,
   interestExact,
   irr,
+  nper,
   npv,
   npvExact,
   periodicRate,
+  pmt,
+  pmtExact,
+  pv,
+  pvExact,
+  rate,
   discountedSum,
   discountedSumExact,
   prorate,
@@ -795,14 +803,14 @@ describe('npv and irr', () => {
 
 describe('periodicRate and annualRate', () => {
   /** (1 + rate)^n as a ratio, exactly */
-  const growthPower = (rate: string | Ratio, n: number): Ratio => {
-    const value = ratio(rate);
+  const growthPower = (periodic: string | Ratio, n: number): Ratio => {
+    const value = ratio(periodic);
     const power = BigInt(n);
     return ratio((value.num + value.den) ** power, value.den ** power);
   };
   const lessOrEqual = (left: Ratio, right: Ratio) => left.num * right.den <= right.num * left.den;
-  const onePlus = (rate: string | Ratio): Ratio => {
-    const value = ratio(rate);
+  const onePlus = (periodic: string | Ratio): Ratio => {
+    const value = ratio(periodic);
     return ratio(value.num + value.den, value.den);
   };
 
@@ -941,6 +949,184 @@ describe('periodicRate and annualRate', () => {
         expect(ratio(coarse)).toEqual(ratio(floored, 10n ** BigInt(digits)));
       }),
       { numRuns: runs(100) },
+    );
+  });
+});
+
+describe('fv, pv, pmt, nper and rate (Excel)', () => {
+  const usd = (amount: string): Money<'USD'> => money(amount, 'USD');
+  const exactText = (value: { num: bigint; den: bigint }) => text(ratio(value.num, value.den));
+
+  it('follow Excel at a rate of 0', () => {
+    // FV = −(pv + pmt·nper), PV = −(fv + pmt·nper), PMT = −(pv + fv)/nper, whatever the type
+    expect(fv('0', 10, usd('-100'), { pv: usd('-50') }).toDecimal()).toBe('1050.00');
+    expect(fv('0', 10, usd('-100'), { pv: usd('-50'), type: 1 }).toDecimal()).toBe('1050.00');
+    expect(pv('0', 10, usd('100'), { fv: usd('50') }).toDecimal()).toBe('-1050.00');
+    expect(pmt('0', 3, usd('1000'), { fv: usd('-100'), type: 1 }).toDecimal()).toBe('-300.00');
+    expect(exactText(pmtExact('0', 3, usd('100')))).toBe('-100/3');
+    expect(nper('0', usd('-100'), usd('1000'), { fv: usd('-50'), digits: 2 })).toEqual({
+      nper: '9.50',
+      lower: '9.50',
+      upper: '9.51',
+      exact: ratio(19n, 2n),
+    });
+  });
+
+  it('are exact rationals, rounded once', () => {
+    // (1.1^2 − 1)/0.1 = 2.1 payments of 100, at the end of each period
+    expect(exactText(fvExact('0.1', 2, usd('-100')))).toBe('210/1');
+    expect(exactText(fvExact('0.1', 2, usd('-100'), { type: 1 }))).toBe('231/1');
+    expect(exactText(pvExact('0.1', 2, usd('-100')))).toBe('21000/121');
+    expect(exactText(pmtExact('0.1', 2, usd('1000')))).toBe('-12100/21');
+    expect(pmt('0.1', 2, usd('1000')).toDecimal()).toBe('-576.19');
+    expect(pmt('0.1', 2, usd('1000'), {}, 'ceil').toDecimal()).toBe('-576.19');
+    expect(pmt('0.1', 2, usd('1000'), {}, 'floor').toDecimal()).toBe('-576.20');
+    // nper 0: the future value is the present value, negated; the present value is −fv
+    expect(fv('0.05', 0, usd('-100'), { pv: usd('1000') }).toDecimal()).toBe('-1000.00');
+    expect(pv('0.05', 0, usd('-100'), { fv: usd('1000') }).toDecimal()).toBe('-1000.00');
+  });
+
+  it('agree with each other: pv of pmt is the loan, fv of the plan is the target', () => {
+    fc.assert(
+      fc.property(
+        fc
+          .tuple(fc.bigInt({ min: -40_000n, max: 300_000n }), fc.constant(6))
+          .map(([units]) => ratio(units, 10n ** 6n)),
+        fc.integer({ min: 1, max: 480 }),
+        fc.bigInt({ min: -(10n ** 10n), max: 10n ** 10n }),
+        fc.bigInt({ min: -(10n ** 10n), max: 10n ** 10n }),
+        fc.constantFrom(0, 1 as const),
+        (periodic, periods, loanMinor, targetMinor, type) => {
+          const loan = fromMinor(loanMinor, 'USD');
+          const target = fromMinor(targetMinor, 'USD');
+          const payment = pmtExact(periodic, periods, loan, { fv: target, type });
+          // the exact payment, as an amount at a scale that holds it, isn't always available, so
+          // check the identity on the closed forms instead: FV(pmt, pv) = fv exactly
+          const scaled = (value: { num: bigint; den: bigint }) => ratio(value.num, value.den);
+          const paymentRatio = scaled(payment);
+          // FV is linear in pmt: FV(pmt) = FV(0) + pmt·FV(1)
+          const unit = fromMinor(100n, 'USD');
+          const zero = fromMinor(0n, 'USD');
+          const base = scaled(fvExact(periodic, periods, zero, { pv: loan, type }));
+          const perUnit = scaled(fvExact(periodic, periods, unit, { type }));
+          const future = ratio(
+            base.num * perUnit.den * paymentRatio.den + perUnit.num * paymentRatio.num * base.den,
+            base.den * perUnit.den * paymentRatio.den,
+          );
+          expect(future).toEqual(ratio(targetMinor, 100n));
+        },
+      ),
+      { numRuns: runs(100) },
+    );
+  });
+
+  it('rate is irr of the implied flows', () => {
+    expect(rate(48, usd('-200'), usd('8000'), { digits: 8 })).toEqual({
+      rate: '0.00770147',
+      lower: '0.00770147',
+      upper: '0.00770148',
+    });
+    // 1000 in, 600 and 400 out: exactly 0%
+    expect(rate(2, usd('-600'), usd('1000'), { fv: usd('200'), digits: 4 }).rate).toBe('0.0000');
+    expect(rate(1, usd('-50'), usd('1000'), { fv: usd('-1000'), digits: 6 }).rate).toBe('0.050000');
+    expect(rate(1, usd('-50'), usd('1000'), { fv: usd('-950'), type: 1, digits: 6 }).rate).toBe(
+      '0.000000',
+    );
+    expect(() => rate(10, usd('100'), usd('1000'))).toThrow('never change sign');
+    // 100 out, 230 back, then 132 out: 10% and 20%
+    expect(() => rate(2, usd('230'), usd('-100'), { fv: usd('-362') })).toThrow('pass a bracket');
+    expect(
+      rate(2, usd('230'), usd('-100'), { fv: usd('-362'), bracket: ['0.15', '0.5'], digits: 4 })
+        .rate,
+    ).toBe('0.2000');
+  });
+
+  it('nper is ln(A)/ln(1 + rate), bracketed and floored', () => {
+    // 1000 at 10% with 0 payments grows to 1210 in exactly 2 periods
+    expect(nper('0.1', usd('0'), usd('-1000'), { fv: usd('1210'), digits: 4 })).toEqual({
+      nper: '2.0000',
+      lower: '2.0000',
+      upper: '2.0001',
+      exact: ratio(2n),
+    });
+    // and to 1100 in exactly one, or back to 1000 in none
+    expect(nper('0.1', usd('0'), usd('-1000'), { fv: usd('1100') }).exact).toEqual(ratio(1n));
+    expect(nper('0.1', usd('0'), usd('-1000'), { fv: usd('1000') }).exact).toEqual(ratio(0n));
+    // 1.21 = 1.1^2, so growing by 10% takes half a period at 21%
+    expect(nper('0.21', usd('0'), usd('-1000'), { fv: usd('1100'), digits: 3 }).exact).toEqual(
+      ratio(1n, 2n),
+    );
+    expect(nper('0.01', usd('-100'), usd('-1000'), { digits: 8 }).nper).toBe('-9.57859404');
+    expect(() => nper('0.1', usd('-50'), usd('1000'))).toThrow('never settle');
+    expect(() => nper('0', usd('0'), usd('1000'))).toThrow('no payment at a rate of 0');
+    expect(() => nper('0.1', usd('-100'), usd('1000'), { digits: 101 })).toThrow('Invalid digits');
+  });
+
+  it('nper brackets the root: (1 + r)^lower ≤ A < (1 + r)^upper on integer checks', () => {
+    // with digits 0 the bracket ends are whole numbers, where the powers are exact
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: 100n, max: 200_000n }),
+        fc.bigInt({ min: 1n, max: 10n ** 9n }),
+        fc.bigInt({ min: 1n, max: 1000n }),
+        (rateUnits, loanMinor, margin) => {
+          const periodic = ratio(rateUnits, 10n ** 6n);
+          const interestMinor = (loanMinor * rateUnits) / 10n ** 6n;
+          // a payment of at least 1/1000 of the loan over the interest: at most a few thousand
+          // periods
+          const paymentMinor = -(interestMinor + (loanMinor * margin) / 1000n + 1n);
+          const result = nper(
+            periodic,
+            fromMinor(paymentMinor, 'USD'),
+            fromMinor(loanMinor, 'USD'),
+            {
+              digits: 0,
+            },
+          );
+          // A = pmt / (pmt + pv·r), above 1
+          const growth = ratio(
+            paymentMinor * periodic.den,
+            paymentMinor * periodic.den + loanMinor * periodic.num,
+          );
+          const lower = BigInt(result.lower);
+          // the check raises 1 + r to the result exactly, so keep it to a few thousand periods (a
+          // 0.0001% rate can give millions, whose power has hundreds of millions of bits)
+          fc.pre(lower <= 3000n);
+          const at = (count: bigint) =>
+            ratio((periodic.num + periodic.den) ** count, periodic.den ** count);
+          const lessOrEqual = (left: Ratio, right: Ratio) =>
+            left.num * right.den <= right.num * left.den;
+          expect(lessOrEqual(at(lower), growth)).toBe(true);
+          expect(lessOrEqual(at(lower + 1n), growth)).toBe(false);
+        },
+      ),
+      { numRuns: runs(100) },
+    );
+  });
+
+  it('nper gives up, rather than refine without end, when the result is too close to the grid', () => {
+    // A = 1.21 + 10^-6000, so nper is 2 + about 8·10^-6001: telling it from 2 takes about 20,000
+    // bits, past the cap
+    const big = 10n ** 6000n;
+    const options = { fv: fromMinor(121n * (big / 100n) + 1n, 'USD'), digits: 0 };
+    expect(() => nper('0.1', usd('0'), fromMinor(-big, 'USD'), options)).toThrow(
+      'too close to a 0-place decimal',
+    );
+    // 10^-300 is close, but within the cap
+    const near = 10n ** 300n;
+    const nearOptions = { fv: fromMinor(121n * (near / 100n) + 1n, 'USD'), digits: 0 };
+    expect(nper('0.1', usd('0'), fromMinor(-near, 'USD'), nearOptions).nper).toBe('2');
+  });
+
+  it('reject what Excel computes differently', () => {
+    expect(() => fv('0.1', 1.5, usd('-100'))).toThrow('nper must be a whole number');
+    expect(() => pmt('0.1', 0, usd('100'))).toThrow('nper must be a whole number from 1');
+    expect(() => rate(2.5, usd('-100'), usd('200'))).toThrow('nper must be a whole number');
+    expect(() => fv('-1', 2, usd('-100'))).toThrow('must be above -1');
+    expect(() => pv('-1.5', 2, usd('-100'))).toThrow('must be above -1');
+    expect(() => fv('0.1', 2, usd('-100'), { type: 2 as 0 })).toThrow('Invalid type 2');
+    expect(() => fv('0.1', 2, usd('-100'), { pv: eur('1') as unknown as Money<'USD'> })).toThrow(
+      CurrencyMismatchError,
     );
   });
 });
