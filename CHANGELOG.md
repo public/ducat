@@ -71,6 +71,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
+- **Visible change:** `parse(text, currency, locale)` throws a RangeError naming the locale when
+  the runtime has no Intl data for its language and region (`xx-ZZ`, `de-XX`), as `parseMoney`
+  already did. It used to read the amount with the fallback locale's separators, which can misread
+  it. Pass a supported locale, or the base language (`de`) (#271).
 - `extractTax` and `extractTaxExact` throw a RangeError naming the percent for -100% or below,
   where no net amount has that gross. Before, -100% failed inside `ratio()` with "Division by
   zero", and a percent below -100 returned a meaningless split (a net of −2 × gross at −150%).
