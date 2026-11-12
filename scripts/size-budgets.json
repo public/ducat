@@ -116,6 +116,14 @@
     "functions with every ISO code: /iso, fromMinor, add, toDecimal": {
       "code": "import '@ducatjs/money/iso'; import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",
       "gzipped": 1.93
+    },
+    "finance: npv alone": {
+      "code": "import { money } from '@ducatjs/money'; import { npv } from '@ducatjs/money/finance'; console.log(npv('0.08', [money('300', 'EUR'), money('400', 'EUR')]).toDecimal());",
+      "gzipped": 5.1
+    },
+    "finance: pmt alone": {
+      "code": "import { money } from '@ducatjs/money'; import { pmt } from '@ducatjs/money/finance'; console.log(pmt('0.005', 360, money('200000', 'EUR')).toDecimal());",
+      "gzipped": 6.6
     }
   }
 }
