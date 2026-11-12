@@ -124,8 +124,13 @@ theorem rootLow_bracket (num den bits q : ℕ) (hden : 0 < den) (hq : q ≠ 0) :
       num * (2 ^ bits) ^ q < (rootLow num den bits q + 1) ^ q * den := by
   have hS : (2 ^ bits) ^ q = 2 ^ (bits * q) := (pow_mul 2 bits q).symm
   obtain ⟨h1, h2⟩ := floorRoot_spec q (num * 2 ^ (bits * q) / den) (Nat.pos_of_ne_zero hq)
-  rw [hS]
-  exact root_bracket _ q num den (2 ^ bits) hden (by rw [hS]; exact h1) (by rw [hS]; exact h2)
+  have h1' : rootLow num den bits q ^ q ≤ num * (2 ^ bits) ^ q / den := by
+    rw [hS]
+    exact h1
+  have h2' : num * (2 ^ bits) ^ q / den < (rootLow num den bits q + 1) ^ q := by
+    rw [hS]
+    exact h2
+  exact root_bracket (rootLow num den bits q) q num den (2 ^ bits) hden h1' h2'
 
 /-- The floored factor is a lower bound of `Π g^(r/q)`. -/
 theorem factorLow_le (num den bits : ℕ) (hden : 0 < den) (key : List (ℕ × ℕ))
