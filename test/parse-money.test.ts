@@ -146,3 +146,80 @@ describe('parseMoney reads back what format writes (property)', () => {
     );
   });
 });
+
+// #310: symbols with a space in them ("F CFA" for XOF and XAF in fr-SN) were split into "F" and "CFA"
+describe('parseMoney reads symbols that contain a space', () => {
+  it('reads XOF in fr-SN, with a hint because XAF writes the same symbol', () => {
+    const text = format(money('1000', 'XOF'), 'fr-SN');
+    expect(text).toMatch(/F\s*CFA/u);
+    expect(show(text, 'fr-SN', { hint: 'XOF' })).toBe('1000 XOF');
+    expect(() => parseMoney(text, 'fr-SN')).toThrow(/could be XAF, XOF/);
+  });
+
+  it('still reads a code and a symbol side by side, and signs around them', () => {
+    expect(show('12 EUR €', 'fr-FR')).toBe('12.00 EUR');
+    expect(show('US $ 12.50', 'en-US')).toBe('12.50 USD');
+    expect(show('-1 234,50 €', 'fr-FR')).toBe('-1234.50 EUR');
+  });
+
+  it('matches custom symbols without regard to spaces', () => {
+    expect(show('12 F CFA', 'fr-SN', { symbols: { 'F CFA': 'XOF' } })).toBe('12 XOF');
+    expect(show('12 FCFA', 'fr-SN', { symbols: { 'F CFA': 'XOF' } })).toBe('12 XOF');
+  });
+
+  it('reads back what format writes, for every currency whose symbol has a space', () => {
+    const locales = [
+      'fr-SN',
+      'fr-CM',
+      'fr-CI',
+      'fr-FR',
+      'fr-CA',
+      'de-CH',
+      'es-MX',
+      'pt-BR',
+      'ar-EG',
+      'en-IN',
+      'ru-RU',
+      'sw-KE',
+    ];
+    const codes = [
+      'XOF',
+      'XAF',
+      'XPF',
+      'CHF',
+      'EUR',
+      'USD',
+      'CAD',
+      'MXN',
+      'BRL',
+      'EGP',
+      'INR',
+      'RUB',
+      'KES',
+      'SAR',
+      'AED',
+      'ZAR',
+    ];
+    let checked = 0;
+    for (const locale of locales) {
+      for (const code of codes) {
+        const value = money('1234.5', code, { rounding: 'halfExpand' });
+        const text = format(value, locale);
+        const symbol = text.replace(/[\d\s\p{Z}\p{Cf}.,٫٬'’()+\-−]/gu, '');
+        const spaced = new Intl.NumberFormat(locale, { style: 'currency', currency: code })
+          .formatToParts(1)
+          .find((part) => part.type === 'currency')!.value;
+        if (!/[\s\p{Z}]/u.test(spaced.trim()) || symbol === '') {
+          continue;
+        }
+        checked++;
+        expect([locale, code, parseMoney(text, locale, { hint: code }).toString()]).toEqual([
+          locale,
+          code,
+          value.toString(),
+        ]);
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+});

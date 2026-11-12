@@ -20,7 +20,7 @@
     "@ducatjs/money/format": 0.56,
     "@ducatjs/money/fixed": 1.27,
     "@ducatjs/money/fixed/money": 1.42,
-    "@ducatjs/money/parse": 2.14,
+    "@ducatjs/money/parse": 2.22,
     "@ducatjs/money/stripe": 1.14,
     "@ducatjs/money/adyen": 0.66,
     "@ducatjs/money/checkout": 1.17,
