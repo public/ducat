@@ -1375,13 +1375,13 @@ function annuity<C extends string>(
 
 /**
  * The most bits an annuity's power (1 + r)^nper may have before it throws rather than take
- * seconds to minutes: 2^20 for fv, pv and pmt (about 20 ms there), 2^17 for their …Exact forms
- * (an ExactMoney reduces its fraction, which is quadratic: about 0.5 s there), and 2^19 for rate,
- * which evaluates one at every bisection step. Monthly for 30 years at a 10-digit rate is about
+ * seconds to minutes: 2^20 for fv, pv and pmt (about 20 ms there), 2^16 for their …Exact forms
+ * (an ExactMoney reduces its fraction, which is quadratic: from 0.1 s to about 1 s there,
+ * depending on the engine), and 2^19 for rate, checked at every rate the bisection tries. Monthly for 30 years at a 10-digit rate is about
  * 12,000 bits.
  */
 const MAX_POWER_BITS = 1_048_576; // 2^20, a literal so bundlers drop it when unused
-const MAX_EXACT_POWER_BITS = 131_072; // 2^17
+const MAX_EXACT_POWER_BITS = 65_536; // 2^16
 const MAX_RATE_POWER_BITS = 524_288; // 2^19
 
 /** Throws when `base^count` would have more than `limit` bits. */
@@ -1641,7 +1641,6 @@ export function rate<C extends string>(
   const [paymentMinor, presentMinor, futureMinor] = parts.minors as [bigint, bigint, bigint];
   const type = parts.type;
   const unit = pow10n(digits);
-  assertPowerSize(unit * 2n, count, 'rate', MAX_RATE_POWER_BITS);
   // The flows RATE implies, for the sign rules: pv (+ pmt) at 0, pmt between, pmt (or 0) + fv at
   // nper. Their sign changes don't depend on nper beyond 2, so three stand for them all.
   const implied =
@@ -1662,7 +1661,7 @@ export function rate<C extends string>(
     );
   }
   // The NPV of those flows is f / (1 + r)^n with f = pv·G + pmt·(1 + r·type)·(G − 1)/r + fv and
-  // G = (1 + r)^n, so it has f's sign. For r = a/b, f·a·b^(n+1) is
+  // G = (1 + r)^n, so it has f's sign. For r = a/b, f·a·b^n is
   // H = pv·a·(a + b)^n + pmt·(b + a·type)·((a + b)^n − b^n) + fv·a·b^n, an integer by squaring
   // (no Horner's rule over nper flows), so sign(f) = sign(H)·sign(a), and pv + pmt·n + fv at 0.
   const signAtRate = (candidate: Ratio): -1 | 0 | 1 => {
@@ -1671,6 +1670,10 @@ export function rate<C extends string>(
     if (rateNum === 0n) {
       return signOf(presentMinor + paymentMinor * count + futureMinor);
     }
+    // checked at every rate tried (grid points, the doubling search and a bracket's ends), since
+    // a candidate can be far larger than 1 + rate at the answer
+    const larger = rateNum + rateDen > rateDen ? rateNum + rateDen : rateDen;
+    assertPowerSize(larger, count, 'rate', MAX_RATE_POWER_BITS);
     const growth = (rateNum + rateDen) ** count;
     const base = rateDen ** count;
     const scaled =

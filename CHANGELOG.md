@@ -77,7 +77,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Changed
 
-- `irr` throws a RangeError for an IRR above 2^1024 per period, where it used to keep doubling its
+- **Visible change:** `irr` throws a RangeError for an IRR above 2^1024 per period, where it used to keep doubling its
   search without limit; every rate solver in `/finance` now has a bounded number of steps (#200).
 - **Visible change:** `toIso20022Amount` and `fromIso20022Amount` accept only ISO 4217 codes, as
   ISO 20022's `ActiveOrHistoricCurrencyCode` requires: current codes (including `XAU` and the other

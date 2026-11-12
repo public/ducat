@@ -228,8 +228,9 @@ as for `interest` and `npv`. Amounts are `Money` of one currency; the rate is a 
   (times the sign of `a`), with the powers by squaring, rather than Horner's rule over `nper + 1`
   flows, whose cost grew with `nper²`.
 - **Limits, so nothing runs away.** The power `(1 + r)^nper` may have at most 2^20 bits for `fv`,
-  `pv` and `pmt` (about 20 ms there), 2^17 for their `…Exact` forms (an `ExactMoney` reduces its
-  fraction, quadratically: about 0.5 s), and 2^19 for `rate`, which evaluates one per step;
+  `pv` and `pmt` (about 20 ms there), 2^16 for their `…Exact` forms (an `ExactMoney` reduces its
+  fraction, quadratically: 0.1 s to about 1 s, by engine), and 2^19 for `rate`, checked at every
+  rate the bisection tries (grid points, the doubling search and a bracket's ends);
   monthly for 30 years at a 10-digit rate is about 12,000 bits. Past them they throw. The search
   for a positive rate doubles at most 1,024 times (a rate above 2^1024 throws), so every
   bisection has a bounded number of steps. `nper` refines its logarithms to at most 16,384 bits,

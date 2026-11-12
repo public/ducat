@@ -602,52 +602,70 @@ describe(`LibreOffice Calc's FV, PV, PMT, NPER and RATE (${calc.calc})`, () => {
     expect(mismatches).toEqual([]);
   });
 
-  it("RATE: within 1e-12 relative, or within Calc's own stopping tolerance where it stops early", () => {
-    // Excel documents only that RATE stops within 0.0000001, which is far looser than most rates
-    // (the smallest here is about 1e-9), so the test is tighter. Most of Calc's values agree with
+  it('RATE: within 1e-12 relative, or 5e-12 where Calc stops early, and always a genuine root', () => {
+    // Excel documents only that RATE stops within 0.0000001, far looser than most rates (the
+    // smallest here is about 1e-9), so the test is much tighter. Most of Calc's values agree with
     // ducat's exact bracket to 1e-12 relative. The rest are where Calc's Newton iteration stops
-    // early: LibreOffice's RATE stops once a step is below 1e-10, so those lie within 1e-10 of
-    // the root (all are within 2e-12 here; ill-conditioned ones, such as a 1e-9 rate over 360
-    // periods, differ relatively by more, and ducat's value is the right one: it matches irr on
-    // the implied flows to every digit). With payments at the start, RATE's equation also has a
-    // root at exactly -1, where the NPV is undefined: Calc can converge to it, and those are
-    // counted apart, as irr's test counts Newton going past -1.
-    const accuracy = ratio(microsoft.rate.accuracy);
+    // early or loses digits to cancellation (ill-conditioned cases, such as a 1e-9 rate over 360
+    // periods): their largest absolute gap is 1.8e-12, so they must be within 5e-12, and ducat's
+    // value matches irr on the implied flows to every digit. Every bracket is checked to be a
+    // genuine root: f(r) = fv − FV(r) changes sign over [lower, upper]. With payments at the
+    // start, RATE's equation also has a root at exactly −1, where the NPV is undefined; Calc can
+    // converge to it, and there ducat's rate must still be a genuine root above −1.
     const relative = ratio(1n, 10n ** 12n);
-    const stopping = ratio(1n, 10n ** 10n);
+    const early = ratio(5n, 10n ** 12n);
     let strict = 0;
     let atMinusOne = 0;
     const mismatches = calc.rate.filter((vector) => {
       const theirs = calcRatio(vector.calc);
-      if (vector.type === 1 && !isGreater(theirs, ratio('-0.999999'))) {
-        atMinusOne++;
-        return false;
-      }
+      const spurious = vector.type === 1 && !isGreater(theirs, ratio('-0.999999'));
       // enough places for 1e-12 relative at the smallest rates
-      const places = 14 + Math.max(0, Math.ceil(-Math.log10(Math.abs(Number(vector.calc)))));
+      const scale = spurious
+        ? 0
+        : Math.max(0, Math.ceil(-Math.log10(Math.abs(Number(vector.calc)))));
       const { lower, upper } = rate(vector.nper, usd(vector.pmt), usd(vector.pv), {
         fv: usd(vector.fv),
         type: vector.type,
-        digits: Math.min(places, 40),
+        digits: Math.min(14 + scale, 40),
       });
+      // a genuine root: the NPV of the implied flows has opposite signs (or a zero) at the
+      // bracket's ends, by Horner's rule on integers, independently of rate's closed form
+      const cents = (amount: string) => BigInt(usd(amount).minor);
+      const [payment, present, future] = [cents(vector.pmt), cents(vector.pv), cents(vector.fv)];
+      const flows = Array.from({ length: vector.nper + 1 }, () => payment);
+      if (vector.type === 1) {
+        flows[0] = present + payment;
+        flows[vector.nper] = future;
+      } else {
+        flows[0] = present;
+        flows[vector.nper] = payment + future;
+      }
+      const npvSign = (at: string) => {
+        const { num, den } = ratio(at);
+        let accumulator = flows[0]!;
+        let denominatorPower = 1n;
+        for (let index = 1; index < flows.length; index++) {
+          denominatorPower *= den;
+          accumulator = accumulator * (num + den) + flows[index]! * denominatorPower;
+        }
+        return Math.sign(Number(accumulator > 0n ? 1n : accumulator < 0n ? -1n : 0n));
+      };
+      const lowSign = npvSign(lower);
+      const highSign = npvSign(upper);
+      if (lowSign !== 0 && lowSign === highSign) {
+        return true;
+      }
+      if (spurious) {
+        atMinusOne++;
+        return !isGreater(ratio(lower), ratio(-1));
+      }
       const distance = magnitude(subtract(ratio(lower), theirs));
-      if (
-        !isGreater(
-          distance,
-          ratio(
-            magnitude(ratio(lower)).num * relative.num,
-            magnitude(ratio(lower)).den * relative.den,
-          ),
-        )
-      ) {
+      const size = magnitude(ratio(lower));
+      if (!isGreater(distance, ratio(size.num * relative.num, size.den * relative.den))) {
         strict++;
         return false;
       }
-      return (
-        isGreater(distance, stopping) ||
-        isGreater(subtract(ratio(lower), theirs), accuracy) ||
-        isGreater(subtract(theirs, ratio(upper)), accuracy)
-      );
+      return isGreater(distance, early);
     });
     expect(calc.rate.length).toBe(150);
     expect(mismatches).toEqual([]);

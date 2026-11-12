@@ -1004,6 +1004,23 @@ describe('fv, pv, pmt, nper and rate (Excel)', () => {
         ]);
       }
     }
+    // and for fv (−(pv/2 + pmt) at −50%) and pv (−3(fv + pmt)/2 at −1/3): 0.01 gives the ties
+    // −0.005 and −0.015
+    for (const mode of modes) {
+      for (const amount of ['0.01', '-0.01', '0.03']) {
+        expect([mode, amount, fv('-0.5', 1, usd('0'), { pv: usd(amount) }, mode)]).toEqual([
+          mode,
+          amount,
+          fvExact('-0.5', 1, usd('0'), { pv: usd(amount) }).round(mode),
+        ]);
+        const third = ratio(-1n, 3n);
+        expect([mode, amount, pv(third, 1, usd('0'), { fv: usd(amount) }, mode)]).toEqual([
+          mode,
+          amount,
+          pvExact(third, 1, usd('0'), { fv: usd(amount) }).round(mode),
+        ]);
+      }
+    }
     const nickels = roundingPolicy({ increment: 5, rounding: 'halfEven' });
     expect(pmt('-0.01', 3, usd('100'), {}, nickels)).toEqual(
       pmtExact('-0.01', 3, usd('100')).round(nickels),
@@ -1157,13 +1174,25 @@ describe('fv, pv, pmt, nper and rate (Excel)', () => {
   });
 
   it('throw rather than compute powers too large to finish', () => {
-    // (1 + r)^nper must stay under 2^20 bits (2^17 for the exact forms, 2^19 for rate)
+    // (1 + r)^nper must stay under 2^20 bits (2^16 for the exact forms, 2^19 for rate)
     expect(() => fv('1e-100', 100_000, usd('-1'))).toThrow("fv's power (1 + rate)^nper would pass");
-    expect(() => fvExact('0.0123456789', 10_000, usd('-1'))).toThrow('would pass 131072 bits');
+    expect(() => fvExact('0.0123456789', 10_000, usd('-1'))).toThrow('would pass 65536 bits');
     expect(fv('0.0123456789', 10_000, usd('-1')).isPositive()).toBe(true);
     expect(() => rate(3000, usd('-200'), usd('450000'), { digits: 100 })).toThrow(
       "rate's power (1 + rate)^nper would pass 524288 bits",
     );
+    // the cap holds at every rate tried, not only near the answer: the doubling search for a
+    // huge rate, and a bracket's huge or finely divided ends
+    const huge = money(`1${'0'.repeat(300)}`, 'USD');
+    expect(() => rate(14_000, huge, usd('-0.01'))).toThrow(
+      "rate's power (1 + rate)^nper would pass",
+    );
+    expect(() =>
+      rate(10_000, usd('-1'), usd('5000'), { bracket: ['0', ratio(10n ** 3000n)] }),
+    ).toThrow("rate's power");
+    expect(() =>
+      rate(10_000, usd('-1'), usd('5000'), { bracket: [ratio(1n, 10n ** 2000n), '1'] }),
+    ).toThrow("rate's power");
     // a rate above 2^1024 per period: the search for a positive root stops
     expect(() =>
       rate(1, usd('0'), usd('-0.01'), { fv: money(`1${'0'.repeat(400)}`, 'USD') }),

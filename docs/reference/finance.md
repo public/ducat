@@ -127,7 +127,7 @@ Excel's names, so Excel's arguments, sign convention (money paid out is negative
 Excel's FV: the future value of `pmt` every period for `nper` periods, on top of `pv`: `−(pv·(1 + rate)^nper + pmt·(1 + rate·type)·((1 + rate)^nper − 1)/rate)`, and at a rate of 0, `−(pv + pmt·nper)`. Exact, then rounded once.
 
 - **Rounds:** once; it is `fvExact(…).round(rounding)`.
-- **Throws:** `RangeError` for an `nper` that isn't a whole number from 0 to 100,000, a rate at or below −1, a `type` other than 0 or 1, or when `(1 + rate)^nper` would pass 2^20 bits (2^17 for the `…Exact` forms, which reduce their fraction).
+- **Throws:** `RangeError` for an `nper` that isn't a whole number from 0 to 100,000, a rate at or below −1, a `type` other than 0 or 1, or when `(1 + rate)^nper` would pass 2^20 bits (2^16 for the `…Exact` forms, which reduce their fraction).
 
 ### fvExact
 
@@ -179,7 +179,7 @@ Excel's NPER: `ln((pmt·(1 + rate·type) − fv·rate) / (pmt·(1 + rate·type) 
 
 Excel's RATE, as `irr` of the flows it implies: `pv` at period 0, `pmt` at periods 1 to `nper` (0 to `nper − 1` with `type: 1`), and `fv` at period `nper`. Exact to `digits` places, floored, between `lower` and `upper`. A `bracket` replaces Excel's `guess`. Microsoft documents that RATE iterates until it is within 0.0000001, so Excel's value is that close to [`lower`, `upper`].
 
-- **Throws:** `RangeError` where Excel guesses: when the implied flows change sign more than once (several rates fit) unless a `bracket` selects one, and when they never change sign (Excel's #NUM!); for an `nper` that isn't a whole number from 1 to 100,000, `digits` outside 0–100, `(1 + rate)^nper` past 2^19 bits at `digits` places, and a rate above 2^1024. Otherwise as `irr`.
+- **Throws:** `RangeError` where Excel guesses: when the implied flows change sign more than once (several rates fit) unless a `bracket` selects one, and when they never change sign (Excel's #NUM!); for an `nper` that isn't a whole number from 1 to 100,000, `digits` outside 0–100, `(1 + rate)^nper` past 2^19 bits at any rate the bisection tries, and a rate above 2^1024. Otherwise as `irr`.
 
 ```ts
 import { money, ratio } from '@ducatjs/money';
