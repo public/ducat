@@ -1,6 +1,6 @@
 # `@ducatjs/money/finance`
 
-Day counts, interest, periodic and annual rates, loan schedules, discounted sums and proration, in exact arithmetic, under ducat's own names. Excel's financial functions are in [`@ducatjs/money/excel`](excel.md). **Installs:** nothing; every function is a free function.
+Day counts, interest, periodic and annual rates, loan and savings schedules, discounted sums and proration, in exact arithmetic, under ducat's own names. Excel's financial functions are in [`@ducatjs/money/excel`](excel.md). **Installs:** nothing; every function is a free function.
 
 Related: [How to calculate interest and loans](../how-to/calculate-interest-and-loans.md) · [The finance module's design](../explanation/finance-design.md) · [About rounding](../explanation/rounding.md)
 
@@ -51,6 +51,30 @@ An annuity, linear or interest-only repayment schedule. Each period's interest i
 
 - **Rounds:** every payment and interest charge, once each, with `options.rounding`.
 - **Throws:** `RangeError` when the loan isn't positive, the balloon isn't between zero and the loan, an `'interestOnly'` loan has a balloon, the loan or the balloon isn't a multiple of the rounding's unit (0.01 EUR, or a policy's increment), the rate is negative, `residual: 'lastInterest'` is used on anything but an annuity with a non-zero rate, there are more than 100,000 periods, or the payment dates run past the year 9999.
+
+### savingsPlan
+
+`savingsPlan<C extends string>(options: SavingsPlanOptions<C>): SavingsPlan<C>`
+
+A savings schedule: a `contribution` every period, or the contribution that reaches a `target`, earning `rate / perYear` per period. Each period's interest is the balance it earns on (the balance before the period, plus the contribution when it is paid at the start) times the periodic rate, rounded once, as a bank credits it. Nothing else is rounded, so the final balance is exactly `initial + totalContributions + totalInterest`. With a `target`, the regular contribution is Excel's PMT for it, rounded, and the last contribution takes the residual, so the plan ends exactly on the target, as `amortise` settles a loan on its last payment. With `timing: 'start'`, the last period's interest is on the regular contribution, and the last contribution is then adjusted. At a rate of 0 the regular contribution is `(target − initial) / periods`, rounded. Rates down to −perYear (excluded), negative contributions (withdrawals) and targets below what `initial` grows to are allowed. It isn't an Excel name; its amounts are positive when paid in.
+
+- **Rounds:** every interest credit, and a target's regular contribution, once each, with `options.rounding`.
+- **Throws:** `RangeError` when both or neither of `contribution` and `target` are given, for a `periods` count that isn't a whole number from 1 to 100,000, a `perYear` that isn't a positive integer, a rate that loses everything in one period, a `timing` other than `'end'` or `'start'`, or amounts that aren't multiples of the rounding's unit; `CurrencyMismatchError` for amounts in different currencies.
+
+```ts
+import { money } from '@ducatjs/money';
+import { savingsPlan } from '@ducatjs/money/finance';
+
+const plan = savingsPlan({
+  rate: '0.05',
+  perYear: 12,
+  periods: 216,
+  target: money('50000', 'USD'),
+});
+plan.contribution; // → 143.18 USD
+plan.rows.at(-1)?.contribution; // → 144.38 USD
+plan.balance; // → 50000.00 USD
+```
 
 ## Discounted sums and rates
 
@@ -138,6 +162,10 @@ yearFraction('2026-07-15', '2026-01-15', 'ACT/360'); // throws RangeError
 - `AmortisationResidual`: `'lastPayment'` (the default, which most lenders use) or `'lastInterest'`, which keeps the last payment equal to the others.
 - `Amortisation<C>`: `{ payment: Money<C>; rows: AmortisationRow<C>[]; totalInterest: Money<C> }`. `payment` is the regular payment: for `'annuity'` every payment but possibly the last, for `'linear'` the first (the largest), for `'interestOnly'` the interest payment.
 - `AmortisationRow<C>`: `{ period: number; date?: string; payment; interest; principal; balance: Money<C>; days?: number; yearFraction?: Ratio }`. `date` is set when `firstPayment` is given; `days` and `yearFraction` are reserved and not set yet.
+- `ContributionTiming`: `'end'` (the default, Excel's `type` 0) or `'start'` (`type` 1).
+- `SavingsPlanOptions<C>`: `{ rate: Factor; perYear: number; periods: number; contribution?: Money<C>; target?: Money<C>; initial?: Money<C>; timing?: ContributionTiming; rounding?: RoundingInput; firstContribution?: CalendarDate }`, with exactly one of `contribution` and `target`. The contribution dates follow `firstContribution` as `amortise`'s follow `firstPayment`.
+- `SavingsPlan<C>`: `{ contribution: Money<C>; rows: SavingsPlanRow<C>[]; totalContributions: Money<C>; totalInterest: Money<C>; balance: Money<C> }`. `contribution` is the regular one (with a `target`, every one but possibly the last).
+- `SavingsPlanRow<C>`: `{ period: number; date?: string; contribution; interest; balance: Money<C> }`. `date` is set when `firstContribution` is given.
 - `PeriodicRateOptions`: `{ perYear: number; digits?: number }`; `perYear` is the periods per year (12 for monthly), `digits` the decimal places of the result (default 10, at most 100; `digits × perYear` at most 50,000).
 - `AnnualRateOptions`: `{ perYear: number }`, a positive integer up to 100,000.
 - `PeriodicRateResult`: `{ rate: string; lower: string; upper: string; exact?: Ratio }`, as `IrrResult`, with `exact` when the rate is rational.

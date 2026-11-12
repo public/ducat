@@ -14,6 +14,7 @@ import {
   discountedSum,
   discountedSumExact,
   prorate,
+  savingsPlan,
   splitPeriod,
   yearFraction,
   type DayCount,
@@ -1224,6 +1225,208 @@ describe('fv, pv, pmt, nper and rate (Excel)', () => {
     expect(() => fv('0.1', 2, usd('-100'), { type: 2 as 0 })).toThrow('Invalid type 2');
     expect(() => fv('0.1', 2, usd('-100'), { pv: eur('1') as unknown as Money<'USD'> })).toThrow(
       CurrencyMismatchError,
+    );
+  });
+});
+
+describe('savingsPlan', () => {
+  const usd = (amount: string): Money<'USD'> => money(amount, 'USD');
+  const decimals = (amounts: readonly Money[]) => amounts.map((amount) => amount.toDecimal());
+
+  it('credits interest every period, rounded once, on what the balance earns', () => {
+    const plan = savingsPlan({
+      rate: '0.06',
+      perYear: 12,
+      periods: 10,
+      contribution: usd('200'),
+      initial: usd('500'),
+      timing: 'start',
+    });
+    // 700 earns 0.5% in the first month
+    expect(decimals([plan.rows[0]!.interest, plan.rows[0]!.balance])).toEqual(['3.50', '703.50']);
+    // Excel's FV(0.5%, 10, -200, -500, 1) is 2581.40; rounding each credit gives the same here
+    expect(plan.balance.toDecimal()).toBe('2581.40');
+    expect(decimals([plan.totalContributions, plan.totalInterest])).toEqual(['2000.00', '81.40']);
+    const atEnd = savingsPlan({ rate: '0.06', perYear: 12, periods: 2, contribution: usd('100') });
+    // the first contribution, at the end of period 1, earns nothing until period 2
+    expect(decimals(atEnd.rows.map((row) => row.interest))).toEqual(['0.00', '0.50']);
+  });
+
+  it('reaches a target exactly, the residual on the last contribution', () => {
+    const plan = savingsPlan({ rate: '0.05', perYear: 12, periods: 216, target: usd('50000') });
+    // the regular contribution is Excel's PMT, rounded
+    expect(plan.contribution.toDecimal()).toBe('143.18');
+    expect(plan.balance.toDecimal()).toBe('50000.00');
+    expect(plan.rows.at(-1)!.contribution.toDecimal()).toBe('144.38');
+    expect(plan.rows.slice(0, -1).every((row) => row.contribution.equals(plan.contribution))).toBe(
+      true,
+    );
+    const starting = savingsPlan({
+      rate: '0.05',
+      perYear: 12,
+      periods: 216,
+      target: usd('50000'),
+      timing: 'start',
+      firstContribution: '2026-01-31',
+    });
+    expect(starting.balance.toDecimal()).toBe('50000.00');
+    expect([starting.rows[0]!.date, starting.rows[1]!.date, starting.rows.at(-1)!.date]).toEqual([
+      '2026-01-31',
+      '2026-02-28',
+      '2043-12-31',
+    ]);
+  });
+
+  it('at a rate of 0, contributes the target over the periods, the residual on the last', () => {
+    const plan = savingsPlan({ rate: '0', perYear: 12, periods: 7, target: usd('100') });
+    // 100 / 7 = 14.2857… rounds to 14.29; the last takes 100 − 6 × 14.29
+    expect(decimals(plan.rows.map((row) => row.contribution))).toEqual([
+      ...Array.from({ length: 6 }, () => '14.29'),
+      '14.26',
+    ]);
+    expect(plan.totalInterest.toDecimal()).toBe('0.00');
+  });
+
+  it('takes negative rates, withdrawals and a policy', () => {
+    const shrinking = savingsPlan({
+      rate: '-0.12',
+      perYear: 12,
+      periods: 1,
+      contribution: usd('0'),
+      initial: usd('100'),
+    });
+    expect(shrinking.balance.toDecimal()).toBe('99.00');
+    // a target below what the initial balance grows to: withdrawals
+    const drawdown = savingsPlan({
+      rate: '0.12',
+      perYear: 12,
+      periods: 12,
+      target: usd('0'),
+      initial: usd('1000'),
+    });
+    expect(drawdown.contribution.isNegative()).toBe(true);
+    expect(drawdown.balance.toDecimal()).toBe('0.00');
+    const nickels = roundingPolicy({ rounding: 'halfEven', increment: 5 });
+    const rounded = savingsPlan({
+      rate: '0.05',
+      perYear: 12,
+      periods: 24,
+      target: usd('1000'),
+      rounding: nickels,
+    });
+    expect(rounded.rows.every((row) => Number(row.interest.minor) % 5 === 0)).toBe(true);
+    expect(rounded.balance.toDecimal()).toBe('1000.00');
+  });
+
+  it('rejects bad plans', () => {
+    const base = { rate: '0.05', perYear: 12, periods: 12 };
+    expect(() => savingsPlan(base)).toThrow('a contribution or a target');
+    expect(() => savingsPlan({ ...base, contribution: usd('1'), target: usd('100') })).toThrow(
+      'a contribution or a target',
+    );
+    expect(() => savingsPlan({ ...base, periods: 0, contribution: usd('1') })).toThrow(
+      'Invalid periods 0',
+    );
+    expect(() => savingsPlan({ ...base, perYear: 0, contribution: usd('1') })).toThrow(
+      'Invalid perYear 0',
+    );
+    expect(() => savingsPlan({ ...base, rate: '-12', contribution: usd('1') })).toThrow(
+      'loses everything',
+    );
+    expect(() =>
+      savingsPlan({ ...base, contribution: usd('1'), timing: 'middle' as 'end' }),
+    ).toThrow('Invalid timing middle');
+    expect(() =>
+      savingsPlan({
+        ...base,
+        contribution: usd('1'),
+        initial: eur('1') as unknown as Money<'USD'>,
+      }),
+    ).toThrow(CurrencyMismatchError);
+    const nickels = roundingPolicy({ rounding: 'halfEven', increment: 5 });
+    expect(() => savingsPlan({ ...base, contribution: usd('1.01'), rounding: nickels })).toThrow(
+      'multiples of',
+    );
+  });
+
+  const plans = fc.record({
+    rateUnits: fc.bigInt({ min: -20_000n, max: 200_000n }),
+    perYear: fc.constantFrom(1, 4, 12, 52),
+    periods: fc.integer({ min: 1, max: 480 }),
+    amount: fc.bigInt({ min: -(10n ** 9n), max: 10n ** 9n }),
+    initial: fc.bigInt({ min: 0n, max: 10n ** 9n }),
+    timing: fc.constantFrom('end', 'start' as const),
+    byTarget: fc.boolean(),
+  });
+  const build = (settings: {
+    rateUnits: bigint;
+    perYear: number;
+    periods: number;
+    amount: bigint;
+    initial: bigint;
+    timing: 'end' | 'start';
+    byTarget: boolean;
+  }) => {
+    const amount = fromMinor(settings.amount, 'USD');
+    return savingsPlan({
+      rate: ratio(settings.rateUnits, 10n ** 6n),
+      perYear: settings.perYear,
+      periods: settings.periods,
+      initial: fromMinor(settings.initial, 'USD'),
+      timing: settings.timing,
+      ...(settings.byTarget ? { target: amount } : { contribution: amount }),
+    });
+  };
+
+  it('reconciles: initial + contributions + interest is the balance, row by row', () => {
+    fc.assert(
+      fc.property(plans, (settings) => {
+        const plan = build(settings);
+        let balance = fromMinor(settings.initial, 'USD');
+        for (const row of plan.rows) {
+          balance = add(add(balance, row.contribution), row.interest);
+          expect(row.balance).toEqual(balance);
+        }
+        expect(plan.balance).toEqual(
+          add(add(fromMinor(settings.initial, 'USD'), plan.totalContributions), plan.totalInterest),
+        );
+        if (settings.byTarget) {
+          expect(plan.balance).toEqual(fromMinor(settings.amount, 'USD'));
+        }
+        // every contribution but a target plan's last is the regular one
+        const regular = settings.byTarget ? plan.rows.slice(0, -1) : plan.rows;
+        expect(regular.every((row) => row.contribution.equals(plan.contribution))).toBe(true);
+      }),
+      { numRuns: runs(100) },
+    );
+  });
+
+  it("stays within its roundings of Excel's FV", () => {
+    fc.assert(
+      fc.property(plans, (settings) => {
+        fc.pre(!settings.byTarget);
+        const plan = build(settings);
+        const periodic = ratio(settings.rateUnits, BigInt(settings.perYear) * 10n ** 6n);
+        const exactFv = fvExact(periodic, settings.periods, fromMinor(-settings.amount, 'USD'), {
+          pv: fromMinor(-settings.initial, 'USD'),
+          type: settings.timing === 'start' ? 1 : 0,
+        });
+        // each credit is off by at most half a cent, and grows with the balance after it: in
+        // total at most half a cent times Σ (1 + r)^k for k < n, below n·(1 + |r|)^n half cents
+        const growth = ratio(
+          periodic.num < 0n ? periodic.den - periodic.num : periodic.num + periodic.den,
+          periodic.den,
+        );
+        const n = BigInt(settings.periods);
+        const bound = ratio(n * growth.num ** n, 200n * growth.den ** n);
+        const difference = ratio(
+          BigInt(plan.balance.minor) * exactFv.den - exactFv.num * 100n,
+          100n * exactFv.den,
+        );
+        const size = difference.num < 0n ? ratio(-difference.num, difference.den) : difference;
+        expect(size.num * bound.den <= bound.num * size.den).toBe(true);
+      }),
+      { numRuns: runs(100) },
     );
   });
 });

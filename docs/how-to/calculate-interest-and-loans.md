@@ -63,6 +63,33 @@ rate(48, usd('-200'), usd('8000'), { digits: 6 }).rate; // → '0.007701'
 
 `fv`, `pv` and `pmt` are exact and rounded once (`pmtExact` and the others give the exact value). `nper` and `rate` are irrational in general, so ask for the digits you need: they come back floored, with the bracket around the true value. Where Excel picks one of several possible rates by its `guess`, `rate` throws until you pass a `bracket`.
 
+## Plan regular savings
+
+`savingsPlan` builds the schedule a savings calculator shows: the contribution, the interest credited and the balance, every period. Give it a fixed `contribution`, or a `target` to save up to. With a target it solves Excel's PMT, rounds it, and puts the rounding residual on the last contribution, so the plan ends exactly on the target:
+
+```ts
+import { money } from '@ducatjs/money';
+import { savingsPlan } from '@ducatjs/money/finance';
+
+const usd = (amount: string) => money(amount, 'USD');
+const plan = savingsPlan({ rate: '0.05', perYear: 12, periods: 216, target: usd('50000') });
+plan.contribution; // → 143.18 USD
+plan.balance; // → 50000.00 USD
+plan.totalInterest; // → 19071.92 USD
+
+const monthly = savingsPlan({
+  rate: '0.06',
+  perYear: 12,
+  periods: 10,
+  contribution: usd('200'),
+  initial: usd('500'),
+  timing: 'start',
+});
+monthly.balance; // → 2581.40 USD
+```
+
+Each period's interest is rounded once, as a bank credits it, so the final balance can differ by a few cents from Excel's FV, which never rounds. If the product quotes an effective annual rate, convert it with `periodicRate` first.
+
 ## Convert between annual and periodic rates
 
 If a product quotes an effective annual rate and you need the monthly rate that compounds to it (a savings plan, say), use `periodicRate`. The root is irrational in general, so ask for the digits you need; the result is floored and bracketed, as `irr`'s is. `annualRate` goes the other way, exactly:

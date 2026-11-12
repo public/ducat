@@ -264,6 +264,28 @@ Tests: every worked example on Microsoft's FV, PV, PMT, NPER and RATE pages, and
 Calc vectors each (`scripts/gen-calc-vectors.py`): FV, PV and PMT at 15 significant digits or
 within the error of a double power, NPER the same, and RATE within its stated accuracy.
 
+### 3c. Savings plans (v0.4.0, #200)
+
+`savingsPlan` is the schedule half of #200: what a savings calculator shows period by period. It
+isn't an Excel name, so it follows the bank's practice, as `amortise` follows the lender's, and its
+amounts are positive when paid in.
+
+- **One rounding per credited amount.** Each period's interest is the exact balance it earns on
+  times `rate / perYear`, rounded once (a mode or a policy). The balance is a sum of rounded
+  amounts, so it needs no rounding of its own.
+- **A target settles exactly.** With a `target`, the regular contribution is
+  `−pmtExact(rate / perYear, periods, −initial, { fv: target, type })`, rounded once, and the last
+  contribution is `target − balance − interest`, so the plan ends on exactly the target. This is
+  the savings counterpart of `amortise`'s `residual: 'lastPayment'`. With `timing: 'start'`, the
+  last period's interest is computed on the regular contribution before the last contribution is
+  adjusted, so the adjustment doesn't feed back into its own interest.
+- **Against Excel's FV.** The rounded credits drift from Excel's unrounded FV by at most half a
+  unit per credit, compounded: below `periods · (1 + |r|)^periods` half units. A property test
+  checks that bound.
+- **Invariants** (property tests): `initial + Σ contributions + Σ interest = balance`, row by row;
+  every contribution but a target plan's last equals the regular one; a target plan ends on its
+  target.
+
 ### 3a. Periodic and annual rates (v0.4.0, #199)
 
 ```ts
