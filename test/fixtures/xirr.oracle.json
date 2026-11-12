@@ -1,4 +1,4 @@
-{"leanSources":"20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca","contentSha256":"83cb21edc0acad5aef651d34d82d1745d72ca6b7a44e6b9b43b0a20b8131f547","cases":
+{"leanSources":"20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca","contentSha256":"a21840dfca895beebb6792b6f4a8083a7cf1525280d87755c5d71143ad2529f1","cases":
 [
 {"currency":"EUR","days":[0,1868,365],"values":["-222324159","93598271","85001503"],"digits":8,"lower":"-6425532"},
 {"currency":"EUR","days":[0,0,730,480,3615],"values":["-134853346","4920824","62392392","45643398","18038265"],"digits":6,"lower":"-10248"},
@@ -29,6 +29,11 @@
 {"currency":"EUR","days":[0,0,365,1301],"values":["-413148988","135389440","158986613","91475054"],"digits":10,"lower":"-509831278"},
 {"currency":"EUR","days":[0,0],"values":["-511722590","146009732"],"digits":10,"lower":null},
 {"currency":"EUR","days":[0,0,1022,1969],"values":["-610296193","3273272","52891979","270351049"],"digits":6,"lower":"-117891"},
-{"currency":"EUR","days":[0,0],"values":["-708869795","87274556"],"digits":10,"lower":null}
+{"currency":"EUR","days":[0,0],"values":["-708869795","87274556"],"digits":10,"lower":null},
+{"currency":"EUR","days":[0,365],"values":["-10000","11000"],"digits":10,"lower":"1000000000"},
+{"currency":"EUR","days":[0,365,730],"values":["-10000","0","12100"],"digits":8,"lower":"10000000"},
+{"currency":"EUR","days":[0,200],"values":["-10000","10000"],"digits":6,"lower":"0"},
+{"currency":"EUR","days":[0,60],"values":["-10000","50000"],"digits":8,"lower":"1786665368879"},
+{"currency":"EUR","days":[0,400],"values":["-10000","5000"],"digits":9,"lower":"-468736317"}
 ]
 }
