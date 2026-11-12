@@ -464,7 +464,8 @@ splitPeriod(money('30', 'EUR'), {
     few hundred LibreOffice Calc results (`scripts/gen-calc-vectors.py`): NPV at 15 significant
     digits or within Calc's double rounding, IRR within Excel's stated 0.00001 percent.
 - Property tests for every invariant above, with an exact oracle (Python `fractions`, like the
-  existing `pydecimal` vectors) for the schedules.
+  existing `pydecimal` vectors) for the schedules and for every `/excel` function, with bounds
+  of its own (from `decimal`'s correctly rounded `ln` and `exp`) where the value is irrational.
 - Lean, when it pays: the schedule's reconciliation (principal sums to the loan, the balance ends
   at zero) fits the existing instalment proofs.
 
