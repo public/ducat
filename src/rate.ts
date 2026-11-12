@@ -393,6 +393,16 @@ export class Rate<From extends string = string, To extends string = string> {
   }
 
   /**
+   * @internal With `strictValidity`, throws RateExpiredError when `validUntil` has passed. Every
+   * conversion that takes ConvertOptions calls it, so the check can't differ between them.
+   */
+  checkValidity(options: ConvertOptions | undefined): void {
+    if (options?.strictValidity === true && this.validUntil !== undefined && this.isExpired()) {
+      throw new RateExpiredError(this.from, this.to, this.validUntil);
+    }
+  }
+
+  /**
    * Converts `money`, rounding once: with a mode, to the target currency's exponent (or
    * `options.scale`); with a rounding policy, to the policy's scale and increment.
    */
@@ -404,9 +414,7 @@ export class Rate<From extends string = string, To extends string = string> {
     if (money.currency !== this.from) {
       throw new CurrencyMismatchError(this.from, money.currency);
     }
-    if (options?.strictValidity === true && this.validUntil !== undefined && this.isExpired()) {
-      throw new RateExpiredError(this.from, this.to, this.validUntil);
-    }
+    this.checkValidity(options);
     if (typeof rounding === 'function') {
       return convertWithPolicy(money, this.to, this.ratio, rounding, options);
     }
