@@ -105,32 +105,44 @@ theorem loop_floor_le (S : ℕ) (hS : 0 < S) :
   | _ rest ih =>
     intro result square R Q hR hQ hres hsq
     rw [loop]
-    split_ifs with h0
-    · subst h0; simpa using hres
-    · have hlt : rest / 2 < rest := by omega
-      have hrest : rest = 2 * (rest / 2) + rest % 2 := (Nat.div_add_mod rest 2).symm
-      -- the new result bounds R·Q^(rest % 2), the new square Q^2 (or Q when no square is taken)
-      have hres' : ((if rest % 2 = 1 then mulFloor S result square else result : ℕ) : ℚ) / S ≤
-          R * Q ^ (rest % 2) := by
-        split_ifs with hbit
-        · rw [hbit, pow_one]; exact mulFloor_le S result square hS R Q hres hsq
-        · have : rest % 2 = 0 := by omega
-          rw [this, pow_zero, mul_one]; exact hres
-      by_cases hmore : rest > 1
-      · have hsq' : ((if rest > 1 then mulFloor S square square else square : ℕ) : ℚ) / S ≤
-            Q ^ 2 := by
-          rw [if_pos hmore, sq]; exact mulFloor_le S square square hS Q Q hsq hsq
-        have := ih (rest / 2) hlt _ _ (R * Q ^ (rest % 2)) (Q ^ 2) (by positivity) (by positivity)
-          hres' hsq'
-        calc _ ≤ R * Q ^ (rest % 2) * (Q ^ 2) ^ (rest / 2) := this
-          _ = R * Q ^ rest := by
-            rw [← pow_mul, mul_assoc, ← pow_add]; congr 2; omega
-      · have h1 : rest = 1 := by omega
-        have h2 : rest / 2 = 0 := by omega
-        have := ih (rest / 2) hlt _ _ (R * Q ^ (rest % 2)) Q (by positivity) hQ hres'
-          (by rw [if_neg hmore]; exact hsq)
-        calc _ ≤ R * Q ^ (rest % 2) * Q ^ (rest / 2) := this
-          _ = R * Q ^ rest := by rw [h2, h1]; norm_num
+    by_cases h0 : rest = 0
+    · rw [if_pos h0]
+      subst h0
+      simpa using hres
+    rw [if_neg h0]
+    have hlt : rest / 2 < rest := by omega
+    have hsplit : rest % 2 + 2 * (rest / 2) = rest := by omega
+    -- the new result bounds R·Q^(rest % 2)
+    obtain ⟨r', hr', hr'eq⟩ : ∃ r' : ℕ, (r' : ℚ) / S ≤ R * Q ^ (rest % 2) ∧
+        (if rest % 2 = 1 then mulFloor S result square else result) = r' := by
+      by_cases hbit : rest % 2 = 1
+      · refine ⟨mulFloor S result square, ?_, if_pos hbit⟩
+        rw [hbit, pow_one]
+        exact mulFloor_le S result square hS R Q hres hsq
+      · refine ⟨result, ?_, if_neg hbit⟩
+        have hzero : rest % 2 = 0 := by omega
+        rw [hzero, pow_zero, mul_one]
+        exact hres
+    rw [hr'eq]
+    by_cases hmore : rest > 1
+    · rw [if_pos hmore]
+      have hsq' : (mulFloor S square square : ℚ) / S ≤ Q ^ 2 := by
+        rw [sq]
+        exact mulFloor_le S square square hS Q Q hsq hsq
+      have step := ih (rest / 2) hlt r' (mulFloor S square square) (R * Q ^ (rest % 2)) (Q ^ 2)
+        (by positivity) (by positivity) hr' hsq'
+      calc (loop (mulFloor S) r' (mulFloor S square square) (rest / 2) : ℚ) / S
+          ≤ R * Q ^ (rest % 2) * (Q ^ 2) ^ (rest / 2) := step
+        _ = R * Q ^ rest := by
+          rw [← pow_mul, mul_assoc, ← pow_add, hsplit]
+    · rw [if_neg hmore]
+      have h1 : rest = 1 := by omega
+      have step := ih (rest / 2) hlt r' square (R * Q ^ (rest % 2)) Q (by positivity) hQ hr' hsq
+      calc (loop (mulFloor S) r' square (rest / 2) : ℚ) / S
+          ≤ R * Q ^ (rest % 2) * Q ^ (rest / 2) := step
+        _ = R * Q ^ rest := by
+          rw [h1]
+          norm_num
 
 /-- With every product ceiled, the loop is an upper bound of `R·Q^rest`. -/
 theorem le_loop_ceil (S : ℕ) (hS : 0 < S) :
@@ -141,30 +153,41 @@ theorem le_loop_ceil (S : ℕ) (hS : 0 < S) :
   | _ rest ih =>
     intro result square R Q hR hQ hres hsq
     rw [loop]
-    split_ifs with h0
-    · subst h0; simpa using hres
-    · have hlt : rest / 2 < rest := by omega
-      have hres' : R * Q ^ (rest % 2) ≤
-          ((if rest % 2 = 1 then mulCeil S result square else result : ℕ) : ℚ) / S := by
-        split_ifs with hbit
-        · rw [hbit, pow_one]; exact le_mulCeil S result square hS R Q hR hQ hres hsq
-        · have : rest % 2 = 0 := by omega
-          rw [this, pow_zero, mul_one]; exact hres
-      by_cases hmore : rest > 1
-      · have hsq' : Q ^ 2 ≤
-            ((if rest > 1 then mulCeil S square square else square : ℕ) : ℚ) / S := by
-          rw [if_pos hmore, sq]; exact le_mulCeil S square square hS Q Q hQ hQ hsq hsq
-        have := ih (rest / 2) hlt _ _ (R * Q ^ (rest % 2)) (Q ^ 2) (by positivity) (by positivity)
-          hres' hsq'
-        calc R * Q ^ rest = R * Q ^ (rest % 2) * (Q ^ 2) ^ (rest / 2) := by
-              rw [← pow_mul, mul_assoc, ← pow_add]; congr 2; omega
-          _ ≤ _ := this
-      · have h1 : rest = 1 := by omega
-        have h2 : rest / 2 = 0 := by omega
-        have := ih (rest / 2) hlt _ _ (R * Q ^ (rest % 2)) Q (by positivity) hQ hres'
-          (by rw [if_neg hmore]; exact hsq)
-        calc R * Q ^ rest = R * Q ^ (rest % 2) * Q ^ (rest / 2) := by rw [h2, h1]; norm_num
-          _ ≤ _ := this
+    by_cases h0 : rest = 0
+    · rw [if_pos h0]
+      subst h0
+      simpa using hres
+    rw [if_neg h0]
+    have hlt : rest / 2 < rest := by omega
+    have hsplit : rest % 2 + 2 * (rest / 2) = rest := by omega
+    obtain ⟨r', hr', hr'eq⟩ : ∃ r' : ℕ, R * Q ^ (rest % 2) ≤ (r' : ℚ) / S ∧
+        (if rest % 2 = 1 then mulCeil S result square else result) = r' := by
+      by_cases hbit : rest % 2 = 1
+      · refine ⟨mulCeil S result square, ?_, if_pos hbit⟩
+        rw [hbit, pow_one]
+        exact le_mulCeil S result square hS R Q hR hQ hres hsq
+      · refine ⟨result, ?_, if_neg hbit⟩
+        have hzero : rest % 2 = 0 := by omega
+        rw [hzero, pow_zero, mul_one]
+        exact hres
+    rw [hr'eq]
+    by_cases hmore : rest > 1
+    · rw [if_pos hmore]
+      have hsq' : Q ^ 2 ≤ (mulCeil S square square : ℚ) / S := by
+        rw [sq]
+        exact le_mulCeil S square square hS Q Q hQ hQ hsq hsq
+      have step := ih (rest / 2) hlt r' (mulCeil S square square) (R * Q ^ (rest % 2)) (Q ^ 2)
+        (by positivity) (by positivity) hr' hsq'
+      calc R * Q ^ rest = R * Q ^ (rest % 2) * (Q ^ 2) ^ (rest / 2) := by
+            rw [← pow_mul, mul_assoc, ← pow_add, hsplit]
+        _ ≤ (loop (mulCeil S) r' (mulCeil S square square) (rest / 2) : ℚ) / S := step
+    · rw [if_neg hmore]
+      have h1 : rest = 1 := by omega
+      have step := ih (rest / 2) hlt r' square (R * Q ^ (rest % 2)) Q (by positivity) hQ hr' hsq
+      calc R * Q ^ rest = R * Q ^ (rest % 2) * Q ^ (rest / 2) := by
+            rw [h1]
+            norm_num
+        _ ≤ (loop (mulCeil S) r' square (rest / 2) : ℚ) / S := step
 
 /-- `fixedPower(x, n)` floored, from `result = S` (1.0): a lower bound of `X^n` when `x/S ≤ X`. -/
 theorem fixedPower_floor_le (S x n : ℕ) (hS : 0 < S) (X : ℚ) (hX : (x : ℚ) / S ≤ X) (hX0 : 0 ≤ X) :
