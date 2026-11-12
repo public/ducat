@@ -265,13 +265,14 @@ def xnpv (m : Mode) (num den e : ℕ) (flows : List (ℕ × ℤ)) : Option ℤ :
 
 def qsign (v : ℚ) : ℤ := if 0 < v then 1 else if v < 0 then -1 else 0
 
-/-- `xnpvSign`: the sign once the bounds exclude 0; 2 if no precision settles it (the code throws). -/
-def xnpvSign (num den : ℕ) (d : Dated) : ℤ :=
-  (refineBits fun bits =>
+/-- `xnpvSign`: the sign once the bounds exclude 0; `none` if no precision settles it (the code
+throws). -/
+def xnpvSign (num den : ℕ) (d : Dated) : Option ℤ :=
+  refineBits fun bits =>
     match scaled num den bits d with
     | none => none
     | some (.exact v) => some (qsign v)
-    | some (.bounds low high) => if 0 < low then some 1 else if high < 0 then some (-1) else none).getD 2
+    | some (.bounds low high) => if 0 < low then some 1 else if high < 0 then some (-1) else none
 
 /-- The number of sign changes and the first nonzero sign. -/
 def signChanges (xs : List ℤ) : ℕ × ℤ :=
@@ -280,13 +281,20 @@ def signChanges (xs : List ℤ) : ℕ × ℤ :=
 
 /-- `xirr` without a bracket: the rate floored to `digits` places, as an integer count of
 `10^−digits`; `none` where the code throws. The NPV's sign at a grid point `k` is taken at
-`1 + rate = (10^digits + k) / 10^digits`, unreduced, as the code does. -/
+`1 + rate = (10^digits + k) / 10^digits`, unreduced, as the code does.
+
+The code throws at the first grid point whose sign doesn't settle. Here such a sign is read as 0,
+which stops `bisectRate` at that point (it returns at a 0), and a result whose sign didn't settle
+is dropped: so the model has no value exactly where the code throws, and `bisectRate_spec` applies
+to the signs it uses. -/
 def xirr (digits : ℕ) (flows : List (ℕ × ℤ)) : Option ℤ :=
   (dated flows).bind fun d =>
     if d.minors.all (· = 0) then none
     else if (signChanges d.minors).1 ≠ 1 then none
     else
-      bisectRate (fun k => xnpvSign (10 ^ digits + k).toNat (10 ^ digits) d) (10 ^ digits)
-        (signChanges d.minors).2
+      match bisectRate (fun k => (xnpvSign (10 ^ digits + k).toNat (10 ^ digits) d).getD 0)
+          (10 ^ digits) (signChanges d.minors).2 with
+      | some r => if (xnpvSign (10 ^ digits + r).toNat (10 ^ digits) d).isSome then some r else none
+      | none => none
 
 end Ducat.XnpvModel

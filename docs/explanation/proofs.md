@@ -87,7 +87,7 @@ The bounds are over ℝ, with `Real.rpow` for the roots, so they apply to the ir
 
 - That the model's interval contains the real XNPV, as one statement: each group's factor is bracketed (`factorLow_le`, `le_factorHigh`), and the term and sum steps are proved separately, but they are not composed through the model's grouping into one theorem.
 - The CRT computation of the split. `splitExponent` checks the identity `n = W·m + Σ r·(m/q)` at run time and throws if it fails, so `power_split` takes the identity as a hypothesis.
-- That a root of the real function lies between two grid points of opposite sign: `bisectRate_spec` is about the signs at grid points, and the step to a root needs continuity. It holds for any sign function with values in {−1, 0, 1}: that each solver's sign is its NPV's sign is not proved, nor that the model's XIRR sign always settles (where 2,048 bits can't, the model gives 2 and the code throws). `irr` and `rate` share the search but have no model or fixture here.
+- That a root of the real function lies between two grid points of opposite sign: `bisectRate_spec` is about the signs at grid points, and the step to a root needs continuity. It holds for any sign function with values in {−1, 0, 1}: that each solver's sign is its NPV's sign is not proved, and where XIRR's sign doesn't settle within 2,048 bits the model, like the code, has no value. `irr` and `rate` share the search but have no model or fixture here.
 - A caller's `bracket` (`bracketToGrid`), other day counts and the defensive caps on root size: not in the model.
 - That the TypeScript is the model: as for the other proved models, the oracle fixtures test it on generated cases.
 
