@@ -15,7 +15,7 @@
     "@ducatjs/money/convert/boc": 3.13,
     "@ducatjs/money/exact": 1.61,
     "@ducatjs/money/policy": 0.4,
-    "@ducatjs/money/pricing": 2.82,
+    "@ducatjs/money/pricing": 2.86,
     "@ducatjs/money/cash": 3.1,
     "@ducatjs/money/format": 0.56,
     "@ducatjs/money/fixed": 1.27,
