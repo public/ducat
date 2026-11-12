@@ -133,16 +133,29 @@ describe('parse: locale data', () => {
 });
 
 describe('parseMoney', () => {
-  it('reads English symbols in other locales', () => {
-    expect(detect('1,00 A$', 'fr-FR')).toBe('1.00 AUD');
+  it('checks the locale before reading any symbol', () => {
+    const resolved = new Intl.NumberFormat('en-XX').resolvedOptions().locale;
+    expect(typeof resolved).toBe('string');
+    if (resolved !== 'en-XX') {
+      expect(() => detect('€ 1.00', 'en-XX')).toThrow(
+        new RangeError('This runtime has no Intl data for the locale en-XX'),
+      );
+    }
   });
 
+  // First in this file: the candidate list is built once, and per-test coverage credits it to the
+  // first test that builds it.
   it('does not count non-monetary codes as currencies', () => {
     for (const code of ['XAU', 'XTS', 'XXX']) {
       expect(() => detect(`${code} 1.00`, 'en-US')).toThrow(
         new SyntaxError(`Cannot parse "${code} 1.00": "${code}" is not a currency`),
       );
     }
+  });
+
+  it('reads English symbols in other locales', () => {
+    expect(detect('1,00 A$', 'fr-FR')).toBe('1.00 AUD');
+    expect(detect('1,00 CA$', 'fr-FR')).toBe('1.00 CAD');
   });
 
   it('a shared symbol needs a hint among its meanings', () => {
