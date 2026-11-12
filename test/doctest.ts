@@ -1,4 +1,4 @@
-// Checks used by the README examples that test/readme.test.ts generates.
+// Checks used by the documentation examples that test/docs.test.ts generates.
 import { ValiError } from 'valibot';
 import { ZodError } from 'zod';
 import { FetchRatesError } from '../src/fetch.js';

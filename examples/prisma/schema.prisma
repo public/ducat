@@ -1,4 +1,4 @@
-// Two ways to store money. See the README ("Databases") for Postgres/MySQL column types.
+// Two ways to store money. See docs/how-to/store-money-in-a-database.md for Postgres/MySQL column types.
 generator client {
   provider = "prisma-client-js"
   output   = "./generated"
