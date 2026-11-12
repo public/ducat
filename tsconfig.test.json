@@ -5,10 +5,7 @@
     "rootDir": ".",
     "types": ["node"],
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    // the private vectors package, which ducat's own package.json doesn't name (vitest.config.ts
-    // resolves it the same way)
-    "paths": { "@ducatjs/money-spec/*": ["./spec/*"] }
+    "resolveJsonModule": true
   },
   "include": ["src", "test", "bench"],
   "exclude": [

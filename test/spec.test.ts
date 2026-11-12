@@ -2,7 +2,6 @@
 // It checks every vector file against the schema, maps each neutral operation to ducat's API, and
 // runs every case. A file with an operation this runner doesn't know, or one that breaks the
 // schema, fails the suite; so does a drop in the number of cases in any area.
-import { join } from 'node:path';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 import { DIAGNOSED_IDS } from '../compare/battery/vectors.ts';
@@ -343,7 +342,7 @@ describe('@ducatjs/money-spec', () => {
   });
 
   it("names a real vector in each of compare/'s diagnoses", () => {
-    const battery = files.get(join('core', 'battery.json')) as SpecFile;
+    const battery = files.get('core/battery.json') as SpecFile;
     const ids = new Set(battery.cases!.map((specCase) => specCase.id));
     expect(DIAGNOSED_IDS.filter((id) => !ids.has(id))).toEqual([]);
   });
@@ -376,7 +375,7 @@ describe('@ducatjs/money-spec', () => {
   });
 
   it("draws the generated allocations spec/README.md's example names", () => {
-    const battery = files.get(join('core', 'battery.json')) as SpecFile;
+    const battery = files.get('core/battery.json') as SpecFile;
     const generated = battery.cases!.find(
       (specCase) => specCase.op === 'money.allocate.generated',
     )!;
@@ -412,7 +411,7 @@ describe('@ducatjs/money-spec', () => {
   });
 
   it('rejects a file that breaks the schema, or has an operation the runner does not know', () => {
-    const battery = files.get(join('core', 'battery.json')) as SpecFile;
+    const battery = files.get('core/battery.json') as SpecFile;
     const first = battery.cases![0]!;
 
     const withFloat = {

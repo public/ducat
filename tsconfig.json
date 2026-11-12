@@ -15,7 +15,10 @@
     "sourceMap": true,
     "outDir": "dist",
     "rootDir": "src",
-    "types": []
+    "types": [],
+    // the private vectors package (spec/), for the tests; ducat's package.json doesn't name it,
+    // and vitest.config.ts resolves it the same way. Nothing in src/ imports it.
+    "paths": { "@ducatjs/money-spec/*": ["./spec/*"] }
   },
   "include": ["src"],
   // built by tsconfig.drizzle.json (skipLibCheck for drizzle-orm's declarations),
