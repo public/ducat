@@ -47,3 +47,7 @@ Not triaged yet.
 ## rate.ts
 
 Not triaged yet.
+
+## Database adapters
+
+The mutation run includes the database tests in `test/db/`, but without `DUCAT_PG_URL` and `DUCAT_MYSQL_URL` only their SQLite parts run. Code that only Postgres or MySQL reaches is covered by the CI database job, which runs those tests against real servers, but it is not mutation-tested, and its mutants show as "no coverage": `drizzle/pg.ts`, `drizzle/mysql.ts`, and the Postgres and MySQL branches of `pg.ts` and `kysely.ts`.
