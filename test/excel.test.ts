@@ -10,23 +10,21 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ratio, type Ratio } from '../src/decimal.js';
 import type { ExactMoney } from '../src/exact.js';
+import { annualRate, discountedSumExact, periodicRate } from '../src/finance.js';
 import {
-  annualRate,
-  discountedSumExact,
   fv,
   fvExact,
   irr,
   nper,
   npv,
   npvExact,
-  periodicRate,
   pmt,
   pmtExact,
   pv,
   pvExact,
   rate,
   type PaymentTiming,
-} from '../src/finance.js';
+} from '../src/excel.js';
 import { abs, add, money, type Money } from '../src/money.js';
 
 interface Microsoft {
@@ -685,3 +683,17 @@ function subtract(left: Ratio, right: Ratio): Ratio {
 function isGreater(left: Ratio, right: Ratio): boolean {
   return left.num * right.den > right.num * left.den;
 }
+
+describe('the 0.3 names in /finance', () => {
+  it('are deprecated re-exports of /excel, the same functions', async () => {
+    const finance = await import('../src/entries/finance.js');
+    const excel = await import('../src/entries/excel.js');
+    expect([finance.npv, finance.npvExact, finance.irr]).toEqual([
+      excel.npv,
+      excel.npvExact,
+      excel.irr,
+    ]);
+    // and /finance carries none of the new Excel functions
+    expect(['fv', 'pv', 'pmt', 'nper', 'rate'].filter((name) => name in finance)).toEqual([]);
+  });
+});

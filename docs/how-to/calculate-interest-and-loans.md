@@ -1,20 +1,13 @@
 # How to calculate interest, loan schedules, NPV, IRR and proration
 
-This guide shows you how to compute interest between two dates, build an amortisation schedule, take a net present value or an internal rate of return, and prorate a subscription, all in exact arithmetic with one rounding per amount paid or booked. The functions are in `@ducatjs/money/finance`.
+This guide shows you how to compute interest between two dates, build an amortisation schedule, take a net present value or an internal rate of return, and prorate a subscription, all in exact arithmetic with one rounding per amount paid or booked. ducat's own calculations are in `@ducatjs/money/finance`; Excel's financial functions (NPV, IRR, FV, PV, PMT, NPER and RATE), with Excel's arguments and sign convention, are in `@ducatjs/money/excel`.
 
 Write dates as `'YYYY-MM-DD'` strings or `{ year, month, day }` objects (so a `Temporal.PlainDate` works), never `Date`.
 
 ```ts
 import { money } from '@ducatjs/money';
-import {
-  amortise,
-  interest,
-  irr,
-  npv,
-  discountedSum,
-  prorate,
-  splitPeriod,
-} from '@ducatjs/money/finance';
+import { irr, npv } from '@ducatjs/money/excel';
+import { amortise, interest, discountedSum, prorate, splitPeriod } from '@ducatjs/money/finance';
 
 const period = { from: '2026-01-15', to: '2026-07-15', dayCount: 'ACT/365F' } as const;
 interest(money('10000', 'EUR'), '0.05', period, 'halfEven'); // → 247.95 EUR
@@ -54,11 +47,11 @@ Charge the used part of a period with `prorate(price, { period, used })` (by the
 
 ## Solve for a payment, a term or a rate as Excel does
 
-`pmt`, `fv`, `pv`, `nper` and `rate` are Excel's PMT, FV, PV, NPER and RATE, with Excel's arguments and sign convention: money you pay out is negative. Pass the rate per period, so 8% a year paid monthly is `ratio('0.08', 12)`:
+`pmt`, `fv`, `pv`, `nper` and `rate` in `@ducatjs/money/excel` are Excel's PMT, FV, PV, NPER and RATE, with Excel's arguments and sign convention: money you pay out is negative. Pass the rate per period, so 8% a year paid monthly is `ratio('0.08', 12)`:
 
 ```ts
 import { money, ratio } from '@ducatjs/money';
-import { fv, nper, pmt, rate } from '@ducatjs/money/finance';
+import { fv, nper, pmt, rate } from '@ducatjs/money/excel';
 
 const usd = (amount: string) => money(amount, 'USD');
 pmt(ratio('0.08', 12), 10, usd('10000')); // → -1037.03 USD (the monthly payment on a 10,000 loan)

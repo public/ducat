@@ -1,6 +1,6 @@
 # `@ducatjs/money/finance`: design
 
-Status: approved design (#54), implemented in v0.3.0 (#135). XNPV and XIRR are planned for v0.4.0 (#136).
+Status: approved design (#54), implemented in v0.3.0 (#135). In v0.4.0 the Excel-named functions moved to their own entry, `@ducatjs/money/excel` (npv, npvExact and irr, with the new fv, pv, pmt, nper and rate; see decisions.md), and XNPV and XIRR are planned there (#136).
 
 Billing and lending code keeps re-implementing the same few calculations, usually in floats: loan
 and amortisation schedules, interest between two dates under a day-count convention, net present
@@ -121,7 +121,8 @@ plan.totalInterest; // exact sum of the interest column
 
 ```ts
 import { money } from '@ducatjs/money';
-import { discountedSum, irr, npv } from '@ducatjs/money/finance';
+import { irr, npv } from '@ducatjs/money/excel';
+import { discountedSum } from '@ducatjs/money/finance';
 
 discountedSum(
   '0.08',
@@ -182,7 +183,7 @@ irr([money('-1000', 'EUR'), money('300', 'EUR'), money('400', 'EUR'), money('500
 
 ```ts
 import { money, ratio } from '@ducatjs/money';
-import { fv, nper, pmt, pv, rate } from '@ducatjs/money/finance';
+import { fv, nper, pmt, pv, rate } from '@ducatjs/money/excel';
 
 const usd = (amount: string) => money(amount, 'USD');
 pmt(ratio('0.08', 12), 10, usd('10000')); // -1037.03 USD, as Excel's PMT(8%/12, 10, 10000)
@@ -236,7 +237,12 @@ as for `interest` and `npv`. Amounts are `Money` of one currency; the rate is a 
   bisection has a bounded number of steps. `nper` refines its logarithms to at most 16,384 bits,
   and its exactness check compares sizes before raising anything to the result's power.
 
-Interface differences, all of them refusals rather than other values:
+Interface differences, all of them refusals rather than other values, except one:
+
+- Where Excel's own double evaluation is ill-conditioned (RATE for a tiny rate over many periods,
+  say, which loses digits to cancellation or stops iterating early), ducat returns the exact root
+  to `digits` places, which is the correct answer, and Excel's value may be further off. Wherever
+  Excel's evaluation is well conditioned, they agree at its 15 significant digits.
 
 - `nper` must be a whole number from 0 (1 for `pmt` and `rate`) to 100,000 for `fv`, `pv`, `pmt`
   and `rate`. Excel takes a fractional `nper`, whose power is irrational.

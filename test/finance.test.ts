@@ -8,20 +8,9 @@ import {
   amortise,
   annualRate,
   compound,
-  fv,
-  fvExact,
   interest,
   interestExact,
-  irr,
-  nper,
-  npv,
-  npvExact,
   periodicRate,
-  pmt,
-  pmtExact,
-  pv,
-  pvExact,
-  rate,
   discountedSum,
   discountedSumExact,
   prorate,
@@ -29,6 +18,19 @@ import {
   yearFraction,
   type DayCount,
 } from '../src/finance.js';
+import {
+  fv,
+  fvExact,
+  irr,
+  nper,
+  npv,
+  npvExact,
+  pmt,
+  pmtExact,
+  pv,
+  pvExact,
+  rate,
+} from '../src/excel.js';
 import { add, CurrencyMismatchError, fromMinor, money, sum, type Money } from '../src/money.js';
 import { roundingPolicy } from '../src/policy.js';
 import { runs } from './fc-config.js';

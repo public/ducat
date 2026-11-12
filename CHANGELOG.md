@@ -21,9 +21,19 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   export, type or method is missing from the reference, and another when a link or anchor in the
   docs doesn't resolve.
 
+### Deprecated
+
+- `npv`, `npvExact`, `irr`, `IrrOptions` and `IrrResult` from `@ducatjs/money/finance`: they
+  moved to `@ducatjs/money/excel`, where Excel-named functions live. `/finance` re-exports them
+  in 0.4, marked `@deprecated`; 0.5 removes them. Import them from `/excel` (#200).
+
 ### Added
 
-- `fv`, `pv`, `pmt`, `nper` and `rate` in `/finance`: Excel's FV, PV, PMT, NPER and RATE, with
+- `@ducatjs/money/excel`, a new entry for Excel's financial functions, under the Excel rule:
+  Excel's arguments and sign convention, and Excel's value at 15 significant digits wherever
+  Excel's double evaluation is well conditioned (the exact value or root where it isn't). It has
+  `npv`, `npvExact` and `irr`, moved from `/finance`, and the new functions below (#200).
+- `fv`, `pv`, `pmt`, `nper` and `rate` in `/excel`: Excel's FV, PV, PMT, NPER and RATE, with
   Excel's arguments, sign convention and `type`, and Excel's values. `fv`, `pv` and `pmt` are exact
   and rounded once (`fvExact`, `pvExact`, `pmtExact` return the `ExactMoney`); `nper` is to
   `digits` places from rigorous logarithm bounds, with `exact` when it is rational; `rate` is
@@ -78,7 +88,7 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 ### Changed
 
 - **Visible change:** `irr` throws a RangeError for an IRR above 2^1024 per period, where it used to keep doubling its
-  search without limit; every rate solver in `/finance` now has a bounded number of steps (#200).
+  search without limit; every rate solver in `/excel` and `/finance` now has a bounded number of steps (#200).
 - **Visible change:** `toIso20022Amount` and `fromIso20022Amount` accept only ISO 4217 codes, as
   ISO 20022's `ActiveOrHistoricCurrencyCode` requires: current codes (including `XAU` and the other
   codes without a minor unit) and withdrawn ones registered with `defineHistoricCurrencies`. A
