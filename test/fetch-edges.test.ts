@@ -2,7 +2,7 @@
 // checks before any request, accept headers, signals and timeouts, HTTP errors, and how parse
 // errors carry the URL.
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   BANK_OF_CANADA_URL,
   ECB_URLS,
@@ -28,14 +28,20 @@ function fakeFetch(respond: (url: string) => { status: number; body: string }) {
   return { fetch, calls };
 }
 
+// Assigned directly rather than through vi.stubGlobal, which Bun's test runner lacks.
+const globals = globalThis as { fetch?: unknown };
+const platformFetch = globals.fetch;
+const setGlobalFetch = (fetch: unknown) => {
+  globals.fetch = fetch;
+};
 afterEach(() => {
-  vi.unstubAllGlobals();
+  globals.fetch = platformFetch;
 });
 
 describe('fetchEcb', () => {
   it('works without options, through the global fetch', async () => {
     const { fetch, calls } = fakeFetch(() => ({ status: 200, body: daily }));
-    vi.stubGlobal('fetch', fetch);
+    setGlobalFetch(fetch);
     const [table] = await fetchEcb();
     expect(table!.asOf).toBe('2026-11-06');
     expect(calls.map((call) => [call.url, call.init?.headers?.accept])).toEqual([
@@ -44,7 +50,7 @@ describe('fetchEcb', () => {
   });
 
   it('without any fetch, says how to pass one', async () => {
-    vi.stubGlobal('fetch', undefined);
+    setGlobalFetch(undefined);
     await expect(fetchEcb()).rejects.toThrow(
       new TypeError('No fetch available: pass options.fetch'),
     );
