@@ -2,7 +2,7 @@
 // derived timing, metadata without undefined keys, published digits, and the errors users see.
 import '../src/plugins/iso.js';
 import { describe, expect, it } from 'vitest';
-import { money } from '../src/fn.js';
+import { fromMinor, money } from '../src/fn.js';
 import { roundingPolicy } from '../src/policy.js';
 import { exchangeRate, hasEnded, RateExpiredError, toIsoString } from '../src/rate.js';
 
@@ -58,6 +58,27 @@ describe('metadata', () => {
     expect(exchangeRate('EUR', 'USD', '1.10/3').quote).toBeUndefined();
     const quote = { rate: '136.80', per: 100 };
     expect(exchangeRate('JPY', 'NOK', '1.3680', { quote }).quote).toEqual(quote);
+  });
+});
+
+describe('conversion beyond 2^53', () => {
+  it('a product of safe minor units and a safe numerator past 2^53 is still exact', () => {
+    // (2^40 + 1) × 1000001 > 2^53: the float product would round
+    const minor = 2n ** 40n + 1n;
+    const rate = exchangeRate('EUR', 'USD', '1.000001');
+    const exact = (shift: bigint) => {
+      const numerator = minor * 1000001n * 10n ** shift;
+      const denominator = 10n ** 6n;
+      // half-even on a positive quotient
+      const quotient = numerator / denominator;
+      const twice = 2n * (numerator % denominator);
+      return twice > denominator || (twice === denominator && quotient % 2n === 1n)
+        ? quotient + 1n
+        : quotient;
+    };
+    const amount = fromMinor(minor, 'EUR');
+    expect(String(rate.convert(amount, 'halfEven').minor)).toBe(String(exact(0n)));
+    expect(String(rate.convert(amount, 'halfEven', { scale: 4 }).minor)).toBe(String(exact(2n)));
   });
 });
 
