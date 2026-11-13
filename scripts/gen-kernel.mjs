@@ -42,9 +42,12 @@ const ORACLES = {
   chunk: { area: 'allocate', op: 'chunk', model: 'Ducat/Schedule.lean' },
   schedule: { area: 'allocate', op: 'schedule', model: 'Ducat/Schedule.lean' },
   increment: { area: 'cash', op: 'roundToIncrement.byMode', model: 'Ducat/Cash.lean' },
-  xnpv: { area: 'excel', op: 'xnpv.scaled', model: 'Ducat/XnpvModel.lean' },
-  xirr: { area: 'excel', op: 'xirr.floor', model: 'Ducat/XnpvModel.lean' },
+  xnpv: { area: 'excel', op: 'xnpv.scaled', model: 'Ducat/XnpvModel.lean', iso4217: true },
+  xirr: { area: 'excel', op: 'xirr.floor', model: 'Ducat/XnpvModel.lean', iso4217: true },
 };
+// the ISO 4217 List One whose exponents the currency-carrying oracles' rows are in
+// (data/iso4217-list-one.xml), recorded as their data version
+const ISO4217_PUBLISHED = '2026-09-17';
 const ORACLE_MODELS = Object.keys(ORACLES);
 const oracleFile = (model) => `spec/vectors/${ORACLES[model].area}/${model}-lean.json`;
 const ducatVersion = () => JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
@@ -148,7 +151,7 @@ function stampKernel(content, sources) {
  * Oracle.lean printed them. checkedAgainst is the ducat version when the rows last changed.
  */
 function stampOracle(model, content, sources, checkedAgainst) {
-  const { area, op, model: leanModel } = ORACLES[model];
+  const { area, op, model: leanModel, iso4217 } = ORACLES[model];
   const envelope = {
     $schema: '../../schema/vectors.schema.json',
     format: 1,
@@ -159,6 +162,7 @@ function stampOracle(model, content, sources, checkedAgainst) {
       source: 'lean',
       generator: { name: 'proofs/Oracle.lean', version: `lean-sources sha256:${sources}` },
       method: `lake env lean --run Oracle.lean ${model}, written by scripts/gen-kernel.mjs. The model's properties are proved in proofs/${leanModel}.`,
+      ...(iso4217 ? { data: { iso4217: ISO4217_PUBLISHED } } : {}),
     },
     checkedAgainst,
     contentSha256: sha256(content),

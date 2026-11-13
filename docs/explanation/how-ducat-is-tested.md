@@ -24,9 +24,13 @@ This page describes the suites that keep ducat correct, fast and small: what eac
   - instalment sums, tax breakdowns that add up
   - `parse(format(x))` across 14 locales
   - the Intl hand-off being bit-identical
-- Independent oracles, generated offline and committed as JSON:
+- Independent oracles, generated offline and committed as vectors of the conformance suite (below):
+  - The Lean models whose properties are proved: allocation, instalments, chunks, schedules, rounding to an increment, XNPV and XIRR (`proofs/Oracle.lean`, written by `pnpm gen:kernel`; `pnpm gen:check` checks the files match the proofs).
   - Python's `decimal` for rounding and `fractions` for `/finance` and every function in `/excel` (`scripts/gen-pydecimal-vectors.py`, `scripts/gen-finance-vectors.py`; `pnpm vectors:check` checks the files are current). Where an Excel value is irrational (NPER, RATE, XNPV, XIRR), the oracle bounds it from Python's correctly rounded `ln` and `exp`, widened well past their rounding, and raises the precision until the bounds settle every value it writes.
   - LibreOffice Calc's results for the Excel functions (`scripts/gen-calc-vectors.py`), on random and edge cases. That needs LibreOffice, so CI doesn't rerun it: the JSON file is the record. They are compared with the exact values, and the cases where Calc's doubles differ are listed in the test with the reason.
+  - Microsoft's worked examples from the Excel function pages, copied as printed.
+  - ICU's spell-out of numbers in every language ducat ships, for the RBNF interpreter behind `amountInWords` (`scripts/gen-rbnf-vectors.mjs` with `scripts/rbnf-oracle.cpp`).
+  - The General Decimal Arithmetic test cases (decTest) are IBM's copyright, so `pnpm fetch:dectest` downloads them and `test/dectest.test.ts` runs them when they are present.
 - `pnpm typecheck` compiles `test/types.ts`. Its `@ts-expect-error` lines prove that currency mismatch, readonly fields and unknown rounding modes are compile errors.
 - `pnpm test:runtimes` runs:
   - the **full suite on Node 24, Bun 1.4 (via `bun test`) and Deno 2.9**: all pass
@@ -34,6 +38,23 @@ This page describes the suites that keep ducat correct, fast and small: what eac
 - `pnpm test:db` runs the SQL helpers against real databases: SQLite through Node's built-in `node:sqlite`, and Postgres and MySQL when `DUCAT_PG_URL` and `DUCAT_MYSQL_URL` point at a server (CI runs both as service containers, and sets `DUCAT_REQUIRE_DB=1` so a missing URL fails instead of skipping). It covers BIGINT minor units beyond 2^53 and at the BIGINT limits, `NUMERIC(19,4)` and `NUMERIC(38,4)` columns, Money as JSON/JSONB, values a column rounded silently (rejected on read), NaN and Infinity, and driver defaults that lose precision.
 - `pnpm test:browser` runs a smoke and property subset in Chromium, Firefox and WebKit through Playwright, including `parse(format())` round trips in 18 locales; `DUCAT_BROWSER_RUNS` sets the cases per property (default 300) and `DUCAT_SEED` the seed.
 - `pnpm test:mutation` runs Stryker over `src/` with property counts capped, on the unit tests and the SQLite part of the database tests (`vitest.mutation.config.ts`); CI runs it nightly and keeps the report.
+
+## The conformance suite
+
+ducat's test vectors are a language-neutral conformance suite, the private workspace package `@ducatjs/money-spec` in [`spec/`](https://github.com/public/ducat/tree/main/spec). It holds the cross-library battery, the fixed-point battery and every oracle above (about 21,000 cases in JSON), with a JSON Schema and [a README](https://github.com/public/ducat/blob/main/spec/README.md) that defines each operation and how its results are judged.
+
+- **Nothing in a file needs JavaScript to read.** Amounts are exact decimal strings with a currency and a scale. Rounding modes have their ECMA-402 names, errors are neutral kinds (`rounding`, `currency-mismatch`, `range`, `syntax`, `type`), and irrational results are exact bounds.
+- **Every file says where its expected values come from**: worked out by hand, a Lean model, Python's `decimal` or `fractions`, LibreOffice Calc, Microsoft's documentation, or ICU. It also names the generator and its version, and the version of any data the values depend on (the ISO 4217 publication date, the CLDR and ICU releases). No expected value comes from ducat's own output: the generators are second implementations, and a vector ducat fails is investigated, not regenerated.
+- **`test/spec.test.ts` is ducat's runner.**
+  - It validates every file against the schema, and fails on an operation it doesn't know.
+  - It runs each case through ducat's API and judges it as the README says: money by amount, currency and scale.
+  - It counts the cases in each area, so a lost vector fails the build.
+  - It changes one expected value in every table it checks, to show the check can fail.
+  - The finance and Excel tables are run by their own test files (`test/finance.oracle.test.ts`, `test/excel.oracle.test.ts`, `test/excel.test.ts`), which the runner names and checks.
+- **`compare/` reads the same battery** from the package, so the cross-library comparison and ducat's own tests can't drift apart.
+- **Each file records `checkedAgainst`**, the ducat version it was last checked against. The spec's version follows ducat's major and minor, and a changed expected value is a spec change that comes with a ducat release.
+
+The suite is groundwork for implementations in other languages; ducat's TypeScript is the only one so far. The README's [How a port uses the suite](https://github.com/public/ducat/blob/main/spec/README.md#how-a-port-uses-the-suite) shows how another would run it.
 
 ## Mutation testing
 

@@ -24,7 +24,7 @@ from xml.sax.saxutils import quoteattr
 
 sys.dont_write_bytecode = True  # no __pycache__ in scripts/
 import excel_edge_cases  # noqa: E402  (the inputs scripts/gen-finance-vectors.py also computes)
-from spec_vectors import file_text, vector_path, write_or_check  # noqa: E402
+from spec_vectors import ISO4217_PUBLISHED, file_text, vector_path, write_or_check  # noqa: E402
 
 SEED = 20261108
 # bumped when the output's layout changes; the values depend on the seed and on Calc
@@ -409,6 +409,7 @@ def vector_texts(vectors: dict, calc_version: str) -> dict:
         "generator": {"name": "scripts/gen-calc-vectors.py", "version": f"{GENERATOR_VERSION} (seed {SEED})"},
         "tool": {"name": "LibreOffice Calc", "version": calc_version},
         "method": "Each case is a formula in a generated spreadsheet, recalculated by LibreOffice Calc in doubles and exported to 16 significant digits.",
+        "data": {"iso4217": ISO4217_PUBLISHED},
     }
     description = "Excel's NPV, IRR, FV, PV, PMT, NPER, RATE, XNPV and XIRR, and periodicRate and annualRate (RRI and EFFECT), as LibreOffice Calc computes them in doubles."
     text = file_text("excel", "libreoffice-calc", description, provenance, tables)

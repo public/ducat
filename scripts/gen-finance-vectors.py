@@ -24,7 +24,7 @@ from fractions import Fraction
 
 sys.dont_write_bytecode = True  # no __pycache__ in scripts/
 import excel_edge_cases  # noqa: E402
-from spec_vectors import file_text, vector_path, write_or_check  # noqa: E402
+from spec_vectors import ISO4217_PUBLISHED, file_text, vector_path, write_or_check  # noqa: E402
 
 # bumped when the output's layout changes; the values depend only on the seeds
 GENERATOR_VERSION = "2"
@@ -988,6 +988,7 @@ def provenance(seed: int) -> dict:
             "version": f"{GENERATOR_VERSION} (seed {seed})",
         },
         "method": "A second implementation of each definition in exact fractions. Irrational values are bounded from Python's correctly rounded decimal ln and exp, widened well past their rounding, with the precision raised until the bounds settle every value written.",
+        "data": {"iso4217": ISO4217_PUBLISHED},
     }
 
 

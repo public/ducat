@@ -53,7 +53,73 @@ An implementation runs every file the same way:
    it raises, with `expect` (see [Expectations](#expectations)).
 
 ducat's runner is `test/spec.test.ts`. It also counts the cases in each area, so a lost vector
-fails the build.
+fails the build. And it changes one expected value in one row of every table it checks, to show
+that the check can fail.
+
+## How a port uses the suite
+
+A port of ducat to another language would use the suite like this:
+
+1. **Take the version that matches.** The spec's major and minor follow ducat's (see
+   [Versions](#versions)). A port of ducat 0.4 runs spec 0.4.x, from this directory, or from a
+   published copy if there is one later.
+2. **Validate every file** with any JSON Schema 2020-12 validator, before running anything.
+3. **Map each operation to the port's API.** There is one function per case operation
+   ([Operations](#operations)) and one per table operation ([Table operations](#table-operations)),
+   each taking the documented arguments.
+4. **Map the port's errors** onto the five kinds (`rounding`, `currency-mismatch`, `range`,
+   `syntax`, `type`).
+5. **Judge results as the spec says**: money by amount, currency and scale; plain decimals by
+   value; and each table field by its stated rule.
+6. **Fail on anything unknown.** An unknown operation, expectation or error kind is a failure,
+   never a skip. Count the cases per area, so a file that goes missing is noticed.
+
+The two battery files (`core/battery.json` and `fixed/battery.json`, 69 cases) are a good first
+target. They use only the basic operations, with no generated data and no tables.
+
+A port's runner, in pseudo-code:
+
+```text
+MODES = { "halfEven": ROUND_HALF_EVEN, "halfExpand": ROUND_HALF_UP, ... }
+
+def money_of(m):                      # { amount, currency, scale }
+    return Money(Decimal(m.amount), m.currency, scale=m.scale)
+
+def as_spec(result):                  # the port's Money as the spec writes one
+    return { amount: result.to_decimal_string(), currency: result.currency, scale: result.scale }
+
+CASE_OPS = {
+    "money.multiply": lambda a: money_of(a.money).multiply(Decimal(a.factor), MODES[a.mode]),
+    "money.add":      lambda a: money_of(a.first).add(money_of(a.second)),
+    ...                                 # one entry per operation in the schema
+}
+
+def kind_of(error):                   # the port's errors as the spec's kinds
+    if error is a RoundingNeeded:     return "rounding"
+    if error is a CurrencyMismatch:   return "currency-mismatch"
+    ...
+
+for path in every file under spec/vectors:
+    doc = read_json(path)
+    check_against_schema(doc, "spec/schema/vectors.schema.json")
+    for case in doc.cases (if any):
+        run = CASE_OPS[case.op]         # a missing key is a failure, not a skip
+        alternatives = case.expect.anyOf or [case.expect]
+        try:
+            result = run(case.args)
+        except PortError as error:
+            assert kind_of(error) in [e.error for e in alternatives if e.error]
+            continue
+        assert any(meets(result, e) for e in alternatives if not e.error)
+    for table in doc.tables (if any):
+        check_row = TABLE_OPS[table.op]
+        for row in table.rows:
+            assert check_row(row, table.parameters or {})
+```
+
+Here `meets` compares as [Expectations](#expectations) says. For the case `half-even` above, it
+runs `Money("0.25", "EUR", scale=2).multiply("0.5", ROUND_HALF_EVEN)` and compares
+`{ "amount": "0.12", "currency": "EUR", "scale": 2 }` field by field.
 
 ## A vector file
 
@@ -145,9 +211,11 @@ number:
 - **Counts, scales and weights** are small JSON integers.
 - **Rational:** a decimal, or `"numerator/denominator"` with a positive denominator:
   `"-1329887967/1000"`. Used where a result is an exact fraction.
-- **Interval:** an irrational result (a rate, a period count, XIRR) given exactly:
-  `{ "lower": "…", "upper": "…", "tolerance": "…" }`, rationals with lower ≤ value ≤ upper.
-  An implementation's answer passes when it lies within `tolerance` of the interval.
+- **Interval:** an irrational result given exactly, as rationals `{ "lower": "…", "upper": "…" }`
+  with lower ≤ value ≤ upper, and `"exact": true` when both are the value itself (XNPV's bounds).
+  Most irrational results in the files are instead a floor on a grid: the value floored to
+  `digits` places, as an integer string (a rate, a period count, XIRR). Each operation says how its
+  results are judged. The schema also allows an interval a `tolerance`, but no file uses one yet.
 
 ### Rounding modes
 
@@ -205,6 +273,13 @@ Each operation rounds at most once, to the scale named, from the exact result.
 | `property`      | the named property holds (see [Generated cases](#generated-cases))         |
 | `anyOf`         | any one of the listed expectations passes                                  |
 
+**Stricter than before.** The battery was a TypeScript table before it became these files, and it
+judged ducat as it judges every other library: amounts compared by value, and any error accepted
+where one was expected. The files are stricter: a money result must also have the right currency
+and scale, and an error must be of the stated kind. `test/spec.test.ts` holds ducat to that. The
+cross-library comparison in `compare/` keeps the looser judgement, since other libraries have no
+scales or error kinds to compare.
+
 **Equality.** Money is equal only when amount, currency and scale all match: `"1.50"` EUR at scale
 2 is not `"1.5"` at scale 1, because the scale is part of what the operation promises. Plain
 decimals (`decimal`, used for the `fixed` operations) compare by numeric value, since the scale of
@@ -242,6 +317,10 @@ drawn one after another from the same state. The battery's first allocation, fro
 The property `allocation-within-one-unit` holds when, for every allocation of the amount `A`
 (minor units) by weights `w` with total `W`, the parts `p` sum to `A`, have the currency's scale,
 and each satisfies `|p × W − A × w| ≤ W`: every part is within one minor unit of its exact share.
+
+A correct allocator satisfies the property for any seed, so the property alone doesn't show that a
+port draws the same allocations. The first draw above does: ducat's runner checks it, and a port
+should too.
 
 ## Table operations
 
@@ -301,6 +380,9 @@ fraction (any form), and "grid" means an integer string counting 10^−digits: t
 | `excel.xirr`           | `lower`: Excel's XIRR of `values` on `dates`, grid                                                                                                                                                                                                                         |
 
 ### Microsoft's examples and LibreOffice Calc
+
+Amounts in these two files are decimal strings in major units of USD (`"-1000.00"`), as a
+spreadsheet cell holds them, not minor units.
 
 `excel/microsoft.json` holds the worked examples on Microsoft's Excel pages, one table per function,
 with the page as the table's `source`. Each row has the page's `formula`, its inputs (a `rate` may

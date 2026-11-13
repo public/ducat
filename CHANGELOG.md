@@ -25,6 +25,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   by stated in `spec/README.md` (#321).
 - ICU's spell-out of numbers (CLDR 49), which the RBNF interpreter behind `amountInWords` is checked
   against, is now tables in `@ducatjs/money-spec` (#321).
+- `docs/explanation/how-ducat-is-tested.md` describes the conformance suite, and `spec/README.md`
+  shows how an implementation in another language would run it (#321).
 
 ### Documentation
 

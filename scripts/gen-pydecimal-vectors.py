@@ -27,7 +27,7 @@ from decimal import (
 )
 
 sys.dont_write_bytecode = True  # no __pycache__ in scripts/
-from spec_vectors import file_text, vector_path, write_or_check  # noqa: E402
+from spec_vectors import ISO4217_PUBLISHED, file_text, vector_path, write_or_check  # noqa: E402
 
 SEED = 20261107
 COUNT_PER_OP = 250
@@ -153,6 +153,7 @@ PROVENANCE = {
     "source": "python-decimal",
     "generator": {"name": "scripts/gen-pydecimal-vectors.py", "version": f"{GENERATOR_VERSION} (seed {SEED})"},
     "method": "Python's decimal module at 400 digits, rounded once with each rounding mode; half-ceil and half-floor are half-up or half-down by the value's sign.",
+    "data": {"iso4217": ISO4217_PUBLISHED},
 }
 
 
