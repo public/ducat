@@ -1,14 +1,13 @@
 // Functions named after Excel's (npv, irr) must give Excel's values; periodicRate and annualRate
 // aren't Excel names, but must agree with Excel's RRI and EFFECT examples and Calc's POWER. Ground truth: Microsoft's
-// worked examples (test/fixtures/excel/microsoft.json, copied from the function pages), then a broad
-// set computed by LibreOffice Calc (test/vectors/finance-calc.json, scripts/gen-calc-vectors.py).
+// worked examples (@ducatjs/money-spec's excel/microsoft.json, copied from the function pages), then a broad
+// set computed by LibreOffice Calc (excel/libreoffice-calc.json, scripts/gen-calc-vectors.py).
 // Spreadsheets compute in doubles, so values are compared at 15 significant digits, and IRR at
 // Excel's stated accuracy (0.00001 percent).
 import '../src/plugins/core.js'; // the tests below use the Money methods
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { sectionsOf } from './spec/load.ts';
+import type { SpecFile } from './spec/format.ts';
+import { loadVectorFiles, sectionsOf } from './spec/load.ts';
 import { ratio, type Ratio } from '../src/decimal.js';
 import type { ExactMoney } from '../src/exact.js';
 import { annualRate, discountedSumExact, periodicRate } from '../src/finance.js';
@@ -121,12 +120,28 @@ interface Calc {
   >;
 }
 
-const microsoft = JSON.parse(
-  readFileSync(join(import.meta.dirname, 'fixtures', 'excel', 'microsoft.json'), 'utf8'),
-) as Microsoft;
-const calc = JSON.parse(
-  readFileSync(join(import.meta.dirname, 'vectors', 'finance-calc.json'), 'utf8'),
-) as Calc;
+// @ducatjs/money-spec's excel/microsoft.json: one table per function, with its page and any accuracy
+// the page states
+const documented = loadVectorFiles().get('excel/microsoft.json') as SpecFile;
+const microsoft = Object.fromEntries(
+  documented.tables!.map((table) => [
+    table.op.slice('excelExample.'.length),
+    { source: table.source, ...table.parameters, examples: table.rows },
+  ]),
+) as unknown as Microsoft;
+
+// excel/libreoffice-calc.json: a table per function, then the shared edge cases
+const calcFile = loadVectorFiles().get('excel/libreoffice-calc.json') as SpecFile;
+const calcSections = sectionsOf('excel/libreoffice-calc.json');
+const calc = {
+  calc: calcFile.provenance.tool!.version,
+  ...Object.fromEntries(Object.entries(calcSections).filter(([name]) => !name.startsWith('edge.'))),
+  edge: Object.fromEntries(
+    Object.entries(calcSections)
+      .filter(([name]) => name.startsWith('edge.'))
+      .map(([name, rows]) => [name.slice('edge.'.length), rows]),
+  ),
+} as unknown as Calc;
 
 const usd = (amount: string): Money => money(amount, 'USD');
 

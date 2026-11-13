@@ -20,6 +20,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The Python oracles (`decimal` for rounding, conversion and tax; `fractions` for `/finance` and
   `/excel`) are now tables in `@ducatjs/money-spec`, with every value unchanged, and
   `spec/README.md` says how each table's results are judged (#321).
+- LibreOffice Calc's results and Microsoft's worked examples for the Excel functions are now tables
+  in `@ducatjs/money-spec`, with the 15-significant-digit and double-error rules they are judged
+  by stated in `spec/README.md` (#321).
 
 ### Documentation
 

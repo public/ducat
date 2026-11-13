@@ -52,6 +52,7 @@ export type TableOperation = CheckedTable | DelegatedTable;
 
 const FINANCE_ORACLE = 'test/finance.oracle.test.ts';
 const EXCEL_ORACLE = 'test/excel.oracle.test.ts';
+const EXCEL = 'test/excel.test.ts';
 
 const eur = (minor: string): Money<'EUR'> => fromMinor(BigInt(minor), 'EUR');
 const minors = (parts: Money<string>[]): string[] => parts.map((part) => String(part.minor));
@@ -329,6 +330,35 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'excel.rate': { runBy: EXCEL_ORACLE },
   'excel.xnpv': { runBy: EXCEL_ORACLE },
   'excel.xirr': { runBy: EXCEL_ORACLE },
+  'spreadsheet.npv': { runBy: EXCEL },
+  'spreadsheet.irr': { runBy: EXCEL },
+  'spreadsheet.periodicRate': { runBy: EXCEL },
+  'spreadsheet.annualRate': { runBy: EXCEL },
+  'spreadsheet.fv': { runBy: EXCEL },
+  'spreadsheet.pv': { runBy: EXCEL },
+  'spreadsheet.pmt': { runBy: EXCEL },
+  'spreadsheet.nper': { runBy: EXCEL },
+  'spreadsheet.rate': { runBy: EXCEL },
+  'spreadsheet.xnpv': { runBy: EXCEL },
+  'spreadsheet.xirr': { runBy: EXCEL },
+  'spreadsheet.edge.fv': { runBy: EXCEL },
+  'spreadsheet.edge.pv': { runBy: EXCEL },
+  'spreadsheet.edge.pmt': { runBy: EXCEL },
+  'spreadsheet.edge.nper': { runBy: EXCEL },
+  'spreadsheet.edge.rate': { runBy: EXCEL },
+  'spreadsheet.edge.xnpv': { runBy: EXCEL },
+  'spreadsheet.edge.xirr': { runBy: EXCEL },
+  'excelExample.npv': { runBy: EXCEL },
+  'excelExample.irr': { runBy: EXCEL },
+  'excelExample.rri': { runBy: EXCEL },
+  'excelExample.effect': { runBy: EXCEL },
+  'excelExample.fv': { runBy: EXCEL },
+  'excelExample.pv': { runBy: EXCEL },
+  'excelExample.pmt': { runBy: EXCEL },
+  'excelExample.nper': { runBy: EXCEL },
+  'excelExample.rate': { runBy: EXCEL },
+  'excelExample.xnpv': { runBy: EXCEL },
+  'excelExample.xirr': { runBy: EXCEL },
   'xirr.floor': {
     expects: ['lower'],
     checkRow: checkXirr,
