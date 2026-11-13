@@ -492,7 +492,7 @@ def payment_date_cases(rng: random.Random) -> list:
 
 
 # ---------------------------------------------------------------------------------------------
-# @ducatjs/money/excel: written to test/vectors/excel.json, checked by test/excel.oracle.test.ts
+# @ducatjs/money/excel: written to spec/vectors/excel/fractions.json, checked by test/excel.oracle.test.ts
 #
 # FV, PV and PMT are rational: exact fractions. NPER, RATE, XNPV and XIRR are irrational in
 # general, so the oracle carries its own bounds: the logarithms and exponentials come from Python's

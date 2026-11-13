@@ -14,23 +14,25 @@ spec/
   vectors/<area>/<name>.json   the vectors, one area per directory
 ```
 
-| area       | file                    | cases | source           | what it covers                                                                |
-| ---------- | ----------------------- | ----: | ---------------- | ----------------------------------------------------------------------------- |
-| `core`     | `battery.json`          |    41 | hand             | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches |
-| `fixed`    | `battery.json`          |    28 | hand             | the same checks for plain decimals, without currencies                        |
-| `allocate` | `allocate-lean.json`    | 1,500 | Lean             | allocation by weights, every remainder strategy                               |
-| `allocate` | `instalments-lean.json` | 1,200 | Lean             | instalments with a unit, every remainder strategy                             |
-| `allocate` | `chunk-lean.json`       | 1,200 | Lean             | tranches of at most a maximum                                                 |
-| `allocate` | `schedule-lean.json`    | 1,500 | Lean             | fixed, percentage and rest tranches, and the ones that fail                   |
-| `cash`     | `increment-lean.json`   | 1,500 | Lean             | rounding to an increment, every rounding mode                                 |
-| `excel`    | `xnpv-lean.json`        |   120 | Lean             | XNPV's exact bounds and its rounded value in every mode                       |
-| `excel`    | `xirr-lean.json`        |    35 | Lean             | XIRR floored to a number of digits, or no root                                |
-| `rounding` | `pydecimal.json`        |   750 | Python `decimal` | multiply, divide and rescale, every rounding mode                             |
-| `convert`  | `pydecimal.json`        |   250 | Python `decimal` | conversion at a rate, every rounding mode                                     |
-| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal` | percentages, discounts, adding and extracting tax                             |
+| area       | file                    | cases | source             | what it covers                                                                |
+| ---------- | ----------------------- | ----: | ------------------ | ----------------------------------------------------------------------------- |
+| `core`     | `battery.json`          |    41 | hand               | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches |
+| `fixed`    | `battery.json`          |    28 | hand               | the same checks for plain decimals, without currencies                        |
+| `allocate` | `allocate-lean.json`    | 1,500 | Lean               | allocation by weights, every remainder strategy                               |
+| `allocate` | `instalments-lean.json` | 1,200 | Lean               | instalments with a unit, every remainder strategy                             |
+| `allocate` | `chunk-lean.json`       | 1,200 | Lean               | tranches of at most a maximum                                                 |
+| `allocate` | `schedule-lean.json`    | 1,500 | Lean               | fixed, percentage and rest tranches, and the ones that fail                   |
+| `cash`     | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                 |
+| `excel`    | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                       |
+| `excel`    | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                |
+| `rounding` | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                             |
+| `convert`  | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                     |
+| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                             |
+| `finance`  | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                    |
+| `excel`    | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                |
 
-The other areas the schema names (`format`, `words`, `parse`, `exact`, `finance`) are where ducat's
-remaining vectors move next.
+The other areas the schema names (`format`, `words`, `parse`, `exact`) are where ducat's remaining
+vectors move next.
 
 ## Running the suite
 
@@ -262,9 +264,34 @@ given.
 In the `minor.*` rows, `minor` is the amount in minor units of `currency` at its ISO 4217 scale
 (JPY 0, EUR 2, KWD 3, CLF 4), and every result is in minor units of the result's scale.
 
-**How results are judged.** A table may name a `comparison`; without one, every expected field must
-equal the result exactly, as text (integer strings, fractions and `null` alike). Every table so
-far is exact.
+**How results are judged.** Unless an operation says otherwise below, every expected field must
+equal the result exactly, as text (integer strings, fractions and `null` alike).
+
+### Finance and Excel tables
+
+The tables in `finance/fractions.json` and `excel/fractions.json` follow the definitions in ducat's
+reference (`docs/reference/finance.md`, `docs/reference/excel.md`). Amounts are minor units of the
+row's `currency`, dates are `YYYY-MM-DD`, and `mode` is the rounding mode. Each expected field is
+judged as the last column says. "Exact" means the same text, "rational" means the same value as a
+fraction (any form), and "grid" means an integer string counting 10^−digits: the result floored to
+`digits` places.
+
+| op                     | expected fields and how each is judged                                                                                                                                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `finance.yearFraction` | `want`: the year fraction between `start` and `end` under `convention` (with `maturity` where given) as a reduced `"num/den"`, exact; or `"throws"`, a `range` error                                                                                                       |
+| `finance.interest`     | `want`: simple interest, `principal` × `rate` × the year fraction from `from` to `to` under `dayCount`, rounded once; exact                                                                                                                                                |
+| `finance.compound`     | `want`: `principal` × (1 + `rate` / `perYear`)^`periods`, rounded once; exact                                                                                                                                                                                              |
+| `finance.amortise`     | `payment`, `rows` (the row count), `totalInterest`, `last` (the last row's payment, interest, principal and balance) and `checksum` = Σ (i + 1) × (paymentᵢ + 7 × interestᵢ) over the rows from i = 0, in minor units; all exact                                           |
+| `finance.npv`          | `npv`: Excel's NPV of `flows` at `rate`, rounded once; `discountedSum`: the textbook NPV, Σ flowₜ / (1 + rate)ᵗ with the first flow at period 0 not discounted, rounded once; exact                                                                                        |
+| `finance.irr`          | `lower`: Excel's IRR of `flows`, grid; the reported rate is that floor                                                                                                                                                                                                     |
+| `finance.irrBracketed` | `lower`: the IRR inside `bracket` (one of two known rational roots), grid                                                                                                                                                                                                  |
+| `finance.proration`    | `prorate`: `price` × used days / period days (periods end-exclusive), rounded once; `split`: `price` split at the dates `at` in proportion to the days in each piece, by largest remainder; exact                                                                          |
+| `finance.paymentDates` | `dates`: the payment dates of a `count`-payment schedule, `perYear` a year, from `firstPayment`; exact                                                                                                                                                                     |
+| `excel.annuities`      | for each of `results.fv`, `.pv` and `.pmt`: `exact`, rational; `rounded`, the value rounded once in each mode, exact                                                                                                                                                       |
+| `excel.nper`           | `lower`, grid, or `"throws"` (a `range` error); `exact`, rational, present exactly when the period count is rational                                                                                                                                                       |
+| `excel.rate`           | `lower`: Excel's RATE, grid                                                                                                                                                                                                                                                |
+| `excel.xnpv`           | where `exact` is given: the bounds are both that value, rational, and marked exact. Otherwise the implementation's guaranteed interval [lower, upper] must contain [`low`, `high`] and be at most 10^−`digits` wide. `rounded`: the value rounded once in each mode, exact |
+| `excel.xirr`           | `lower`: Excel's XIRR of `values` on `dates`, grid                                                                                                                                                                                                                         |
 
 What the strategies mean:
 
