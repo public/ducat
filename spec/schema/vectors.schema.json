@@ -1124,7 +1124,8 @@
         "excelExample.nper",
         "excelExample.rate",
         "excelExample.xnpv",
-        "excelExample.xirr"
+        "excelExample.xirr",
+        "words.spellOut"
       ]
     },
     "rowsByOp": {
@@ -2343,6 +2344,27 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/excelExample.xirr"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "words.spellOut"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/words.spellOut"
                 }
               }
             }
@@ -4280,6 +4302,20 @@
           },
           "result": {
             "$ref": "#/$defs/decimal"
+          }
+        },
+        "additionalProperties": false
+      },
+      "words.spellOut": {
+        "type": "object",
+        "required": ["number", "words"],
+        "properties": {
+          "number": {
+            "$ref": "#/$defs/integerString"
+          },
+          "words": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "additionalProperties": false

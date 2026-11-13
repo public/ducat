@@ -39,6 +39,7 @@ const CASES_PER_AREA: Record<string, number> = {
   convert: 250,
   tax: 1000,
   finance: 2420,
+  words: 6904,
 };
 
 const schema = vectorSchema;
@@ -450,6 +451,9 @@ describe('@ducatjs/money-spec', () => {
         const [key, inner] = Object.entries(value as object)[0]!;
         return { ...(value as object), [key]: corrupt(inner) };
       }
+      if (!/^-?\d+(\/\d+)?$/.test(String(value))) {
+        return `${String(value)} (changed)`;
+      }
       const [numerator, denominator] = String(value).split('/');
       const changed = String(BigInt(numerator!) + 1n);
       return denominator === undefined ? changed : `${changed}/${denominator}`;
@@ -469,7 +473,7 @@ describe('@ducatjs/money-spec', () => {
           expect({
             op: table.op,
             field,
-            caught: operation.checkRow(changed, 0).length > 0,
+            caught: operation.checkRow(changed, 0, table.parameters ?? {}).length > 0,
           }).toEqual({
             op: table.op,
             field,
@@ -527,7 +531,9 @@ for (const [path, file] of files) {
         }
         const mismatches = [
           ...(operation.checkTable?.(table.rows) ?? []),
-          ...table.rows.flatMap((row, index) => operation.checkRow(row, index)),
+          ...table.rows.flatMap((row, index) =>
+            operation.checkRow(row, index, table.parameters ?? {}),
+          ),
         ];
         expect(mismatches.slice(0, 5)).toEqual([]);
       },

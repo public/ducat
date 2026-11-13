@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Writes test/vectors/rbnf.json: ICU's own spell-out of a set of numbers in every shipped language
+// Writes @ducatjs/money-spec's spec/vectors/words/rbnf.json: ICU's own spell-out of a set of numbers in every shipped language
 // and its main rule sets, the oracle test/words.test.ts checks the RBNF interpreter against. ICU
 // isn't exposed to JavaScript, so this drives scripts/rbnf-oracle.cpp, built against ICU4C 79.1,
 // the release whose CLDR data (49) data/rbnf comes from:
@@ -8,13 +8,15 @@
 //     -o rbnf-oracle
 //   RBNF_ORACLE=./rbnf-oracle LD_LIBRARY_PATH=$ICU/lib node scripts/gen-rbnf-vectors.mjs [--check]
 //
-// With --from-data it writes test/vectors/rbnf-data.json instead: ICU's engine run on the rule text
+// With --from-data it writes spec/vectors/words/rbnf-data.json instead: ICU's engine run on the rule text
 // in data/rbnf rather than on ICU's own data, for every other public rule set, so an ICU older than
 // CLDR 49 (the box's ICU4C 74 made the committed file) checks the rules ducat ships. Rule sets that
 // reach a '[…|…]' rule are left out: that syntax is newer than ICU 74.
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { rbnfVectorText } from './rbnf-vectors.mjs';
+import { vectorPath } from './spec-vectors.mjs';
 
 const fromData = process.argv.includes('--from-data');
 const dataDirectory = join(import.meta.dirname, '..', 'data', 'rbnf');
@@ -205,18 +207,15 @@ keys.forEach(([locale, ruleSet, value], i) => {
   ((vectors[locale] ??= {})[ruleSet] ??= []).push([value, text]);
 });
 
-const file = fromData ? 'rbnf-data.json' : 'rbnf.json';
-const path = join(import.meta.dirname, '..', 'test', 'vectors', file);
-const source = fromData
-  ? `ICU4C ${version} RuleBasedNumberFormat on the rule text of data/rbnf (CLDR 49)`
-  : `ICU4C ${version} RuleBasedNumberFormat (CLDR 49)`;
-const output = JSON.stringify({ source, vectors }, null, 1) + '\n';
+const name = fromData ? 'rbnf-data' : 'rbnf';
+const path = vectorPath('words', name);
+const output = rbnfVectorText(name, version, vectors);
 if (process.argv.includes('--check')) {
   if (readFileSync(path, 'utf8') !== output) {
-    console.error(`test/vectors/${file} differs from ICU`);
+    console.error(`spec/vectors/words/${name}.json differs from ICU`);
     process.exit(1);
   }
-  console.log(`test/vectors/${file} matches ICU`);
+  console.log(`spec/vectors/words/${name}.json matches ICU`);
 } else {
   writeFileSync(path, output);
   console.log(`wrote ${path} (${keys.length} vectors)`);

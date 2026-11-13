@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { defineCurrency, money } from '../src/index.js';
@@ -21,33 +20,8 @@ const LANGUAGES: Record<string, SpelloutRules> = {
   pt: portuguese,
   nl: dutch,
 };
-// ICU4C 79.1 on its own CLDR 49 data, and ICU4C 74.2 on data/rbnf's text for the other rule sets
-const vectorFiles = ['vectors/rbnf.json', 'vectors/rbnf-data.json'].map(
-  (file) =>
-    JSON.parse(readFileSync(new URL(file, import.meta.url), 'utf8')) as {
-      source: string;
-      vectors: Record<string, Record<string, [string, string][]>>;
-    },
-);
-
-describe('the RBNF interpreter matches ICU', () => {
-  for (const { source, vectors } of vectorFiles) {
-    for (const [locale, sets] of Object.entries(vectors)) {
-      for (const [ruleSet, cases] of Object.entries(sets)) {
-        it(`${locale} ${ruleSet} (${source})`, () => {
-          const wrong = cases
-            .map(([value, expected]) => [
-              value,
-              expected,
-              spellOut(BigInt(value), LANGUAGES[locale]!, ruleSet),
-            ])
-            .filter(([, expected, actual]) => expected !== actual);
-          expect(wrong).toEqual([]);
-        });
-      }
-    }
-  }
-});
+// ICU's spell-out of every language's rule sets (@ducatjs/money-spec's words/rbnf.json and
+// rbnf-data.json) is checked by test/spec.test.ts.
 
 describe('spellOut', () => {
   it('lists public rule sets', () => {
