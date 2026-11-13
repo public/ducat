@@ -17,6 +17,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The Lean oracles (allocation, instalments, chunks, schedules, rounding to an increment, XNPV and
   XIRR) are now tables in `@ducatjs/money-spec`, with the rows exactly as Lean printed them, and
   `test/spec.test.ts` runs them (#321).
+- The Python oracles (`decimal` for rounding, conversion and tax; `fractions` for `/finance` and
+  `/excel`) are now tables in `@ducatjs/money-spec`, with every value unchanged, and
+  `spec/README.md` says how each table's results are judged (#321).
 
 ### Documentation
 
