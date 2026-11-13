@@ -3,9 +3,8 @@
 // bounds (from Python's correctly rounded decimal ln and exp) where the value is irrational.
 // Random cases plus the edge cases in scripts/excel_edge_cases.py, which Calc also computes.
 import '../src/plugins/core.js'; // ExactMoney#round
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { sectionsOf } from './spec/load.ts';
 import type { Ratio } from '../src/decimal.js';
 import {
   fv,
@@ -84,9 +83,7 @@ interface Vectors {
   }[];
 }
 
-const vectors = JSON.parse(
-  readFileSync(join(import.meta.dirname, 'vectors', 'excel.json'), 'utf8'),
-) as Vectors;
+const vectors = sectionsOf('excel/fractions.json') as unknown as Vectors;
 
 const amount = (minor: string, currency: string): Money => fromMinor(BigInt(minor), currency);
 const minorOf = (value: Money): string => value.toMinor().toString();

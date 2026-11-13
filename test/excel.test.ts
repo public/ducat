@@ -8,6 +8,7 @@ import '../src/plugins/core.js'; // the tests below use the Money methods
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { sectionsOf } from './spec/load.ts';
 import { ratio, type Ratio } from '../src/decimal.js';
 import type { ExactMoney } from '../src/exact.js';
 import { annualRate, discountedSumExact, periodicRate } from '../src/finance.js';
@@ -779,7 +780,7 @@ describe(`LibreOffice Calc's XNPV and XIRR (${calc.calc})`, () => {
 });
 
 describe(`LibreOffice Calc on the edge cases (${calc.calc})`, () => {
-  // The exact oracle's values for the same inputs (test/vectors/excel.json, which
+  // The exact oracle's values for the same inputs (excel/fractions.json, which
   // test/excel.oracle.test.ts holds ducat to): each as a [low, high] pair of fractions, a point
   // where the value is exact, else the oracle's bounds or the grid step [lower, lower + 10^-digits).
   interface Oracle {
@@ -789,9 +790,7 @@ describe(`LibreOffice Calc on the edge cases (${calc.calc})`, () => {
     xnpv: { note?: string; exact?: string; low?: string; high?: string }[];
     xirr: { note?: string; lower: string; digits: number }[];
   }
-  const oracle = JSON.parse(
-    readFileSync(join(import.meta.dirname, 'vectors', 'excel.json'), 'utf8'),
-  ) as Oracle;
+  const oracle = sectionsOf('excel/fractions.json') as unknown as Oracle;
   const byNote = <T extends { note?: string }>(cases: T[], note: string): T =>
     cases.find((vector) => vector.note === note)!;
   const point = (text: string): [Ratio, Ratio] => {

@@ -1053,7 +1053,29 @@
         "schedule",
         "roundToIncrement.byMode",
         "xnpv.scaled",
-        "xirr.floor"
+        "xirr.floor",
+        "minor.multiply",
+        "minor.divide",
+        "minor.toScale",
+        "minor.convert",
+        "minor.percentage",
+        "minor.discount",
+        "minor.addTax",
+        "minor.extractTax",
+        "finance.yearFraction",
+        "finance.interest",
+        "finance.compound",
+        "finance.amortise",
+        "finance.npv",
+        "finance.irr",
+        "finance.irrBracketed",
+        "finance.proration",
+        "finance.paymentDates",
+        "excel.annuities",
+        "excel.nper",
+        "excel.rate",
+        "excel.xnpv",
+        "excel.xirr"
       ]
     },
     "rowsByOp": {
@@ -1201,6 +1223,468 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/xirr.floor"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.multiply"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.multiply"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.divide"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.divide"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.toScale"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.toScale"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.convert"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.convert"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.percentage"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.percentage"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.discount"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.discount"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.addTax"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.addTax"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "minor.extractTax"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/minor.extractTax"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.yearFraction"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.yearFraction"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.interest"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.interest"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.compound"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.compound"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.amortise"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.amortise"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.npv"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.npv"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.irr"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.irr"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.irrBracketed"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.irrBracketed"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.proration"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.proration"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.paymentDates"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.paymentDates"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "excel.annuities"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/excel.annuities"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "excel.nper"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/excel.nper"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "excel.rate"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/excel.rate"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "excel.xnpv"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/excel.xnpv"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "excel.xirr"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/excel.xirr"
                 }
               }
             }
@@ -1629,6 +2113,761 @@
                 "type": "null"
               }
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.multiply": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "factor", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "factor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.divide": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "divisor", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "divisor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.toScale": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "scale", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "scale": {
+            "$ref": "#/$defs/scale"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.convert": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "to", "rate", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.percentage": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.discount": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.addTax": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "tax", "gross"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "tax": {
+            "$ref": "#/$defs/integerString"
+          },
+          "gross": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minor.extractTax": {
+        "type": "object",
+        "required": ["currency", "minor", "mode", "percent", "net", "tax"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "net": {
+            "$ref": "#/$defs/integerString"
+          },
+          "tax": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.yearFraction": {
+        "type": "object",
+        "required": ["start", "end", "convention", "want"],
+        "properties": {
+          "start": {
+            "$ref": "#/$defs/date"
+          },
+          "end": {
+            "$ref": "#/$defs/date"
+          },
+          "convention": {
+            "oneOf": [
+              {
+                "enum": ["30E/360", "30E/360 ISDA", "ACT/360", "ACT/365F", "ACT/ACT ISDA"]
+              },
+              {
+                "$ref": "#/$defs/rational"
+              }
+            ]
+          },
+          "want": {
+            "oneOf": [
+              {
+                "enum": ["throws"]
+              },
+              {
+                "$ref": "#/$defs/rational"
+              }
+            ]
+          },
+          "maturity": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.interest": {
+        "type": "object",
+        "required": ["currency", "principal", "rate", "from", "to", "dayCount", "mode", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "principal": {
+            "$ref": "#/$defs/integerString"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "from": {
+            "$ref": "#/$defs/date"
+          },
+          "to": {
+            "$ref": "#/$defs/date"
+          },
+          "dayCount": {
+            "oneOf": [
+              {
+                "enum": ["30E/360", "30E/360 ISDA", "ACT/360", "ACT/365F", "ACT/ACT ISDA"]
+              },
+              {
+                "$ref": "#/$defs/rational"
+              }
+            ]
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          },
+          "maturity": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.compound": {
+        "type": "object",
+        "required": ["currency", "principal", "rate", "perYear", "periods", "mode", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "principal": {
+            "$ref": "#/$defs/integerString"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "perYear": {
+            "type": "integer"
+          },
+          "periods": {
+            "type": "integer"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.amortise": {
+        "type": "object",
+        "required": [
+          "currency",
+          "loan",
+          "rate",
+          "perYear",
+          "periods",
+          "method",
+          "mode",
+          "residual",
+          "payment",
+          "rows",
+          "totalInterest",
+          "last",
+          "checksum"
+        ],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "loan": {
+            "$ref": "#/$defs/integerString"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "perYear": {
+            "type": "integer"
+          },
+          "periods": {
+            "type": "integer"
+          },
+          "method": {
+            "enum": ["annuity", "interestOnly", "linear"]
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "residual": {
+            "enum": ["lastInterest", "lastPayment"]
+          },
+          "payment": {
+            "$ref": "#/$defs/integerString"
+          },
+          "rows": {
+            "type": "integer"
+          },
+          "totalInterest": {
+            "$ref": "#/$defs/integerString"
+          },
+          "last": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "checksum": {
+            "$ref": "#/$defs/integerString"
+          },
+          "balloon": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.npv": {
+        "type": "object",
+        "required": ["currency", "flows", "rate", "mode", "npv", "discountedSum"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "flows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "npv": {
+            "$ref": "#/$defs/integerString"
+          },
+          "discountedSum": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.irr": {
+        "type": "object",
+        "required": ["currency", "flows", "digits", "lower"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "flows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "digits": {
+            "type": "integer"
+          },
+          "lower": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.irrBracketed": {
+        "type": "object",
+        "required": ["currency", "flows", "digits", "bracket", "lower"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "flows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "digits": {
+            "type": "integer"
+          },
+          "bracket": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/rational"
+            }
+          },
+          "lower": {
+            "$ref": "#/$defs/integerString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.proration": {
+        "type": "object",
+        "required": ["currency", "price", "period", "used", "at", "mode", "prorate", "split"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "price": {
+            "$ref": "#/$defs/integerString"
+          },
+          "period": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/date"
+            }
+          },
+          "used": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/date"
+            }
+          },
+          "at": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/date"
+            }
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "prorate": {
+            "$ref": "#/$defs/integerString"
+          },
+          "split": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.paymentDates": {
+        "type": "object",
+        "required": ["firstPayment", "perYear", "count", "dates"],
+        "properties": {
+          "firstPayment": {
+            "$ref": "#/$defs/date"
+          },
+          "perYear": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/date"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "excel.annuities": {
+        "type": "object",
+        "required": ["currency", "rate", "nper", "type", "pmt", "pv", "fv", "results"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "nper": {
+            "type": "integer"
+          },
+          "type": {
+            "enum": [0, 1]
+          },
+          "pmt": {
+            "$ref": "#/$defs/integerString"
+          },
+          "pv": {
+            "$ref": "#/$defs/integerString"
+          },
+          "fv": {
+            "$ref": "#/$defs/integerString"
+          },
+          "results": {
+            "type": "object",
+            "required": ["fv", "pv", "pmt"],
+            "properties": {
+              "fv": {
+                "type": "object",
+                "required": ["exact", "rounded"],
+                "properties": {
+                  "exact": {
+                    "$ref": "#/$defs/rational"
+                  },
+                  "rounded": {
+                    "type": "object",
+                    "propertyNames": {
+                      "$ref": "#/$defs/roundingMode"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/integerString"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "pv": {
+                "type": "object",
+                "required": ["exact", "rounded"],
+                "properties": {
+                  "exact": {
+                    "$ref": "#/$defs/rational"
+                  },
+                  "rounded": {
+                    "type": "object",
+                    "propertyNames": {
+                      "$ref": "#/$defs/roundingMode"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/integerString"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "pmt": {
+                "type": "object",
+                "required": ["exact", "rounded"],
+                "properties": {
+                  "exact": {
+                    "$ref": "#/$defs/rational"
+                  },
+                  "rounded": {
+                    "type": "object",
+                    "propertyNames": {
+                      "$ref": "#/$defs/roundingMode"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/integerString"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "excel.nper": {
+        "type": "object",
+        "required": ["currency", "rate", "type", "digits", "pmt", "pv", "fv", "lower"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "type": {
+            "enum": [0, 1]
+          },
+          "digits": {
+            "type": "integer"
+          },
+          "pmt": {
+            "$ref": "#/$defs/integerString"
+          },
+          "pv": {
+            "$ref": "#/$defs/integerString"
+          },
+          "fv": {
+            "$ref": "#/$defs/integerString"
+          },
+          "lower": {
+            "oneOf": [
+              {
+                "enum": ["throws"]
+              },
+              {
+                "$ref": "#/$defs/integerString"
+              }
+            ]
+          },
+          "exact": {
+            "$ref": "#/$defs/rational"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "excel.rate": {
+        "type": "object",
+        "required": ["currency", "nper", "pmt", "pv", "fv", "type", "digits", "lower"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "nper": {
+            "type": "integer"
+          },
+          "pmt": {
+            "$ref": "#/$defs/integerString"
+          },
+          "pv": {
+            "$ref": "#/$defs/integerString"
+          },
+          "fv": {
+            "$ref": "#/$defs/integerString"
+          },
+          "type": {
+            "enum": [0, 1]
+          },
+          "digits": {
+            "type": "integer"
+          },
+          "lower": {
+            "$ref": "#/$defs/integerString"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "excel.xnpv": {
+        "type": "object",
+        "required": ["currency", "rate", "values", "dates", "digits", "rounded"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/date"
+            }
+          },
+          "digits": {
+            "type": "integer"
+          },
+          "low": {
+            "$ref": "#/$defs/decimal"
+          },
+          "high": {
+            "$ref": "#/$defs/decimal"
+          },
+          "rounded": {
+            "type": "object",
+            "propertyNames": {
+              "$ref": "#/$defs/roundingMode"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "dayCount": {
+            "enum": ["ACT/360", "ACT/ACT ISDA"]
+          },
+          "exact": {
+            "$ref": "#/$defs/rational"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "excel.xirr": {
+        "type": "object",
+        "required": ["currency", "values", "dates", "digits", "lower"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/date"
+            }
+          },
+          "digits": {
+            "type": "integer"
+          },
+          "lower": {
+            "$ref": "#/$defs/integerString"
+          },
+          "note": {
+            "type": "string"
           }
         },
         "additionalProperties": false

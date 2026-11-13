@@ -7,13 +7,21 @@ import '../../src/plugins/iso.js';
 import { ratio, type Ratio } from '../../src/decimal.js';
 import { xirr, xnpv, xnpvBounds } from '../../src/excel.js';
 import {
+  addTax,
   allocate,
   chunk,
+  convert,
+  discount,
+  divide,
+  extractTax,
   fromMinor,
   instalments,
+  multiply,
+  percentage,
   roundToIncrement,
   RoundingError,
   schedule,
+  toScale,
   type Money,
   type Remainder,
   type RoundingMode,
@@ -22,12 +30,28 @@ import {
 
 type Row = Readonly<Record<string, unknown>>;
 
-export interface TableOperation {
+/** A table this runner checks row by row. */
+export interface CheckedTable {
+  /** the row fields that hold expected results (a corruption test changes them) */
+  readonly expects: readonly string[];
   /** the mismatches in one row, described */
   checkRow(row: Row, index: number): string[];
   /** checks on the table as a whole (that it has both throwing and returning rows, say) */
   checkTable?(rows: readonly Row[]): string[];
 }
+
+/**
+ * A table whose rows an existing test file checks, with the comparison spec/README.md states for
+ * the operation; the runner checks that the file exists and reads that vector file by name.
+ */
+export interface DelegatedTable {
+  readonly runBy: string;
+}
+
+export type TableOperation = CheckedTable | DelegatedTable;
+
+const FINANCE_ORACLE = 'test/finance.oracle.test.ts';
+const EXCEL_ORACLE = 'test/excel.oracle.test.ts';
 
 const eur = (minor: string): Money<'EUR'> => fromMinor(BigInt(minor), 'EUR');
 const minors = (parts: Money<string>[]): string[] => parts.map((part) => String(part.minor));
@@ -227,17 +251,86 @@ function checkXirr(row: Row, index: number): string[] {
   return actual === row['lower'] ? [] : [`row ${index}: ${actual}, expected ${row['lower']}`];
 }
 
+// --- money in minor units, from Python's decimal -----------------------------------------------------
+
+/** The amount in minor units at its own scale. */
+const minorOf = (amount: Money): string => amount.toScaledUnits().toString();
+
+/** One minor.* operation: ducat's results by field name, compared exactly with the row's. */
+function minorOperation(
+  expects: readonly string[],
+  compute: (amount: Money, row: Row) => Record<string, string>,
+): CheckedTable {
+  return {
+    expects,
+    checkRow(row: Row): string[] {
+      const amount = fromMinor(BigInt(row['minor'] as string), row['currency'] as string);
+      const actual = compute(amount, row);
+      const differs = Object.entries(actual).some(([field, value]) => row[field] !== value);
+      return differs ? [`${JSON.stringify(row)} -> got ${JSON.stringify(actual)}`] : [];
+    },
+  };
+}
+
+const modeOf = (row: Row) => row['mode'] as RoundingMode;
+const text = (row: Row, field: string) => row[field] as string;
+
 export const TABLE_OPERATIONS: Record<string, TableOperation> = {
-  'allocate.byRemainder': { checkRow: checkAllocation },
-  'instalments.byRemainder': { checkRow: checkInstalments },
-  chunk: { checkRow: checkChunk },
+  'allocate.byRemainder': { expects: REMAINDERS, checkRow: checkAllocation },
+  'instalments.byRemainder': {
+    expects: ['first', 'last', 'toFirst', 'toLast'],
+    checkRow: checkInstalments,
+  },
+  chunk: { expects: ['chunks'], checkRow: checkChunk },
   schedule: {
+    expects: ['result'],
     checkRow: checkSchedule,
     checkTable: (rows) => hasBothOutcomes(rows, 'result'),
   },
-  'roundToIncrement.byMode': { checkRow: checkIncrement },
-  'xnpv.scaled': { checkRow: checkXnpv },
+  'roundToIncrement.byMode': { expects: ROUNDING_MODES, checkRow: checkIncrement },
+  'xnpv.scaled': { expects: ['bounds', 'rounded'], checkRow: checkXnpv },
+  'minor.multiply': minorOperation(['want'], (amount, row) => ({
+    want: minorOf(multiply(amount, text(row, 'factor'), modeOf(row))),
+  })),
+  'minor.divide': minorOperation(['want'], (amount, row) => ({
+    want: minorOf(divide(amount, text(row, 'divisor'), modeOf(row))),
+  })),
+  'minor.toScale': minorOperation(['want'], (amount, row) => ({
+    want: minorOf(toScale(amount, row['scale'] as number, modeOf(row))),
+  })),
+  'minor.convert': minorOperation(['want'], (amount, row) => ({
+    want: minorOf(convert(amount, text(row, 'to'), text(row, 'rate'), modeOf(row))),
+  })),
+  'minor.percentage': minorOperation(['want'], (amount, row) => ({
+    want: minorOf(percentage(amount, text(row, 'percent'), modeOf(row))),
+  })),
+  'minor.discount': minorOperation(['want'], (amount, row) => ({
+    want: minorOf(discount(amount, text(row, 'percent'), modeOf(row))),
+  })),
+  'minor.addTax': minorOperation(['tax', 'gross'], (amount, row) => {
+    const breakdown = addTax(amount, text(row, 'percent'), modeOf(row));
+    return { tax: minorOf(breakdown.tax), gross: minorOf(breakdown.gross) };
+  }),
+  'minor.extractTax': minorOperation(['net', 'tax'], (amount, row) => {
+    const breakdown = extractTax(amount, text(row, 'percent'), modeOf(row));
+    return { net: minorOf(breakdown.net), tax: minorOf(breakdown.tax) };
+  }),
+  'finance.yearFraction': { runBy: FINANCE_ORACLE },
+  'finance.interest': { runBy: FINANCE_ORACLE },
+  'finance.compound': { runBy: FINANCE_ORACLE },
+  'finance.amortise': { runBy: FINANCE_ORACLE },
+  'finance.npv': { runBy: FINANCE_ORACLE },
+  'finance.irr': { runBy: FINANCE_ORACLE },
+  'finance.irrBracketed': { runBy: FINANCE_ORACLE },
+  'finance.proration': { runBy: FINANCE_ORACLE },
+  'finance.paymentDates': { runBy: FINANCE_ORACLE },
+  'excel.annuities': { runBy: EXCEL_ORACLE },
+  'excel.nper': { runBy: EXCEL_ORACLE },
+  'excel.rate': { runBy: EXCEL_ORACLE },
+  'excel.xnpv': { runBy: EXCEL_ORACLE },
+  'excel.xirr': { runBy: EXCEL_ORACLE },
   'xirr.floor': {
+    expects: ['lower'],
     checkRow: checkXirr,
     checkTable: (rows) => {
       const returning = rows.filter((row) => row['lower'] !== null).length;

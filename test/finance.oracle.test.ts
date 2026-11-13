@@ -1,8 +1,7 @@
 // Reference vectors for /finance computed with Python's fractions module
-// (scripts/gen-finance-vectors.py): a second, independent implementation of the definitions.
+// (scripts/gen-finance-vectors.py, @ducatjs/money-spec's finance/fractions.json): a second,
+// independent implementation of the definitions.
 import '../src/plugins/core.js'; // the tests below use the Money methods
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   amortise,
@@ -19,6 +18,7 @@ import {
 import { irr, npv, npvExact } from '../src/excel.js';
 import { fromMinor, type Money } from '../src/money.js';
 import type { RoundingMode } from '../src/rounding.js';
+import { sectionsOf } from './spec/load.ts';
 
 interface Vectors {
   yearFraction: {
@@ -93,9 +93,7 @@ interface Vectors {
   paymentDates: { firstPayment: string; perYear: number; count: number; dates: string[] }[];
 }
 
-const vectors = JSON.parse(
-  readFileSync(join(import.meta.dirname, 'vectors', 'finance.json'), 'utf8'),
-) as Vectors;
+const vectors = sectionsOf('finance/fractions.json') as unknown as Vectors;
 
 const amount = (minor: string, currency: string): Money => fromMinor(BigInt(minor), currency);
 const minorOf = (value: Money): string => value.toMinor().toString();
