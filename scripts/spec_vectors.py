@@ -11,6 +11,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# The ISO 4217 List One the generators' currency exponents come from (JPY 0, EUR and USD 2, KWD 3,
+# CLF 4: data/iso4217-list-one.xml): recorded as each file's data version
+ISO4217_PUBLISHED = "2026-09-17"
 
 
 def vector_path(area: str, name: str) -> Path:

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Writes @ducatjs/money-spec's spec/vectors/words/rbnf.json: ICU's own spell-out of a set of numbers in every shipped language
-// and its main rule sets, the oracle test/words.test.ts checks the RBNF interpreter against. ICU
+// Writes @ducatjs/money-spec's spec/vectors/words/rbnf.json: ICU's own spell-out of a set of
+// numbers in every shipped language and its main rule sets, the oracle test/spec.test.ts checks the
+// RBNF interpreter against. ICU
 // isn't exposed to JavaScript, so this drives scripts/rbnf-oracle.cpp, built against ICU4C 79.1,
 // the release whose CLDR data (49) data/rbnf comes from:
 //

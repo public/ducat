@@ -7,7 +7,7 @@
  "provenance": {
   "source": "hand",
   "generator": null,
-  "method": "Each expected value was worked out by hand from the exact decimal arithmetic in the description; none was taken from a library.",
+  "method": "Each expected value was worked out by hand from the exact decimal arithmetic in the description; none was taken from a library. alloc-fuzz is generated rather than listed: its property holds for any seed, so test/spec.test.ts also checks the generator's first draw (spec/README.md, \"Generated cases\"), which pins the stream a port must reproduce.",
   "data": {
    "iso4217": "2026-09-17"
   }

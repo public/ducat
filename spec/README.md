@@ -211,9 +211,11 @@ number:
 - **Counts, scales and weights** are small JSON integers.
 - **Rational:** a decimal, or `"numerator/denominator"` with a positive denominator:
   `"-1329887967/1000"`. Used where a result is an exact fraction.
-- **Interval:** an irrational result (a rate, a period count, XIRR) given exactly:
-  `{ "lower": "…", "upper": "…", "tolerance": "…" }`, rationals with lower ≤ value ≤ upper.
-  An implementation's answer passes when it lies within `tolerance` of the interval.
+- **Interval:** an irrational result given exactly, as rationals `{ "lower": "…", "upper": "…" }`
+  with lower ≤ value ≤ upper, and `"exact": true` when both are the value itself (XNPV's bounds).
+  Most irrational results in the files are instead a floor on a grid: the value floored to
+  `digits` places, as an integer string (a rate, a period count, XIRR). Each operation says how its
+  results are judged. The schema also allows an interval a `tolerance`, but no file uses one yet.
 
 ### Rounding modes
 
@@ -378,6 +380,9 @@ fraction (any form), and "grid" means an integer string counting 10^−digits: t
 | `excel.xirr`           | `lower`: Excel's XIRR of `values` on `dates`, grid                                                                                                                                                                                                                         |
 
 ### Microsoft's examples and LibreOffice Calc
+
+Amounts in these two files are decimal strings in major units of USD (`"-1000.00"`), as a
+spreadsheet cell holds them, not minor units.
 
 `excel/microsoft.json` holds the worked examples on Microsoft's Excel pages, one table per function,
 with the page as the table's `source`. Each row has the page's `formula`, its inputs (a `rate` may
