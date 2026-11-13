@@ -34,7 +34,7 @@ const CASES_PER_AREA: Record<string, number> = {
   fixed: 28,
   allocate: 5400,
   cash: 1500,
-  excel: 912,
+  excel: 2878,
   rounding: 750,
   convert: 250,
   tax: 1000,

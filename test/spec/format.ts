@@ -50,6 +50,7 @@ export interface SpecCase {
 export interface Provenance {
   readonly source: string;
   readonly generator: { readonly name: string; readonly version: string } | null;
+  readonly tool?: { readonly name: string; readonly version: string };
   readonly method: string;
   readonly data?: Readonly<Record<string, string>>;
 }
@@ -72,6 +73,7 @@ export interface SpecTable {
   readonly op: string;
   readonly description?: string;
   readonly source?: string;
+  readonly parameters?: Readonly<Record<string, unknown>>;
   readonly rows: readonly Readonly<Record<string, unknown>>[];
 }
 
