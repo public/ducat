@@ -14,20 +14,23 @@ spec/
   vectors/<area>/<name>.json   the vectors, one area per directory
 ```
 
-| area       | file                    | cases | source | what it covers                                                                |
-| ---------- | ----------------------- | ----: | ------ | ----------------------------------------------------------------------------- |
-| `core`     | `battery.json`          |    41 | hand   | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches |
-| `fixed`    | `battery.json`          |    28 | hand   | the same checks for plain decimals, without currencies                        |
-| `allocate` | `allocate-lean.json`    | 1,500 | Lean   | allocation by weights, every remainder strategy                               |
-| `allocate` | `instalments-lean.json` | 1,200 | Lean   | instalments with a unit, every remainder strategy                             |
-| `allocate` | `chunk-lean.json`       | 1,200 | Lean   | tranches of at most a maximum                                                 |
-| `allocate` | `schedule-lean.json`    | 1,500 | Lean   | fixed, percentage and rest tranches, and the ones that fail                   |
-| `cash`     | `increment-lean.json`   | 1,500 | Lean   | rounding to an increment, every rounding mode                                 |
-| `excel`    | `xnpv-lean.json`        |   120 | Lean   | XNPV's exact bounds and its rounded value in every mode                       |
-| `excel`    | `xirr-lean.json`        |    35 | Lean   | XIRR floored to a number of digits, or no root                                |
+| area       | file                    | cases | source           | what it covers                                                                |
+| ---------- | ----------------------- | ----: | ---------------- | ----------------------------------------------------------------------------- |
+| `core`     | `battery.json`          |    41 | hand             | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches |
+| `fixed`    | `battery.json`          |    28 | hand             | the same checks for plain decimals, without currencies                        |
+| `allocate` | `allocate-lean.json`    | 1,500 | Lean             | allocation by weights, every remainder strategy                               |
+| `allocate` | `instalments-lean.json` | 1,200 | Lean             | instalments with a unit, every remainder strategy                             |
+| `allocate` | `chunk-lean.json`       | 1,200 | Lean             | tranches of at most a maximum                                                 |
+| `allocate` | `schedule-lean.json`    | 1,500 | Lean             | fixed, percentage and rest tranches, and the ones that fail                   |
+| `cash`     | `increment-lean.json`   | 1,500 | Lean             | rounding to an increment, every rounding mode                                 |
+| `excel`    | `xnpv-lean.json`        |   120 | Lean             | XNPV's exact bounds and its rounded value in every mode                       |
+| `excel`    | `xirr-lean.json`        |    35 | Lean             | XIRR floored to a number of digits, or no root                                |
+| `rounding` | `pydecimal.json`        |   750 | Python `decimal` | multiply, divide and rescale, every rounding mode                             |
+| `convert`  | `pydecimal.json`        |   250 | Python `decimal` | conversion at a rate, every rounding mode                                     |
+| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal` | percentages, discounts, adding and extracting tax                             |
 
-The other areas the schema names (`rounding`, `tax`, `convert`, `format`, `words`, `parse`, `exact`,
-`finance`) are where ducat's remaining vectors move next.
+The other areas the schema names (`format`, `words`, `parse`, `exact`, `finance`) are where ducat's
+remaining vectors move next.
 
 ## Running the suite
 
@@ -247,6 +250,21 @@ given.
 | `roundToIncrement.byMode` | `amount`, `step`                               | the multiple of `step` for each rounding mode, by its name, or `null` (`rounding`, for `unnecessary`)       |
 | `xnpv.scaled`             | `currency`, `rate`, `days`, `values`, `digits` | `bounds` (an interval in major units, or `null`: `range`) and `rounded` (minor units by rounding mode)      |
 | `xirr.floor`              | `currency`, `days`, `values`, `digits`         | `lower`: the rate floored to `digits` places, as an integer string scaled by 10^digits, or `null` (`range`) |
+| `minor.multiply`          | `currency`, `minor`, `mode`, `factor`          | `want`: minor × factor, rounded once to the currency's scale                                                |
+| `minor.divide`            | `currency`, `minor`, `mode`, `divisor`         | `want`: minor ÷ divisor, rounded once to the currency's scale                                               |
+| `minor.toScale`           | `currency`, `minor`, `mode`, `scale`           | `want`: the amount rounded to `scale` digits, in units of 10^−scale                                         |
+| `minor.convert`           | `currency`, `minor`, `mode`, `to`, `rate`      | `want`: amount × rate in `to`, rounded once to `to`'s scale                                                 |
+| `minor.percentage`        | `currency`, `minor`, `mode`, `percent`         | `want`: amount × percent / 100, rounded once                                                                |
+| `minor.discount`          | `currency`, `minor`, `mode`, `percent`         | `want`: the amount less its rounded percentage                                                              |
+| `minor.addTax`            | `currency`, `minor`, `mode`, `percent`         | `tax`: the rounded percentage of the net amount; `gross`: net + tax                                         |
+| `minor.extractTax`        | `currency`, `minor`, `mode`, `percent`         | `net`: gross ÷ (1 + percent / 100), rounded once; `tax`: gross − net                                        |
+
+In the `minor.*` rows, `minor` is the amount in minor units of `currency` at its ISO 4217 scale
+(JPY 0, EUR 2, KWD 3, CLF 4), and every result is in minor units of the result's scale.
+
+**How results are judged.** A table may name a `comparison`; without one, every expected field must
+equal the result exactly, as text (integer strings, fractions and `null` alike). Every table so
+far is exact.
 
 What the strategies mean:
 
