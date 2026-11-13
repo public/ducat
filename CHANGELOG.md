@@ -7,6 +7,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- `@ducatjs/money-spec`, a private workspace package in `spec/`: ducat's test vectors as
+  language-neutral JSON, with a JSON Schema, provenance on every file, and the rules for running
+  them from any language. The cross-library battery's 41 vectors and the fixed-point battery's 28
+  are the first areas; `compare/` reads them from the package, and `test/spec.test.ts` runs every
+  vector against ducat (#321).
+
 ### Documentation
 
 - A new explanation page, [Where money arithmetic goes wrong](docs/explanation/footguns.md), shows each class of money bug in other JavaScript libraries (floats, rounding at every step, negative halves, lost cents, overflow past 2⁵³, lenient parsing and more) with the result the library returns and what ducat does instead, linked from the README, the comparison and the how-to guides where each one bites.

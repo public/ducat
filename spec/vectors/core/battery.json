@@ -1,0 +1,967 @@
+{
+ "$schema": "../../schema/vectors.schema.json",
+ "format": 1,
+ "area": "core",
+ "name": "battery",
+ "description": "The cross-library correctness battery: currencies and minor units, allocation, tax, rounding at ties, amounts beyond 2^53, negatives, binary64 input and currency mismatches. compare/ runs the same cases against other JavaScript money and decimal libraries.",
+ "provenance": {
+  "source": "hand",
+  "generator": null,
+  "method": "Each expected value was worked out by hand from the exact decimal arithmetic in the description; none was taken from a library.",
+  "data": {
+   "iso4217": "2026-09-17"
+  }
+ },
+ "checkedAgainst": "0.4.0",
+ "cases": [
+  {
+   "id": "exp-JPY",
+   "group": "currency",
+   "description": "library knows JPY has 0 decimals",
+   "op": "currency.exponent",
+   "args": {
+    "currency": "JPY"
+   },
+   "expect": {
+    "integer": 0
+   }
+  },
+  {
+   "id": "exp-KWD",
+   "group": "currency",
+   "description": "library knows KWD has 3 decimals",
+   "op": "currency.exponent",
+   "args": {
+    "currency": "KWD"
+   },
+   "expect": {
+    "integer": 3
+   }
+  },
+  {
+   "id": "exp-CLF",
+   "group": "currency",
+   "description": "library knows CLF has 4 decimals",
+   "op": "currency.exponent",
+   "args": {
+    "currency": "CLF"
+   },
+   "expect": {
+    "integer": 4
+   }
+  },
+  {
+   "id": "exp-ISK",
+   "group": "currency",
+   "description": "library knows ISK has 0 decimals (ISO)",
+   "op": "currency.exponent",
+   "args": {
+    "currency": "ISK"
+   },
+   "expect": {
+    "integer": 0
+   }
+  },
+  {
+   "id": "jpy-1000",
+   "group": "currency",
+   "description": "1000 JPY round-trips as \"1000\"",
+   "op": "money.fromMinor",
+   "args": {
+    "minor": "1000",
+    "currency": "JPY"
+   },
+   "expect": {
+    "money": {
+     "amount": "1000",
+     "currency": "JPY",
+     "scale": 0
+    }
+   }
+  },
+  {
+   "id": "jpy-frac",
+   "group": "currency",
+   "description": "\"1000.5\" JPY is rejected (not silently rounded)",
+   "op": "money.fromDecimal",
+   "args": {
+    "amount": "1000.5",
+    "currency": "JPY"
+   },
+   "expect": {
+    "error": "rounding"
+   }
+  },
+  {
+   "id": "kwd-1.234",
+   "group": "currency",
+   "description": "\"1.234\" KWD = 1234 fils, round-trips",
+   "op": "money.fromMinor",
+   "args": {
+    "minor": "1234",
+    "currency": "KWD"
+   },
+   "expect": {
+    "money": {
+     "amount": "1.234",
+     "currency": "KWD",
+     "scale": 3
+    }
+   }
+  },
+  {
+   "id": "kwd-split3",
+   "group": "currency",
+   "description": "1.000 KWD split 3 → 0.334, 0.333, 0.333",
+   "op": "money.split",
+   "args": {
+    "money": {
+     "amount": "1.000",
+     "currency": "KWD",
+     "scale": 3
+    },
+    "count": 3
+   },
+   "expect": {
+    "moneyMultiset": [
+     {
+      "amount": "0.334",
+      "currency": "KWD",
+      "scale": 3
+     },
+     {
+      "amount": "0.333",
+      "currency": "KWD",
+      "scale": 3
+     },
+     {
+      "amount": "0.333",
+      "currency": "KWD",
+      "scale": 3
+     }
+    ]
+   }
+  },
+  {
+   "id": "jpy-split3",
+   "group": "currency",
+   "description": "100 JPY split 3 → 34, 33, 33",
+   "op": "money.split",
+   "args": {
+    "money": {
+     "amount": "100",
+     "currency": "JPY",
+     "scale": 0
+    },
+    "count": 3
+   },
+   "expect": {
+    "moneyMultiset": [
+     {
+      "amount": "34",
+      "currency": "JPY",
+      "scale": 0
+     },
+     {
+      "amount": "33",
+      "currency": "JPY",
+      "scale": 0
+     },
+     {
+      "amount": "33",
+      "currency": "JPY",
+      "scale": 0
+     }
+    ]
+   }
+  },
+  {
+   "id": "split3",
+   "group": "allocation",
+   "description": "100.00 EUR split 3 → 33.34, 33.33, 33.33",
+   "op": "money.split",
+   "args": {
+    "money": {
+     "amount": "100.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "count": 3
+   },
+   "expect": {
+    "moneyMultiset": [
+     {
+      "amount": "33.34",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "33.33",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "33.33",
+      "currency": "EUR",
+      "scale": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "split3-neg",
+   "group": "allocation",
+   "description": "-100.00 EUR split 3 → -33.34, -33.33, -33.33",
+   "op": "money.split",
+   "args": {
+    "money": {
+     "amount": "-100.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "count": 3
+   },
+   "expect": {
+    "moneyMultiset": [
+     {
+      "amount": "-33.34",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "-33.33",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "-33.33",
+      "currency": "EUR",
+      "scale": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "split-cent",
+   "group": "allocation",
+   "description": "0.01 EUR split 3 → 0.01, 0, 0",
+   "op": "money.split",
+   "args": {
+    "money": {
+     "amount": "0.01",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "count": 3
+   },
+   "expect": {
+    "moneyMultiset": [
+     {
+      "amount": "0.01",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "0.00",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "0.00",
+      "currency": "EUR",
+      "scale": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "alloc-zero-w",
+   "group": "allocation",
+   "description": "10.00 EUR by [1,0,1] → 5, 0, 5 (zero weight gets nothing)",
+   "op": "money.allocate",
+   "args": {
+    "money": {
+     "amount": "10.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "weights": [
+     1,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "moneyList": [
+     {
+      "amount": "5.00",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "0.00",
+      "currency": "EUR",
+      "scale": 2
+     },
+     {
+      "amount": "5.00",
+      "currency": "EUR",
+      "scale": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "alloc-fuzz",
+   "group": "allocation",
+   "description": "2,000 seeded random allocations: parts sum to the whole, each within 1 unit of its share",
+   "op": "money.allocate.generated",
+   "args": {
+    "currency": "EUR",
+    "count": 2000,
+    "generator": {
+     "kind": "lcg",
+     "seed": 12345,
+     "multiplier": 1103515245,
+     "increment": 12345,
+     "modulus": 2147483648
+    },
+    "draws": [
+     {
+      "name": "minor",
+      "limit": 1000000000,
+      "offset": -100000000
+     },
+     {
+      "name": "weightCount",
+      "limit": 6,
+      "offset": 2
+     },
+     {
+      "name": "weights",
+      "repeat": "weightCount",
+      "limit": 1000,
+      "offset": 1
+     }
+    ]
+   },
+   "expect": {
+    "property": "allocation-within-one-unit"
+   }
+  },
+  {
+   "id": "vat-12",
+   "group": "tax",
+   "description": "VAT 20% extracted from 12.00 GBP: net 10.00 (gross ÷ 1.2)",
+   "op": "money.divide",
+   "args": {
+    "money": {
+     "amount": "12.00",
+     "currency": "GBP",
+     "scale": 2
+    },
+    "divisor": "1.2",
+    "mode": "halfEven"
+   },
+   "expect": {
+    "money": {
+     "amount": "10.00",
+     "currency": "GBP",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "vat-9.99-even",
+   "group": "tax",
+   "description": "HMRC 9.99 GBP ÷ 1.2 = 8.325 → half-even 8.32",
+   "op": "money.divide",
+   "args": {
+    "money": {
+     "amount": "9.99",
+     "currency": "GBP",
+     "scale": 2
+    },
+    "divisor": "1.2",
+    "mode": "halfEven"
+   },
+   "expect": {
+    "money": {
+     "amount": "8.32",
+     "currency": "GBP",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "vat-9.99-up",
+   "group": "tax",
+   "description": "HMRC 9.99 GBP ÷ 1.2 = 8.325 → half-up 8.33",
+   "op": "money.divide",
+   "args": {
+    "money": {
+     "amount": "9.99",
+     "currency": "GBP",
+     "scale": 2
+    },
+    "divisor": "1.2",
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "money": {
+     "amount": "8.33",
+     "currency": "GBP",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "vat-119",
+   "group": "tax",
+   "description": "German 19%: 119.00 EUR ÷ 1.19 → net 100.00",
+   "op": "money.divide",
+   "args": {
+    "money": {
+     "amount": "119.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "divisor": "1.19",
+    "mode": "halfEven"
+   },
+   "expect": {
+    "money": {
+     "amount": "100.00",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "half-even",
+   "group": "rounding",
+   "description": "0.25 × 0.5 = 0.125 → half-even 0.12",
+   "op": "money.multiply",
+   "args": {
+    "money": {
+     "amount": "0.25",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "factor": "0.5",
+    "mode": "halfEven"
+   },
+   "expect": {
+    "money": {
+     "amount": "0.12",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "half-up",
+   "group": "rounding",
+   "description": "0.25 × 0.5 = 0.125 → half-up 0.13",
+   "op": "money.multiply",
+   "args": {
+    "money": {
+     "amount": "0.25",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "factor": "0.5",
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "money": {
+     "amount": "0.13",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "half-up-neg",
+   "group": "rounding",
+   "description": "-0.25 × 0.5 = -0.125 → half-up (away from 0) -0.13",
+   "op": "money.multiply",
+   "args": {
+    "money": {
+     "amount": "-0.25",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "factor": "0.5",
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "money": {
+     "amount": "-0.13",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "half-even-neg",
+   "group": "rounding",
+   "description": "-0.25 × 0.5 = -0.125 → half-even -0.12",
+   "op": "money.multiply",
+   "args": {
+    "money": {
+     "amount": "-0.25",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "factor": "0.5",
+    "mode": "halfEven"
+   },
+   "expect": {
+    "money": {
+     "amount": "-0.12",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "float-mul-1.15",
+   "group": "rounding",
+   "description": "0.50 × 1.15 = 0.575 → half-up 0.58 (float gives 57.49999999999999)",
+   "op": "money.multiply",
+   "args": {
+    "money": {
+     "amount": "0.50",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "factor": "1.15",
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "money": {
+     "amount": "0.58",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "float-mul-0.7",
+   "group": "rounding",
+   "description": "0.45 × 0.7 = 0.315 → half-up 0.32 (float gives 31.499999999999996)",
+   "op": "money.multiply",
+   "args": {
+    "money": {
+     "amount": "0.45",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "factor": "0.7",
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "money": {
+     "amount": "0.32",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "float-mul-1.1",
+   "group": "rounding",
+   "description": "1.15 × 1.1 = 1.265 → half-even 1.26 (float gives 126.50000000000001)",
+   "op": "money.multiply",
+   "args": {
+    "money": {
+     "amount": "1.15",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "factor": "1.1",
+    "mode": "halfEven"
+   },
+   "expect": {
+    "money": {
+     "amount": "1.26",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "fx-jpy",
+   "group": "rounding",
+   "description": "100.00 EUR → JPY at 162.457 → 16246 (half-up)",
+   "op": "money.convert",
+   "args": {
+    "money": {
+     "amount": "100.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "to": "JPY",
+    "rate": "162.457",
+    "mode": "halfExpand"
+   },
+   "expect": {
+    "money": {
+     "amount": "16246",
+     "currency": "JPY",
+     "scale": 0
+    }
+   }
+  },
+  {
+   "id": "fx-float",
+   "group": "rounding",
+   "description": "1.15 EUR → USD at 1.1 → 1.26 (half-even; float gives 1.27)",
+   "op": "money.convert",
+   "args": {
+    "money": {
+     "amount": "1.15",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "to": "USD",
+    "rate": "1.1",
+    "mode": "halfEven"
+   },
+   "expect": {
+    "money": {
+     "amount": "1.26",
+     "currency": "USD",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "big-2^53+1",
+   "group": "large",
+   "description": "90071992547409.93 EUR (2^53+1 cents) round-trips",
+   "op": "money.roundTrip",
+   "args": {
+    "money": {
+     "amount": "90071992547409.93",
+     "currency": "EUR",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "90071992547409.93",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "big-add",
+   "group": "large",
+   "description": "90071992547409.92 + 0.01 = 90071992547409.93",
+   "op": "money.add",
+   "args": {
+    "first": {
+     "amount": "90071992547409.92",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "second": {
+     "amount": "0.01",
+     "currency": "EUR",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "90071992547409.93",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "gdp",
+   "group": "large",
+   "description": "world GDP: 125000000000000.00 USD + 0.01 = …000.01",
+   "op": "money.add",
+   "args": {
+    "first": {
+     "amount": "125000000000000.00",
+     "currency": "USD",
+     "scale": 2
+    },
+    "second": {
+     "amount": "0.01",
+     "currency": "USD",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "125000000000000.01",
+     "currency": "USD",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "gdp-split3",
+   "group": "large",
+   "description": "world GDP 125000000000000.00 USD split 3 sums to the whole",
+   "op": "money.split",
+   "args": {
+    "money": {
+     "amount": "125000000000000.00",
+     "currency": "USD",
+     "scale": 2
+    },
+    "count": 3
+   },
+   "expect": {
+    "sumOfParts": {
+     "amount": "125000000000000.00",
+     "currency": "USD",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "bigint-max",
+   "group": "large",
+   "description": "92233720368547758.07 EUR (BIGINT max cents) round-trips",
+   "op": "money.roundTrip",
+   "args": {
+    "money": {
+     "amount": "92233720368547758.07",
+     "currency": "EUR",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "92233720368547758.07",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "neg-add",
+   "group": "negative",
+   "description": "-5.00 + 2.50 = -2.50",
+   "op": "money.add",
+   "args": {
+    "first": {
+     "amount": "-5.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "second": {
+     "amount": "2.50",
+     "currency": "EUR",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "-2.50",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "neg-sub",
+   "group": "negative",
+   "description": "2.50 − 5.00 = -2.50",
+   "op": "money.subtract",
+   "args": {
+    "first": {
+     "amount": "2.50",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "second": {
+     "amount": "5.00",
+     "currency": "EUR",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "-2.50",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "neg-small",
+   "group": "negative",
+   "description": "-0.05 round-trips as \"-0.05\"",
+   "op": "money.roundTrip",
+   "args": {
+    "money": {
+     "amount": "-0.05",
+     "currency": "EUR",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "-0.05",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "float-in",
+   "group": "float",
+   "description": "money(0.1 + 0.2) is rejected, not stored (0.30000000000000004 has 17 decimals)",
+   "op": "money.fromBinary64",
+   "args": {
+    "value": {
+     "binary64": "0.30000000000000004",
+     "exact": "0.3000000000000000444089209850062616169452667236328125"
+    },
+    "currency": "EUR"
+   },
+   "expect": {
+    "error": "rounding"
+   }
+  },
+  {
+   "id": "dec-add",
+   "group": "float",
+   "description": "0.10 + 0.20 = 0.30 exactly",
+   "op": "money.add",
+   "args": {
+    "first": {
+     "amount": "0.10",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "second": {
+     "amount": "0.20",
+     "currency": "EUR",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "money": {
+     "amount": "0.30",
+     "currency": "EUR",
+     "scale": 2
+    }
+   }
+  },
+  {
+   "id": "float-1.005",
+   "group": "float",
+   "description": "money(1.005) is rejected, or kept exactly: as the decimal 1.005 (its shortest form) or as the double 1.00499999999999989…",
+   "op": "money.fromBinary64",
+   "args": {
+    "value": {
+     "binary64": "1.005",
+     "exact": "1.00499999999999989341858963598497211933135986328125"
+    },
+    "currency": "EUR"
+   },
+   "expect": {
+    "anyOf": [
+     {
+      "error": "rounding"
+     },
+     {
+      "money": {
+       "amount": "1.005",
+       "currency": "EUR",
+       "scale": 3
+      }
+     },
+     {
+      "money": {
+       "amount": "1.00499999999999989341858963598497211933135986328125",
+       "currency": "EUR",
+       "scale": 50
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mix-add",
+   "group": "mismatch",
+   "description": "EUR + USD throws",
+   "op": "money.add",
+   "args": {
+    "first": {
+     "amount": "1.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "second": {
+     "amount": "1.00",
+     "currency": "USD",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "error": "currency-mismatch"
+   }
+  },
+  {
+   "id": "mix-cmp",
+   "group": "mismatch",
+   "description": "compare(EUR, USD) throws",
+   "op": "money.compare",
+   "args": {
+    "first": {
+     "amount": "1.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "second": {
+     "amount": "2.00",
+     "currency": "USD",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "error": "currency-mismatch"
+   }
+  },
+  {
+   "id": "mix-eq",
+   "group": "mismatch",
+   "description": "equals(1 EUR, 1 USD) is false",
+   "op": "money.equals",
+   "args": {
+    "first": {
+     "amount": "1.00",
+     "currency": "EUR",
+     "scale": 2
+    },
+    "second": {
+     "amount": "1.00",
+     "currency": "USD",
+     "scale": 2
+    }
+   },
+   "expect": {
+    "anyOf": [
+     {
+      "boolean": false
+     },
+     {
+      "error": "currency-mismatch"
+     }
+    ]
+   }
+  }
+ ]
+}

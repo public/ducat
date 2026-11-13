@@ -5,6 +5,19 @@
 // Each vector returns a value check, or throws:
 // - NotSupported when the library has no such capability (shown as "n/a", never emulated);
 // - anything else, which is a pass for vectors that expect a throw and an error otherwise.
+//
+// The vectors themselves are data: @ducatjs/money-spec's vectors/core/battery.json, in the
+// language-neutral format of spec/README.md. This file maps each neutral operation to the adapter
+// methods, and keeps the comparison's own judgement of other libraries' answers (DIAGNOSES).
+import batteryFile from '@ducatjs/money-spec/vectors/core/battery.json' with { type: 'json' };
+import {
+  generatedAllocations,
+  minorUnitsOf,
+  type Expectation,
+  type SpecCase,
+  type SpecFile,
+  type SpecMoney,
+} from '../../test/spec/format.ts';
 
 /** Thrown by an adapter, or by a vector, when a library has no such capability. */
 export class NotSupported extends Error {}
@@ -60,10 +73,8 @@ export interface Vector {
   readonly id: string;
   readonly group: string;
   readonly description: string;
-  /** a throw (other than NotSupported) is the correct behaviour */
+  /** a throw (other than NotSupported) is a correct behaviour, though a correct value may also pass */
   readonly expectsThrow?: boolean;
-  /** a throw is acceptable, though a correct value also passes */
-  readonly throwIsAcceptable?: boolean;
   check(library: MoneyLibrary): Check;
 }
 
@@ -197,32 +208,6 @@ function exponentOf(library: MoneyLibrary, currency: string): string {
   }
 }
 
-function multiplyCheck(
-  library: MoneyLibrary,
-  decimal: string,
-  minorUnits: number,
-  factor: string,
-  mode: RoundingName,
-  expected: string,
-): Check {
-  requireMethods(library, 'multiply');
-  const amount = amountOf(library, decimal, 'EUR', minorUnits);
-  return valueCheck(library.toDecimal(library.multiply!(amount, factor, mode)), expected);
-}
-
-/** split(amount, count) as a multiset check against the expected parts */
-function splitCheck(
-  library: MoneyLibrary,
-  decimal: string,
-  currency: string,
-  minorUnits: number | bigint,
-  count: number,
-  expected: string[],
-): Check {
-  const amount = amountOf(library, decimal, currency, minorUnits);
-  return sameMultiset(decimalsOf(library, splitInto(library, amount, count)), expected);
-}
-
 /** A EUR decimal string ("-12.3", "4") as exact cents. */
 function centsOf(decimal: string): bigint {
   const normalized = normalizeDecimal(decimal);
@@ -232,31 +217,96 @@ function centsOf(decimal: string): bigint {
   return isNegative ? -cents : cents;
 }
 
-/**
- * The battery's seeded linear congruential generator, in bigint: its product overflows 2^53, so in
- * doubles it would not be the generator it claims to be.
- */
-function seededRandom(seed: number): (limit: number) => number {
-  let state = BigInt(seed);
-  return (limit) => {
-    state = (state * 1103515245n + 12345n) % 2147483648n;
-    return Number(state % BigInt(limit));
+/** One operation's result, as each expectation needs it. */
+type Produced =
+  | { readonly kind: 'text'; readonly text: string }
+  | { readonly kind: 'parts'; readonly parts: string[] }
+  | { readonly kind: 'boolean'; readonly value: boolean }
+  | { readonly kind: 'check'; readonly check: Check };
+
+interface Diagnosis {
+  /** runs before the operation: a library that can't express the case by design */
+  precondition?(library: MoneyLibrary): Check | undefined;
+  /** classifies a value returned where a throw (or another value) was expected */
+  classify?(stored: string): Check;
+}
+
+function mismatchByDesign(got: string): Diagnosis {
+  return {
+    precondition: (library) =>
+      library.hasNoCurrency ? { ok: false, got, note: 'by design' } : undefined,
   };
 }
 
-function allocationFuzz(library: MoneyLibrary): Check {
+/**
+ * How the battery reads other libraries' wrong answers, by vector id: which are lossy rather than
+ * wrong, and which can't be expressed by design. This is the comparison's own judgement, kept here
+ * rather than in the language-neutral vectors.
+ */
+const DIAGNOSES: Record<string, Diagnosis> = {
+  'jpy-frac': {
+    precondition: (library) => {
+      if (library.isDecimalLibrary || library.hasNoExponentTable) {
+        throw new NotSupported('no currency exponents');
+      }
+      return undefined;
+    },
+    classify: (stored) => {
+      if (stored === '1000.5') {
+        return {
+          ok: 'lossy',
+          got: stored,
+          note: 'kept at a finer scale than the currency (allowed by design)',
+        };
+      }
+      return { ok: false, got: stored };
+    },
+  },
+  'float-in': {
+    classify: (stored) => {
+      if (stored === '0.3') {
+        return { ok: 'lossy', got: stored, note: 'silently rounded to 0.30' };
+      }
+      if (stored === '0.30000000000000004') {
+        return { ok: false, got: stored, note: "accepted, keeping the float's error" };
+      }
+      return { ok: false, got: stored };
+    },
+  },
+  'float-1.005': {
+    classify: (stored) => {
+      const roundedSilently = stored === '1.01' || stored === '1';
+      return { ok: roundedSilently ? 'lossy' : false, got: stored, note: 'silently rounded' };
+    },
+  },
+  'mix-add': mismatchByDesign('no currency on values: added'),
+  'mix-cmp': mismatchByDesign('no currency on values'),
+  'mix-eq': mismatchByDesign('true (no currency)'),
+};
+
+function amountFrom(library: MoneyLibrary, amount: SpecMoney): unknown {
+  return amountOf(library, amount.amount, amount.currency, minorUnitsOf(amount));
+}
+
+/** A minor-unit count as the JS number minor-unit APIs take, or a bigint beyond 2^53. */
+function minorArgument(minor: string): number | bigint {
+  const units = BigInt(minor);
+  const isSafe =
+    units <= BigInt(Number.MAX_SAFE_INTEGER) && units >= -BigInt(Number.MAX_SAFE_INTEGER);
+  return isSafe ? Number(units) : units;
+}
+
+function allocationFuzz(library: MoneyLibrary, args: SpecCase['args']): Check {
   requireMethods(library, 'allocate', 'fromMinor');
-  const randomBelow = seededRandom(12345);
+  const currency = args['currency'] as string;
   let badCount = 0;
   let firstBad: string | undefined;
 
-  for (let i = 0; i < 2000; i++) {
-    const amountMinor = randomBelow(1_000_000_000) - 100_000_000;
-    const weightCount = 2 + randomBelow(6);
-    const weights = Array.from({ length: weightCount }, () => 1 + randomBelow(1000));
+  for (const { minor, weights } of generatedAllocations(args)) {
+    const amountMinor = Number(minor);
     const totalWeight = BigInt(weights.reduce((total, weight) => total + weight, 0));
 
-    const whole = library.fromMinor!(amountMinor, 'EUR');
+    const whole = library.fromMinor!(amountMinor, currency);
     const parts = decimalsOf(library, library.allocate!(whole, weights));
     const sumsToWhole = sumOfDecimals(parts) === normalizeDecimal(library.toDecimal(whole));
 
@@ -277,419 +327,209 @@ function allocationFuzz(library: MoneyLibrary): Check {
   return { ok: badCount === 0, got: badCount ? `${badCount} bad, e.g. ${firstBad}` : '0 bad' };
 }
 
-function mismatchByDesign(got: string): Check {
-  return { ok: false, got, note: 'by design' };
+type Operation = (library: MoneyLibrary, args: SpecCase['args']) => Produced;
+
+function textResult(value: string): Produced {
+  return { kind: 'text', text: value };
 }
 
-/** The exact value of the double nearest to 1.005. */
-const EXACT_DOUBLE_1_005 = '1.00499999999999989341858963598497211933135986328125';
+function twoAmounts(library: MoneyLibrary, args: SpecCase['args']): [unknown, unknown] {
+  return [
+    amountFrom(library, args['first'] as SpecMoney),
+    amountFrom(library, args['second'] as SpecMoney),
+  ];
+}
 
-export const VECTORS: Vector[] = [
-  // --- currencies and minor units
-  {
-    id: 'exp-JPY',
-    group: 'currency',
-    description: 'library knows JPY has 0 decimals',
-    check: (library) => valueCheck(exponentOf(library, 'JPY'), '0'),
+/** Each neutral operation, driven through the library's adapter. */
+const OPERATIONS: Record<string, Operation> = {
+  'currency.exponent': (library, args) =>
+    textResult(exponentOf(library, args['currency'] as string)),
+  'money.fromMinor': (library, args) => {
+    requireMethods(library, 'fromMinor');
+    const minor = minorArgument(args['minor'] as string);
+    return textResult(library.toDecimal(library.fromMinor!(minor, args['currency'] as string)));
   },
-  {
-    id: 'exp-KWD',
-    group: 'currency',
-    description: 'library knows KWD has 3 decimals',
-    check: (library) => valueCheck(exponentOf(library, 'KWD'), '3'),
+  'money.fromDecimal': (library, args) => {
+    requireMethods(library, 'fromDecimal');
+    const amount = library.fromDecimal!(args['amount'] as string, args['currency'] as string);
+    return textResult(library.toDecimal(amount));
   },
-  {
-    id: 'exp-CLF',
-    group: 'currency',
-    description: 'library knows CLF has 4 decimals',
-    check: (library) => valueCheck(exponentOf(library, 'CLF'), '4'),
+  'money.fromBinary64': (library, args) => {
+    requireMethods(library, 'fromFloat');
+    const { binary64 } = args['value'] as { binary64: string };
+    return textResult(
+      library.toDecimal(library.fromFloat!(Number(binary64), args['currency'] as string)),
+    );
   },
-  {
-    id: 'exp-ISK',
-    group: 'currency',
-    description: 'library knows ISK has 0 decimals (ISO)',
-    check: (library) => valueCheck(exponentOf(library, 'ISK'), '0'),
+  'money.roundTrip': (library, args) =>
+    textResult(library.toDecimal(amountFrom(library, args['money'] as SpecMoney))),
+  'money.add': (library, args) => {
+    requireMethods(library, 'add');
+    const [first, second] = twoAmounts(library, args);
+    return textResult(library.toDecimal(library.add!(first, second)));
   },
-  {
-    id: 'jpy-1000',
-    group: 'currency',
-    description: '1000 JPY round-trips as "1000"',
-    check: (library) => {
-      requireMethods(library, 'fromMinor');
-      return valueCheck(library.toDecimal(library.fromMinor!(1000, 'JPY')), '1000');
-    },
+  'money.subtract': (library, args) => {
+    requireMethods(library, 'subtract');
+    const [first, second] = twoAmounts(library, args);
+    return textResult(library.toDecimal(library.subtract!(first, second)));
   },
-  {
-    id: 'jpy-frac',
-    group: 'currency',
-    description: '"1000.5" JPY is rejected (not silently rounded)',
-    expectsThrow: true,
-    check: (library) => {
-      if (library.isDecimalLibrary || library.hasNoExponentTable) {
-        throw new NotSupported('no currency exponents');
-      }
-      requireMethods(library, 'fromDecimal');
-      const stored = normalizeDecimal(library.toDecimal(library.fromDecimal!('1000.5', 'JPY')));
-      if (stored === '1000.5') {
-        return {
-          ok: 'lossy',
-          got: stored,
-          note: 'kept at a finer scale than the currency (allowed by design)',
-        };
-      }
-      return { ok: false, got: stored };
-    },
+  'money.compare': (library, args) => {
+    requireMethods(library, 'compare');
+    const [first, second] = twoAmounts(library, args);
+    return textResult(String(library.compare!(first, second)));
   },
-  {
-    id: 'kwd-1.234',
-    group: 'currency',
-    description: '"1.234" KWD = 1234 fils, round-trips',
-    check: (library) => {
-      requireMethods(library, 'fromMinor');
-      return valueCheck(library.toDecimal(library.fromMinor!(1234, 'KWD')), '1.234');
-    },
+  'money.equals': (library, args) => {
+    requireMethods(library, 'equals');
+    const [first, second] = twoAmounts(library, args);
+    return { kind: 'boolean', value: library.equals!(first, second) };
   },
-  {
-    id: 'kwd-split3',
-    group: 'currency',
-    description: '1.000 KWD split 3 → 0.334, 0.333, 0.333',
-    check: (library) => splitCheck(library, '1.000', 'KWD', 1000, 3, ['0.334', '0.333', '0.333']),
+  'money.multiply': (library, args) => {
+    requireMethods(library, 'multiply');
+    const amount = amountFrom(library, args['money'] as SpecMoney);
+    const mode = args['mode'] as RoundingName;
+    return textResult(library.toDecimal(library.multiply!(amount, args['factor'] as string, mode)));
   },
-  {
-    id: 'jpy-split3',
-    group: 'currency',
-    description: '100 JPY split 3 → 34, 33, 33',
-    check: (library) => splitCheck(library, '100', 'JPY', 100, 3, ['34', '33', '33']),
+  'money.divide': (library, args) => {
+    requireMethods(library, 'divide');
+    const amount = amountFrom(library, args['money'] as SpecMoney);
+    const mode = args['mode'] as RoundingName;
+    return textResult(library.toDecimal(library.divide!(amount, args['divisor'] as string, mode)));
   },
+  'money.convert': (library, args) => {
+    requireMethods(library, 'convert');
+    const amount = amountFrom(library, args['money'] as SpecMoney);
+    const mode = args['mode'] as RoundingName;
+    const target = args['to'] as string;
+    return textResult(
+      library.toDecimal(library.convert!(amount, target, args['rate'] as string, mode)),
+    );
+  },
+  'money.split': (library, args) => {
+    const amount = amountFrom(library, args['money'] as SpecMoney);
+    return {
+      kind: 'parts',
+      parts: decimalsOf(library, splitInto(library, amount, args['count'] as number)),
+    };
+  },
+  'money.allocate': (library, args) => {
+    requireMethods(library, 'allocate');
+    const amount = amountFrom(library, args['money'] as SpecMoney);
+    const weights = args['weights'] as number[];
+    return { kind: 'parts', parts: decimalsOf(library, library.allocate!(amount, weights)) };
+  },
+  'money.allocate.generated': (library, args) => ({
+    kind: 'check',
+    check: allocationFuzz(library, args),
+  }),
+};
 
-  // --- allocation
-  {
-    id: 'split3',
-    group: 'allocation',
-    description: '100.00 EUR split 3 → 33.34, 33.33, 33.33',
-    check: (library) => splitCheck(library, '100.00', 'EUR', 10000, 3, ['33.34', '33.33', '33.33']),
-  },
-  {
-    id: 'split3-neg',
-    group: 'allocation',
-    description: '-100.00 EUR split 3 → -33.34, -33.33, -33.33',
-    check: (library) =>
-      splitCheck(library, '-100.00', 'EUR', -10000, 3, ['-33.34', '-33.33', '-33.33']),
-  },
-  {
-    id: 'split-cent',
-    group: 'allocation',
-    description: '0.01 EUR split 3 → 0.01, 0, 0',
-    check: (library) => splitCheck(library, '0.01', 'EUR', 1, 3, ['0.01', '0', '0']),
-  },
-  {
-    id: 'alloc-zero-w',
-    group: 'allocation',
-    description: '10.00 EUR by [1,0,1] → 5, 0, 5 (zero weight gets nothing)',
-    check: (library) => {
-      requireMethods(library, 'allocate');
-      const amount = amountOf(library, '10.00', 'EUR', 1000);
-      const parts = decimalsOf(library, library.allocate!(amount, [1, 0, 1])).map(normalizeDecimal);
-      return { ok: parts.join() === '5,0,5', got: parts.join(' ') };
-    },
-  },
-  {
-    id: 'alloc-fuzz',
-    group: 'allocation',
-    description:
-      '2,000 seeded random allocations: parts sum to the whole, each within 1 unit of its share',
-    check: allocationFuzz,
-  },
+function producedText(produced: Produced): string {
+  switch (produced.kind) {
+    case 'text':
+      return produced.text;
+    case 'boolean':
+      return String(produced.value);
+    case 'parts':
+      return produced.parts.join(' ');
+    case 'check':
+      return produced.check.got;
+  }
+}
 
-  // --- tax
-  {
-    id: 'vat-12',
-    group: 'tax',
-    description: 'VAT 20% extracted from 12.00 GBP: net 10.00 (gross ÷ 1.2)',
-    check: (library) => {
-      requireMethods(library, 'divide');
-      const gross = amountOf(library, '12.00', 'GBP', 1200);
-      return valueCheck(library.toDecimal(library.divide!(gross, '1.2', 'halfEven')), '10.00');
-    },
-  },
-  {
-    id: 'vat-9.99-even',
-    group: 'tax',
-    description: 'HMRC 9.99 GBP ÷ 1.2 = 8.325 → half-even 8.32',
-    check: (library) => {
-      requireMethods(library, 'divide');
-      const gross = amountOf(library, '9.99', 'GBP', 999);
-      return valueCheck(library.toDecimal(library.divide!(gross, '1.2', 'halfEven')), '8.32');
-    },
-  },
-  {
-    id: 'vat-9.99-up',
-    group: 'tax',
-    description: 'HMRC 9.99 GBP ÷ 1.2 = 8.325 → half-up 8.33',
-    check: (library) => {
-      requireMethods(library, 'divide');
-      const gross = amountOf(library, '9.99', 'GBP', 999);
-      return valueCheck(library.toDecimal(library.divide!(gross, '1.2', 'halfExpand')), '8.33');
-    },
-  },
-  {
-    id: 'vat-119',
-    group: 'tax',
-    description: 'German 19%: 119.00 EUR ÷ 1.19 → net 100.00',
-    check: (library) => {
-      requireMethods(library, 'divide');
-      const gross = amountOf(library, '119.00', 'EUR', 11900);
-      return valueCheck(library.toDecimal(library.divide!(gross, '1.19', 'halfEven')), '100.00');
-    },
-  },
-
-  // --- rounding at .5 boundaries
-  {
-    id: 'half-even',
-    group: 'rounding',
-    description: '0.25 × 0.5 = 0.125 → half-even 0.12',
-    check: (library) => multiplyCheck(library, '0.25', 25, '0.5', 'halfEven', '0.12'),
-  },
-  {
-    id: 'half-up',
-    group: 'rounding',
-    description: '0.25 × 0.5 = 0.125 → half-up 0.13',
-    check: (library) => multiplyCheck(library, '0.25', 25, '0.5', 'halfExpand', '0.13'),
-  },
-  {
-    id: 'half-up-neg',
-    group: 'rounding',
-    description: '-0.25 × 0.5 = -0.125 → half-up (away from 0) -0.13',
-    check: (library) => multiplyCheck(library, '-0.25', -25, '0.5', 'halfExpand', '-0.13'),
-  },
-  {
-    id: 'half-even-neg',
-    group: 'rounding',
-    description: '-0.25 × 0.5 = -0.125 → half-even -0.12',
-    check: (library) => multiplyCheck(library, '-0.25', -25, '0.5', 'halfEven', '-0.12'),
-  },
-  {
-    id: 'float-mul-1.15',
-    group: 'rounding',
-    description: '0.50 × 1.15 = 0.575 → half-up 0.58 (float gives 57.49999999999999)',
-    check: (library) => multiplyCheck(library, '0.50', 50, '1.15', 'halfExpand', '0.58'),
-  },
-  {
-    id: 'float-mul-0.7',
-    group: 'rounding',
-    description: '0.45 × 0.7 = 0.315 → half-up 0.32 (float gives 31.499999999999996)',
-    check: (library) => multiplyCheck(library, '0.45', 45, '0.7', 'halfExpand', '0.32'),
-  },
-  {
-    id: 'float-mul-1.1',
-    group: 'rounding',
-    description: '1.15 × 1.1 = 1.265 → half-even 1.26 (float gives 126.50000000000001)',
-    check: (library) => multiplyCheck(library, '1.15', 115, '1.1', 'halfEven', '1.26'),
-  },
-  {
-    id: 'fx-jpy',
-    group: 'rounding',
-    description: '100.00 EUR → JPY at 162.457 → 16246 (half-up)',
-    check: (library) => {
-      requireMethods(library, 'convert');
-      const amount = amountOf(library, '100.00', 'EUR', 10000);
-      const converted = library.convert!(amount, 'JPY', '162.457', 'halfExpand');
-      return valueCheck(library.toDecimal(converted), '16246');
-    },
-  },
-  {
-    id: 'fx-float',
-    group: 'rounding',
-    description: '1.15 EUR → USD at 1.1 → 1.26 (half-even; float gives 1.27)',
-    check: (library) => {
-      requireMethods(library, 'convert');
-      const amount = amountOf(library, '1.15', 'EUR', 115);
-      const converted = library.convert!(amount, 'USD', '1.1', 'halfEven');
-      return valueCheck(library.toDecimal(converted), '1.26');
-    },
-  },
-
-  // --- large amounts
-  {
-    id: 'big-2^53+1',
-    group: 'large',
-    description: '90071992547409.93 EUR (2^53+1 cents) round-trips',
-    check: (library) => {
-      const amount = amountOf(library, '90071992547409.93', 'EUR', 9007199254740993n);
-      return valueCheck(library.toDecimal(amount), '90071992547409.93');
-    },
-  },
-  {
-    id: 'big-add',
-    group: 'large',
-    description: '90071992547409.92 + 0.01 = 90071992547409.93',
-    check: (library) => {
-      requireMethods(library, 'add');
-      const amount = amountOf(library, '90071992547409.92', 'EUR', 9007199254740992n);
-      const cent = amountOf(library, '0.01', 'EUR', 1);
-      return valueCheck(library.toDecimal(library.add!(amount, cent)), '90071992547409.93');
-    },
-  },
-  {
-    id: 'gdp',
-    group: 'large',
-    description: 'world GDP: 125000000000000.00 USD + 0.01 = …000.01',
-    check: (library) => {
-      requireMethods(library, 'add');
-      const amount = amountOf(library, '125000000000000.00', 'USD', 12500000000000000n);
-      const cent = amountOf(library, '0.01', 'USD', 1);
-      return valueCheck(library.toDecimal(library.add!(amount, cent)), '125000000000000.01');
-    },
-  },
-  {
-    id: 'gdp-split3',
-    group: 'large',
-    description: 'world GDP 125000000000000.00 USD split 3 sums to the whole',
-    check: (library) => {
-      const amount = amountOf(library, '125000000000000.00', 'USD', 12500000000000000n);
-      const parts = decimalsOf(library, splitInto(library, amount, 3));
+function judgeValue(produced: Produced, expect: Expectation): Check {
+  if (produced.kind === 'check') {
+    return produced.check;
+  }
+  if (expect.boolean !== undefined && produced.kind === 'boolean') {
+    return { ok: produced.value === expect.boolean, got: String(produced.value) };
+  }
+  if (produced.kind === 'parts') {
+    const parts = produced.parts;
+    if (expect.moneyMultiset) {
+      return sameMultiset(
+        parts,
+        expect.moneyMultiset.map((part) => part.amount),
+      );
+    }
+    if (expect.moneyList) {
+      const normalized = parts.map(normalizeDecimal);
+      const expected = expect.moneyList.map((part) => normalizeDecimal(part.amount));
+      return { ok: normalized.join() === expected.join(), got: normalized.join(' ') };
+    }
+    if (expect.sumOfParts) {
       return {
-        ok: sumOfDecimals(parts) === '125000000000000',
+        ok: sumOfDecimals(parts) === normalizeDecimal(expect.sumOfParts.amount),
         got: parts.map(normalizeDecimal).join(' '),
       };
-    },
-  },
-  {
-    id: 'bigint-max',
-    group: 'large',
-    description: '92233720368547758.07 EUR (BIGINT max cents) round-trips',
-    check: (library) => {
-      const amount = amountOf(library, '92233720368547758.07', 'EUR', 9223372036854775807n);
-      return valueCheck(library.toDecimal(amount), '92233720368547758.07');
-    },
-  },
+    }
+  }
+  if (produced.kind === 'text') {
+    if (expect.money) {
+      return valueCheck(produced.text, expect.money.amount);
+    }
+    if (expect.integer !== undefined) {
+      return valueCheck(produced.text, String(expect.integer));
+    }
+  }
+  throw new Error(`the battery can't judge ${produced.kind} against ${JSON.stringify(expect)}`);
+}
 
-  // --- negatives
-  {
-    id: 'neg-add',
-    group: 'negative',
-    description: '-5.00 + 2.50 = -2.50',
-    check: (library) => {
-      requireMethods(library, 'add');
-      const first = amountOf(library, '-5.00', 'EUR', -500);
-      const second = amountOf(library, '2.50', 'EUR', 250);
-      return valueCheck(library.toDecimal(library.add!(first, second)), '-2.50');
-    },
-  },
-  {
-    id: 'neg-sub',
-    group: 'negative',
-    description: '2.50 − 5.00 = -2.50',
-    check: (library) => {
-      requireMethods(library, 'subtract');
-      const first = amountOf(library, '2.50', 'EUR', 250);
-      const second = amountOf(library, '5.00', 'EUR', 500);
-      return valueCheck(library.toDecimal(library.subtract!(first, second)), '-2.50');
-    },
-  },
-  {
-    id: 'neg-small',
-    group: 'negative',
-    description: '-0.05 round-trips as "-0.05"',
-    check: (library) =>
-      valueCheck(library.toDecimal(amountOf(library, '-0.05', 'EUR', -5)), '-0.05'),
-  },
+/** The battery judges values by numeric equality of the decimals, as other libraries print them. */
+function judge(produced: Produced, expect: Expectation, diagnosis: Diagnosis | undefined): Check {
+  if (expect.error !== undefined) {
+    if (diagnosis?.classify) {
+      return diagnosis.classify(normalizeDecimal(producedText(produced)));
+    }
+    return { ok: false, got: producedText(produced) };
+  }
+  if (expect.anyOf) {
+    const values = expect.anyOf.filter((alternative) => alternative.error === undefined);
+    const checks = values.map((alternative) => judgeValue(produced, alternative));
+    const passing = checks.find((check) => check.ok === true);
+    if (passing) {
+      return passing;
+    }
+    if (diagnosis?.classify) {
+      return diagnosis.classify(normalizeDecimal(producedText(produced)));
+    }
+    return checks[0]!;
+  }
+  return judgeValue(produced, expect);
+}
 
-  // --- float input
-  {
-    id: 'float-in',
-    group: 'float',
-    description: 'money(0.1 + 0.2) is rejected, not stored (0.30000000000000004 has 17 decimals)',
-    expectsThrow: true,
-    check: (library) => {
-      requireMethods(library, 'fromFloat');
-      const stored = normalizeDecimal(library.toDecimal(library.fromFloat!(0.1 + 0.2, 'EUR')));
-      if (stored === '0.3') {
-        return { ok: 'lossy', got: stored, note: 'silently rounded to 0.30' };
-      }
-      if (stored === '0.30000000000000004') {
-        return { ok: false, got: stored, note: "accepted, keeping the float's error" };
-      }
-      return { ok: false, got: stored };
-    },
-  },
-  {
-    id: 'dec-add',
-    group: 'float',
-    description: '0.10 + 0.20 = 0.30 exactly',
-    check: (library) => {
-      requireMethods(library, 'add');
-      const first = amountOf(library, '0.10', 'EUR', 10);
-      const second = amountOf(library, '0.20', 'EUR', 20);
-      return valueCheck(library.toDecimal(library.add!(first, second)), '0.30');
-    },
-  },
-  {
-    id: 'float-1.005',
-    group: 'float',
-    description:
-      'money(1.005) is rejected, or kept exactly: as the decimal 1.005 (its shortest form) or as the double 1.00499999999999989…',
-    expectsThrow: true,
-    check: (library) => {
-      requireMethods(library, 'fromFloat');
-      const stored = normalizeDecimal(library.toDecimal(library.fromFloat!(1.005, 'EUR')));
-      const exactReadings = ['1.005', EXACT_DOUBLE_1_005];
-      if (exactReadings.includes(stored)) {
-        return { ok: true, got: stored };
-      }
-      const roundedSilently = stored === '1.01' || stored === '1';
-      return { ok: roundedSilently ? 'lossy' : false, got: stored, note: 'silently rounded' };
-    },
-  },
+function expectsThrow(expect: Expectation): boolean {
+  return (
+    expect.error !== undefined ||
+    (expect.anyOf ?? []).some((alternative) => alternative.error !== undefined)
+  );
+}
 
-  // --- currency mismatch
-  {
-    id: 'mix-add',
-    group: 'mismatch',
-    description: 'EUR + USD throws',
-    expectsThrow: true,
+function vectorOf(specCase: SpecCase): Vector {
+  const operation = OPERATIONS[specCase.op];
+  if (!operation) {
+    throw new Error(`the battery has no operation ${specCase.op} (vector ${specCase.id})`);
+  }
+  const diagnosis = DIAGNOSES[specCase.id];
+  return {
+    id: specCase.id,
+    group: specCase.group ?? '',
+    description: specCase.description,
+    expectsThrow: expectsThrow(specCase.expect),
     check: (library) => {
-      if (library.hasNoCurrency) {
-        return mismatchByDesign('no currency on values: added');
+      const preconditionCheck = diagnosis?.precondition?.(library);
+      if (preconditionCheck) {
+        return preconditionCheck;
       }
-      requireMethods(library, 'add');
-      const euro = amountOf(library, '1.00', 'EUR', 100);
-      const dollar = amountOf(library, '1.00', 'USD', 100);
-      return { ok: false, got: library.toDecimal(library.add!(euro, dollar)) };
+      return judge(operation(library, specCase.args), specCase.expect, diagnosis);
     },
-  },
-  {
-    id: 'mix-cmp',
-    group: 'mismatch',
-    description: 'compare(EUR, USD) throws',
-    expectsThrow: true,
-    check: (library) => {
-      if (library.hasNoCurrency) {
-        return mismatchByDesign('no currency on values');
-      }
-      requireMethods(library, 'compare');
-      const euro = amountOf(library, '1.00', 'EUR', 100);
-      const dollars = amountOf(library, '2.00', 'USD', 200);
-      return { ok: false, got: String(library.compare!(euro, dollars)) };
-    },
-  },
-  {
-    id: 'mix-eq',
-    group: 'mismatch',
-    description: 'equals(1 EUR, 1 USD) is false',
-    throwIsAcceptable: true,
-    check: (library) => {
-      if (library.hasNoCurrency) {
-        return mismatchByDesign('true (no currency)');
-      }
-      requireMethods(library, 'equals');
-      const euro = amountOf(library, '1.00', 'EUR', 100);
-      const dollar = amountOf(library, '1.00', 'USD', 100);
-      const isEqual = library.equals!(euro, dollar);
-      return { ok: isEqual === false, got: String(isEqual) };
-    },
-  },
-];
+  };
+}
+
+/** The battery's vectors: @ducatjs/money-spec's core battery, in its order. */
+export const VECTORS: Vector[] = (batteryFile as unknown as SpecFile).cases!.map(vectorOf);
+
+/** Every diagnosis names a vector that exists, so a renamed vector can't silently lose one. */
+export const DIAGNOSED_IDS: readonly string[] = Object.keys(DIAGNOSES);
 
 function describeError(error: unknown, maxLength: number): string {
   const name = (error as Error)?.constructor?.name ?? 'Error';
@@ -714,7 +554,7 @@ export function runVector(vector: Vector, library: MoneyLibrary): VectorResult {
     if (error instanceof NotSupported) {
       return { outcome: 'unsupported', got: error.message };
     }
-    if (vector.expectsThrow || vector.throwIsAcceptable) {
+    if (vector.expectsThrow) {
       return { outcome: 'pass', got: `throws ${describeError(error, 80)}` };
     }
     return { outcome: 'error', got: describeError(error, 100) };
