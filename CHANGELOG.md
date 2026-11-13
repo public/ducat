@@ -23,6 +23,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - LibreOffice Calc's results and Microsoft's worked examples for the Excel functions are now tables
   in `@ducatjs/money-spec`, with the 15-significant-digit and double-error rules they are judged
   by stated in `spec/README.md` (#321).
+- ICU's spell-out of numbers (CLDR 49), which the RBNF interpreter behind `amountInWords` is checked
+  against, is now tables in `@ducatjs/money-spec` (#321).
 
 ### Documentation
 

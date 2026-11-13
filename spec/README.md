@@ -14,27 +14,32 @@ spec/
   vectors/<area>/<name>.json   the vectors, one area per directory
 ```
 
-| area       | file                    | cases | source             | what it covers                                                                |
-| ---------- | ----------------------- | ----: | ------------------ | ----------------------------------------------------------------------------- |
-| `core`     | `battery.json`          |    41 | hand               | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches |
-| `fixed`    | `battery.json`          |    28 | hand               | the same checks for plain decimals, without currencies                        |
-| `allocate` | `allocate-lean.json`    | 1,500 | Lean               | allocation by weights, every remainder strategy                               |
-| `allocate` | `instalments-lean.json` | 1,200 | Lean               | instalments with a unit, every remainder strategy                             |
-| `allocate` | `chunk-lean.json`       | 1,200 | Lean               | tranches of at most a maximum                                                 |
-| `allocate` | `schedule-lean.json`    | 1,500 | Lean               | fixed, percentage and rest tranches, and the ones that fail                   |
-| `cash`     | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                 |
-| `excel`    | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                       |
-| `excel`    | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                |
-| `rounding` | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                             |
-| `convert`  | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                     |
-| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                             |
-| `finance`  | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                    |
-| `excel`    | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                |
-| `excel`    | `libreoffice-calc.json` | 1,943 | LibreOffice Calc   | the same functions in doubles, and RRI and EFFECT, with the shared edge cases |
-| `excel`    | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                 |
+| area       | file                    | cases | source             | what it covers                                                                     |
+| ---------- | ----------------------- | ----: | ------------------ | ---------------------------------------------------------------------------------- |
+| `core`     | `battery.json`          |    41 | hand               | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches      |
+| `fixed`    | `battery.json`          |    28 | hand               | the same checks for plain decimals, without currencies                             |
+| `allocate` | `allocate-lean.json`    | 1,500 | Lean               | allocation by weights, every remainder strategy                                    |
+| `allocate` | `instalments-lean.json` | 1,200 | Lean               | instalments with a unit, every remainder strategy                                  |
+| `allocate` | `chunk-lean.json`       | 1,200 | Lean               | tranches of at most a maximum                                                      |
+| `allocate` | `schedule-lean.json`    | 1,500 | Lean               | fixed, percentage and rest tranches, and the ones that fail                        |
+| `cash`     | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                      |
+| `excel`    | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                            |
+| `excel`    | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                     |
+| `rounding` | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                  |
+| `convert`  | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                          |
+| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                  |
+| `finance`  | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                         |
+| `excel`    | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                     |
+| `excel`    | `libreoffice-calc.json` | 1,943 | LibreOffice Calc   | the same functions in doubles, and RRI and EFFECT, with the shared edge cases      |
+| `excel`    | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                      |
+| `words`    | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets |
+| `words`    | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets      |
 
-The other areas the schema names (`format`, `words`, `parse`, `exact`) are where ducat's remaining
-vectors move next.
+The other areas the schema names (`format`, `parse`, `exact`) have no vectors yet.
+
+The General Decimal Arithmetic test cases (decTest), which `test/dectest.test.ts` runs, aren't in
+the suite: they are IBM's copyright, so `scripts/fetch-dectest.mjs` downloads them at test time
+instead of the repository holding a copy.
 
 ## Running the suite
 
@@ -343,6 +348,15 @@ Known gaps:
 - Each `spreadsheet.*` test also requires that most rows pass at 15 digits (more than 250 of the
   NPVs, say), as a check that the error bounds aren't doing all the work. Those counts are in the
   tests, not in the spec.
+
+### Spelling out numbers
+
+`words.spellOut` tables come one per language and rule set, named in the table's
+`parameters` (`locale`, and `ruleSet` such as `%spellout-cardinal`). Each row's `words` is ICU's
+spell-out of the integer `number` by that CLDR rule set, and must be matched exactly, as text.
+`words/rbnf.json` comes from ICU's own data. `words/rbnf-data.json` comes from ICU's engine run on
+ducat's copy of the CLDR rule text (`data/rbnf`); rule sets that use syntax newer than that ICU are
+left out.
 
 What the strategies mean:
 

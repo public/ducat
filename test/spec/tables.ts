@@ -5,6 +5,14 @@
 // every ISO 4217 code: these build Money from /fn-level modules, which don't register them
 import '../../src/plugins/iso.js';
 import { ratio, type Ratio } from '../../src/decimal.js';
+import { spellOut, type SpelloutRules } from '../../src/rbnf.js';
+import { german } from '../../src/words/de.js';
+import { english } from '../../src/words/en.js';
+import { spanish } from '../../src/words/es.js';
+import { french } from '../../src/words/fr.js';
+import { italian } from '../../src/words/it.js';
+import { dutch } from '../../src/words/nl.js';
+import { portuguese } from '../../src/words/pt.js';
 import { xirr, xnpv, xnpvBounds } from '../../src/excel.js';
 import {
   addTax,
@@ -34,8 +42,8 @@ type Row = Readonly<Record<string, unknown>>;
 export interface CheckedTable {
   /** the row fields that hold expected results (a corruption test changes them) */
   readonly expects: readonly string[];
-  /** the mismatches in one row, described */
-  checkRow(row: Row, index: number): string[];
+  /** the mismatches in one row, described; `parameters` are the table's */
+  checkRow(row: Row, index: number, parameters: Row): string[];
   /** checks on the table as a whole (that it has both throwing and returning rows, say) */
   checkTable?(rows: readonly Row[]): string[];
 }
@@ -276,6 +284,26 @@ function minorOperation(
 const modeOf = (row: Row) => row['mode'] as RoundingMode;
 const text = (row: Row, field: string) => row[field] as string;
 
+// --- spelling out numbers, from ICU ------------------------------------------------------------------
+
+const SPELLOUT_RULES: Record<string, SpelloutRules> = {
+  en: english,
+  de: german,
+  fr: french,
+  es: spanish,
+  it: italian,
+  pt: portuguese,
+  nl: dutch,
+};
+
+function checkSpellOut(row: Row, _index: number, parameters: Row): string[] {
+  const locale = parameters['locale'] as string;
+  const ruleSet = parameters['ruleSet'] as string;
+  const number = row['number'] as string;
+  const actual = spellOut(BigInt(number), SPELLOUT_RULES[locale]!, ruleSet);
+  return actual === row['words'] ? [] : [`${locale} ${ruleSet} ${number}: ${actual}`];
+}
+
 export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'allocate.byRemainder': { expects: REMAINDERS, checkRow: checkAllocation },
   'instalments.byRemainder': {
@@ -359,6 +387,7 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'excelExample.rate': { runBy: EXCEL },
   'excelExample.xnpv': { runBy: EXCEL },
   'excelExample.xirr': { runBy: EXCEL },
+  'words.spellOut': { expects: ['words'], checkRow: checkSpellOut },
   'xirr.floor': {
     expects: ['lower'],
     checkRow: checkXirr,

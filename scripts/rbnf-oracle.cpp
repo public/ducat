@@ -1,4 +1,4 @@
-// The ICU oracle for test/vectors/rbnf.json: reads "locale<TAB>rule set<TAB>integer" lines and prints
+// The ICU oracle for spec/vectors/words/rbnf.json and rbnf-data.json: reads "locale<TAB>rule set<TAB>integer" lines and prints
 // ICU's spell-out for each (or "ERR <code>"), and ICU's version for a line "VERSION". Build it
 // against ICU4C 79.1 (CLDR 49), the release the rules in data/rbnf come from; see
 // scripts/gen-rbnf-vectors.mjs. Given a directory (data/rbnf), it runs ICU's engine on the rule text
