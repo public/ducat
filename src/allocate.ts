@@ -128,8 +128,8 @@ function distribute<T extends number | bigint>(
  * weights get zero. With 'largest' each part is less than one minor unit from its exact share; with
  * 'first' and 'last', at most one unit. Negative amounts are allocated as the negation of the
  * positive allocation. These properties are proved for a Lean model of this function
- * (proofs/Ducat/Allocate.lean), and test/allocate.oracle.test.ts checks this code against that
- * model.
+ * (proofs/Ducat/Allocate.lean), and test/spec.test.ts checks this code against that model's
+ * cases (spec/vectors/allocate/allocate-lean.json).
  *
  *     allocate(money('100', 'EUR'), [1, 1, 1])        // 33.34, 33.33, 33.33
  *     allocate(money('0.05', 'EUR'), ['70', '30'])    // 0.04, 0.01

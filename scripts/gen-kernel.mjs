@@ -2,21 +2,25 @@
 // The files printed from the Lean proofs in proofs/:
 //   src/generated/kernel.ts             the proved rounding kernels (proofs/Gen.lean,
 //                                       formatted with oxfmt)
-//   test/fixtures/<model>.oracle.json   each proved model (allocate, instalments, chunk,
-//                                       schedule, increment) evaluated on generated cases
-//                                       (proofs/Oracle.lean <model>)
+//   spec/vectors/<area>/<model>-lean.json   each proved model (allocate, instalments, chunk,
+//                                       schedule, increment, xnpv, xirr) evaluated on generated
+//                                       cases (proofs/Oracle.lean <model>), as a table in
+//                                       @ducatjs/money-spec's format
 //
 //   node scripts/gen-kernel.mjs           build the proofs and regenerate all of them
 //                                         (pnpm gen:kernel)
 //   node scripts/gen-kernel.mjs --check   build the proofs and fail if any differs
 //                                         (pnpm gen:kernel:check)
 //   node scripts/gen-kernel.mjs --verify  without Lean: fail if a proof uses `sorry` (or
-//                                         `axiom`, `native_decide`, ...), or if either file
+//                                         `axiom`, `native_decide`, ...), or if any file
 //                                         was edited by hand or not regenerated after a
 //                                         change to proofs/ (part of gen:check)
+//   node scripts/gen-kernel.mjs --restamp without Lean: rewrite each oracle's envelope (its
+//                                         description, provenance and so on) around the
+//                                         unchanged rows, after a change to ORACLES below
 //
 // --verify works from a stamp in each file: the SHA-256 of the Lean sources it was generated from,
-// and of its own content. Regenerating needs the Lean toolchain (elan) and the Mathlib cache
+// and of its own content. In an oracle the envelope must also be exactly what this script writes. Regenerating needs the Lean toolchain (elan) and the Mathlib cache
 // (`cd proofs && lake exe cache get`).
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -30,9 +34,20 @@ const proofsDir = join(root, 'proofs');
 const mode = process.argv[2] ?? '--write';
 
 const KERNEL_FILE = 'src/generated/kernel.ts';
-// one fixture per proved model that the TypeScript is checked against (proofs/Oracle.lean <model>)
-const ORACLE_MODELS = ['allocate', 'instalments', 'chunk', 'schedule', 'increment', 'xnpv', 'xirr'];
-const oracleFile = (model) => `test/fixtures/${model}.oracle.json`;
+// one vector file per proved model that the TypeScript is checked against (proofs/Oracle.lean
+// <model>): its spec area, its table operation (spec/README.md) and the Lean model it evaluates
+const ORACLES = {
+  allocate: { area: 'allocate', op: 'allocate.byRemainder', model: 'Ducat/Allocate.lean' },
+  instalments: { area: 'allocate', op: 'instalments.byRemainder', model: 'Ducat/Schedule.lean' },
+  chunk: { area: 'allocate', op: 'chunk', model: 'Ducat/Schedule.lean' },
+  schedule: { area: 'allocate', op: 'schedule', model: 'Ducat/Schedule.lean' },
+  increment: { area: 'cash', op: 'roundToIncrement.byMode', model: 'Ducat/Cash.lean' },
+  xnpv: { area: 'excel', op: 'xnpv.scaled', model: 'Ducat/XnpvModel.lean' },
+  xirr: { area: 'excel', op: 'xirr.floor', model: 'Ducat/XnpvModel.lean' },
+};
+const ORACLE_MODELS = Object.keys(ORACLES);
+const oracleFile = (model) => `spec/vectors/${ORACLES[model].area}/${model}-lean.json`;
+const ducatVersion = () => JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 
 const sha256 = (text) => createHash('sha256').update(text).digest('hex');
 
@@ -128,8 +143,28 @@ function stampKernel(content, sources) {
   return `// lean-sources sha256:${sources} content sha256:${sha256(content)}\n${content}`;
 }
 
-function stampOracle(content, sources) {
-  return `{"leanSources":"${sources}","contentSha256":"${sha256(content)}","cases":\n${content}}\n`;
+/**
+ * An oracle file: the envelope of a @ducatjs/money-spec vector file, then the rows exactly as
+ * Oracle.lean printed them. checkedAgainst is the ducat version when the rows last changed.
+ */
+function stampOracle(model, content, sources, checkedAgainst) {
+  const { area, op, model: leanModel } = ORACLES[model];
+  const envelope = {
+    $schema: '../../schema/vectors.schema.json',
+    format: 1,
+    area,
+    name: `${model}-lean`,
+    description: `The proved Lean model in proofs/${leanModel} evaluated on generated cases.`,
+    provenance: {
+      source: 'lean',
+      generator: { name: 'proofs/Oracle.lean', version: `lean-sources sha256:${sources}` },
+      method: `lake env lean --run Oracle.lean ${model}, written by scripts/gen-kernel.mjs. The model's properties are proved in proofs/${leanModel}.`,
+    },
+    checkedAgainst,
+    contentSha256: sha256(content),
+  };
+  const header = JSON.stringify(envelope).slice(0, -1);
+  return `${header},"tables":[{"op":"${op}","rows":\n${content}}]}\n`;
 }
 
 /**
@@ -144,12 +179,41 @@ function readStamp(file, text) {
       match && { sources: match[1], contentHash: match[2], content: text.slice(match[0].length) }
     );
   }
-  const match =
-    /^\{"leanSources":"([0-9a-f]{64})","contentSha256":"([0-9a-f]{64})","cases":\n/.exec(text);
-  if (!match || !text.endsWith('}\n')) {
+  const start = text.indexOf('"rows":\n');
+  if (start === -1 || !text.endsWith('}]}\n')) {
     return null;
   }
-  return { sources: match[1], contentHash: match[2], content: text.slice(match[0].length, -2) };
+  let envelope;
+  try {
+    envelope = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  const version = /^lean-sources sha256:([0-9a-f]{64})$/.exec(
+    envelope.provenance?.generator?.version ?? '',
+  );
+  if (!version) {
+    return null;
+  }
+  return {
+    sources: version[1],
+    contentHash: envelope.contentSha256,
+    checkedAgainst: envelope.checkedAgainst,
+    content: text.slice(start + '"rows":\n'.length, -'}]}\n'.length),
+  };
+}
+
+/** The version an oracle's rows were last checked against: kept while the rows don't change. */
+function checkedAgainstFor(model, content) {
+  try {
+    const stamp = readStamp(oracleFile(model), readFileSync(join(root, oracleFile(model)), 'utf8'));
+    if (stamp && stamp.contentHash === sha256(content)) {
+      return stamp.checkedAgainst;
+    }
+  } catch {
+    // no file yet
+  }
+  return ducatVersion();
 }
 
 function formatTypeScript(source) {
@@ -202,7 +266,12 @@ function regenerate() {
     run(['env', 'lean', '--run', 'Oracle.lean', oracleDir]);
     for (const model of ORACLE_MODELS) {
       const cases = readFileSync(join(oracleDir, `${model}.json`), 'utf8');
-      files[oracleFile(model)] = stampOracle(cases, sources);
+      files[oracleFile(model)] = stampOracle(
+        model,
+        cases,
+        sources,
+        checkedAgainstFor(model, cases),
+      );
     }
   } finally {
     rmSync(oracleDir, { recursive: true, force: true });
@@ -220,8 +289,13 @@ if (mode === '--verify') {
   const sources = leanSourcesHash();
   let ok = true;
   for (const file of [KERNEL_FILE, ...ORACLE_MODELS.map(oracleFile)]) {
-    const stamp = readStamp(file, readFileSync(join(root, file), 'utf8'));
-    if (!stamp || stamp.contentHash !== sha256(stamp.content)) {
+    const text = readFileSync(join(root, file), 'utf8');
+    const stamp = readStamp(file, text);
+    const model = ORACLE_MODELS.find((name) => oracleFile(name) === file);
+    const envelopeIsOurs =
+      !model ||
+      (stamp && text === stampOracle(model, stamp.content, stamp.sources, stamp.checkedAgainst));
+    if (!stamp || stamp.contentHash !== sha256(stamp.content) || !envelopeIsOurs) {
       console.error(`${file} was edited by hand: run \`pnpm gen:kernel\``);
       ok = false;
     } else if (stamp.sources !== sources) {
@@ -252,6 +326,20 @@ if (mode === '--verify') {
     process.exit(1);
   }
   console.log('proofs check, standard axioms only; generated files are up to date');
+} else if (mode === '--restamp') {
+  for (const model of ORACLE_MODELS) {
+    const file = oracleFile(model);
+    const stamp = readStamp(file, readFileSync(join(root, file), 'utf8'));
+    if (!stamp || stamp.contentHash !== sha256(stamp.content)) {
+      console.error(`${file}: its rows don't match their stamp, so only Lean can rewrite it`);
+      process.exit(1);
+    }
+    writeFileSync(
+      join(root, file),
+      stampOracle(model, stamp.content, stamp.sources, stamp.checkedAgainst),
+    );
+    console.log(`restamped ${file}`);
+  }
 } else if (mode === '--write') {
   for (const [file, text] of Object.entries(regenerate())) {
     writeFileSync(join(root, file), text);

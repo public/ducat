@@ -1,4 +1,4 @@
-{"leanSources":"20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca","contentSha256":"69b5e18ce525935b03b95ab1914a21bed0b7493c3ad9316acb966109fd2e9c9c","cases":
+{"$schema":"../../schema/vectors.schema.json","format":1,"area":"allocate","name":"schedule-lean","description":"The proved Lean model in proofs/Ducat/Schedule.lean evaluated on generated cases.","provenance":{"source":"lean","generator":{"name":"proofs/Oracle.lean","version":"lean-sources sha256:20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca"},"method":"lake env lean --run Oracle.lean schedule, written by scripts/gen-kernel.mjs. The model's properties are proved in proofs/Ducat/Schedule.lean."},"checkedAgainst":"0.4.0","contentSha256":"69b5e18ce525935b03b95ab1914a21bed0b7493c3ad9316acb966109fd2e9c9c","tables":[{"op":"schedule","rows":
 [
 {"total":"237456","tranches":[{"percent":"31.9","cap":"226826"},{"amount":"194845"}],"result":null},
 {"total":"9007199254740941","tranches":[{"percent":"29.4"}],"result":null},
@@ -1501,4 +1501,4 @@
 {"total":"9007199254741256","tranches":[{"amount":"13525"},{"amount":"90798"},{"rest":true}],"result":["13525","90798","9007199254636933"]},
 {"total":"100000000000000092757","tranches":[{"rest":true},{"percent":"26.9"}],"result":["73100000000000067805","26900000000000024952"]}
 ]
-}
+}]}

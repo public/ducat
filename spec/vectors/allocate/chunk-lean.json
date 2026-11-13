@@ -1,4 +1,4 @@
-{"leanSources":"20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca","contentSha256":"15b864f16afa5759bd9aeac14d1e684331cb0bc956b1883dad23ad67e08ad6ef","cases":
+{"$schema":"../../schema/vectors.schema.json","format":1,"area":"allocate","name":"chunk-lean","description":"The proved Lean model in proofs/Ducat/Schedule.lean evaluated on generated cases.","provenance":{"source":"lean","generator":{"name":"proofs/Oracle.lean","version":"lean-sources sha256:20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca"},"method":"lake env lean --run Oracle.lean chunk, written by scripts/gen-kernel.mjs. The model's properties are proved in proofs/Ducat/Schedule.lean."},"checkedAgainst":"0.4.0","contentSha256":"15b864f16afa5759bd9aeac14d1e684331cb0bc956b1883dad23ad67e08ad6ef","tables":[{"op":"chunk","rows":
 [
 {"total":"0","max":"4382","chunks":["0"]},
 {"total":"96380","max":"2759","chunks":["2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2759","2574"]},
@@ -1201,4 +1201,4 @@
 {"total":"16779","max":"2583","chunks":["2583","2583","2583","2583","2583","2583","1281"]},
 {"total":"20011944560265345","max":"1000000000000377","chunks":["1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","1000000000000377","11944560257805"]}
 ]
-}
+}]}

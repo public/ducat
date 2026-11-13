@@ -23,6 +23,11 @@ const dec = (ms: Money[]) => ms.map(toDecimal);
 describe('allocate', () => {
   it('real-world vectors', () => {
     expect(dec(allocate(eur('100'), [1, 1, 1]))).toEqual(['33.34', '33.33', '33.33']);
+    expect(allocate(eur('100'), [1, 1, 1]).map(String)).toEqual([
+      '33.34 EUR',
+      '33.33 EUR',
+      '33.33 EUR',
+    ]);
     expect(dec(allocate(eur('0.05'), [70, 30]))).toEqual(['0.04', '0.01']);
     expect(dec(allocate(eur('0.05'), ['0.7', '0.3']))).toEqual(['0.04', '0.01']);
     expect(dec(allocate(eur('1'), [1, 1, 1], { remainder: 'last' }))).toEqual([

@@ -1,4 +1,4 @@
-{"leanSources":"20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca","contentSha256":"6f27208de949056cced095dc5d172b77f6cccd30acd15db531211248db1e59c2","cases":
+{"$schema":"../../schema/vectors.schema.json","format":1,"area":"cash","name":"increment-lean","description":"The proved Lean model in proofs/Ducat/Cash.lean evaluated on generated cases.","provenance":{"source":"lean","generator":{"name":"proofs/Oracle.lean","version":"lean-sources sha256:20f04f77584c080712acfd98db04e8fb77ac08311a412f26d4dfb3f2ddb152ca"},"method":"lake env lean --run Oracle.lean increment, written by scripts/gen-kernel.mjs. The model's properties are proved in proofs/Ducat/Cash.lean."},"checkedAgainst":"0.4.0","contentSha256":"6f27208de949056cced095dc5d172b77f6cccd30acd15db531211248db1e59c2","tables":[{"op":"roundToIncrement.byMode","rows":
 [
 {"amount":"-80132596","step":"50","halfEven":"-80132600","halfExpand":"-80132600","halfTrunc":"-80132600","halfCeil":"-80132600","halfFloor":"-80132600","expand":"-80132600","trunc":"-80132550","ceil":"-80132550","floor":"-80132600","unnecessary":null},
 {"amount":"-9007199254741081","step":"100","halfEven":"-9007199254741100","halfExpand":"-9007199254741100","halfTrunc":"-9007199254741100","halfCeil":"-9007199254741100","halfFloor":"-9007199254741100","expand":"-9007199254741100","trunc":"-9007199254741000","ceil":"-9007199254741000","floor":"-9007199254741100","unnecessary":null},
@@ -1501,4 +1501,4 @@
 {"amount":"9007199254740812","step":"2","halfEven":"9007199254740812","halfExpand":"9007199254740812","halfTrunc":"9007199254740812","halfCeil":"9007199254740812","halfFloor":"9007199254740812","expand":"9007199254740812","trunc":"9007199254740812","ceil":"9007199254740812","floor":"9007199254740812","unnecessary":"9007199254740812"},
 {"amount":"-100000000000013987897","step":"10","halfEven":"-100000000000013987900","halfExpand":"-100000000000013987900","halfTrunc":"-100000000000013987900","halfCeil":"-100000000000013987900","halfFloor":"-100000000000013987900","expand":"-100000000000013987900","trunc":"-100000000000013987890","ceil":"-100000000000013987890","floor":"-100000000000013987900","unnecessary":null}
 ]
-}
+}]}

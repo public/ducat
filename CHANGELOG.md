@@ -14,6 +14,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   them from any language. The cross-library battery's 41 vectors and the fixed-point battery's 28
   are the first areas; `compare/` reads them from the package, and `test/spec.test.ts` runs every
   vector against ducat (#321).
+- The Lean oracles (allocation, instalments, chunks, schedules, rounding to an increment, XNPV and
+  XIRR) are now tables in `@ducatjs/money-spec`, with the rows exactly as Lean printed them, and
+  `test/spec.test.ts` runs them (#321).
 
 ### Documentation
 
