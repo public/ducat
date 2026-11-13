@@ -2,6 +2,7 @@
 // It checks every vector file against the schema, maps each neutral operation to ducat's API, and
 // runs every case. A file with an operation this runner doesn't know, or one that breaks the
 // schema, fails the suite; so does a drop in the number of cases in any area.
+import { readFileSync } from 'node:fs';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 import { DIAGNOSED_IDS } from '../compare/battery/vectors.ts';
@@ -33,10 +34,11 @@ const CASES_PER_AREA: Record<string, number> = {
   fixed: 28,
   allocate: 5400,
   cash: 1500,
-  excel: 155,
+  excel: 912,
   rounding: 750,
   convert: 250,
   tax: 1000,
+  finance: 2420,
 };
 
 const schema = vectorSchema;
@@ -435,6 +437,51 @@ describe('@ducatjs/money-spec', () => {
     expect(modes.size).toBe(9);
   });
 
+  it('fails a table when one expected value in one row is changed', () => {
+    /** a different value of the same shape */
+    const corrupt = (value: unknown): unknown => {
+      if (value === null) {
+        return '1';
+      }
+      if (Array.isArray(value)) {
+        return value.length === 0 ? ['1'] : [corrupt(value[0]), ...value.slice(1)];
+      }
+      if (typeof value === 'object') {
+        const [key, inner] = Object.entries(value as object)[0]!;
+        return { ...(value as object), [key]: corrupt(inner) };
+      }
+      const [numerator, denominator] = String(value).split('/');
+      const changed = String(BigInt(numerator!) + 1n);
+      return denominator === undefined ? changed : `${changed}/${denominator}`;
+    };
+
+    const checked: string[] = [];
+    for (const file of files.values()) {
+      for (const table of (file as SpecFile).tables ?? []) {
+        const operation = TABLE_OPERATIONS[table.op]!;
+        if ('runBy' in operation) {
+          continue;
+        }
+        for (const field of operation.expects) {
+          // a row with a value there, so the change keeps its shape
+          const row = table.rows.find((candidate) => candidate[field] !== null) ?? table.rows[0]!;
+          const changed = { ...row, [field]: corrupt(row[field]) };
+          expect({
+            op: table.op,
+            field,
+            caught: operation.checkRow(changed, 0).length > 0,
+          }).toEqual({
+            op: table.op,
+            field,
+            caught: true,
+          });
+        }
+        checked.push(table.op);
+      }
+    }
+    expect(checked.length).toBeGreaterThanOrEqual(15);
+  });
+
   it('rejects a file that breaks the schema, or has an operation the runner does not know', () => {
     const battery = files.get('core/battery.json') as SpecFile;
     const first = battery.cases![0]!;
@@ -469,6 +516,15 @@ for (const [path, file] of files) {
       '%s',
       (_, table) => {
         const operation = TABLE_OPERATIONS[table.op]!;
+        if ('runBy' in operation) {
+          // an existing test checks these rows: it must exist and read this file by name
+          const source = readFileSync(new URL(`../${operation.runBy}`, import.meta.url), 'utf8');
+          expect({ runBy: operation.runBy, readsFile: source.includes(`'${path}'`) }).toEqual({
+            runBy: operation.runBy,
+            readsFile: true,
+          });
+          return;
+        }
         const mismatches = [
           ...(operation.checkTable?.(table.rows) ?? []),
           ...table.rows.flatMap((row, index) => operation.checkRow(row, index)),

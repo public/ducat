@@ -1,8 +1,7 @@
 import '../src/plugins/core.js'; // the tests below use the Money methods
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { sectionsOf } from './spec/load.ts';
 import {
   currencyExponent,
   fromMinor,
@@ -418,8 +417,11 @@ describe('Python decimal vectors, through Fixed', () => {
     scale?: number;
     want: string | [string, string];
   }
-  const vectorPath = join(import.meta.dirname, 'vectors', 'pydecimal.json');
-  const { cases } = JSON.parse(readFileSync(vectorPath, 'utf8')) as { cases: VectorCase[] };
+  // @ducatjs/money-spec's rounding/pydecimal.json, whose tables are minor.multiply, minor.divide
+  // and minor.toScale
+  const cases = Object.entries(sectionsOf('rounding/pydecimal.json')).flatMap(([op, rows]) =>
+    rows.map((row) => ({ op, ...row }) as VectorCase),
+  );
   // The currency-free operations: the value is the minor units at the currency's exponent.
   const fixedCases = cases.filter((vector) =>
     ['multiply', 'divide', 'toScale'].includes(vector.op),

@@ -61,3 +61,19 @@ export function loadVectorFiles(): Map<string, unknown> {
   const files = process.versions['bun'] ? filesFromPackageDirectory() : filesFromGlob();
   return new Map([...files].toSorted(([first], [second]) => first.localeCompare(second)));
 }
+
+/**
+ * A table file's rows by operation name without its prefix: sectionsOf('excel/fractions.json')
+ * gives { annuities: [...], nper: [...], ... } for the tables excel.annuities, excel.nper, ...
+ */
+export function sectionsOf(path: string): Record<string, Record<string, unknown>[]> {
+  const file = loadVectorFiles().get(path) as
+    | { tables?: { op: string; rows: Record<string, unknown>[] }[] }
+    | undefined;
+  if (!file?.tables) {
+    throw new Error(`no table file ${path} in @ducatjs/money-spec`);
+  }
+  return Object.fromEntries(
+    file.tables.map((table) => [table.op.slice(table.op.indexOf('.') + 1), table.rows]),
+  );
+}

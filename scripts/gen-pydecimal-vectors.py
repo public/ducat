@@ -10,7 +10,6 @@ and check that nothing changed with --check.
 Rounding modes: decimal has no half-ceil or half-floor, so those two are built from half-up and
 half-down by the sign of the value (ties toward +infinity / -infinity). Every other mode is decimal's own.
 """
-import hashlib
 import json
 import random
 import sys
@@ -26,11 +25,12 @@ from decimal import (
     Decimal,
     localcontext,
 )
-from pathlib import Path
+
+sys.dont_write_bytecode = True  # no __pycache__ in scripts/
+from spec_vectors import file_text, vector_path, write_or_check  # noqa: E402
 
 SEED = 20261107
 COUNT_PER_OP = 250
-ROOT = Path(__file__).resolve().parent.parent
 # bumped when the output's layout changes; the values depend only on the seed
 GENERATOR_VERSION = "2"
 # each operation's spec area and table operation (spec/README.md, "Table operations")
@@ -149,51 +149,11 @@ def make_case(rng: random.Random, operation: str) -> dict:
     return case
 
 
-def out_path(area: str) -> Path:
-    return ROOT / "spec" / "vectors" / area / "pydecimal.json"
-
-
-def rows_text(tables: list) -> str:
-    """the tables, one row per line, so a regeneration diff shows exactly which vectors changed"""
-    parts = []
-    for op, rows in tables:
-        body = ",\n".join(json.dumps(row, separators=(",", ":")) for row in rows)
-        parts.append(f'{{"op":"{op}","rows":[\n{body}\n]}}')
-    return "[\n" + ",\n".join(parts) + "\n]"
-
-
-def checked_against(area: str, content_hash: str) -> str:
-    """the ducat version when the rows last changed: kept while they stay the same"""
-    path = out_path(area)
-    if path.exists():
-        existing = json.loads(path.read_text())
-        if existing.get("contentSha256") == content_hash:
-            return existing["checkedAgainst"]
-    return json.loads((ROOT / "package.json").read_text())["version"]
-
-
-def file_text(area: str, tables: list) -> str:
-    rows = rows_text(tables)
-    content_hash = hashlib.sha256(rows.encode()).hexdigest()
-    envelope = {
-        "$schema": "../../schema/vectors.schema.json",
-        "format": 1,
-        "area": area,
-        "name": "pydecimal",
-        "description": DESCRIPTIONS[area],
-        "provenance": {
-            "source": "python-decimal",
-            "generator": {
-                "name": "scripts/gen-pydecimal-vectors.py",
-                "version": f"{GENERATOR_VERSION} (seed {SEED})",
-            },
-            "method": "Python's decimal module at 400 digits, rounded once with each rounding mode; half-ceil and half-floor are half-up or half-down by the value's sign.",
-        },
-        "checkedAgainst": checked_against(area, content_hash),
-        "contentSha256": content_hash,
-    }
-    header = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))[:-1]
-    return f'{header},"tables":{rows}}}\n'
+PROVENANCE = {
+    "source": "python-decimal",
+    "generator": {"name": "scripts/gen-pydecimal-vectors.py", "version": f"{GENERATOR_VERSION} (seed {SEED})"},
+    "method": "Python's decimal module at 400 digits, rounded once with each rounding mode; half-ceil and half-floor are half-up or half-down by the value's sign.",
+}
 
 
 def main() -> None:
@@ -205,23 +165,13 @@ def main() -> None:
     with localcontext(Context(prec=400, Emax=10**6, Emin=-(10**6))):
         for operation in operations:
             rows = [make_case(rng, operation) for _ in range(COUNT_PER_OP)]
-            tables_by_area.setdefault(AREAS[operation], []).append((f"minor.{operation}", rows))
+            tables_by_area.setdefault(AREAS[operation], []).append({"op": f"minor.{operation}", "rows": rows})
 
-    texts = {area: file_text(area, tables) for area, tables in tables_by_area.items()}
-
-    if "--check" in sys.argv:
-        for area, text in texts.items():
-            path = out_path(area)
-            if not path.exists() or path.read_text() != text:
-                sys.exit(f"{path} is out of date; run python3 scripts/gen-pydecimal-vectors.py")
-        return
-
-    for area, text in texts.items():
-        path = out_path(area)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
-        print(f"wrote {path}")
-
+    texts = {
+        vector_path(area, "pydecimal"): file_text(area, "pydecimal", DESCRIPTIONS[area], PROVENANCE, tables)
+        for area, tables in tables_by_area.items()
+    }
+    write_or_check(texts, "python3 scripts/gen-pydecimal-vectors.py")
 
 if __name__ == "__main__":
     main()
