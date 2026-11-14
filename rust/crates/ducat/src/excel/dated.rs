@@ -13,7 +13,7 @@ use super::big::{
 };
 use crate::finance::rates::{GridValue, bisect_rate, check_digits, flow_units, sign_changes};
 use crate::finance::{Date, DayCount, MoneyKind, money_like, round_quotient, year_fraction};
-use crate::{Error, Factor, Int, Ratio, Rounding};
+use crate::{Error, Factor, Int, Ratio, RoundingInput};
 
 /// The most bits each discount factor and the sum are bracketed to: every step of a factor raises
 /// a number of about this many bits to the root's order (365 for days / 365).
@@ -484,30 +484,32 @@ pub fn xnpv_bounds<M: MoneyKind>(
 ///
 /// # Errors
 ///
-/// As [`xnpv_bounds`], and [`Error::Rounding`] with [`Rounding::Unnecessary`] for an inexact value.
+/// As [`xnpv_bounds`], and [`Error::Rounding`] with
+/// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary) for an inexact value.
 pub fn xnpv<M: MoneyKind>(
     rate: impl Factor,
     values: &[M],
     dates: &[Date],
     options: &XnpvOptions,
-    rounding: Rounding,
+    rounding: impl Into<RoundingInput>,
 ) -> Result<M, Error> {
     let flows = dated_flows(values, dates, options)?;
     let (num, den) = growth_of(rate)?;
     let minor_unit = Int::ONE.mul_pow10(u32::from(flows.scale)).to_big();
     let template = &values[0];
-    let exponent = u16::from(template.parts().2.exponent());
+    let currency = template.parts().2;
+    let rounding = rounding.into();
     let amount = refine(|bits| {
         let Some(sum) = xnpv_scaled(&flows, &num, &den, bits)? else {
             return Ok(None);
         };
         let scale = Int::from_big(&sum.scale * &minor_unit);
-        let low = round_quotient(&Int::from_big(sum.low), &scale, exponent, rounding)?;
+        let low = round_quotient(&Int::from_big(sum.low), &scale, currency, rounding)?;
         if sum.exact {
             return Ok(Some(low));
         }
         // rounding is monotone, so when both ends round alike, so does everything between
-        let high = round_quotient(&Int::from_big(sum.high), &scale, exponent, rounding)?;
+        let high = round_quotient(&Int::from_big(sum.high), &scale, currency, rounding)?;
         Ok((low.units == high.units).then_some(low))
     })?;
     Ok(money_like(template, amount))

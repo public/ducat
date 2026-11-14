@@ -41,7 +41,7 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::NotPositive`] for an increment that isn't positive; [`Error::Rounding`] with
-    /// [`Rounding::Unnecessary`] when the amount isn't a multiple.
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary) when the amount isn't a multiple.
     pub fn round_to_increment(&self, increment: &Self, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(
             self.amount

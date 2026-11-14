@@ -68,7 +68,9 @@
         "fixed",
         "exact",
         "excel",
-        "finance"
+        "finance",
+        "pricing",
+        "math"
       ]
     },
     "provenance": {
@@ -1133,7 +1135,23 @@
         "exact.multiplyExact",
         "rate.inverse",
         "rate.chain",
-        "rate.convert"
+        "rate.convert",
+        "policy.multiply",
+        "policy.divide",
+        "policy.round",
+        "policy.convert",
+        "policy.tax",
+        "policy.exactRound",
+        "policy.check",
+        "pricing.priceEnding",
+        "pricing.tiered",
+        "math.average",
+        "math.ratioOf",
+        "math.divideToIntegral",
+        "math.trimScale",
+        "math.ratio",
+        "finance.interestExact",
+        "finance.discountedSumExact"
       ]
     },
     "rowsByOp": {
@@ -2541,6 +2559,342 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/rate.convert"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "policy.multiply"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/policy.multiply"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "policy.divide"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/policy.divide"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "policy.round"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/policy.round"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "policy.convert"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/policy.convert"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "policy.tax"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/policy.tax"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "policy.exactRound"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/policy.exactRound"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "policy.check"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/policy.check"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "pricing.priceEnding"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/pricing.priceEnding"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "pricing.tiered"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/pricing.tiered"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "math.average"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/math.average"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "math.ratioOf"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/math.ratioOf"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "math.divideToIntegral"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/math.divideToIntegral"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "math.trimScale"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/math.trimScale"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "math.ratio"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/math.ratio"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.interestExact"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.interestExact"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "finance.discountedSumExact"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/finance.discountedSumExact"
                 }
               }
             }
@@ -4686,12 +5040,654 @@
           }
         },
         "additionalProperties": false
+      },
+      "policy.multiply": {
+        "type": "object",
+        "required": ["currency", "amount", "factor", "policy", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "factor": {
+            "$ref": "#/$defs/rational"
+          },
+          "policy": {
+            "$ref": "#/$defs/policy"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "policy.divide": {
+        "type": "object",
+        "required": ["currency", "amount", "divisor", "policy", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "divisor": {
+            "$ref": "#/$defs/rational"
+          },
+          "policy": {
+            "$ref": "#/$defs/policy"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "policy.round": {
+        "type": "object",
+        "required": ["currency", "amount", "policy", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "policy": {
+            "$ref": "#/$defs/policy"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "policy.convert": {
+        "type": "object",
+        "required": ["currency", "amount", "to", "rate", "policy", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "policy": {
+            "$ref": "#/$defs/policy"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "policy.tax": {
+        "type": "object",
+        "required": [
+          "currency",
+          "amount",
+          "percent",
+          "policy",
+          "percentage",
+          "discount",
+          "addTax",
+          "extractTax"
+        ],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "policy": {
+            "$ref": "#/$defs/policy"
+          },
+          "percentage": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "discount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "addTax": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["tax", "gross"],
+                "properties": {
+                  "tax": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "gross": {
+                    "$ref": "#/$defs/decimal"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extractTax": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["net", "tax"],
+                "properties": {
+                  "net": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "tax": {
+                    "$ref": "#/$defs/decimal"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "policy.exactRound": {
+        "type": "object",
+        "required": ["currency", "num", "den", "policy", "want", "residual"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "num": {
+            "$ref": "#/$defs/integerString"
+          },
+          "den": {
+            "$ref": "#/$defs/integerString"
+          },
+          "policy": {
+            "$ref": "#/$defs/policy"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "residual": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rational"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "policy.check": {
+        "type": "object",
+        "required": ["currency", "amount", "policy", "valid"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "policy": {
+            "$ref": "#/$defs/policy"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "pricing.priceEnding": {
+        "type": "object",
+        "required": ["currency", "amount", "ending", "step", "mode", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "ending": {
+            "$ref": "#/$defs/decimal"
+          },
+          "step": {
+            "$ref": "#/$defs/decimal"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "pricing.tiered": {
+        "type": "object",
+        "required": [
+          "currency",
+          "quantity",
+          "mode",
+          "tiers",
+          "rounding",
+          "total",
+          "exact",
+          "lines"
+        ],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "quantity": {
+            "$ref": "#/$defs/rational"
+          },
+          "mode": {
+            "enum": ["graduated", "volume"]
+          },
+          "tiers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["upTo"],
+              "properties": {
+                "upTo": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/rational"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unitAmount": {
+                  "$ref": "#/$defs/decimal"
+                },
+                "flatAmount": {
+                  "$ref": "#/$defs/decimal"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "beyondLastTier": {
+            "enum": ["throw", "cap"]
+          },
+          "chargeQuantity": {
+            "$ref": "#/$defs/rational"
+          },
+          "total": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/integerString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "exact": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rational"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lines": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["tier", "quantity", "exact", "amount"],
+                  "properties": {
+                    "tier": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "quantity": {
+                      "$ref": "#/$defs/rational"
+                    },
+                    "exact": {
+                      "$ref": "#/$defs/rational"
+                    },
+                    "amount": {
+                      "$ref": "#/$defs/integerString"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "math.average": {
+        "type": "object",
+        "required": ["currency", "amounts", "mode", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amounts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/decimal"
+            }
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "want": {
+            "$ref": "#/$defs/decimal"
+          }
+        },
+        "additionalProperties": false
+      },
+      "math.ratioOf": {
+        "type": "object",
+        "required": ["currency", "amount", "other", "ratio"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "other": {
+            "$ref": "#/$defs/decimal"
+          },
+          "ratio": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rational"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "math.divideToIntegral": {
+        "type": "object",
+        "required": ["currency", "amount", "divisor", "quotient", "remainder"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "divisor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "quotient": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/integerString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remainder": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "math.trimScale": {
+        "type": "object",
+        "required": ["currency", "amount", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "minimumScale": {
+            "$ref": "#/$defs/scale"
+          },
+          "want": {
+            "$ref": "#/$defs/decimal"
+          }
+        },
+        "additionalProperties": false
+      },
+      "math.ratio": {
+        "type": "object",
+        "required": [
+          "left",
+          "right",
+          "sum",
+          "difference",
+          "product",
+          "quotient",
+          "compare",
+          "negation",
+          "complement"
+        ],
+        "properties": {
+          "left": {
+            "$ref": "#/$defs/rational"
+          },
+          "right": {
+            "$ref": "#/$defs/rational"
+          },
+          "sum": {
+            "$ref": "#/$defs/rational"
+          },
+          "difference": {
+            "$ref": "#/$defs/rational"
+          },
+          "product": {
+            "$ref": "#/$defs/rational"
+          },
+          "quotient": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rational"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "compare": {
+            "enum": [-1, 0, 1]
+          },
+          "negation": {
+            "$ref": "#/$defs/rational"
+          },
+          "complement": {
+            "$ref": "#/$defs/rational"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.interestExact": {
+        "type": "object",
+        "required": ["currency", "principal", "rate", "from", "to", "dayCount", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "principal": {
+            "$ref": "#/$defs/integerString"
+          },
+          "rate": {
+            "$ref": "#/$defs/decimal"
+          },
+          "from": {
+            "$ref": "#/$defs/date"
+          },
+          "to": {
+            "$ref": "#/$defs/date"
+          },
+          "dayCount": {
+            "enum": ["ACT/360", "ACT/365F", "ACT/ACT ISDA", "30/360", "30E/360", "30E/360 ISDA"]
+          },
+          "maturity": {
+            "type": "boolean"
+          },
+          "want": {
+            "$ref": "#/$defs/rational"
+          }
+        },
+        "additionalProperties": false
+      },
+      "finance.discountedSumExact": {
+        "type": "object",
+        "required": ["currency", "flows", "rate", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "flows": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/integerString"
+            }
+          },
+          "rate": {
+            "$ref": "#/$defs/rational"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rational"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       }
     },
     "spreadsheetNumber": {
       "description": "A double as a spreadsheet prints it: 16 significant digits in scientific notation (\"1.188443412335220E+03\"), or an error (\"Err:523\", \"#NUM!\").",
       "type": "string",
       "pattern": "^(-?[0-9]\\.[0-9]{15}E[+-][0-9]{2,3}|Err:[0-9]+|#[A-Z0-9/]+!?)$"
+    },
+    "policy": {
+      "description": "A rounding policy, as ducat's roundingPolicy options: a scale (default: the currency's exponent), an increment of 10^-scale units, a mode, and an optional currency it is restricted to.",
+      "type": "object",
+      "required": ["increment", "rounding"],
+      "properties": {
+        "scale": {
+          "$ref": "#/$defs/scale"
+        },
+        "increment": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rounding": {
+          "$ref": "#/$defs/roundingMode"
+        },
+        "currency": {
+          "$ref": "#/$defs/currency"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "oneOf": [

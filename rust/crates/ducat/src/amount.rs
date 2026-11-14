@@ -4,8 +4,8 @@ use core::cmp::Ordering;
 use core::fmt;
 
 use crate::decimal::{Decimal, MAX_SCALE, faithful_decimal, parse_decimal, write_scaled};
-use crate::rounding::{Rounding, rescale_ratio};
-use crate::{Error, Int, Ratio};
+use crate::rounding::{Rounding, RoundingInput, rescale_ratio};
+use crate::{CurrencyCode, Error, Int, Ratio};
 
 /// `units × 10^−scale`, with `scale` at most `MAX_SCALE`.
 #[derive(Clone, Debug)]
@@ -91,6 +91,7 @@ impl Amount {
     }
 
     /// `self × factor`, rounded once to `scale`.
+    #[cfg(feature = "fixed")]
     pub(crate) fn mul_ratio(
         &self,
         factor: &Ratio,
@@ -112,7 +113,55 @@ impl Amount {
         })
     }
 
+    /// `self × num / den` (`den` positive, not necessarily reduced), rounded once to `scale`.
+    pub(crate) fn round_parts(
+        &self,
+        num: &Int,
+        den: &Int,
+        scale: u16,
+        rounding: Rounding,
+    ) -> Result<Self, Error> {
+        let scale = check_scale(scale)?;
+        let (up, down) = shift(self.scale, scale);
+        Ok(Self {
+            units: rescale_ratio(&self.units, num, den, up, down, rounding)?,
+            scale,
+        })
+    }
+
+    /// `self × num / den` (`den` positive) in `currency`, rounded once: with a mode to `scale`,
+    /// with a policy to the policy's scale and increment. Every operation that takes a
+    /// [`RoundingInput`] rounds through here.
+    pub(crate) fn round_input(
+        &self,
+        num: &Int,
+        den: &Int,
+        scale: u16,
+        rounding: RoundingInput,
+        currency: CurrencyCode,
+    ) -> Result<Self, Error> {
+        // `currency` is only read by a policy
+        let _ = currency;
+        match rounding {
+            RoundingInput::Mode(mode) => self.round_parts(num, den, scale, mode),
+            #[cfg(feature = "policy")]
+            RoundingInput::Policy(policy) => policy.round_product(self, num, den, currency),
+        }
+    }
+
+    /// `self × factor` in `currency`, rounded once as [`Amount::round_input`] does.
+    pub(crate) fn mul_input(
+        &self,
+        factor: &Ratio,
+        scale: u16,
+        rounding: RoundingInput,
+        currency: CurrencyCode,
+    ) -> Result<Self, Error> {
+        self.round_input(factor.numer(), factor.denom(), scale, rounding, currency)
+    }
+
     /// `self ÷ divisor`, rounded once to `scale`.
+    #[cfg(feature = "fixed")]
     pub(crate) fn div_ratio(
         &self,
         divisor: &Ratio,

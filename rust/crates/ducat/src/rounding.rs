@@ -129,6 +129,42 @@ impl FromStr for Rounding {
     }
 }
 
+/// What every rounding parameter accepts: a [`Rounding`] mode, or (with the `policy` feature) a
+/// [`RoundingPolicy`](crate::policy::RoundingPolicy), as ducat's `RoundingInput`.
+///
+/// Parameters take `impl Into<RoundingInput>`, so a mode, a policy or a reference to a policy goes
+/// straight in. A mode rounds to the scale the operation names (the amount's own, or the
+/// currency's exponent); a policy rounds to its own scale and increment instead, once.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum RoundingInput {
+    /// A rounding mode, at the operation's scale.
+    Mode(Rounding),
+    /// A rounding policy, at its own scale and increment.
+    #[cfg(feature = "policy")]
+    Policy(crate::policy::RoundingPolicy),
+}
+
+impl From<Rounding> for RoundingInput {
+    fn from(mode: Rounding) -> Self {
+        Self::Mode(mode)
+    }
+}
+
+#[cfg(feature = "policy")]
+impl From<crate::policy::RoundingPolicy> for RoundingInput {
+    fn from(policy: crate::policy::RoundingPolicy) -> Self {
+        Self::Policy(policy)
+    }
+}
+
+#[cfg(feature = "policy")]
+impl From<&crate::policy::RoundingPolicy> for RoundingInput {
+    fn from(policy: &crate::policy::RoundingPolicy) -> Self {
+        Self::Policy(*policy)
+    }
+}
+
 /// A divisor for [`div_round`]: a 256-bit magnitude, or one too large for 256 bits (only a power
 /// of ten from a large scale difference can be), which every dividend here is less than half of.
 #[derive(Clone, Copy)]

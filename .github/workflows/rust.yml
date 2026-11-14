@@ -66,6 +66,9 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features finance --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features policy --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features pricing --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features math --locked -- -D warnings
       - run: cargo doc -p ducat --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings

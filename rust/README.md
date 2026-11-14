@@ -21,7 +21,7 @@ assert_eq!(gross.to_string(), "26.88 EUR");
 Status: the core (parsing, rounding, add, subtract, multiply, divide, convert at a rate, compare, serde), allocation
 (allocate, split, instalments, schedule, chunk), cash rounding, tax (percentages, discounts, adding and extracting
 tax), `Fixed` decimals, `ExactMoney`, exchange rates (`Rate`), finance (day counts, interest, loans, savings,
-proration, NPV and IRR), and the conformance runner. See [docs/design.md](docs/design.md).
+proration), Excel's functions, rounding policies, pricing and tiers, math, and the conformance runner. See [docs/design.md](docs/design.md).
 
 ## Conformance
 

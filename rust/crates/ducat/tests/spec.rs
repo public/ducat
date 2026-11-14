@@ -29,6 +29,8 @@ use serde_json::Value;
 
 #[path = "spec/excel.rs"]
 mod excel;
+#[path = "spec/policy_math.rs"]
+mod policy_math;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
 /// count), never silently lost.
@@ -39,9 +41,11 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("core", 41),
     ("exact", 1000),
     ("excel", 2878),
-    ("finance", 2420),
+    ("finance", 2720),
     ("fixed", 28),
-    ("rounding", 750),
+    ("math", 750),
+    ("pricing", 300),
+    ("rounding", 1800),
     ("tax", 1000),
     ("words", 6904),
 ];
@@ -724,7 +728,7 @@ fn proration_row(row: &Value) -> Fields {
 }
 
 fn row_op(op: &str) -> Option<RowOp> {
-    if let Some(run) = excel::row_op(op) {
+    if let Some(run) = excel::row_op(op).or_else(|| policy_math::row_op(op)) {
         return Some(run);
     }
     fn start(row: &Value) -> Result<AnyMoney, Error> {
@@ -1097,7 +1101,7 @@ fn mutated_row(run: RowOp, row: &Value) -> Value {
 
 const AREAS: &[&str] = &[
     "core", "rounding", "allocate", "tax", "convert", "cash", "format", "words", "parse", "fixed",
-    "exact", "excel", "finance",
+    "exact", "excel", "finance", "pricing", "math",
 ];
 const EXPECTATIONS: &[&str] = &[
     "money",

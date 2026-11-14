@@ -6,10 +6,12 @@ verified against ducat's language-neutral conformance suite (`@ducatjs/money-spe
 Status: milestones 1 to 3 (the core, allocation and cash, tax, `Fixed`, `ExactMoney` and `Rate`) and milestone 4
 (`finance`, and `excel` for the functions named after Excel's, as in ducat).
 
+Milestone 5a added rounding policies (`RoundingPolicy`, accepted wherever a mode is, as `impl Into<RoundingInput>`),
+pricing, tiers and math, with their vectors in `spec/`.
+
 Known gaps, to close later:
-- `interestExact` and `discountedSumExact` (`/finance`): not ported yet; no spec vectors use them.
-- Rounding policies (a scale, an increment and a mode, ducat's `RoundingPolicy`, and `cashPolicy`): not ported,
-  so every operation rounds by a mode to a scale. Planned with milestone 5. The rate-source
+- `cashPolicy` (a policy from CLDR's cash rules): with the currency data, milestone 5b.
+- `MoneyBag` (`/bag`): it converts through rate providers, so with them, milestone 5d. The rate-source
 parsers (ECB, BoC, Fed, BoE, HMRC, history, Stripe and Adyen FX) move to milestone 5, with the processors. Rate
 providers (tables, chains, `via`) and rate metadata (dates, validity) come with them. The decisions in "Choices that are expensive to reverse" are the coordinator's,
 flagged to Alex for review.

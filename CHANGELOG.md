@@ -49,10 +49,16 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   with the residual, implied rates).
 - The Rust port gains `ducat::finance` (dates, the six day counts, interest, compounding, amortisation,
   payment dates, discounted sums, periodic and annual rates, savings plans, proration) and, in
-  `ducat::excel`, Excel's NPV and IRR, and passes the spec's 2,420 finance vectors.
+  `ducat::excel`, Excel's NPV and IRR, and passes the spec's 2,420 finance vectors (#344).
 - The Rust port's `ducat::excel` gains FV, PV, PMT, NPER, RATE, XNPV and XIRR, with exact values and
   bounds, and passes the spec's 2,878 Excel, LibreOffice Calc and Microsoft vectors, with the Calc
-  exceptions `test/excel.test.ts` lists.
+  exceptions `test/excel.test.ts` lists (#345).
+- Vectors for rounding policies (`spec/vectors/rounding/policy-fractions.json`), price endings and
+  tiered pricing (`pricing/fractions.json`, a new area), the math helpers (`math/fractions.json`, a
+  new area) and exact interest and discounted sums (`finance/exact-fractions.json`), from Python's
+  `fractions` by `scripts/gen-policy-math-vectors.py`. Both ducat and the Rust port run them.
+- The Rust port gains rounding policies (accepted wherever a rounding mode is), `ducat::pricing`,
+  `ducat::math`, `interest_exact` and `discounted_sum_exact`.
 
 ### Documentation
 

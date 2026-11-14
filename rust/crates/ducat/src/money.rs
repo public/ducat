@@ -10,7 +10,7 @@ use core::ops::{Add, Neg, Sub};
 use core::str::FromStr;
 
 use crate::amount::Amount;
-use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Rounding};
+use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money in the currency `C`: a count of 10^−scale units of any size.
 ///
@@ -24,7 +24,7 @@ use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Rounding};
 ///   `Clone` but not `Copy`: methods take `&self`, and the operators work on references
 ///   (`&a + &b`) as well as values.
 /// - **Rounding is always an argument.** Anything that may round takes a [`Rounding`]; with
-///   [`Rounding::Unnecessary`] an inexact result is an error.
+///   [`Rounding::Unnecessary`](crate::Rounding::Unnecessary) an inexact result is an error.
 /// - **Equality is by value,** as ducat's `equals`: `==`, `Eq`, `Hash` and `Ord` ignore the scale, so
 ///   1.0 EUR at scale 1 is `==` to 1.00 EUR, and they are the same `HashMap` or `BTreeMap` key
 ///   (the representation inserted first is the one kept). Check the amount *and* the scale, as
@@ -136,7 +136,7 @@ impl<C: Currency> Money<C> {
 
     /// A decimal string in major units at `scale`, rounded with `rounding` if it has more
     /// decimals than that. [`FromStr`] is this at the currency's exponent with
-    /// [`Rounding::Unnecessary`].
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     ///
     /// There is no limit on the number of digits, as in ducat, so the cost grows with the length
     /// of the text: bound untrusted input before parsing it.
@@ -145,7 +145,7 @@ impl<C: Currency> Money<C> {
     ///
     /// [`Error::Syntax`] outside ducat's grammar (see [`AnyMoney::parse_at`]);
     /// [`Error::ExponentOutOfRange`]; [`Error::InvalidScale`]; [`Error::Rounding`] for more
-    /// decimals than `scale` with [`Rounding::Unnecessary`].
+    /// decimals than `scale` with [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn parse_at(text: &str, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(Amount::parse(text, scale, rounding)?))
     }
@@ -187,7 +187,7 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::NotFinite`], [`Error::InvalidScale`], and [`Error::Rounding`] (with
-    /// [`Rounding::Unnecessary`]).
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary)).
     pub fn from_f64_at(value: f64, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(Amount::from_f64(
             value, scale, rounding, false,
@@ -241,31 +241,43 @@ impl<C: Currency> Money<C> {
         Self::from_amount(self.amount.abs())
     }
 
-    /// `self × factor`, rounded once to `self`'s scale.
+    /// `self × factor`, rounded once: with a mode to `self`'s scale, with a rounding policy to
+    /// the policy's scale and increment.
     ///
     /// # Errors
     ///
-    /// [`Error::Rounding`] for an inexact product with [`Rounding::Unnecessary`], and whatever
-    /// reading `factor` fails with.
-    pub fn multiply(&self, factor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
-        Ok(Self::from_amount(self.amount.mul_ratio(
+    /// [`Error::Rounding`] for an inexact product with [`Rounding::Unnecessary`](crate::Rounding::Unnecessary);
+    /// [`Error::CurrencyMismatch`] for a policy for another currency; and whatever reading
+    /// `factor` fails with.
+    pub fn multiply(
+        &self,
+        factor: impl Factor,
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<Self, Error> {
+        Ok(Self::from_amount(self.amount.mul_input(
             &factor.to_ratio()?,
             self.amount.scale,
-            rounding,
+            rounding.into(),
+            C::CODE,
         )?))
     }
 
-    /// `self ÷ divisor`, rounded once to `self`'s scale. To split an amount so that the parts
-    /// sum to it, allocate it instead.
+    /// `self ÷ divisor`, rounded once as [`Money::multiply`] rounds. To split an amount so that
+    /// the parts sum to it, allocate it instead.
     ///
     /// # Errors
     ///
     /// [`Error::DivisionByZero`]; otherwise as [`Money::multiply`].
-    pub fn divide(&self, divisor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
-        Ok(Self::from_amount(self.amount.div_ratio(
-            &divisor.to_ratio()?,
+    pub fn divide(
+        &self,
+        divisor: impl Factor,
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<Self, Error> {
+        Ok(Self::from_amount(self.amount.mul_input(
+            &divisor.to_ratio()?.recip()?,
             self.amount.scale,
-            rounding,
+            rounding.into(),
+            C::CODE,
         )?))
     }
 
@@ -275,22 +287,29 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::InvalidScale`]; [`Error::Rounding`] when digits would be lost with
-    /// [`Rounding::Unnecessary`].
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn to_scale(&self, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(self.amount.rescale(scale, rounding)?))
     }
 
-    /// The amount rounded to the currency's exponent (ducat's `round`).
+    /// The amount rounded once: with a mode to the currency's exponent, with a rounding policy
+    /// to the policy's scale and increment (ducat's `round`).
     ///
     /// # Errors
     ///
-    /// As [`Money::to_scale`].
-    pub fn round(&self, rounding: Rounding) -> Result<Self, Error> {
-        self.to_scale(u16::from(C::CODE.exponent()), rounding)
+    /// As [`Money::multiply`].
+    pub fn round(&self, rounding: impl Into<RoundingInput>) -> Result<Self, Error> {
+        Ok(Self::from_amount(self.amount.mul_input(
+            &Ratio::ONE,
+            u16::from(C::CODE.exponent()),
+            rounding.into(),
+            C::CODE,
+        )?))
     }
 
-    /// Converts to the currency `T` at `rate` (units of `T` per unit of `C`), rounded once to
-    /// `T`'s exponent.
+    /// Converts to the currency `T` at `rate` (units of `T` per unit of `C`), rounded once: with a
+    /// mode to `T`'s exponent, with a rounding policy to its scale (by default `T`'s exponent)
+    /// and increment, its currency checked against `T`.
     ///
     /// ```
     /// use ducat::{Money, Rounding};
@@ -308,7 +327,7 @@ impl<C: Currency> Money<C> {
     pub fn convert<T: Currency>(
         &self,
         rate: impl Factor,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Money<T>, Error> {
         let any = self.to_any().convert(T::CODE, rate, rounding)?;
         Ok(Money::from_amount(any.amount))

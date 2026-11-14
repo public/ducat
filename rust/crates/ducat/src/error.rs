@@ -127,6 +127,30 @@ pub enum Error {
     FlowsCancel,
     /// A year fraction whose discount factor needs a root too large to bracket.
     RootTooLarge,
+    /// A rounding policy's increment that isn't from 1 to 2^53 − 1.
+    InvalidIncrement,
+    /// An amount that isn't what a rounding policy produces: at another scale, or off its increment.
+    OffPolicy,
+    /// A scale given beside a rounding policy, which has its own.
+    ScaleWithPolicy,
+    /// A price ending outside [0, step), or a step that isn't positive.
+    InvalidEnding,
+    /// A price ending or step with more decimals than the price it is applied to.
+    EndingTooPrecise,
+    /// Tiered pricing with no tiers.
+    NoTiers,
+    /// A price tier with neither a unit amount nor a flat amount (a free tier has a zero unit amount).
+    UnpricedTier,
+    /// Tier bounds that don't increase from above 0, or an open tier that isn't the last.
+    InvalidTierBounds,
+    /// A negative quantity or tier bound.
+    NegativeQuantity,
+    /// A quantity past a bounded last tier, without capping it.
+    BeyondLastTier,
+    /// A charge quantity in graduated tiered pricing, which splits the quantity across tiers.
+    ChargeQuantityNeedsVolume,
+    /// An average of no amounts.
+    NoAmounts,
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -153,7 +177,9 @@ impl Error {
             Self::Rounding => ErrorKind::Rounding,
             Self::CurrencyMismatch { .. } => ErrorKind::CurrencyMismatch,
             Self::Syntax => ErrorKind::Syntax,
-            Self::InvalidCurrency => ErrorKind::Type,
+            Self::InvalidCurrency | Self::ScaleWithPolicy | Self::ChargeQuantityNeedsVolume => {
+                ErrorKind::Type
+            }
             Self::Overflow
             | Self::DivisionByZero
             | Self::InvalidScale
@@ -201,7 +227,17 @@ impl Error {
             | Self::OneSignOnly
             | Self::DateBeforeFirst
             | Self::FlowsCancel
-            | Self::RootTooLarge => ErrorKind::Range,
+            | Self::RootTooLarge
+            | Self::InvalidIncrement
+            | Self::OffPolicy
+            | Self::InvalidEnding
+            | Self::EndingTooPrecise
+            | Self::NoTiers
+            | Self::UnpricedTier
+            | Self::InvalidTierBounds
+            | Self::NegativeQuantity
+            | Self::BeyondLastTier
+            | Self::NoAmounts => ErrorKind::Range,
         }
     }
 }
@@ -271,6 +307,18 @@ impl fmt::Display for Error {
             Self::DateBeforeFirst => f.write_str("a date is before the first date"),
             Self::FlowsCancel => f.write_str("the cash flows cancel on every date, so every rate is a root"),
             Self::RootTooLarge => f.write_str("a year fraction's roots would be too large to bracket"),
+            Self::InvalidIncrement => f.write_str("a policy's increment must be a positive integer, at most 2^53 - 1"),
+            Self::OffPolicy => f.write_str("the amount isn't at the policy's scale and on its increment"),
+            Self::ScaleWithPolicy => f.write_str("a rounding policy has its own scale; don't pass another"),
+            Self::InvalidEnding => f.write_str("a price ending must be at least 0 and less than a positive step"),
+            Self::EndingTooPrecise => f.write_str("the price ending or step has more decimals than the price"),
+            Self::NoTiers => f.write_str("tiered pricing needs at least one tier"),
+            Self::UnpricedTier => f.write_str("a tier needs a unit amount or a flat amount; write a free tier with a zero unit amount"),
+            Self::InvalidTierBounds => f.write_str("tier bounds must increase from above 0, and only the last tier can be open"),
+            Self::NegativeQuantity => f.write_str("a quantity must not be negative"),
+            Self::BeyondLastTier => f.write_str("the quantity is beyond the last tier; cap it to charge nothing past it"),
+            Self::ChargeQuantityNeedsVolume => f.write_str("a charge quantity needs volume pricing: graduated tiers split the quantity"),
+            Self::NoAmounts => f.write_str("an average needs at least one amount"),
         }
     }
 }

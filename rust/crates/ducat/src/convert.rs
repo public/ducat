@@ -23,7 +23,9 @@ use core::fmt;
 use core::marker::PhantomData;
 
 use crate::exact::{AnyExactMoney, ExactMoney, Rounded};
-use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, Rounding};
+use crate::{
+    AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, Rounding, RoundingInput,
+};
 
 /// The rate as text: the digits it was given, or its exact decimal when that terminates, or
 /// `num/den`.
@@ -204,12 +206,18 @@ impl<F: Currency, T: Currency> Rate<F, T> {
         Ok(rounded(&self.ratio, places, rounding)?.1)
     }
 
-    /// Converts `money`, rounding once to `T`'s exponent.
+    /// Converts `money`, rounding once: with a mode to `T`'s exponent, with a rounding policy to
+    /// its scale (by default `T`'s exponent) and increment, its currency checked against `T`.
     ///
     /// # Errors
     ///
-    /// [`Error::Rounding`] with [`Rounding::Unnecessary`] when inexact.
-    pub fn convert(&self, money: &Money<F>, rounding: Rounding) -> Result<Money<T>, Error> {
+    /// [`Error::Rounding`] with [`Rounding::Unnecessary`] when inexact;
+    /// [`Error::CurrencyMismatch`] for a policy for another currency than `T`.
+    pub fn convert(
+        &self,
+        money: &Money<F>,
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<Money<T>, Error> {
         money.convert(&self.ratio, rounding)
     }
 
@@ -222,7 +230,7 @@ impl<F: Currency, T: Currency> Rate<F, T> {
     pub fn convert_detailed(
         &self,
         money: &Money<F>,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Rounded<Money<T>, ExactMoney<T>>, Error> {
         self.convert_exact(&money.exact())
             .round_with_residual(rounding, None)
@@ -410,7 +418,11 @@ impl AnyRate {
     /// # Errors
     ///
     /// [`Error::CurrencyMismatch`] for money in another currency; otherwise as [`Rate::convert`].
-    pub fn convert(&self, money: &AnyMoney, rounding: Rounding) -> Result<AnyMoney, Error> {
+    pub fn convert(
+        &self,
+        money: &AnyMoney,
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<AnyMoney, Error> {
         self.check(money.currency())?;
         money.convert(self.to, &self.ratio, rounding)
     }
@@ -423,7 +435,7 @@ impl AnyRate {
     pub fn convert_detailed(
         &self,
         money: &AnyMoney,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Rounded<AnyMoney, AnyExactMoney>, Error> {
         self.convert_exact(&money.exact())?
             .round_with_residual(rounding, None)

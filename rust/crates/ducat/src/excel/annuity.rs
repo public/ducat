@@ -8,7 +8,7 @@ use num_traits::{One, Signed, ToPrimitive, Zero};
 use super::big::{bit_length, exact_root, floor_div, ln_interval, power, sign};
 use crate::finance::rates::{GridValue, bisect_rate, check_digits, sign_changes};
 use crate::finance::{MAX_PERIODS, MoneyKind, money_like, round_quotient};
-use crate::{Error, Factor, Int, Ratio, Rounding};
+use crate::{Error, Factor, Int, Ratio, RoundingInput};
 
 /// The most bits `(1 + rate)^nper` may have in [`fv`], [`pv`] and [`pmt`].
 const MAX_POWER_BITS: u64 = 1 << 20;
@@ -199,12 +199,11 @@ fn annuity_value<M: MoneyKind>(
 fn rounded<M: MoneyKind>(
     template: &M,
     (numerator, denominator): (Int, Int),
-    rounding: Rounding,
+    rounding: RoundingInput,
 ) -> Result<M, Error> {
-    let exponent = u16::from(template.parts().2.exponent());
     Ok(money_like(
         template,
-        round_quotient(&numerator, &denominator, exponent, rounding)?,
+        round_quotient(&numerator, &denominator, template.parts().2, rounding)?,
     ))
 }
 
@@ -239,7 +238,7 @@ fn exact<M: MoneyKind>(
 ///
 /// [`Error::InvalidPeriods`] for more than [`MAX_PERIODS`] periods; [`Error::RateTooLow`];
 /// [`Error::CurrencyMismatch`]; [`Error::PowerTooLarge`] when `(1 + rate)^nper` would pass 2^20
-/// bits; [`Error::Rounding`] with [`Rounding::Unnecessary`]; and whatever reading `rate` fails
+/// bits; [`Error::Rounding`] with [`Rounding::Unnecessary`](crate::Rounding::Unnecessary); and whatever reading `rate` fails
 /// with.
 pub fn fv<M: MoneyKind>(
     rate: impl Factor,
@@ -247,7 +246,7 @@ pub fn fv<M: MoneyKind>(
     pmt: &M,
     pv: Option<&M>,
     timing: PaymentTiming,
-    rounding: Rounding,
+    rounding: impl Into<RoundingInput>,
 ) -> Result<M, Error> {
     let value = annuity_value(
         Value::Future,
@@ -258,7 +257,7 @@ pub fn fv<M: MoneyKind>(
         timing,
         MAX_POWER_BITS,
     )?;
-    rounded(pmt, value, rounding)
+    rounded(pmt, value, rounding.into())
 }
 
 /// Excel's FV, exactly (see [`fv`]).
@@ -311,7 +310,7 @@ pub fn pv<M: MoneyKind>(
     pmt: &M,
     fv: Option<&M>,
     timing: PaymentTiming,
-    rounding: Rounding,
+    rounding: impl Into<RoundingInput>,
 ) -> Result<M, Error> {
     let value = annuity_value(
         Value::Present,
@@ -322,7 +321,7 @@ pub fn pv<M: MoneyKind>(
         timing,
         MAX_POWER_BITS,
     )?;
-    rounded(pmt, value, rounding)
+    rounded(pmt, value, rounding.into())
 }
 
 /// Excel's PV, exactly (see [`pv`]).
@@ -376,7 +375,7 @@ pub fn pmt<M: MoneyKind>(
     pv: &M,
     fv: Option<&M>,
     timing: PaymentTiming,
-    rounding: Rounding,
+    rounding: impl Into<RoundingInput>,
 ) -> Result<M, Error> {
     let value = annuity_value(
         Value::Payment,
@@ -387,7 +386,7 @@ pub fn pmt<M: MoneyKind>(
         timing,
         MAX_POWER_BITS,
     )?;
-    rounded(pv, value, rounding)
+    rounded(pv, value, rounding.into())
 }
 
 /// Excel's PMT, exactly (see [`pmt`]).

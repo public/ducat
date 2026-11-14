@@ -3,7 +3,7 @@
 //! and IRR are in [`crate::excel`], with the other functions named after Excel's, as in ducat.
 //!
 //! Every amount that is paid or booked is rounded once from its exact value, with an explicit
-//! [`Rounding`] to the currency's exponent; nothing in between is rounded, and no floats are used.
+//! [`Rounding`](crate::Rounding) to the currency's exponent; nothing in between is rounded, and no floats are used.
 //! Irrational results (an IRR, a periodic rate) are found to a number of decimal places by exact
 //! bisection on rationals. Dates are calendar [`Date`]s: proleptic Gregorian, no time, no time zone.
 //!
@@ -36,86 +36,20 @@ pub use loan::{
     payment_dates,
 };
 pub use proration::{ProrationInstant, ProrationPeriod, ProrationUnit};
+#[cfg(feature = "exact")]
+pub use rates::discounted_sum_exact;
 pub use rates::{GridValue, PeriodicRate, annual_rate, discounted_sum, periodic_rate};
 pub use savings::{
     ContributionTiming, SavingsPlan, SavingsPlanOptions, SavingsPlanRow, savings_plan,
 };
 
+pub use crate::MoneyKind;
 use crate::amount::Amount;
-use crate::rounding::rescale_ratio;
-use crate::{AnyMoney, Currency, CurrencyCode, Error, Int, Money, Ratio, Rounding};
+use crate::{CurrencyCode, Error, Int, Ratio, RoundingInput};
 
 /// The most periods a schedule or a compounding may have: `(1 + r)^n` has about `n` times the
 /// bits of `1 + r`, so this bounds the integers.
 pub const MAX_PERIODS: u32 = 100_000;
-
-mod sealed {
-    use crate::{CurrencyCode, Int};
-
-    /// The money types the finance functions take; sealed, so only [`Money`](crate::Money) and
-    /// [`AnyMoney`](crate::AnyMoney) implement it.
-    pub trait Sealed: Clone {
-        /// The units, the scale and the currency.
-        fn parts(&self) -> (&Int, u16, CurrencyCode);
-        /// An amount in this one's currency.
-        fn with_units(&self, units: Int, scale: u16) -> Self;
-        /// An exact amount of `value` major units in this one's currency.
-        #[cfg(feature = "exact")]
-        fn exact_in(&self, value: crate::Ratio) -> <Self as super::MoneyKind>::Exact
-        where
-            Self: super::MoneyKind;
-    }
-}
-
-/// A money type the finance functions take: [`Money<C>`] or [`AnyMoney`]. The functions that take
-/// several amounts (flows, a balloon) return [`Error::CurrencyMismatch`] for [`AnyMoney`] in more
-/// than one currency; with [`Money<C>`] the type rules that out.
-pub trait MoneyKind: sealed::Sealed {
-    /// The exact amount of the same kind: [`ExactMoney<C>`](crate::exact::ExactMoney) for
-    /// [`Money<C>`], [`AnyExactMoney`](crate::exact::AnyExactMoney) for [`AnyMoney`].
-    #[cfg(feature = "exact")]
-    type Exact;
-}
-
-impl<C: Currency> sealed::Sealed for Money<C> {
-    fn parts(&self) -> (&Int, u16, CurrencyCode) {
-        (&self.amount.units, self.amount.scale, C::CODE)
-    }
-
-    fn with_units(&self, units: Int, scale: u16) -> Self {
-        Self::from_amount(Amount { units, scale })
-    }
-
-    #[cfg(feature = "exact")]
-    fn exact_in(&self, value: Ratio) -> <Self as MoneyKind>::Exact {
-        crate::exact::ExactMoney::of(value)
-    }
-}
-
-impl<C: Currency> MoneyKind for Money<C> {
-    #[cfg(feature = "exact")]
-    type Exact = crate::exact::ExactMoney<C>;
-}
-
-impl sealed::Sealed for AnyMoney {
-    fn parts(&self) -> (&Int, u16, CurrencyCode) {
-        (&self.amount.units, self.amount.scale, self.currency())
-    }
-
-    fn with_units(&self, units: Int, scale: u16) -> Self {
-        Self::from_parts(Amount { units, scale }, self.currency())
-    }
-
-    #[cfg(feature = "exact")]
-    fn exact_in(&self, value: Ratio) -> <Self as MoneyKind>::Exact {
-        crate::exact::AnyExactMoney::of(value, self.currency())
-    }
-}
-
-impl MoneyKind for AnyMoney {
-    #[cfg(feature = "exact")]
-    type Exact = crate::exact::AnyExactMoney;
-}
 
 /// The amount of `money`.
 pub(crate) fn amount_of<M: MoneyKind>(money: &M) -> Amount {
@@ -146,64 +80,85 @@ pub(crate) fn amount_in<M: MoneyKind>(money: &M, other: &M) -> Result<Amount, Er
     }
 }
 
-/// `numerator / denominator` major units (`denominator` positive), rounded once to `exponent`
-/// places. The fraction isn't reduced first: rounding divides once either way.
+/// The currency of `money`.
+pub(crate) fn currency_of<M: MoneyKind>(money: &M) -> CurrencyCode {
+    money.parts().2
+}
+
+/// `numerator / denominator` major units of `currency` (`denominator` positive), rounded once:
+/// with a mode to the currency's exponent, with a policy to its scale and increment. The fraction
+/// isn't reduced first: rounding divides once either way.
 pub(crate) fn round_quotient(
     numerator: &Int,
     denominator: &Int,
-    exponent: u16,
-    rounding: Rounding,
+    currency: CurrencyCode,
+    rounding: RoundingInput,
 ) -> Result<Amount, Error> {
-    Ok(Amount {
-        units: rescale_ratio(
-            numerator,
-            &Int::ONE,
-            denominator,
-            u32::from(exponent),
-            0,
-            rounding,
-        )?,
-        scale: exponent,
-    })
+    let one = Amount {
+        units: Int::ONE,
+        scale: 0,
+    };
+    one.round_input(
+        numerator,
+        denominator,
+        u16::from(currency.exponent()),
+        rounding,
+        currency,
+    )
 }
 
-/// `amount × numerator / denominator` (`denominator` positive), rounded once to `exponent` places.
+/// `amount × numerator / denominator` (`denominator` positive) in `currency`, rounded once as
+/// [`round_quotient`] rounds.
 fn multiply_and_round(
     amount: &Amount,
     numerator: &Int,
     denominator: &Int,
-    exponent: u16,
-    rounding: Rounding,
+    currency: CurrencyCode,
+    rounding: RoundingInput,
 ) -> Result<Amount, Error> {
-    let (up, down) = if exponent >= amount.scale {
-        (u32::from(exponent - amount.scale), 0)
-    } else {
-        (0, u32::from(amount.scale - exponent))
-    };
-    Ok(Amount {
-        units: rescale_ratio(&amount.units, numerator, denominator, up, down, rounding)?,
-        scale: exponent,
-    })
+    amount.round_input(
+        numerator,
+        denominator,
+        u16::from(currency.exponent()),
+        rounding,
+        currency,
+    )
 }
 
-/// `amount × factor`, rounded once to `exponent` places.
+/// `amount × factor` in `currency`, rounded once as [`round_quotient`] rounds.
 fn multiply_by_ratio(
     amount: &Amount,
     factor: &Ratio,
-    exponent: u16,
-    rounding: Rounding,
+    currency: CurrencyCode,
+    rounding: RoundingInput,
 ) -> Result<Amount, Error> {
-    multiply_and_round(amount, factor.numer(), factor.denom(), exponent, rounding)
+    multiply_and_round(amount, factor.numer(), factor.denom(), currency, rounding)
 }
 
-/// Whether `amount` is a whole number of minor units at `exponent`.
-fn is_whole_minor(amount: &Amount, exponent: u16) -> bool {
-    amount.scale <= exponent
-        || amount
-            .units
-            .div_rem(&Int::ONE.mul_pow10(u32::from(amount.scale - exponent)))
-            .1
-            .is_zero()
+/// The smallest amount a rounding produces in `currency`: one minor unit with a mode, one
+/// increment at its scale with a policy.
+fn rounding_unit(currency: CurrencyCode, rounding: RoundingInput) -> Amount {
+    match rounding {
+        RoundingInput::Mode(_) => Amount {
+            units: Int::ONE,
+            scale: u16::from(currency.exponent()),
+        },
+        #[cfg(feature = "policy")]
+        RoundingInput::Policy(policy) => Amount {
+            units: Int::from(policy.increment()),
+            scale: policy
+                .scale()
+                .unwrap_or_else(|| u16::from(currency.exponent())),
+        },
+    }
+}
+
+/// Whether `amount` is a whole number of `unit`s (`unit` positive).
+fn is_multiple(amount: &Amount, unit: &Amount) -> bool {
+    let scale = amount.scale.max(unit.scale);
+    let units = amount.units.mul_pow10(u32::from(scale - amount.scale));
+    let step = unit.units.mul_pow10(u32::from(scale - unit.scale));
+    units.div_rem(&step).1.is_zero()
 }
 
 /// A periods count from `minimum` to [`MAX_PERIODS`].

@@ -3,9 +3,9 @@
 use alloc::vec::Vec;
 use core::str::FromStr;
 
-use super::{Date, MoneyKind, amount_of, exponent_of, money_like, multiply_and_round};
+use super::{Date, MoneyKind, amount_of, currency_of, money_like, multiply_and_round};
 use crate::allocate::Remainder;
-use crate::{AnyMoney, Currency, Error, Int, Money, Rounding};
+use crate::{AnyMoney, Currency, Error, Int, Money, RoundingInput};
 
 /// The largest Unix time taken, 2^53 − 1 seconds (about 285 million years), as in ducat.
 const MAX_SAFE: u64 = (1 << 53) - 1;
@@ -125,7 +125,7 @@ fn prorate_of<M: MoneyKind>(
     period: &ProrationPeriod,
     used: &ProrationPeriod,
     unit: ProrationUnit,
-    rounding: Rounding,
+    rounding: RoundingInput,
 ) -> Result<M, Error> {
     let (start, end) = period.counts(unit)?;
     if end <= start {
@@ -139,7 +139,7 @@ fn prorate_of<M: MoneyKind>(
         &amount_of(price),
         &Int::from(used_end - used_start),
         &Int::from(end - start),
-        exponent_of(price),
+        currency_of(price),
         rounding,
     )?;
     Ok(money_like(price, amount))
@@ -198,15 +198,15 @@ impl<C: Currency> Money<C> {
     /// [`Error::InvalidPeriod`] when the period doesn't end after it starts;
     /// [`Error::OutsidePeriod`] when `used` isn't inside it (or ends before it starts);
     /// [`Error::InvalidInstant`] for a Unix time beyond ±(2^53 − 1), or one counted in days; [`Error::Rounding`] with
-    /// [`Rounding::Unnecessary`].
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn prorate(
         &self,
         period: &ProrationPeriod,
         used: &ProrationPeriod,
         unit: ProrationUnit,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        prorate_of(self, period, used, unit, rounding)
+        prorate_of(self, period, used, unit, rounding.into())
     }
 
     /// Splits the price of one `period` at change points (plan changes), in proportion to the
@@ -255,9 +255,9 @@ impl AnyMoney {
         period: &ProrationPeriod,
         used: &ProrationPeriod,
         unit: ProrationUnit,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        prorate_of(self, period, used, unit, rounding)
+        prorate_of(self, period, used, unit, rounding.into())
     }
 
     /// As [`Money::split_period`].

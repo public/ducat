@@ -4,11 +4,11 @@ use alloc::vec::Vec;
 use core::cmp::Ordering;
 
 use super::{
-    Date, MoneyKind, amount_in, amount_of, check_periods, exponent_of, is_whole_minor, money_like,
-    multiply_by_ratio, payment_dates, round_quotient,
+    Date, MoneyKind, amount_in, amount_of, check_periods, currency_of, exponent_of, is_multiple,
+    money_like, multiply_by_ratio, payment_dates, round_quotient, rounding_unit,
 };
 use crate::amount::Amount;
-use crate::{Error, Factor, Int, Ratio, Rounding};
+use crate::{CurrencyCode, Error, Factor, Int, Ratio, RoundingInput};
 
 /// The most bits `(1 + rate)^periods` may have when a target plan solves its contribution, as
 /// ducat's PMT limits it.
@@ -45,9 +45,9 @@ pub struct SavingsPlanOptions<M> {
     pub initial: Option<M>,
     /// When contributions are paid in.
     pub timing: ContributionTiming,
-    /// How every interest credit (and a target's contribution) is rounded, to the currency's
-    /// exponent.
-    pub rounding: Rounding,
+    /// How every interest credit (and a target's contribution) is rounded: a mode, to the
+    /// currency's exponent, or a rounding policy, to its scale and increment.
+    pub rounding: RoundingInput,
     /// The date of the first contribution; the later ones follow as [`payment_dates`] gives them.
     pub first_contribution: Option<Date>,
 }
@@ -57,7 +57,7 @@ impl<M> SavingsPlanOptions<M> {
         rate: impl Factor,
         per_year: u32,
         periods: u32,
-        rounding: Rounding,
+        rounding: RoundingInput,
         contribution: Option<M>,
         target: Option<M>,
     ) -> Result<Self, Error> {
@@ -84,9 +84,16 @@ impl<M> SavingsPlanOptions<M> {
         per_year: u32,
         periods: u32,
         contribution: M,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        Self::of(rate, per_year, periods, rounding, Some(contribution), None)
+        Self::of(
+            rate,
+            per_year,
+            periods,
+            rounding.into(),
+            Some(contribution),
+            None,
+        )
     }
 
     /// A plan that saves up to `target`, paying in at the end of each period, from a zero balance.
@@ -99,9 +106,9 @@ impl<M> SavingsPlanOptions<M> {
         per_year: u32,
         periods: u32,
         target: M,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        Self::of(rate, per_year, periods, rounding, None, Some(target))
+        Self::of(rate, per_year, periods, rounding.into(), None, Some(target))
     }
 
     /// The same plan starting from `initial`.
@@ -173,8 +180,8 @@ fn target_contribution(
     initial: &Amount,
     target: &Amount,
     at_start: bool,
-    exponent: u16,
-    rounding: Rounding,
+    currency: CurrencyCode,
+    rounding: RoundingInput,
 ) -> Result<Amount, Error> {
     let (a, b) = (periodic.numer(), periodic.denom());
     let growth = a + b;
@@ -204,7 +211,7 @@ fn target_contribution(
     } else {
         (numerator, denominator)
     };
-    round_quotient(&numerator, &denominator, exponent, rounding)
+    round_quotient(&numerator, &denominator, currency, rounding)
 }
 
 /// The last contribution `c` of a start-timed target plan, paid at the start of the period, so
@@ -217,12 +224,13 @@ fn settle_at_start(
     balance: &Amount,
     target: &Amount,
     periodic: &Ratio,
-    exponent: u16,
-    rounding: Rounding,
+    currency: CurrencyCode,
+    rounding: RoundingInput,
 ) -> Result<(Amount, Option<Amount>), Error> {
+    let unit = rounding_unit(currency, rounding);
     let needed = target.sub(balance);
     let reached = |contribution: &Amount| -> Result<Amount, Error> {
-        let interest = multiply_by_ratio(&balance.add(contribution), periodic, exponent, rounding)?;
+        let interest = multiply_by_ratio(&balance.add(contribution), periodic, currency, rounding)?;
         Ok(contribution.add(&interest))
     };
     // start near (needed − balance·r) / (1 + r), then step by units to the target
@@ -231,15 +239,15 @@ fn settle_at_start(
         periodic.denom().clone(),
     )?;
     let estimate = multiply_by_ratio(
-        &needed.sub(&multiply_by_ratio(balance, periodic, exponent, rounding)?),
+        &needed.sub(&multiply_by_ratio(balance, periodic, currency, rounding)?),
         &growth.recip()?,
-        exponent,
+        currency,
         rounding,
     )?;
     let at = |steps: &Int| {
         estimate.add(&Amount {
-            units: steps.clone(),
-            scale: exponent,
+            units: steps * &unit.units,
+            scale: unit.scale,
         })
     };
     let fits = |steps: &Int| -> Result<bool, Error> {
@@ -292,7 +300,8 @@ fn settle_at_start(
 /// left over is an `adjustment`, paid at the end of the period. At a rate of 0 the regular
 /// contribution is `(target − initial) / periods`, rounded, the residual on the last.
 ///
-/// The amounts share one currency and are whole numbers of minor units. Contributions may be
+/// The amounts share one currency and are whole numbers of the rounding's unit (a minor unit, or
+/// a rounding policy's increment at its scale). Contributions may be
 /// negative (withdrawals), and a target below what the initial balance grows to gives them.
 ///
 /// ```
@@ -314,10 +323,11 @@ fn settle_at_start(
 /// [`Error::InvalidPerYear`] for a `per_year` of zero (or, with a first contribution, one that
 /// [`payment_dates`] doesn't take); [`Error::InvalidSavingsPlan`] when both or neither of
 /// `contribution` and `target` are given; [`Error::CurrencyMismatch`]; [`Error::NotAMultiple`]
-/// for amounts that aren't whole numbers of minor units; [`Error::RateTooLow`] for a rate that
+/// for amounts that aren't whole numbers of the rounding's unit; [`Error::RateTooLow`] for a rate that
 /// loses everything in one period; [`Error::PowerTooLarge`] when a target's `(1 + rate)^periods`
 /// would pass 2^20 bits; [`Error::Unsettled`] when the last start-timed contribution can't be
-/// found; [`Error::DateOutOfRange`]; [`Error::Rounding`] with [`Rounding::Unnecessary`].
+/// found; [`Error::DateOutOfRange`]; [`Error::Rounding`] with
+/// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
 pub fn savings_plan<M: MoneyKind>(
     options: &SavingsPlanOptions<M>,
 ) -> Result<SavingsPlan<M>, Error> {
@@ -341,6 +351,7 @@ pub fn savings_plan<M: MoneyKind>(
         _ => return Err(Error::InvalidSavingsPlan),
     };
     let exponent = exponent_of(reference);
+    let currency = currency_of(reference);
     let zero = Amount {
         units: Int::ZERO,
         scale: exponent,
@@ -350,7 +361,8 @@ pub fn savings_plan<M: MoneyKind>(
         None => zero.clone(),
     };
     let reference_amount = amount_of(reference);
-    if !is_whole_minor(&reference_amount, exponent) || !is_whole_minor(&initial, exponent) {
+    let unit = rounding_unit(currency, rounding);
+    if !is_multiple(&reference_amount, &unit) || !is_multiple(&initial, &unit) {
         return Err(Error::NotAMultiple);
     }
     let periodic = Ratio::new(rate.numer().clone(), rate.denom() * &Int::from(per_year))?;
@@ -364,7 +376,7 @@ pub fn savings_plan<M: MoneyKind>(
     let target = target.as_ref().map(|_| reference_amount.clone());
     let regular = match &target {
         Some(target) => target_contribution(
-            &periodic, periods, &initial, target, at_start, exponent, rounding,
+            &periodic, periods, &initial, target, at_start, currency, rounding,
         )?,
         None => reference_amount.clone(),
     };
@@ -377,9 +389,9 @@ pub fn savings_plan<M: MoneyKind>(
             // the last contribution of a target plan settles it exactly
             Some(target) if period == periods => {
                 if at_start {
-                    settle_at_start(&balance, target, &periodic, exponent, rounding)?
+                    settle_at_start(&balance, target, &periodic, currency, rounding)?
                 } else {
-                    let interest = multiply_by_ratio(&balance, &periodic, exponent, rounding)?;
+                    let interest = multiply_by_ratio(&balance, &periodic, currency, rounding)?;
                     (target.sub(&balance).sub(&interest), None)
                 }
             }
@@ -391,7 +403,7 @@ pub fn savings_plan<M: MoneyKind>(
         } else {
             balance.clone()
         };
-        let interest = multiply_by_ratio(&earning, &periodic, exponent, rounding)?;
+        let interest = multiply_by_ratio(&earning, &periodic, currency, rounding)?;
         balance = balance.add(&contribution).add(&interest);
         total_contributions = total_contributions.add(&contribution);
         if let Some(adjustment) = &adjustment {

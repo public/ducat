@@ -22,12 +22,30 @@ import {
   type ExactMoney,
 } from '../../src/exact.js';
 import { convertDetailed } from '../../src/convert.js';
+import { discountedSumExact, interestExact, type DayCount } from '../../src/finance.js';
+import {
+  average,
+  divideToIntegral,
+  ratioAdd,
+  ratioCompare,
+  ratioComplement,
+  ratioDivide,
+  ratioMultiply,
+  ratioNegate,
+  ratioOf,
+  ratioSubtract,
+  remainder,
+  trimScale,
+} from '../../src/math.js';
+import { assertScale, roundingPolicy } from '../../src/policy.js';
+import { priceEnding, tieredPrice, type PriceTier, type TiersMode } from '../../src/pricing.js';
 import { exchangeRate, type Rate } from '../../src/rate.js';
 import {
   addTax,
   allocate,
   chunk,
   convert,
+  CurrencyMismatchError,
   discount,
   divide,
   extractTax,
@@ -35,6 +53,7 @@ import {
   instalments,
   multiply,
   percentage,
+  round,
   roundToIncrement,
   RoundingError,
   schedule,
@@ -42,6 +61,7 @@ import {
   type Money,
   type Remainder,
   type RoundingMode,
+  type RoundingPolicy,
   type Tranche,
 } from '../../src/fn.js';
 
@@ -338,6 +358,100 @@ function chainOf(row: Row): Rate<string, string> {
 }
 const text = (row: Row, field: string) => row[field] as string;
 
+// --- rounding policies, pricing and math, from Python's fractions ------------------------------------
+
+/** A decimal in major units as Money at the scale its fraction digits give ('12.340' is scale 3). */
+function moneyOf(amount: string, currency: string): Money<string> {
+  const [whole, places = ''] = amount.split('.');
+  return fromMinor(BigInt(`${whole}${places}`), currency, places.length);
+}
+
+function policyOf(row: Row): RoundingPolicy {
+  const options = row['policy'] as {
+    scale?: number;
+    increment: number;
+    rounding: RoundingMode;
+    currency?: string;
+  };
+  return roundingPolicy(options);
+}
+
+/** The result, or null where it throws an error of `kind` (the spec's null for that kind). */
+function orNull<T>(kind: new (...args: never[]) => Error, run: () => T): T | null {
+  try {
+    return run();
+  } catch (error) {
+    if (error instanceof kind) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** A table whose rows are compared field by field as JSON text. */
+function fieldsOperation(
+  expects: readonly string[],
+  compute: (row: Row) => Record<string, unknown>,
+): CheckedTable {
+  return {
+    expects,
+    checkRow(row: Row): string[] {
+      const actual = compute(row);
+      const differs = Object.entries(actual).some(
+        ([field, value]) => JSON.stringify(row[field]) !== JSON.stringify(value),
+      );
+      return differs ? [`${JSON.stringify(row)} -> got ${JSON.stringify(actual)}`] : [];
+    },
+  };
+}
+
+const amountOf = (row: Row, field = 'amount') => moneyOf(text(row, field), text(row, 'currency'));
+const byPolicy = (run: () => Money<string>) =>
+  orNull(CurrencyMismatchError, () => run().toDecimal());
+const ratioText = ({ num, den }: Ratio) => rationalOf(num, den);
+
+function checkTiered(row: Row): Record<string, unknown> {
+  const currency = text(row, 'currency');
+  const tiers = (row['tiers'] as Row[]).map((tier): PriceTier<string> => {
+    const priced: { upTo: string | null; unitAmount?: Money; flatAmount?: Money } = {
+      upTo: tier['upTo'] as string | null,
+    };
+    if (tier['unitAmount'] !== undefined) {
+      priced.unitAmount = moneyOf(tier['unitAmount'] as string, currency);
+    }
+    if (tier['flatAmount'] !== undefined) {
+      priced.flatAmount = moneyOf(tier['flatAmount'] as string, currency);
+    }
+    return priced;
+  });
+  const result = orNull(RangeError, () =>
+    tieredPrice(text(row, 'quantity'), {
+      mode: row['mode'] as TiersMode,
+      tiers,
+      rounding: row['rounding'] as RoundingMode,
+      ...(row['beyondLastTier'] === undefined
+        ? {}
+        : { beyondLastTier: row['beyondLastTier'] as 'throw' | 'cap' }),
+      ...(row['chargeQuantity'] === undefined
+        ? {}
+        : { chargeQuantity: row['chargeQuantity'] as string }),
+    }),
+  );
+  if (result === null) {
+    return { total: null, exact: null, lines: null };
+  }
+  return {
+    total: String(result.total.minor),
+    exact: exactText(result.exact),
+    lines: result.lines.map((line) => ({
+      tier: line.tier,
+      quantity: line.quantity,
+      exact: exactText(line.exact),
+      amount: String(line.amount.minor),
+    })),
+  };
+}
+
 // --- spelling out numbers, from ICU ------------------------------------------------------------------
 
 const SPELLOUT_RULES: Record<string, SpelloutRules> = {
@@ -488,6 +602,109 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'excelExample.xnpv': { runBy: EXCEL },
   'excelExample.xirr': { runBy: EXCEL },
   'words.spellOut': { expects: ['words'], checkRow: checkSpellOut },
+  'policy.multiply': fieldsOperation(['want'], (row) => ({
+    want: byPolicy(() => multiply(amountOf(row), text(row, 'factor'), policyOf(row))),
+  })),
+  'policy.divide': fieldsOperation(['want'], (row) => ({
+    want: byPolicy(() => divide(amountOf(row), text(row, 'divisor'), policyOf(row))),
+  })),
+  'policy.round': fieldsOperation(['want'], (row) => ({
+    want: byPolicy(() => round(amountOf(row), policyOf(row))),
+  })),
+  'policy.convert': fieldsOperation(['want'], (row) => ({
+    want: byPolicy(() => convert(amountOf(row), text(row, 'to'), text(row, 'rate'), policyOf(row))),
+  })),
+  'policy.tax': fieldsOperation(['percentage', 'discount', 'addTax', 'extractTax'], (row) => {
+    const amount = amountOf(row);
+    const percent = text(row, 'percent');
+    const policy = policyOf(row);
+    return {
+      percentage: byPolicy(() => percentage(amount, percent, policy)),
+      discount: byPolicy(() => discount(amount, percent, policy)),
+      addTax: orNull(CurrencyMismatchError, () => {
+        const { tax, gross } = addTax(amount, percent, policy);
+        return { tax: tax.toDecimal(), gross: gross.toDecimal() };
+      }),
+      extractTax: orNull(CurrencyMismatchError, () => {
+        const { net, tax } = extractTax(amount, percent, policy);
+        return { net: net.toDecimal(), tax: tax.toDecimal() };
+      }),
+    };
+  }),
+  'policy.exactRound': fieldsOperation(['want', 'residual'], (row) => {
+    const amount = exact(fromMinor(BigInt(text(row, 'num')), text(row, 'currency'), 0)).divide(
+      text(row, 'den'),
+    );
+    const rounded = orNull(CurrencyMismatchError, () => amount.roundWithResidual(policyOf(row)));
+    return {
+      want: rounded === null ? null : rounded.value.toDecimal(),
+      residual: rounded === null ? null : exactText(rounded.residual),
+    };
+  }),
+  'policy.check': fieldsOperation(['valid'], (row) => ({
+    valid: orNull(RangeError, () => (assertScale(amountOf(row), policyOf(row)), true)) ?? false,
+  })),
+  'pricing.priceEnding': fieldsOperation(['want'], (row) => {
+    const rule = priceEnding({
+      ending: text(row, 'ending'),
+      step: text(row, 'step'),
+      rounding: modeOf(row),
+    });
+    return { want: orNull(RangeError, () => rule(amountOf(row)).toDecimal()) };
+  }),
+  'pricing.tiered': fieldsOperation(['total', 'exact', 'lines'], checkTiered),
+  'math.average': fieldsOperation(['want'], (row) => ({
+    want: average(
+      (row['amounts'] as string[]).map((amount) => moneyOf(amount, text(row, 'currency'))),
+      modeOf(row),
+    ).toDecimal(),
+  })),
+  'math.ratioOf': fieldsOperation(['ratio'], (row) => ({
+    ratio: orNull(RangeError, () => ratioText(ratioOf(amountOf(row), amountOf(row, 'other')))),
+  })),
+  'math.divideToIntegral': fieldsOperation(['quotient', 'remainder'], (row) => {
+    const [amount, divisor] = [amountOf(row), amountOf(row, 'divisor')];
+    return {
+      quotient: orNull(RangeError, () => String(divideToIntegral(amount, divisor))),
+      remainder: orNull(RangeError, () => remainder(amount, divisor).toDecimal()),
+    };
+  }),
+  'math.trimScale': fieldsOperation(['want'], (row) => ({
+    want: trimScale(amountOf(row), row['minimumScale'] as number | undefined).toDecimal(),
+  })),
+  'math.ratio': fieldsOperation(
+    ['sum', 'difference', 'product', 'quotient', 'compare', 'negation', 'complement'],
+    (row) => {
+      const [left, right] = [text(row, 'left'), text(row, 'right')];
+      return {
+        sum: ratioText(ratioAdd(left, right)),
+        difference: ratioText(ratioSubtract(left, right)),
+        product: ratioText(ratioMultiply(left, right)),
+        quotient: orNull(RangeError, () => ratioText(ratioDivide(left, right))),
+        compare: ratioCompare(left, right),
+        negation: ratioText(ratioNegate(left)),
+        complement: ratioText(ratioComplement(left)),
+      };
+    },
+  ),
+  'finance.interestExact': fieldsOperation(['want'], (row) => {
+    const principal = fromMinor(BigInt(text(row, 'principal')), text(row, 'currency'));
+    const period = {
+      from: text(row, 'from'),
+      to: text(row, 'to'),
+      dayCount: row['dayCount'] as DayCount,
+      ...(row['maturity'] === undefined ? {} : { maturity: row['maturity'] as boolean }),
+    };
+    return { want: exactText(interestExact(principal, text(row, 'rate'), period)) };
+  }),
+  'finance.discountedSumExact': fieldsOperation(['want'], (row) => {
+    const flows = (row['flows'] as string[]).map((flow) =>
+      fromMinor(BigInt(flow), text(row, 'currency')),
+    );
+    return {
+      want: orNull(RangeError, () => exactText(discountedSumExact(text(row, 'rate'), flows))),
+    };
+  }),
   'xirr.floor': {
     expects: ['lower'],
     checkRow: checkXirr,

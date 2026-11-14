@@ -66,6 +66,13 @@ pub mod fixed;
 mod int;
 #[cfg(feature = "iso")]
 pub mod iso;
+mod kind;
+#[cfg(feature = "math")]
+pub mod math;
+#[cfg(feature = "policy")]
+pub mod policy;
+#[cfg(feature = "pricing")]
+pub mod pricing;
 #[rustfmt::skip] // generated: tests/iso_table.rs checks it byte for byte
 mod iso_table;
 mod money;
@@ -86,6 +93,7 @@ pub use decimal::MAX_SCALE;
 pub use error::{Error, ErrorKind};
 pub use int::Int;
 pub use iso_table::ISO_4217_PUBLISHED;
+pub use kind::MoneyKind;
 pub use money::Money;
 pub use ratio::Ratio;
-pub use rounding::Rounding;
+pub use rounding::{Rounding, RoundingInput};
