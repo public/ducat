@@ -3353,7 +3353,7 @@ static L_CA: LocaleData = LocaleData { name: "ca", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"ERN", fields: "dnakfa eritreu\u{1f}1nakfa eritreu\u{1f}5nakfes eritreus" },
     CurrencyData { code: *b"ESA", fields: "dpesseta espanyola (compte A)\u{1f}1pesseta espanyola (compte A)\u{1f}5pessetes espanyoles (compte A)" },
     CurrencyData { code: *b"ESB", fields: "dpesseta espanyola (compte convertible)\u{1f}1pesseta espanyola (compte convertible)\u{1f}5pessetes espanyoles (compte convertible)" },
-    CurrencyData { code: *b"ESP", fields: "s₧\u{1f}dpesseta espanyola\u{1f}1pesseta espanyola\u{1f}5pessetes espanyoles" },
+    CurrencyData { code: *b"ESP", fields: "s₧\u{1f}dpesseta espanyola\u{1f}p¤\u{a0}#,##0.00\u{1f}.,\u{1f},.\u{1f}1pesseta espanyola\u{1f}5pessetes espanyoles" },
     CurrencyData { code: *b"ETB", fields: "dbirr etíop\u{1f}1birr etíop\u{1f}5birrs etíops" },
     CurrencyData { code: *b"EUR", fields: "deuro\u{1f}1euro\u{1f}5euros" },
     CurrencyData { code: *b"FIM", fields: "dmarc finlandès\u{1f}1marc finlandès\u{1f}5marcs finlandesos" },
@@ -5257,7 +5257,7 @@ static L_DE_LI: LocaleData = LocaleData { name: "de-LI", parent: "de", numbers: 
 
 #[cfg(feature = "de")]
 static L_DE_LU: LocaleData = LocaleData { name: "de-LU", parent: "de", numbers: &NUMBERS_AZ, plurals: PLURALS_DE, currencies: &[
-    CurrencyData { code: *b"LUF", fields: "sF" },
+    CurrencyData { code: *b"LUF", fields: "sF\u{1f}..\u{1f},," },
 ] };
 
 #[cfg(feature = "dsb")]
@@ -5553,7 +5553,7 @@ static L_EL: LocaleData = LocaleData { name: "el", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"GNF", fields: "dΦράγκο Γουινέας\u{1f}1φράγκο Γουινέας\u{1f}5φράγκα Γουινέας" },
     CurrencyData { code: *b"GNS", fields: "dΣυλί Γουινέας\u{1f}1συλί Γουινέας\u{1f}5συλί Γουινέας" },
     CurrencyData { code: *b"GQE", fields: "dΕκγουέλε Ισημερινής Γουινέας\u{1f}1εκουέλε Ισημερινής Γουινέας\u{1f}5εκουέλε Ισημερινής Γουινέας" },
-    CurrencyData { code: *b"GRD", fields: "sΔρχ\u{1f}dΔραχμή Ελλάδας\u{1f}1δραχμή Ελλάδας\u{1f}5δραχμές Ελλάδας" },
+    CurrencyData { code: *b"GRD", fields: "sΔρχ\u{1f}dΔραχμή Ελλάδας\u{1f}p#,##0.00\u{a0}¤\u{1f}.,\u{1f},.\u{1f}1δραχμή Ελλάδας\u{1f}5δραχμές Ελλάδας" },
     CurrencyData { code: *b"GTQ", fields: "dΚουετσάλ Γουατεμάλας\u{1f}1κουετσάλ Γουατεμάλας\u{1f}5κουετσάλ Γουατεμάλας" },
     CurrencyData { code: *b"GWE", fields: "dΓκινέα Εσκούδο Πορτογαλίας\u{1f}1γκινέα εσκούδο Πορτογαλίας\u{1f}5γκινέα εσκούδο Πορτογαλίας" },
     CurrencyData { code: *b"GWP", fields: "dΠέσο Γουινέας-Μπισάου\u{1f}1πέσο Γουινέα-Μπισάου\u{1f}5πέσο Γουινέα-Μπισάου" },
@@ -6177,6 +6177,7 @@ static L_EN_001: LocaleData = LocaleData { name: "en-001", parent: "en", numbers
 
 #[cfg(feature = "en")]
 static L_EN_150: LocaleData = LocaleData { name: "en-150", parent: "en-001", numbers: &NUMBERS_EN_150, plurals: PLURALS_EN, currencies: &[
+    CurrencyData { code: *b"EUR", fields: "p¤#,##0.00" },
 ] };
 
 #[cfg(feature = "en")]
@@ -6199,6 +6200,7 @@ static L_EN_AS: LocaleData = LocaleData { name: "en-AS", parent: "en", numbers: 
 
 #[cfg(feature = "en")]
 static L_EN_AT: LocaleData = LocaleData { name: "en-AT", parent: "en-150", numbers: &NUMBERS_EN_AT, plurals: PLURALS_EN, currencies: &[
+    CurrencyData { code: *b"EUR", fields: "p¤\u{a0}#,##0.00" },
 ] };
 
 #[cfg(feature = "en")]
@@ -7369,7 +7371,7 @@ static L_ET: LocaleData = LocaleData { name: "et", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"DOP", fields: "dDominikaani peeso\u{1f}1Dominikaani peeso\u{1f}5Dominikaani peesot" },
     CurrencyData { code: *b"DZD", fields: "dAlžeeria dinaar\u{1f}1Alžeeria dinaar\u{1f}5Alžeeria dinaari" },
     CurrencyData { code: *b"ECS", fields: "dEcuadori sukre\u{1f}1Ecuadori sukre\u{1f}5Ecuadori sukret" },
-    CurrencyData { code: *b"EEK", fields: "skr\u{1f}dEesti kroon\u{1f}1Eesti kroon\u{1f}5Eesti krooni" },
+    CurrencyData { code: *b"EEK", fields: "skr\u{1f}dEesti kroon\u{1f}..\u{1f},\u{a0}\u{1f}1Eesti kroon\u{1f}5Eesti krooni" },
     CurrencyData { code: *b"EGP", fields: "dEgiptuse nael\u{1f}1Egiptuse nael\u{1f}5Egiptuse naela" },
     CurrencyData { code: *b"ERN", fields: "dEritrea nakfa\u{1f}1Eritrea nakfa\u{1f}5Eritrea nakfat" },
     CurrencyData { code: *b"ESP", fields: "dHispaania peseeta\u{1f}1Hispaania peseeta\u{1f}5Hispaania peseetat" },
@@ -7668,7 +7670,7 @@ static L_EU: LocaleData = LocaleData { name: "eu", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"ERN", fields: "dnakfa eritrearra\u{1f}1nakfa eritrear\u{1f}5nakfa eritrear" },
     CurrencyData { code: *b"ESA", fields: "dpezeta espainiarra (A kontua)\u{1f}1pezeta espainiar (A kontua)\u{1f}5pezeta espainiar (A kontua)" },
     CurrencyData { code: *b"ESB", fields: "dpezeta espainiarra (kontu bihurgarria)\u{1f}1pezeta espainiar (kontu bihurgarria)\u{1f}5pezeta espainiar (kontu bihurgarria)" },
-    CurrencyData { code: *b"ESP", fields: "s₧\u{1f}dpezeta espainiarra\u{1f}1pezeta espainiar\u{1f}5pezeta espainiar" },
+    CurrencyData { code: *b"ESP", fields: "s₧\u{1f}dpezeta espainiarra\u{1f}p¤\u{a0}#,##0.00\u{1f}.,\u{1f},.\u{1f}1pezeta espainiar\u{1f}5pezeta espainiar" },
     CurrencyData { code: *b"ETB", fields: "dbirr etiopiarra\u{1f}1birr etiopiar\u{1f}5birr etiopiar" },
     CurrencyData { code: *b"EUR", fields: "deuroa\u{1f}1euro\u{1f}5euro" },
     CurrencyData { code: *b"FIM", fields: "dmarkka finlandiarra\u{1f}1markka finlandiar\u{1f}5markka finlandiar" },
@@ -9837,7 +9839,7 @@ static L_GL: LocaleData = LocaleData { name: "gl", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"ERN", fields: "dnakfa eritreo\u{1f}1nakfa eritreo\u{1f}5nakfas eritreos" },
     CurrencyData { code: *b"ESA", fields: "dPeseta española (conta A)\u{1f}5Peseta española (conta A)" },
     CurrencyData { code: *b"ESB", fields: "dPeseta española (conta convertible)\u{1f}5Peseta española (conta convertible)" },
-    CurrencyData { code: *b"ESP", fields: "s₧\u{1f}dPeseta española\u{1f}1peseta\u{1f}5pesetas" },
+    CurrencyData { code: *b"ESP", fields: "s₧\u{1f}dPeseta española\u{1f}p#,##0.00\u{a0}¤\u{1f}.,\u{1f},\u{202f}\u{1f}1peseta\u{1f}5pesetas" },
     CurrencyData { code: *b"ETB", fields: "dbirr etíope\u{1f}1birr etíope\u{1f}5birres etíopes" },
     CurrencyData { code: *b"EUR", fields: "deuro\u{1f}1euro\u{1f}5euros" },
     CurrencyData { code: *b"FJD", fields: "ddólar fixiano\u{1f}1dólar fixiano\u{1f}5dólares fixianos" },
@@ -12583,7 +12585,7 @@ static L_IT: LocaleData = LocaleData { name: "it", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"IQD", fields: "ddinaro iracheno\u{1f}1dinaro iracheno\u{1f}5dinari iracheni" },
     CurrencyData { code: *b"IRR", fields: "drial iraniano\u{1f}1rial iraniano\u{1f}5rial iraniani" },
     CurrencyData { code: *b"ISK", fields: "dcorona islandese\u{1f}1corona islandese\u{1f}5corone islandesi" },
-    CurrencyData { code: *b"ITL", fields: "dlira italiana\u{1f}1lire italiane\u{1f}5lire italiane" },
+    CurrencyData { code: *b"ITL", fields: "dlira italiana\u{1f}p¤\u{a0}#,##0.00\u{1f}.,\u{1f},.\u{1f}1lire italiane\u{1f}5lire italiane" },
     CurrencyData { code: *b"JMD", fields: "ddollaro giamaicano\u{1f}1dollaro giamaicano\u{1f}5dollari giamaicani" },
     CurrencyData { code: *b"JOD", fields: "ddinaro giordano\u{1f}1dinaro giordano\u{1f}5dinari giordani" },
     CurrencyData { code: *b"JPY", fields: "sJPY\u{1f}dyen giapponese\u{1f}1yen giapponese\u{1f}5yen giapponesi" },
@@ -19137,7 +19139,7 @@ static L_PT_CH: LocaleData = LocaleData { name: "pt-CH", parent: "pt-PT", number
 
 #[cfg(feature = "pt")]
 static L_PT_CV: LocaleData = LocaleData { name: "pt-CV", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
-    CurrencyData { code: *b"CVE", fields: "s\u{200b}" },
+    CurrencyData { code: *b"CVE", fields: "s\u{200b}\u{1f}.$" },
     CurrencyData { code: *b"PTE", fields: "sPTE" },
 ] };
 
@@ -19290,7 +19292,7 @@ static L_PT_PT: LocaleData = LocaleData { name: "pt-PT", parent: "pt", numbers: 
     CurrencyData { code: *b"PHP", fields: "dpeso filipino\u{1f}1peso filipino\u{1f}5pesos filipinos" },
     CurrencyData { code: *b"PKR", fields: "drupia paquistanesa\u{1f}1rupia paquistanesa\u{1f}5rupias paquistanesas" },
     CurrencyData { code: *b"PLN", fields: "dzloti polaco\u{1f}1zloti polaco\u{1f}5zlotis polacos" },
-    CurrencyData { code: *b"PTE", fields: "s\u{200b}\u{1f}descudo português\u{1f}1escudo português\u{1f}5escudos portugueses" },
+    CurrencyData { code: *b"PTE", fields: "s\u{200b}\u{1f}descudo português\u{1f}.$\u{1f},,\u{1f}1escudo português\u{1f}5escudos portugueses" },
     CurrencyData { code: *b"PYG", fields: "dguarani paraguaio\u{1f}1guarani paraguaio\u{1f}5guaranis paraguaios" },
     CurrencyData { code: *b"QAR", fields: "drial catarense\u{1f}1rial catarense\u{1f}5riais catarenses" },
     CurrencyData { code: *b"RON", fields: "dleu romeno\u{1f}1leu romeno\u{1f}5leus romenos" },
@@ -24491,7 +24493,7 @@ static L_TR: LocaleData = LocaleData { name: "tr", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"TOP", fields: "dTonga paʻangası\u{1f}5Tonga paʻangası" },
     CurrencyData { code: *b"TPE", fields: "dTimor Esküdosu\u{1f}5Timor Esküdosu" },
     CurrencyData { code: *b"TRL", fields: "dEski Türk Lirası\u{1f}5Eski Türk Lirası" },
-    CurrencyData { code: *b"TRY", fields: "s₺\u{1f}dTürk lirası\u{1f}5Türk lirası" },
+    CurrencyData { code: *b"TRY", fields: "s₺\u{1f}dTürk lirası\u{1f}p¤#,##0.00\u{1f}5Türk lirası" },
     CurrencyData { code: *b"TTD", fields: "dTrinidad ve Tobago doları\u{1f}5Trinidad ve Tobago doları" },
     CurrencyData { code: *b"TWD", fields: "nNT$\u{1f}dYeni Tayvan doları\u{1f}5Yeni Tayvan doları" },
     CurrencyData { code: *b"TZS", fields: "dTanzanya şilini\u{1f}5Tanzanya şilini" },

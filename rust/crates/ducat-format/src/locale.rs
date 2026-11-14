@@ -3,6 +3,8 @@
 
 use alloc::string::String;
 
+use ducat::territories::{TerritoryOptions, territory_currencies};
+
 use crate::Error;
 use crate::data;
 use crate::icu;
@@ -18,6 +20,8 @@ pub struct Locale {
     data: &'static LocaleData,
     numbers: &'static Numbers,
     has_data: bool,
+    /// The tag's region (or the resolved locale's), ASCII, for its currency.
+    region: [u8; 3],
 }
 
 /// A tag's language, script, region and variants, case-normalised; extensions are dropped.
@@ -236,10 +240,19 @@ impl Locale {
             && script_kept
             && language_and_region(&resolved_name) == language_and_region(&requested);
         let numbers = icu::numbers(data.name).unwrap_or(data.numbers);
+        let region_text = subtags
+            .region
+            .map(str::to_ascii_uppercase)
+            .unwrap_or_else(|| String::from(language_and_region(data.name).1));
+        let mut region = [0; 3];
+        for (slot, byte) in region.iter_mut().zip(region_text.bytes()) {
+            *slot = byte;
+        }
         Ok(Self {
             data,
             numbers,
             has_data,
+            region,
         })
     }
 
@@ -258,23 +271,31 @@ impl Locale {
         self.has_data
     }
 
-    #[allow(dead_code)] // read by the formatter
     pub(crate) const fn numbers(&self) -> &'static Numbers {
         self.numbers
     }
 
-    #[allow(dead_code)] // read by the formatter
     pub(crate) const fn plurals(&self) -> &'static [crate::tables::Rule] {
         self.data.plurals
     }
 
     /// A currency's entry for one field, from this locale up its parents to root.
-    #[allow(dead_code)] // read by the formatter
     pub(crate) fn currency_field(
         &self,
         code: &str,
         field: impl Fn(&'static CurrencyData) -> Option<&'static str>,
     ) -> Option<&'static str> {
+        self.currency_owner(code, &field)
+            .and_then(|(_, entry)| field(entry))
+    }
+
+    /// The first locale, from this one up its parents to root, whose entry for the currency has
+    /// the field, and that entry.
+    pub(crate) fn currency_owner(
+        &self,
+        code: &str,
+        field: impl Fn(&'static CurrencyData) -> Option<&'static str>,
+    ) -> Option<(&'static LocaleData, &'static CurrencyData)> {
         let mut locale = self.data;
         // the chain is at most a few locales long; the bound guards against a cycle in the data
         for _ in 0..16 {
@@ -282,8 +303,9 @@ impl Locale {
                 .currencies
                 .binary_search_by(|entry| entry.code.as_slice().cmp(code.as_bytes()))
             {
-                if let Some(value) = field(&locale.currencies[at]) {
-                    return Some(value);
+                let entry = &locale.currencies[at];
+                if field(entry).is_some() {
+                    return Some((locale, entry));
                 }
             }
             if locale.parent.is_empty() {
@@ -292,6 +314,52 @@ impl Locale {
             locale = data::locale(locale.parent)?;
         }
         None
+    }
+
+    /// The current legal tender of the locale's region (EUR for en-NL), if CLDR names one.
+    fn region_currency(&self) -> Option<&'static str> {
+        let length = self.region.iter().position(|&byte| byte == 0).unwrap_or(3);
+        let region = core::str::from_utf8(&self.region[..length]).ok()?;
+        if region.is_empty() {
+            return None;
+        }
+        territory_currencies(region, &TerritoryOptions::default())
+            .ok()?
+            .into_iter()
+            .find(|use_| use_.to.is_none())
+            .map(|use_| use_.currency)
+    }
+
+    /// The pattern and separators CLDR gives this currency of its own in the locale (EUR in
+    /// en-150, PTE in pt-PT), as ICU stores them: with the separators of the locale that gives
+    /// them, or that locale's own where CLDR gives none, which its descendants inherit.
+    fn special_format(&self, code: &str) -> Option<(&'static str, &'static str, &'static str)> {
+        let (owner, entry) = self.currency_owner(code, |entry| {
+            entry
+                .field('p')
+                .or_else(|| entry.field('.'))
+                .or_else(|| entry.field(','))
+        })?;
+        let numbers = icu::numbers(owner.name).unwrap_or(owner.numbers);
+        Some((
+            entry.field('p').unwrap_or(numbers.currency_pattern),
+            entry.field('.').unwrap_or(numbers.decimal),
+            entry.field(',').unwrap_or(numbers.group),
+        ))
+    }
+
+    /// The pattern and separators every sign and display of `code` is written with, where ICU
+    /// 78.3 writes them so (data/icu/README.md): the currency's own special format, else that of
+    /// the locale's region's currency, which ICU's symbols load for the locale and keep for
+    /// currencies without one (en-NL writes USD as `US$1,234.50`, in EUR's pattern from en-150).
+    pub(crate) fn currency_format(
+        &self,
+        code: &str,
+    ) -> Option<(&'static str, &'static str, &'static str)> {
+        self.special_format(code).or_else(|| {
+            let region_code = self.region_currency()?;
+            self.special_format(region_code)
+        })
     }
 }
 

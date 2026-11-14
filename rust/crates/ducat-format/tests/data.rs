@@ -187,6 +187,9 @@ fn currency(code: &str, entry: &Value) -> String {
         ("symbol", 's'),
         ("symbol-alt-narrow", 'n'),
         ("displayName", 'd'),
+        ("pattern", 'p'),
+        ("decimal", '.'),
+        ("group", ','),
     ] {
         if let Some(value) = entry.get(key) {
             fields.push(format!("{tag}{}", text(value)));
@@ -207,10 +210,12 @@ fn currency(code: &str, entry: &Value) -> String {
     )
 }
 
+/// A locale as the generator collects it: name, language (feature), parent, numbers.json, plural
+/// rules key, currency entries.
+type Entry = (String, String, String, Value, String, Vec<String>);
+
 /// The languages with a locale in the snapshot (root aside).
-fn languages_of(
-    entries: &[(String, String, String, Value, String, Vec<String>)],
-) -> BTreeSet<String> {
+fn languages_of(entries: &[Entry]) -> BTreeSet<String> {
     entries
         .iter()
         .map(|(_, lang, ..)| lang.clone())
@@ -250,7 +255,35 @@ fn icu_symbols(text: &str) -> BTreeMap<String, BTreeMap<String, String>> {
     out
 }
 
-/// `src/icu.rs`: each overridden locale's number data with ICU's symbols over CLDR's.
+/// The `CurrencyUnitPatterns` table of an ICU curr/ file, if it has one.
+fn icu_unit_patterns(text: &str) -> Option<BTreeMap<String, String>> {
+    let mut out = BTreeMap::new();
+    let mut path: Vec<String> = Vec::new();
+    let mut found = false;
+    for line in text.trim_start_matches('\u{feff}').lines() {
+        let line = line.trim();
+        if line.starts_with("//") || line.is_empty() {
+            continue;
+        }
+        if let Some(name) = line.strip_suffix('{') {
+            path.push(name.to_owned());
+            if path.len() == 2 && path[1] == "CurrencyUnitPatterns" {
+                found = true;
+            }
+        } else if line == "}" {
+            path.pop();
+        } else if path.len() == 2 && path[1] == "CurrencyUnitPatterns" {
+            let (key, value) = line.split_once('{').unwrap();
+            let value = value.strip_suffix('}').unwrap();
+            let value = value.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
+            out.insert(key.to_owned(), value.to_owned());
+        }
+    }
+    found.then_some(out)
+}
+
+/// `src/icu.rs`: each overridden locale's number data with ICU's symbols and unit patterns over
+/// CLDR's.
 fn generate_icu(systems: &Value) -> String {
     let mut out = String::new();
     writeln!(
@@ -268,32 +301,82 @@ fn generate_icu(systems: &Value) -> String {
     writeln!(out).unwrap();
     writeln!(out, "/// The ICU release of these overrides.").unwrap();
     writeln!(out, "pub(crate) const ICU_VERSION: &str = \"78.3\";").unwrap();
-    let mut files: Vec<PathBuf> = std::fs::read_dir(root().join("data/icu"))
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .filter(|path| path.extension().is_some_and(|extension| extension == "txt"))
-        .collect();
-    files.sort();
-    let mut arms = Vec::new();
-    for path in files {
-        let locale = path
-            .file_stem()
+    // data/icu/<locale>.txt: ICU's locales/ files whose number symbols override CLDR's;
+    // data/icu/curr/<locale>.txt: its curr/ files whose unit patterns do (a curr/ file without
+    // CurrencyUnitPatterns has root's, data/icu/curr/root.txt)
+    let txt_files = |dir: PathBuf| -> Vec<PathBuf> {
+        let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|extension| extension == "txt"))
+            .collect();
+        files.sort();
+        files
+    };
+    let locale_of = |path: &PathBuf| {
+        path.file_stem()
             .unwrap()
             .to_str()
             .unwrap()
-            .replace('_', "-");
-        let symbols = icu_symbols(&std::fs::read_to_string(&path).unwrap());
+            .replace('_', "-")
+    };
+    let mut symbol_overrides: BTreeMap<String, BTreeMap<String, BTreeMap<String, String>>> =
+        BTreeMap::new();
+    for path in txt_files(root().join("data/icu")) {
+        symbol_overrides.insert(
+            locale_of(&path),
+            icu_symbols(&std::fs::read_to_string(&path).unwrap()),
+        );
+    }
+    let root_units =
+        icu_unit_patterns(&std::fs::read_to_string(root().join("data/icu/curr/root.txt")).unwrap())
+            .expect("root has unit patterns");
+    let mut unit_overrides: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
+    for path in txt_files(root().join("data/icu/curr")) {
+        let locale = locale_of(&path);
+        if locale == "root" {
+            continue;
+        }
+        let units = icu_unit_patterns(&std::fs::read_to_string(&path).unwrap())
+            .unwrap_or_else(|| root_units.clone());
+        unit_overrides.insert(locale, units);
+    }
+    let overridden: BTreeSet<String> = symbol_overrides
+        .keys()
+        .chain(unit_overrides.keys())
+        .cloned()
+        .collect();
+    let mut arms = Vec::new();
+    for locale in overridden {
         let mut numbers_json = json(&format!("main/{locale}/numbers.json"));
         let body = &mut numbers_json["main"][locale.as_str()]["numbers"];
         let system = text(&body["defaultNumberingSystem"]).to_owned();
-        let Some(overrides) = symbols.get(&system) else {
-            continue;
-        };
-        let table = body[format!("symbols-numberSystem-{system}")]
-            .as_object_mut()
-            .unwrap();
-        for (key, value) in overrides {
-            table.insert(key.clone(), Value::String(value.clone()));
+        if let Some(overrides) = symbol_overrides
+            .get(&locale)
+            .and_then(|by_system| by_system.get(&system))
+        {
+            let table = body[format!("symbols-numberSystem-{system}")]
+                .as_object_mut()
+                .unwrap();
+            for (key, value) in overrides {
+                table.insert(key.clone(), Value::String(value.clone()));
+            }
+        }
+        if let Some(units) = unit_overrides.get(&locale) {
+            // ICU keeps one set of unit patterns, whatever the numbering system
+            for block in [
+                format!("currencyFormats-numberSystem-{system}"),
+                "currencyFormats-numberSystem-latn".to_owned(),
+            ] {
+                let formats = body[block.as_str()].as_object_mut().unwrap();
+                formats.retain(|key, _| !key.starts_with("unitPattern-count-"));
+                for (category, pattern) in units {
+                    formats.insert(
+                        format!("unitPattern-count-{category}"),
+                        Value::String(pattern.clone()),
+                    );
+                }
+            }
         }
         let lang = language(&locale).to_owned();
         writeln!(out).unwrap();

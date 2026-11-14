@@ -36,7 +36,9 @@ pub(crate) struct CurrencyData {
     pub(crate) code: [u8; 3],
     /// Its fields, each a tag character and the text, separated by U+001F (which CLDR's text
     /// never holds): `s` the symbol, `n` the narrow symbol, `d` the display name, and the display
-    /// names by plural category, `0` zero, `1` one, `2` two, `3` few, `4` many, `5` other.
+    /// names by plural category, `0` zero, `1` one, `2` two, `3` few, `4` many, `5` other; and,
+    /// where CLDR gives the currency its own format (en-150's EUR), `p` its pattern and `.` and
+    /// `,` its decimal and group separators.
     pub(crate) fields: &'static str,
 }
 
@@ -79,8 +81,10 @@ pub(crate) struct LocaleData {
     pub(crate) plurals: &'static [Rule],
 }
 
-/// What a plural relation tests (TR35's operands).
+/// What a plural relation tests (TR35's operands). Which ones the built rules use depends on the
+/// language features.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub(crate) enum Operand {
     /// The absolute value.
     N,
@@ -88,7 +92,8 @@ pub(crate) enum Operand {
     I,
     /// The number of visible fraction digits, with trailing zeros.
     V,
-    /// The number of visible fraction digits, without trailing zeros.
+    /// The number of visible fraction digits, without trailing zeros (no CLDR 48 rule here
+    /// uses it).
     W,
     /// The visible fraction digits, with trailing zeros, as an integer.
     F,

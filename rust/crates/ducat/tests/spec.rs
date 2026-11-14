@@ -67,15 +67,16 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
 
 /// Operations the runner knows about but the Rust port doesn't implement yet, with the milestone
 /// that brings them. Each is named in full, so a new operation in the spec is an error here.
-const NOT_YET: &[(&str, &str)] = &[
-    ("format.money", "M6c"),
-    ("parse.money", "M6c"),
-    ("parse.detect", "M6c"),
-];
+const NOT_YET: &[(&str, &str)] = &[];
 
 /// Operations another crate of the workspace runs, with its own spec test over the same files:
 /// they are counted here, and reported on their own, never as passes.
-const DELEGATED: &[(&str, &str)] = &[("words.spellOut", "delegated to ducat-words")];
+const DELEGATED: &[(&str, &str)] = &[
+    ("words.spellOut", "delegated to ducat-words"),
+    ("format.money", "delegated to ducat-format"),
+    ("parse.money", "delegated to ducat-format"),
+    ("parse.detect", "delegated to ducat-format"),
+];
 
 fn delegated(op: &str) -> Option<&'static str> {
     DELEGATED
