@@ -54,6 +54,14 @@ const isNode24Icu783 =
 describe('format with long currency names', () => {
   it('writes the whole amount once, before the name, in every euro-country English locale', () => {
     for (const locale of EURO_ENGLISH) {
+      // runtimes with smaller Intl data (Deno) lack some of these locales, and parse refuses those
+      if (
+        Intl.NumberFormat.supportedLocalesOf(locale).length === 0 ||
+        new Intl.NumberFormat(locale).resolvedOptions().locale !== locale
+      ) {
+        console.warn(`no Intl data for ${locale} in this runtime: skipped`);
+        continue;
+      }
       for (const [amount, currency] of [
         ['1234.567', 'KWD'],
         ['1234.5', 'USD'],
