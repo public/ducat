@@ -50,6 +50,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The Rust port gains `ducat::finance` (dates, the six day counts, interest, compounding, amortisation,
   payment dates, discounted sums, periodic and annual rates, savings plans, proration) and, in
   `ducat::excel`, Excel's NPV and IRR, and passes the spec's 2,420 finance vectors.
+- The Rust port's `ducat::excel` gains FV, PV, PMT, NPER, RATE, XNPV and XIRR, with exact values and
+  bounds, and passes the spec's 2,878 Excel, LibreOffice Calc and Microsoft vectors, with the Calc
+  exceptions `test/excel.test.ts` lists.
 
 ### Documentation
 

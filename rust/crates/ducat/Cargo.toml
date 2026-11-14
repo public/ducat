@@ -32,7 +32,7 @@ finance = ["allocate"]
 ## `Serialize` and `Deserialize` as `{"amount":"12.34","currency":"EUR"}`.
 serde = ["dep:serde"]
 ## Functions named after Excel's, with its arguments and conventions (`ducat::excel`).
-excel = ["finance"]
+excel = ["finance", "exact"]
 
 [dependencies]
 # amounts, ratios and weights beyond i128; private behind ducat::Int

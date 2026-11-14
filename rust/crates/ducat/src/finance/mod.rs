@@ -36,7 +36,7 @@ pub use loan::{
     payment_dates,
 };
 pub use proration::{ProrationInstant, ProrationPeriod, ProrationUnit};
-pub use rates::{GridRate, PeriodicRate, annual_rate, discounted_sum, periodic_rate};
+pub use rates::{GridValue, PeriodicRate, annual_rate, discounted_sum, periodic_rate};
 pub use savings::{
     ContributionTiming, SavingsPlan, SavingsPlanOptions, SavingsPlanRow, savings_plan,
 };
@@ -59,13 +59,23 @@ mod sealed {
         fn parts(&self) -> (&Int, u16, CurrencyCode);
         /// An amount in this one's currency.
         fn with_units(&self, units: Int, scale: u16) -> Self;
+        /// An exact amount of `value` major units in this one's currency.
+        #[cfg(feature = "exact")]
+        fn exact_in(&self, value: crate::Ratio) -> <Self as super::MoneyKind>::Exact
+        where
+            Self: super::MoneyKind;
     }
 }
 
 /// A money type the finance functions take: [`Money<C>`] or [`AnyMoney`]. The functions that take
 /// several amounts (flows, a balloon) return [`Error::CurrencyMismatch`] for [`AnyMoney`] in more
 /// than one currency; with [`Money<C>`] the type rules that out.
-pub trait MoneyKind: sealed::Sealed {}
+pub trait MoneyKind: sealed::Sealed {
+    /// The exact amount of the same kind: [`ExactMoney<C>`](crate::exact::ExactMoney) for
+    /// [`Money<C>`], [`AnyExactMoney`](crate::exact::AnyExactMoney) for [`AnyMoney`].
+    #[cfg(feature = "exact")]
+    type Exact;
+}
 
 impl<C: Currency> sealed::Sealed for Money<C> {
     fn parts(&self) -> (&Int, u16, CurrencyCode) {
@@ -75,9 +85,17 @@ impl<C: Currency> sealed::Sealed for Money<C> {
     fn with_units(&self, units: Int, scale: u16) -> Self {
         Self::from_amount(Amount { units, scale })
     }
+
+    #[cfg(feature = "exact")]
+    fn exact_in(&self, value: Ratio) -> <Self as MoneyKind>::Exact {
+        crate::exact::ExactMoney::of(value)
+    }
 }
 
-impl<C: Currency> MoneyKind for Money<C> {}
+impl<C: Currency> MoneyKind for Money<C> {
+    #[cfg(feature = "exact")]
+    type Exact = crate::exact::ExactMoney<C>;
+}
 
 impl sealed::Sealed for AnyMoney {
     fn parts(&self) -> (&Int, u16, CurrencyCode) {
@@ -87,12 +105,20 @@ impl sealed::Sealed for AnyMoney {
     fn with_units(&self, units: Int, scale: u16) -> Self {
         Self::from_parts(Amount { units, scale }, self.currency())
     }
+
+    #[cfg(feature = "exact")]
+    fn exact_in(&self, value: Ratio) -> <Self as MoneyKind>::Exact {
+        crate::exact::AnyExactMoney::of(value, self.currency())
+    }
 }
 
-impl MoneyKind for AnyMoney {}
+impl MoneyKind for AnyMoney {
+    #[cfg(feature = "exact")]
+    type Exact = crate::exact::AnyExactMoney;
+}
 
 /// The amount of `money`.
-fn amount_of<M: MoneyKind>(money: &M) -> Amount {
+pub(crate) fn amount_of<M: MoneyKind>(money: &M) -> Amount {
     let (units, scale, _) = money.parts();
     Amount {
         units: units.clone(),
@@ -101,17 +127,17 @@ fn amount_of<M: MoneyKind>(money: &M) -> Amount {
 }
 
 /// `amount` in `template`'s currency.
-fn money_like<M: MoneyKind>(template: &M, amount: Amount) -> M {
+pub(crate) fn money_like<M: MoneyKind>(template: &M, amount: Amount) -> M {
     template.with_units(amount.units, amount.scale)
 }
 
 /// The currency's exponent, the scale every rounded result has.
-fn exponent_of<M: MoneyKind>(money: &M) -> u16 {
+pub(crate) fn exponent_of<M: MoneyKind>(money: &M) -> u16 {
     u16::from(money.parts().2.exponent())
 }
 
 /// `other`'s amount, when it is in `money`'s currency.
-fn amount_in<M: MoneyKind>(money: &M, other: &M) -> Result<Amount, Error> {
+pub(crate) fn amount_in<M: MoneyKind>(money: &M, other: &M) -> Result<Amount, Error> {
     let (expected, actual) = (money.parts().2, other.parts().2);
     if expected == actual {
         Ok(amount_of(other))
@@ -122,7 +148,7 @@ fn amount_in<M: MoneyKind>(money: &M, other: &M) -> Result<Amount, Error> {
 
 /// `numerator / denominator` major units (`denominator` positive), rounded once to `exponent`
 /// places. The fraction isn't reduced first: rounding divides once either way.
-fn round_quotient(
+pub(crate) fn round_quotient(
     numerator: &Int,
     denominator: &Int,
     exponent: u16,
@@ -181,7 +207,7 @@ fn is_whole_minor(amount: &Amount, exponent: u16) -> bool {
 }
 
 /// A periods count from `minimum` to [`MAX_PERIODS`].
-fn check_periods(periods: u32, minimum: u32) -> Result<(), Error> {
+pub(crate) fn check_periods(periods: u32, minimum: u32) -> Result<(), Error> {
     if (minimum..=MAX_PERIODS).contains(&periods) {
         Ok(())
     } else {

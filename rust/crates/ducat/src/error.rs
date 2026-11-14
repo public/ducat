@@ -111,6 +111,22 @@ pub enum Error {
     Unsettled,
     /// A power `(1 + rate)^periods` that would pass the bits allowed: use fewer periods or a shorter rate.
     PowerTooLarge,
+    /// No payment at a rate of 0, where the number of periods is undefined (Excel's #DIV/0!).
+    NoPayment,
+    /// Payments that never settle the amounts, so there is no number of periods (Excel's #NUM!).
+    NeverSettles,
+    /// A value that couldn't be settled within the precision allowed: too close to a grid point, a rate too close to 0, or bounds that don't narrow enough.
+    PrecisionExhausted,
+    /// Values and dates of different lengths.
+    LengthMismatch,
+    /// Dated flows without both a positive and a negative value (Excel's #NUM!).
+    OneSignOnly,
+    /// A date before the first one, which starts the schedule (Excel's #NUM!).
+    DateBeforeFirst,
+    /// Dated flows that cancel on every date, so every rate is a root.
+    FlowsCancel,
+    /// A year fraction whose discount factor needs a root too large to bracket.
+    RootTooLarge,
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -177,7 +193,15 @@ impl Error {
             | Self::InvalidInstant
             | Self::InvalidSavingsPlan
             | Self::Unsettled
-            | Self::PowerTooLarge => ErrorKind::Range,
+            | Self::PowerTooLarge
+            | Self::NoPayment
+            | Self::NeverSettles
+            | Self::PrecisionExhausted
+            | Self::LengthMismatch
+            | Self::OneSignOnly
+            | Self::DateBeforeFirst
+            | Self::FlowsCancel
+            | Self::RootTooLarge => ErrorKind::Range,
         }
     }
 }
@@ -239,6 +263,14 @@ impl fmt::Display for Error {
             Self::InvalidSavingsPlan => f.write_str("give a savings plan a contribution or a target, not both or neither"),
             Self::Unsettled => f.write_str("the last contribution of this savings plan can't be settled"),
             Self::PowerTooLarge => f.write_str("the power (1 + rate)^periods would be too large; use fewer periods or a shorter rate"),
+            Self::NoPayment => f.write_str("with no payment at a rate of 0, the number of periods is undefined"),
+            Self::NeverSettles => f.write_str("the payments never settle these amounts, so there is no number of periods"),
+            Self::PrecisionExhausted => f.write_str("the value couldn't be settled within the precision allowed"),
+            Self::LengthMismatch => f.write_str("values and dates must have the same length"),
+            Self::OneSignOnly => f.write_str("XNPV and XIRR need at least one positive and one negative value"),
+            Self::DateBeforeFirst => f.write_str("a date is before the first date"),
+            Self::FlowsCancel => f.write_str("the cash flows cancel on every date, so every rate is a root"),
+            Self::RootTooLarge => f.write_str("a year fraction's roots would be too large to bracket"),
         }
     }
 }
