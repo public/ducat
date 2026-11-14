@@ -39,24 +39,6 @@ pub struct Fixed {
     amount: Amount,
 }
 
-/// The value at its smallest exact scale: equal values give the same key whatever their scales.
-fn value_key(amount: &Amount) -> (Int, u16) {
-    if amount.units.is_zero() {
-        return (Int::ZERO, 0);
-    }
-    let ten = Int::from(10u8);
-    let (mut units, mut scale) = (amount.units.clone(), amount.scale);
-    while scale > 0 {
-        let (quotient, remainder) = units.div_rem(&ten);
-        if !remainder.is_zero() {
-            break;
-        }
-        units = quotient;
-        scale -= 1;
-    }
-    (units, scale)
-}
-
 impl Fixed {
     const fn from_amount(amount: Amount) -> Self {
         Self { amount }
@@ -195,7 +177,7 @@ impl Fixed {
     /// It never adds digits.
     #[must_use]
     pub fn trim_scale(&self, minimum: u16) -> Self {
-        let (units, scale) = value_key(&self.amount);
+        let (units, scale) = self.amount.normalized();
         if scale >= minimum {
             return Self::from_amount(Amount { units, scale });
         }
@@ -215,7 +197,7 @@ impl Fixed {
     /// Whether the two have the same value *and* the same scale.
     #[must_use]
     pub fn identical(&self, other: &Self) -> bool {
-        self.amount.scale == other.amount.scale && self.amount.units == other.amount.units
+        self.amount.identical(&other.amount)
     }
 
     /// The value as a reduced [`Ratio`].
@@ -339,7 +321,7 @@ impl Eq for Fixed {}
 impl Hash for Fixed {
     /// Hashes the value at its smallest exact scale, so it agrees with `==`.
     fn hash<H: Hasher>(&self, state: &mut H) {
-        value_key(&self.amount).hash(state);
+        self.amount.normalized().hash(state);
     }
 }
 
