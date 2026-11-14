@@ -86,9 +86,19 @@ recursion is bounded, so adversarial rule text is an error, not a stack overflow
 the digit grouping of numbers the rules write as digits (separator and minimum grouping digits), and the word for "and"
 come from the CLDR 48 snapshot (`data/cldr/`), generated into `src/cldr.rs` by `tests/cldr.rs` with a drift check, as the
 rule text is; ducat reads them from `Intl`, CLDR 48 on Node 24. The rule text is CLDR 49 and these values
-CLDR 48, the release ducat's `Intl` carries. `Intl` also gives ducat the currency's name; there is none here, and
-CLDR's names aren't in ducat's data, so `amount_in_words` takes the currency's names from the caller, as both take the
-minor unit's. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
+CLDR 48, the release ducat's `Intl` carries. `amount_in_words` takes the currency's names from the caller, as both take the minor unit's.
+
+**Currency names diverge here.** ducat's `amountInWords` takes the currency's name, its plural form and its place next to
+the number from the runtime's `Intl` (a currency format with `currencyDisplay: 'name'`, its digits replaced by the
+words), so the text follows that runtime's CLDR data and build: ICU 78.3 puts U+00A0 before a name in fr-CA, Deno
+2.9.8's data a space (spec/README.md, "Runtime divergences"). `ducat-words` has no `Intl`: the caller passes the
+names (`UnitNames`: `other`, with `one` and `many` where they differ), they follow the number after a plain space, and the plural category comes from
+CLDR 48's rules (`src/cldr.rs`). For the seven languages CLDR 48's `unitPattern` is `{0} {1}` with a plain space, so the
+two agree when the caller passes CLDR's names. They differ where the caller's names aren't CLDR's, where a runtime's
+data isn't CLDR 48 (or isn't ICU's build of it), and for `many` (a million euros in es, fr, it, pt): CLDR has no
+`many` name for most currencies, and `Intl` falls back to `other`, as `UnitNames` does without `many`. The snapshot
+in `data/cldr/` carries CLDR's names (`main/<locale>/currencies.json`), so a later milestone can offer them as
+defaults; until then they are the caller's, and the words vectors (`words.spellOut`) don't cover names. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
 and runs every row; the MSRV is the core's, 1.85.
 
 Known gaps, to close later:
