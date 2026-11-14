@@ -156,8 +156,8 @@ pub struct RateQuote {
     /// The number exactly as published, trailing zeros included (`136.80`).
     pub rate: String,
     /// How many units of the published direction's first currency the number is for: 100 for
-    /// "NOK per 100 JPY". `None` for 1. A `per` of 0 describes no rate, and a negative one
-    /// (with a positive number) a negative rate: either is refused.
+    /// "NOK per 100 JPY". `None` for 1. A quote is a positive price for a positive whole number
+    /// of units, so a `per` below 1 is refused, whatever the number's sign.
     pub per: Option<i64>,
     /// The source quoted `to` → `from`; the rate is its exact inverse.
     pub inverted: bool,
@@ -180,23 +180,24 @@ impl RateQuote {
         self.per.is_none() && !self.inverted
     }
 
-    /// The rate it describes: `rate ÷ per`, or `per ÷ rate` when inverted. As in ducat, a
-    /// negative `per` is checked through the sign: it describes a negative rate unless the number
-    /// is negative too.
+    /// The rate it describes: `rate ÷ per`, or `per ÷ rate` when inverted.
     ///
     /// # Errors
     ///
-    /// [`Error::QuoteMismatch`] for a `per` of 0, or a zero number when inverted; whatever
-    /// reading `rate` fails with.
+    /// [`Error::InvalidQuote`] for a number that isn't positive or a `per` below 1, whatever
+    /// the signs; whatever reading `rate` fails with.
     pub fn describes(&self) -> Result<Ratio, Error> {
         let published: Ratio = self.rate.parse()?;
-        let per = Ratio::from(self.per.unwrap_or(1));
-        let described = if self.inverted {
+        let per = self.per.unwrap_or(1);
+        if !published.numer().is_positive() || per < 1 {
+            return Err(Error::InvalidQuote);
+        }
+        let per = Ratio::from(per);
+        if self.inverted {
             per.div(&published)
         } else {
             published.div(&per)
-        };
-        described.map_err(|_| Error::QuoteMismatch)
+        }
     }
 }
 
@@ -615,10 +616,10 @@ impl AnyRate {
     ///
     /// # Errors
     ///
-    /// [`Error::QuoteMismatch`] when `info` has a quote that doesn't describe the rate exactly
-    /// (the rate is `quote ÷ per`, or `per ÷ quote` when inverted): a different number, a `per` of
-    /// 0, or a negative `per` with a positive number. Whatever reading the quote's number fails with. So the inverse, which
-    /// flips `inverted`, always describes its rate too.
+    /// [`Error::InvalidQuote`] when `info` has a quote whose number isn't positive or whose `per`
+    /// is below 1; [`Error::QuoteMismatch`] when its quote doesn't describe the rate exactly (the
+    /// rate is `quote ÷ per`, or `per ÷ quote` when inverted); whatever reading the quote's number
+    /// fails with. So the inverse, which flips `inverted`, always describes its rate too.
     pub fn with_info(mut self, info: RateInfo) -> Result<Self, Error> {
         if let Some(quote) = &info.quote {
             if quote.describes()? != self.ratio {

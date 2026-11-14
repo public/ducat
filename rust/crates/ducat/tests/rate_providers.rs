@@ -133,19 +133,22 @@ fn quotes_must_describe_their_rate() {
     );
     assert_eq!(quoted("136.80", per(100)), Err(Error::QuoteMismatch));
     for bad in [0, -100] {
-        assert_eq!(quoted("1.368", per(bad)), Err(Error::QuoteMismatch));
+        assert_eq!(quoted("1.368", per(bad)), Err(Error::InvalidQuote));
     }
-    // a negative per is checked through the sign, as in ducat: with a negative number it describes
-    // the positive rate
+    // a quote is a positive price per positive units, whatever the signs: -136.80 per -100 would
+    // describe 1.368, and is refused as ducat refuses it
     let both_negative = RateQuote {
         rate: "-136.80".into(),
         per: Some(-100),
         inverted: false,
     };
-    assert_eq!(
-        quoted("1.368", both_negative).map(|r| r.to_string()),
-        Ok("1.368".into())
-    );
+    assert_eq!(quoted("1.368", both_negative), Err(Error::InvalidQuote));
+    let zero = RateQuote {
+        rate: "0".into(),
+        per: None,
+        inverted: true,
+    };
+    assert_eq!(quoted("1.368", zero), Err(Error::InvalidQuote));
     let inverted = RateQuote {
         rate: "0.9100".into(),
         per: None,

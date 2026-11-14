@@ -166,8 +166,11 @@ pub enum Error {
     /// A rate time that isn't a date `YYYY-MM-DD` or an instant `YYYY-MM-DDTHH:MM[:SS[.sss]]`
     /// with `Z` or `±HH:MM` (see [`UtcInstant`](crate::convert::UtcInstant)).
     InvalidTime,
-    /// A one-for-one quote in a rate's own direction that isn't the rate.
+    /// A quote that doesn't describe its rate exactly.
     QuoteMismatch,
+    /// A quote whose number isn't positive, or whose `per` isn't a positive integer: a quote is a
+    /// positive price for a positive whole number of units.
+    InvalidQuote,
     /// No provider has a rate for the pair (ducat's `RateUnavailableError`).
     #[cfg(feature = "convert")]
     RateUnavailable {
@@ -283,7 +286,8 @@ impl Error {
             | Self::ZeroAmount
             | Self::AmountTooLarge
             | Self::InvalidTime
-            | Self::QuoteMismatch => ErrorKind::Range,
+            | Self::QuoteMismatch
+            | Self::InvalidQuote => ErrorKind::Range,
             #[cfg(feature = "convert")]
             Self::RateUnavailable { .. } | Self::RateExpired { .. } => ErrorKind::Range,
         }
@@ -375,6 +379,7 @@ impl fmt::Display for Error {
             Self::AmountTooLarge => f.write_str("the amount is too large for the processor"),
             Self::InvalidTime => f.write_str("an invalid date or time: expected YYYY-MM-DD, or YYYY-MM-DDTHH:MM[:SS[.sss]] with Z or an offset ±HH:MM"),
             Self::QuoteMismatch => f.write_str("the quote isn't the rate"),
+            Self::InvalidQuote => f.write_str("a quote's number must be positive, and its per a positive integer"),
             #[cfg(feature = "convert")]
             Self::RateUnavailable { from, to, as_of } => {
                 write!(f, "no exchange rate {from}→{to}")?;

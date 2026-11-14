@@ -32,7 +32,7 @@ spec/
 | `rounding`   | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                               |
 | `convert`    | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                                       |
 | `convert`    | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual                      |
-| `convert`    | `providers.json`        | 1,429 | Python `fractions` | rate metadata and its JSON, validity at UTC day boundaries, rate providers, multi-currency bags |
+| `convert`    | `providers.json`        | 1,434 | Python `fractions` | rate metadata and its JSON, validity at UTC day boundaries, rate providers, multi-currency bags |
 | `exact`      | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply                |
 | `tax`        | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                               |
 | `finance`    | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                                      |
@@ -484,12 +484,14 @@ and `derivedFrom`. Every field is judged exactly, as JSON; `error` names the out
 - **Rate text:** a published decimal keeps its digits when its canonical form would drop trailing
   zeros (`1.10`, `136.80`); otherwise a rate prints as its exact decimal (`01.50` is `1.5`), or as
   `num/den` when that doesn't terminate. A rounded rate prints canonically.
-- **Quotes** must describe their rate exactly: the rate is `quote ÷ per`, or `per ÷ quote` when
-  `inverted` (`per` defaults to 1). A rate whose quote doesn't is refused when it is built
-  (`range`), so its inverse, which flips `inverted`, always describes its rate too. A `per` of 0
-  describes nothing, and a negative `per` (with a positive quote) describes a negative rate. The
-  error rows carry such a `per`, including a fractional one: the one place a JSON number in these
-  files isn't a small integer, which a port must refuse (as ducat does) rather than read.
+- **Quotes** are a published positive price for a positive whole number of units, and must
+  describe their rate exactly: the rate is `quote ÷ per`, or `per ÷ quote` when `inverted` (`per`
+  defaults to 1). A rate with a quote whose number isn't positive, whose `per` isn't a positive
+  integer (whatever the signs: a negative number over a negative `per` is refused too), or that
+  doesn't describe the rate is refused when it is built (`range`), so its inverse, which flips
+  `inverted`, always describes its rate too. The error rows carry such a `per`, including a
+  fractional one: the one place a JSON number in these files isn't a small integer, which a port
+  must refuse (as ducat does) rather than read.
 - **Times:** a date or an instant (`rateTime`); an instant is stored as UTC to the millisecond
   (`2026-11-06T15:00:00.000Z`), a date as given. A date counts as the start of its UTC day for
   `asOf`, `availableAt` and a lookup's start, and as the whole day for `validUntil` and for a date
