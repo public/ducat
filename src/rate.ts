@@ -294,7 +294,14 @@ export class Rate<From extends string = string, To extends string = string> {
       // inverted. Otherwise toString, or the inverse's (which flips `inverted`), would print a
       // number that isn't the rate. ratio() caches strings, so for a rate built from the same text
       // this is two lookups.
+      // A quote is a published positive price for a positive whole number of units.
       const published = ratio(quote.rate);
+      if (published.num <= 0n) {
+        throw new RangeError(`Quote ${quote.rate} isn't a positive rate`);
+      }
+      if (quote.per !== undefined && !(Number.isSafeInteger(quote.per) && quote.per > 0)) {
+        throw new RangeError(`A quote's per is a positive integer, got ${quote.per}`);
+      }
       const per = BigInt(quote.per ?? 1);
       const quoted =
         quote.inverted === true

@@ -89,6 +89,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - `exchangeRate` and `rateFromJSON` now refuse an inverted or scaled quote that isn't exactly the
   rate (rate = quote ÷ `per`, or `per` ÷ quote when inverted), throwing the `RangeError` convert.md
   always documented, where 0.4 accepted it and the rate's `inverse()` then threw.
+- `exchangeRate` and `rateFromJSON` now refuse a quote whose rate isn't positive or whose `per`
+  isn't a positive integer, throwing `RangeError`, where 0.4 accepted them (a negative rate over a
+  negative `per`, for instance).
 
 ### Documentation
 

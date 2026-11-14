@@ -86,6 +86,28 @@ describe('derived rates', () => {
 describe('metadata', () => {
   // A quote must describe its rate exactly, or the inverse (which flips `inverted`) would print a
   // number that isn't the rate.
+  it('refuses a quote whose rate or per is not positive, whatever the signs', () => {
+    // -136.80 per -100 would describe 1.368, but a quote is a positive price per positive units
+    const both = { quote: { rate: '-136.80', per: -100 } };
+    expect(() => exchangeRate('JPY', 'NOK', '1.368', both)).toThrow(
+      new RangeError("Quote -136.80 isn't a positive rate"),
+    );
+    expect(() => rateFromJSON({ from: 'JPY', to: 'NOK', rate: '1.368', ...both })).toThrow(
+      RangeError,
+    );
+    expect(() => exchangeRate('EUR', 'USD', '1', { quote: { rate: '0', inverted: true } })).toThrow(
+      new RangeError("Quote 0 isn't a positive rate"),
+    );
+    expect(() => exchangeRate('EUR', 'USD', '1', { quote: { rate: '-1' } })).toThrow(RangeError);
+    const fractional = { quote: { rate: '136.80', per: 1.5 } };
+    expect(() => exchangeRate('JPY', 'NOK', '91.2', fractional)).toThrow(
+      new RangeError("A quote's per is a positive integer, got 1.5"),
+    );
+    expect(() =>
+      exchangeRate('JPY', 'NOK', '-1.368', { quote: { rate: '136.80', per: -100 } }),
+    ).toThrow(RangeError);
+  });
+
   it('refuses an inverted or scaled quote that is not the rate, so inverse() cannot fail', () => {
     const wrong = { quote: { rate: '0.9100', inverted: true } } as const;
     expect(() => exchangeRate('EUR', 'USD', '290', wrong)).toThrow(

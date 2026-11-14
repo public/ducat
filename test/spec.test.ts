@@ -36,7 +36,7 @@ const CASES_PER_AREA: Record<string, number> = {
   cash: 2014,
   excel: 2878,
   rounding: 1800,
-  convert: 2279,
+  convert: 2284,
   tax: 1000,
   finance: 2720,
   words: 6904,

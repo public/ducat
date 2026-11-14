@@ -217,13 +217,13 @@ class Rate:
             self.info["type"] = info["type"]
         quote = info.get("quote")
         if quote is not None:
-            # the quote describes the rate exactly: quote / per, or per / quote when inverted; a per
-            # that isn't a non-zero integer describes nothing, and a negative one gives the wrong sign
+            # a quote is a positive published price for a positive whole number of units, and it
+            # describes the rate exactly: quote / per, or per / quote when inverted
             per = quote.get("per", 1)
-            if not isinstance(per, int) or isinstance(per, bool) or per == 0:
+            if not isinstance(per, int) or isinstance(per, bool) or per < 1:
                 raise RateError("range")
             published = read_rate(quote["rate"])
-            if published == 0:
+            if published <= 0:
                 raise RateError("range")
             described = per / published if quote.get("inverted") is True else published / per
             if described != value:
@@ -594,6 +594,14 @@ def derive_rows(rng) -> list:
             else:
                 steps.append({"op": "round", "places": rng.randrange(0, 7), "rounding": rng.choice(MODES)})
         rows.append({"rate": start, "steps": steps})
+    # a quote is a positive price per positive units, whatever the signs: a negative number over a
+    # negative per, and a zero number, are refused at construction
+    for text, quote in [
+        ("1.368", {"rate": "-136.80", "per": -100}),
+        ("1.368", {"rate": "0", "per": 100}),
+        ("1.368", {"rate": "0", "inverted": True}),
+    ]:
+        rows.append({"rate": {"from": "JPY", "to": "NOK", "rate": text, "info": {"quote": quote}}, "steps": [{"op": "inverse"}]})
     out = []
     for row in rows:
         try:
@@ -665,6 +673,8 @@ def json_rows(rng) -> list:
         {"from": "JPY", "to": "NOK", "rate": "1.368", "quote": {"rate": "136.80", "per": 1.5}},
         {"from": "JPY", "to": "NOK", "rate": "1.368", "quote": {"rate": "136.80", "per": -100}},
         {"from": "JPY", "to": "NOK", "rate": "-1.368", "quote": {"rate": "136.80", "per": -100}},
+        {"from": "JPY", "to": "NOK", "rate": "1.368", "quote": {"rate": "-136.80", "per": -100}},
+        {"from": "EUR", "to": "USD", "rate": "1.1", "quote": {"rate": "0"}},
         {"from": "EUR", "to": "USD", "rate": "1.1165", "source": "ECB", "asOf": "2026-11-06", "availableAt": "2026-11-06T16:00:00+01:00", "validUntil": "2026-11-07T00:00Z", "type": "reference"},
         {"from": "USD", "to": "EUR", "rate": "2000/2233", "asOf": "2026-11-06", "derivedFrom": [{"from": "EUR", "to": "USD", "rate": "1.1165", "source": "ECB", "asOf": "2026-11-06"}]},
     ]
