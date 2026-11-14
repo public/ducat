@@ -34,7 +34,7 @@ fn t1_sub_minor_totals_are_conserved() {
     for remainder in ALL {
         let parts = whole.split(2, remainder).unwrap();
         assert!(parts.iter().all(|part| part.scale() == 3));
-        assert_eq!(parts.iter().sum::<Money<Usd>>(), whole);
+        assert!(parts.iter().sum::<Money<Usd>>().identical(&whole));
     }
 }
 

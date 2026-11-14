@@ -308,7 +308,7 @@ proptest! {
     fn t13_display_round_trips(units in boundary_int(), scale in 0u16..60) {
         let money = AnyMoney::from_units(units, scale, code("EUR")).unwrap();
         let back = AnyMoney::parse_at(&money.to_decimal(), money.currency(), scale, Rounding::Unnecessary).unwrap();
-        prop_assert_eq!(&back, &money);
+        prop_assert!(back.identical(&money), "{back:?} vs {money:?}");
         prop_assert!(!money.to_decimal().contains(['e', 'E']));
     }
 
@@ -319,7 +319,9 @@ proptest! {
         let right = Money::<Eur>::from_units(b, sb).unwrap();
         let value_equal = a * 10i128.pow(u32::from(sb)) == b * 10i128.pow(u32::from(sa));
         prop_assert_eq!(left.eq_value(&right), value_equal);
-        prop_assert_eq!(left == right, a == b && sa == sb);
+        prop_assert_eq!(left == right, value_equal);
+        prop_assert_eq!(left.identical(&right), a == b && sa == sb);
+        prop_assert_eq!(left.cmp(&right), left.compare(&right));
         prop_assert_eq!(left.compare(&right), right.compare(&left).reverse());
         if left == right {
             let set: HashSet<AnyMoney> = [left.to_any(), right.to_any()].into_iter().collect();
@@ -332,7 +334,11 @@ proptest! {
 #[test]
 fn t11_i128_min() {
     let min = Money::<Eur>::from_minor(i128::MIN);
-    assert_eq!(min.multiply(1, Rounding::Unnecessary).unwrap(), min);
+    assert!(
+        min.multiply(1, Rounding::Unnecessary)
+            .unwrap()
+            .identical(&min)
+    );
     assert_eq!(
         min.multiply(-1, Rounding::Unnecessary)
             .unwrap()
@@ -419,9 +425,13 @@ fn hundred_thousand_digits() {
     let money: Money<Eur> = digits.parse().unwrap();
     let text = money.to_decimal();
     assert_eq!(text.len(), 100_003);
-    assert_eq!(text.parse::<Money<Eur>>().unwrap(), money);
+    assert!(text.parse::<Money<Eur>>().unwrap().identical(&money));
     let json = serde_json::to_string(&money).unwrap();
-    assert_eq!(serde_json::from_str::<Money<Eur>>(&json).unwrap(), money);
+    assert!(
+        serde_json::from_str::<Money<Eur>>(&json)
+            .unwrap()
+            .identical(&money)
+    );
     assert!(
         start.elapsed() < Duration::from_secs(60),
         "took {:?}",
@@ -484,13 +494,21 @@ fn t16_serde() {
     let money = eur("12.34");
     let json = serde_json::to_string(&money).unwrap();
     assert_eq!(json, r#"{"amount":"12.34","currency":"EUR"}"#);
-    assert_eq!(serde_json::from_str::<Money<Eur>>(&json).unwrap(), money);
+    assert!(
+        serde_json::from_str::<Money<Eur>>(&json)
+            .unwrap()
+            .identical(&money)
+    );
     assert_eq!(serde_json::from_str::<AnyMoney>(&json).unwrap(), money);
     // the value's own scale is written; at the currency's exponent it reads back by value
     let scale3 = Money::<Eur>::parse_at("12.340", 3, Rounding::Unnecessary).unwrap();
     let json = serde_json::to_string(&scale3).unwrap();
     assert_eq!(json, r#"{"amount":"12.340","currency":"EUR"}"#);
-    assert_eq!(serde_json::from_str::<Money<Eur>>(&json).unwrap(), money);
+    assert!(
+        serde_json::from_str::<Money<Eur>>(&json)
+            .unwrap()
+            .identical(&money)
+    );
     // beyond i128 is just a longer string
     let huge = r#"{"amount":"170141183460469231731687303715884105728.00","currency":"EUR"}"#;
     assert_eq!(
@@ -513,17 +531,63 @@ fn t16_serde() {
     assert_eq!(usd.to_string(), "-5.00 USD");
 }
 
-/// T18: Hash agrees with Eq across Money and AnyMoney, scale included.
+/// T18: Hash agrees with Eq across Money and AnyMoney, and both are by value: 1.00 EUR and
+/// 1.000 EUR are equal, hash alike and are one map key (the first inserted is kept), but aren't
+/// identical.
 #[test]
 fn t18_hash_across_types() {
+    use std::collections::{BTreeMap, HashMap};
     use std::hash::{BuildHasher, RandomState};
     let state = RandomState::new();
     let typed = eur("1.00");
     assert_eq!(state.hash_one(&typed), state.hash_one(typed.to_any()));
     assert_eq!(typed, typed.to_any());
     let three_places = Money::<Eur>::parse_at("1.000", 3, Rounding::Unnecessary).unwrap();
-    assert_ne!(typed, three_places);
+    assert_eq!(typed, three_places);
+    assert_eq!(state.hash_one(&typed), state.hash_one(&three_places));
+    assert!(!typed.identical(&three_places));
     assert!(typed.eq_value(&three_places));
+    let mut map = HashMap::new();
+    map.insert(typed.clone(), "first");
+    map.insert(three_places.clone(), "second");
+    assert_eq!(map.len(), 1);
+    assert!(map.keys().next().unwrap().identical(&typed));
+    let tree: BTreeMap<Money<Eur>, u8> = [(three_places.clone(), 1), (typed.clone(), 2)]
+        .into_iter()
+        .collect();
+    assert_eq!(tree.len(), 1);
+    // another currency is never equal, and AnyMoney's compare still refuses it
+    let usd = AnyMoney::parse("1.00", code("USD")).unwrap();
+    assert_ne!(typed.to_any(), usd);
+    assert!(matches!(
+        typed.to_any().compare(&usd),
+        Err(Error::CurrencyMismatch { .. })
+    ));
+    // the scale cap: 1 at scale 0 against 10^1000 at scale 1000
+    let one = Money::<Eur>::from_units(1, 0).unwrap();
+    let wide = Money::<Eur>::from_units(
+        format!("1{}", "0".repeat(1000)).parse::<Int>().unwrap(),
+        1000,
+    )
+    .unwrap();
+    assert_eq!(one, wide);
+    assert_eq!(state.hash_one(&one), state.hash_one(&wide));
+    assert!(!one.identical(&wide));
+}
+
+proptest! {
+    /// a == b implies hash(a) == hash(b), across scales and across the promotion boundary.
+    #[test]
+    fn hash_follows_value(units in boundary_int(), scale in 0u16..20, extra in 0u16..60) {
+        use std::hash::{BuildHasher, RandomState};
+        let state = RandomState::new();
+        let low = Money::<Eur>::from_units(units, scale).unwrap();
+        let high = low.to_scale(scale + extra, Rounding::Unnecessary).unwrap();
+        prop_assert_eq!(&low, &high);
+        prop_assert_eq!(state.hash_one(&low), state.hash_one(&high));
+        prop_assert_eq!(state.hash_one(low.to_any()), state.hash_one(high.to_any()));
+        prop_assert_eq!(low.identical(&high), extra == 0);
+    }
 }
 
 /// T20: Ratio arithmetic is exact at any size; only zero denominators fail.
