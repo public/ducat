@@ -88,6 +88,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- The wire readers accept what their specs allow, which widens the input they take:
+  `fromIso20022Amount` reads a leading `+` and `-0` (XML Schema's `xs:decimal`), and
+  `fromGoogleMoney` reads `units` and `nanos` as numbers or strings, exponent form included, when
+  the value is an exact integer (ProtoJSON). A `units` number past 2^53 − 1 is refused (send it as a
+  string), and a negative ISO 20022 amount is now a `RangeError` rather than a `SyntaxError`.
 - `parseEcbXml` ends each day at its own closing tag, so a day whose rates are written
   `<Cube …></Cube>` keeps all of them, where it used to keep only the first and drop the rest
   without an error; cubes that don't nest (an unclosed day, a stray `</Cube>`) now throw
