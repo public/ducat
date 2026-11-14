@@ -146,7 +146,7 @@ lives").
 | `.` (core), `/fn` | `ducat` core: `Money`, `AnyMoney`, methods plus free functions where natural | Rust doesn't need ducat's /fn split: unused methods cost nothing |
 | `/iso`, `/iso/*`, `/currencies`, `/territories`, `/historic` | `ducat::iso` (markers plus the table), `currencies`, `territories`, `historic` features | static tables, no registration step |
 | `/allocate` | `allocate` (allocate, split, instalments, schedule, chunk) | the Lean vectors apply |
-| `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | |
+| `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | `cash::cldr_cash` is Rust-only (no ducat equivalent; the spec checks it against `data/` only), for `ducat-icu` |
 | `/fixed`, `/fixed/money` | `ducat::fixed::Fixed` | |
 | `/finance`, `/excel` | `finance`, `excel` | the Excel rule applies to `excel` |
 | `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | the parsers take text and never fetch |
