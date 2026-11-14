@@ -47,7 +47,9 @@ LIST_LOCALES = ["de", "en", "es", "fr", "it", "nl", "pt"]
 NUMBER_KEYS = re.compile(r"^(defaultNumberingSystem|otherNumberingSystems|minimumGroupingDigits|symbols-numberSystem-.+|decimalFormats-numberSystem-.+|currencyFormats-numberSystem-.+)$")
 # within a decimal or currency formats block: the standard patterns, not compact or long forms
 FORMAT_KEYS = re.compile(r"^(standard|standard-alphaNextToNumber|standard-noCurrency|accounting|accounting-alphaNextToNumber|accounting-noCurrency|currencySpacing|currencyPatternAppendISO|unitPattern-count-.+)$")
-CURRENCY_KEYS = re.compile(r"^(displayName|displayName-count-.+|symbol|symbol-alt-narrow)$")
+# a currency's symbols and names, and its own pattern and separators where CLDR gives them (en-150
+# writes EUR as €1,234.50)
+CURRENCY_KEYS = re.compile(r"^(displayName|displayName-count-.+|symbol|symbol-alt-narrow|pattern|decimal|group)$")
 
 
 def archive_sha256() -> str:

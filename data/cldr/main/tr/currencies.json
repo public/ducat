@@ -1019,6 +1019,7 @@
       "displayName-count-other": "Eski Türk Lirası"
      },
      "TRY": {
+      "pattern": "¤#,##0.00",
       "displayName": "Türk lirası",
       "displayName-count-other": "Türk lirası",
       "symbol": "₺"

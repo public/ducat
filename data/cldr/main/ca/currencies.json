@@ -466,10 +466,13 @@
       "displayName-count-other": "pessetes espanyoles (compte convertible)"
      },
      "ESP": {
+      "pattern": "¤ #,##0.00",
       "displayName": "pesseta espanyola",
       "displayName-count-one": "pesseta espanyola",
       "displayName-count-other": "pessetes espanyoles",
-      "symbol": "₧"
+      "symbol": "₧",
+      "decimal": ",",
+      "group": "."
      },
      "ETB": {
       "displayName": "birr etíop",

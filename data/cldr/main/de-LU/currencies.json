@@ -9,7 +9,9 @@
    "numbers": {
     "currencies": {
      "LUF": {
-      "symbol": "F"
+      "symbol": "F",
+      "decimal": ".",
+      "group": ","
      }
     }
    }

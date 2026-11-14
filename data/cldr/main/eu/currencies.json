@@ -463,10 +463,13 @@
       "displayName-count-other": "pezeta espainiar (kontu bihurgarria)"
      },
      "ESP": {
+      "pattern": "¤ #,##0.00",
       "displayName": "pezeta espainiarra",
       "displayName-count-one": "pezeta espainiar",
       "displayName-count-other": "pezeta espainiar",
-      "symbol": "₧"
+      "symbol": "₧",
+      "decimal": ",",
+      "group": "."
      },
      "ETB": {
       "displayName": "birr etiopiarra",

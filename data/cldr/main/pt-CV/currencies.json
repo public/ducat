@@ -9,7 +9,8 @@
    "numbers": {
     "currencies": {
      "CVE": {
-      "symbol": "​"
+      "symbol": "​",
+      "decimal": "$"
      },
      "PTE": {
       "symbol": "PTE"

@@ -7,7 +7,11 @@
    },
    "inherits": "en-150",
    "numbers": {
-    "currencies": {}
+    "currencies": {
+     "EUR": {
+      "pattern": "¤ #,##0.00"
+     }
+    }
    }
   }
  }

@@ -484,10 +484,13 @@
       "displayName-count-other": "εκουέλε Ισημερινής Γουινέας"
      },
      "GRD": {
+      "pattern": "#,##0.00 ¤",
       "displayName": "Δραχμή Ελλάδας",
       "displayName-count-one": "δραχμή Ελλάδας",
       "displayName-count-other": "δραχμές Ελλάδας",
-      "symbol": "Δρχ"
+      "symbol": "Δρχ",
+      "decimal": ",",
+      "group": "."
      },
      "GTQ": {
       "displayName": "Κουετσάλ Γουατεμάλας",

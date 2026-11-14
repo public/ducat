@@ -386,7 +386,9 @@
       "displayName": "Eesti kroon",
       "displayName-count-one": "Eesti kroon",
       "displayName-count-other": "Eesti krooni",
-      "symbol": "kr"
+      "symbol": "kr",
+      "decimal": ".",
+      "group": " "
      },
      "EGP": {
       "displayName": "Egiptuse nael",

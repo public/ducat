@@ -534,9 +534,12 @@
       "displayName-count-other": "corone islandesi"
      },
      "ITL": {
+      "pattern": "¤ #,##0.00",
       "displayName": "lira italiana",
       "displayName-count-one": "lire italiane",
-      "displayName-count-other": "lire italiane"
+      "displayName-count-other": "lire italiane",
+      "decimal": ",",
+      "group": "."
      },
      "JMD": {
       "displayName": "dollaro giamaicano",

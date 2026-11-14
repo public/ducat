@@ -315,10 +315,13 @@
       "displayName-count-other": "Peseta española (conta convertible)"
      },
      "ESP": {
+      "pattern": "#,##0.00 ¤",
       "displayName": "Peseta española",
       "displayName-count-one": "peseta",
       "displayName-count-other": "pesetas",
-      "symbol": "₧"
+      "symbol": "₧",
+      "decimal": ",",
+      "group": " "
      },
      "ETB": {
       "displayName": "birr etíope",
