@@ -20,7 +20,9 @@ use core::marker::PhantomData;
 use core::ops::{Add, Neg, Sub};
 
 use crate::amount::Amount;
-use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, Rounding};
+use crate::{
+    AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, Rounding, RoundingInput,
+};
 
 /// What rounding an exact amount gave, and what it left out: `value + residual` is exactly the
 /// unrounded amount, so a ledger can book the difference.
@@ -60,6 +62,33 @@ fn round_value(value: &Ratio, scale: u16, rounding: Rounding) -> Result<Amount, 
         units: value.round_to_units(scale, rounding)?,
         scale,
     })
+}
+
+/// `value` major units of `currency` rounded once: with a mode to `scale` (default: the currency's
+/// exponent), with a policy to its own scale and increment (and then `scale` must be `None`).
+fn round_input_value(
+    value: &Ratio,
+    rounding: RoundingInput,
+    scale: Option<u16>,
+    currency: CurrencyCode,
+) -> Result<Amount, Error> {
+    match rounding {
+        RoundingInput::Mode(mode) => {
+            round_value(value, scale.unwrap_or(u16::from(currency.exponent())), mode)
+        }
+        #[cfg(feature = "policy")]
+        RoundingInput::Policy(policy) => {
+            if scale.is_some() {
+                return Err(Error::ScaleWithPolicy);
+            }
+            // num/den is num units at scale 0 times 1/den: the policy rounds that product once
+            let whole = Amount {
+                units: value.numer().clone(),
+                scale: 0,
+            };
+            policy.round_product(&whole, &Int::ONE, value.denom(), currency)
+        }
+    }
 }
 
 /// `value` at the smallest scale, at least `minimum`, that holds it exactly.
@@ -227,17 +256,24 @@ impl<C: Currency> ExactMoney<C> {
             .is_some_and(|needed| needed <= scale)
     }
 
-    /// Rounds once to `scale` (default: the currency's exponent).
+    /// Rounds once: with a mode to `scale` (default: the currency's exponent), with a rounding
+    /// policy to the policy's scale and increment.
     ///
     /// # Errors
     ///
-    /// [`Error::Rounding`] with [`Rounding::Unnecessary`] when inexact; [`Error::InvalidScale`].
-    pub fn round(&self, rounding: Rounding, scale: Option<u16>) -> Result<Money<C>, Error> {
-        let scale = scale.unwrap_or(u16::from(C::CODE.exponent()));
-        Ok(Money::from_amount(round_value(
+    /// [`Error::Rounding`] with [`Rounding::Unnecessary`] when inexact; [`Error::InvalidScale`];
+    /// [`Error::ScaleWithPolicy`] for a scale beside a policy, which has its own;
+    /// [`Error::CurrencyMismatch`] for a policy for another currency.
+    pub fn round(
+        &self,
+        rounding: impl Into<RoundingInput>,
+        scale: Option<u16>,
+    ) -> Result<Money<C>, Error> {
+        Ok(Money::from_amount(round_input_value(
             &self.value,
+            rounding.into(),
             scale,
-            rounding,
+            C::CODE,
         )?))
     }
 
@@ -248,7 +284,7 @@ impl<C: Currency> ExactMoney<C> {
     /// As [`ExactMoney::round`].
     pub fn round_with_residual(
         &self,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
         scale: Option<u16>,
     ) -> Result<Rounded<Money<C>, Self>, Error> {
         let value = self.round(rounding, scale)?;
@@ -394,10 +430,13 @@ impl AnyExactMoney {
     /// # Errors
     ///
     /// As [`ExactMoney::round`].
-    pub fn round(&self, rounding: Rounding, scale: Option<u16>) -> Result<AnyMoney, Error> {
-        let scale = scale.unwrap_or(u16::from(self.currency.exponent()));
+    pub fn round(
+        &self,
+        rounding: impl Into<RoundingInput>,
+        scale: Option<u16>,
+    ) -> Result<AnyMoney, Error> {
         Ok(AnyMoney::from_parts(
-            round_value(&self.value, scale, rounding)?,
+            round_input_value(&self.value, rounding.into(), scale, self.currency)?,
             self.currency,
         ))
     }
@@ -409,7 +448,7 @@ impl AnyExactMoney {
     /// As [`ExactMoney::round`].
     pub fn round_with_residual(
         &self,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
         scale: Option<u16>,
     ) -> Result<Rounded<AnyMoney, Self>, Error> {
         let value = self.round(rounding, scale)?;

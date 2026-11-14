@@ -6,12 +6,12 @@ use core::fmt;
 use core::str::FromStr;
 
 use super::{
-    Date, MoneyKind, amount_in, amount_of, check_periods, exponent_of, is_whole_minor, money_like,
-    multiply_by_ratio, round_quotient, sum_amounts,
+    Date, MoneyKind, amount_in, amount_of, check_periods, currency_of, exponent_of, is_multiple,
+    money_like, multiply_by_ratio, round_quotient, rounding_unit, sum_amounts,
 };
 use crate::allocate::InstalmentRemainder;
 use crate::amount::Amount;
-use crate::{AnyMoney, Currency, Error, Factor, Int, Money, Ratio, Rounding};
+use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, RoundingInput};
 
 /// How a loan is repaid.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -109,8 +109,9 @@ pub struct AmortiseOptions<M> {
     pub periods: u32,
     /// How the loan is repaid.
     pub method: AmortisationMethod,
-    /// How every payment and interest charge is rounded, to the currency's exponent.
-    pub rounding: Rounding,
+    /// How every payment and interest charge is rounded: a mode, to the currency's exponent, or a
+    /// rounding policy, to its scale and increment.
+    pub rounding: RoundingInput,
     /// An amount still owed after the regular payments, paid with the last one (annuity and
     /// linear only).
     pub balloon: Option<M>,
@@ -131,14 +132,14 @@ impl<M> AmortiseOptions<M> {
         rate: impl Factor,
         per_year: u32,
         periods: u32,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
         Ok(Self {
             rate: rate.to_ratio()?,
             per_year,
             periods,
             method: AmortisationMethod::Annuity,
-            rounding,
+            rounding: rounding.into(),
             balloon: None,
             first_payment: None,
             residual: AmortisationResidual::LastPayment,
@@ -268,6 +269,7 @@ fn amortise_of<M: MoneyKind>(
         residual,
     } = *options;
     let exponent = exponent_of(loan);
+    let currency = currency_of(loan);
     let zero = Amount {
         units: Int::ZERO,
         scale: exponent,
@@ -290,7 +292,9 @@ fn amortise_of<M: MoneyKind>(
     {
         return Err(Error::InvalidBalloon);
     }
-    if !is_whole_minor(&loan_amount, exponent) || !is_whole_minor(&balloon_amount, exponent) {
+    // the loan and the balloon are whole units of the rounding, so every amount in the schedule is
+    let unit = rounding_unit(currency, rounding);
+    if !is_multiple(&loan_amount, &unit) || !is_multiple(&balloon_amount, &unit) {
         return Err(Error::NotAMultiple);
     }
     if rate.numer().is_negative() {
@@ -308,7 +312,7 @@ fn amortise_of<M: MoneyKind>(
         .transpose()?;
     let rate_per_period = Ratio::new(rate.numer().clone(), rate.denom() * &Int::from(per_year))?;
     let interest_on =
-        |balance: &Amount| multiply_by_ratio(balance, &rate_per_period, exponent, rounding);
+        |balance: &Amount| multiply_by_ratio(balance, &rate_per_period, currency, rounding);
     // periods is at most MAX_PERIODS, so it fits a usize
     let count = periods as usize;
 
@@ -317,11 +321,8 @@ fn amortise_of<M: MoneyKind>(
         || (method == AmortisationMethod::Annuity && zero_rate)
     {
         // The principal parts of a linear loan, or of any loan at a zero rate: equal parts that
-        // sum to the loan exactly, each a whole number of minor units, the remainder in the last.
-        let unit = Amount {
-            units: Int::ONE,
-            scale: exponent,
-        };
+        // sum to the loan exactly, each a whole number of the rounding's unit, the remainder in the
+        // last.
         let parts = loan_amount.sub(&balloon_amount).instalments(
             count,
             Some(&unit),
@@ -371,7 +372,7 @@ fn amortise_of<M: MoneyKind>(
             &balloon_amount,
             &rate_per_period,
             periods,
-            exponent,
+            currency,
             rounding,
             residual,
             &mut rows,
@@ -406,8 +407,8 @@ fn annuity_rows(
     balloon: &Amount,
     rate: &Ratio,
     periods: u32,
-    exponent: u16,
-    rounding: Rounding,
+    currency: CurrencyCode,
+    rounding: RoundingInput,
     residual: AmortisationResidual,
     rows: &mut Vec<Row>,
 ) -> Result<Amount, Error> {
@@ -422,13 +423,13 @@ fn annuity_rows(
     let payment = round_quotient(
         &((loan_units * &growth_power - balloon_units * &base_power) * rate.numer()),
         &(Int::ONE.mul_pow10(u32::from(scale)) * rate.denom() * (growth_power - &base_power)),
-        exponent,
+        currency,
         rounding,
     )?;
 
     let mut balance = loan.clone();
     for index in 0..periods {
-        let interest = multiply_by_ratio(&balance, rate, exponent, rounding)?;
+        let interest = multiply_by_ratio(&balance, rate, currency, rounding)?;
         let last = index == periods - 1;
         let owed = balance.add(&interest);
         // the last payment, or a regular payment that would clear more than is owed, settles it
@@ -476,7 +477,8 @@ impl<C: Currency> Money<C> {
     /// [`AmortisationResidual::LastInterest`], to the last interest). If rounded payments clear the
     /// loan early, the schedule ends with the payment that clears it, so it can have fewer rows
     /// than `periods`. At a zero rate the payments are equal instalments with the remainder on the
-    /// last. The loan and the balloon must be whole numbers of minor units.
+    /// last. The loan and the balloon must be whole numbers of the rounding's unit (a minor unit,
+    /// or a rounding policy's increment at its scale).
     ///
     /// ```
     /// use ducat::{Money, Rounding};
@@ -497,10 +499,11 @@ impl<C: Currency> Money<C> {
     /// [`payment_dates`] doesn't take); [`Error::InvalidLoan`] for a loan that isn't positive;
     /// [`Error::InvalidBalloon`] for a balloon that isn't between zero and the loan, or with an
     /// interest-only loan; [`Error::NotAMultiple`] for a loan or balloon that isn't a whole number
-    /// of minor units; [`Error::NegativeRate`]; [`Error::InvalidResidual`] for
+    /// of the rounding's unit (a minor unit, or a policy's increment); [`Error::NegativeRate`]; [`Error::InvalidResidual`] for
     /// [`AmortisationResidual::LastInterest`] on anything but an annuity with a non-zero rate, or
     /// a residual larger than the last interest; [`Error::DateOutOfRange`] for payment dates past
-    /// 9999; [`Error::Rounding`] with [`Rounding::Unnecessary`].
+    /// 9999; [`Error::Rounding`] with [`Rounding::Unnecessary`](crate::Rounding::Unnecessary);
+    /// [`Error::CurrencyMismatch`] for a rounding policy for another currency.
     pub fn amortise(&self, options: &AmortiseOptions<Self>) -> Result<Amortisation<Self>, Error> {
         amortise_of(self, options)
     }

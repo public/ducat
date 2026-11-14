@@ -3,8 +3,8 @@
 use core::fmt;
 use core::str::FromStr;
 
-use super::{Date, MoneyKind, amount_of, exponent_of, money_like, multiply_by_ratio};
-use crate::{AnyMoney, Currency, Error, Factor, Int, Money, Ratio, Rounding};
+use super::{Date, MoneyKind, amount_of, currency_of, money_like, multiply_by_ratio};
+use crate::{AnyMoney, Currency, Error, Factor, Int, Money, Ratio, RoundingInput};
 
 /// A day-count convention, as the 2006 ISDA Definitions §4.16 define them. None of them is Excel's
 /// YEARFRAC: its basis 0 is the US (NASD) 30/360 with end-of-February rules rather than Bond
@@ -226,17 +226,30 @@ fn interest_of<M: MoneyKind>(
     principal: &M,
     yearly_rate: impl Factor,
     period: &InterestPeriod,
-    rounding: Rounding,
+    rounding: RoundingInput,
 ) -> Result<M, Error> {
     let fraction = period.year_fraction()?;
     let rate = yearly_rate.to_ratio()?;
     let amount = multiply_by_ratio(
         &amount_of(principal),
         &rate.mul(&fraction),
-        exponent_of(principal),
+        currency_of(principal),
         rounding,
     )?;
     Ok(money_like(principal, amount))
+}
+
+/// Simple interest, `principal × rate × year fraction`, exactly.
+#[cfg(feature = "exact")]
+fn interest_exact_of<M: MoneyKind>(
+    principal: &M,
+    yearly_rate: impl Factor,
+    period: &InterestPeriod,
+) -> Result<M::Exact, Error> {
+    let fraction = period.year_fraction()?;
+    let (units, scale, _) = principal.parts();
+    let value = Ratio::new(units.clone(), Int::ONE.mul_pow10(u32::from(scale)))?;
+    Ok(principal.exact_in(value.mul(&yearly_rate.to_ratio()?).mul(&fraction)))
 }
 
 /// `(1 + rate/per_year)^periods` as a numerator and denominator in lowest terms.
@@ -261,7 +274,7 @@ fn compound_of<M: MoneyKind>(
     yearly_rate: impl Factor,
     periods: u32,
     per_year: u32,
-    rounding: Rounding,
+    rounding: RoundingInput,
 ) -> Result<M, Error> {
     super::check_periods(periods, 0)?;
     let (numerator, denominator) = growth_power(&yearly_rate.to_ratio()?, periods, per_year)?;
@@ -269,7 +282,7 @@ fn compound_of<M: MoneyKind>(
         &amount_of(principal),
         &numerator,
         &denominator,
-        exponent_of(principal),
+        currency_of(principal),
         rounding,
     )?;
     Ok(money_like(principal, amount))
@@ -293,14 +306,40 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// As [`year_fraction`]; [`Error::Rounding`] for an inexact result with
-    /// [`Rounding::Unnecessary`]; and whatever reading `yearly_rate` fails with.
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary); and whatever reading `yearly_rate` fails with.
     pub fn interest(
         &self,
         yearly_rate: impl Factor,
         period: &InterestPeriod,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        interest_of(self, yearly_rate, period, rounding)
+        interest_of(self, yearly_rate, period, rounding.into())
+    }
+
+    /// Simple interest, `principal × yearly_rate × year fraction`, exactly (ducat's
+    /// `interestExact`).
+    ///
+    /// ```
+    /// use ducat::Money;
+    /// use ducat::finance::{DayCount, InterestPeriod};
+    /// use ducat::iso::Eur;
+    ///
+    /// let principal: Money<Eur> = "10000".parse()?;
+    /// let period = InterestPeriod::new("2026-01-15".parse()?, "2026-07-15".parse()?, DayCount::Act365Fixed);
+    /// assert_eq!(principal.interest_exact("0.05", &period)?.value().to_string(), "18100/73");
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// As [`year_fraction`], and whatever reading `yearly_rate` fails with.
+    #[cfg(feature = "exact")]
+    pub fn interest_exact(
+        &self,
+        yearly_rate: impl Factor,
+        period: &InterestPeriod,
+    ) -> Result<crate::exact::ExactMoney<C>, Error> {
+        interest_exact_of(self, yearly_rate, period)
     }
 
     /// Periodic compounding, `principal × (1 + yearly_rate / per_year)^periods`, an exact integer
@@ -320,15 +359,15 @@ impl<C: Currency> Money<C> {
     ///
     /// [`Error::InvalidPeriods`] for more than [`MAX_PERIODS`](super::MAX_PERIODS) periods;
     /// [`Error::InvalidPerYear`] for a `per_year` of zero; [`Error::RateTooLow`] for a rate that
-    /// loses everything in one period; [`Error::Rounding`] with [`Rounding::Unnecessary`].
+    /// loses everything in one period; [`Error::Rounding`] with [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn compound(
         &self,
         yearly_rate: impl Factor,
         periods: u32,
         per_year: u32,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        compound_of(self, yearly_rate, periods, per_year, rounding)
+        compound_of(self, yearly_rate, periods, per_year, rounding.into())
     }
 }
 
@@ -342,9 +381,23 @@ impl AnyMoney {
         &self,
         yearly_rate: impl Factor,
         period: &InterestPeriod,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        interest_of(self, yearly_rate, period, rounding)
+        interest_of(self, yearly_rate, period, rounding.into())
+    }
+
+    /// As [`Money::interest_exact`].
+    ///
+    /// # Errors
+    ///
+    /// As [`Money::interest_exact`].
+    #[cfg(feature = "exact")]
+    pub fn interest_exact(
+        &self,
+        yearly_rate: impl Factor,
+        period: &InterestPeriod,
+    ) -> Result<crate::exact::AnyExactMoney, Error> {
+        interest_exact_of(self, yearly_rate, period)
     }
 
     /// As [`Money::compound`].
@@ -357,8 +410,8 @@ impl AnyMoney {
         yearly_rate: impl Factor,
         periods: u32,
         per_year: u32,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
-        compound_of(self, yearly_rate, periods, per_year, rounding)
+        compound_of(self, yearly_rate, periods, per_year, rounding.into())
     }
 }

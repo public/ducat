@@ -5,7 +5,7 @@ use core::fmt;
 
 use super::{MAX_PERIODS, MoneyKind, money_like, round_quotient};
 use crate::decimal::write_scaled;
-use crate::{Error, Factor, Int, Ratio, Rounding};
+use crate::{Error, Factor, Int, Ratio, RoundingInput};
 
 /// The most decimal places a rate may be asked for.
 const MAX_DIGITS: u16 = 100;
@@ -83,20 +83,19 @@ fn discounted_value<M: MoneyKind>(
 fn discounted<M: MoneyKind>(
     rate: impl Factor,
     flows: &[M],
-    rounding: Rounding,
+    rounding: RoundingInput,
     from_period_one: bool,
 ) -> Result<M, Error> {
     let (numerator, denominator) = discounted_value(&rate.to_ratio()?, flows, from_period_one)?;
     let first = &flows[0];
-    let exponent = u16::from(first.parts().2.exponent());
     Ok(money_like(
         first,
-        round_quotient(&numerator, &denominator, exponent, rounding)?,
+        round_quotient(&numerator, &denominator, first.parts().2, rounding)?,
     ))
 }
 
-/// The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`, rounded once to the
-/// currency's exponent: the textbook NPV, with the first flow (an initial outlay, say) not
+/// The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`, rounded once (with a
+/// mode to the currency's exponent, with a rounding policy to its scale and increment): the textbook NPV, with the first flow (an initial outlay, say) not
 /// discounted. It is `flows[0] + `[`npv`](crate::excel::npv)`(rate, flows[1..])`. (Not Excel's PV, which is an annuity's
 /// present value.)
 ///
@@ -114,13 +113,38 @@ fn discounted<M: MoneyKind>(
 ///
 /// [`Error::NoFlows`]; [`Error::CurrencyMismatch`] for flows in more than one currency;
 /// [`Error::RateTooLow`] for a rate at or below −1; [`Error::Rounding`] with
-/// [`Rounding::Unnecessary`]; and whatever reading `rate` fails with.
+/// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary); and whatever reading `rate` fails
+/// with.
 pub fn discounted_sum<M: MoneyKind>(
     rate: impl Factor,
     flows: &[M],
-    rounding: Rounding,
+    rounding: impl Into<RoundingInput>,
 ) -> Result<M, Error> {
-    discounted(rate, flows, rounding, false)
+    discounted(rate, flows, rounding.into(), false)
+}
+
+/// The discounted sum of flows at periods 0, 1, 2…, exactly (see [`discounted_sum`]).
+///
+/// ```
+/// use ducat::Money;
+/// use ducat::finance::discounted_sum_exact;
+/// use ducat::iso::Eur;
+///
+/// let flows: Vec<Money<Eur>> = ["-100", "110"].iter().map(|f| f.parse()).collect::<Result<_, _>>()?;
+/// assert!(discounted_sum_exact("0.1", &flows)?.value().is_zero());
+/// # Ok::<(), ducat::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// As [`discounted_sum`], without the rounding.
+#[cfg(feature = "exact")]
+pub fn discounted_sum_exact<M: MoneyKind>(
+    rate: impl Factor,
+    flows: &[M],
+) -> Result<M::Exact, Error> {
+    let (numerator, denominator) = discounted_value(&rate.to_ratio()?, flows, false)?;
+    Ok(flows[0].exact_in(Ratio::new(numerator, denominator)?))
 }
 
 /// Excel's NPV: `Σ flowᵢ / (1 + rate)ⁱ` for i = 1, 2…, so the first flow is at the end of period 1
@@ -143,8 +167,12 @@ pub fn discounted_sum<M: MoneyKind>(
 ///
 /// As [`discounted_sum`].
 #[cfg(feature = "excel")]
-pub fn npv<M: MoneyKind>(rate: impl Factor, flows: &[M], rounding: Rounding) -> Result<M, Error> {
-    discounted(rate, flows, rounding, true)
+pub fn npv<M: MoneyKind>(
+    rate: impl Factor,
+    flows: &[M],
+    rounding: impl Into<RoundingInput>,
+) -> Result<M, Error> {
+    discounted(rate, flows, rounding.into(), true)
 }
 
 /// Excel's NPV, exactly (see [`npv`]).

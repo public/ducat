@@ -7,7 +7,7 @@ use core::ops::Neg;
 use core::str::FromStr;
 
 use crate::amount::Amount;
-use crate::{CurrencyCode, Error, Factor, Int, Rounding};
+use crate::{CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money whose currency is a run-time [`CurrencyCode`]: for values from
 /// databases, JSON and user input.
@@ -62,7 +62,7 @@ impl AnyMoney {
     }
 
     /// `other`'s amount, when it is in this currency.
-    #[cfg(any(feature = "allocate", feature = "cash"))]
+    #[cfg(any(feature = "allocate", feature = "cash", feature = "math"))]
     pub(crate) fn amount_in<'a>(&self, other: &'a Self) -> Result<&'a Amount, Error> {
         self.same_currency(other)?;
         Ok(&other.amount)
@@ -118,7 +118,7 @@ impl AnyMoney {
     ///
     /// # Errors
     ///
-    /// As [`AnyMoney::parse_at`] with [`Rounding::Unnecessary`].
+    /// As [`AnyMoney::parse_at`] with [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn parse(text: &str, currency: CurrencyCode) -> Result<Self, Error> {
         Self::parse_at(
             text,
@@ -141,7 +141,7 @@ impl AnyMoney {
     ///
     /// [`Error::Syntax`] outside the grammar; [`Error::ExponentOutOfRange`] for an exponent or
     /// decimal places beyond 1000; [`Error::InvalidScale`]; [`Error::Rounding`] for more
-    /// decimals than `scale` with [`Rounding::Unnecessary`].
+    /// decimals than `scale` with [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn parse_at(
         text: &str,
         currency: CurrencyCode,
@@ -262,11 +262,16 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::multiply`](crate::Money::multiply).
-    pub fn multiply(&self, factor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
-        Ok(self.with_amount(self.amount.mul_ratio(
+    pub fn multiply(
+        &self,
+        factor: impl Factor,
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<Self, Error> {
+        Ok(self.with_amount(self.amount.mul_input(
             &factor.to_ratio()?,
             self.amount.scale,
-            rounding,
+            rounding.into(),
+            self.currency,
         )?))
     }
 
@@ -275,11 +280,16 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::divide`](crate::Money::divide).
-    pub fn divide(&self, divisor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
-        Ok(self.with_amount(self.amount.div_ratio(
-            &divisor.to_ratio()?,
+    pub fn divide(
+        &self,
+        divisor: impl Factor,
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<Self, Error> {
+        Ok(self.with_amount(self.amount.mul_input(
+            &divisor.to_ratio()?.recip()?,
             self.amount.scale,
-            rounding,
+            rounding.into(),
+            self.currency,
         )?))
     }
 
@@ -292,17 +302,22 @@ impl AnyMoney {
         Ok(self.with_amount(self.amount.rescale(scale, rounding)?))
     }
 
-    /// The amount rounded to the currency's exponent.
+    /// As [`Money::round`](crate::Money::round).
     ///
     /// # Errors
     ///
-    /// As [`Money::to_scale`](crate::Money::to_scale).
-    pub fn round(&self, rounding: Rounding) -> Result<Self, Error> {
-        self.to_scale(u16::from(self.currency.exponent()), rounding)
+    /// As [`Money::round`](crate::Money::round).
+    pub fn round(&self, rounding: impl Into<RoundingInput>) -> Result<Self, Error> {
+        Ok(self.with_amount(self.amount.mul_input(
+            &Ratio::ONE,
+            u16::from(self.currency.exponent()),
+            rounding.into(),
+            self.currency,
+        )?))
     }
 
-    /// Converts to `to` at `rate` (units of `to` per unit of this currency), rounded once to
-    /// `to`'s exponent.
+    /// Converts to `to` at `rate` (units of `to` per unit of this currency), rounded once as
+    /// [`Money::convert`](crate::Money::convert) rounds.
     ///
     /// # Errors
     ///
@@ -312,7 +327,7 @@ impl AnyMoney {
         &self,
         to: CurrencyCode,
         rate: impl Factor,
-        rounding: Rounding,
+        rounding: impl Into<RoundingInput>,
     ) -> Result<Self, Error> {
         let rate = rate.to_ratio()?;
         if !rate.numer().is_positive() {
@@ -321,7 +336,7 @@ impl AnyMoney {
         Ok(Self {
             amount: self
                 .amount
-                .mul_ratio(&rate, u16::from(to.exponent()), rounding)?,
+                .mul_input(&rate, u16::from(to.exponent()), rounding.into(), to)?,
             currency: to,
         })
     }
