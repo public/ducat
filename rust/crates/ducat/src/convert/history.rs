@@ -74,10 +74,10 @@ impl QuotedRate {
 }
 
 /// A one-base table of published quotes: ducat's `QuotedTableSpec`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct QuotedTableSpec {
     /// The base currency.
-    pub base: Option<CurrencyCode>,
+    pub base: CurrencyCode,
     /// The table's metadata, which every rate gets too (its quote isn't used).
     pub info: RateInfo,
     /// Every rate is published as base per unit of the currency, unless its entry says otherwise.
@@ -86,6 +86,25 @@ pub struct QuotedTableSpec {
     pub decimals: Option<u8>,
     /// The rates in order; `None` for a currency listed without a value.
     pub rates: Vec<(CurrencyCode, Option<QuotedRate>)>,
+    /// Codes the source listed that aren't currencies the port knows (see
+    /// [`RateTable::unknown`]).
+    pub unknown: Vec<String>,
+}
+
+impl QuotedTableSpec {
+    /// A table of `base` with `info`, its rates published in its own direction and with all their
+    /// digits.
+    #[must_use]
+    pub const fn new(base: CurrencyCode, info: RateInfo) -> Self {
+        Self {
+            base,
+            info,
+            inverted: false,
+            decimals: None,
+            rates: Vec::new(),
+            unknown: Vec::new(),
+        }
+    }
 }
 
 /// A table from rates as a source published them: each is stored exactly in the table's
@@ -93,9 +112,9 @@ pub struct QuotedTableSpec {
 ///
 /// # Errors
 ///
-/// As [`rate_from_quote`]; [`Error::MalformedRates`] without a base.
+/// As [`rate_from_quote`]; [`Error::InvalidDecimals`] for more than 30 decimals.
 pub fn quoted_table(spec: &QuotedTableSpec) -> Result<RateTable, Error> {
-    let base = spec.base.ok_or(Error::MalformedRates)?;
+    let base = spec.base;
     let info = RateInfo {
         quote: None,
         ..spec.info.clone()
@@ -107,7 +126,7 @@ pub fn quoted_table(spec: &QuotedTableSpec) -> Result<RateTable, Error> {
             Some(quoted) => {
                 let mut text = String::from(quoted.rate.trim());
                 if let Some(decimals) = quoted.decimals.or(spec.decimals) {
-                    text = with_decimals(&text, decimals);
+                    text = with_decimals(&text, decimals)?;
                 }
                 let quote = RateQuote {
                     rate: text,
@@ -120,6 +139,9 @@ pub fn quoted_table(spec: &QuotedTableSpec) -> Result<RateTable, Error> {
                 )?
             }
         };
+    }
+    for code in &spec.unknown {
+        builder = builder.unknown(code);
     }
     Ok(builder.build())
 }
@@ -210,8 +232,9 @@ pub fn rate_history(
 }
 
 fn before(day: Date, count: i64) -> Date {
-    // dates in a history are real days; stepping back past 0000-01-01 stops there
-    day.add_days(-count).unwrap_or(day)
+    // stepping back past 0000-01-01 stops there
+    day.add_days(-count)
+        .unwrap_or_else(|_| Date::new(0, 1, 1).unwrap_or(day))
 }
 
 /// Why a table can't answer the pair at the time asked for, or `None` when it can.

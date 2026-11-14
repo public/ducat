@@ -46,7 +46,7 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("allocate", 5400),
     ("cash", 2014),
     ("currency", 1367),
-    ("convert", 2614),
+    ("convert", 2677),
     ("core", 41),
     ("exact", 1000),
     ("excel", 2878),

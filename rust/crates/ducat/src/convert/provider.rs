@@ -2,6 +2,7 @@
 //! (ducat's `src/provider.ts`). Loading rates (network, files, databases) stays outside.
 
 use alloc::collections::BTreeMap;
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::{AnyRate, RateInfo, Time};
@@ -220,6 +221,7 @@ pub struct RateTable {
     available_at: Option<Time>,
     valid_until: Option<Time>,
     missing: Vec<CurrencyCode>,
+    unknown: Vec<String>,
 }
 
 impl RateTable {
@@ -291,6 +293,14 @@ impl RateTable {
     pub fn missing(&self) -> &[CurrencyCode] {
         &self.missing
     }
+
+    /// The codes a source listed that aren't ISO 4217 currencies, current or withdrawn: their
+    /// rates are left out. ducat keeps such a code as a currency of its own; the port lists it
+    /// here, so a code new to ISO 4217 doesn't fail a whole file.
+    #[must_use]
+    pub fn unknown(&self) -> &[String] {
+        &self.unknown
+    }
 }
 
 impl RateProvider for RateTable {
@@ -345,6 +355,13 @@ impl RateTableBuilder {
     /// Records a currency the source listed without a value (a holiday, `N/A`).
     pub fn missing(mut self, currency: CurrencyCode) -> Self {
         self.table.missing.push(currency);
+        self
+    }
+
+    /// Records a code the source listed that isn't a currency the port knows (see
+    /// [`RateTable::unknown`]).
+    pub fn unknown(mut self, code: &str) -> Self {
+        self.table.unknown.push(code.into());
         self
     }
 

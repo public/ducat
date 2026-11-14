@@ -6,8 +6,8 @@ use alloc::vec::Vec;
 use super::history::{QuotedRate, QuotedTableSpec, quoted_table};
 use super::json_value::{Value, parse};
 use super::rate_text::{
-    DayRates, add_day_rate, any_rate, calendar_day, currency, local_time, malformed, newest_first,
-    publication, rate_cell, sunday,
+    DayRates, add_day_rate, any_rate, calendar_day, is_code, local_time, malformed, newest_first,
+    publication, rate_cell, resolve, sunday,
 };
 use super::{Date, Publication, RateInfo, RateTable, RateType, Time};
 use crate::{CurrencyCode, Error};
@@ -36,14 +36,12 @@ fn published_by(day: Date) -> Result<Time, Error> {
 }
 
 /// The currency of a daily `FX…CAD` series.
-fn series_currency(series: &str) -> Result<CurrencyCode, Error> {
+fn series_currency(series: &str) -> Result<&str, Error> {
     match series
         .strip_prefix("FX")
         .and_then(|rest| rest.strip_suffix("CAD"))
     {
-        Some(code) if code.len() == 3 && code.bytes().all(|byte| byte.is_ascii_uppercase()) => {
-            currency(code)
-        }
+        Some(code) if is_code(code) => Ok(code),
         _ => malformed(),
     }
 }
@@ -103,7 +101,7 @@ pub fn parse_bank_of_canada_json(
             let known = days
                 .iter()
                 .find(|(known, _)| *known == day)
-                .is_some_and(|(_, rates)| rates.iter().any(|(c, _)| *c == code));
+                .is_some_and(|(_, rates)| rates.iter().any(|(c, _)| c == code));
             if !known {
                 add_day_rate(&mut days, day, code, None)?;
             }
@@ -115,8 +113,9 @@ pub fn parse_bank_of_canada_json(
         if !any_rate(rates) {
             continue;
         }
+        let (known, unknown) = resolve(rates);
         let spec = QuotedTableSpec {
-            base: Some(cad),
+            base: cad,
             info: RateInfo {
                 source: Some("BoC".into()),
                 as_of: Some(Time::Date(*day)),
@@ -126,10 +125,11 @@ pub fn parse_bank_of_canada_json(
             },
             inverted: true,
             decimals: None,
-            rates: rates
-                .iter()
-                .map(|(code, rate)| (*code, rate.as_deref().map(QuotedRate::new)))
+            rates: known
+                .into_iter()
+                .map(|(code, rate)| (code, rate.map(QuotedRate::new)))
                 .collect(),
+            unknown,
         };
         tables.push(quoted_table(&spec)?);
     }

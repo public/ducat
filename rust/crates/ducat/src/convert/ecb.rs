@@ -17,8 +17,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::rate_text::{
-    DayRates, add_day_rate, any_rate, calendar_day, csv_rows, currency, day_of, digits,
-    is_plain_decimal, local_time, malformed, newest_first, publication, rate_cell, sunday,
+    DayRates, add_day_rate, any_rate, calendar_day, csv_rows, day_of, digits, is_code,
+    is_plain_decimal, local_time, malformed, newest_first, publication, rate_cell, resolve, sunday,
     with_decimals, without_bom,
 };
 use super::{Date, Publication, RateInfo, RateTable, RateType, Time};
@@ -42,7 +42,7 @@ pub struct EcbSdmxOptions<'a> {
     /// The decimals each currency is published with, for a file without the DECIMALS column
     /// (`detail=dataonly`); see [`parse_ecb_sdmx_decimals`]. A DECIMALS column in the file takes
     /// precedence.
-    pub decimals: &'a [(CurrencyCode, u8)],
+    pub decimals: &'a [(String, u8)],
 }
 
 /// 16:00 in Frankfurt on `day`: CET, or CEST from the last Sunday of March to the last Sunday of
@@ -68,11 +68,15 @@ fn ecb_table(
         ..RateInfo::default()
     };
     let mut builder = RateTable::with_base(CurrencyCode::iso("EUR")?, info);
-    for (code, rate) in rates {
+    let (known, unknown) = resolve(rates);
+    for (code, rate) in known {
         builder = match rate {
-            Some(text) => builder.rate(*code, text)?,
-            None => builder.missing(*code),
+            Some(text) => builder.rate(code, text)?,
+            None => builder.missing(code),
         };
+    }
+    for code in &unknown {
+        builder = builder.unknown(code);
     }
     Ok(builder.build())
 }
@@ -126,47 +130,62 @@ fn ecb_day(text: &str) -> Result<Date, Error> {
     }
 }
 
-/// The next `<Cube time="…">…</Cube>` at or after `from`: its date text, its body and where it
-/// ends.
-fn next_day_cube(text: &str, mut from: usize) -> Option<(&str, &str, usize)> {
-    while let Some(found) = text.get(from..)?.find("<Cube") {
+/// The next `<Cube …>`, `<Cube …/>` or `</Cube>` tag at or after `from`: whether it closes,
+/// its attribute text, whether it is self-closing, and where it ends. `Cube` must end the name
+/// (`<Cubes>` isn't one).
+fn next_cube_tag(text: &str, mut from: usize) -> Option<(bool, &str, bool, usize)> {
+    while let Some(found) = text.get(from..)?.find('<') {
         let start = from + found;
         from = start + 1;
-        let rest = &text[start + 5..];
-        let spaced = rest.trim_start();
-        if spaced.len() == rest.len() {
-            continue;
-        }
-        let Some(after) = spaced.strip_prefix("time=") else {
+        let rest = &text[start + 1..];
+        let (close, rest) = match rest.strip_prefix('/') {
+            Some(rest) => (true, rest),
+            None => (false, rest),
+        };
+        let Some(after) = rest.strip_prefix("Cube") else {
             continue;
         };
-        let after = after.as_bytes();
-        let quotes = |byte: u8| byte == b'"' || byte == b'\'';
-        if after.len() < 12 || !quotes(after[0]) || !quotes(after[11]) {
+        if after
+            .chars()
+            .next()
+            .is_some_and(|char| char.is_ascii_alphanumeric() || char == '_')
+        {
             continue;
         }
-        // checked byte by byte before slicing, so the slice is ASCII
-        let date_ok = after[1..11].iter().enumerate().all(|(i, &byte)| {
-            if i == 4 || i == 7 {
-                byte == b'-'
-            } else {
-                byte.is_ascii_digit()
-            }
-        });
-        if !date_ok {
-            continue;
-        }
-        let date = &spaced[6..16];
-        let tail = &spaced[17..];
-        let tail_trimmed = tail.trim_start();
-        let Some(body) = tail_trimmed.strip_prefix('>') else {
-            continue;
+        let end = after.find('>')?;
+        let inner = &after[..end];
+        let (attributes, self_closing) = match inner.strip_suffix('/') {
+            Some(attributes) => (attributes, true),
+            None => (inner, false),
         };
-        let body_start = text.len() - body.len();
-        let close = body.find("</Cube>")?;
-        return Some((date, &body[..close], body_start + close + 7));
+        let tag_end = text.len() - after.len() + end + 1;
+        return Some((close, attributes, self_closing, tag_end));
     }
     None
+}
+
+/// A day cube's attribute text, ` time='2026-11-06' `: its date text.
+fn day_attributes(text: &str) -> Option<&str> {
+    let rest = text.trim_start();
+    if rest.len() == text.len() {
+        return None;
+    }
+    let value = rest.strip_prefix("time=")?;
+    let bytes = value.as_bytes();
+    let quotes = |byte: u8| byte == b'"' || byte == b'\'';
+    if bytes.len() < 12 || !quotes(bytes[0]) || !quotes(bytes[11]) || !value[12..].trim().is_empty()
+    {
+        return None;
+    }
+    let shaped = bytes[1..11].iter().enumerate().all(|(i, &byte)| {
+        if i == 4 || i == 7 {
+            byte == b'-'
+        } else {
+            byte.is_ascii_digit()
+        }
+    });
+    // checked byte by byte, so the slice is ASCII
+    shaped.then(|| &value[1..11])
 }
 
 /// The attributes of an inner cube's text, the last of a repeated name winning.
@@ -210,46 +229,27 @@ fn attributes(text: &str) -> Vec<(&str, &str)> {
     found
 }
 
-/// The currency → rate attributes of the inner cubes of one day's cube.
-fn rates_of_day(body: &str) -> Result<DayRates, Error> {
-    let mut rates: DayRates = Vec::new();
-    let mut from = 0;
-    while let Some(found) = body[from..].find("<Cube") {
-        let start = from + found + 5;
-        from = start;
-        let word = body[start..]
-            .chars()
-            .next()
-            .is_some_and(|char| char.is_ascii_alphanumeric() || char == '_');
-        if word {
-            continue;
-        }
-        let Some(end) = body[start..].find('>') else {
-            break;
-        };
-        let inner = &body[start..start + end];
-        let inner = inner.strip_suffix('/').unwrap_or(inner);
-        from = start + end + 1;
-        let attributes = attributes(inner);
-        let get = |name: &str| {
-            attributes
-                .iter()
-                .find(|(key, _)| *key == name)
-                .map(|(_, v)| *v)
-        };
-        match (get("currency"), get("rate")) {
-            (None, None) => {}
-            (Some(code), Some(rate)) if is_plain_decimal(rate) => {
-                let code = currency(code)?;
-                match rates.iter_mut().find(|(known, _)| *known == code) {
-                    Some(entry) => entry.1 = Some(rate.into()),
-                    None => rates.push((code, Some(rate.into()))),
-                }
+/// Adds the currency → rate attributes of one inner cube to a day's rates.
+fn add_rate(rates: &mut DayRates, text: &str) -> Result<(), Error> {
+    let attributes = attributes(text);
+    let get = |name: &str| {
+        attributes
+            .iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, v)| *v)
+    };
+    match (get("currency"), get("rate")) {
+        (None, None) => Ok(()),
+        // fail rather than silently drop a currency: a missing rate would look like "not quoted"
+        (Some(code), Some(rate)) if is_code(code) && is_plain_decimal(rate) => {
+            match rates.iter_mut().find(|(known, _)| known == code) {
+                Some(entry) => entry.1 = Some(rate.into()),
+                None => rates.push((code.into(), Some(rate.into()))),
             }
-            _ => return malformed(),
+            Ok(())
         }
+        _ => malformed(),
     }
-    Ok(rates)
 }
 
 /// Parses `eurofxref-daily.xml`, `eurofxref-hist-90d.xml` or `eurofxref-hist.xml` into one
@@ -261,17 +261,46 @@ fn rates_of_day(body: &str) -> Result<DayRates, Error> {
 /// [`Error::MalformedRates`] for a file without a day, or a rate entry that can't be read.
 pub fn parse_ecb_xml(xml: &str, options: &EcbOptions<'_>) -> Result<Vec<RateTable>, Error> {
     let text = without_bom(xml);
-    let (mut days, mut tables, mut from) = (0, Vec::new(), 0);
-    while let Some((date, body, end)) = next_day_cube(text, from) {
-        days += 1;
+    let mut tables = Vec::new();
+    // the Cube elements must nest: a day's rates end at its own closing tag, and an inner cube
+    // may be written <Cube …/> or <Cube …></Cube>
+    let (mut days, mut depth, mut from) = (0_u32, 0_i64, 0);
+    let mut day: Option<(Date, DayRates)> = None;
+    let mut open: Option<&str> = None;
+    while let Some((close, attributes, self_closing, end)) = next_cube_tag(text, from) {
         from = end;
-        let day = ecb_day(date)?;
-        let rates = rates_of_day(body)?;
-        if !rates.is_empty() {
-            tables.push(ecb_table(day, &rates, &options.available_at)?);
+        if close {
+            if let Some(inner) = open.take() {
+                if let Some((_, rates)) = &mut day {
+                    add_rate(rates, inner)?;
+                }
+            } else if let Some((date, rates)) = day.take() {
+                if !rates.is_empty() {
+                    tables.push(ecb_table(date, &rates, &options.available_at)?);
+                }
+            }
+            depth -= 1;
+        } else if open.is_some() {
+            return malformed();
+        } else if let Some((_, rates)) = &mut day {
+            if self_closing {
+                add_rate(rates, attributes)?;
+            } else {
+                open = Some(attributes);
+                depth += 1;
+            }
+        } else if !self_closing {
+            if let Some(date) = day_attributes(attributes) {
+                days += 1;
+                day = Some((ecb_day(date)?, Vec::new()));
+            }
+            depth += 1;
+        }
+        if depth < 0 {
+            return malformed();
         }
     }
-    if days == 0 {
+    if days == 0 || depth != 0 {
         return malformed();
     }
     Ok(newest_first(tables))
@@ -294,27 +323,20 @@ pub fn parse_ecb_csv(csv: &str, options: &EcbOptions<'_>) -> Result<Vec<RateTabl
     if columns[0] != "Date" {
         return malformed();
     }
-    let codes = columns[1..]
-        .iter()
-        .map(|code| {
-            if code.is_empty() {
-                Ok(None)
-            } else {
-                currency(code).map(Some)
-            }
-        })
-        .collect::<Result<Vec<_>, Error>>()?;
+    let codes = &columns[1..];
     let mut tables = Vec::new();
     for line in lines {
         let cells: Vec<&str> = line.split(',').map(str::trim).collect();
         let day = ecb_day(cells[0])?;
         let mut rates: DayRates = Vec::new();
         for (i, code) in codes.iter().enumerate() {
-            let Some(code) = code else { continue };
+            if code.is_empty() {
+                continue;
+            }
             let rate = rate_cell(cells.get(i + 1).copied().unwrap_or(""))?;
             match rates.iter_mut().find(|(known, _)| known == code) {
                 Some(entry) => entry.1 = rate.map(String::from),
-                None => rates.push((*code, rate.map(String::from))),
+                None => rates.push(((*code).into(), rate.map(String::from))),
             }
         }
         if any_rate(&rates) {
@@ -375,17 +397,16 @@ fn required(header: &[String], names: &[&str]) -> Result<Vec<usize>, Error> {
 ///
 /// [`Error::MalformedRates`] for a file without CURRENCY and DECIMALS columns, or with a DECIMALS
 /// that isn't 0 to 30.
-pub fn parse_ecb_sdmx_decimals(csv: &str) -> Result<Vec<(CurrencyCode, u8)>, Error> {
+pub fn parse_ecb_sdmx_decimals(csv: &str) -> Result<Vec<(String, u8)>, Error> {
     let (header, rows) = sdmx_records(csv)?;
     let at = required(&header, &["CURRENCY", "DECIMALS"])?;
-    let mut decimals: Vec<(CurrencyCode, u8)> = Vec::new();
+    let mut decimals: Vec<(String, u8)> = Vec::new();
     for cells in rows {
-        let code_text = cells[at[0]].trim();
-        let code = currency(code_text)?;
-        let value = stated_decimals(code_text, cells[at[1]].trim())?;
-        match decimals.iter_mut().find(|(known, _)| *known == code) {
+        let code = cells[at[0]].trim();
+        let value = stated_decimals(code, cells[at[1]].trim())?;
+        match decimals.iter_mut().find(|(known, _)| known == code) {
             Some(entry) => entry.1 = value,
-            None => decimals.push((code, value)),
+            None => decimals.push((code.into(), value)),
         }
     }
     Ok(decimals)
@@ -431,31 +452,32 @@ pub fn parse_ecb_sdmx_csv(
                     byte.is_ascii_digit()
                 }
             });
-        if code_text.len() != 3
-            || !code_text.bytes().all(|byte| byte.is_ascii_uppercase())
-            || !shaped
-        {
+        if !is_code(code_text) || !shaped {
             return malformed();
         }
         if optional(cells, "UNIT_MULT").is_some_and(|value| !value.is_empty() && value != "0") {
             return malformed();
         }
-        let code = currency(code_text)?;
         let mut rate = rate_cell(cells[at[3]].trim())?.map(String::from);
         if let Some(text) = &rate {
             let mut decimals = options
                 .decimals
                 .iter()
-                .find(|(known, _)| *known == code)
+                .find(|(known, _)| known == code_text)
                 .map(|&(_, value)| value);
             if let Some(own) = optional(cells, "DECIMALS").filter(|own| !own.is_empty()) {
                 decimals = Some(stated_decimals(code_text, &own)?);
             }
             if let Some(decimals) = decimals {
-                rate = Some(with_decimals(text, decimals));
+                rate = Some(with_decimals(text, decimals)?);
             }
         }
-        add_day_rate(&mut days, calendar_day(day_text)?, code, rate.as_deref())?;
+        add_day_rate(
+            &mut days,
+            calendar_day(day_text)?,
+            code_text,
+            rate.as_deref(),
+        )?;
     }
     let mut tables = Vec::new();
     for (day, rates) in &days {

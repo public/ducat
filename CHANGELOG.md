@@ -82,7 +82,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The rate-source fixtures move to `spec/fixtures/`, with their provenance, and
   `spec/vectors/convert/sources.json` checks the parsers on them (from
   `scripts/gen-rate-source-vectors.py`, Python's standard library). The Rust port gains the parsers,
-  a feature each: `ecb`, `boc`, `fed`, `boe`, `hmrc`, `history`, `stripe-fx` and `adyen-fx`.
+  a feature each: `ecb`, `boc`, `fed`, `boe`, `hmrc`, `history`, `stripe-fx` and `adyen-fx`. A code
+  that isn't an ISO 4217 currency, current or withdrawn, is listed in the table's `unknown()`
+  rather than failing the file.
 
 ### Fixed
 

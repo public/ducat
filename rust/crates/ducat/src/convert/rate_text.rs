@@ -49,24 +49,33 @@ pub(crate) fn rate_cell(cell: &str) -> Result<Option<&str>, Error> {
     }
 }
 
+/// The most decimals a source can be said to publish, as ducat's `withDecimals` allows.
+pub(crate) const MAX_PUBLISHED_DECIMALS: u8 = 30;
+
 /// The published digits of a rate from a feed that strips trailing zeros: `1.175` with 4
 /// decimals is `1.1750`. Text with more decimals is kept as it is.
-pub(crate) fn with_decimals(text: &str, decimals: u8) -> String {
+///
+/// # Errors
+///
+/// [`Error::InvalidDecimals`] for more than 30 decimals.
+pub(crate) fn with_decimals(text: &str, decimals: u8) -> Result<String, Error> {
+    if decimals > MAX_PUBLISHED_DECIMALS {
+        return Err(Error::InvalidDecimals);
+    }
     let present = text
         .split_once('.')
         .map_or(0, |(_, fraction)| fraction.len());
     let wanted = usize::from(decimals);
     let mut out = String::from(text);
-    if present >= wanted {
-        return out;
+    if present < wanted {
+        if present == 0 {
+            out.push('.');
+        }
+        for _ in present..wanted {
+            out.push('0');
+        }
     }
-    if present == 0 {
-        out.push('.');
-    }
-    for _ in present..wanted {
-        out.push('0');
-    }
-    out
+    Ok(out)
 }
 
 /// Text without a leading byte-order mark.
@@ -162,24 +171,43 @@ pub(crate) fn digits(text: &str, count: usize) -> Option<u16> {
         .flatten()
 }
 
-/// A currency code from a file: three uppercase letters, an ISO 4217 code or a withdrawn one (the
-/// ECB's history lists CYP, the Fed VEB).
-pub(crate) fn currency(code: &str) -> Result<CurrencyCode, Error> {
-    if code.len() != 3 || !code.bytes().all(|byte| byte.is_ascii_uppercase()) {
-        return malformed();
-    }
-    CurrencyCode::iso(code).or_else(|_| CurrencyCode::historic(code))
+/// Three uppercase ASCII letters, the shape every source's codes have.
+pub(crate) fn is_code(text: &str) -> bool {
+    text.len() == 3 && text.bytes().all(|byte| byte.is_ascii_uppercase())
 }
 
-/// A day's rates by currency, in the order first seen: a rate text or `None` (missing).
-pub(crate) type DayRates = Vec<(CurrencyCode, Option<String>)>;
+/// A currency code from a file: an ISO 4217 code or a withdrawn one (the ECB's history lists CYP,
+/// the Fed VEB). `None` for any other: the parsers skip it and list it in the table's `unknown`,
+/// so a code new to ISO 4217 doesn't fail the whole file.
+pub(crate) fn currency(code: &str) -> Option<CurrencyCode> {
+    CurrencyCode::iso(code)
+        .or_else(|_| CurrencyCode::historic(code))
+        .ok()
+}
+
+/// A day's rates by currency code, as the file writes it, in the order first seen: a rate text or
+/// `None` (missing).
+pub(crate) type DayRates = Vec<(String, Option<String>)>;
+
+/// A day's rates split into the currencies the port knows, with their rates, and the codes it
+/// doesn't.
+pub(crate) fn resolve(rates: &DayRates) -> (Vec<(CurrencyCode, Option<&str>)>, Vec<String>) {
+    let (mut known, mut unknown) = (Vec::new(), Vec::new());
+    for (code, rate) in rates {
+        match currency(code) {
+            Some(currency) => known.push((currency, rate.as_deref())),
+            None => unknown.push(code.clone()),
+        }
+    }
+    (known, unknown)
+}
 
 /// Records a currency's rate (or `None`, missing) for a day. The same currency twice on one day is
 /// a repeat, which is fine, or a contradiction, which is malformed: a parser never picks one.
 pub(crate) fn add_day_rate(
     days: &mut Vec<(Date, DayRates)>,
     day: Date,
-    code: CurrencyCode,
+    code: &str,
     rate: Option<&str>,
 ) -> Result<(), Error> {
     let index = match days.iter().position(|(known, _)| *known == day) {
@@ -190,11 +218,11 @@ pub(crate) fn add_day_rate(
         }
     };
     let rates = &mut days[index].1;
-    match rates.iter().find(|(known, _)| *known == code) {
+    match rates.iter().find(|(known, _)| known == code) {
         Some((_, earlier)) if earlier.as_deref() != rate => malformed(),
         Some(_) => Ok(()),
         None => {
-            rates.push((code, rate.map(String::from)));
+            rates.push((code.into(), rate.map(String::from)));
             Ok(())
         }
     }

@@ -95,7 +95,7 @@ fn parse(row: &Value) -> Result<Vec<RateTable>, Error> {
                     .map(|pair| {
                         let places =
                             u8::try_from(pair[1].as_u64().expect("decimals")).expect("few");
-                        (code(pair[0].as_str().expect("a code")), places)
+                        (pair[0].as_str().expect("a code").to_owned(), places)
                     })
                     .collect(),
                 (None, None) => Vec::new(),

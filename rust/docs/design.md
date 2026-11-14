@@ -55,8 +55,12 @@ fixtures live in `spec/fixtures/`, shared with ducat's tests, and `spec/vectors/
   use the EU rule (since 1996) and the North American one (since 2007) written out, which agree with tzdata for
   1999 to 2039; ducat reads them from `Intl`. `Publication` is `Unknown`, `Stated` or `Given(&dyn Fn(Date) -> Time)`,
   ducat's `false`, `true` and function.
-- **Currency codes** in files must be ISO 4217 codes or withdrawn ones (`CurrencyCode::historic`: CYP, VEB…); ducat
-  takes any string, so a file with another code is an error here.
+- **Currency codes** in files are ISO 4217 codes or withdrawn ones (`CurrencyCode::historic`: CYP, VEB…). Any other
+  code is skipped and listed in the table's `unknown()`, so a code new to ISO 4217 in a feed doesn't fail every parse
+  that day; ducat keeps such a code as a currency of its own (it takes any string).
+- **The ECB's XML** follows the Cube elements' nesting, as ducat does since #354: a day ends at its own closing tag,
+  inner cubes may be self-closing or explicitly closed, and a self-closing `<Cube time='…'/>` isn't a day.
+- **Decimals** a source is said to publish are 0 to 30, as ducat's `withDecimals` allows (`Error::InvalidDecimals`).
 - **A small JSON reader** for Valet (no dependency): depth-limited, last repeated key wins in the first one's place,
   as `JSON.parse`.
 - **Stripe's `exchange_rate`** is passed as the JSON number's text, not a float, so the library reads no float; it is

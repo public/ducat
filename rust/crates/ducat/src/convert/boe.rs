@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use super::history::{QuotedRate, QuotedTableSpec, quoted_table};
 use super::rate_text::{
     DayRates, add_day_rate, any_rate, csv_rows, day_of, digits, malformed, newest_first, rate_cell,
-    without_bom,
+    resolve, without_bom,
 };
 use super::{Date, RateInfo, RateTable, RateType, Time};
 use crate::{CurrencyCode, Error};
@@ -98,16 +98,16 @@ pub fn parse_bank_of_england_csv(
     if header[0].trim() != "DATE" || header.len() < 2 {
         return malformed();
     }
-    let mut codes: Vec<CurrencyCode> = Vec::new();
+    // the series table maps to codes the port knows, so a BoE file has no unknown codes
+    let mut codes: Vec<&str> = Vec::new();
     for code in &header[1..] {
         let Some(&(_, iso)) = BOE_SERIES.iter().find(|(series, _)| *series == code.trim()) else {
             return malformed();
         };
-        let code = CurrencyCode::iso(iso).or_else(|_| CurrencyCode::historic(iso))?;
-        if codes.contains(&code) {
+        if codes.contains(&iso) {
             return malformed();
         }
-        codes.push(code);
+        codes.push(iso);
     }
     if body.is_empty() {
         return malformed();
@@ -119,7 +119,7 @@ pub fn parse_bank_of_england_csv(
         }
         let day = boe_day(&cells[0])?;
         for (i, code) in codes.iter().enumerate() {
-            add_day_rate(&mut days, day, *code, rate_cell(&cells[i + 1])?)?;
+            add_day_rate(&mut days, day, code, rate_cell(&cells[i + 1])?)?;
         }
     }
     let gbp = CurrencyCode::iso("GBP")?;
@@ -128,21 +128,22 @@ pub fn parse_bank_of_england_csv(
         if !any_rate(rates) {
             continue;
         }
-        let spec = QuotedTableSpec {
-            base: Some(gbp),
-            info: RateInfo {
+        let (known, unknown) = resolve(rates);
+        let mut spec = QuotedTableSpec::new(
+            gbp,
+            RateInfo {
                 source: Some("BoE".into()),
                 as_of: Some(Time::Date(*day)),
                 rate_type: Some(RateType::from("spot")),
                 ..RateInfo::default()
             },
-            inverted: false,
-            decimals: Some(options.decimals),
-            rates: rates
-                .iter()
-                .map(|(code, rate)| (*code, rate.as_deref().map(QuotedRate::new)))
-                .collect(),
-        };
+        );
+        spec.decimals = Some(options.decimals);
+        spec.rates = known
+            .into_iter()
+            .map(|(code, rate)| (code, rate.map(QuotedRate::new)))
+            .collect();
+        spec.unknown = unknown;
         tables.push(quoted_table(&spec)?);
     }
     if tables.is_empty() {

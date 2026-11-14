@@ -6,8 +6,8 @@ use alloc::vec::Vec;
 
 use super::history::{QuotedRate, QuotedTableSpec, quoted_table};
 use super::rate_text::{
-    DayRates, add_day_rate, calendar_day, csv_rows, currency, malformed, newest_first, rate_cell,
-    without_bom,
+    DayRates, add_day_rate, calendar_day, csv_rows, currency, is_code, malformed, newest_first,
+    rate_cell, without_bom,
 };
 use super::{Date, RateInfo, RateTable, RateType, Time};
 use crate::{CurrencyCode, Error};
@@ -80,18 +80,16 @@ pub fn parse_fed_h10_csv(csv: &str) -> Result<Vec<RateTable>, Error> {
         row_of("Multiplier:")?,
         row_of("Unit:")?,
     );
-    let mut columns: Vec<(CurrencyCode, bool)> = Vec::new();
+    let mut columns: Vec<(&str, bool)> = Vec::new();
     for i in 1..width {
         let Some((country, inverted)) = series(rows[series_at][i].trim()) else {
             return malformed();
         };
-        let code_text = currencies[i].trim();
-        if code_text == "USD" {
-            return malformed();
-        }
-        let code = currency(code_text)?;
+        let code = currencies[i].trim();
         let expected = FED_COUNTRIES.iter().find(|(known, _)| *known == country);
-        if expected.is_some_and(|&(_, expected)| expected != code_text)
+        if !is_code(code)
+            || code == "USD"
+            || expected.is_some_and(|&(_, expected)| expected != code)
             || columns.iter().any(|(known, _)| *known == code)
             || units[i].trim() != "Currency"
             || multipliers[i].trim() != "1"
@@ -111,42 +109,42 @@ pub fn parse_fed_h10_csv(csv: &str) -> Result<Vec<RateTable>, Error> {
         }
         let day = calendar_day(cells[0].trim())?;
         for (i, (code, _)) in columns.iter().enumerate() {
-            add_day_rate(&mut days, day, *code, rate_cell(&cells[i + 1])?)?;
+            add_day_rate(&mut days, day, code, rate_cell(&cells[i + 1])?)?;
         }
     }
     let usd = CurrencyCode::iso("USD")?;
     let mut tables = Vec::new();
     for (day, published) in &days {
-        let rates: Vec<(CurrencyCode, Option<QuotedRate>)> = columns
-            .iter()
-            .map(|&(code, inverted)| {
-                let rate = published
-                    .iter()
-                    .find(|(known, _)| *known == code)
-                    .and_then(|(_, rate)| rate.as_deref());
-                let quoted = rate.map(|text| QuotedRate {
-                    inverted: Some(inverted),
-                    ..QuotedRate::new(text)
-                });
-                (code, quoted)
-            })
-            .collect();
-        if rates.iter().all(|(_, rate)| rate.is_none()) {
-            continue;
-        }
-        let spec = QuotedTableSpec {
-            base: Some(usd),
-            info: RateInfo {
+        let mut spec = QuotedTableSpec::new(
+            usd,
+            RateInfo {
                 source: Some("FRB".into()),
                 as_of: Some(Time::Date(*day)),
                 rate_type: Some(RateType::from("noon buying")),
                 ..RateInfo::default()
             },
-            inverted: false,
-            decimals: None,
-            rates,
-        };
-        tables.push(quoted_table(&spec)?);
+        );
+        let mut quoted = 0;
+        for &(code, inverted) in &columns {
+            let rate = published
+                .iter()
+                .find(|(known, _)| known == code)
+                .and_then(|(_, rate)| rate.as_deref());
+            quoted += usize::from(rate.is_some());
+            match currency(code) {
+                Some(known) => spec.rates.push((
+                    known,
+                    rate.map(|text| QuotedRate {
+                        inverted: Some(inverted),
+                        ..QuotedRate::new(text)
+                    }),
+                )),
+                None => spec.unknown.push(code.into()),
+            }
+        }
+        if quoted > 0 {
+            tables.push(quoted_table(&spec)?);
+        }
     }
     Ok(newest_first(tables))
 }

@@ -4,8 +4,8 @@
 use alloc::vec::Vec;
 
 use super::rate_text::{
-    DayRates, add_day_rate, csv_rows, currency, day_of, digits, malformed, newest_first,
-    publication, rate_cell, weekday, without_bom,
+    DayRates, add_day_rate, csv_rows, day_of, digits, is_code, malformed, newest_first,
+    publication, rate_cell, resolve, weekday, without_bom,
 };
 use super::{Date, Publication, RateInfo, RateTable, RateType, Time, UtcInstant};
 use crate::{CurrencyCode, Error};
@@ -103,8 +103,8 @@ pub fn parse_hmrc_monthly_csv(
         if cells.len() != names.len() {
             return malformed();
         }
-        let code = currency(cells[index[0]].trim())?;
-        if code == gbp {
+        let code = cells[index[0]].trim();
+        if !is_code(code) || code == "GBP" {
             return malformed();
         }
         let (start, end) = (uk_day(&cells[index[2]])?, uk_day(&cells[index[3]])?);
@@ -134,10 +134,14 @@ pub fn parse_hmrc_monthly_csv(
             ..RateInfo::default()
         };
         let mut builder = RateTable::with_base(gbp, info);
-        for (code, rate) in &days[0].1 {
+        let (known, unknown) = resolve(&days[0].1);
+        for (code, rate) in known {
             if let Some(text) = rate {
-                builder = builder.rate(*code, text)?;
+                builder = builder.rate(code, text)?;
             }
+        }
+        for code in &unknown {
+            builder = builder.unknown(code);
         }
         tables.push(builder.build());
     }
