@@ -111,6 +111,8 @@ pub mod tax;
 #[cfg(feature = "territories")]
 pub mod territories;
 mod wide;
+#[cfg(feature = "wire")]
+pub mod wire;
 
 pub use amount::Factor;
 pub use any::AnyMoney;

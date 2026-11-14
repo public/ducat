@@ -169,6 +169,10 @@ pub enum Error {
     /// A rate-source file that can't be read: not the source's format, a bad date, an unreadable
     /// cell, or two different values for one rate (ducat's `SyntaxError`).
     MalformedRates,
+    /// A wire value that is malformed, or that its format can't hold: `google.type.Money` with
+    /// `nanos` out of range or of the wrong sign, a negative ISO 20022 amount, more than 5 decimals
+    /// for one.
+    InvalidWire,
     /// A source said to publish more than 30 decimals.
     InvalidDecimals,
     /// A quote that doesn't describe its rate exactly.
@@ -293,7 +297,8 @@ impl Error {
             | Self::InvalidTime
             | Self::QuoteMismatch
             | Self::InvalidQuote
-            | Self::InvalidDecimals => ErrorKind::Range,
+            | Self::InvalidDecimals
+            | Self::InvalidWire => ErrorKind::Range,
             #[cfg(feature = "convert")]
             Self::RateUnavailable { .. } | Self::RateExpired { .. } => ErrorKind::Range,
         }
@@ -387,6 +392,7 @@ impl fmt::Display for Error {
             Self::QuoteMismatch => f.write_str("the quote isn't the rate"),
             Self::MalformedRates => f.write_str("the rate file can't be read"),
             Self::InvalidDecimals => f.write_str("a source's decimals are 0 to 30"),
+            Self::InvalidWire => f.write_str("the wire value is malformed, or out of its format's range"),
             Self::InvalidQuote => f.write_str("a quote's number must be positive, and its per a positive integer"),
             #[cfg(feature = "convert")]
             Self::RateUnavailable { from, to, as_of } => {

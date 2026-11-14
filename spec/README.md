@@ -26,6 +26,7 @@ spec/
 | `cash`       | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                                   |
 | `cash`       | `rules.json`            |   514 | reference data     | the cash-rounding rules by currency and country, and amounts rounded through them               |
 | `processors` | `rules.json`            | 2,372 | reference data     | each payment processor's exponents and multiples, and amounts to and from its API               |
+| `wire`       | `formats.json`          |   610 | Python `fractions` | google.type.Money, ISO 20022 amounts, ISO minor units and dinero.js objects, both ways          |
 | `currency`   | `data.json`             | 1,367 | reference data     | ISO exponents and numeric codes, historic codes, CLDR cash fractions, territories, crypto units |
 | `excel`      | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                                         |
 | `excel`      | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                                  |
@@ -559,6 +560,50 @@ rate that isn't positive, or `null`.
 | `fx.stripeRate`       | `rate`: `stripeRate(from, transaction)`, its `exchange_rate` the decimal of a JSON number; `null` with no rate, or `error` `range` |
 | `fx.stripeImplied`    | `rate`: `stripeImpliedRate` of `amount` in `currency` and the transaction; `null` with `error` `range`                             |
 | `fx.adyenRate`        | `rate`: `adyenRate(row)`, or `null` when the row has no rate                                                                       |
+
+### Wire formats
+
+`wire/formats.json` holds Money to and from the formats other systems send, as
+`scripts/gen-wire-vectors.py` computes them from the formats' published definitions with Python's
+`fractions`, independently of ducat, the specs' own examples first. A Money is given as `amount` (a
+decimal at the scale its fraction digits give) and `currency`; `wire` is the format's JSON shape.
+Every field is judged exactly, as JSON; `error` is `rounding` (more decimals than the target takes
+without a mode), `range` or `syntax`, or `null`. Readers take `options` (`scale`, default the
+currency's exponent, and `rounding`, default `unnecessary`). Malformed input is an error, never a
+rounding.
+
+- **google.type.Money**
+  ([money.proto](https://github.com/googleapis/googleapis/blob/master/google/type/money.proto)):
+  `units` an int64 and `nanos` from −999,999,999 to +999,999,999, with the sign of a non-zero
+  `units` (`$-1.75` is `units` −1 and `nanos` −750,000,000). Written in its
+  [ProtoJSON](https://protobuf.dev/programming-guides/json/) form, `units` as a string; read from
+  numbers or strings, exponent notation included, when the value is an exact integer. A code that
+  isn't three capital letters, a fraction, or a value out of range is `range`.
+- **ISO 20022 amounts** (ActiveOrHistoricCurrencyAndAmount, `<InstdAmt Ccy="EUR">12.34</InstdAmt>`
+  as `{ Ccy, value }`): an `xs:decimal` ([XML Schema 1.0, 3.2.3.1](https://www.w3.org/TR/xmlschema-2/#decimal))
+  with at most 5 decimals and 18 digits by value (leading and trailing zeros don't count) and
+  minInclusive 0, and an ISO 4217 code, current or withdrawn. Written at the currency's decimals
+  (`writeScale` for another, 0 to 5), never negative. Read with an optional sign: `+12.34` and
+  `-0` are valid, any other negative is `range`; `12.` and `.5`, which only
+  [XSD 1.1's lexical rule](https://www.w3.org/TR/xmlschema11-2/#decimal) allows, are `syntax`, as
+  is a malformed code. A code that isn't ISO 4217 is `range`.
+- **ISO 4217 minor units**, `{ value, currency }`: an integer at the currency's exponent, at most
+  2^53 − 1 in magnitude when written (a JSON number).
+- **dinero.js objects** ([`toObject()`](https://v1.dinerojs.com/module-dinero#~toObject)),
+  `{ amount, currency, precision }`: `amount` an integer count of 10^−`precision` units, written
+  at the Money's scale (at most 2^53 − 1 in magnitude) and read at its precision (0 to 1000).
+  `{ amount: 500, currency: 'USD', precision: 2 }` is the documented example.
+
+| op                    | expected fields and how each is judged                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| `wire.toGoogle`       | `wire`: the Money as google.type.Money, rounded to 9 decimals only with `rounding`          |
+| `wire.fromGoogle`     | `amount`: the Money a google.type.Money is, at the options' scale                           |
+| `wire.toIso20022`     | `wire`: the Money as `{ Ccy, value }`, at the currency's decimals or `writeScale`           |
+| `wire.fromIso20022`   | `amount`: the Money an ISO 20022 amount is, at the options' scale                           |
+| `wire.toMinorUnits`   | `wire`: the Money as `{ value, currency }` in ISO minor units, rounded only with `rounding` |
+| `wire.fromMinorUnits` | `amount`: the Money at the currency's exponent                                              |
+| `wire.toDinero`       | `wire`: the Money as `{ amount, currency, precision }`, at its scale                        |
+| `wire.fromDinero`     | `amount`: the Money at the object's precision                                               |
 
 ### Finance and Excel tables
 
