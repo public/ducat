@@ -72,7 +72,8 @@
         "pricing",
         "math",
         "currency",
-        "processors"
+        "processors",
+        "wire"
       ]
     },
     "provenance": {
@@ -1187,7 +1188,15 @@
         "history.lookup",
         "fx.stripeRate",
         "fx.stripeImplied",
-        "fx.adyenRate"
+        "fx.adyenRate",
+        "wire.toGoogle",
+        "wire.fromGoogle",
+        "wire.toIso20022",
+        "wire.fromIso20022",
+        "wire.toMinorUnits",
+        "wire.fromMinorUnits",
+        "wire.toDinero",
+        "wire.fromDinero"
       ]
     },
     "rowsByOp": {
@@ -3540,6 +3549,174 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/fx.adyenRate"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.toGoogle"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.toGoogle"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.fromGoogle"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.fromGoogle"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.toIso20022"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.toIso20022"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.fromIso20022"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.fromIso20022"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.toMinorUnits"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.toMinorUnits"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.fromMinorUnits"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.fromMinorUnits"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.toDinero"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.toDinero"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.fromDinero"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.fromDinero"
                 }
               }
             }
@@ -7607,6 +7784,364 @@
             "oneOf": [
               {
                 "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.toGoogle": {
+        "type": "object",
+        "required": ["amount", "currency", "wire", "error"],
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "wire": {
+            "oneOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["rounding", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.fromGoogle": {
+        "type": "object",
+        "required": ["wire", "amount", "error"],
+        "properties": {
+          "wire": {
+            "type": "object",
+            "description": "google.type.Money in ProtoJSON: currencyCode, and units and nanos as numbers or strings."
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "scale": {
+                "$ref": "#/$defs/scale"
+              },
+              "rounding": {
+                "$ref": "#/$defs/roundingMode"
+              }
+            },
+            "additionalProperties": false
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["rounding", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.toIso20022": {
+        "type": "object",
+        "required": ["amount", "currency", "wire", "error"],
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "writeScale": {
+            "type": "integer"
+          },
+          "wire": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["Ccy", "value"],
+                "properties": {
+                  "Ccy": {
+                    "$ref": "#/$defs/currency"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["rounding", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.fromIso20022": {
+        "type": "object",
+        "required": ["wire", "amount", "error"],
+        "properties": {
+          "wire": {
+            "type": "object",
+            "required": ["Ccy", "value"],
+            "properties": {
+              "Ccy": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "scale": {
+                "$ref": "#/$defs/scale"
+              },
+              "rounding": {
+                "$ref": "#/$defs/roundingMode"
+              }
+            },
+            "additionalProperties": false
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["rounding", "range", "syntax"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.toMinorUnits": {
+        "type": "object",
+        "required": ["amount", "currency", "wire", "error"],
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "wire": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["value", "currency"],
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  },
+                  "currency": {
+                    "$ref": "#/$defs/currency"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["rounding", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.fromMinorUnits": {
+        "type": "object",
+        "required": ["wire", "amount", "error"],
+        "properties": {
+          "wire": {
+            "type": "object",
+            "required": ["value", "currency"],
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "currency": {
+                "$ref": "#/$defs/currency"
+              }
+            },
+            "additionalProperties": false
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.toDinero": {
+        "type": "object",
+        "required": ["amount", "currency", "wire", "error"],
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "wire": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["amount", "currency", "precision"],
+                "properties": {
+                  "amount": {
+                    "type": "integer"
+                  },
+                  "currency": {
+                    "$ref": "#/$defs/currency"
+                  },
+                  "precision": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.fromDinero": {
+        "type": "object",
+        "required": ["wire", "amount", "error"],
+        "properties": {
+          "wire": {
+            "type": "object",
+            "required": ["amount", "currency", "precision"],
+            "properties": {
+              "amount": {
+                "type": "integer"
+              },
+              "currency": {
+                "$ref": "#/$defs/currency"
+              },
+              "precision": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range"]
               },
               {
                 "type": "null"

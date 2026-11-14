@@ -105,6 +105,17 @@ import { stripeImpliedRate, stripeRate } from '../../src/stripe-fx.js';
 import { adyenRate, type AdyenSettlementRow } from '../../src/adyen-fx.js';
 import type { RateTable } from '../../src/provider.js';
 import {
+  fromDineroObject,
+  fromGoogleMoney,
+  fromIso20022Amount,
+  fromMinorUnits,
+  toDineroObject,
+  toGoogleMoney,
+  toIso20022Amount,
+  toMinorUnits,
+  type WireReadOptions,
+} from '../../src/wire.js';
+import {
   addTax,
   allocate,
   chunk,
@@ -838,6 +849,64 @@ const stripeTransaction = (row: Row) => {
   return { ...rest, exchange_rate: rate === undefined || rate === null ? null : Number(rate) };
 };
 
+// --- wire formats ------------------------------------------------------------------------------
+
+/** The kind the spec names for a wire error (RoundingError is a RangeError, so it comes first). */
+function wireOutcome(error: unknown): string {
+  if (error instanceof RoundingError) {
+    return 'rounding';
+  }
+  if (error instanceof SyntaxError) {
+    return 'syntax';
+  }
+  if (error instanceof RangeError) {
+    return 'range';
+  }
+  throw error;
+}
+
+function wireOperation(field: string, run: (row: Row) => unknown): TableOperation {
+  return fieldsOperation([field, 'error'], (row) => {
+    withHistoric();
+    try {
+      return { [field]: run(row), error: null };
+    } catch (error) {
+      return { [field]: null, error: wireOutcome(error) };
+    }
+  });
+}
+
+const wireMoney = (row: Row) => moneyOf(text(row, 'amount'), text(row, 'currency'));
+const wireRounding = (row: Row) => (row['rounding'] as RoundingMode | undefined) ?? 'unnecessary';
+const readOptions = (row: Row) => row['options'] as WireReadOptions | undefined;
+
+const WIRE_OPERATIONS: Record<string, TableOperation> = {
+  'wire.toGoogle': wireOperation('wire', (row) => toGoogleMoney(wireMoney(row), wireRounding(row))),
+  'wire.fromGoogle': wireOperation('amount', (row) =>
+    fromGoogleMoney(row['wire'] as never, readOptions(row)).toDecimal(),
+  ),
+  'wire.toIso20022': wireOperation('wire', (row) =>
+    toIso20022Amount(
+      wireMoney(row),
+      wireRounding(row),
+      row['writeScale'] === undefined ? undefined : { scale: row['writeScale'] as number },
+    ),
+  ),
+  'wire.fromIso20022': wireOperation('amount', (row) =>
+    fromIso20022Amount(row['wire'] as never, readOptions(row)).toDecimal(),
+  ),
+  'wire.toMinorUnits': wireOperation('wire', (row) =>
+    toMinorUnits(wireMoney(row), wireRounding(row)),
+  ),
+  'wire.fromMinorUnits': wireOperation('amount', (row) =>
+    fromMinorUnits(row['wire'] as never).toDecimal(),
+  ),
+  'wire.toDinero': wireOperation('wire', (row) => toDineroObject(wireMoney(row))),
+  'wire.fromDinero': wireOperation('amount', (row) =>
+    fromDineroObject(row['wire'] as never).toDecimal(),
+  ),
+};
+
 const SOURCE_OPERATIONS: Record<string, TableOperation> = {
   'source.parse': fieldsOperation(['days', 'error'], (row) =>
     attemptParse(['days'], () => ({ days: parseSource(row).map((table) => table.asOf) })),
@@ -1002,6 +1071,7 @@ function checkSpellOut(row: Row, _index: number, parameters: Row): string[] {
 export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   ...RATE_OPERATIONS,
   ...SOURCE_OPERATIONS,
+  ...WIRE_OPERATIONS,
   'allocate.byRemainder': { expects: REMAINDERS, checkRow: checkAllocation },
   'instalments.byRemainder': {
     expects: ['first', 'last', 'toFirst', 'toLast'],
