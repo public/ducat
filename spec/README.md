@@ -28,6 +28,8 @@ spec/
 | `excel`    | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                     |
 | `rounding` | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                  |
 | `convert`  | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                          |
+| `convert`  | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual         |
+| `exact`    | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply   |
 | `tax`      | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                  |
 | `finance`  | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                         |
 | `excel`    | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                     |
@@ -36,7 +38,7 @@ spec/
 | `words`    | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets |
 | `words`    | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets      |
 
-The other areas the schema names (`format`, `parse`, `exact`) have no vectors yet.
+The other areas the schema names (`format`, `parse`) have no vectors yet.
 
 The General Decimal Arithmetic test cases (decTest), which `test/dectest.test.ts` runs, aren't in
 the suite: they are IBM's copyright, so `scripts/fetch-dectest.mjs` downloads them at test time
@@ -330,23 +332,35 @@ integer strings of minor units of a currency with scale 2 (the Lean models work 
 EUR serves). `null` where a result is expected means the operation raises an error of the kind
 given.
 
-| op                        | inputs                                         | expected                                                                                                    |
-| ------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `allocate.byRemainder`    | `amount`, `weights` (integer strings ≥ 0)      | the parts, in order, for each remainder strategy: `largest`, `first`, `last`, `toFirst`, `toLast`           |
-| `instalments.byRemainder` | `total`, `count`, `unit`                       | the `count` instalments for each strategy: `first`, `last`, `toFirst`, `toLast`                             |
-| `chunk`                   | `total`, `max`                                 | `chunks`: every one `max` but the last, which is positive; `[0]` for a zero total                           |
-| `schedule`                | `total`, `tranches`                            | `result`: one part per tranche, or `null` (`range`)                                                         |
-| `roundToIncrement.byMode` | `amount`, `step`                               | the multiple of `step` for each rounding mode, by its name, or `null` (`rounding`, for `unnecessary`)       |
-| `xnpv.scaled`             | `currency`, `rate`, `days`, `values`, `digits` | `bounds` (an interval in major units, or `null`: `range`) and `rounded` (minor units by rounding mode)      |
-| `xirr.floor`              | `currency`, `days`, `values`, `digits`         | `lower`: the rate floored to `digits` places, as an integer string scaled by 10^digits, or `null` (`range`) |
-| `minor.multiply`          | `currency`, `minor`, `mode`, `factor`          | `want`: minor × factor, rounded once to the currency's scale                                                |
-| `minor.divide`            | `currency`, `minor`, `mode`, `divisor`         | `want`: minor ÷ divisor, rounded once to the currency's scale                                               |
-| `minor.toScale`           | `currency`, `minor`, `mode`, `scale`           | `want`: the amount rounded to `scale` digits, in units of 10^−scale                                         |
-| `minor.convert`           | `currency`, `minor`, `mode`, `to`, `rate`      | `want`: amount × rate in `to`, rounded once to `to`'s scale                                                 |
-| `minor.percentage`        | `currency`, `minor`, `mode`, `percent`         | `want`: amount × percent / 100, rounded once                                                                |
-| `minor.discount`          | `currency`, `minor`, `mode`, `percent`         | `want`: the amount less its rounded percentage                                                              |
-| `minor.addTax`            | `currency`, `minor`, `mode`, `percent`         | `tax`: the rounded percentage of the net amount; `gross`: net + tax                                         |
-| `minor.extractTax`        | `currency`, `minor`, `mode`, `percent`         | `net`: gross ÷ (1 + percent / 100), rounded once; `tax`: gross − net                                        |
+| op                        | inputs                                         | expected                                                                                                         |
+| ------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `allocate.byRemainder`    | `amount`, `weights` (integer strings ≥ 0)      | the parts, in order, for each remainder strategy: `largest`, `first`, `last`, `toFirst`, `toLast`                |
+| `instalments.byRemainder` | `total`, `count`, `unit`                       | the `count` instalments for each strategy: `first`, `last`, `toFirst`, `toLast`                                  |
+| `chunk`                   | `total`, `max`                                 | `chunks`: every one `max` but the last, which is positive; `[0]` for a zero total                                |
+| `schedule`                | `total`, `tranches`                            | `result`: one part per tranche, or `null` (`range`)                                                              |
+| `roundToIncrement.byMode` | `amount`, `step`                               | the multiple of `step` for each rounding mode, by its name, or `null` (`rounding`, for `unnecessary`)            |
+| `xnpv.scaled`             | `currency`, `rate`, `days`, `values`, `digits` | `bounds` (an interval in major units, or `null`: `range`) and `rounded` (minor units by rounding mode)           |
+| `xirr.floor`              | `currency`, `days`, `values`, `digits`         | `lower`: the rate floored to `digits` places, as an integer string scaled by 10^digits, or `null` (`range`)      |
+| `minor.multiply`          | `currency`, `minor`, `mode`, `factor`          | `want`: minor × factor, rounded once to the currency's scale                                                     |
+| `minor.divide`            | `currency`, `minor`, `mode`, `divisor`         | `want`: minor ÷ divisor, rounded once to the currency's scale                                                    |
+| `minor.toScale`           | `currency`, `minor`, `mode`, `scale`           | `want`: the amount rounded to `scale` digits, in units of 10^−scale                                              |
+| `minor.convert`           | `currency`, `minor`, `mode`, `to`, `rate`      | `want`: amount × rate in `to`, rounded once to `to`'s scale                                                      |
+| `minor.percentage`        | `currency`, `minor`, `mode`, `percent`         | `want`: amount × percent / 100, rounded once                                                                     |
+| `minor.discount`          | `currency`, `minor`, `mode`, `percent`         | `want`: the amount less its rounded percentage                                                                   |
+| `minor.addTax`            | `currency`, `minor`, `mode`, `percent`         | `tax`: the rounded percentage of the net amount; `gross`: net + tax                                              |
+| `minor.extractTax`        | `currency`, `minor`, `mode`, `percent`         | `net`: gross ÷ (1 + percent / 100), rounded once; `tax`: gross − net                                             |
+| `exact.divideRound`       | `currency`, `minor`, `divisor`, `mode`         | `rounded`: amount ÷ divisor rounded once to the currency's scale, in minor units; `residual`: the rest           |
+| `exact.toMoney`           | `currency`, `num`, `den`                       | `money`: num/den major units at the smallest scale (at least the exponent) that holds it, or `null` (`rounding`) |
+| `exact.addTax`            | `currency`, `minor`, `percent`                 | `tax`: amount × percent / 100 exactly; `gross`: amount + tax                                                     |
+| `exact.extractTax`        | `currency`, `minor`, `percent`                 | `net`: amount ÷ (1 + percent / 100) exactly; `tax`: amount − net                                                 |
+| `exact.multiplyExact`     | `currency`, `minor`, `factor`                  | `want`: amount × factor at the smallest scale (at least the amount's) that holds it, or `null` (`rounding`)      |
+| `rate.inverse`            | `rate`                                         | `inverse`: 1 / rate                                                                                              |
+| `rate.chain`              | `via`, `rates`                                 | `composite`: the product of the rates, `rates[i]` taking `via[i]` to `via[i + 1]`                                |
+| `rate.convert`            | `via`, `rates`, `minor`, `mode`                | `want`: minor units of `via[0]` through the chain, rounded once to the last currency's scale; `residual`         |
+
+In the `exact.*` and `rate.*` rows, every rational result (`residual`, `tax`, `gross`, `net`, `inverse`,
+`composite`) is written reduced, as `num/den` or the integer alone, and in major units; a residual is the exact
+value minus the rounded one, so the two add up to it. `minor`, `num` and `den` are integer strings.
 
 In the `minor.*` rows, `minor` is the amount in minor units of `currency` at its ISO 4217 scale
 (JPY 0, EUR 2, KWD 3, CLF 4), and every result is in minor units of the result's scale.

@@ -3,7 +3,9 @@
 A Rust port of [@ducatjs/money](https://github.com/public/ducat). It's idiomatic Rust with ducat's feature set,
 verified against ducat's language-neutral conformance suite (`@ducatjs/money-spec`, in ducat's `spec/`).
 
-Status: milestone 1 (the conformance runner and the core). The decisions in "Choices that are expensive to reverse" are the coordinator's,
+Status: milestones 1 to 3 (the core, allocation and cash, tax, `Fixed`, `ExactMoney` and `Rate`). The rate-source
+parsers (ECB, BoC, Fed, BoE, HMRC, history, Stripe and Adyen FX) move to milestone 5, with the processors. Rate
+providers (tables, chains, `via`) and rate metadata (dates, validity) come with them. The decisions in "Choices that are expensive to reverse" are the coordinator's,
 flagged to Alex for review.
 
 ## Goals

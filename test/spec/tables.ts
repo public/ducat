@@ -15,6 +15,15 @@ import { dutch } from '../../src/words/nl.js';
 import { portuguese } from '../../src/words/pt.js';
 import { xirr, xnpv, xnpvBounds } from '../../src/excel.js';
 import {
+  addTaxExact,
+  exact,
+  extractTaxExact,
+  multiplyExact,
+  type ExactMoney,
+} from '../../src/exact.js';
+import { convertDetailed } from '../../src/convert.js';
+import { exchangeRate, type Rate } from '../../src/rate.js';
+import {
   addTax,
   allocate,
   chunk,
@@ -282,6 +291,51 @@ function minorOperation(
 }
 
 const modeOf = (row: Row) => row['mode'] as RoundingMode;
+
+// --- exact amounts and rates, from Python's fractions ------------------------------------------------
+
+/** An exact value as the spec writes a rational: reduced `num/den`, or the integer alone. */
+function rationalOf(num: bigint, den: bigint): string {
+  return den === 1n ? String(num) : `${num}/${den}`;
+}
+
+const exactText = (amount: ExactMoney<string>) => rationalOf(amount.num, amount.den);
+
+/** A table whose rows are compared field by field, as text; `null` stands for a RoundingError. */
+function exactOperation(
+  expects: readonly string[],
+  compute: (row: Row) => Record<string, string | null>,
+): CheckedTable {
+  return {
+    expects,
+    checkRow(row: Row): string[] {
+      const actual = compute(row);
+      const differs = Object.entries(actual).some(([field, value]) => row[field] !== value);
+      return differs ? [`${JSON.stringify(row)} -> got ${JSON.stringify(actual)}`] : [];
+    },
+  };
+}
+
+/** The money's decimal, or null for a RoundingError (no finite decimal form). */
+function decimalOrNull(build: () => Money<string>): string | null {
+  try {
+    return build().toDecimal();
+  } catch (error) {
+    if (error instanceof RoundingError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** The chain of rates along `via`: rates[i] takes via[i] to via[i + 1]. */
+function chainOf(row: Row): Rate<string, string> {
+  const via = row['via'] as string[];
+  const rates = (row['rates'] as string[]).map((rate, index) =>
+    exchangeRate(via[index]!, via[index + 1]!, rate),
+  );
+  return rates.slice(1).reduce((chain, next) => chain.andThen(next), rates[0]!);
+}
 const text = (row: Row, field: string) => row[field] as string;
 
 // --- spelling out numbers, from ICU ------------------------------------------------------------------
@@ -318,6 +372,52 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   },
   'roundToIncrement.byMode': { expects: ROUNDING_MODES, checkRow: checkIncrement },
   'xnpv.scaled': { expects: ['bounds', 'rounded'], checkRow: checkXnpv },
+  'exact.divideRound': exactOperation(['rounded', 'residual'], (row) => {
+    const amount = fromMinor(BigInt(text(row, 'minor')), text(row, 'currency'));
+    const { value, residual } = exact(amount)
+      .divide(text(row, 'divisor'))
+      .roundWithResidual(modeOf(row));
+    return { rounded: String(value.minor), residual: exactText(residual) };
+  }),
+  'exact.toMoney': exactOperation(['money'], (row) => ({
+    money: decimalOrNull(() =>
+      exact(fromMinor(BigInt(text(row, 'num')), text(row, 'currency'), 0))
+        .divide(text(row, 'den'))
+        .toMoney(),
+    ),
+  })),
+  'exact.addTax': exactOperation(['tax', 'gross'], (row) => {
+    const amount = fromMinor(BigInt(text(row, 'minor')), text(row, 'currency'));
+    const { tax, gross } = addTaxExact(amount, text(row, 'percent'));
+    return { tax: exactText(tax), gross: exactText(gross) };
+  }),
+  'exact.extractTax': exactOperation(['net', 'tax'], (row) => {
+    const amount = fromMinor(BigInt(text(row, 'minor')), text(row, 'currency'));
+    const { net, tax } = extractTaxExact(amount, text(row, 'percent'));
+    return { net: exactText(net), tax: exactText(tax) };
+  }),
+  'exact.multiplyExact': exactOperation(['want'], (row) => ({
+    want: decimalOrNull(() =>
+      multiplyExact(
+        fromMinor(BigInt(text(row, 'minor')), text(row, 'currency')),
+        text(row, 'factor'),
+      ),
+    ),
+  })),
+  'rate.inverse': exactOperation(['inverse'], (row) => {
+    const { num, den } = exchangeRate('EUR', 'USD', text(row, 'rate')).inverse().ratio;
+    return { inverse: rationalOf(num, den) };
+  }),
+  'rate.chain': exactOperation(['composite'], (row) => {
+    const { num, den } = chainOf(row).ratio;
+    return { composite: rationalOf(num, den) };
+  }),
+  'rate.convert': exactOperation(['want', 'residual'], (row) => {
+    const via = row['via'] as string[];
+    const amount = fromMinor(BigInt(text(row, 'minor')), via[0]!);
+    const { value, residual } = convertDetailed(amount, chainOf(row), modeOf(row));
+    return { want: String(value.minor), residual: exactText(residual) };
+  }),
   'minor.multiply': minorOperation(['want'], (amount, row) => ({
     want: minorOf(multiply(amount, text(row, 'factor'), modeOf(row))),
   })),

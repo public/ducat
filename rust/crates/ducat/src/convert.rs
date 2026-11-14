@@ -33,7 +33,9 @@ fn rate_text(f: &mut fmt::Formatter<'_>, ratio: &Ratio, given: Option<&str>) -> 
     }
     match ratio.terminating_scale(0) {
         Some(scale) => {
-            let units = ratio.round_to_units(scale, Rounding::Unnecessary).map_err(|_| fmt::Error)?;
+            let units = ratio
+                .round_to_units(scale, Rounding::Unnecessary)
+                .map_err(|_| fmt::Error)?;
             let amount = crate::amount::Amount { units, scale };
             amount.write(f)
         }
@@ -42,7 +44,11 @@ fn rate_text(f: &mut fmt::Formatter<'_>, ratio: &Ratio, given: Option<&str>) -> 
 }
 
 fn positive(rate: Ratio) -> Result<Ratio, Error> {
-    if rate.numer().is_positive() { Ok(rate) } else { Err(Error::NonPositiveRate) }
+    if rate.numer().is_positive() {
+        Ok(rate)
+    } else {
+        Err(Error::NonPositiveRate)
+    }
 }
 
 /// A decimal rate's text as given, when it is a plain decimal (not a fraction).
@@ -53,10 +59,16 @@ fn given_digits(text: &str) -> Option<String> {
 /// The rate rounded once to `places` decimals.
 fn rounded(ratio: &Ratio, places: u16, rounding: Rounding) -> Result<(Ratio, String), Error> {
     let units = ratio.round_to_units(places, rounding)?;
-    let amount = crate::amount::Amount { units: units.clone(), scale: crate::amount::check_scale(places)? };
+    let amount = crate::amount::Amount {
+        units: units.clone(),
+        scale: crate::amount::check_scale(places)?,
+    };
     let mut text = String::new();
     let _ = amount.write(&mut text);
-    Ok((Ratio::new(units, Int::ONE.mul_pow10(u32::from(places)))?, text))
+    Ok((
+        Ratio::new(units, Int::ONE.mul_pow10(u32::from(places)))?,
+        text,
+    ))
 }
 
 /// An exact exchange rate: one unit of `F` is worth `ratio` units of `T`.
@@ -70,7 +82,11 @@ pub struct Rate<F: Currency, T: Currency> {
 
 impl<F: Currency, T: Currency> Clone for Rate<F, T> {
     fn clone(&self) -> Self {
-        Self { ratio: self.ratio.clone(), given: self.given.clone(), pair: PhantomData }
+        Self {
+            ratio: self.ratio.clone(),
+            given: self.given.clone(),
+            pair: PhantomData,
+        }
     }
 }
 
@@ -85,7 +101,11 @@ impl<F: Currency, T: Currency> Eq for Rate<F, T> {}
 
 impl<F: Currency, T: Currency> Rate<F, T> {
     const fn of(ratio: Ratio, given: Option<String>) -> Self {
-        Self { ratio, given, pair: PhantomData }
+        Self {
+            ratio,
+            given,
+            pair: PhantomData,
+        }
     }
 
     /// The rate `rate`, exactly.
@@ -114,7 +134,11 @@ impl<F: Currency, T: Currency> Rate<F, T> {
     ///
     /// [`Error::NonPositiveRate`] when the quotient isn't positive (a zero or negative amount).
     pub fn implied(presented: &Money<F>, settled: &Money<T>) -> Result<Self, Error> {
-        let quotient = settled.exact().value().div(presented.exact().value()).map_err(|_| Error::NonPositiveRate)?;
+        let quotient = settled
+            .exact()
+            .value()
+            .div(presented.exact().value())
+            .map_err(|_| Error::NonPositiveRate)?;
         Ok(Self::of(positive(quotient)?, None))
     }
 
@@ -195,8 +219,13 @@ impl<F: Currency, T: Currency> Rate<F, T> {
     /// # Errors
     ///
     /// As [`Rate::convert`].
-    pub fn convert_detailed(&self, money: &Money<F>, rounding: Rounding) -> Result<Rounded<Money<T>, ExactMoney<T>>, Error> {
-        self.convert_exact(&money.exact()).round_with_residual(rounding, None)
+    pub fn convert_detailed(
+        &self,
+        money: &Money<F>,
+        rounding: Rounding,
+    ) -> Result<Rounded<Money<T>, ExactMoney<T>>, Error> {
+        self.convert_exact(&money.exact())
+            .round_with_residual(rounding, None)
     }
 
     /// Converts an exact amount, rounding nothing.
@@ -208,7 +237,12 @@ impl<F: Currency, T: Currency> Rate<F, T> {
     /// The same rate with run-time currencies.
     #[must_use]
     pub fn to_any(&self) -> AnyRate {
-        AnyRate { from: F::CODE, to: T::CODE, ratio: self.ratio.clone(), given: self.given.clone() }
+        AnyRate {
+            from: F::CODE,
+            to: T::CODE,
+            ratio: self.ratio.clone(),
+            given: self.given.clone(),
+        }
     }
 }
 
@@ -252,7 +286,12 @@ impl AnyRate {
     ///
     /// As [`Rate::new`].
     pub fn new(from: CurrencyCode, to: CurrencyCode, rate: impl Factor) -> Result<Self, Error> {
-        Ok(Self { from, to, ratio: positive(rate.to_ratio()?)?, given: None })
+        Ok(Self {
+            from,
+            to,
+            ratio: positive(rate.to_ratio()?)?,
+            given: None,
+        })
     }
 
     /// As [`Rate::parse`].
@@ -261,7 +300,12 @@ impl AnyRate {
     ///
     /// As [`Rate::new`].
     pub fn parse(from: CurrencyCode, to: CurrencyCode, text: &str) -> Result<Self, Error> {
-        Ok(Self { from, to, ratio: positive(text.parse()?)?, given: given_digits(text) })
+        Ok(Self {
+            from,
+            to,
+            ratio: positive(text.parse()?)?,
+            given: given_digits(text),
+        })
     }
 
     /// The exact rate.
@@ -285,7 +329,12 @@ impl AnyRate {
     /// The exact reciprocal.
     #[must_use]
     pub fn inverse(&self) -> Self {
-        Self { from: self.to, to: self.from, ratio: self.ratio.recip().unwrap_or(Ratio::ONE), given: None }
+        Self {
+            from: self.to,
+            to: self.from,
+            ratio: self.ratio.recip().unwrap_or(Ratio::ONE),
+            given: None,
+        }
     }
 
     /// The exact composite of this rate and `next`.
@@ -295,9 +344,17 @@ impl AnyRate {
     /// [`Error::CurrencyMismatch`] when `next` isn't from this rate's target.
     pub fn and_then(&self, next: &Self) -> Result<Self, Error> {
         if next.from != self.to {
-            return Err(Error::CurrencyMismatch { expected: self.to, actual: next.from });
+            return Err(Error::CurrencyMismatch {
+                expected: self.to,
+                actual: next.from,
+            });
         }
-        Ok(Self { from: self.from, to: next.to, ratio: self.ratio.mul(&next.ratio), given: None })
+        Ok(Self {
+            from: self.from,
+            to: next.to,
+            ratio: self.ratio.mul(&next.ratio),
+            given: None,
+        })
     }
 
     /// As [`Rate::with_margin`].
@@ -307,7 +364,11 @@ impl AnyRate {
     /// As [`Rate::with_margin`].
     pub fn with_margin(&self, margin: impl Factor) -> Result<Self, Error> {
         let factor = Ratio::ONE.add(&margin.to_ratio()?);
-        Ok(Self { ratio: positive(self.ratio.mul(&factor))?, given: None, ..self.clone() })
+        Ok(Self {
+            ratio: positive(self.ratio.mul(&factor))?,
+            given: None,
+            ..self.clone()
+        })
     }
 
     /// As [`Rate::round`].
@@ -317,7 +378,11 @@ impl AnyRate {
     /// As [`Rate::round`].
     pub fn round(&self, places: u16, rounding: Rounding) -> Result<Self, Error> {
         let (ratio, text) = rounded(&self.ratio, places, rounding)?;
-        Ok(Self { ratio: positive(ratio)?, given: Some(text), ..self.clone() })
+        Ok(Self {
+            ratio: positive(ratio)?,
+            given: Some(text),
+            ..self.clone()
+        })
     }
 
     /// As [`Rate::to_decimal`].
@@ -330,7 +395,14 @@ impl AnyRate {
     }
 
     fn check(&self, currency: CurrencyCode) -> Result<(), Error> {
-        if currency == self.from { Ok(()) } else { Err(Error::CurrencyMismatch { expected: self.from, actual: currency }) }
+        if currency == self.from {
+            Ok(())
+        } else {
+            Err(Error::CurrencyMismatch {
+                expected: self.from,
+                actual: currency,
+            })
+        }
     }
 
     /// Converts `money`, rounding once to the target's exponent.
@@ -348,8 +420,13 @@ impl AnyRate {
     /// # Errors
     ///
     /// As [`AnyRate::convert`].
-    pub fn convert_detailed(&self, money: &AnyMoney, rounding: Rounding) -> Result<Rounded<AnyMoney, AnyExactMoney>, Error> {
-        self.convert_exact(&money.exact())?.round_with_residual(rounding, None)
+    pub fn convert_detailed(
+        &self,
+        money: &AnyMoney,
+        rounding: Rounding,
+    ) -> Result<Rounded<AnyMoney, AnyExactMoney>, Error> {
+        self.convert_exact(&money.exact())?
+            .round_with_residual(rounding, None)
     }
 
     /// Converts an exact amount, rounding nothing.

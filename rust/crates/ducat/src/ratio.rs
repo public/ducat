@@ -139,13 +139,19 @@ impl Ratio {
     /// `−self`.
     #[must_use]
     pub fn neg(&self) -> Self {
-        Self { num: -&self.num, den: self.den.clone() }
+        Self {
+            num: -&self.num,
+            den: self.den.clone(),
+        }
     }
 
     /// `|self|`.
     #[must_use]
     pub fn abs(&self) -> Self {
-        Self { num: self.num.abs(), den: self.den.clone() }
+        Self {
+            num: self.num.abs(),
+            den: self.den.clone(),
+        }
     }
 
     /// The value rounded once to `scale` decimal places, as units of 10^−scale.
@@ -155,7 +161,14 @@ impl Ratio {
     /// [`Error::Rounding`] when it isn't exact at that scale with
     /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn round_to_units(&self, scale: u16, rounding: crate::Rounding) -> Result<Int, Error> {
-        crate::rounding::rescale_ratio(&self.num, &Int::ONE, &self.den, u32::from(scale), 0, rounding)
+        crate::rounding::rescale_ratio(
+            &self.num,
+            &Int::ONE,
+            &self.den,
+            u32::from(scale),
+            0,
+            rounding,
+        )
     }
 
     /// The smallest scale, at least `minimum`, at which the value is an exact decimal, or `None`

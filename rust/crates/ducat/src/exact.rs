@@ -46,13 +46,20 @@ pub struct ExactTaxBreakdown<E> {
 /// The amount's value in major units, exactly.
 fn value_of(amount: &Amount) -> Ratio {
     // a power of ten is never zero
-    Ratio::new(amount.units.clone(), Int::ONE.mul_pow10(u32::from(amount.scale))).unwrap_or(Ratio::ZERO)
+    Ratio::new(
+        amount.units.clone(),
+        Int::ONE.mul_pow10(u32::from(amount.scale)),
+    )
+    .unwrap_or(Ratio::ZERO)
 }
 
 /// `value` rounded once to `scale`.
 fn round_value(value: &Ratio, scale: u16, rounding: Rounding) -> Result<Amount, Error> {
     let scale = crate::amount::check_scale(scale)?;
-    Ok(Amount { units: value.round_to_units(scale, rounding)?, scale })
+    Ok(Amount {
+        units: value.round_to_units(scale, rounding)?,
+        scale,
+    })
 }
 
 /// `value` at the smallest scale, at least `minimum`, that holds it exactly.
@@ -130,7 +137,10 @@ impl<C: Currency> Ord for ExactMoney<C> {
 
 impl<C: Currency> ExactMoney<C> {
     pub(crate) const fn of(value: Ratio) -> Self {
-        Self { value, currency: PhantomData }
+        Self {
+            value,
+            currency: PhantomData,
+        }
     }
 
     /// Zero.
@@ -154,7 +164,10 @@ impl<C: Currency> ExactMoney<C> {
     /// The same amount with a run-time currency.
     #[must_use]
     pub fn to_any(&self) -> AnyExactMoney {
-        AnyExactMoney { value: self.value.clone(), currency: C::CODE }
+        AnyExactMoney {
+            value: self.value.clone(),
+            currency: C::CODE,
+        }
     }
 
     /// `self × factor`, exactly.
@@ -209,7 +222,9 @@ impl<C: Currency> ExactMoney<C> {
     #[must_use]
     pub fn is_exact(&self, scale: Option<u16>) -> bool {
         let scale = scale.unwrap_or(u16::from(C::CODE.exponent()));
-        self.value.terminating_scale(0).is_some_and(|needed| needed <= scale)
+        self.value
+            .terminating_scale(0)
+            .is_some_and(|needed| needed <= scale)
     }
 
     /// Rounds once to `scale` (default: the currency's exponent).
@@ -219,7 +234,11 @@ impl<C: Currency> ExactMoney<C> {
     /// [`Error::Rounding`] with [`Rounding::Unnecessary`] when inexact; [`Error::InvalidScale`].
     pub fn round(&self, rounding: Rounding, scale: Option<u16>) -> Result<Money<C>, Error> {
         let scale = scale.unwrap_or(u16::from(C::CODE.exponent()));
-        Ok(Money::from_amount(round_value(&self.value, scale, rounding)?))
+        Ok(Money::from_amount(round_value(
+            &self.value,
+            scale,
+            rounding,
+        )?))
     }
 
     /// Rounds as [`ExactMoney::round`] does, and returns what rounding left out too.
@@ -227,7 +246,11 @@ impl<C: Currency> ExactMoney<C> {
     /// # Errors
     ///
     /// As [`ExactMoney::round`].
-    pub fn round_with_residual(&self, rounding: Rounding, scale: Option<u16>) -> Result<Rounded<Money<C>, Self>, Error> {
+    pub fn round_with_residual(
+        &self,
+        rounding: Rounding,
+        scale: Option<u16>,
+    ) -> Result<Rounded<Money<C>, Self>, Error> {
         let value = self.round(rounding, scale)?;
         let residual = Self::of(self.value.sub(&value_of(&value.amount)));
         Ok(Rounded { value, residual })
@@ -252,7 +275,11 @@ impl<C: Currency> ExactMoney<C> {
     /// Whatever reading `percent` fails with.
     pub fn add_tax(&self, percent: impl Factor) -> Result<ExactTaxBreakdown<Self>, Error> {
         let tax = self.percentage(percent)?;
-        Ok(ExactTaxBreakdown { gross: self + &tax, net: self.clone(), tax })
+        Ok(ExactTaxBreakdown {
+            gross: self + &tax,
+            net: self.clone(),
+            tax,
+        })
     }
 
     /// Extracts the `percent`% tax a gross amount contains, rounding nothing.
@@ -262,7 +289,11 @@ impl<C: Currency> ExactMoney<C> {
     /// [`Error::InvalidPercent`] for a percent of −100 or below.
     pub fn extract_tax(&self, percent: impl Factor) -> Result<ExactTaxBreakdown<Self>, Error> {
         let net = Self::of(self.value.mul(&net_share(percent)?));
-        Ok(ExactTaxBreakdown { tax: self - &net, net, gross: self.clone() })
+        Ok(ExactTaxBreakdown {
+            tax: self - &net,
+            net,
+            gross: self.clone(),
+        })
     }
 }
 
@@ -272,21 +303,30 @@ impl AnyExactMoney {
     }
 
     fn with(&self, value: Ratio) -> Self {
-        Self { value, currency: self.currency }
+        Self {
+            value,
+            currency: self.currency,
+        }
     }
 
     fn same(&self, other: &Self) -> Result<(), Error> {
         if self.currency == other.currency {
             Ok(())
         } else {
-            Err(Error::CurrencyMismatch { expected: self.currency, actual: other.currency })
+            Err(Error::CurrencyMismatch {
+                expected: self.currency,
+                actual: other.currency,
+            })
         }
     }
 
     /// Zero in `currency`.
     #[must_use]
     pub const fn zero(currency: CurrencyCode) -> Self {
-        Self { value: Ratio::ZERO, currency }
+        Self {
+            value: Ratio::ZERO,
+            currency,
+        }
     }
 
     /// The currency.
@@ -356,7 +396,10 @@ impl AnyExactMoney {
     /// As [`ExactMoney::round`].
     pub fn round(&self, rounding: Rounding, scale: Option<u16>) -> Result<AnyMoney, Error> {
         let scale = scale.unwrap_or(u16::from(self.currency.exponent()));
-        Ok(AnyMoney::from_parts(round_value(&self.value, scale, rounding)?, self.currency))
+        Ok(AnyMoney::from_parts(
+            round_value(&self.value, scale, rounding)?,
+            self.currency,
+        ))
     }
 
     /// As [`ExactMoney::round_with_residual`].
@@ -364,7 +407,11 @@ impl AnyExactMoney {
     /// # Errors
     ///
     /// As [`ExactMoney::round`].
-    pub fn round_with_residual(&self, rounding: Rounding, scale: Option<u16>) -> Result<Rounded<AnyMoney, Self>, Error> {
+    pub fn round_with_residual(
+        &self,
+        rounding: Rounding,
+        scale: Option<u16>,
+    ) -> Result<Rounded<AnyMoney, Self>, Error> {
         let value = self.round(rounding, scale)?;
         let residual = self.with(self.value.sub(&value_of(&value.amount)));
         Ok(Rounded { value, residual })
@@ -377,7 +424,10 @@ impl AnyExactMoney {
     /// As [`ExactMoney::to_money`].
     pub fn to_money(&self, minimum_scale: Option<u16>) -> Result<AnyMoney, Error> {
         let minimum = minimum_scale.unwrap_or(u16::from(self.currency.exponent()));
-        Ok(AnyMoney::from_parts(exact_amount(&self.value, minimum)?, self.currency))
+        Ok(AnyMoney::from_parts(
+            exact_amount(&self.value, minimum)?,
+            self.currency,
+        ))
     }
 
     /// As [`ExactMoney::add_tax`].
@@ -387,7 +437,11 @@ impl AnyExactMoney {
     /// As [`ExactMoney::add_tax`].
     pub fn add_tax(&self, percent: impl Factor) -> Result<ExactTaxBreakdown<Self>, Error> {
         let tax = self.with(self.value.mul(&percent_of(percent)?));
-        Ok(ExactTaxBreakdown { gross: self.with(self.value.add(&tax.value)), net: self.clone(), tax })
+        Ok(ExactTaxBreakdown {
+            gross: self.with(self.value.add(&tax.value)),
+            net: self.clone(),
+            tax,
+        })
     }
 
     /// As [`ExactMoney::extract_tax`].
@@ -397,7 +451,11 @@ impl AnyExactMoney {
     /// As [`ExactMoney::extract_tax`].
     pub fn extract_tax(&self, percent: impl Factor) -> Result<ExactTaxBreakdown<Self>, Error> {
         let net = self.with(self.value.mul(&net_share(percent)?));
-        Ok(ExactTaxBreakdown { tax: self.with(self.value.sub(&net.value)), net, gross: self.clone() })
+        Ok(ExactTaxBreakdown {
+            tax: self.with(self.value.sub(&net.value)),
+            net,
+            gross: self.clone(),
+        })
     }
 }
 
@@ -417,7 +475,10 @@ impl<C: Currency> Money<C> {
     /// needs more than [`MAX_SCALE`](crate::MAX_SCALE) places.
     pub fn multiply_exact(&self, factor: impl Factor) -> Result<Self, Error> {
         let product = value_of(&self.amount).mul(&factor.to_ratio()?);
-        Ok(Self::from_amount(exact_amount(&product, self.amount.scale)?))
+        Ok(Self::from_amount(exact_amount(
+            &product,
+            self.amount.scale,
+        )?))
     }
 }
 
@@ -425,7 +486,10 @@ impl AnyMoney {
     /// As [`Money::exact`].
     #[must_use]
     pub fn exact(&self) -> AnyExactMoney {
-        AnyExactMoney { value: value_of(&self.amount), currency: self.currency() }
+        AnyExactMoney {
+            value: value_of(&self.amount),
+            currency: self.currency(),
+        }
     }
 
     /// As [`Money::multiply_exact`].
@@ -435,7 +499,10 @@ impl AnyMoney {
     /// As [`Money::multiply_exact`].
     pub fn multiply_exact(&self, factor: impl Factor) -> Result<Self, Error> {
         let product = value_of(&self.amount).mul(&factor.to_ratio()?);
-        Ok(Self::from_parts(exact_amount(&product, self.amount.scale)?, self.currency()))
+        Ok(Self::from_parts(
+            exact_amount(&product, self.amount.scale)?,
+            self.currency(),
+        ))
     }
 }
 
@@ -520,7 +587,10 @@ impl fmt::Debug for AnyExactMoney {
 
 impl<C: Currency> From<ExactMoney<C>> for AnyExactMoney {
     fn from(exact: ExactMoney<C>) -> Self {
-        Self { value: exact.value, currency: C::CODE }
+        Self {
+            value: exact.value,
+            currency: C::CODE,
+        }
     }
 }
 
@@ -536,7 +606,10 @@ impl<C: Currency> TryFrom<AnyExactMoney> for ExactMoney<C> {
         if exact.currency == C::CODE {
             Ok(Self::of(exact.value))
         } else {
-            Err(Error::CurrencyMismatch { expected: C::CODE, actual: exact.currency })
+            Err(Error::CurrencyMismatch {
+                expected: C::CODE,
+                actual: exact.currency,
+            })
         }
     }
 }
