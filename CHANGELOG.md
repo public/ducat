@@ -30,7 +30,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - A Rust port in `rust/`, outside the npm package: the core (`Money<C>` with a marker type per ISO 4217
   currency, `AnyMoney`, exact `Ratio` factors, the nine rounding modes plus `unnecessary`, add, subtract,
   multiply, divide, convert at a rate, compare, and serde as `{"amount","currency"}`) and a runner for
-  `@ducatjs/money-spec`, which it passes for every core, rounding and conversion vector it covers.
+  `@ducatjs/money-spec`, which it passes for every core, rounding and conversion vector it covers
+  (#338).
 
 ### Documentation
 
