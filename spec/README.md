@@ -15,34 +15,35 @@ spec/
   vectors/<area>/<name>.json   the vectors, one area per directory
 ```
 
-| area       | file                    | cases | source             | what it covers                                                                                  |
-| ---------- | ----------------------- | ----: | ------------------ | ----------------------------------------------------------------------------------------------- |
-| `core`     | `battery.json`          |    41 | hand               | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches                   |
-| `fixed`    | `battery.json`          |    28 | hand               | the same checks for plain decimals, without currencies                                          |
-| `allocate` | `allocate-lean.json`    | 1,500 | Lean               | allocation by weights, every remainder strategy                                                 |
-| `allocate` | `instalments-lean.json` | 1,200 | Lean               | instalments with a unit, every remainder strategy                                               |
-| `allocate` | `chunk-lean.json`       | 1,200 | Lean               | tranches of at most a maximum                                                                   |
-| `allocate` | `schedule-lean.json`    | 1,500 | Lean               | fixed, percentage and rest tranches, and the ones that fail                                     |
-| `cash`     | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                                   |
-| `cash`     | `rules.json`            |   514 | reference data     | the cash-rounding rules by currency and country, and amounts rounded through them               |
-| `currency` | `data.json`             | 1,367 | reference data     | ISO exponents and numeric codes, historic codes, CLDR cash fractions, territories, crypto units |
-| `excel`    | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                                         |
-| `excel`    | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                                  |
-| `rounding` | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                               |
-| `convert`  | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                                       |
-| `convert`  | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual                      |
-| `exact`    | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply                |
-| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                               |
-| `finance`  | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                                      |
-| `finance`  | `exact-fractions.json`  |   300 | Python `fractions` | exact simple interest and exact discounted sums                                                 |
-| `rounding` | `policy-fractions.json` | 1,050 | Python `fractions` | rounding policies in multiply, divide, round, convert, tax and exact amounts                    |
-| `pricing`  | `fractions.json`        |   300 | Python `fractions` | retail price endings, and graduated and volume tiered pricing                                   |
-| `math`     | `fractions.json`        |   750 | Python `fractions` | averages, shares, integral division, trimming the scale, exact ratio arithmetic                 |
-| `excel`    | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                                  |
-| `excel`    | `libreoffice-calc.json` | 1,943 | LibreOffice Calc   | the same functions in doubles, and RRI and EFFECT, with the shared edge cases                   |
-| `excel`    | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                                   |
-| `words`    | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets              |
-| `words`    | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets                   |
+| area         | file                    | cases | source             | what it covers                                                                                  |
+| ------------ | ----------------------- | ----: | ------------------ | ----------------------------------------------------------------------------------------------- |
+| `core`       | `battery.json`          |    41 | hand               | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches                   |
+| `fixed`      | `battery.json`          |    28 | hand               | the same checks for plain decimals, without currencies                                          |
+| `allocate`   | `allocate-lean.json`    | 1,500 | Lean               | allocation by weights, every remainder strategy                                                 |
+| `allocate`   | `instalments-lean.json` | 1,200 | Lean               | instalments with a unit, every remainder strategy                                               |
+| `allocate`   | `chunk-lean.json`       | 1,200 | Lean               | tranches of at most a maximum                                                                   |
+| `allocate`   | `schedule-lean.json`    | 1,500 | Lean               | fixed, percentage and rest tranches, and the ones that fail                                     |
+| `cash`       | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                                   |
+| `cash`       | `rules.json`            |   514 | reference data     | the cash-rounding rules by currency and country, and amounts rounded through them               |
+| `processors` | `rules.json`            | 2,372 | reference data     | each payment processor's exponents and multiples, and amounts to and from its API               |
+| `currency`   | `data.json`             | 1,367 | reference data     | ISO exponents and numeric codes, historic codes, CLDR cash fractions, territories, crypto units |
+| `excel`      | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                                         |
+| `excel`      | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                                  |
+| `rounding`   | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                               |
+| `convert`    | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                                       |
+| `convert`    | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual                      |
+| `exact`      | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply                |
+| `tax`        | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                               |
+| `finance`    | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                                      |
+| `finance`    | `exact-fractions.json`  |   300 | Python `fractions` | exact simple interest and exact discounted sums                                                 |
+| `rounding`   | `policy-fractions.json` | 1,050 | Python `fractions` | rounding policies in multiply, divide, round, convert, tax and exact amounts                    |
+| `pricing`    | `fractions.json`        |   300 | Python `fractions` | retail price endings, and graduated and volume tiered pricing                                   |
+| `math`       | `fractions.json`        |   750 | Python `fractions` | averages, shares, integral division, trimming the scale, exact ratio arithmetic                 |
+| `excel`      | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                                  |
+| `excel`      | `libreoffice-calc.json` | 1,943 | LibreOffice Calc   | the same functions in doubles, and RRI and EFFECT, with the shared edge cases                   |
+| `excel`      | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                                   |
+| `words`      | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets              |
+| `words`      | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets                   |
 
 The other areas the schema names (`format`, `parse`) have no vectors yet.
 
@@ -433,6 +434,40 @@ latest date, and the first of two that tie. Every expected field is judged exact
 | `crypto.fromBaseUnits` | `amount`: `units` base units at the currency's decimals; `null` (a `syntax` error) unless `units` is an integer with an optional minus sign and no leading zeros                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `cash.rule`            | for `currency` (and `country`, and `includeUnverified`, default true): `rule` (`increment` in ISO minor units, `countries`, `verified`, and `rounding`, the tie rule, `halfExpand` unless the source says otherwise) or `null`; `cashUnit`, the step in major units at the exponent (the minor unit without a rule); `cashDigits`, 0 when the step is whole units, else the exponent; `policy` (`scale` the exponent, `increment`, `rounding`), `null` (a `range` error) without a rule. Without a country, the currency's first rule applies, except for EUR, which has none euro-wide; with one, the first rule that lists it. A rule with `verified: false` doesn't apply with `includeUnverified: false` |
 | `cash.round`           | `cashRound`: `amount` rounded to a multiple of the rule's step, ties by `rounding` (or the rule's), at the larger of its scale and the exponent, or unchanged without a rule; `policy`: the same through the cash policy, at the exponent, `null` (a `range` error) without a rule                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
+### Payment-processor tables
+
+`processors/rules.json` holds each processor's rules from ducat's `data/` (`stripe`, `adyen`,
+`checkout`, `paypal`, `braintree`, `klarna`), as `scripts/gen-processor-vectors.py` reads them,
+independently of ducat's generator, and the definitions in ducat's processor docs. `processor` names
+one of them. Stripe, Adyen, Checkout.com and Klarna take an integer at the processor's exponent;
+PayPal and Braintree a decimal string in major units. `amount` is a decimal at the scale its fraction
+digits give. Every field is judged exactly, as JSON; `error` names the kind of error, or is `null`.
+
+- **Exponents and multiples:** the processor's own, not ISO 4217's where they differ. Stripe: two
+  decimals unless zero- or three-decimal, its special cases' API exponents, ISK and UGX a multiple of
+  100 (two-decimal values ending in 00), HUF and TWD payouts a multiple of 100, three-decimal
+  currencies a multiple of 10. Adyen: its table. Checkout.com: its listed exponents, 2 for the
+  others, its payment multiples (CLP 100, three-decimal 10) and the Standalone API's (CLP 1).
+  PayPal, Braintree and Klarna: their listed exponents, ISO's for the others. Codes are read
+  case-insensitively, except by Adyen.
+- **To the processor:** the amount is rescaled to the processor's exponent, rounding once with
+  `rounding` when that loses digits, then made a multiple of the multiple (the payout's for Stripe
+  with `payout`, the Standalone API's for Checkout.com with `standalone`), rounding once again with
+  it. Without `rounding` (`unnecessary`) either step that would round is a `rounding` error. The
+  sign is checked after rounding: Checkout.com and PayPal refuse negatives, Braintree zero and
+  negatives (`range`). An integer beyond 2^53 − 1, and more than 15 digits before PayPal's point,
+  are `range` errors, as is a currency the processor doesn't list.
+- **From the processor:** the amount at the currency's exponent when that is exact, else at the
+  scale it came with (the processor's exponent, or the string's fraction digits), so extra
+  precision is kept. PayPal's strings match `^((-?[0-9]+)|(-?([0-9]+)?[.][0-9]+))$` and are at most
+  32 characters; Braintree's `^[0-9]+(\.[0-9]+)?$`; anything else is a `syntax` error.
+
+| op                   | expected fields and how each is judged                                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `processor.rule`     | for `currency`: `exponent`, `multiple` (Stripe's charge, Checkout.com's payment, else 1) and `contextMultiple` (Stripe's payout, Checkout.com's Standalone API, else `multiple`), all `null` when the processor doesn't list it |
+| `processor.toWire`   | `wire`: the processor's amount for `amount` in `currency` (an integer string, or PayPal's and Braintree's decimal string), with `payout`, `standalone` and `rounding` where given; `null` with `error` `rounding` or `range`    |
+| `processor.fromWire` | `amount`: the money a processor's `wire` amount in `currency` is; `null` with `error` `range` (an unlisted currency) or `syntax` (a string outside the format)                                                                  |
 
 ### Finance and Excel tables
 

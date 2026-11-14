@@ -71,7 +71,8 @@
         "finance",
         "pricing",
         "math",
-        "currency"
+        "currency",
+        "processors"
       ]
     },
     "provenance": {
@@ -1166,7 +1167,10 @@
         "crypto.toBaseUnits",
         "crypto.fromBaseUnits",
         "cash.rule",
-        "cash.round"
+        "cash.round",
+        "processor.rule",
+        "processor.toWire",
+        "processor.fromWire"
       ]
     },
     "rowsByOp": {
@@ -3099,6 +3103,69 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/cash.round"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "processor.rule"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/processor.rule"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "processor.toWire"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/processor.toWire"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "processor.fromWire"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/processor.fromWire"
                 }
               }
             }
@@ -6303,6 +6370,136 @@
             "oneOf": [
               {
                 "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "processor.rule": {
+        "type": "object",
+        "required": ["processor", "currency", "exponent", "multiple", "contextMultiple"],
+        "properties": {
+          "processor": {
+            "enum": ["stripe", "adyen", "checkout", "paypal", "braintree", "klarna"]
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{3}$"
+          },
+          "exponent": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "multiple": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contextMultiple": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "processor.toWire": {
+        "type": "object",
+        "required": ["processor", "currency", "amount", "wire", "error"],
+        "properties": {
+          "processor": {
+            "enum": ["stripe", "adyen", "checkout", "paypal", "braintree", "klarna"]
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{3}$"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "payout": {
+            "type": "boolean"
+          },
+          "standalone": {
+            "type": "boolean"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "wire": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["rounding", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "processor.fromWire": {
+        "type": "object",
+        "required": ["processor", "currency", "wire", "amount", "error"],
+        "properties": {
+          "processor": {
+            "enum": ["stripe", "adyen", "checkout", "paypal", "braintree", "klarna"]
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{3}$"
+          },
+          "wire": {
+            "type": "string"
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range", "syntax"]
               },
               {
                 "type": "null"

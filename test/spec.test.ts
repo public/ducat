@@ -44,6 +44,7 @@ const CASES_PER_AREA: Record<string, number> = {
   pricing: 300,
   math: 750,
   currency: 1367,
+  processors: 2372,
 };
 
 const schema = vectorSchema;
