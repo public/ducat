@@ -7,7 +7,7 @@ import { rateHistory } from '../src/history.js';
 import { exchangeRate } from '../src/rate.js';
 
 function fixture(name: string): string {
-  return readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8');
+  return readFileSync(new URL(`../spec/fixtures/${name}`, import.meta.url), 'utf8');
 }
 
 // Fetched from data-api.ecb.europa.eu on 2026-11-08: USD, JPY, ISK and BGN for the 2025 Christmas

@@ -5,7 +5,8 @@ import { money } from '../src/fn.js';
 import { parseEcbCsv, parseEcbXml } from '../src/ecb.js';
 import { snapshotsFrom, via } from '../src/provider.js';
 
-const fixture = (f: string) => readFileSync(new URL(`fixtures/ecb/${f}`, import.meta.url), 'utf8');
+const fixture = (f: string) =>
+  readFileSync(new URL(`../spec/fixtures/ecb/${f}`, import.meta.url), 'utf8');
 const oneDay = (cubes: string) =>
   `<gesmes:Envelope><Cube><Cube time='2026-11-06'>${cubes}</Cube></Cube></gesmes:Envelope>`;
 

@@ -4,7 +4,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ECB_URLS, fetchEcb, FetchRatesError, type Fetch } from '../src/fetch.js';
 
-const daily = readFileSync(new URL('fixtures/ecb/eurofxref-daily.xml', import.meta.url), 'utf8');
+const daily = readFileSync(
+  new URL('../spec/fixtures/ecb/eurofxref-daily.xml', import.meta.url),
+  'utf8',
+);
 
 function fake(status: number, body: string, seen: unknown[] = []): Fetch {
   return async (url, init) => {

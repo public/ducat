@@ -14,7 +14,7 @@ import {
 } from '../src/fetch.js';
 
 const fixture = (name: string) =>
-  readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8');
+  readFileSync(new URL(`../spec/fixtures/${name}`, import.meta.url), 'utf8');
 const daily = fixture('ecb/eurofxref-daily.xml');
 
 type Call = { url: string; init: Parameters<Fetch>[1] };

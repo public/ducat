@@ -9,7 +9,7 @@
     "examples/prisma/generated",
     "bench/out",
     "src/generated",
-    "test/fixtures",
+    "spec/fixtures",
     "data",
     "package-lock.json",
     "compare/results",

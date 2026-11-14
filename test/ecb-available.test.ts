@@ -7,7 +7,7 @@ import { fetchEcb, fetchEcbRange, type Fetch } from '../src/fetch.js';
 import { rateHistory } from '../src/history.js';
 
 const fixture = (path: string) =>
-  readFileSync(new URL(`fixtures/${path}`, import.meta.url), 'utf8');
+  readFileSync(new URL(`../spec/fixtures/${path}`, import.meta.url), 'utf8');
 const day = (time: string) => `<Cube time='${time}'><Cube currency='USD' rate='1.1000'/></Cube>`;
 const envelope = (...days: string[]) =>
   `<gesmes:Envelope><Cube>${days.map(day).join('')}</Cube></gesmes:Envelope>`;

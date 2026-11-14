@@ -16,7 +16,10 @@ import { convert } from '../src/convert.js';
 import { exchangeRate } from '../src/rate.js';
 
 // Fetched from bankofcanada.ca/valet on 2026-11-08: FX_RATES_DAILY over the 2025 Christmas holidays.
-const valet = readFileSync(new URL('fixtures/boc/fx-rates-daily.json', import.meta.url), 'utf8');
+const valet = readFileSync(
+  new URL('../spec/fixtures/boc/fx-rates-daily.json', import.meta.url),
+  'utf8',
+);
 
 const observations = (rows: readonly object[]) => JSON.stringify({ observations: rows });
 

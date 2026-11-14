@@ -11,7 +11,7 @@ import { exchangeRate } from '../src/rate.js';
 
 // Downloaded from federalreserve.gov/datadownload on 2026-11-08: H.10, all 23 currencies,
 // 20 December 2025 to 6 January 2026, CSV, series in columns, with labels.
-const h10 = readFileSync(new URL('fixtures/fed/h10-daily.csv', import.meta.url), 'utf8');
+const h10 = readFileSync(new URL('../spec/fixtures/fed/h10-daily.csv', import.meta.url), 'utf8');
 
 const HEADER = [
   '"Series Description","Euro","Japanese Yen"',

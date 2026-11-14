@@ -41,7 +41,7 @@ money('10.07', 'EUR').convert(eurChf, cashPolicy('CHF')); // → 9.20 CHF (9.207
 
 A `RateProvider` answers `rate(from, to, { asOf })` synchronously, or with `undefined`. Hold a fixed set of rates in `rateTable()`, then combine: `chain(...)` takes the first answer, `reversed(p)` inverts, `via('EUR', p)` triangulates through one currency, and `identity()` answers 1 for a currency to itself. Keep loading outside providers: it is async. `snapshots(load)` gives the latest table at or before a day, looks back over weekends and holidays, and caches loaded days.
 
-<!-- doctest: setup import { readFileSync } from 'node:fs'; const xml90Days = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const xml90Days = readFileSync('spec/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
 
 ```ts
 import { money } from '@ducatjs/money';
