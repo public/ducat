@@ -9,8 +9,13 @@ Status: milestones 1 to 3 (the core, allocation and cash, tax, `Fixed`, `ExactMo
 Milestone 5a added rounding policies (`RoundingPolicy`, accepted wherever a mode is, as `impl Into<RoundingInput>`),
 pricing, tiers and math, with their vectors in `spec/`.
 
+Milestone 5b added the currency data (numeric codes, historic codes, territories, crypto units, CLDR's cash
+rules and `cash_policy`), generated from `data/` by `tests/currency_data.rs` with a drift check, as for ISO. The
+ISO exponent, CLDR's display digits and the cash rules stay separate figures.
+
 Known gaps, to close later:
-- `cashPolicy` (a policy from CLDR's cash rules): with the currency data, milestone 5b.
+- Currency names and symbols (`currencyName`, `currencySymbol`): they come from `Intl` in ducat, so with
+  formatting in `ducat-icu` (milestone 6).
 - `MoneyBag` (`/bag`): it converts through rate providers, so with them, milestone 5d. The rate-source
 parsers (ECB, BoC, Fed, BoE, HMRC, history, Stripe and Adyen FX) move to milestone 5, with the processors. Rate
 providers (tables, chains, `via`) and rate metadata (dates, validity) come with them. The decisions in "Choices that are expensive to reverse" are the coordinator's,

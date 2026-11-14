@@ -21,7 +21,31 @@ import {
   multiplyExact,
   type ExactMoney,
 } from '../../src/exact.js';
+import { readFileSync } from 'node:fs';
 import { convertDetailed } from '../../src/convert.js';
+import {
+  CASH_RULES,
+  cashPolicy,
+  cashRound,
+  cashRule,
+  cashUnit,
+  currencyDigits,
+  type CashRoundOptions,
+} from '../../src/cash.js';
+import { currencyFromNumeric, minorUnit, numericCode } from '../../src/currencies.js';
+import { ISO_EXPONENTS } from '../../src/currency.js';
+import {
+  cryptoUnit,
+  defineCryptoCurrencies,
+  fromBaseUnits,
+  toBaseUnits,
+} from '../../src/crypto.js';
+import { historicCurrency } from '../../src/historic.js';
+import {
+  currencyTerritories,
+  territoryCurrencies,
+  type TerritoryOptions,
+} from '../../src/territories.js';
 import { discountedSumExact, interestExact, type DayCount } from '../../src/finance.js';
 import {
   average,
@@ -452,6 +476,46 @@ function checkTiered(row: Row): Record<string, unknown> {
   };
 }
 
+// --- currency data and cash rules, from data/ ---------------------------------------------------------
+
+/**
+ * CLDR's cash fractions, which ducat reads only in test/cash-cldr.test.ts (to check its cash rules
+ * against them) and doesn't expose: the `cldr` field of `currency.figures` is held to the data file
+ * itself, the one field here that doesn't exercise ducat.
+ */
+const CLDR_CASH = JSON.parse(
+  readFileSync(new URL('../../data/cldr-cash.json', import.meta.url), 'utf8'),
+).currencies as Record<string, unknown>;
+
+function territoryOptions(row: Row): TerritoryOptions {
+  return {
+    ...(row['on'] === undefined ? {} : { on: row['on'] as string }),
+    ...(row['includeNonTender'] === undefined
+      ? {}
+      : { includeNonTender: row['includeNonTender'] as boolean }),
+  };
+}
+
+function cashOptions(row: Row): CashRoundOptions {
+  return {
+    ...(row['country'] === undefined ? {} : { country: row['country'] as string }),
+    ...(row['rounding'] === undefined ? {} : { rounding: row['rounding'] as RoundingMode }),
+    ...(row['includeUnverified'] === undefined
+      ? {}
+      : { includeUnverified: row['includeUnverified'] as boolean }),
+  };
+}
+
+let cryptoDefined = false;
+
+/** The crypto codes, registered once (no other table uses them). */
+function withCrypto(): void {
+  if (!cryptoDefined) {
+    defineCryptoCurrencies();
+    cryptoDefined = true;
+  }
+}
+
 // --- spelling out numbers, from ICU ------------------------------------------------------------------
 
 const SPELLOUT_RULES: Record<string, SpelloutRules> = {
@@ -602,6 +666,123 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'excelExample.xnpv': { runBy: EXCEL },
   'excelExample.xirr': { runBy: EXCEL },
   'words.spellOut': { expects: ['words'], checkRow: checkSpellOut },
+  'currency.figures': fieldsOperation(['iso', 'historic', 'cldr', 'cash', 'minorUnit'], (row) => {
+    const code = text(row, 'code');
+    const numeric = numericCode(code);
+    const isoExponents: Readonly<Record<string, number>> = ISO_EXPONENTS;
+    const exponent = Object.hasOwn(isoExponents, code) ? isoExponents[code]! : null;
+    const old = historicCurrency(code);
+    return {
+      iso: numeric === undefined ? null : { exponent, numeric },
+      historic:
+        old === undefined
+          ? null
+          : {
+              exponent: old.exponent,
+              name: old.name,
+              numeric: old.numeric ?? null,
+              withdrawn: old.withdrawn ?? null,
+            },
+      cldr: Object.hasOwn(CLDR_CASH, code) ? CLDR_CASH[code] : null,
+      cash: CASH_RULES.filter((rule) => rule.currency === code).map((rule) => ({
+        increment: rule.increment,
+        countries: rule.countries,
+        verified: rule.verified,
+        rounding: rule.rounding ?? 'halfExpand',
+      })),
+      minorUnit: exponent === null ? null : minorUnit(code),
+    };
+  }),
+  'currency.fromNumeric': fieldsOperation(['currency'], (row) => {
+    try {
+      return { currency: currencyFromNumeric(text(row, 'numeric')) ?? null };
+    } catch (error) {
+      if (error instanceof RangeError) {
+        return { currency: 'throws' };
+      }
+      throw error;
+    }
+  }),
+  'territory.currencies': fieldsOperation(['currencies'], (row) => ({
+    currencies: orNull(RangeError, () =>
+      territoryCurrencies(text(row, 'territory'), territoryOptions(row)).map((use) => ({
+        currency: use.currency,
+        from: use.from ?? null,
+        to: use.to ?? null,
+        tender: use.tender,
+      })),
+    ),
+  })),
+  'currency.territories': fieldsOperation(['territories'], (row) => ({
+    territories: currencyTerritories(text(row, 'currency'), territoryOptions(row)),
+  })),
+  'crypto.unit': fieldsOperation(['unit'], (row) => {
+    const unit = cryptoUnit(text(row, 'code'));
+    return {
+      unit:
+        unit === undefined
+          ? null
+          : {
+              name: unit.name,
+              decimals: unit.decimals,
+              baseUnit: unit.baseUnit ?? null,
+              network: unit.network,
+              contract: unit.contract ?? null,
+            },
+    };
+  }),
+  'crypto.toBaseUnits': fieldsOperation(['baseUnits'], (row) => {
+    withCrypto();
+    const amount = moneyOf(text(row, 'amount'), text(row, 'code'));
+    return { baseUnits: orNull(RoundingError, () => String(toBaseUnits(amount))) };
+  }),
+  'crypto.fromBaseUnits': fieldsOperation(['amount'], (row) => {
+    withCrypto();
+    return {
+      amount: orNull(SyntaxError, () =>
+        fromBaseUnits(text(row, 'units'), text(row, 'code')).toDecimal(),
+      ),
+    };
+  }),
+  'cash.rule': fieldsOperation(['rule', 'cashUnit', 'cashDigits', 'policy'], (row) => {
+    const currency = text(row, 'currency');
+    const options = cashOptions(row);
+    // the rule cashUnit, currencyDigits and cashPolicy apply: cashRule's, unless it is unverified
+    // and includeUnverified is false
+    const found = cashRule(currency, options.country);
+    const rule =
+      found === undefined || (options.includeUnverified === false && !found.verified)
+        ? null
+        : found;
+    const policy = orNull(RangeError, () => cashPolicy(currency, options));
+    return {
+      rule:
+        rule === null
+          ? null
+          : {
+              increment: rule.increment,
+              countries: rule.countries,
+              verified: rule.verified,
+              rounding: rule.rounding ?? 'halfExpand',
+            },
+      cashUnit: cashUnit(currency, options),
+      cashDigits: currencyDigits(currency, { ...options, usage: 'cash' }),
+      policy:
+        policy === null
+          ? null
+          : { scale: policy.scale, increment: policy.increment, rounding: policy.rounding },
+    };
+  }),
+  'cash.round': fieldsOperation(['cashRound', 'policy'], (row) => {
+    const amount = amountOf(row);
+    const options = cashOptions(row);
+    return {
+      cashRound: cashRound(amount, options).toDecimal(),
+      policy: orNull(RangeError, () =>
+        round(amount, cashPolicy(text(row, 'currency'), options)).toDecimal(),
+      ),
+    };
+  }),
   'policy.multiply': fieldsOperation(['want'], (row) => ({
     want: byPolicy(() => multiply(amountOf(row), text(row, 'factor'), policyOf(row))),
   })),

@@ -58,7 +58,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   new area) and exact interest and discounted sums (`finance/exact-fractions.json`), from Python's
   `fractions` by `scripts/gen-policy-math-vectors.py`. Both ducat and the Rust port run them.
 - The Rust port gains rounding policies (accepted wherever a rounding mode is), `ducat::pricing`,
-  `ducat::math`, `interest_exact` and `discounted_sum_exact`.
+  `ducat::math`, `interest_exact` and `discounted_sum_exact` (#346).
+- Vectors for the currency data (`spec/vectors/currency/data.json`, a new area: ISO exponents and
+  numeric codes, historic codes, territories, crypto units, CLDR digits) and the cash rules
+  (`cash/rules.json`), read from `data/` by `scripts/gen-currency-data-vectors.py` with Python's
+  standard library, independently of `scripts/gen-currencies.mjs`. Both ducat and the Rust port run
+  them.
+- The Rust port gains the currency data: numeric codes, historic codes, territories, crypto units,
+  and CLDR's cash rules with `cash_rule` and `cash_policy`.
 
 ### Documentation
 

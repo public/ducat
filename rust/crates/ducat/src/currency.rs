@@ -97,7 +97,7 @@ const fn is_non_monetary(code: &[u8]) -> bool {
 }
 
 impl CurrencyCode {
-    const fn build(code: &[u8], exponent: u8) -> Self {
+    pub(crate) const fn build(code: &[u8], exponent: u8) -> Self {
         let mut bytes = [0; MAX_CODE_LEN];
         let mut index = 0;
         while index < code.len() {

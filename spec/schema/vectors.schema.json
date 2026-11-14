@@ -70,7 +70,8 @@
         "excel",
         "finance",
         "pricing",
-        "math"
+        "math",
+        "currency"
       ]
     },
     "provenance": {
@@ -88,7 +89,8 @@
             "libreoffice-calc",
             "microsoft-documentation",
             "dectest",
-            "icu"
+            "icu",
+            "reference-data"
           ]
         },
         "generator": {
@@ -155,6 +157,10 @@
             "runtimeIntl": {
               "description": "Set when the results also depend on the runtime's own Intl or ICU data: what depends on it.",
               "type": "string"
+            },
+            "iso4217ListThree": {
+              "description": "ISO 4217 List Three (withdrawn codes) publication date.",
+              "$ref": "#/$defs/date"
             }
           }
         }
@@ -1151,7 +1157,16 @@
         "math.trimScale",
         "math.ratio",
         "finance.interestExact",
-        "finance.discountedSumExact"
+        "finance.discountedSumExact",
+        "currency.figures",
+        "currency.fromNumeric",
+        "territory.currencies",
+        "currency.territories",
+        "crypto.unit",
+        "crypto.toBaseUnits",
+        "crypto.fromBaseUnits",
+        "cash.rule",
+        "cash.round"
       ]
     },
     "rowsByOp": {
@@ -2895,6 +2910,195 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/finance.discountedSumExact"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "currency.figures"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/currency.figures"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "currency.fromNumeric"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/currency.fromNumeric"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "territory.currencies"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/territory.currencies"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "currency.territories"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/currency.territories"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "crypto.unit"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/crypto.unit"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "crypto.toBaseUnits"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/crypto.toBaseUnits"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "crypto.fromBaseUnits"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/crypto.fromBaseUnits"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "cash.rule"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/cash.rule"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "cash.round"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/cash.round"
                 }
               }
             }
@@ -5661,6 +5865,452 @@
           }
         },
         "additionalProperties": false
+      },
+      "currency.figures": {
+        "type": "object",
+        "required": ["code", "iso", "historic", "cldr", "cash", "minorUnit"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12
+          },
+          "iso": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["exponent", "numeric"],
+                "properties": {
+                  "exponent": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "numeric": {
+                    "type": "string",
+                    "pattern": "^[0-9]{3}$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "historic": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["exponent", "name", "numeric", "withdrawn"],
+                "properties": {
+                  "exponent": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "numeric": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[0-9]{3}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "withdrawn": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[0-9]{4}(-[0-9]{2})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cldr": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["digits", "cashDigits", "cashRounding"],
+                "properties": {
+                  "digits": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cashDigits": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cashRounding": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cash": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["increment", "countries", "verified", "rounding"],
+              "properties": {
+                "increment": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "countries": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{2,3}$"
+                  }
+                },
+                "verified": {
+                  "type": "boolean"
+                },
+                "rounding": {
+                  "$ref": "#/$defs/roundingMode"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "minorUnit": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "currency.fromNumeric": {
+        "type": "object",
+        "required": ["numeric", "currency"],
+        "properties": {
+          "numeric": {
+            "type": "string"
+          },
+          "currency": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/currency"
+              },
+              {
+                "const": "throws"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "territory.currencies": {
+        "type": "object",
+        "required": ["territory", "currencies"],
+        "properties": {
+          "territory": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{2,3}$"
+          },
+          "on": {
+            "type": "string"
+          },
+          "includeNonTender": {
+            "type": "boolean"
+          },
+          "currencies": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/territoryUse"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "currency.territories": {
+        "type": "object",
+        "required": ["currency", "territories"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "on": {
+            "type": "string"
+          },
+          "includeNonTender": {
+            "type": "boolean"
+          },
+          "territories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{2,3}$"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "crypto.unit": {
+        "type": "object",
+        "required": ["code", "unit"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["name", "decimals", "baseUnit", "network", "contract"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "decimals": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "baseUnit": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "network": {
+                    "type": "string"
+                  },
+                  "contract": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "crypto.toBaseUnits": {
+        "type": "object",
+        "required": ["code", "amount", "baseUnits"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "baseUnits": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/integerString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "crypto.fromBaseUnits": {
+        "type": "object",
+        "required": ["code", "units", "amount"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12
+          },
+          "units": {
+            "type": "string"
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "cash.rule": {
+        "type": "object",
+        "required": ["currency", "rule", "cashUnit", "cashDigits", "policy"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "country": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{2,3}$"
+          },
+          "includeUnverified": {
+            "type": "boolean"
+          },
+          "rule": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["increment", "countries", "verified", "rounding"],
+                "properties": {
+                  "increment": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "countries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Z0-9]{2,3}$"
+                    }
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  },
+                  "rounding": {
+                    "$ref": "#/$defs/roundingMode"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cashUnit": {
+            "$ref": "#/$defs/decimal"
+          },
+          "cashDigits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "policy": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["scale", "increment", "rounding"],
+                "properties": {
+                  "scale": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "increment": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "rounding": {
+                    "$ref": "#/$defs/roundingMode"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "cash.round": {
+        "type": "object",
+        "required": ["currency", "amount", "cashRound", "policy"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "country": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{2,3}$"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "includeUnverified": {
+            "type": "boolean"
+          },
+          "cashRound": {
+            "$ref": "#/$defs/decimal"
+          },
+          "policy": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       }
     },
     "spreadsheetNumber": {
@@ -5685,6 +6335,39 @@
         },
         "currency": {
           "$ref": "#/$defs/currency"
+        }
+      },
+      "additionalProperties": false
+    },
+    "territoryUse": {
+      "type": "object",
+      "required": ["currency", "from", "to", "tender"],
+      "properties": {
+        "currency": {
+          "$ref": "#/$defs/currency"
+        },
+        "from": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tender": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

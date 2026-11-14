@@ -151,6 +151,10 @@ pub enum Error {
     ChargeQuantityNeedsVolume,
     /// An average of no amounts.
     NoAmounts,
+    /// Text or a number that isn't an ISO 4217 numeric code's shape: one to three digits, up to 999.
+    InvalidNumericCode,
+    /// No cash-rounding rule applies to the currency (EUR needs a country), so there is no cash policy.
+    NoCashRule,
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -237,7 +241,9 @@ impl Error {
             | Self::InvalidTierBounds
             | Self::NegativeQuantity
             | Self::BeyondLastTier
-            | Self::NoAmounts => ErrorKind::Range,
+            | Self::NoAmounts
+            | Self::InvalidNumericCode
+            | Self::NoCashRule => ErrorKind::Range,
         }
     }
 }
@@ -319,6 +325,8 @@ impl fmt::Display for Error {
             Self::BeyondLastTier => f.write_str("the quantity is beyond the last tier; cap it to charge nothing past it"),
             Self::ChargeQuantityNeedsVolume => f.write_str("a charge quantity needs volume pricing: graduated tiers split the quantity"),
             Self::NoAmounts => f.write_str("an average needs at least one amount"),
+            Self::InvalidNumericCode => f.write_str("an ISO 4217 numeric code is one to three digits"),
+            Self::NoCashRule => f.write_str("no cash-rounding rule applies to this currency (EUR needs a country)"),
         }
     }
 }
