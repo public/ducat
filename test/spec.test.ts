@@ -33,7 +33,7 @@ const CASES_PER_AREA: Record<string, number> = {
   core: 41,
   fixed: 28,
   allocate: 5400,
-  cash: 1500,
+  cash: 2014,
   excel: 2878,
   rounding: 1800,
   convert: 850,
@@ -43,6 +43,7 @@ const CASES_PER_AREA: Record<string, number> = {
   exact: 1000,
   pricing: 300,
   math: 750,
+  currency: 1367,
 };
 
 const schema = vectorSchema;

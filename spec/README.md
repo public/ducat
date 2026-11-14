@@ -15,32 +15,34 @@ spec/
   vectors/<area>/<name>.json   the vectors, one area per directory
 ```
 
-| area       | file                    | cases | source             | what it covers                                                                     |
-| ---------- | ----------------------- | ----: | ------------------ | ---------------------------------------------------------------------------------- |
-| `core`     | `battery.json`          |    41 | hand               | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches      |
-| `fixed`    | `battery.json`          |    28 | hand               | the same checks for plain decimals, without currencies                             |
-| `allocate` | `allocate-lean.json`    | 1,500 | Lean               | allocation by weights, every remainder strategy                                    |
-| `allocate` | `instalments-lean.json` | 1,200 | Lean               | instalments with a unit, every remainder strategy                                  |
-| `allocate` | `chunk-lean.json`       | 1,200 | Lean               | tranches of at most a maximum                                                      |
-| `allocate` | `schedule-lean.json`    | 1,500 | Lean               | fixed, percentage and rest tranches, and the ones that fail                        |
-| `cash`     | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                      |
-| `excel`    | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                            |
-| `excel`    | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                     |
-| `rounding` | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                  |
-| `convert`  | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                          |
-| `convert`  | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual         |
-| `exact`    | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply   |
-| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                  |
-| `finance`  | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                         |
-| `finance`  | `exact-fractions.json`  |   300 | Python `fractions` | exact simple interest and exact discounted sums                                    |
-| `rounding` | `policy-fractions.json` | 1,050 | Python `fractions` | rounding policies in multiply, divide, round, convert, tax and exact amounts       |
-| `pricing`  | `fractions.json`        |   300 | Python `fractions` | retail price endings, and graduated and volume tiered pricing                      |
-| `math`     | `fractions.json`        |   750 | Python `fractions` | averages, shares, integral division, trimming the scale, exact ratio arithmetic    |
-| `excel`    | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                     |
-| `excel`    | `libreoffice-calc.json` | 1,943 | LibreOffice Calc   | the same functions in doubles, and RRI and EFFECT, with the shared edge cases      |
-| `excel`    | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                      |
-| `words`    | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets |
-| `words`    | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets      |
+| area       | file                    | cases | source             | what it covers                                                                                  |
+| ---------- | ----------------------- | ----: | ------------------ | ----------------------------------------------------------------------------------------------- |
+| `core`     | `battery.json`          |    41 | hand               | the cross-library battery: exponents, allocation, tax, ties, 2^53, mismatches                   |
+| `fixed`    | `battery.json`          |    28 | hand               | the same checks for plain decimals, without currencies                                          |
+| `allocate` | `allocate-lean.json`    | 1,500 | Lean               | allocation by weights, every remainder strategy                                                 |
+| `allocate` | `instalments-lean.json` | 1,200 | Lean               | instalments with a unit, every remainder strategy                                               |
+| `allocate` | `chunk-lean.json`       | 1,200 | Lean               | tranches of at most a maximum                                                                   |
+| `allocate` | `schedule-lean.json`    | 1,500 | Lean               | fixed, percentage and rest tranches, and the ones that fail                                     |
+| `cash`     | `increment-lean.json`   | 1,500 | Lean               | rounding to an increment, every rounding mode                                                   |
+| `cash`     | `rules.json`            |   514 | reference data     | the cash-rounding rules by currency and country, and amounts rounded through them               |
+| `currency` | `data.json`             | 1,367 | reference data     | ISO exponents and numeric codes, historic codes, CLDR cash fractions, territories, crypto units |
+| `excel`    | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                                         |
+| `excel`    | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                                  |
+| `rounding` | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                               |
+| `convert`  | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                                       |
+| `convert`  | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual                      |
+| `exact`    | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply                |
+| `tax`      | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                               |
+| `finance`  | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                                      |
+| `finance`  | `exact-fractions.json`  |   300 | Python `fractions` | exact simple interest and exact discounted sums                                                 |
+| `rounding` | `policy-fractions.json` | 1,050 | Python `fractions` | rounding policies in multiply, divide, round, convert, tax and exact amounts                    |
+| `pricing`  | `fractions.json`        |   300 | Python `fractions` | retail price endings, and graduated and volume tiered pricing                                   |
+| `math`     | `fractions.json`        |   750 | Python `fractions` | averages, shares, integral division, trimming the scale, exact ratio arithmetic                 |
+| `excel`    | `fractions.json`        |   757 | Python `fractions` | FV, PV, PMT, NPER, RATE, XNPV and XIRR, with Calc's edge cases                                  |
+| `excel`    | `libreoffice-calc.json` | 1,943 | LibreOffice Calc   | the same functions in doubles, and RRI and EFFECT, with the shared edge cases                   |
+| `excel`    | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                                   |
+| `words`    | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets              |
+| `words`    | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets                   |
 
 The other areas the schema names (`format`, `parse`) have no vectors yet.
 
@@ -404,6 +406,34 @@ the target's) is a `currency-mismatch` error, written `null` in the `policy.*` r
 | `math.trimScale`        | `want`: `amount` at the smallest scale that keeps it exact, but not below `minimumScale` (default: the currency's exponent), and never above its own                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `math.ratio`            | for two rationals `left` and `right`: `sum`, `difference`, `product`, `quotient` (`null`, a `range` error, when `right` is zero), `negation` and `complement` (1 − `left`), all rational; `compare`: −1, 0 or 1 as `left` is less than, equal to or greater than `right`                                                                                                                                                                                                                                                                                                              |
 
+### Currency data and cash tables
+
+The tables in `currency/data.json` and `cash/rules.json` are read from ducat's `data/` by
+`scripts/gen-currency-data-vectors.py`, which doesn't use ducat's generator. A currency can have
+three figures, and each is its own field, never derived from another:
+
+- its **ISO 4217 exponent**, the scale of its amounts (List One; `null` for the N.A. codes such as
+  XAU). A withdrawn code has the exponent ISO gave it while it was current (`data/historic.json`);
+- **CLDR's** display and cash digits (`data/cldr-cash.json`). That file holds only the currencies
+  CLDR cash-rounds, so `null` means "not in the data", not "the same as the exponent";
+- its **cash rule** (`data/cash-rounding.json`), with its step in the currency's ISO minor units.
+
+A withdrawal date is the latest date in List Three's entry (a month, a year, or a range such as
+`1990-07 to 1990-09`, compared as text); a code withdrawn in several entries takes the entry with the
+latest date, and the first of two that tie. Every expected field is judged exactly, as JSON.
+
+| op                     | expected fields and how each is judged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `currency.figures`     | for `code`: `iso` (`exponent`, `null` for N.A., and `numeric`) or `null` when List One doesn't have it; `historic` (`exponent`, `name`, `numeric`, `withdrawn`; `null` numeric and date for non-ISO codes such as CNH) or `null`; `cldr` (`digits`, `cashDigits`, `cashRounding`) or `null`; `minorUnit`, the size of the minor unit in major units, for an active code with an exponent, else `null`                                                                                                                                                                                                                                                                                                        |
+| `currency.fromNumeric` | `currency`: the active code with the numeric code `numeric` (text, trimmed; `"8"` and `"008"` are ALL), `null` for a number ISO doesn't assign, `"throws"` (a `range` error) for text that isn't one to three digits                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `territory.currencies` | `currencies`: what `territory` used, newest first, each `{ currency, from, to, tender }` (`null` days where CLDR gives none); without `includeNonTender`, only legal tender; with `on`, only those in use that day (an unknown start counts as always). `null` (a `range` error) for an `on` that isn't `YYYY-MM-DD`                                                                                                                                                                                                                                                                                                                                                                                         |
+| `currency.territories` | `territories`: the territories that used `currency`, in code order, with the same `on` and `includeNonTender` rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `crypto.unit`          | `unit`: the crypto table's entry for `code` (`name`, `decimals`, `baseUnit`, `network`, `contract`), or `null`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `crypto.toBaseUnits`   | `baseUnits`: `amount` (a decimal at its own scale) in base units, 10^−decimals; `null` (a `rounding` error) when it isn't a whole number of them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `crypto.fromBaseUnits` | `amount`: `units` base units at the currency's decimals; `null` (a `syntax` error) unless `units` is an integer with an optional minus sign and no leading zeros                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `cash.rule`            | for `currency` (and `country`, and `includeUnverified`, default true): `rule` (`increment` in ISO minor units, `countries`, `verified`, and `rounding`, the tie rule, `halfExpand` unless the source says otherwise) or `null`; `cashUnit`, the step in major units at the exponent (the minor unit without a rule); `cashDigits`, 0 when the step is whole units, else the exponent; `policy` (`scale` the exponent, `increment`, `rounding`), `null` (a `range` error) without a rule. Without a country, the currency's first rule applies, except for EUR, which has none euro-wide; with one, the first rule that lists it. A rule with `verified: false` doesn't apply with `includeUnverified: false` |
+| `cash.round`           | `cashRound`: `amount` rounded to a multiple of the rule's step, ties by `rounding` (or the rule's), at the larger of its scale and the exponent, or unchanged without a rule; `policy`: the same through the cash policy, at the exponent, `null` (a `range` error) without a rule                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
 ### Finance and Excel tables
 
 The tables in `finance/fractions.json` and `excel/fractions.json` follow the definitions in ducat's
@@ -520,24 +550,25 @@ What the strategies mean:
 
 Every file says where its expected values come from (`provenance.source`):
 
-| source                    | meaning                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `hand`                    | worked out by hand from exact decimal arithmetic                                                        |
-| `lean`                    | evaluated from a Lean model whose properties are proved                                                 |
-| `python-fractions`        | computed exactly with Python's `fractions`                                                              |
-| `python-decimal`          | Python's `decimal` module, the reference implementation of the General Decimal Arithmetic specification |
-| `libreoffice-calc`        | computed by LibreOffice Calc                                                                            |
-| `microsoft-documentation` | copied from Microsoft's documentation of an Excel function                                              |
-| `dectest`                 | the General Decimal Arithmetic test cases                                                               |
-| `icu`                     | ICU's own output, on CLDR data                                                                          |
+| source                    | meaning                                                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `hand`                    | worked out by hand from exact decimal arithmetic                                                                                           |
+| `lean`                    | evaluated from a Lean model whose properties are proved                                                                                    |
+| `python-fractions`        | computed exactly with Python's `fractions`                                                                                                 |
+| `python-decimal`          | Python's `decimal` module, the reference implementation of the General Decimal Arithmetic specification                                    |
+| `libreoffice-calc`        | computed by LibreOffice Calc                                                                                                               |
+| `microsoft-documentation` | copied from Microsoft's documentation of an Excel function                                                                                 |
+| `dectest`                 | the General Decimal Arithmetic test cases                                                                                                  |
+| `icu`                     | ICU's own output, on CLDR data                                                                                                             |
+| `reference-data`          | read from the reference data in ducat's `data/` (ISO 4217 lists, CLDR, curated sources), by a program independent of ducat's own generator |
 
 `generator` names the program that wrote the file and its version, or is `null` for values
 written by hand or copied. Expected values never come from ducat's own output: a vector that
 ducat fails is investigated, not regenerated.
 
 Where the expected values depend on reference data, `provenance.data` gives its version:
-`iso4217` (the ISO 4217 List One publication date), `cldr`, `icu`, and `runtimeIntl` when the
-results also depend on the runtime's own Intl data.
+`iso4217` (the ISO 4217 List One publication date), `iso4217ListThree` (List Three's, for withdrawn
+codes), `cldr`, `icu`, and `runtimeIntl` when the results also depend on the runtime's own Intl data.
 
 ## Versions
 
