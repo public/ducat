@@ -56,14 +56,7 @@ function amounts(currency: string): string[] {
   return [`1234567${fraction}`, `-1234567${fraction}`, zero];
 }
 
-/**
- * A long name whose fraction digits land after the name ("KWD 1,234,567.88 Kuwaiti dinars8"):
- * Node 24's ICU in the English locales of euro countries; ducat's format composes those names
- * itself once #363 lands.
- */
 const signOf = (amount: Money<string>) => (isZero(amount) ? 0 : isNegative(amount) ? -1 : 1);
-
-const garbled = (text: string) => /[\p{L})]\d+$/u.test(text);
 
 describe('parse reads back what format writes', () => {
   it(`covers ${LOCALES.length} locales`, () => {
@@ -81,9 +74,6 @@ describe('parse reads back what format writes', () => {
         for (const currencyDisplay of DISPLAYS) {
           for (const currencySign of SIGNS) {
             const text = format(written, locale, { currencyDisplay, currencySign });
-            if (currencyDisplay === 'name' && garbled(text)) {
-              continue;
-            }
             let read;
             try {
               read = parse(text, currency, locale);
