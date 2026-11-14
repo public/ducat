@@ -81,6 +81,7 @@ import {
   type Rate,
   type RateInfo,
   type RateJSON,
+  type RateQuote,
 } from '../../src/rate.js';
 import {
   chain as chainProviders,
@@ -94,6 +95,15 @@ import {
   type RateTableSpec,
 } from '../../src/provider.js';
 import { bag, sortByValue } from '../../src/bag.js';
+import { parseEcbCsv, parseEcbSdmxCsv, parseEcbSdmxDecimals, parseEcbXml } from '../../src/ecb.js';
+import { parseBankOfCanadaJson } from '../../src/boc.js';
+import { parseFedH10Csv } from '../../src/fed.js';
+import { parseBankOfEnglandCsv } from '../../src/boe.js';
+import { parseHmrcMonthlyCsv } from '../../src/hmrc.js';
+import { rateFromQuote, rateHistory } from '../../src/history.js';
+import { stripeImpliedRate, stripeRate } from '../../src/stripe-fx.js';
+import { adyenRate, type AdyenSettlementRow } from '../../src/adyen-fx.js';
+import type { RateTable } from '../../src/provider.js';
 import {
   addTax,
   allocate,
@@ -749,6 +759,134 @@ function strictConvert(row: Row): string {
   );
 }
 
+// --- rate sources, from spec/fixtures ------------------------------------------------------------
+
+const fixtureText = (path: string) =>
+  readFileSync(new URL(`../../spec/fixtures/${path}`, import.meta.url), 'utf8');
+
+const sourceText = (row: Row) =>
+  row['fixture'] === undefined ? text(row, 'text') : fixtureText(text(row, 'fixture'));
+
+const SOURCE_PARSERS: Record<string, (input: string, options: never) => RateTable[]> = {
+  ecbXml: parseEcbXml,
+  ecbCsv: parseEcbCsv,
+  ecbSdmx: parseEcbSdmxCsv,
+  boc: parseBankOfCanadaJson,
+  fed: (input) => parseFedH10Csv(input),
+  boe: parseBankOfEnglandCsv,
+  hmrc: parseHmrcMonthlyCsv,
+};
+
+/** The row's file through its parser, with its options (`decimals` as pairs, or from a file). */
+function parseSource(row: Row): RateTable[] {
+  const options: Record<string, unknown> = { ...(row['options'] as Row | undefined) };
+  if (options['decimalsFrom'] !== undefined) {
+    options['decimals'] = parseEcbSdmxDecimals(fixtureText(options['decimalsFrom'] as string));
+    delete options['decimalsFrom'];
+  } else if (Array.isArray(options['decimals'])) {
+    options['decimals'] = Object.fromEntries(options['decimals'] as [string, number][]);
+  }
+  return SOURCE_PARSERS[text(row, 'parser')]!(sourceText(row), options as never);
+}
+
+function tableJson(table: RateTable): Record<string, unknown> {
+  const json: Record<string, unknown> = { base: table.base };
+  for (const key of ['asOf', 'availableAt', 'validUntil'] as const) {
+    if (table[key] !== undefined) {
+      json[key] = table[key];
+    }
+  }
+  json['missing'] = table.missing ?? [];
+  json['rates'] = table.rates.map((rate) => rate.toJSON());
+  return json;
+}
+
+/** The kind the spec names for a parser's error. */
+function parseOutcome(error: unknown): string {
+  if (error instanceof SyntaxError) {
+    return 'syntax';
+  }
+  if (error instanceof RangeError) {
+    return 'range';
+  }
+  throw error;
+}
+
+function attemptParse(
+  nulls: readonly string[],
+  run: () => Record<string, unknown>,
+): Record<string, unknown> {
+  try {
+    return { ...run(), error: null };
+  } catch (error) {
+    return {
+      ...Object.fromEntries(nulls.map((field) => [field, null])),
+      error: parseOutcome(error),
+    };
+  }
+}
+
+interface StripeRow {
+  amount: number;
+  currency: string;
+  exchange_rate?: string | null;
+  created?: number;
+}
+
+const stripeTransaction = (row: Row) => {
+  const { exchange_rate: rate, ...rest } = row['transaction'] as StripeRow;
+  return { ...rest, exchange_rate: rate === undefined || rate === null ? null : Number(rate) };
+};
+
+const SOURCE_OPERATIONS: Record<string, TableOperation> = {
+  'source.parse': fieldsOperation(['days', 'error'], (row) =>
+    attemptParse(['days'], () => ({ days: parseSource(row).map((table) => table.asOf) })),
+  ),
+  'source.table': fieldsOperation(['table'], (row) => ({
+    table: tableJson(parseSource(row)[row['index'] as number]!),
+  })),
+  'source.sdmxDecimals': fieldsOperation(['decimals', 'error'], (row) =>
+    attemptParse(['decimals'], () => ({
+      decimals: Object.entries(parseEcbSdmxDecimals(sourceText(row))),
+    })),
+  ),
+  'history.fromQuote': fieldsOperation(['rate', 'error'], (row) =>
+    attemptParse(['rate'], () => ({
+      rate: rateFromQuote(
+        text(row, 'from'),
+        text(row, 'to'),
+        row['quote'] as RateQuote,
+        row['info'] as RateInfo | undefined,
+      ).toJSON(),
+    })),
+  ),
+  'history.lookup': fieldsOperation(['rate', 'skipped'], (row) => {
+    const options = row['lookback'] === undefined ? {} : { lookback: row['lookback'] as number };
+    const history = rateHistory(parseSource(row['tables'] as Row), options);
+    const found = history.lookup(text(row, 'from'), text(row, 'to'), asOfQuery(row));
+    return {
+      rate: found.rate?.toJSON() ?? null,
+      skipped: found.skipped.map((fallback) => [fallback.day, fallback.reason]),
+    };
+  }),
+  'fx.stripeRate': fieldsOperation(['rate', 'error'], (row) =>
+    attemptParse(['rate'], () => ({
+      rate: stripeRate(text(row, 'from'), stripeTransaction(row))?.toJSON() ?? null,
+    })),
+  ),
+  'fx.stripeImplied': fieldsOperation(['rate', 'error'], (row) =>
+    attemptParse(['rate'], () => ({
+      rate: stripeImpliedRate(
+        moneyOf(text(row, 'amount'), text(row, 'currency')),
+        stripeTransaction(row),
+      ).toJSON(),
+    })),
+  ),
+  'fx.adyenRate': fieldsOperation(['rate'], (row) => ({
+    rate: adyenRate(row['row'] as AdyenSettlementRow)?.toJSON() ?? null,
+  })),
+};
+
 const RATE_OPERATIONS: Record<string, TableOperation> = {
   'rate.derive': fieldsOperation(['json', 'error'], (row) =>
     attemptOutcome(['json'], () => ({ json: derive(row) })),
@@ -863,6 +1001,7 @@ function checkSpellOut(row: Row, _index: number, parameters: Row): string[] {
 
 export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   ...RATE_OPERATIONS,
+  ...SOURCE_OPERATIONS,
   'allocate.byRemainder': { expects: REMAINDERS, checkRow: checkAllocation },
   'instalments.byRemainder': {
     expects: ['first', 'last', 'toFirst', 'toLast'],
