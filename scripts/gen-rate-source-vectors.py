@@ -286,16 +286,23 @@ def ecb_day(text: str) -> str:
     return calendar_day(int(match[3]), MONTHS.index(match[2].lower()) + 1, int(match[1]))
 
 
+# A day is a Cube with only a time attribute, written with a closing tag: <Cube time='…'/> isn't
+# one, and a file of only those has no day.
+OPEN_DAY = re.compile(r"""<Cube\s+time=["']\d{4}-\d\d-\d\d["']\s*>""")
+
+
 def ecb_xml(text: str, options: dict) -> list:
+    """The Cube elements must nest (anything else is not an ECB file); a day's inner cubes are its
+    rates, written <Cube …/> or <Cube …></Cube>."""
     try:
         root = ElementTree.fromstring(without_bom(text).encode())
     except ElementTree.ParseError:
         syntax()
-    days, tables = 0, []
+    days, tables = len(OPEN_DAY.findall(without_bom(text))), []
     for cube in root.iter():
+        # a day without inner cubes has no rates, written open or self-closing
         if not cube.tag.endswith("Cube") or "time" not in cube.attrib:
             continue
-        days += 1
         day = ecb_day(cube.attrib["time"])
         entries = []
         for inner in cube:
@@ -690,6 +697,18 @@ def parse_inputs() -> list:
     ]
     for cube in ["<Cube currency='USD'/>", "<Cube rate='1.1'/>", "<Cube currency='usd' rate='1.1'/>", "<Cube currency='USDX' rate='1.1'/>", "<Cube currency='USD' rate='1.1.1'/>", "<Cube currency='USD' rate='x1.1'/>", "<Cube currency='USD' rate='-1.1'/>"]:
         rows.append({"parser": "ecbXml", "text": ECB_XML.format(ecb_xml_day(cube))})
+    # a day ends at its own closing tag: inner cubes written <Cube …></Cube> are all kept, and cubes
+    # that don't nest aren't an ECB file; a self-closing day cube isn't a day
+    rows += [
+        {"parser": "ecbXml", "text": ECB_XML.format(ecb_xml_day("<Cube currency='USD' rate='1.1'></Cube><Cube currency='JPY' rate='170'></Cube>"))},
+        {"parser": "ecbXml", "text": ECB_XML.format("<Cube time='2026-11-06'><Cube currency='USD' rate='1.1'/>")},
+        {"parser": "ecbXml", "text": ECB_XML.format(ecb_xml_day("<Cube currency='USD' rate='1.1'/>") + "</Cube>")},
+        {"parser": "ecbXml", "text": ECB_XML.format("<Cube time='2026-11-06'/>")},
+        {"parser": "ecbXml", "text": ECB_XML.format("<Cube time='2026-11-06'/>" + ecb_xml_day("<Cube currency='USD' rate='1.1'/>", "2026-11-05"))},
+    ]
+    # every month name, in any case
+    months = ["January", "february", "MARCH", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    rows.append({"parser": "ecbCsv", "text": "Date,USD\n" + "".join(f"06 {name} 2026,1.1\n" for name in months)})
     rows += [
         {"parser": "ecbXml", "text": "<Envelope/>"},
         {"parser": "ecbXml", "text": ECB_XML.format(ecb_xml_day("<Cube currency='USD' rate='1.1'/>", "2026-02-30"))},
@@ -765,7 +784,10 @@ def parse_inputs() -> list:
         {"parser": "fed", "text": f"{FED_HEADER}\n2026-11-06,1.1650,n/q\n"},
         {"parser": "fed", "text": f"{FED_HEADER}\n2026-11-06,0.0000,150\n"},
     ]
-    # the Bank of England
+    # the Bank of England: every series, and every month
+    codes = list(BOE_SERIES)
+    rows.append({"parser": "boe", "text": f"DATE,{','.join(codes)}\n22 Dec 2025,{','.join(f'{i + 1}.5' for i in range(len(codes)))}\n"})
+    rows.append({"parser": "boe", "text": "DATE,XUDLUSS\n" + "".join(f"05 {month} 2025,1.35\n" for month in SHORT_MONTHS)})
     rows += [
         {"parser": "boe", "text": "\ufeff DATE , XUDLUSS \n 05 Dec 2025 , 1.35\n 05 Jan 2025 , 1.3\n"},
         {"parser": "boe", "text": "DATE,XUDLUSS,XUDLERS\n05 Dec 2025,1.35,\n"},
@@ -973,6 +995,7 @@ def history_rows() -> list:
         "hmrc": {"parser": "hmrc", "fixture": "hmrc/monthly_csv_2026-11.csv"},
         "hmrcAmended": {"parser": "hmrc", "text": "\n".join([HMRC_HEADER, hmrc_row("EUR", "1.1500", "01/10/2026", "31/10/2026"), hmrc_row("EUR", "1.1600", "15/10/2026", "31/10/2026")]), "options": {"availableAt": False}},
         "boe": {"parser": "boe", "fixture": "boe/spot-sample.csv"},
+        "hmrcEnded": {"parser": "hmrc", "text": "\n".join([HMRC_HEADER, hmrc_row("EUR", "1.1500", "14/10/2026", "15/10/2026")]), "options": {"availableAt": False}},
     }
     queries = [
         ("ecbHist", "EUR", "USD", None, None),
@@ -1003,9 +1026,12 @@ def history_rows() -> list:
         ("hmrcAmended", "GBP", "EUR", "2026-10-14", 0),
         ("hmrcAmended", "GBP", "EUR", "2026-10-15", 0),
         ("hmrcAmended", "GBP", "EUR", "2026-11-01", 0),
-        ("boe", "GBP", "USD", "2025-12-24", None),
-        ("boe", "GBP", "BGN", "2025-12-23", 1),
-        ("boe", "GBP", "USD", "2025-12-21", None),
+        ("boe", "GBP", "USD", "2026-01-01", None),
+        ("boe", "GBP", "EUR", "2025-12-31", 1),
+        ("boe", "GBP", "USD", "2025-12-30", None),
+        ("hmrcEnded", "GBP", "EUR", "2026-10-17", None),
+        ("hmrcEnded", "GBP", "EUR", "2026-10-15T23:59:59.999Z", None),
+        ("hmrcEnded", "GBP", "EUR", "2026-10-25", None),
     ]
     out = []
     for name, source, target, at, lookback in queries:
@@ -1094,6 +1120,9 @@ def adyen_rows() -> list:
         if zone is not None:
             row["TimeZone"] = zone
         rows.append(row)
+    # every zone it reads by name
+    for zone in ZONES:
+        rows.append({**base, "Creation Date": "2026-11-06 12:00:00", "TimeZone": zone.lower() if zone == "JST" else zone})
     rows += [{**base, "Exchange Rate": ""}, {**base, "Net Currency": ""}, {"Gross Currency": "EUR", "Exchange Rate": "1"}, {**base, "Exchange Rate": " 0.8612 "}]
     out = []
     for row in rows:
