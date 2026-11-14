@@ -1,5 +1,6 @@
-//! CLDR's plural rules for whole numbers in the shipped languages, cardinal and ordinal: what
-//! JavaScript's `Intl.PluralRules` selects, for the categories the rules and the unit names use.
+//! CLDR's plural rules for whole numbers in the shipped languages, cardinal and ordinal (generated
+//! into src/cldr.rs from data/cldr/): what JavaScript's `Intl.PluralRules` selects, for the
+//! categories the rules and the unit names use.
 
 use crate::{Error, Locale};
 
@@ -24,46 +25,63 @@ pub(crate) const fn operand(value: i128) -> i128 {
     }
 }
 
-/// The category of a non-negative operand.
-fn select(locale: Locale, kind: PluralType, n: i128) -> &'static str {
-    let many = n != 0 && n % MILLION == 0;
-    match (kind, locale) {
-        (PluralType::Cardinal, Locale::En | Locale::De | Locale::Nl) => {
-            if n == 1 {
-                "one"
-            } else {
-                "other"
-            }
+/// What a relation tests: the whole number (CLDR's `n` and `i`), or an operand that is zero for
+/// whole numbers (`v`, `w`, `f`, `t`, `c`, `e`).
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum Operand {
+    Whole,
+    Zero,
+}
+
+/// One relation of a CLDR plural rule: `operand % modulus` (no modulus when 0) is, or with
+/// `equal` false isn't, in one of the inclusive `ranges`.
+#[derive(Debug)]
+pub(crate) struct Relation {
+    pub(crate) operand: Operand,
+    pub(crate) modulus: u32,
+    pub(crate) equal: bool,
+    pub(crate) ranges: &'static [(u32, u32)],
+}
+
+/// A category and its condition: any of the alternatives, each all of its relations.
+#[derive(Debug)]
+pub(crate) struct Rule {
+    pub(crate) category: &'static str,
+    pub(crate) any: &'static [&'static [Relation]],
+}
+
+impl Relation {
+    fn holds(&self, n: i128) -> bool {
+        let mut value = match self.operand {
+            Operand::Whole => n,
+            Operand::Zero => 0,
+        };
+        if self.modulus != 0 {
+            value %= i128::from(self.modulus);
         }
-        (PluralType::Cardinal, Locale::It | Locale::Es) => match n {
-            1 => "one",
-            _ if many => "many",
-            _ => "other",
-        },
-        (PluralType::Cardinal, Locale::Fr | Locale::Pt) => match n {
-            0 | 1 => "one",
-            _ if many => "many",
-            _ => "other",
-        },
-        (PluralType::Ordinal, Locale::En) => match (n % 10, n % 100) {
-            (1, tens) if tens != 11 => "one",
-            (2, tens) if tens != 12 => "two",
-            (3, tens) if tens != 13 => "few",
-            _ => "other",
-        },
-        (PluralType::Ordinal, Locale::Fr) => {
-            if n == 1 {
-                "one"
-            } else {
-                "other"
-            }
-        }
-        (PluralType::Ordinal, Locale::It) => match n {
-            11 | 8 | 80 | 800 => "many",
-            _ => "other",
-        },
-        (PluralType::Ordinal, _) => "other",
+        let within = self
+            .ranges
+            .iter()
+            .any(|&(low, high)| i128::from(low) <= value && value <= i128::from(high));
+        within == self.equal
     }
+}
+
+/// The category of a non-negative operand, by the language's CLDR rules (src/cldr.rs).
+fn select(locale: Locale, kind: PluralType, n: i128) -> &'static str {
+    let data = locale.data();
+    let rules = match kind {
+        PluralType::Cardinal => data.cardinal,
+        PluralType::Ordinal => data.ordinal,
+    };
+    rules
+        .iter()
+        .find(|rule| {
+            rule.any
+                .iter()
+                .any(|all| all.iter().all(|relation| relation.holds(n)))
+        })
+        .map_or("other", |rule| rule.category)
 }
 
 /// The plural category of `value`, as `Intl.PluralRules` gives it.

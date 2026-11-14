@@ -758,6 +758,11 @@ and compares the text with the file's row for it.
   expected and found. ducat's runner writes it as a GitHub Actions warning:
   `::warning title=Intl data differs::de-CH skipped (166 rows): expected U+0027 got U+2019 …`.
 - Skipped rows still count as seen: the count per area stays exact, so a lost file still fails.
+- A CI job can say it is meant to be the declared runtime with `SPEC_REFERENCE_RUNTIME=1` (ducat's
+  Node 24.x job does). There any other runtime fails, naming both: `reference job runs Node
+  <version> (ICU …, CLDR …); the files declare Node 24 (ICU 78.3, CLDR 48.0): regenerate the vectors
+  or update the declaration`. So a Node 24 release with other ICU data turns that job red instead of
+  quietly skipping. Without the variable the runtime alone decides, as above.
 
 ### Spelling out numbers
 
