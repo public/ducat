@@ -27,7 +27,11 @@
 //! ```
 //!
 //! It matches ducat's TypeScript on every format and parse vector of ducat's conformance suite,
-//! where ducat formats through the runtime's `Intl` (ICU 78.3, which carries CLDR 48).
+//! where ducat formats through the runtime's `Intl` (ICU 78.3, which carries CLDR 48). It follows
+//! ICU's data where ICU ships other values than CLDR (fr-CH's group separator, my's unit pattern,
+//! the separators of a currency's own pattern), not its code's bugs: a currency's name is always
+//! written as TR35 has it, in the locale's decimal and unit patterns. Rounding is ducat's exact
+//! kernel on the decimal; there are no floats.
 //!
 //! # Locales and what they cost
 //!
@@ -79,7 +83,7 @@ pub use format::{
 pub use locale::{Locale, locales};
 pub use parse::{ParseMoneyOptions, ParseOptions, parse, parse_money};
 
-/// The longest text [`parse`] and [`parse_money`] read, in bytes: an amount is far shorter, and
+/// The longest text [`parse()`] and [`parse_money`] read, in bytes: an amount is far shorter, and
 /// the bound keeps the work per call small.
 pub const MAX_INPUT: usize = 1024;
 

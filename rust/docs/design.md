@@ -78,7 +78,7 @@ format's JSON shape. Malformed input is an error, never a rounding (`Error::Inva
 rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either.
 
 Milestone 6a added amounts and numbers in words, in their own crate, `ducat-words`, so a program that wants only words
-never pulls in ICU (the rest of milestone 6, format and parse, may build on ICU4X). It is ducat's own RBNF interpreter
+never pulls in format and parse data (milestone 6c's `ducat-format`). It is ducat's own RBNF interpreter
 over CLDR's rule text (`data/rbnf/*.txt`, CLDR 49, embedded by `tests/rules.rs` with a drift check, without its comment
 lines as ducat's generator drops them), one feature per language: `en` (4,081 bytes of rules), `de` (8,506), `fr`
 (4,312), `es` (5,829), `it` (11,871), `nl` (2,284), `pt` (4,676), about 41 KB in all, so every language is a default. Values are `i128` within ±(2^63 − 1), ICU's range;
@@ -101,9 +101,68 @@ in `data/cldr/` carries CLDR's names (`main/<locale>/currencies.json`), so a lat
 defaults; until then they are the caller's, and the words vectors (`words.spellOut`) don't cover names. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
 and runs every row; the MSRV is the core's, 1.85.
 
+Milestone 6c added locale formatting and parsing, in their own crate, `ducat-format`, from CLDR 48's data and ducat's own
+code, with no ICU. ICU4X was the plan; ducat chose otherwise because no ICU4X release carries CLDR 48.0 throughout
+(`icu_decimal_data` 2.1.1 has 48.0, but `icu_experimental_data` only 48.1, 48.2.x and 49), and its currency formatter
+is pre-1.0 experimental and re-rounds to CLDR's digits. ducat's TypeScript formats through the runtime's `Intl`, whose
+ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped differences from it:
+
+- **Data:** `tests/data.rs` generates `src/data.rs` (numbers, currency symbols, names and formats, unit patterns,
+  plural rules, parents, default content and likely scripts of the 430 modern-coverage locales) and `src/icu.rs`
+  (ICU 78.3's overrides: fr-CH's group, my's unit pattern) from `data/cldr/` and `data/icu/`, with a drift check, and
+  the Cargo feature per language. `data/cldr/README.md` has the one regeneration that updates the spec, `ducat-words`
+  and `ducat-format` together.
+- **Engine:** a TR35 pattern parser and formatter over ducat's rounding (`to_scale`, no floats): every display and
+  sign, `digits` and `rounding`, `Intl`'s fraction and significant digits and rounding increment, currency spacing,
+  names by plural rule, and parts; `parse` and `parse_money` as ducat's. Input is bounded (`MAX_INPUT`, 1,024 bytes;
+  patterns 256 characters) and nothing recurses.
+- **ICU's data followed, not its code bugs:** a currency's own format (EUR in en-150, PTE in pt-PT) is used for every
+  sign with a symbol, narrow symbol or code, with the separators of the locale that defines it, and the format of a
+  locale's region's currency for currencies without one (en-NL writes USD as `US$1,234.50`), as ICU's data and symbols
+  have it (`data/icu/README.md`). A name follows TR35 everywhere, by ducat's decision: the locale's decimal pattern
+  and unit pattern (`1,234.50 euros` in en-150), never the currency's own pattern or symbol, which ICU's code puts there
+  and garbles at other scales (`KWD 1,234.56 Kuwaiti dinars7` on Node 24); ducat's TypeScript is to match.
+- **Conformance:** the core runner delegates `format.money`, `parse.money` and `parse.detect` to `ducat-format`'s own
+  spec test (2,538, 1,629 and 1,757 rows, all passing, the icu-overrides files included). Its proptests round-trip
+  format and parse in every built locale and feed arbitrary tags, options, amounts and text to the public API.
+
+### Coverage
+
+The crate has the locales CLDR rates modern: 430 (root, `und`, included) in 101 languages, a feature each (`full`
+for all); `hi` also needs `en` (hi-Latn inherits en-IN), `ht` needs `fr`, `nb` and `nn` need `no`. The default set is
+31 languages, 313 locales: those of ducat's vectors (ar, da, de, en, es, fa, fr, hi, it, ja, nl, pt, ru, sv, sw, th)
+and the most spoken others (bn, fil, he, id, ko, mr, ms, pl, ta, te, tr, uk, ur, vi, zh). In a stripped release
+binary the data costs about 1.15 MB for the default set and 3.25 MB for `full` (`examples/locales.rs`, which links
+every built locale); root alone is nearly nothing. CI builds and tests root only and `en` only.
+
+**The one difference from ducat's TypeScript:** Rust's set of locales is fixed when the crate is built; TypeScript
+formats any locale its runtime's `Intl` knows. A tag the build lacks falls back by TR35 (dropping subtags down to
+root): it still formats, and `Locale::has_data` is false, so parsing refuses it, as ducat refuses a locale `Intl` has
+no data for.
+
+A tag is resolved through CLDR's likely scripts first, so a region that writes another script finds that script's
+locale. What Node 24 (ICU 78.3) and `ducat-format` resolve, checked in `tests/locale.rs` and `tests/runtime.rs`:
+
+| tag | Node 24 | ducat-format data | has data | |
+|---|---|---|---|---|
+| `zh-TW` | zh-TW, Traditional (`2.00 歐元`) | `zh-Hant` | yes | same text |
+| `zh-HK` | zh-HK, Traditional | `zh-Hant-HK` | yes | same text |
+| `zh-CN` | zh-CN, Simplified | `zh-Hans` | yes | |
+| `sr-Latn-RS` | sr-Latn-RS, Latin (`2,00 evra`) | `sr-Latn` | yes | same text |
+| `sr-ME` | sr-ME, Latin | `sr-Latn-ME` | yes | same text |
+| `en-Latn-US` | en | `en` | no | ducat's TypeScript refuses it for parsing too |
+| `pa-PK` | pa-PK, Arabic script | `pa` (Gurmukhi) | no | pa-Arab isn't modern coverage |
+| `uz-Arab`, `uz-AF` | uz-Arab, Arabic script | `uz` (Latin) | no | uz-Arab isn't modern coverage |
+
+`Intl`'s fraction and significant digits and rounding increment round the decimal here, exactly, with ducat's rounding
+kernel. Other known differences from ducat's TypeScript on Node, none of them in a vector: letters around a number are
+Rust's `Alphabetic`, which takes some
+combining vowel signs `\p{L}` doesn't; the four modern locales ICU doesn't ship (be-tarask, ca-ES-valencia, el-polyton,
+ht) and nb-SJ have CLDR's data here, where `Intl` falls back; and sr-Cyrl-ME's currency names are CLDR's Cyrillic
+ones, not ICU's Latin. Like ducat's TypeScript, `parse` refuses its
+own text where a symbol has a character outside its affix set (PEN's `S/` in es-PE, PAB's `B/.`, XOF's Sinhala symbol).
+
 Known gaps, to close later:
-- Currency names and symbols (`currencyName`, `currencySymbol`): they come from `Intl` in ducat, so with
-  formatting in `ducat-icu` (milestone 6).
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
 
 The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.
@@ -163,8 +222,8 @@ The decisions in "Choices that are expensive to reverse" are the coordinator's, 
 7. **Layout:** a cargo workspace.
    - `ducat` holds core, allocate, tax, math, convert (rates and providers, without fetchers), cash, policy, pricing,
      exact, fixed, finance, excel and the processors, each behind a feature.
-   - Separate crates hold heavy or optional dependencies: `ducat-icu` (format, parse and words, on ICU4X), `ducat-sqlx`,
-     `ducat-diesel` and `ducat-fetch` (rate fetchers, on reqwest).
+   - Separate crates hold heavy or optional data and dependencies: `ducat-words` (amounts in words), `ducat-format`
+     (format and parse, on CLDR's data), `ducat-sqlx`, `ducat-diesel` and `ducat-fetch` (rate fetchers, on reqwest).
 8. **The licence is MIT,** as ducat's is.
 
 ## Decisions made while building milestone 1
@@ -233,7 +292,7 @@ lives").
 | `.` (core), `/fn` | `ducat` core: `Money`, `AnyMoney`, methods plus free functions where natural | Rust doesn't need ducat's /fn split: unused methods cost nothing |
 | `/iso`, `/iso/*`, `/currencies`, `/territories`, `/historic` | `ducat::iso` (markers plus the table), `currencies`, `territories`, `historic` features | static tables, no registration step |
 | `/allocate` | `allocate` (allocate, split, instalments, schedule, chunk) | the Lean vectors apply |
-| `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | `cash::cldr_cash` is Rust-only (no ducat equivalent; the spec checks it against `data/` only), for `ducat-icu` |
+| `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | `cash::cldr_cash` is Rust-only (no ducat equivalent; the spec checks it against `data/` only) |
 | `/fixed`, `/fixed/money` | `ducat::fixed::Fixed` | |
 | `/finance`, `/excel` | `finance`, `excel` | the Excel rule applies to `excel` |
 | `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | rates with metadata, providers and `MoneyBag` in `convert` (5d1); the parsers, a feature each, take text and never fetch (5d2) |
@@ -241,7 +300,8 @@ lives").
 | `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
 | `/wire` | `wire` (google.type.Money, ISO 20022, minor units, dinero objects) | ported in 5e |
 | `/words/*` | `ducat-words` (6a) | its own interpreter, no ICU |
-| `/format`, `/parse` | `ducat-icu` | first check what ICU4X offers for currency formatting |
+| `/format`, `/parse` | `ducat-format` (6c) | CLDR 48's data with ICU 78.3's overrides, no ICU; a feature per language |
+| `currencyName`, `currencySymbol` | `ducat-format` (6c) | from CLDR, as `currency_name` and `currency_symbol` |
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
 | `/zod`, `/valibot` | not ported | TypeScript schema libraries; `serde` covers validation |
 | `/prisma`, `/drizzle/*`, `/kysely`, `/typeorm`, `/pg` | `ducat-sqlx`, `ducat-diesel` | Postgres numeric and bigint, plus the composite type |
@@ -268,12 +328,10 @@ lives").
 4. **Excel and finance:** the fractions, Calc, Microsoft and Lean xnpv/xirr vectors.
 5. **Currency data:** ISO, historic, territories, cash rules and processors. Vectors mostly don't exist yet, so add
    them to ducat's spec first, from an independent source.
-6. **`ducat-icu`:** format, parse and words. It depends on ducat#337 for format and parse vectors; the RBNF vectors
-   exist.
-   - Build on ICU4X's `DecimalFormatter`, with ducat's own rounding, not on its currency formatter, which re-rounds
-     to CLDR digits (wrong for HUF, IDR, IQD and MGA at ISO scale). Pin `icu_experimental` exactly if it's used at all.
-   - Its own MSRV (1.88 or later, as ICU4X 2.x needs); the core stays on 1.85.
-   - Parsing and RBNF are ducat-rs's own code: ICU4X has neither.
+6. **Words, format and parse:** `ducat-words` (6a, RBNF) and `ducat-format` (6c, format and parse), both ducat-rs's own
+   code over CLDR's data, with no ICU. ICU4X was the plan, but no release carries CLDR 48.0 throughout and its currency
+   formatter is experimental and re-rounds to CLDR digits (wrong for HUF, IDR, IQD and MGA at ISO scale); the format
+   and parse vectors came with ducat#337. Both keep the core's MSRV, 1.85.
 7. **Integrations:** `ducat-sqlx`, `ducat-diesel`, `ducat-fetch` and `proptest`.
 8. **Fuzzing** of every boundary (parsing, serde, database decoding, `Ratio`) with `cargo fuzz`.
 

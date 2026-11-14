@@ -37,6 +37,34 @@ jobs:
       # the conformance runner (tests/spec.rs) prints its counts per area and operation; ducat-words
       # runs the words area, which the core runner delegates to it
       - run: cargo test --workspace --locked --no-fail-fast -- --nocapture
+      # every language, for the locale and ICU-behaviour tests that need pa, uz, sr and my
+      - run: cargo test -p ducat-format --locked --no-fail-fast --features full -- --nocapture
+
+  format-features:
+    name: ducat-format, one language and root only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - run: cargo test -p ducat-format --locked --no-fail-fast --no-default-features --features en
+      - run: cargo test -p ducat-format --locked --no-fail-fast --no-default-features
+
+  format-build:
+    name: ducat-format build time and memory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      # the dependencies first, so the timed builds are ducat-format's own
+      - run: cargo build -p ducat --release --locked --no-default-features --features territories
+      - name: default languages
+        run: |
+          /usr/bin/time -v cargo build -p ducat-format --release --locked 2> time.txt
+          grep -E 'Elapsed \(wall clock\)|Maximum resident set size' time.txt
+      - name: every language (full)
+        run: |
+          /usr/bin/time -v cargo build -p ducat-format --release --locked --features full 2> time.txt
+          grep -E 'Elapsed \(wall clock\)|Maximum resident set size' time.txt
 
   msrv:
     name: MSRV 1.85 (library)
@@ -49,6 +77,8 @@ jobs:
       - run: cargo +1.85 check -p ducat --lib --locked --no-default-features
       - run: cargo +1.85 check -p ducat-words --lib --locked
       - run: cargo +1.85 check -p ducat-words --lib --locked --no-default-features
+      - run: cargo +1.85 check -p ducat-format --lib --locked
+      - run: cargo +1.85 check -p ducat-format --lib --locked --no-default-features
 
   no-std:
     name: no_std
@@ -62,6 +92,7 @@ jobs:
       - run: cargo build -p ducat --lib --locked --no-default-features --features ecb,boc,fed,boe,hmrc,history,stripe-fx,adyen-fx --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features wire,serde --target thumbv7em-none-eabihf
       - run: cargo build -p ducat-words --lib --locked --no-default-features --features en,de,fr,es,it,nl,pt --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat-format --lib --locked --no-default-features --features en --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto,stripe,adyen,checkout,paypal,braintree,klarna --target thumbv7em-none-eabihf
 
   lint:
@@ -108,6 +139,9 @@ jobs:
       - run: cargo clippy -p ducat-words --lib --no-default-features --features it --locked -- -D warnings
       - run: cargo clippy -p ducat-words --lib --no-default-features --features nl --locked -- -D warnings
       - run: cargo clippy -p ducat-words --lib --no-default-features --features pt --locked -- -D warnings
-      - run: cargo doc -p ducat -p ducat-words --no-deps --locked
+      - run: cargo clippy -p ducat-format --lib --no-default-features --locked -- -D warnings
+      - run: cargo clippy -p ducat-format --lib --no-default-features --features en --locked -- -D warnings
+      - run: cargo clippy -p ducat-format --all-targets --locked -- -D warnings
+      - run: cargo doc -p ducat -p ducat-words -p ducat-format --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings
