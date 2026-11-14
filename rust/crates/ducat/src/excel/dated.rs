@@ -11,7 +11,7 @@ use num_traits::{One, Signed, Zero};
 use super::big::{
     ceil_div, exact_root, fixed_power, fixed_product, floor_div, floor_root, power, sign,
 };
-use crate::finance::rates::{GridRate, bisect_rate, check_digits, flow_units, sign_changes};
+use crate::finance::rates::{GridValue, bisect_rate, check_digits, flow_units, sign_changes};
 use crate::finance::{Date, DayCount, MoneyKind, money_like, round_quotient, year_fraction};
 use crate::{Error, Factor, Int, Ratio, Rounding};
 
@@ -567,7 +567,7 @@ pub fn xirr<M: MoneyKind>(
     options: &XnpvOptions,
     digits: u16,
     bracket: Option<(&Ratio, &Ratio)>,
-) -> Result<GridRate, Error> {
+) -> Result<GridValue, Error> {
     let unit = check_digits(digits)?;
     let flows = dated_flows(values, dates, options)?;
     let units: Vec<Int> = flows.units.iter().cloned().map(Int::from_big).collect();
@@ -592,7 +592,7 @@ pub fn xirr<M: MoneyKind>(
         if grid <= -&unit {
             return Err(Error::RateNearMinusOne);
         }
-        Ok(GridRate::new(grid, digits))
+        Ok(GridValue::new(grid, digits))
     };
     bisect_rate(sign_at, result, &unit, first_sign, bracket, sign_at_rate)
 }

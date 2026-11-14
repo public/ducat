@@ -36,7 +36,7 @@ pub use loan::{
     payment_dates,
 };
 pub use proration::{ProrationInstant, ProrationPeriod, ProrationUnit};
-pub use rates::{GridRate, PeriodicRate, annual_rate, discounted_sum, periodic_rate};
+pub use rates::{GridValue, PeriodicRate, annual_rate, discounted_sum, periodic_rate};
 pub use savings::{
     ContributionTiming, SavingsPlan, SavingsPlanOptions, SavingsPlanRow, savings_plan,
 };

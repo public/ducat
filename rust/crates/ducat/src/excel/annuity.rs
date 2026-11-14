@@ -6,7 +6,7 @@ use num_bigint::BigInt;
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
 use super::big::{bit_length, exact_root, floor_div, ln_interval, power, sign};
-use crate::finance::rates::{GridRate, bisect_rate, check_digits, sign_changes};
+use crate::finance::rates::{GridValue, bisect_rate, check_digits, sign_changes};
 use crate::finance::{MAX_PERIODS, MoneyKind, money_like, round_quotient};
 use crate::{Error, Factor, Int, Ratio, Rounding};
 
@@ -419,7 +419,7 @@ pub fn pmt_exact<M: MoneyKind>(
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Nper {
     /// The number of periods floored to `digits` places: it lies in `[lower, upper)`.
-    pub periods: GridRate,
+    pub periods: GridValue,
     /// The exact number of periods, when it is rational (always, at a rate of 0).
     pub exact: Option<Ratio>,
 }
@@ -509,7 +509,7 @@ pub fn nper<M: MoneyKind>(
     let (a, b) = (&parts.a, &parts.b);
     let unit_big = unit.to_big();
     let result = |grid: BigInt, exact: Option<Ratio>| Nper {
-        periods: GridRate::new(Int::from_big(grid), digits),
+        periods: GridValue::new(Int::from_big(grid), digits),
         exact,
     };
     if a.is_zero() {
@@ -616,7 +616,7 @@ pub fn rate<M: MoneyKind>(
     timing: PaymentTiming,
     digits: u16,
     bracket: Option<(&Ratio, &Ratio)>,
-) -> Result<GridRate, Error> {
+) -> Result<GridValue, Error> {
     let count = whole_periods(nper, 1)?;
     let unit = check_digits(digits)?;
     let parts = Annuity::new(&Ratio::ZERO, timing, &[Some(pmt), Some(pv), fv])?;
@@ -666,7 +666,7 @@ pub fn rate<M: MoneyKind>(
         if grid <= -&unit {
             return Err(Error::RateNearMinusOne);
         }
-        Ok(GridRate::new(grid, digits))
+        Ok(GridValue::new(grid, digits))
     };
     bisect_rate(sign_at, result, &unit, first_sign, bracket, sign_at_ratio)
 }

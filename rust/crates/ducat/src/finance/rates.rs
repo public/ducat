@@ -158,17 +158,17 @@ pub fn npv_exact<M: MoneyKind>(rate: impl Factor, flows: &[M]) -> Result<M::Exac
     Ok(flows[0].exact_in(Ratio::new(numerator, denominator)?))
 }
 
-/// A rate known to `digits` decimal places: the grid point `lower` (in units of 10^−digits) at or
+/// A value known to `digits` decimal places (a rate, or a number of periods): the grid point `lower` (in units of 10^−digits) at or
 /// below it, and `upper = lower + 10^−digits` above it.
 ///
 /// [`Display`](fmt::Display) writes `lower` as a decimal with `digits` places (`"0.08896339"`).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct GridRate {
+pub struct GridValue {
     grid: Int,
     digits: u16,
 }
 
-impl GridRate {
+impl GridValue {
     /// The grid point `grid` at `digits` places.
     #[cfg(feature = "excel")]
     pub(crate) const fn new(grid: Int, digits: u16) -> Self {
@@ -213,7 +213,7 @@ impl GridRate {
     }
 }
 
-impl fmt::Display for GridRate {
+impl fmt::Display for GridValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write_scaled(f, &self.grid, self.digits)
     }
@@ -426,7 +426,7 @@ pub fn irr<M: MoneyKind>(
     flows: &[M],
     digits: u16,
     bracket: Option<(&Ratio, &Ratio)>,
-) -> Result<GridRate, Error> {
+) -> Result<GridValue, Error> {
     let unit = check_digits(digits)?;
     let (units, _) = flow_units(flows)?;
     let (changes, first_sign) = sign_changes(&units);
@@ -446,7 +446,7 @@ pub fn irr<M: MoneyKind>(
         if grid <= -&unit {
             return Err(Error::RateNearMinusOne);
         }
-        Ok(GridRate { grid, digits })
+        Ok(GridValue { grid, digits })
     };
     bisect_rate(sign_at, result, &unit, first_sign, bracket, sign_at_rate)
 }
@@ -457,7 +457,7 @@ pub fn irr<M: MoneyKind>(
 pub struct PeriodicRate {
     /// The periodic rate floored to `digits` places: `(1 + lower)^per_year ≤ 1 + annual <
     /// (1 + upper)^per_year`.
-    pub rate: GridRate,
+    pub rate: GridValue,
     /// The exact periodic rate, when it is rational: when the reduced numerator and denominator of
     /// `1 + annual` are both perfect `per_year`th powers (`"0.21"` with `per_year` 2 gives 1/10).
     pub exact: Option<Ratio>,
@@ -557,7 +557,7 @@ pub fn periodic_rate(
     if low.is_zero() {
         return Err(Error::RateNearMinusOne);
     }
-    let rate = GridRate {
+    let rate = GridValue {
         grid: low - &unit,
         digits,
     };
