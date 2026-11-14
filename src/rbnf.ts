@@ -10,7 +10,12 @@
 //
 // It loads neither Money nor the currency table: a language pack is plain data.
 
-/** A language's spell-out rules, from CLDR. Import one from `@ducatjs/money/words/<language>`. */
+/**
+ * A language's spell-out rules, from CLDR. Import one from `@ducatjs/money/words/<language>`. Rule
+ * text of your own is bounded by a depth cap (64 levels) and a work budget (10,000 rule
+ * applications per number), and throws a SyntaxError where it can't be read; still treat
+ * untrusted rule text with care.
+ */
 export interface SpelloutRules {
   /** The locale the rules are for, which also picks plural rules and number formats. */
   readonly locale: string;
@@ -64,15 +69,45 @@ const compiledRules = /* @__PURE__ */ new WeakMap<SpelloutRules, Compiled>();
 
 /** ICU's RBNF formats int64 values; past them it writes plain digits, so this refuses instead. */
 const INT64_MAX = 2n ** 63n - 1n;
+/** Deeper than CLDR's rules nest, so caller-supplied rules that loop end in a RangeError. */
+const MAX_DEPTH = 64;
+/**
+ * The most rule applications one spellOut may make, counted in steps, never in time, so
+ * caller-supplied rules that branch (a rule substituting two rule sets that each substitute two
+ * more, 40 levels deep, is 2^40 applications) end in a RangeError rather than running for hours
+ * within the depth cap. Measured by counting applications over every words vector and, for every
+ * public rule set of every shipped language, 0 to 1999, 10^e and its neighbours to 10^18,
+ * ±(2^63 - 1), 10^18 ± 1 and their negatives: at most 82 (English %spellout-numbering-verbose,
+ * -999999999999999999). 10,000 is about 120 times that.
+ */
+const MAX_STEPS = 10_000;
+
+/** The applications made so far in one spellOut, shared across its call tree. */
+interface Work {
+  steps: number;
+}
+
 const MILLION = 1_000_000n;
 
 /** The exponent of the rule's divisor: the largest e with radix^e <= base. */
 function divisorFor(base: bigint, radix: bigint): bigint {
+  if (radix < 2n) {
+    throw new SyntaxError(`RBNF rule with radix ${radix}`);
+  }
   let divisor = 1n;
   while (divisor * radix <= base) {
     divisor *= radix;
   }
   return divisor;
+}
+
+/** Where `token` closes what starts before `from`: a SyntaxError when it never does. */
+function closing(text: string, token: string, from: number): number {
+  const at = text.indexOf(token, from);
+  if (at < 0) {
+    throw new SyntaxError(`RBNF rule text with no closing ${token}: ${text}`);
+  }
+  return at;
 }
 
 /** Splits a rule's text into text, substitutions, plurals and optional parts. */
@@ -91,7 +126,7 @@ function parseParts(text: string): { parts: Part[]; hasRemainder: boolean } {
     const char = text[i]!;
 
     if (char === '[') {
-      const close = text.indexOf(']', i);
+      const close = closing(text, ']', i);
       const inner = text.slice(i + 1, close);
       const bar = inner.indexOf('|');
       const present = parseParts(bar < 0 ? inner : inner.slice(0, bar));
@@ -105,7 +140,7 @@ function parseParts(text: string): { parts: Part[]; hasRemainder: boolean } {
 
     if (char === '$' && text[i + 1] === '(') {
       // $(cardinal,one{Million}other{Millionen})$
-      const close = text.indexOf(')$', i);
+      const close = closing(text, ')$', i);
       const body = text.slice(i + 2, close);
       const comma = body.indexOf(',');
       const cases = new Map<string, string>();
@@ -130,7 +165,7 @@ function parseParts(text: string): { parts: Part[]; hasRemainder: boolean } {
         i += 2;
         continue;
       }
-      const close = text.indexOf(char, i + 1);
+      const close = closing(text, char, i + 1);
       parts.push({ kind: 'substitution', type: char, target: text.slice(i + 1, close) });
       hasRemainder ||= char === '>';
       i = close;
@@ -280,7 +315,16 @@ function applyRule(
   rule: Rule,
   value: bigint,
   parts: readonly Part[],
+  depth: number,
+  work: Work,
 ): string {
+  if (depth > MAX_DEPTH) {
+    throw new RangeError(`RBNF rules for ${language.locale} nest more than ${MAX_DEPTH} deep`);
+  }
+  work.steps++;
+  if (work.steps > MAX_STEPS) {
+    throw new RangeError(`RBNF rules for ${language.locale} take more than ${MAX_STEPS} steps`);
+  }
   const quotient = value / rule.divisor;
   const remainder = value % rule.divisor;
   let output = '';
@@ -291,14 +335,26 @@ function applyRule(
     } else if (part.kind === 'optional') {
       // the bracketed text is left out when the value is a multiple of the divisor
       const chosen = remainder === 0n ? part.omitted : part.present;
-      output += applyRule(language, set, index, rule, value, chosen);
+      output += applyRule(language, set, index, rule, value, chosen, depth + 1, work);
     } else if (part.kind === 'plural') {
       const category = pluralCategory(language, part.type, quotient);
       output += part.cases.get(category) ?? part.cases.get('other') ?? '';
     } else if (part.type === '>>>') {
       // the remainder, through the rule before this one rather than by the usual selection
-      const previous = set.rules[index - 1]!;
-      output += applyRule(language, set, index - 1, previous, remainder, previous.parts);
+      const previous = set.rules[index - 1];
+      if (previous === undefined) {
+        throw new SyntaxError(`RBNF rule >>> with no rule before it in ${set.name}`);
+      }
+      output += applyRule(
+        language,
+        set,
+        index - 1,
+        previous,
+        remainder,
+        previous.parts,
+        depth + 1,
+        work,
+      );
     } else {
       let operand = value;
       if (part.type === '<') {
@@ -310,27 +366,34 @@ function applyRule(
       if (target !== '' && !target.startsWith('%')) {
         output += formatDecimal(language, target, operand);
       } else {
-        output += spell(language, target === '' ? set : ruleSet(language, target), operand);
+        const next = target === '' ? set : ruleSet(language, target);
+        output += spell(language, next, operand, depth + 1, work);
       }
     }
   }
   return output;
 }
 
-function spell(language: Compiled, set: RuleSet, value: bigint): string {
+function spell(
+  language: Compiled,
+  set: RuleSet,
+  value: bigint,
+  depth = 0,
+  work: Work = { steps: 0 },
+): string {
   if (value < 0n) {
     const negative = set.negative;
     if (negative === undefined) {
       // As ICU does: a set without a -x rule hands the value, sign and all, to its first rule
       // (in CLDR, always one that passes it on whole: 0: =%spellout-cardinal-masculine=)
       const first = set.rules[0]!;
-      return applyRule(language, set, 0, first, value, first.parts);
+      return applyRule(language, set, 0, first, value, first.parts, depth, work);
     }
-    return applyRule(language, set, -1, negative, -value, negative.parts);
+    return applyRule(language, set, -1, negative, -value, negative.parts, depth, work);
   }
   const index = ruleIndexFor(set, value);
   const rule = set.rules[index]!;
-  return applyRule(language, set, index, rule, value, rule.parts);
+  return applyRule(language, set, index, rule, value, rule.parts, depth, work);
 }
 
 /** The public rule sets of a language: the names `spellOut` accepts. */

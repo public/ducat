@@ -200,3 +200,59 @@ describe('spellOut', () => {
     );
   });
 });
+
+// Rules a caller supplies: malformed text throws a SyntaxError and rules that loop a RangeError,
+// rather than hanging or growing without bound (each would otherwise run until the test times out)
+describe('caller-supplied rules', () => {
+  const rules = (text: string): SpelloutRules => ({ locale: 'en', rules: text });
+
+  it('throws a SyntaxError for unclosed parts and a radix below 2', () => {
+    for (const [text, token] of [
+      ['%a:\n0: one [two;', ']'],
+      ['%a:\n0: $(cardinal,one{x}other{y};', ')$'],
+      ['%a:\n0: <%a;', '<'],
+      ['%a:\n0: =%a;', '='],
+      ['%a:\n0: one >;', '>'],
+    ] as const) {
+      expect(() => spellOut(5, rules(text), '%a')).toThrow(SyntaxError);
+      expect(() => spellOut(5, rules(text), '%a')).toThrow(`no closing ${token}`);
+    }
+    expect(() => spellOut(5, rules('%a:\n5/1: x;'), '%a')).toThrow(
+      new SyntaxError('RBNF rule with radix 1'),
+    );
+    expect(() => spellOut(5, rules('%a:\n0: >>>;'), '%a')).toThrow(SyntaxError);
+    expect(() =>
+      amountInWords(money('5', 'EUR'), rules('%a:\n0: one [two;'), { ruleSet: '%a' }),
+    ).toThrow(SyntaxError);
+  });
+
+  it('throws a RangeError for rule sets that call themselves or each other without end', () => {
+    for (const text of ['%a:\n0: =%a=;', '%a:\n0: =%b=;\n%b:\n0: =%a=;', '%a:\n0: <<;']) {
+      expect(() => spellOut(5, rules(text), '%a')).toThrow(
+        new RangeError('RBNF rules for en nest more than 64 deep'),
+      );
+    }
+    expect(() =>
+      amountInWords(money('5', 'EUR'), rules('%a:\n0: =%b=;\n%b:\n0: =%a=;'), { ruleSet: '%a' }),
+    ).toThrow(RangeError);
+  });
+
+  it('throws a RangeError for rules that branch past the work budget, within the depth cap', () => {
+    // 40 levels, each substituting the next twice: 2^40 applications, hours of work without a budget
+    let text = '';
+    for (let level = 0; level < 40; level++) {
+      text += `%s${level}:\n0: =%s${level + 1}==%s${level + 1}=;\n`;
+    }
+    text += '%s40:\n0: x;';
+    expect(() => spellOut(5, rules(text), '%s0')).toThrow(
+      new RangeError('RBNF rules for en take more than 10000 steps'),
+    );
+    // 13 levels (8,191 applications) are within it
+    let small = '';
+    for (let level = 0; level < 12; level++) {
+      small += `%s${level}:\n0: =%s${level + 1}==%s${level + 1}=;\n`;
+    }
+    small += '%s12:\n0: x;';
+    expect(spellOut(5, rules(small), '%s0')).toBe('x'.repeat(4096));
+  });
+});

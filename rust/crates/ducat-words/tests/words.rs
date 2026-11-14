@@ -312,3 +312,90 @@ fn adversarial_rules_are_errors_not_panics() {
         assert!(result.is_err(), "{text:?}: {result:?}");
     }
 }
+
+/// `levels` rule sets, each substituting the next twice: 2^levels applications.
+fn fan_out(levels: usize) -> String {
+    let mut text = String::new();
+    for level in 0..levels {
+        text.push_str(&format!(
+            "%s{level}:\n0: =%s{next}==%s{next}=;\n",
+            next = level + 1
+        ));
+    }
+    text.push_str(&format!("%s{levels}:\n0: x;"));
+    text
+}
+
+#[test]
+fn rules_that_branch_past_the_work_budget_are_an_error() {
+    // 63 levels, within the depth cap: 2^64 applications, ages of work without the budget
+    let text: &'static str = Box::leak(fan_out(63).into_boxed_str());
+    let rules = SpelloutRules {
+        locale: ducat_words::Locale::En,
+        rules: text,
+    };
+    let started = std::time::Instant::now();
+    assert_eq!(spell_out(5, &rules, Some("%s0")), Err(Error::TooManySteps));
+    // the budget is the bound; the clock is only a safety net
+    assert!(started.elapsed() < std::time::Duration::from_secs(10));
+    // 12 levels (8,191 applications) are within it
+    let small: &'static str = Box::leak(fan_out(12).into_boxed_str());
+    let rules = SpelloutRules {
+        locale: ducat_words::Locale::En,
+        rules: small,
+    };
+    assert_eq!(spell_out(5, &rules, Some("%s0")).unwrap(), "x".repeat(4096));
+}
+
+mod arbitrary_rules {
+    use ducat_words::{Locale, SpelloutRules, spell_out};
+    use proptest::prelude::*;
+
+    fn fragment() -> impl Strategy<Value = &'static str> {
+        prop_oneof![
+            Just("%a:\n"),
+            Just("%b:\n"),
+            Just("%%c:\n"),
+            Just("0: "),
+            Just("10: "),
+            Just("100/10: "),
+            Just("5/1: "),
+            Just("-x: "),
+            Just("x.x: "),
+            Just("=%a="),
+            Just("=%b=="),
+            Just("<<"),
+            Just(">>"),
+            Just(">>>"),
+            Just("<%b<"),
+            Just("=#,##0="),
+            Just("["),
+            Just("]"),
+            Just("|"),
+            Just("$(cardinal,one{x}other{y})$"),
+            Just("$(ordinal,"),
+            Just("word"),
+            Just(" "),
+            Just(";\n"),
+            Just("'"),
+            Just("é"),
+        ]
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(512))]
+
+        #[test]
+        fn any_rule_text_ends_quickly_in_ok_or_err(pieces in prop::collection::vec(fragment(), 0..60), value in any::<i64>()) {
+            let text: &'static str = Box::leak(pieces.concat().into_boxed_str());
+            let rules = SpelloutRules { locale: Locale::En, rules: text };
+            let started = std::time::Instant::now();
+            for set in ["%a", "%b"] {
+                let _ = spell_out(i128::from(value), &rules, Some(set));
+                let _ = spell_out(5, &rules, Some(set));
+            }
+            // a generous safety net: the depth cap and the work budget are the real bounds
+            prop_assert!(started.elapsed() < std::time::Duration::from_secs(5));
+        }
+    }
+}
