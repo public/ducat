@@ -18,6 +18,10 @@ iso = []
 allocate = []
 ## Rounding to an increment (`round_to_increment`), for cash.
 cash = []
+## `ExactMoney`, exact rational amounts that round once at the end (`ducat::exact`).
+exact = []
+## Exchange rates: `Rate`, inverses, chains and conversions (`ducat::convert`).
+convert = ["exact"]
 ## `Serialize` and `Deserialize` as `{"amount":"12.34","currency":"EUR"}`.
 serde = ["dep:serde"]
 

@@ -122,11 +122,90 @@ impl Ratio {
         Ok(self.mul(&other.recip()?))
     }
 
+    /// `self + other`.
+    #[must_use]
+    pub fn add(&self, other: &Self) -> Self {
+        let num = &self.num * &other.den + &other.num * &self.den;
+        let den = &self.den * &other.den;
+        Self::reduced(num, den).unwrap_or(Self::ZERO)
+    }
+
+    /// `self − other`.
+    #[must_use]
+    pub fn sub(&self, other: &Self) -> Self {
+        self.add(&other.neg())
+    }
+
+    /// `−self`.
+    #[must_use]
+    pub fn neg(&self) -> Self {
+        Self { num: -&self.num, den: self.den.clone() }
+    }
+
+    /// `|self|`.
+    #[must_use]
+    pub fn abs(&self) -> Self {
+        Self { num: self.num.abs(), den: self.den.clone() }
+    }
+
+    /// The value rounded once to `scale` decimal places, as units of 10^−scale.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Rounding`] when it isn't exact at that scale with
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
+    pub fn round_to_units(&self, scale: u16, rounding: crate::Rounding) -> Result<Int, Error> {
+        crate::rounding::rescale_ratio(&self.num, &Int::ONE, &self.den, u32::from(scale), 0, rounding)
+    }
+
+    /// The smallest scale, at least `minimum`, at which the value is an exact decimal, or `None`
+    /// when its decimal expansion doesn't terminate (a denominator with a prime factor other than
+    /// 2 and 5) or needs more than [`MAX_SCALE`](crate::MAX_SCALE) places.
+    #[must_use]
+    pub fn terminating_scale(&self, minimum: u16) -> Option<u16> {
+        let (mut den, mut twos, mut fives) = (self.den.clone(), 0u32, 0u32);
+        let (two, five) = (Int::from(2u8), Int::from(5u8));
+        loop {
+            let (quotient, remainder) = den.div_rem(&two);
+            if !remainder.is_zero() {
+                break;
+            }
+            den = quotient;
+            twos += 1;
+        }
+        loop {
+            let (quotient, remainder) = den.div_rem(&five);
+            if !remainder.is_zero() {
+                break;
+            }
+            den = quotient;
+            fives += 1;
+        }
+        if den != 1 {
+            return None;
+        }
+        let scale = u16::try_from(twos.max(fives)).ok()?.max(minimum);
+        (scale <= crate::MAX_SCALE).then_some(scale)
+    }
+
     /// An exact decimal `digits × 10^−scale` as a reduced ratio.
     pub(crate) fn from_decimal(decimal: Decimal) -> Self {
         let Decimal { digits, scale } = decimal;
         // the denominator is a power of ten, so the reduction can't fail
         Self::reduced(digits, Int::ONE.mul_pow10(u32::from(scale))).unwrap_or(Self::ZERO)
+    }
+}
+
+impl PartialOrd for Ratio {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Ratio {
+    /// By value. Denominators are positive, so cross-multiplying keeps the order.
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        (&self.num * &other.den).cmp(&(&other.num * &self.den))
     }
 }
 
