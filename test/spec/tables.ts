@@ -24,6 +24,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { convertDetailed } from '../../src/convert.js';
 import {
+  CASH_RULES,
   cashPolicy,
   cashRound,
   cashRule,
@@ -665,7 +666,7 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'excelExample.xnpv': { runBy: EXCEL },
   'excelExample.xirr': { runBy: EXCEL },
   'words.spellOut': { expects: ['words'], checkRow: checkSpellOut },
-  'currency.figures': fieldsOperation(['iso', 'historic', 'cldr', 'minorUnit'], (row) => {
+  'currency.figures': fieldsOperation(['iso', 'historic', 'cldr', 'cash', 'minorUnit'], (row) => {
     const code = text(row, 'code');
     const numeric = numericCode(code);
     const isoExponents: Readonly<Record<string, number>> = ISO_EXPONENTS;
@@ -683,6 +684,12 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
               withdrawn: old.withdrawn ?? null,
             },
       cldr: Object.hasOwn(CLDR_CASH, code) ? CLDR_CASH[code] : null,
+      cash: CASH_RULES.filter((rule) => rule.currency === code).map((rule) => ({
+        increment: rule.increment,
+        countries: rule.countries,
+        verified: rule.verified,
+        rounding: rule.rounding ?? 'halfExpand',
+      })),
       minorUnit: exponent === null ? null : minorUnit(code),
     };
   }),

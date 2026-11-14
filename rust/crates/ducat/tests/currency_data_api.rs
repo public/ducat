@@ -93,6 +93,8 @@ fn cash_rounding() -> Result {
 
 #[test]
 fn cash_rules_lookup() -> Result {
+    // every rule's currency is an active code, so none is dropped
+    assert_eq!(cash_rules().count(), 44);
     assert!(cash_rules().all(|rule| rule.increment() > 0 && !rule.countries().is_empty()));
     assert_eq!(cash_rule("GBP".parse()?, None), None);
     assert_eq!(cash_rule("EUR".parse()?, None), None);
@@ -144,6 +146,19 @@ fn historic_codes() -> Result {
     );
     assert!(historic::currencies().all(|entry| !entry.code().is_iso()));
     assert_eq!(historic::currency("EUR"), None);
+    // every table code is one `custom` would make: none collides with an active or N.A. code
+    for entry in historic::currencies() {
+        assert_eq!(
+            Ok(entry.code()),
+            CurrencyCode::custom(entry.code().as_str(), entry.exponent())
+        );
+    }
+    for unit in crypto::units() {
+        assert_eq!(
+            Ok(unit.code()),
+            CurrencyCode::custom(unit.code().as_str(), unit.decimals())
+        );
+    }
     // never an active code: they don't parse, and are built on request with ISO's old exponent
     assert!("PTE".parse::<CurrencyCode>().is_err());
     let escudo = CurrencyCode::historic("PTE")?;
@@ -230,5 +245,28 @@ fn crypto_units_and_base_units() -> Result {
         Err(Error::Syntax)
     );
     assert_eq!(CurrencyCode::crypto("XRP"), Err(Error::UnknownCurrency));
+    Ok(())
+}
+
+#[test]
+fn numeric_codes_and_typed_base_units() -> Result {
+    use ducat::currencies::{
+        currency_from_number, currency_from_numeric, minor_unit, numeric_code,
+    };
+    assert_eq!(currency_from_number(8)?, Some("ALL"));
+    assert_eq!(currency_from_number(959)?, Some("XAU"));
+    assert_eq!(currency_from_number(1000), Err(Error::InvalidNumericCode));
+    assert_eq!(currency_from_numeric(" 978 ")?, Some("EUR"));
+    assert_eq!(currency_from_numeric("9.5"), Err(Error::InvalidNumericCode));
+    assert_eq!(numeric_code("XAU"), Some("959"));
+    let eur: CurrencyCode = "EUR".parse()?;
+    assert_eq!(eur.numeric_code(), Some("978"));
+    assert_eq!(CurrencyCode::historic("BGN")?.numeric_code(), None);
+    assert_eq!(minor_unit("JPY".parse()?).to_decimal(), "1");
+    assert_eq!(
+        Money::<Eur>::from_base_units("1234")?.to_string(),
+        "12.34 EUR"
+    );
+    assert_eq!(Money::<Eur>::from_base_units("12.34"), Err(Error::Syntax));
     Ok(())
 }

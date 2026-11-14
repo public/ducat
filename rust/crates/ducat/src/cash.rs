@@ -210,9 +210,11 @@ impl CashOptions<'_> {
     }
 }
 
-/// The number of decimals a cash amount is shown with (CLDR's `cashDigits`, from the rules): none
-/// when cash is rounded to whole units (SEK 1, HUF 5), the exponent otherwise (DKK 0.50 is shown
-/// as 10.50). A currency without a rule that applies takes its exponent.
+/// The number of decimals a cash amount is shown with, from the cash rules (ducat's `currencyDigits`
+/// with `usage: 'cash'`): none when cash is rounded to whole units (SEK 1, HUF 5), the exponent
+/// otherwise (DKK 0.50 is shown as 10.50). A currency without a rule that applies takes its
+/// exponent. This is the rules' figure, not CLDR's `cashDigits`, and the two can differ (CLDR has
+/// cash digits 0 for MUR, which has no rule here): [`cldr_cash`] gives CLDR's own.
 #[must_use]
 pub fn cash_digits(currency: CurrencyCode, options: &CashOptions<'_>) -> u8 {
     let exponent = currency.exponent();

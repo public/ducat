@@ -5868,7 +5868,7 @@
       },
       "currency.figures": {
         "type": "object",
-        "required": ["code", "iso", "historic", "cldr", "minorUnit"],
+        "required": ["code", "iso", "historic", "cldr", "cash", "minorUnit"],
         "properties": {
           "code": {
             "type": "string",
@@ -5973,6 +5973,33 @@
                 "type": "null"
               }
             ]
+          },
+          "cash": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["increment", "countries", "verified", "rounding"],
+              "properties": {
+                "increment": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "countries": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{2,3}$"
+                  }
+                },
+                "verified": {
+                  "type": "boolean"
+                },
+                "rounding": {
+                  "$ref": "#/$defs/roundingMode"
+                }
+              },
+              "additionalProperties": false
+            }
           },
           "minorUnit": {
             "oneOf": [

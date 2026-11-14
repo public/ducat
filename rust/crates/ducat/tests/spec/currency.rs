@@ -1,7 +1,9 @@
 //! The currency data and cash tables (spec/README.md, "Currency data and cash tables"). Every
 //! field is judged exactly, as JSON.
 
-use ducat::cash::{CashOptions, cash_digits, cash_policy, cash_rule, cash_unit, cldr_cash};
+use ducat::cash::{
+    CashOptions, cash_digits, cash_policy, cash_rule, cash_rules, cash_unit, cldr_cash,
+};
 use ducat::currencies::{currency_from_numeric, minor_unit, numeric_code};
 use ducat::territories::{TerritoryOptions, currency_territories, territory_currencies};
 use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Rounding, crypto, historic};
@@ -59,10 +61,22 @@ fn figures(row: &Value) -> Fields {
     let minor = active.map_or(Value::Null, |currency| {
         Value::String(minor_unit(currency).to_decimal())
     });
+    let cash: Value = cash_rules()
+        .filter(|rule| rule.currency().as_str() == code)
+        .map(|rule| {
+            json!({
+                "increment": rule.increment(),
+                "countries": rule.countries(),
+                "verified": rule.verified(),
+                "rounding": rule.rounding().name(),
+            })
+        })
+        .collect();
     vec![
         ("iso", iso),
         ("historic", old),
         ("cldr", cldr),
+        ("cash", cash),
         ("minorUnit", minor),
     ]
 }

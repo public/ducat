@@ -173,7 +173,7 @@ def places(text: str) -> int:
 # --- currency/data.json -------------------------------------------------------------------------
 
 
-def figures(active, table, cldr, crypto_units) -> list:
+def figures(active, table, cldr, crypto_units, rules) -> list:
     """every code the data knows, with each figure in its own field"""
     codes = sorted(set(active) | set(table) | set(cldr) | set(crypto_units) | {"XYZ"})
     rows = []
@@ -184,6 +184,8 @@ def figures(active, table, cldr, crypto_units) -> list:
             "iso": None if iso is None else {"exponent": iso[0], "numeric": iso[1]},
             "historic": table.get(code),
             "cldr": cldr.get(code),
+            # the code's cash rules, in table order: a figure of their own, never the exponent's
+            "cash": [{key: rule[key] for key in ["increment", "countries", "verified", "rounding"]} for rule in rules if rule["currency"] == code],
             "minorUnit": None if iso is None or iso[0] is None else plain(1, iso[0]),
         }
         rows.append(row)
@@ -430,7 +432,7 @@ def main() -> None:
         "data": {"iso4217": published, "iso4217ListThree": three_published, "cldr": CLDR_RELEASE},
     }
     data_tables = [
-        {"op": "currency.figures", "rows": figures(active, table, cldr, crypto_units)},
+        {"op": "currency.figures", "rows": figures(active, table, cldr, crypto_units, rules)},
         {"op": "currency.fromNumeric", "rows": from_numeric(rng, active)},
         {"op": "territory.currencies", "rows": territory_currencies(rng, regions)},
         {"op": "currency.territories", "rows": currency_territories(rng, regions)},
