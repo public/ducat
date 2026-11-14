@@ -44,6 +44,17 @@ subject.
   through `pnpm gen`; `src/generated/kernel.ts` is printed from the Lean proofs in `proofs/` by
   `pnpm gen:kernel`, which needs the Lean toolchain.
 
+## The Rust port
+
+`rust/` is a Rust port of ducat, checked against `spec/` by `rust/crates/ducat/tests/spec.rs` (the
+`Rust` workflow; locally, `cargo test` in `rust/`). A pull request that changes `spec/` or `data/`
+keeps it green:
+
+- a new operation goes in the runner's `NOT_YET` list (or gets a Rust implementation), and new cases
+  raise its `CASES_PER_AREA` count;
+- a change to `data/iso4217-list-one.xml` needs `DUCAT_REGENERATE=1 cargo test -p ducat --test
+  iso_table` in `rust/`, which rewrites `rust/crates/ducat/src/iso_table.rs`.
+
 ## Code style
 
 The code is meant to be read by people. The minifier renames everything, so readable code costs
