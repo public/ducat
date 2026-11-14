@@ -173,6 +173,7 @@ impl U256 {
     }
 
     /// The value as a `u128`, or `None` when it doesn't fit.
+    #[cfg(feature = "allocate")]
     pub(crate) const fn to_u128(self) -> Option<u128> {
         if self.hi == 0 { Some(self.lo) } else { None }
     }
