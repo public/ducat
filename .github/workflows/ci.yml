@@ -72,6 +72,8 @@ jobs:
       - run: pnpm test
         env:
           DUCAT_REQUIRE_DECTEST: '1'
+          # the 24.x entry must be the runtime the format and parse vectors declare (spec/README.md)
+          SPEC_REFERENCE_RUNTIME: ${{ matrix.node == '24.x' && '1' || '' }}
 
   runtimes:
     name: Bun, Deno and engine shells

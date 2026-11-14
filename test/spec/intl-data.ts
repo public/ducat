@@ -68,17 +68,55 @@ export function declaredRuntime(files: ReadonlyMap<string, unknown>): string {
   return [...declared][0]!;
 }
 
-/** Whether this process is the declared runtime, from the runtime and its versions alone. */
-export function isReferenceRuntime(declared: string): boolean {
+type Versions = Readonly<Record<string, string | undefined>>;
+
+/**
+ * Whether this process is the declared runtime, from the runtime and its versions alone.
+ * `versions` and `isDeno` are parameters so a test can stub them.
+ */
+export function isReferenceRuntime(
+  declared: string,
+  versions: Versions = process.versions,
+  isDeno: boolean = 'Deno' in globalThis,
+): boolean {
   const [, major, icu, cldr] = DECLARATION.exec(declared)!;
-  const versions = process.versions as Record<string, string | undefined>;
-  const isDeno = 'Deno' in globalThis;
   return (
     versions['bun'] === undefined &&
     !isDeno &&
     versions['node']?.split('.')[0] === major &&
     versions['icu'] === icu &&
     versions['cldr'] === cldr
+  );
+}
+
+/** This runtime, written as the files write the declaration. */
+function runtimeName(versions: Versions, isDeno: boolean): string {
+  const name =
+    versions['bun'] !== undefined
+      ? `Bun ${versions['bun']}`
+      : isDeno
+        ? 'Deno'
+        : `Node ${versions['node'] ?? '(unknown)'}`;
+  return `${name} (ICU ${versions['icu'] ?? '(none)'}, CLDR ${versions['cldr'] ?? '(none)'})`;
+}
+
+/**
+ * The CI job that sets SPEC_REFERENCE_RUNTIME=1 is the one meant to run the declared runtime:
+ * there, any other runtime is a failure (a Node 24 update with new ICU data, say), never a skip.
+ * Returns the failure, or undefined. Without the variable nothing is checked.
+ */
+export function referenceJobProblem(
+  declared: string,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+  versions: Versions = process.versions,
+  isDeno: boolean = 'Deno' in globalThis,
+): string | undefined {
+  if (env['SPEC_REFERENCE_RUNTIME'] !== '1' || isReferenceRuntime(declared, versions, isDeno)) {
+    return undefined;
+  }
+  return (
+    `reference job runs ${runtimeName(versions, isDeno)}; the files declare ${declared}: ` +
+    'regenerate the vectors or update the declaration'
   );
 }
 

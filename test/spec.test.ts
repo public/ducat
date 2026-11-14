@@ -27,7 +27,14 @@ import {
 } from './spec/format.ts';
 import { loadVectorFiles, vectorSchema } from './spec/load.ts';
 import { TABLE_OPERATIONS } from './spec/tables.ts';
-import { CANARIES, INTL_OPERATIONS, intlVerdict, warningLine } from './spec/intl-data.ts';
+import {
+  CANARIES,
+  declaredRuntime,
+  INTL_OPERATIONS,
+  intlVerdict,
+  referenceJobProblem,
+  warningLine,
+} from './spec/intl-data.ts';
 
 /** Cases per area. A vector may be added (raise the count), never silently lost. */
 const CASES_PER_AREA: Record<string, number> = {
@@ -340,6 +347,35 @@ describe('@ducatjs/money-spec', () => {
 
   it('matches every Intl canary on the runtime the format and parse files declare', () => {
     expect(intl.failures.map(warningLine)).toEqual([]);
+  });
+
+  it('runs the declared runtime in the reference job (SPEC_REFERENCE_RUNTIME=1)', () => {
+    expect(referenceJobProblem(declaredRuntime(files))).toBeUndefined();
+  });
+
+  it('fails the reference job on another runtime, and checks nothing without the variable', () => {
+    const declared = 'Node 24 (ICU 78.3, CLDR 48.0)';
+    const job = { SPEC_REFERENCE_RUNTIME: '1' };
+    const node24 = { node: '24.22.2', icu: '78.3', cldr: '48.0' };
+    expect(referenceJobProblem(declared, job, node24, false)).toBeUndefined();
+    expect(
+      referenceJobProblem(declared, job, { node: '24.23.0', icu: '78.4', cldr: '48.1' }, false),
+    ).toBe(
+      'reference job runs Node 24.23.0 (ICU 78.4, CLDR 48.1); the files declare Node 24 (ICU 78.3, CLDR 48.0): regenerate the vectors or update the declaration',
+    );
+    expect(
+      referenceJobProblem(declared, job, { node: '26.1.0', icu: '78.3', cldr: '48.0' }, false),
+    ).toMatch(/^reference job runs Node 26\.1\.0 /);
+    expect(referenceJobProblem(declared, job, { ...node24, bun: '1.4.4' }, false)).toMatch(
+      /^reference job runs Bun 1\.4\.4 \(ICU 78\.3, CLDR 48\.0\)/,
+    );
+    expect(referenceJobProblem(declared, job, node24, true)).toMatch(/^reference job runs Deno /);
+    // without the variable (or with another value) the runtime decides as before: no failure
+    const node26 = { node: '26.1.0', icu: '79.1', cldr: '49.0' };
+    expect(referenceJobProblem(declared, {}, node26, false)).toBeUndefined();
+    expect(
+      referenceJobProblem(declared, { SPEC_REFERENCE_RUNTIME: '' }, node26, false),
+    ).toBeUndefined();
   });
 
   it('fails a canary mismatch on the declared runtime and skips the locale elsewhere', () => {
