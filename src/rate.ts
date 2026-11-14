@@ -290,11 +290,16 @@ export class Rate<From extends string = string, To extends string = string> {
     const writable = this as { -readonly [Key in keyof Rate]?: unknown };
     const quote = info?.quote;
     if (quote !== undefined) {
-      // toString prints a one-for-one quote, so it must be this rate. (rateFromQuote derives a
-      // scaled or inverted rate from its quote, so that one can't disagree.)
-      const direct = quote.per === undefined && quote.inverted !== true;
-      // ratio() caches strings, so for a rate built from the same text this is two lookups.
-      const quoted = direct ? ratio(quote.rate) : normalized;
+      // The quote must describe this rate exactly: rate = quote / per, or per / quote when
+      // inverted. Otherwise toString, or the inverse's (which flips `inverted`), would print a
+      // number that isn't the rate. ratio() caches strings, so for a rate built from the same text
+      // this is two lookups.
+      const published = ratio(quote.rate);
+      const per = BigInt(quote.per ?? 1);
+      const quoted =
+        quote.inverted === true
+          ? ratio(published.den * per, published.num)
+          : ratio(published.num, published.den * per);
       if (quoted.num !== normalized.num || quoted.den !== normalized.den) {
         throw new RangeError(`Quote ${quote.rate} isn't the rate ${from}→${to}`);
       }
