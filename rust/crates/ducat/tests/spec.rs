@@ -17,9 +17,10 @@ use std::process::ExitCode;
 use ducat::allocate::{InstalmentRemainder, Remainder, Tranche};
 use ducat::convert::AnyRate;
 use ducat::exact::AnyExactMoney;
+use ducat::excel::{irr, npv};
 use ducat::finance::{
     AmortiseOptions, Date, DayCount, InterestPeriod, ProrationInstant, ProrationPeriod,
-    ProrationUnit, discounted_sum, irr, npv, payment_dates, year_fraction,
+    ProrationUnit, discounted_sum, payment_dates, year_fraction,
 };
 use ducat::fixed::Fixed;
 use ducat::iso::Eur;

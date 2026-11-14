@@ -3,7 +3,8 @@
 A Rust port of [@ducatjs/money](https://github.com/public/ducat). It's idiomatic Rust with ducat's feature set,
 verified against ducat's language-neutral conformance suite (`@ducatjs/money-spec`, in ducat's `spec/`).
 
-Status: milestones 1 to 3 (the core, allocation and cash, tax, `Fixed`, `ExactMoney` and `Rate`). The rate-source
+Status: milestones 1 to 3 (the core, allocation and cash, tax, `Fixed`, `ExactMoney` and `Rate`) and milestone 4's
+`finance`, with `excel` holding Excel's NPV and IRR so far (Excel-named functions live there, as in ducat). The rate-source
 parsers (ECB, BoC, Fed, BoE, HMRC, history, Stripe and Adyen FX) move to milestone 5, with the processors. Rate
 providers (tables, chains, `via`) and rate metadata (dates, validity) come with them. The decisions in "Choices that are expensive to reverse" are the coordinator's,
 flagged to Alex for review.

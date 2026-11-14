@@ -181,7 +181,7 @@ impl Int {
     }
 
     /// The quotient rounded toward −∞; `divisor` is non-zero.
-    #[cfg(feature = "finance")]
+    #[cfg(feature = "excel")]
     pub(crate) fn div_floor(&self, divisor: &Self) -> Self {
         let (quotient, remainder) = self.div_rem(divisor);
         if !remainder.is_zero() && remainder.is_negative() != divisor.is_negative() {

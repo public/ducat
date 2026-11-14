@@ -47,6 +47,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   run them.
 - The Rust port gains `ExactMoney` and `Rate` (inverses, chains, margins, rounded quotes, conversions
   with the residual, implied rates).
+- The Rust port gains `ducat::finance` (dates, the six day counts, interest, compounding, amortisation,
+  payment dates, discounted sums, periodic and annual rates, savings plans, proration) and, in
+  `ducat::excel`, Excel's NPV and IRR, and passes the spec's 2,420 finance vectors.
 
 ### Documentation
 

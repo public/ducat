@@ -2,10 +2,11 @@
 //! docs/how-to/calculate-interest-and-loans.md), through the Rust API.
 
 use ducat::allocate::Remainder;
+use ducat::excel::{irr, npv};
 use ducat::finance::{
     AmortisationMethod, AmortiseOptions, ContributionTiming, Date, DayCount, InterestPeriod,
     ProrationInstant, ProrationPeriod, ProrationUnit, SavingsPlanOptions, annual_rate,
-    discounted_sum, irr, npv, payment_dates, periodic_rate, savings_plan, year_fraction,
+    discounted_sum, payment_dates, periodic_rate, savings_plan, year_fraction,
 };
 use ducat::iso::{Eur, Usd};
 use ducat::{AnyMoney, Error, Money, Ratio, Rounding};

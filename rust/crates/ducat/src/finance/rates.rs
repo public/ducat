@@ -14,6 +14,7 @@ const MAX_DIGITS: u16 = 100;
 /// decimal to the `per_year`th power, so this bounds the integers.
 const MAX_ROOT_SIZE: u32 = 50_000;
 
+#[cfg(feature = "excel")]
 /// The most times the bisection doubles its upper end looking for a positive root: a rate above
 /// 2^1024 per period is an error rather than a longer search.
 const MAX_DOUBLINGS: u32 = 1024;
@@ -96,7 +97,7 @@ fn discounted<M: MoneyKind>(
 
 /// The discounted sum of flows at periods 0, 1, 2…, `Σ flowₜ / (1 + rate)ᵗ`, rounded once to the
 /// currency's exponent: the textbook NPV, with the first flow (an initial outlay, say) not
-/// discounted. It is `flows[0] + npv(rate, flows[1..])`. (Not Excel's PV, which is an annuity's
+/// discounted. It is `flows[0] + `[`npv`](crate::excel::npv)`(rate, flows[1..])`. (Not Excel's PV, which is an annuity's
 /// present value.)
 ///
 /// ```
@@ -124,11 +125,12 @@ pub fn discounted_sum<M: MoneyKind>(
 
 /// Excel's NPV: `Σ flowᵢ / (1 + rate)ⁱ` for i = 1, 2…, so the first flow is at the end of period 1
 /// and is discounted once, rounded once to the currency's exponent. As in Excel, an initial outlay
-/// at period 0 goes outside: `flows[0] + npv(rate, flows[1..])`, or use [`discounted_sum`].
+/// at period 0 goes outside: `flows[0] + npv(rate, flows[1..])`, or use
+/// [`discounted_sum`](crate::finance::discounted_sum).
 ///
 /// ```
 /// use ducat::{Money, Rounding};
-/// use ducat::finance::npv;
+/// use ducat::excel::npv;
 /// use ducat::iso::Usd;
 ///
 /// let flows: Vec<Money<Usd>> = ["-10000", "3000", "4200", "6800"].iter().map(|f| f.parse()).collect::<Result<_, _>>()?;
@@ -140,6 +142,7 @@ pub fn discounted_sum<M: MoneyKind>(
 /// # Errors
 ///
 /// As [`discounted_sum`].
+#[cfg(feature = "excel")]
 pub fn npv<M: MoneyKind>(rate: impl Factor, flows: &[M], rounding: Rounding) -> Result<M, Error> {
     discounted(rate, flows, rounding, true)
 }
@@ -206,6 +209,7 @@ fn check_digits(digits: u16) -> Result<Int, Error> {
     Ok(Int::ONE.mul_pow10(u32::from(digits)))
 }
 
+#[cfg(feature = "excel")]
 /// Sign changes in the flows, zeros skipped, and the sign of the first non-zero flow.
 fn sign_changes(units: &[Int]) -> (usize, i8) {
     let (mut changes, mut first, mut previous) = (0, 0, 0);
@@ -230,6 +234,7 @@ fn half(value: &Int) -> Int {
     value.div_rem(&Int::from(2u8)).0
 }
 
+#[cfg(feature = "excel")]
 /// The bisection the rate solvers share, on the grid of `unit`ths: from the caller's bracket, or
 /// with one sign change from 0 (the root is negative when the value at 0 has the first flow's
 /// sign, else positive, found by doubling, at most 1,024 times). `sign_at` takes a grid point,
@@ -301,6 +306,7 @@ pub(super) fn bisect_rate<R>(
     result(low)
 }
 
+#[cfg(feature = "excel")]
 /// What `bracket_to_grid` found: the root pinned to one grid step, or a grid bracket to bisect
 /// with the sign at its lower end.
 enum Grid {
@@ -308,6 +314,7 @@ enum Grid {
     Bracket(Int, Int, i8),
 }
 
+#[cfg(feature = "excel")]
 /// The caller's bracket narrowed to the grid of `unit`ths. The signs are taken at the exact
 /// bracket ends first, so the root found is argued to be one inside the bracket (ducat#307).
 fn bracket_to_grid(
@@ -380,7 +387,7 @@ fn bracket_to_grid(
 ///
 /// ```
 /// use ducat::Money;
-/// use ducat::finance::irr;
+/// use ducat::excel::irr;
 /// use ducat::iso::Eur;
 ///
 /// let flows: Vec<Money<Eur>> = ["-1000", "300", "400", "500"].iter().map(|f| f.parse()).collect::<Result<_, _>>()?;
@@ -397,6 +404,7 @@ fn bracket_to_grid(
 /// [`Error::InvalidBracket`] for a bracket that isn't two increasing rates above −1 with NPVs of
 /// opposite signs; [`Error::RateNearMinusOne`] for an IRR within 10^−digits of −1 (ask for more
 /// digits); [`Error::RateTooHigh`] for an IRR above 2^1024.
+#[cfg(feature = "excel")]
 pub fn irr<M: MoneyKind>(
     flows: &[M],
     digits: u16,

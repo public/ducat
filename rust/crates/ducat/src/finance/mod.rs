@@ -1,6 +1,6 @@
 //! Day counts, simple and compound interest, periodic and annual rates, loan and savings
-//! schedules, discounted sums and proration, in exact arithmetic: ducat's `/finance`. It also has
-//! Excel's NPV and IRR ([`npv`], [`irr`]), which ducat's finance vectors exercise.
+//! schedules, discounted sums and proration, in exact arithmetic: ducat's `/finance`. Excel's NPV
+//! and IRR are in [`crate::excel`], with the other functions named after Excel's, as in ducat.
 //!
 //! Every amount that is paid or booked is rounded once from its exact value, with an explicit
 //! [`Rounding`] to the currency's exponent; nothing in between is rounded, and no floats are used.
@@ -26,7 +26,7 @@ mod date;
 mod day_count;
 mod loan;
 mod proration;
-mod rates;
+pub(crate) mod rates;
 mod savings;
 
 pub use date::Date;
@@ -36,7 +36,7 @@ pub use loan::{
     payment_dates,
 };
 pub use proration::{ProrationInstant, ProrationPeriod, ProrationUnit};
-pub use rates::{GridRate, PeriodicRate, annual_rate, discounted_sum, irr, npv, periodic_rate};
+pub use rates::{GridRate, PeriodicRate, annual_rate, discounted_sum, periodic_rate};
 pub use savings::{
     ContributionTiming, SavingsPlan, SavingsPlanOptions, SavingsPlanRow, savings_plan,
 };
