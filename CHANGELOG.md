@@ -37,6 +37,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (#339).
 - The Rust port's amounts, ratios and weights are unbounded, as in TypeScript: `i128` while they fit,
   arbitrary precision beyond, so the 36 conformance vectors it used to skip as beyond `i128` now run.
+- The Rust port gains tax (`percentage`, `discount`, `add_tax`, `extract_tax`) and `Fixed`, an exact
+  decimal without a currency, and passes the spec's tax and fixed-point vectors.
 
 ### Documentation
 

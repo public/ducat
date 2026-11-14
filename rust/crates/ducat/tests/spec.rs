@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use ducat::allocate::{InstalmentRemainder, Remainder, Tranche};
+use ducat::fixed::Fixed;
 use ducat::iso::Eur;
 use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Rounding};
 use serde_json::Value;
@@ -37,16 +38,6 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
 /// Operations the runner knows about but the Rust port doesn't implement yet, with the milestone
 /// that brings them. Each is named in full, so a new operation in the spec is an error here.
 const NOT_YET: &[(&str, &str)] = &[
-    ("minor.percentage", "not yet: milestone 3 (tax)"),
-    ("minor.discount", "not yet: milestone 3 (tax)"),
-    ("minor.addTax", "not yet: milestone 3 (tax)"),
-    ("minor.extractTax", "not yet: milestone 3 (tax)"),
-    ("fixed.roundTrip", "not yet: milestone 3 (fixed)"),
-    ("fixed.add", "not yet: milestone 3 (fixed)"),
-    ("fixed.multiply", "not yet: milestone 3 (fixed)"),
-    ("fixed.divide", "not yet: milestone 3 (fixed)"),
-    ("fixed.round", "not yet: milestone 3 (fixed)"),
-    ("fixed.compare", "not yet: milestone 3 (fixed)"),
     ("xnpv.scaled", "not yet: milestone 4 (excel)"),
     ("xirr.floor", "not yet: milestone 4 (excel)"),
     ("excel.annuities", "not yet: milestone 4 (excel)"),
@@ -119,6 +110,8 @@ fn spec_dir() -> PathBuf {
 #[derive(Debug, Clone)]
 enum Outcome {
     Money(AnyMoney),
+    /// A plain decimal (the `fixed` operations), judged by value.
+    Decimal(String),
     Parts(Vec<AnyMoney>),
     /// The generated allocations that break the property, described.
     Failures(Vec<String>),
@@ -141,6 +134,28 @@ fn code(text: &str) -> Result<CurrencyCode, Error> {
 
 fn mode(args: &Value) -> Rounding {
     string(args, "mode").parse().expect("a rounding mode")
+}
+
+fn fixed(args: &Value, key: &str) -> Result<Fixed, Error> {
+    string(args, key).parse()
+}
+
+fn scale_arg(args: &Value) -> u16 {
+    u16::try_from(args["scale"].as_u64().expect("a scale")).expect("a small scale")
+}
+
+/// Plain decimals compare by value: "1.50" and "1.5" are the same number.
+fn decimal_value(text: &str) -> String {
+    let trimmed = if text.contains('.') {
+        text.trim_end_matches('0').trim_end_matches('.')
+    } else {
+        text
+    };
+    if trimmed == "-0" {
+        "0".to_owned()
+    } else {
+        trimmed.to_owned()
+    }
 }
 
 fn money_of(value: &Value) -> Result<AnyMoney, Error> {
@@ -227,6 +242,38 @@ fn case_op(op: &str) -> Option<CaseOp> {
         "money.equals" => |args| {
             Ok(Outcome::Boolean(
                 money_of(&args["first"])?.eq_value(&money_of(&args["second"])?),
+            ))
+        },
+        "fixed.roundTrip" => |args| Ok(Outcome::Decimal(fixed(args, "value")?.to_string())),
+        "fixed.add" => |args| {
+            Ok(Outcome::Decimal(
+                (fixed(args, "first")? + fixed(args, "second")?).to_string(),
+            ))
+        },
+        "fixed.multiply" => |args| {
+            Ok(Outcome::Decimal(
+                fixed(args, "value")?
+                    .multiply_at(string(args, "factor"), scale_arg(args), mode(args))?
+                    .to_string(),
+            ))
+        },
+        "fixed.divide" => |args| {
+            Ok(Outcome::Decimal(
+                fixed(args, "value")?
+                    .divide_at(string(args, "divisor"), scale_arg(args), mode(args))?
+                    .to_string(),
+            ))
+        },
+        "fixed.round" => |args| {
+            Ok(Outcome::Decimal(
+                fixed(args, "value")?
+                    .to_scale(scale_arg(args), mode(args))?
+                    .to_string(),
+            ))
+        },
+        "fixed.compare" => |args| {
+            Ok(Outcome::Integer(
+                fixed(args, "first")?.compare(&fixed(args, "second")?) as i64,
             ))
         },
         "money.split" => |args| {
@@ -369,6 +416,9 @@ fn meets(result: &Result<Outcome, Error>, expectation: &Value) -> bool {
     match (result, key.as_str()) {
         (Err(error), "error") => expected.as_str() == Some(kind_name(error.kind())),
         (Ok(Outcome::Money(money)), "money") => spec_money(money) == *expected,
+        (Ok(Outcome::Decimal(value)), "decimal") => expected
+            .as_str()
+            .is_some_and(|want| decimal_value(want) == decimal_value(value)),
         (Ok(Outcome::Integer(value)), "integer") => expected.as_i64() == Some(*value),
         (Ok(Outcome::Boolean(value)), "boolean") => expected.as_bool() == Some(*value),
         (Ok(Outcome::Parts(parts)), "moneyList") => {
@@ -517,6 +567,44 @@ fn row_op(op: &str) -> Option<RowOp> {
                 }))
             }
         }
+        "minor.percentage" => {
+            |row| want(start(row).and_then(|m| m.percentage(string(row, "percent"), mode(row))))
+        }
+        "minor.discount" => {
+            |row| want(start(row).and_then(|m| m.discount(string(row, "percent"), mode(row))))
+        }
+        "minor.addTax" => |row| {
+            let parts = start(row).and_then(|m| m.add_tax(string(row, "percent"), mode(row)));
+            vec![
+                (
+                    "tax",
+                    minor_field(
+                        parts.clone().map(|p| p.tax.units().clone()),
+                        ErrorKind::Rounding,
+                    ),
+                ),
+                (
+                    "gross",
+                    minor_field(parts.map(|p| p.gross.units().clone()), ErrorKind::Rounding),
+                ),
+            ]
+        },
+        "minor.extractTax" => |row| {
+            let parts = start(row).and_then(|m| m.extract_tax(string(row, "percent"), mode(row)));
+            vec![
+                (
+                    "net",
+                    minor_field(
+                        parts.clone().map(|p| p.net.units().clone()),
+                        ErrorKind::Rounding,
+                    ),
+                ),
+                (
+                    "tax",
+                    minor_field(parts.map(|p| p.tax.units().clone()), ErrorKind::Rounding),
+                ),
+            ]
+        },
         "allocate.byRemainder" => |row| {
             let amount = eur(string(row, "amount"));
             let weights: Vec<&str> = row["weights"]
@@ -854,6 +942,7 @@ fn mutated(expect: &Value) -> Value {
         .and_then(|fields| fields.iter().next())
         .expect("an expectation");
     let changed = match key.as_str() {
+        "decimal" => serde_json::json!(format!("{}1", value.as_str().unwrap())),
         "money" => {
             let mut money = value.clone();
             money["scale"] = serde_json::json!(money["scale"].as_u64().unwrap() + 1);

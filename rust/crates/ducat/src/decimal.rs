@@ -19,6 +19,8 @@ const MAX_FAITHFUL_DIGITS: usize = 15;
 pub(crate) struct Decimal {
     pub(crate) digits: Int,
     pub(crate) scale: u16,
+    /// The scale as written (`"12.340"` is 3, `"1.5e3"` is 0), before trailing zeros are dropped.
+    pub(crate) written: u16,
 }
 
 /// Parses ducat's decimal-string grammar: an optional `+` or `-`, one or more ASCII digits,
@@ -100,6 +102,7 @@ pub(crate) fn parse_decimal(input: &str) -> Result<Decimal, Error> {
         return Err(Error::ExponentOutOfRange);
     }
 
+    let written = u16::try_from(scale.max(0)).unwrap_or(MAX_SCALE);
     // Trailing zeros in the fraction don't change the value: drop them, so "1.2300…0" with any
     // number of zeros still fits. (The range checks above are on the text as written.)
     let kept = bytes[frac_start..frac_start + frac_len]
@@ -117,11 +120,13 @@ pub(crate) fn parse_decimal(input: &str) -> Result<Decimal, Error> {
         return Ok(Decimal {
             digits: digits.mul_pow10(up),
             scale: 0,
+            written,
         });
     }
     Ok(Decimal {
         digits,
         scale: u16::try_from(scale).unwrap_or(MAX_SCALE),
+        written,
     })
 }
 
