@@ -33,6 +33,8 @@ mod currency;
 mod excel;
 #[path = "spec/policy_math.rs"]
 mod policy_math;
+#[path = "spec/processors.rs"]
+mod processors;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
 /// count), never silently lost.
@@ -48,6 +50,7 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("fixed", 28),
     ("math", 750),
     ("pricing", 300),
+    ("processors", 2372),
     ("rounding", 1800),
     ("tax", 1000),
     ("words", 6904),
@@ -734,6 +737,7 @@ fn row_op(op: &str) -> Option<RowOp> {
     if let Some(run) = excel::row_op(op)
         .or_else(|| policy_math::row_op(op))
         .or_else(|| currency::row_op(op))
+        .or_else(|| processors::row_op(op))
     {
         return Some(run);
     }
@@ -1106,8 +1110,23 @@ fn mutated_row(run: RowOp, row: &Value) -> Value {
 // --- the file format ---------------------------------------------------------------------------
 
 const AREAS: &[&str] = &[
-    "core", "rounding", "allocate", "tax", "convert", "cash", "format", "words", "parse", "fixed",
-    "exact", "excel", "finance", "pricing", "math", "currency",
+    "core",
+    "rounding",
+    "allocate",
+    "tax",
+    "convert",
+    "cash",
+    "format",
+    "words",
+    "parse",
+    "fixed",
+    "exact",
+    "excel",
+    "finance",
+    "pricing",
+    "math",
+    "currency",
+    "processors",
 ];
 const EXPECTATIONS: &[&str] = &[
     "money",

@@ -40,7 +40,18 @@ import {
   fromBaseUnits,
   toBaseUnits,
 } from '../../src/crypto.js';
-import { historicCurrency } from '../../src/historic.js';
+import { defineHistoricCurrencies, historicCurrency } from '../../src/historic.js';
+import { adyenExponent, fromAdyen, toAdyen } from '../../src/adyen.js';
+import { braintreeExponent, fromBraintree, toBraintree } from '../../src/braintree.js';
+import {
+  CHECKOUT_RULES,
+  checkoutExponent,
+  fromCheckout,
+  toCheckoutAmount,
+} from '../../src/checkout.js';
+import { fromKlarna, klarnaExponent, toKlarna } from '../../src/klarna.js';
+import { fromPayPal, paypalExponent, toPayPalValue } from '../../src/paypal.js';
+import { STRIPE_RULES, fromStripe, stripeExponent, toStripeAmount } from '../../src/stripe.js';
 import {
   currencyTerritories,
   territoryCurrencies,
@@ -516,6 +527,78 @@ function withCrypto(): void {
   }
 }
 
+// --- payment processors, from data/ --------------------------------------------------------------------
+
+let historicDefined = false;
+
+/** The historic codes some processors still list (Braintree's HRK, Stripe's ANG), registered once. */
+function withHistoric(): void {
+  if (!historicDefined) {
+    defineHistoricCurrencies();
+    historicDefined = true;
+  }
+}
+
+const PROCESSOR_EXPONENT: Record<string, (currency: string) => number> = {
+  stripe: stripeExponent,
+  adyen: adyenExponent,
+  checkout: checkoutExponent,
+  paypal: paypalExponent,
+  braintree: braintreeExponent,
+  klarna: klarnaExponent,
+};
+
+/** The error kind the spec names for an error ducat throws (RoundingError is a RangeError). */
+function errorKind(error: unknown): string {
+  if (error instanceof RoundingError) {
+    return 'rounding';
+  }
+  if (error instanceof SyntaxError) {
+    return 'syntax';
+  }
+  if (error instanceof RangeError) {
+    return 'range';
+  }
+  throw error;
+}
+
+function toWire(row: Row): string | number {
+  const amount = moneyOf(text(row, 'amount'), text(row, 'currency'));
+  const rounding = (row['rounding'] as RoundingMode | undefined) ?? 'unnecessary';
+  switch (text(row, 'processor')) {
+    case 'stripe':
+      return toStripeAmount(amount, { payout: row['payout'] === true, rounding });
+    case 'adyen':
+      return toAdyen(amount, rounding).value;
+    case 'checkout':
+      return toCheckoutAmount(amount, { standalone: row['standalone'] === true, rounding });
+    case 'paypal':
+      return toPayPalValue(amount, { rounding });
+    case 'braintree':
+      return toBraintree(amount, { rounding });
+    default:
+      return toKlarna(amount, { rounding });
+  }
+}
+
+function fromWire(row: Row): Money<string> {
+  const [currency, wire] = [text(row, 'currency'), text(row, 'wire')];
+  switch (text(row, 'processor')) {
+    case 'stripe':
+      return fromStripe(BigInt(wire), currency);
+    case 'adyen':
+      return fromAdyen({ value: BigInt(wire), currency });
+    case 'checkout':
+      return fromCheckout(BigInt(wire), currency);
+    case 'paypal':
+      return fromPayPal({ currency_code: currency, value: wire });
+    case 'braintree':
+      return fromBraintree(wire, currency);
+    default:
+      return fromKlarna(BigInt(wire), currency);
+  }
+}
+
 // --- spelling out numbers, from ICU ------------------------------------------------------------------
 
 const SPELLOUT_RULES: Record<string, SpelloutRules> = {
@@ -666,6 +749,39 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   'excelExample.xnpv': { runBy: EXCEL },
   'excelExample.xirr': { runBy: EXCEL },
   'words.spellOut': { expects: ['words'], checkRow: checkSpellOut },
+  'processor.rule': fieldsOperation(['exponent', 'multiple', 'contextMultiple'], (row) => {
+    const [processor, currency] = [text(row, 'processor'), text(row, 'currency')];
+    const exponent = orNull(RangeError, () => PROCESSOR_EXPONENT[processor]!(currency));
+    if (exponent === null) {
+      return { exponent: null, multiple: null, contextMultiple: null };
+    }
+    const tables: Record<string, Readonly<Record<string, readonly number[]>>> = {
+      stripe: STRIPE_RULES,
+      checkout: CHECKOUT_RULES,
+    };
+    const rule = tables[processor]?.[currency.toUpperCase()];
+    return {
+      exponent,
+      multiple: rule?.[1] ?? 1,
+      contextMultiple: rule?.[2] ?? 1,
+    };
+  }),
+  'processor.toWire': fieldsOperation(['wire', 'error'], (row) => {
+    withHistoric();
+    try {
+      return { wire: String(toWire(row)), error: null };
+    } catch (error) {
+      return { wire: null, error: errorKind(error) };
+    }
+  }),
+  'processor.fromWire': fieldsOperation(['amount', 'error'], (row) => {
+    withHistoric();
+    try {
+      return { amount: fromWire(row).toDecimal(), error: null };
+    } catch (error) {
+      return { amount: null, error: errorKind(error) };
+    }
+  }),
   'currency.figures': fieldsOperation(['iso', 'historic', 'cldr', 'cash', 'minorUnit'], (row) => {
     const code = text(row, 'code');
     const numeric = numericCode(code);

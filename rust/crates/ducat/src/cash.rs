@@ -281,6 +281,9 @@ pub struct CldrCash {
 
 /// CLDR's fractions for `currency`, from `data/cldr-cash.json`, which holds only the currencies CLDR
 /// cash-rounds: `None` means "not in the data", not "the same as the exponent".
+///
+/// Rust-only: ducat has no equivalent, so the spec checks this against `data/` alone, not against
+/// ducat. It is here for formatting (`ducat-icu`), which needs CLDR's display digits.
 #[must_use]
 pub fn cldr_cash(currency: &str) -> Option<CldrCash> {
     CLDR_CASH

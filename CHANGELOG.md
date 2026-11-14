@@ -65,7 +65,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   standard library, independently of `scripts/gen-currencies.mjs`. Both ducat and the Rust port run
   them.
 - The Rust port gains the currency data: numeric codes, historic codes, territories, crypto units,
-  and CLDR's cash rules with `cash_rule` and `cash_policy`.
+  and CLDR's cash rules with `cash_rule` and `cash_policy` (#347).
+- Vectors for the payment processors' amount rules (`spec/vectors/processors/rules.json`, a new area:
+  Stripe, Adyen, Checkout.com, PayPal, Braintree and Klarna), read from `data/` by
+  `scripts/gen-processor-vectors.py` with Python's standard library. Both ducat and the Rust port run
+  them.
+- The Rust port gains `ducat::processors` (one feature per processor), and `CurrencyCode::custom`
+  accepts the ISO codes without a minor unit (XDR, XAU…), as ducat's `defineCurrency` does.
 
 ### Documentation
 

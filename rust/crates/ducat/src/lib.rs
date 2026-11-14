@@ -88,6 +88,15 @@ pub mod math;
 pub mod policy;
 #[cfg(feature = "pricing")]
 pub mod pricing;
+#[cfg(any(
+    feature = "stripe",
+    feature = "adyen",
+    feature = "checkout",
+    feature = "paypal",
+    feature = "braintree",
+    feature = "klarna"
+))]
+pub mod processors;
 #[rustfmt::skip] // generated: tests/iso_table.rs checks it byte for byte
 mod iso_table;
 mod money;

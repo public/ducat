@@ -55,7 +55,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal --target thumbv7em-none-eabihf && rustup default stable
       - run: cargo build -p ducat --lib --locked --no-default-features --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features iso,serde,allocate,cash --target thumbv7em-none-eabihf
-      - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto,stripe,adyen,checkout,paypal,braintree,klarna --target thumbv7em-none-eabihf
 
   lint:
     name: fmt, clippy and docs
@@ -75,6 +75,12 @@ jobs:
       - run: cargo clippy -p ducat --lib --no-default-features --features historic --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features territories --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features crypto --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features stripe --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features adyen --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features checkout --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features paypal --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features braintree --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features klarna --locked -- -D warnings
       - run: cargo doc -p ducat --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings

@@ -13,6 +13,12 @@ Milestone 5b added the currency data (numeric codes, historic codes, territories
 rules and `cash_policy`), generated from `data/` by `tests/currency_data.rs` with a drift check, as for ISO. The
 ISO exponent, CLDR's display digits and the cash rules stay separate figures.
 
+Milestone 5c added the payment processors, one feature and module each under `ducat::processors`, with their
+tables generated from `data/` by `tests/processor_tables.rs` with a drift check. Integer amounts are `i64`, refused
+beyond 2^53 − 1 on the way to the processor as in ducat, and read back whatever their size (ducat refuses only
+unsafe JavaScript numbers there, and reads any `bigint`); the `from_*` constructors take a `CurrencyCode`, so only the `&str` lookups are
+case-insensitive (Adyen's excepted).
+
 Known gaps, to close later:
 - Currency names and symbols (`currencyName`, `currencySymbol`): they come from `Intl` in ducat, so with
   formatting in `ducat-icu` (milestone 6).
@@ -146,12 +152,12 @@ lives").
 | `.` (core), `/fn` | `ducat` core: `Money`, `AnyMoney`, methods plus free functions where natural | Rust doesn't need ducat's /fn split: unused methods cost nothing |
 | `/iso`, `/iso/*`, `/currencies`, `/territories`, `/historic` | `ducat::iso` (markers plus the table), `currencies`, `territories`, `historic` features | static tables, no registration step |
 | `/allocate` | `allocate` (allocate, split, instalments, schedule, chunk) | the Lean vectors apply |
-| `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | |
+| `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | `cash::cldr_cash` is Rust-only (no ducat equivalent; the spec checks it against `data/` only), for `ducat-icu` |
 | `/fixed`, `/fixed/money` | `ducat::fixed::Fixed` | |
 | `/finance`, `/excel` | `finance`, `excel` | the Excel rule applies to `excel` |
 | `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | the parsers take text and never fetch |
 | `/convert/fetch` | `ducat-fetch` | network code only here |
-| `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}` | |
+| `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
 | `/wire` | `wire` (google.type.Money, ISO 20022, dinero objects) | |
 | `/format`, `/parse`, `/words/*` | `ducat-icu` | first check what ICU4X offers for currency formatting; RBNF is an interpreter over CLDR rules, as ducat's is |
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
