@@ -13,16 +13,22 @@ export interface FormatOptions extends Intl.NumberFormatOptions {
   readonly rounding?: RoundingMode;
 }
 
-const cache = /* @__PURE__ */ new Map<string, Intl.NumberFormat>();
+/** What format() needs from a formatter: Intl.NumberFormat, or the long-name composition below. */
+interface Formatter {
+  format(value: number): string;
+  formatToParts(value: number): Intl.NumberFormatPart[];
+}
+
+const cache = /* @__PURE__ */ new Map<string, Formatter>();
 // one-entry memo in front of the Map: formatting in a loop is almost always the same
 // locale/currency
 let lastLocale: string | undefined;
 let lastCurrency = '';
 let lastScale = -1;
-let lastFormatter: Intl.NumberFormat | undefined;
+let lastFormatter: Formatter | undefined;
 // the same for calls with options, keyed by the options' JSON
 let lastOptionsKey = '';
-let lastOptionsFormatter: Intl.NumberFormat | undefined;
+let lastOptionsFormatter: Formatter | undefined;
 
 let stringInput: boolean | undefined;
 /** ES2023 Intl.NumberFormat v3 formats decimal strings exactly; older engines convert to Number. */
@@ -49,7 +55,7 @@ function formatter(
   money: Money,
   locale: string | undefined,
   options: Intl.NumberFormatOptions | undefined,
-): Intl.NumberFormat {
+): Formatter {
   if (
     options === undefined &&
     lastFormatter !== undefined &&
@@ -71,7 +77,7 @@ function formatter(
   }
   let numberFormat = cache.get(key);
   if (numberFormat === undefined) {
-    numberFormat = new Intl.NumberFormat(locale, {
+    const intlOptions: Intl.NumberFormatOptions = {
       style: 'currency',
       currency: money.currency,
       // ISO exponent (or the value's scale), not the engine's default digits: V8 (CLDR) shows ALL,
@@ -79,7 +85,8 @@ function formatter(
       minimumFractionDigits: money.scale,
       maximumFractionDigits: money.scale,
       ...options,
-    });
+    };
+    numberFormat = longName(new Intl.NumberFormat(locale, intlOptions), intlOptions);
     // bounded, as before: clearing is rare and cheap next to building formatters
     if (cache.size > 256) {
       cache.clear();
@@ -96,6 +103,77 @@ function formatter(
     lastOptionsFormatter = numberFormat;
   }
   return numberFormat;
+}
+
+const longNameSound = /* @__PURE__ */ new Map<string, boolean>();
+const SHAPE: Partial<Record<string, string>> = {
+  currency: 'c',
+  integer: 'd',
+  group: 'd',
+  decimal: 'd',
+  fraction: 'd',
+};
+
+/**
+ * `numberFormat` itself, unless it shows long names in a locale where the runtime gets them wrong.
+ * ICU 78.3 (Node 24) does in the English locales of euro countries that inherit en-150 (en-NL,
+ * en-DE, en-FI ...): it applies en-150's euro pattern (¤#,##0.00) inside the long-name pattern, so
+ * every currency shows its symbol beside its name, and fraction digits beyond two land after the
+ * name: "KWD 1,234.56 Kuwaiti dinars7". A probe asks once per locale (one currency part, the
+ * digits in one run); on a fixed runtime it passes and Intl's own text is used.
+ *
+ * Where it fails, the text is composed as the long form is meant to be (TR35's unitPattern): the
+ * number as the locale's currency format writes it, with the separators parse() reads, then the
+ * plural name Intl chose. Only English locales are affected, and CLDR 48's English unitPattern is
+ * "{0} {1}" for every count. The number is the code form's at the same options without the code:
+ * English writes no other literal into a currency's number, and Intl ignores currencySign for long
+ * names.
+ */
+function longName(numberFormat: Intl.NumberFormat, options: Intl.NumberFormatOptions): Formatter {
+  const { locale, currencyDisplay } = numberFormat.resolvedOptions();
+  if (currencyDisplay !== 'name' || !locale.startsWith('en-')) {
+    return numberFormat;
+  }
+  let sound = longNameSound.get(locale);
+  if (sound === undefined) {
+    // c: a currency part, d: a digit part (integer, group, decimal, fraction), x: anything else
+    const shape = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: 'KWD',
+      currencyDisplay: 'name',
+      minimumFractionDigits: 3,
+    })
+      .formatToParts(1234.567)
+      .map(({ type }) => SHAPE[type] ?? 'x')
+      .join('');
+    sound = /^[^c]*c[^c]*$/.test(shape) && !/d[^d]+d/.test(shape);
+    longNameSound.set(locale, sound);
+  }
+  if (sound) {
+    return numberFormat;
+  }
+  const { currencySign: _sign, ...rest } = options;
+  const code = new Intl.NumberFormat(locale, { ...rest, currencyDisplay: 'code' });
+  const toParts = (value: number): Intl.NumberFormatPart[] => {
+    const parts = numberFormat.formatToParts(value);
+    const name = parts.findLast((part) => part.type === 'currency');
+    return name === undefined
+      ? parts
+      : [
+          ...code
+            .formatToParts(value)
+            .filter(({ type }) => type !== 'currency' && type !== 'literal'),
+          { type: 'literal', value: ' ' },
+          name,
+        ];
+  };
+  return {
+    format: (value) =>
+      toParts(value)
+        .map((part) => part.value)
+        .join(''),
+    formatToParts: toParts,
+  };
 }
 
 /**
