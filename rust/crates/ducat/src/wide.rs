@@ -172,12 +172,6 @@ impl U256 {
         (quotient, remainder)
     }
 
-    /// The value as a `u128`, or `None` when it doesn't fit.
-    #[cfg(feature = "allocate")]
-    pub(crate) const fn to_u128(self) -> Option<u128> {
-        if self.hi == 0 { Some(self.lo) } else { None }
-    }
-
     /// The value with sign `negative` as an `i128`, or `None` when it doesn't fit.
     pub(crate) const fn to_i128(self, negative: bool) -> Option<i128> {
         if self.hi != 0 {

@@ -24,11 +24,19 @@ flagged to Alex for review.
   TypeScript.
 
 ## Choices that are expensive to reverse
-1. **Amounts are `i128` minor units at an explicit scale. There is no bigint in 1.0.**
-   - An `i128` holds ±1.7 × 10³⁸ minor units, enough for any real ledger. Overflow is an error (`Error::Overflow`),
-     never a wrap.
-   - ducat's unbounded bigint path isn't ported. Vectors beyond the `i128` range are skipped with that reason,
-     and counted. A `bigint` feature can come later without changing the API: the amount type is private.
+1. **Amounts are integers of any size at an explicit scale, as in ducat** (Alex, 2026-11-14, replacing the first
+   draft's `i128`-only rule).
+   - `ducat::Int` holds a value inline as an `i128` while it fits, with machine arithmetic, and moves it to the heap
+     (num-bigint, private behind `Int`) only when it doesn't, moving it back as soon as it fits again. The
+     representation is canonical, so derived equality and hashing stay structural. This is ducat's
+     number-then-bigint switch.
+   - Amounts, `Ratio` numerators and denominators, and allocation weights are all unbounded. Only the scale and a
+     decimal string's exponent are capped, at 1000, as in ducat.
+   - There is no digit cap on input, matching ducat. The cost of parsing, formatting and arithmetic grows with the
+     number of digits, so callers taking untrusted input bound its length; `FromStr` and `parse_at` say so, and a
+     test parses, prints and round-trips 100,000 digits.
+   - Money can't be `Copy` with a heap case, so `Money<C>` and `AnyMoney` are `Clone`, methods take `&self`, and the
+     operators work on references as well as values.
 2. **Currencies are typed where they're known, and dynamic where they aren't.** This mirrors ducat's
    `Money<'EUR'>` against `Money<string>`.
    - `Money<C: Currency>` uses a zero-sized marker type per ISO code (`ducat::iso::Eur`, generated from ISO 4217).
@@ -38,12 +46,13 @@ flagged to Alex for review.
    - `AnyMoney::try_into::<Money<Eur>>()` narrows, like `assertCurrency`.
    - Custom currencies (`define_currency`) work at run time through `AnyMoney`, or as user-defined marker types.
 3. **Fallible operations return `Result`.** Operator traits are implemented only where nothing can fail: typed
-   add/sub/neg. Even those use checked arithmetic and panic on `i128` overflow, like integer overflow in debug.
-   `checked_add` and friends return `Result`. Multiply, divide, allocate, convert and parse return `Result`.
+   add, sub and neg (and `Sum`), which can't overflow now that amounts are unbounded. `AnyMoney`'s `checked_add` and
+   `checked_sub` return `Result` for a currency mismatch. Multiply, divide, allocate, convert and parse return
+   `Result`.
 4. **Rounding is an argument, never ambient:** `Rounding` is an enum of ducat's nine modes, with Intl's names
    (`HalfExpand`, `HalfEven`, …), plus `Unnecessary`, which errors instead of rounding. ducat's rounding policies
    (scale, increment, mode) are a `RoundingPolicy` value.
-5. **Factors are exact rationals** (`Ratio`: reduced `i128` numerator and denominator, with an overflow error), built
+5. **Factors are exact rationals** (`Ratio`: a reduced numerator and denominator of any size), built
    from integers, decimal strings and ducat's binary64 rule for floats (`Ratio::try_from(f64)` uses the shortest
    round-trip form, and refuses more than 15 significant digits).
 6. **MSRV and edition:** Rust 1.85, edition 2024.
@@ -85,10 +94,11 @@ lives").
    - Only ISO codes deserialize, since a custom currency's exponent isn't in the JSON.
 4. **No default rounding.** ducat defaults arithmetic to `halfExpand`; ducat-rs requires a `Rounding` on every
    operation that may round, and parsing never rounds unless asked to (`parse_at` with a mode).
-5. **Display is exact.** `"12.34 EUR"`, never an exponent, never `-0` (an `i128` has no negative zero). Format flags
+5. **Display is exact.** `"12.34 EUR"`, never an exponent, never `-0` (an integer has no negative zero). Format flags
    such as `{:.1}` are ignored rather than rounding or truncating: round explicitly with `to_scale` first. Tested.
-6. **Typed `+`, `-` and unary `-` panic on overflow in every build profile** (`checked_*` plus `expect`), never
-   wrap. `checked_add`, `checked_sub`, `checked_neg` and `checked_abs` return `Error::Overflow`.
+6. **Typed `+`, `-` and unary `-` never overflow** (they panicked on `i128` overflow before amounts became
+   unbounded). `Error::Overflow` is left only for narrowing: an `Int` into a machine integer, or a count of parts
+   beyond what can be held.
 7. **Boundaries are strict and never panic.** Parsing, serde and (later) the database decoders return errors for
    excess precision, NaN and the infinities, and out-of-range values. No `f64` is used in arithmetic, and a float is
    never a `Factor`. Floats come in only through explicit conversions, under ducat's binary64 rule (the shortest
@@ -96,14 +106,18 @@ lives").
    given): `Ratio::try_from(f64)`, and `from_f64`/`from_f64_at` on the money types. The money constructors exist
    because the spec's `money.fromBinary64` vectors check the order of the two errors: the rounding check comes
    first, so `0.1 + 0.2` in EUR is a rounding error, as in ducat, which a `Ratio` can't express.
-8. **Intermediates are 256-bit.** Every multiply, divide, convert and rescale rounds once, through one private
-   kernel that forms `units × numerator × 10^k` in 256 bits, so a result that fits `i128` is found even when the
-   plain product doesn't.
+8. **One rounding kernel, two paths.** Every multiply, divide, convert and rescale rounds once, through one private
+   kernel. When the operands fit `i128` it forms `units × numerator × 10^k` in 256 bits; when they don't, or the
+   result doesn't fit, it computes the same quotient in arbitrary precision. Differential proptests check the two
+   paths against each other and against num-bigint around the boundaries (±`i128::MAX`, `i128::MIN`, and products
+   just past them).
 9. **The ISO table is committed generated code.** `tests/iso_table.rs` is the generator (it reads the repository's
    `data/iso4217-list-one.xml`) and fails when `src/iso_table.rs` is stale; `DUCAT_REGENERATE=1` rewrites it.
 10. **Features:** `std`, `iso` (the marker types; the ISO table itself is always present, since `CurrencyCode`
     parsing needs it) and `serde`, all default.
-11. **Test dependencies:** `serde_json` (reading the vectors) and `proptest`. The
+11. **Dependencies:** num-bigint, num-integer and num-traits (without default features, so the core stays
+    `no_std + alloc`), for amounts beyond `i128`; serde, optional. For tests, `serde_json` (reading the vectors) and
+    `proptest`. The
     runner checks the vector files' structure by hand rather than with a JSON Schema crate. proptest needs Rust
     1.88, so the 1.85 MSRV applies to the library, not its tests.
 
@@ -136,7 +150,7 @@ lives").
   it knows, and fails on an unknown operation unless that operation is listed as "not yet". It prints implemented,
   skipped (with the reason) and failed counts per operation and area, checks each file's structure, checks the
   number of cases per area (so a lost file fails), and changes one expectation per implemented operation to show
-  the judgement can fail. Vectors whose inputs or expected values are beyond `i128` are skipped and counted.
+  the judgement can fail. Nothing is skipped for size.
 - **The judgement rules come from `spec/README.md`:** Money compares amount, currency and scale; the tables carry their
   own rules (15 significant digits, bounds, exact).
 
@@ -157,7 +171,7 @@ lives").
 8. **Fuzzing** of every boundary (parsing, serde, database decoding, `Ratio`) with `cargo fuzz`.
 
 Allocation (milestone 2) takes its remainder strategy as an argument, as ducat does, with conservation property tests
-at the `i128` limits; sub-minor fractions follow the spec's vectors, never silently floored.
+on both sides of the `i128` boundary; sub-minor fractions follow the spec's vectors, never silently floored.
 
 The research in `docs/research/rust-money-libs.md` (section 6.1) lists 24 bug classes from other Rust libraries. Each
 becomes a regression test with the milestone it belongs to (T5, T7, T8, T10–T14, T16, T18–T21 and T23 with

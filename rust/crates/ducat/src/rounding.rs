@@ -4,8 +4,13 @@ use core::cmp::Ordering;
 use core::fmt;
 use core::str::FromStr;
 
-use crate::Error;
+use num_bigint::{BigInt, Sign};
+use num_integer::Integer;
+use num_traits::{Signed, Zero};
+
+use crate::int::pow10_big;
 use crate::wide::U256;
+use crate::{Error, Int};
 
 /// How to round an exact result that doesn't fit the scale asked for.
 ///
@@ -189,8 +194,9 @@ pub(crate) fn scaled_ratio(
     Some((negative, numerator, divisor))
 }
 
-/// `value × num × 10^up / (den × 10^down)`, rounded once with `mode`.
-pub(crate) fn rescale_ratio(
+/// `value × num × 10^up / (den × 10^down)`, rounded once with `mode`, in `i128` with 256-bit
+/// intermediates: the fast path. [`Error::Overflow`] means the result needs the general path.
+pub(crate) fn rescale_small(
     value: i128,
     num: i128,
     den: u128,
@@ -203,12 +209,58 @@ pub(crate) fn rescale_ratio(
     div_round(negative, numerator, divisor, mode)
 }
 
+/// `value × num × 10^up / (den × 10^down)`, rounded once with `mode`. `den` is positive.
+///
+/// Values that fit take the `i128` path; the rest, and any result beyond `i128`, take the
+/// arbitrary-precision path, which rounds by the same rule.
+pub(crate) fn rescale_ratio(
+    value: &Int,
+    num: &Int,
+    den: &Int,
+    up: u32,
+    down: u32,
+    mode: Rounding,
+) -> Result<Int, Error> {
+    if let (Some(value), Some(num), Some(den)) = (value.to_i128(), num.to_i128(), den.to_i128()) {
+        match rescale_small(value, num, den.unsigned_abs(), up, down, mode) {
+            Ok(result) => return Ok(Int::from(result)),
+            Err(Error::Overflow) => {}
+            Err(error) => return Err(error),
+        }
+    }
+    if den.is_zero() {
+        return Err(Error::DivisionByZero);
+    }
+    let numerator = value.to_big() * num.to_big() * pow10_big(up);
+    let divisor = den.to_big() * pow10_big(down);
+    Ok(Int::from_big(round_big(&numerator, &divisor, mode)?))
+}
+
+/// `numerator / divisor` rounded once with `mode`; `divisor` is positive.
+pub(crate) fn round_big(
+    numerator: &BigInt,
+    divisor: &BigInt,
+    mode: Rounding,
+) -> Result<BigInt, Error> {
+    let negative = numerator.sign() == Sign::Minus;
+    // truncated toward zero, with the remainder taking the numerator's sign
+    let (quotient, remainder) = numerator.div_rem(divisor);
+    let remainder = remainder.abs();
+    let half = remainder.cmp(&(divisor - &remainder));
+    let away = mode.rounds_away(negative, quotient.is_odd(), !remainder.is_zero(), half)?;
+    Ok(match (away, negative) {
+        (false, _) => quotient,
+        (true, false) => quotient + 1,
+        (true, true) => quotient - 1,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn round(value: i128, num: i128, den: u128, mode: Rounding) -> Result<i128, Error> {
-        rescale_ratio(value, num, den, 0, 0, mode)
+        rescale_small(value, num, den, 0, 0, mode)
     }
 
     #[test]
@@ -259,16 +311,56 @@ mod tests {
             Ok(i128::MAX / 3 * 2) // i128::MAX % 3 is 1, and 2/3 floors to 0
         );
         // a huge divisor: 10^1000
-        assert_eq!(rescale_ratio(5, 1, 1, 0, 1000, Rounding::HalfExpand), Ok(0));
-        assert_eq!(rescale_ratio(5, 1, 1, 0, 1000, Rounding::Expand), Ok(1));
-        assert_eq!(rescale_ratio(-5, 1, 1, 0, 1000, Rounding::Floor), Ok(-1));
+        assert_eq!(rescale_small(5, 1, 1, 0, 1000, Rounding::HalfExpand), Ok(0));
+        assert_eq!(rescale_small(5, 1, 1, 0, 1000, Rounding::Expand), Ok(1));
+        assert_eq!(rescale_small(-5, 1, 1, 0, 1000, Rounding::Floor), Ok(-1));
         assert_eq!(
-            rescale_ratio(0, 1, 1, 1000, 0, Rounding::Unnecessary),
+            rescale_small(0, 1, 1, 1000, 0, Rounding::Unnecessary),
             Ok(0)
         );
         assert_eq!(
-            rescale_ratio(1, 1, 1, 39, 0, Rounding::Unnecessary),
+            rescale_small(1, 1, 1, 39, 0, Rounding::Unnecessary),
             Err(Error::Overflow)
+        );
+    }
+
+    #[test]
+    fn big_path_agrees() {
+        let int = |value: i128| Int::from(value);
+        for value in [-7i128, -5, -1, 0, 1, 5, 7, i128::MAX, i128::MIN] {
+            for mode in Rounding::ALL {
+                for den in [1i128, 2, 3, 10] {
+                    let small =
+                        rescale_small(value, 1, den.unsigned_abs(), 0, 0, mode).map(Int::from);
+                    let big = round_big(&BigInt::from(value), &BigInt::from(den), mode)
+                        .map(Int::from_big);
+                    assert_eq!(small, big, "{value}/{den} {mode}");
+                }
+            }
+        }
+        // past the i128 range, on both sides
+        let max = int(i128::MAX);
+        assert_eq!(
+            rescale_ratio(&max, &int(2), &Int::ONE, 0, 0, Rounding::Unnecessary).unwrap(),
+            &max + &max
+        );
+        assert_eq!(
+            rescale_ratio(
+                &int(i128::MIN),
+                &int(-1),
+                &Int::ONE,
+                0,
+                0,
+                Rounding::Unnecessary
+            )
+            .unwrap(),
+            -int(i128::MIN)
+        );
+        assert_eq!(
+            rescale_ratio(&int(1), &Int::ONE, &Int::ONE, 39, 0, Rounding::Unnecessary)
+                .unwrap()
+                .to_string(),
+            "1000000000000000000000000000000000000000"
         );
     }
 

@@ -1,10 +1,15 @@
 //! Regression tests for the bug classes found in other Rust money and decimal libraries
 //! (`docs/research/rust-money-libs.md`, section 6.1). Each test names its class (T5, T7, …).
+//! The differential tests check the `i128` fast path against arbitrary precision (num-bigint)
+//! around the promotion boundaries.
 
 use std::collections::HashSet;
+use std::time::{Duration, Instant};
 
-use ducat::iso::{Eur, Jpy, Kwd, Usd};
-use ducat::{AnyMoney, CurrencyCode, Error, Money, Ratio, Rounding};
+use ducat::iso::{Eur, Jpy, Usd};
+use ducat::{AnyMoney, CurrencyCode, Error, Int, Money, Ratio, Rounding};
+use num_bigint::BigInt;
+use num_integer::Integer;
 use proptest::prelude::*;
 
 fn eur(text: &str) -> Money<Eur> {
@@ -13,6 +18,10 @@ fn eur(text: &str) -> Money<Eur> {
 
 fn code(text: &str) -> CurrencyCode {
     text.parse().unwrap()
+}
+
+fn big(value: &Int) -> BigInt {
+    value.to_string().parse().unwrap()
 }
 
 /// T5: exponents come from ISO 4217 List One, and codes that left it are unknown.
@@ -44,7 +53,7 @@ fn t5_exponent_table() {
     }
 }
 
-/// T7: no negative zero, in Display, to_decimal or serde.
+/// T7: no negative zero, in Display, to_decimal or serde, small or big.
 #[test]
 fn t7_no_negative_zero() {
     let rounded = Money::<Usd>::parse_at("-0.005", 3, Rounding::Unnecessary)
@@ -59,6 +68,15 @@ fn t7_no_negative_zero() {
         r#"{"amount":"0.00","currency":"EUR"}"#
     );
     assert_eq!(eur("-0.00").to_string(), "0.00 EUR");
+    let huge = Money::<Eur>::from_minor(Int::from(i128::MIN) * Int::from(i128::MIN));
+    assert_eq!((&huge - &huge).to_string(), "0.00 EUR");
+    let shrunk = (-&huge)
+        .divide(
+            Ratio::from(Int::from(i128::MIN) * Int::from(i128::MIN)).mul(&Ratio::from(1000)),
+            Rounding::HalfEven,
+        )
+        .unwrap();
+    assert_eq!(shrunk.to_decimal(), "0.00");
 }
 
 /// T8: format flags never truncate or panic: Display ignores them.
@@ -76,7 +94,7 @@ fn t8_format_flags_are_ignored() {
     );
 }
 
-/// T9: rounding carries into a new digit.
+/// T9: rounding carries into a new digit, at any size.
 #[test]
 fn t9_carry() {
     let money = Money::<Eur>::parse_at("9.995", 3, Rounding::Unnecessary).unwrap();
@@ -94,6 +112,15 @@ fn t9_carry() {
             .to_decimal(),
         "-1"
     );
+    let nines = format!("{}.995", "9".repeat(60));
+    let money = Money::<Eur>::parse_at(&nines, 3, Rounding::Unnecessary).unwrap();
+    assert_eq!(
+        money
+            .to_scale(2, Rounding::HalfExpand)
+            .unwrap()
+            .to_decimal(),
+        format!("1{}.00", "0".repeat(60))
+    );
 }
 
 /// T10: exact ties in division round by the mode asked for, with divisors beyond 96 bits.
@@ -104,109 +131,168 @@ fn t10_ties_with_wide_divisors() {
     let money = Money::<Jpy>::from_minor(5 * wide);
     let divisor = Ratio::from(2 * wide);
     assert_eq!(
-        money.divide(divisor, Rounding::HalfEven).unwrap().units(),
+        *money.divide(&divisor, Rounding::HalfEven).unwrap().units(),
         2
     );
     assert_eq!(
-        money.divide(divisor, Rounding::HalfExpand).unwrap().units(),
+        *money
+            .divide(&divisor, Rounding::HalfExpand)
+            .unwrap()
+            .units(),
         3
     );
     assert_eq!(
-        money.divide(divisor, Rounding::HalfTrunc).unwrap().units(),
+        *money.divide(&divisor, Rounding::HalfTrunc).unwrap().units(),
         2
     );
     // wide on both sides, and exact: no mode may move it
-    let odd = Money::<Jpy>::from_minor(-15_845_632_502_852_867_518_708_790_070);
+    let odd = Money::<Jpy>::from_minor(-15_845_632_502_852_867_518_708_790_070i128);
     let divisor = Ratio::from(-3_169_126_500_570_573_503_741_758_014i128);
-    // −15845632502852867518708790070 ÷ −3169126500570573503741758014 = 5 exactly
     assert_eq!(
-        odd.divide(divisor, Rounding::Unnecessary).unwrap().units(),
+        *odd.divide(divisor, Rounding::Unnecessary).unwrap().units(),
         5
     );
     // 15845632502852867518708790069 / 2·10^20 = 79228162.514…, rounding up in every half mode
-    let big = Money::<Eur>::from_units(15_845_632_502_852_867_518_708_790_069, 0).unwrap();
+    let big = Money::<Eur>::from_units(15_845_632_502_852_867_518_708_790_069i128, 0).unwrap();
     let divisor = Ratio::from(200_000_000_000_000_000_000i128);
     assert_eq!(
-        big.divide(divisor, Rounding::HalfEven).unwrap().units(),
+        *big.divide(divisor, Rounding::HalfEven).unwrap().units(),
         79_228_163
+    );
+    // a tie beyond i128: (2·10^40 + 1) / 2 at scale 0
+    let past = Money::<Jpy>::from_minor(format!("2{}1", "0".repeat(39)).parse::<Int>().unwrap());
+    assert_eq!(
+        past.divide(2, Rounding::HalfEven)
+            .unwrap()
+            .units()
+            .to_string(),
+        format!("1{}", "0".repeat(40))
+    );
+    assert_eq!(
+        past.divide(2, Rounding::HalfExpand)
+            .unwrap()
+            .units()
+            .to_string(),
+        format!("1{}1", "0".repeat(39))
     );
 }
 
-/// A slow, independent reference: the exact quotient `n/d` rounded with `mode`, for values small
-/// enough that every product fits an i128.
-fn reference(n: i128, d: i128, mode: Rounding) -> Option<i128> {
-    assert!(d > 0);
-    let floor = n.div_euclid(d);
-    let remainder = n.rem_euclid(d); // 0 ≤ remainder < d
-    if remainder == 0 {
+/// The exact quotient `n/d` rounded with `mode`, in arbitrary precision: an independent
+/// reference written from the definitions of the modes.
+fn reference(n: &BigInt, d: &BigInt, mode: Rounding) -> Option<BigInt> {
+    assert!(*d > BigInt::from(0));
+    let (floor, remainder) = n.div_mod_floor(d); // 0 ≤ remainder < d
+    if remainder == BigInt::from(0) {
         return Some(floor);
     }
-    let ceil = floor + 1;
-    let toward_zero = if n < 0 { ceil } else { floor };
-    let away = if n < 0 { floor } else { ceil };
-    let twice = 2 * remainder; // vs d: below, at or above the midpoint from floor
-    let nearest = |tie: i128| match twice.cmp(&d) {
-        std::cmp::Ordering::Less => floor,
-        std::cmp::Ordering::Greater => ceil,
+    let ceil: BigInt = &floor + BigInt::from(1);
+    let negative = *n < BigInt::from(0);
+    let toward_zero = if negative {
+        ceil.clone()
+    } else {
+        floor.clone()
+    };
+    let away = if negative {
+        floor.clone()
+    } else {
+        ceil.clone()
+    };
+    let twice: BigInt = &remainder * BigInt::from(2);
+    let nearest = |tie: BigInt| match twice.cmp(d) {
+        std::cmp::Ordering::Less => floor.clone(),
+        std::cmp::Ordering::Greater => ceil.clone(),
         std::cmp::Ordering::Equal => tie,
     };
     Some(match mode {
-        Rounding::Floor => floor,
-        Rounding::Ceil => ceil,
+        Rounding::Floor => floor.clone(),
+        Rounding::Ceil => ceil.clone(),
         Rounding::Trunc => toward_zero,
         Rounding::Expand => away,
-        Rounding::HalfFloor => nearest(floor),
-        Rounding::HalfCeil => nearest(ceil),
+        Rounding::HalfFloor => nearest(floor.clone()),
+        Rounding::HalfCeil => nearest(ceil.clone()),
         Rounding::HalfTrunc => nearest(toward_zero),
         Rounding::HalfExpand => nearest(away),
-        Rounding::HalfEven => nearest(if floor % 2 == 0 { floor } else { ceil }),
+        Rounding::HalfEven => nearest(if floor.is_even() {
+            floor.clone()
+        } else {
+            ceil.clone()
+        }),
         Rounding::Unnecessary => return None,
         _ => unreachable!(),
     })
 }
 
+/// Values around the promotion boundaries: near 0, near ±i128::MAX and i128::MIN, and beyond.
+fn boundary_int() -> impl Strategy<Value = Int> {
+    prop_oneof![
+        (-1000i128..1000).prop_map(Int::from),
+        (-1000i128..1000).prop_map(|offset| Int::from(i128::MAX) + Int::from(offset)),
+        (-1000i128..1000).prop_map(|offset| Int::from(i128::MIN) + Int::from(offset)),
+        any::<i128>().prop_map(Int::from),
+        (any::<i128>(), any::<i128>())
+            .prop_map(|(high, low)| Int::from(high) * Int::from(i128::MAX) + Int::from(low)),
+    ]
+}
+
 proptest! {
-    /// T11: rounding division agrees with the reference in every mode and sign combination.
+    /// T11: multiply agrees with the reference in every mode and sign combination, on both
+    /// sides of the i128 boundary.
     #[test]
-    fn t11_rounding_matches_reference(units in -1_000_000_000i128..1_000_000_000, num in -100_000i128..100_000, den in 1i128..100_000, mode in 0usize..10) {
+    fn t11_multiply_matches_reference(units in boundary_int(), num in boundary_int(), den in boundary_int(), mode in 0usize..10) {
+        prop_assume!(!den.is_zero());
         let mode = Rounding::ALL[mode];
-        let money = Money::<Eur>::from_minor(units);
         let factor = Ratio::new(num, den).unwrap();
-        let got = money.multiply(factor, mode);
-        match reference(units * factor.numer(), factor.denom(), mode) {
-            Some(want) => prop_assert_eq!(got.map(|m| m.units()), Ok(want)),
+        let got = Money::<Eur>::from_minor(units.clone()).multiply(&factor, mode);
+        let exact = big(&units) * big(factor.numer());
+        match reference(&exact, &big(factor.denom()), mode) {
+            Some(want) => prop_assert_eq!(got.map(|m| big(m.units())), Ok(want)),
             None => {
-                let exact = (units * factor.numer()) % factor.denom() == 0;
-                prop_assert_eq!(got.is_ok(), exact);
+                let divides = (&exact % big(factor.denom())) == BigInt::from(0);
+                prop_assert_eq!(got.is_ok(), divides);
             }
         }
     }
 
-    /// T11: the same through divide, with negative divisors.
+    /// T11: divide, with negative divisors.
     #[test]
-    fn t11_division_matches_reference(units in -1_000_000_000i128..1_000_000_000, divisor in -100_000i128..100_000, mode in 0usize..9) {
-        prop_assume!(divisor != 0);
+    fn t11_divide_matches_reference(units in boundary_int(), divisor in boundary_int(), mode in 0usize..9) {
+        prop_assume!(!divisor.is_zero());
         let mode = Rounding::ALL[mode];
-        let got = Money::<Eur>::from_minor(units).divide(divisor as i64, mode).unwrap().units();
-        let (n, d) = if divisor < 0 { (-units, -divisor) } else { (units, divisor) };
-        prop_assert_eq!(Some(got), reference(n, d, mode));
+        let got = Money::<Eur>::from_minor(units.clone()).divide(divisor.clone(), mode).unwrap();
+        let (n, d) = (big(&units), big(&divisor));
+        let (n, d) = if d < BigInt::from(0) { (-n, -d) } else { (n, d) };
+        prop_assert_eq!(Some(big(got.units())), reference(&n, &d, mode));
     }
 
-    /// T11 at the i128 limits: a product that overflows i128 in the middle but not at the end,
-    /// against an i128-only reference: a × n / d floored is (a div d) × n + ((a mod d) × n) div d.
+    /// Scale changes, add, subtract and compare agree with arbitrary precision.
     #[test]
-    fn t11_wide_products(units in any::<i128>(), num in 1i128..(1 << 60), den in 1i128..(1 << 60)) {
-        let factor = Ratio::new(num, den).unwrap();
-        let (n, d) = (factor.numer(), factor.denom());
-        let want = units
-            .div_euclid(d)
-            .checked_mul(n)
-            .and_then(|high| high.checked_add((units.rem_euclid(d) * n).div_euclid(d)));
-        let got = Money::<Eur>::from_minor(units).multiply(factor, Rounding::Floor).map(|m| m.units());
-        match want {
-            Some(want) => prop_assert_eq!(got, Ok(want)),
-            None => prop_assert_eq!(got, Err(Error::Overflow)),
-        }
+    fn rescale_add_compare_match_reference(a in boundary_int(), b in boundary_int(), scale in 0u16..45, mode in 0usize..9) {
+        let mode = Rounding::ALL[mode];
+        let left = Money::<Eur>::from_units(a.clone(), scale).unwrap();
+        let right = Money::<Eur>::from_minor(b.clone());
+        let sum = &left + &right;
+        let common = scale.max(2);
+        let lift = |value: &Int, from: u16| big(value) * num_traits::pow(BigInt::from(10), usize::from(common - from));
+        prop_assert_eq!(big(sum.units()), lift(&a, scale) + lift(&b, 2));
+        prop_assert_eq!(big((&left - &right).units()), lift(&a, scale) - lift(&b, 2));
+        prop_assert_eq!(left.compare(&right), lift(&a, scale).cmp(&lift(&b, 2)));
+        let lowered = left.to_scale(0, mode).unwrap();
+        prop_assert_eq!(Some(big(lowered.units())), reference(&big(&a), &num_traits::pow(BigInt::from(10), usize::from(scale)), mode));
+    }
+
+    /// Int's own arithmetic, and its canonical form: a value that grows and comes back is held
+    /// the same way as one that never grew.
+    #[test]
+    fn int_is_canonical(a in boundary_int(), b in boundary_int()) {
+        prop_assert_eq!(big(&(&a + &b)), big(&a) + big(&b));
+        prop_assert_eq!(big(&(&a - &b)), big(&a) - big(&b));
+        prop_assert_eq!(big(&(&a * &b)), big(&a) * big(&b));
+        prop_assert_eq!(a.cmp(&b), big(&a).cmp(&big(&b)));
+        let back = &(&a + &b) - &b;
+        prop_assert_eq!(&back, &a);
+        let set: HashSet<Int> = [back, a.clone()].into_iter().collect();
+        prop_assert_eq!(set.len(), 1);
+        prop_assert_eq!(a.to_string().parse::<Int>().unwrap(), a);
     }
 
     /// T13: parsing any text never panics, and Display always re-parses to the same value.
@@ -215,13 +301,14 @@ proptest! {
         let _ = text.parse::<Money<Eur>>();
         let _ = text.parse::<Ratio>();
         let _ = text.parse::<AnyMoney>();
+        let _ = text.parse::<Int>();
     }
 
     #[test]
-    fn t13_display_round_trips(units in any::<i128>(), scale in 0u16..60) {
+    fn t13_display_round_trips(units in boundary_int(), scale in 0u16..60) {
         let money = AnyMoney::from_units(units, scale, code("EUR")).unwrap();
         let back = AnyMoney::parse_at(&money.to_decimal(), money.currency(), scale, Rounding::Unnecessary).unwrap();
-        prop_assert_eq!(back, money);
+        prop_assert_eq!(&back, &money);
         prop_assert!(!money.to_decimal().contains(['e', 'E']));
     }
 
@@ -241,24 +328,28 @@ proptest! {
     }
 }
 
-/// T11 at i128::MIN.
+/// T11 at i128::MIN, which now negates past i128 instead of failing.
 #[test]
 fn t11_i128_min() {
     let min = Money::<Eur>::from_minor(i128::MIN);
     assert_eq!(min.multiply(1, Rounding::Unnecessary).unwrap(), min);
     assert_eq!(
-        min.multiply(-1, Rounding::Unnecessary),
-        Err(Error::Overflow)
+        min.multiply(-1, Rounding::Unnecessary)
+            .unwrap()
+            .units()
+            .to_string(),
+        "170141183460469231731687303715884105728"
     );
     assert_eq!(
-        min.divide(2, Rounding::Unnecessary).unwrap().units(),
+        *min.divide(2, Rounding::Unnecessary).unwrap().units(),
         i128::MIN / 2
     );
     assert_eq!(
-        min.divide(3, Rounding::Floor).unwrap().units(),
+        *min.divide(3, Rounding::Floor).unwrap().units(),
         i128::MIN.div_euclid(3)
     );
-    assert_eq!(min.checked_neg(), Err(Error::Overflow));
+    assert_eq!((-&min).units().to_i128(), None);
+    assert_eq!(-(-&min), min);
     assert_eq!(
         min.compare(&Money::from_units(-1, 30).unwrap()),
         std::cmp::Ordering::Less
@@ -291,7 +382,7 @@ fn t12_no_silent_rounding() {
 #[test]
 fn t13_odd_inputs() {
     assert_eq!(
-        Money::<Eur>::parse_at("1E-29", 29, Rounding::Unnecessary)
+        *Money::<Eur>::parse_at("1E-29", 29, Rounding::Unnecessary)
             .unwrap()
             .units(),
         1
@@ -307,9 +398,35 @@ fn t13_odd_inputs() {
     );
     assert_eq!("1_1.2_2".parse::<Money<Eur>>(), Err(Error::Syntax));
     assert_eq!("1.23abc".parse::<Money<Eur>>(), Err(Error::Syntax));
-    assert_eq!("1e40".parse::<Money<Eur>>(), Err(Error::Overflow));
+    assert_eq!(
+        "1e40".parse::<Money<Eur>>().unwrap().to_decimal(),
+        format!("1{}.00", "0".repeat(40))
+    );
     assert_eq!("+7".parse::<Money<Eur>>().unwrap().to_decimal(), "7.00");
     assert_eq!("125E-2".parse::<Money<Eur>>().unwrap().to_decimal(), "1.25");
+    assert_eq!(
+        "1e1000".parse::<Money<Eur>>().unwrap().to_decimal().len(),
+        1004
+    );
+}
+
+/// No digit cap, as in ducat: 100,000 digits parse, print and round-trip, in a time far beyond
+/// what that takes (the bound only catches a runaway, it isn't a benchmark).
+#[test]
+fn hundred_thousand_digits() {
+    let digits = "7".repeat(100_000);
+    let start = Instant::now();
+    let money: Money<Eur> = digits.parse().unwrap();
+    let text = money.to_decimal();
+    assert_eq!(text.len(), 100_003);
+    assert_eq!(text.parse::<Money<Eur>>().unwrap(), money);
+    let json = serde_json::to_string(&money).unwrap();
+    assert_eq!(serde_json::from_str::<Money<Eur>>(&json).unwrap(), money);
+    assert!(
+        start.elapsed() < Duration::from_secs(60),
+        "took {:?}",
+        start.elapsed()
+    );
 }
 
 /// T14: float input follows the binary64 rule.
@@ -331,10 +448,10 @@ fn t14_float_input() {
             .to_decimal(),
         "1652185258.8058286"
     );
-    assert_eq!(
+    assert!(
         Money::<Eur>::from_f64_at(1652185258.8058286, 20, Rounding::Unnecessary)
-            .map(|m| m.units() > 0),
-        Ok(true)
+            .unwrap()
+            .is_positive()
     );
     assert_eq!(Money::<Eur>::from_f64(f64::NAN), Err(Error::NotFinite));
     assert_eq!(
@@ -342,6 +459,14 @@ fn t14_float_input() {
             .unwrap()
             .to_decimal(),
         "9007199254740991.00"
+    );
+    assert_eq!(
+        Money::<Eur>::from_f64_at(f64::MAX, 0, Rounding::Unnecessary)
+            .unwrap()
+            .units()
+            .to_string()
+            .len(),
+        309
     );
     assert_eq!(
         Ratio::try_from(20000.000001).unwrap(),
@@ -366,12 +491,17 @@ fn t16_serde() {
     let json = serde_json::to_string(&scale3).unwrap();
     assert_eq!(json, r#"{"amount":"12.340","currency":"EUR"}"#);
     assert_eq!(serde_json::from_str::<Money<Eur>>(&json).unwrap(), money);
+    // beyond i128 is just a longer string
+    let huge = r#"{"amount":"170141183460469231731687303715884105728.00","currency":"EUR"}"#;
+    assert_eq!(
+        serde_json::to_string(&serde_json::from_str::<Money<Eur>>(huge).unwrap()).unwrap(),
+        huge
+    );
     for bad in [
         r#"{"amount":12.34,"currency":"EUR"}"#,
         r#"{"amount":"12.34","currency":"USD"}"#,
         r#"{"amount":"12.34","currency":"XXX"}"#,
         r#"{"amount":"1e9999","currency":"EUR"}"#,
-        r#"{"amount":"170141183460469231731687303715884105728","currency":"EUR"}"#,
         r#"{"amount":"NaN","currency":"EUR"}"#,
         r#"{"amount":"12.34"}"#,
         r#"{"amount":"12.34","currency":"EUR","extra":1}"#,
@@ -389,53 +519,47 @@ fn t18_hash_across_types() {
     use std::hash::{BuildHasher, RandomState};
     let state = RandomState::new();
     let typed = eur("1.00");
-    assert_eq!(state.hash_one(typed), state.hash_one(typed.to_any()));
+    assert_eq!(state.hash_one(&typed), state.hash_one(typed.to_any()));
     assert_eq!(typed, typed.to_any());
-    let one_place = Money::<Eur>::parse_at("1.0", 1, Rounding::Unnecessary).unwrap();
-    assert_ne!(typed, one_place);
-    assert!(typed.eq_value(&one_place));
+    let three_places = Money::<Eur>::parse_at("1.000", 3, Rounding::Unnecessary).unwrap();
+    assert_ne!(typed, three_places);
+    assert!(typed.eq_value(&three_places));
 }
 
-/// T20: Ratio overflow is an error everywhere, including where only intermediates overflow.
+/// T20: Ratio arithmetic is exact at any size; only zero denominators fail.
 #[test]
-fn t20_ratio_overflow() {
-    let small = Ratio::new(1, 3_000_000_000).unwrap();
-    assert!(small.checked_div(Ratio::from(3_080_000_000u32)).is_ok());
-    assert_eq!(Ratio::new(i128::MIN, -1), Err(Error::Overflow));
+fn t20_ratio() {
+    let small = Ratio::new(1, 3_000_000_000u64).unwrap();
+    assert!(small.div(&Ratio::from(3_080_000_000u32)).is_ok());
+    assert_eq!(
+        Ratio::new(i128::MIN, -1).unwrap().numer().to_string(),
+        "170141183460469231731687303715884105728"
+    );
     assert_eq!(Ratio::new(0, 0), Err(Error::DivisionByZero));
-    assert_eq!(
-        Ratio::from(i128::MAX).checked_mul(Ratio::from(i128::MAX)),
-        Err(Error::Overflow)
-    );
     assert_eq!("1/0".parse::<Ratio>(), Err(Error::DivisionByZero));
-    // the plain product of the parts overflows, the reduced one doesn't
+    let square = Ratio::from(i128::MAX).mul(&Ratio::from(i128::MAX));
+    assert_eq!(
+        square.div(&Ratio::from(i128::MAX)).unwrap(),
+        Ratio::from(i128::MAX)
+    );
     let big = Ratio::new(i128::MAX, 7).unwrap();
-    assert_eq!(
-        big.checked_mul(Ratio::new(7, i128::MAX).unwrap()),
-        Ok(Ratio::ONE)
-    );
+    assert_eq!(big.mul(&Ratio::new(7, i128::MAX).unwrap()), Ratio::ONE);
 }
 
-/// T21: typed `+` panics on overflow in every profile, and checked_add errors.
+/// T21, revised: `+` and `-` never overflow; past i128 the value grows.
 #[test]
-#[should_panic(expected = "overflowed")]
-fn t21_add_panics() {
-    let _ = Money::<Eur>::from_minor(i128::MAX) + Money::from_minor(1);
-}
-
-#[test]
-fn t21_checked() {
+fn t21_no_overflow() {
     let max = Money::<Eur>::from_minor(i128::MAX);
-    assert_eq!(max.checked_add(Money::from_minor(1)), Err(Error::Overflow));
+    let next = &max + &Money::from_minor(1);
     assert_eq!(
-        Money::<Eur>::from_minor(i128::MIN).checked_sub(Money::from_minor(1)),
-        Err(Error::Overflow)
+        next.units().to_string(),
+        "170141183460469231731687303715884105728"
     );
-    assert_eq!(max.to_scale(3, Rounding::Unnecessary), Err(Error::Overflow));
-    assert_eq!(
-        Money::<Kwd>::from_minor(1).checked_add(Money::from_units(1, 45).unwrap()),
-        Err(Error::Overflow)
-    );
+    assert_eq!(&next - &Money::from_minor(1), max);
+    let wide = Money::<Eur>::from_units(1, 45).unwrap();
+    assert_eq!((&Money::<Eur>::from_minor(1) + &wide).scale(), 45);
+    let total: Money<Eur> = [max.clone(), max.clone(), max].iter().sum();
+    assert_eq!(big(total.units()), BigInt::from(i128::MAX) * 3);
 }
 
 /// T22: conversion always rounds to the target's exponent.
@@ -465,9 +589,9 @@ fn t23_wei() {
         Eth = "ETH", 18
     }
     let amount: Money<Eth> = "40891.62685493".parse().unwrap();
-    assert_eq!(amount.units(), 40_891_626_854_930_000_000_000);
+    assert_eq!(*amount.units(), 40_891_626_854_930_000_000_000i128);
     assert_eq!(
-        Money::<Eth>::from_minor(40_891_626_854_930_000_000_000).to_string(),
+        Money::<Eth>::from_minor(40_891_626_854_930_000_000_000i128).to_string(),
         "40891.626854930000000000 ETH"
     );
 }

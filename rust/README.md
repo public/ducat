@@ -12,13 +12,14 @@ let gross = price.multiply("1.075", Rounding::HalfEven)?;
 assert_eq!(gross.to_string(), "26.88 EUR");
 ```
 
-- `Money<C>` (a currency known at compile time) and `AnyMoney` (one known at run time), both an `i128` count of
-  10^−scale units. No floats in arithmetic, ever.
+- `Money<C>` (a currency known at compile time) and `AnyMoney` (one known at run time), both an exact count of
+  10^−scale units of any size, as in ducat: machine arithmetic while it is small, arbitrary precision
+  beyond. No floats in arithmetic, ever.
 - Every operation that may round takes a `Rounding`, one of ducat's nine modes or `Unnecessary`.
 - Factors and rates are exact `Ratio`s.
 
-Status: milestone 1, the core (parsing, rounding, add, subtract, multiply, divide, convert at a rate, compare, serde)
-and the conformance runner. See [docs/design.md](docs/design.md).
+Status: the core (parsing, rounding, add, subtract, multiply, divide, convert at a rate, compare, serde), allocation
+(allocate, split, instalments, schedule, chunk), cash rounding, and the conformance runner. See [docs/design.md](docs/design.md).
 
 ## Conformance
 

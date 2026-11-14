@@ -17,22 +17,10 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{AnyMoney, Currency, Money};
 
-/// The amount as text, without allocating.
-struct AmountText(AnyMoney);
-
-impl fmt::Display for AmountText {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.amount.write(f)
-    }
-}
-
 impl Serialize for AnyMoney {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut state = serializer.serialize_struct("Money", 2)?;
-        state.serialize_field(
-            "amount",
-            &alloc::string::ToString::to_string(&AmountText(*self)),
-        )?;
+        state.serialize_field("amount", &self.to_decimal())?;
         state.serialize_field("currency", self.currency().as_str())?;
         state.end()
     }
@@ -40,7 +28,10 @@ impl Serialize for AnyMoney {
 
 impl<C: Currency> Serialize for Money<C> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_any().serialize(serializer)
+        let mut state = serializer.serialize_struct("Money", 2)?;
+        state.serialize_field("amount", &self.to_decimal())?;
+        state.serialize_field("currency", C::CODE.as_str())?;
+        state.end()
     }
 }
 
