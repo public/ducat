@@ -150,6 +150,14 @@ data/cldr-cash.json, data/cldr-territories.json, data/rbnf/
 
   SPDX-License-Identifier: Unicode-3.0
 
+data/cldr/, data/icu/ (in the repository only, not in the npm package)
+  Data from the Unicode Common Locale Data Repository (CLDR), release
+  48 (the cldr-json 48.0.0 archive, trimmed), and ICU 78.3's
+  icu4c/source/data/locales/fr_CH.txt, from
+  https://github.com/unicode-org/cldr-json and
+  https://github.com/unicode-org/icu, for the format and parse test
+  vectors. Used under the Unicode License v3, as above (data/cldr/LICENSE).
+
 assets/logo.png
   Gold ducat of Francesco Foscari, Venice, 1423-1457. Photo by
   Francesco Bini, CC BY-SA 4.0, via Wikimedia Commons. See

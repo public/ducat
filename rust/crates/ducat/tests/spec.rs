@@ -54,7 +54,9 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("excel", 2878),
     ("finance", 2720),
     ("fixed", 28),
+    ("format", 2538),
     ("math", 750),
+    ("parse", 3386),
     ("pricing", 300),
     ("processors", 2372),
     ("rounding", 1800),
@@ -65,7 +67,11 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
 
 /// Operations the runner knows about but the Rust port doesn't implement yet, with the milestone
 /// that brings them. Each is named in full, so a new operation in the spec is an error here.
-const NOT_YET: &[(&str, &str)] = &[];
+const NOT_YET: &[(&str, &str)] = &[
+    ("format.money", "M6c"),
+    ("parse.money", "M6c"),
+    ("parse.detect", "M6c"),
+];
 
 /// Operations another crate of the workspace runs, with its own spec test over the same files:
 /// they are counted here, and reported on their own, never as passes.
@@ -1172,6 +1178,7 @@ const SOURCES: &[&str] = &[
     "dectest",
     "icu",
     "reference-data",
+    "cldr",
 ];
 const TOP_LEVEL: &[&str] = &[
     "$schema",

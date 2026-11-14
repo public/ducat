@@ -46,6 +46,8 @@ const CASES_PER_AREA: Record<string, number> = {
   currency: 1367,
   processors: 2372,
   wire: 610,
+  format: 2538,
+  parse: 3386,
 };
 
 const schema = vectorSchema;
