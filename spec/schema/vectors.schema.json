@@ -1125,7 +1125,15 @@
         "excelExample.rate",
         "excelExample.xnpv",
         "excelExample.xirr",
-        "words.spellOut"
+        "words.spellOut",
+        "exact.divideRound",
+        "exact.toMoney",
+        "exact.addTax",
+        "exact.extractTax",
+        "exact.multiplyExact",
+        "rate.inverse",
+        "rate.chain",
+        "rate.convert"
       ]
     },
     "rowsByOp": {
@@ -2365,6 +2373,174 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/words.spellOut"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "exact.divideRound"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/exact.divideRound"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "exact.toMoney"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/exact.toMoney"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "exact.addTax"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/exact.addTax"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "exact.extractTax"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/exact.extractTax"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "exact.multiplyExact"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/exact.multiplyExact"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "rate.inverse"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/rate.inverse"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "rate.chain"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/rate.chain"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "rate.convert"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/rate.convert"
                 }
               }
             }
@@ -4316,6 +4492,197 @@
           "words": {
             "type": "string",
             "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "exact.divideRound": {
+        "type": "object",
+        "required": ["currency", "minor", "divisor", "mode", "rounded", "residual"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "divisor": {
+            "$ref": "#/$defs/decimal"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "rounded": {
+            "$ref": "#/$defs/integerString"
+          },
+          "residual": {
+            "$ref": "#/$defs/rational"
+          }
+        },
+        "additionalProperties": false
+      },
+      "exact.toMoney": {
+        "type": "object",
+        "required": ["currency", "num", "den", "money"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "num": {
+            "$ref": "#/$defs/integerString"
+          },
+          "den": {
+            "$ref": "#/$defs/integerString"
+          },
+          "money": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "exact.addTax": {
+        "type": "object",
+        "required": ["currency", "minor", "percent", "tax", "gross"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "tax": {
+            "$ref": "#/$defs/rational"
+          },
+          "gross": {
+            "$ref": "#/$defs/rational"
+          }
+        },
+        "additionalProperties": false
+      },
+      "exact.extractTax": {
+        "type": "object",
+        "required": ["currency", "minor", "percent", "net", "tax"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "percent": {
+            "$ref": "#/$defs/decimal"
+          },
+          "net": {
+            "$ref": "#/$defs/rational"
+          },
+          "tax": {
+            "$ref": "#/$defs/rational"
+          }
+        },
+        "additionalProperties": false
+      },
+      "exact.multiplyExact": {
+        "type": "object",
+        "required": ["currency", "minor", "factor", "want"],
+        "properties": {
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "factor": {
+            "$ref": "#/$defs/rational"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "rate.inverse": {
+        "type": "object",
+        "required": ["rate", "inverse"],
+        "properties": {
+          "rate": {
+            "$ref": "#/$defs/rational"
+          },
+          "inverse": {
+            "$ref": "#/$defs/rational"
+          }
+        },
+        "additionalProperties": false
+      },
+      "rate.chain": {
+        "type": "object",
+        "required": ["via", "rates", "composite"],
+        "properties": {
+          "via": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "$ref": "#/$defs/currency"
+            }
+          },
+          "rates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/rational"
+            }
+          },
+          "composite": {
+            "$ref": "#/$defs/rational"
+          }
+        },
+        "additionalProperties": false
+      },
+      "rate.convert": {
+        "type": "object",
+        "required": ["via", "rates", "minor", "mode", "want", "residual"],
+        "properties": {
+          "via": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "$ref": "#/$defs/currency"
+            }
+          },
+          "rates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/rational"
+            }
+          },
+          "minor": {
+            "$ref": "#/$defs/integerString"
+          },
+          "mode": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "want": {
+            "$ref": "#/$defs/integerString"
+          },
+          "residual": {
+            "$ref": "#/$defs/rational"
           }
         },
         "additionalProperties": false

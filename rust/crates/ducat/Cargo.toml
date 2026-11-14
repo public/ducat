@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed"]
+default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std", "num-bigint/std", "num-integer/std", "num-traits/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
@@ -18,6 +18,10 @@ iso = []
 allocate = []
 ## Rounding to an increment (`round_to_increment`), for cash.
 cash = []
+## `ExactMoney`, exact rational amounts that round once at the end (`ducat::exact`).
+exact = []
+## Exchange rates: `Rate`, inverses, chains and conversions (`ducat::convert`).
+convert = ["exact"]
 ## Percentages, discounts, and adding and extracting tax (`ducat::tax`).
 tax = []
 ## `Fixed`, an exact decimal without a currency (`ducat::fixed`).

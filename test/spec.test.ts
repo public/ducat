@@ -36,10 +36,11 @@ const CASES_PER_AREA: Record<string, number> = {
   cash: 1500,
   excel: 2878,
   rounding: 750,
-  convert: 250,
+  convert: 850,
   tax: 1000,
   finance: 2420,
   words: 6904,
+  exact: 1000,
 };
 
 const schema = vectorSchema;

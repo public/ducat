@@ -40,6 +40,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   (#340). Its `==` on money is ducat's `equals`, by value, with `identical()` for the scale (#341).
 - The Rust port gains tax (`percentage`, `discount`, `add_tax`, `extract_tax`) and `Fixed`, an exact
   decimal without a currency, and passes the spec's tax and fixed-point vectors (#342).
+- Vectors for exact amounts (`spec/vectors/exact/fractions.json`: dividing and rounding with the
+  residual, exact decimals, exact tax, exact multiplication) and for exchange rates
+  (`spec/vectors/convert/rates-fractions.json`: inverses, chains, converting through a chain with the
+  residual), from Python's `fractions` by `scripts/gen-exact-vectors.py`. Both ducat and the Rust port
+  run them.
+- The Rust port gains `ExactMoney` and `Rate` (inverses, chains, margins, rounded quotes, conversions
+  with the residual, implied rates).
 
 ### Documentation
 

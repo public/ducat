@@ -15,6 +15,8 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use ducat::allocate::{InstalmentRemainder, Remainder, Tranche};
+use ducat::convert::AnyRate;
+use ducat::exact::AnyExactMoney;
 use ducat::fixed::Fixed;
 use ducat::iso::Eur;
 use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Rounding};
@@ -25,8 +27,9 @@ use serde_json::Value;
 const CASES_PER_AREA: &[(&str, usize)] = &[
     ("allocate", 5400),
     ("cash", 1500),
-    ("convert", 250),
+    ("convert", 850),
     ("core", 41),
+    ("exact", 1000),
     ("excel", 2878),
     ("finance", 2420),
     ("fixed", 28),
@@ -169,9 +172,8 @@ fn money_of(value: &Value) -> Result<AnyMoney, Error> {
     )
 }
 
-fn minor_of(text: &str) -> i128 {
-    text.parse()
-        .expect("minor units within i128 (checked before running)")
+fn minor_of(text: &str) -> Int {
+    text.parse().expect("minor units as an integer string")
 }
 
 // --- case operations ---------------------------------------------------------------------------
@@ -500,6 +502,55 @@ fn minor_field(result: Result<Int, Error>, kind: ErrorKind) -> Value {
     }
 }
 
+/// An exact amount as the tables write a rational: reduced `num/den`, or the integer alone.
+fn exact_field(result: Result<AnyExactMoney, Error>) -> Value {
+    text_field(result.map(|exact| exact.value().to_string()))
+}
+
+/// A money's decimal, or `null` for a rounding error (no finite decimal form).
+fn decimal_field(result: Result<AnyMoney, Error>) -> Value {
+    match result {
+        Ok(money) => Value::String(money.to_decimal()),
+        Err(error) if error.kind() == ErrorKind::Rounding => Value::Null,
+        Err(error) => Value::String(format!("error {} ({error})", kind_name(error.kind()))),
+    }
+}
+
+fn text_field(result: Result<String, Error>) -> Value {
+    match result {
+        Ok(text) => Value::String(text),
+        Err(error) => Value::String(format!("error {} ({error})", kind_name(error.kind()))),
+    }
+}
+
+/// Money from a row's `minor` and `currency`.
+fn start_minor(row: &Value) -> Result<AnyMoney, Error> {
+    Ok(AnyMoney::from_minor(
+        minor_of(string(row, "minor")),
+        code(string(row, "currency"))?,
+    ))
+}
+
+/// The chain of rates along `via`: `rates[i]` takes `via[i]` to `via[i + 1]`.
+fn chain_of(row: &Value) -> Result<AnyRate, Error> {
+    let via: Vec<CurrencyCode> = row["via"]
+        .as_array()
+        .expect("via")
+        .iter()
+        .map(|c| code(c.as_str().expect("a code")))
+        .collect::<Result<_, _>>()?;
+    let rates = row["rates"].as_array().expect("rates");
+    let mut chain = AnyRate::parse(via[0], via[1], rates[0].as_str().expect("a rate"))?;
+    for (index, rate) in rates.iter().enumerate().skip(1) {
+        chain = chain.and_then(&AnyRate::parse(
+            via[index],
+            via[index + 1],
+            rate.as_str().expect("a rate"),
+        )?)?;
+    }
+    Ok(chain)
+}
+
 /// Parts as the tables write them: their units, as integer strings, or `null` for a range error.
 fn parts_field<M>(result: Result<Vec<M>, Error>, units: fn(&M) -> &Int) -> Value {
     match result {
@@ -603,6 +654,86 @@ fn row_op(op: &str) -> Option<RowOp> {
                     "tax",
                     minor_field(parts.map(|p| p.tax.units().clone()), ErrorKind::Rounding),
                 ),
+            ]
+        },
+        "exact.divideRound" => |row| {
+            let result = start_minor(row)
+                .and_then(|m| m.exact().divide(string(row, "divisor")))
+                .and_then(|e| e.round_with_residual(mode(row), None));
+            vec![
+                (
+                    "rounded",
+                    minor_field(
+                        result.clone().map(|r| r.value.units().clone()),
+                        ErrorKind::Rounding,
+                    ),
+                ),
+                ("residual", exact_field(result.map(|r| r.residual))),
+            ]
+        },
+        "exact.toMoney" => |row| {
+            let money = code(string(row, "currency"))
+                .and_then(|currency| {
+                    AnyMoney::from_units(minor_of(string(row, "num")), 0, currency)
+                })
+                .and_then(|m| m.exact().divide(minor_of(string(row, "den"))))
+                .and_then(|e| e.to_money(None));
+            vec![("money", decimal_field(money))]
+        },
+        "exact.addTax" => |row| {
+            let parts = start_minor(row).and_then(|m| m.exact().add_tax(string(row, "percent")));
+            vec![
+                ("tax", exact_field(parts.clone().map(|p| p.tax))),
+                ("gross", exact_field(parts.map(|p| p.gross))),
+            ]
+        },
+        "exact.extractTax" => |row| {
+            let parts =
+                start_minor(row).and_then(|m| m.exact().extract_tax(string(row, "percent")));
+            vec![
+                ("net", exact_field(parts.clone().map(|p| p.net))),
+                ("tax", exact_field(parts.map(|p| p.tax))),
+            ]
+        },
+        "exact.multiplyExact" => |row| {
+            vec![(
+                "want",
+                decimal_field(
+                    start_minor(row).and_then(|m| m.multiply_exact(string(row, "factor"))),
+                ),
+            )]
+        },
+        "rate.inverse" => |row| {
+            let rate = AnyRate::parse(
+                code("EUR").unwrap(),
+                code("USD").unwrap(),
+                string(row, "rate"),
+            );
+            vec![(
+                "inverse",
+                text_field(rate.map(|r| r.inverse().ratio().to_string())),
+            )]
+        },
+        "rate.chain" => |row| {
+            vec![(
+                "composite",
+                text_field(chain_of(row).map(|r| r.ratio().to_string())),
+            )]
+        },
+        "rate.convert" => |row| {
+            let via = row["via"].as_array().expect("via");
+            let result = code(via[0].as_str().expect("a code"))
+                .map(|currency| AnyMoney::from_minor(minor_of(string(row, "minor")), currency))
+                .and_then(|money| chain_of(row)?.convert_detailed(&money, mode(row)));
+            vec![
+                (
+                    "want",
+                    minor_field(
+                        result.clone().map(|r| r.value.units().clone()),
+                        ErrorKind::Rounding,
+                    ),
+                ),
+                ("residual", exact_field(result.map(|r| r.residual))),
             ]
         },
         "allocate.byRemainder" => |row| {

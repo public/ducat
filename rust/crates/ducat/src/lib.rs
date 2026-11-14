@@ -50,9 +50,13 @@ mod amount;
 mod any;
 #[cfg(feature = "cash")]
 mod cash;
+#[cfg(feature = "convert")]
+pub mod convert;
 mod currency;
 mod decimal;
 mod error;
+#[cfg(feature = "exact")]
+pub mod exact;
 #[cfg(feature = "fixed")]
 pub mod fixed;
 mod int;
