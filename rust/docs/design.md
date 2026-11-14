@@ -83,8 +83,10 @@ over CLDR's rule text (`data/rbnf/*.txt`, CLDR 49, embedded by `tests/rules.rs` 
 lines as ducat's generator drops them), one feature per language: `en` (4,081 bytes of rules), `de` (8,506), `fr`
 (4,312), `es` (5,829), `it` (11,871), `nl` (2,284), `pt` (4,676), about 41 KB in all, so every language is a default. Values are `i128` within ±(2^63 − 1), ICU's range;
 recursion is bounded, so adversarial rule text is an error, not a stack overflow. Plural rules (cardinal and ordinal),
-the digit grouping of numbers the rules write as digits, and the word for "and" are written out for the seven
-languages, where ducat reads them from `Intl`. `Intl` also gives ducat the currency's name; there is none here, and
+the digit grouping of numbers the rules write as digits (separator and minimum grouping digits), and the word for "and"
+come from the CLDR 48 snapshot (`data/cldr/`), generated into `src/cldr.rs` by `tests/cldr.rs` with a drift check, as the
+rule text is; ducat reads them from `Intl`, CLDR 48 on Node 24. The rule text is CLDR 49 and these values
+CLDR 48, the release ducat's `Intl` carries. `Intl` also gives ducat the currency's name; there is none here, and
 CLDR's names aren't in ducat's data, so `amount_in_words` takes the currency's names from the caller, as both take the
 minor unit's. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
 and runs every row; the MSRV is the core's, 1.85.

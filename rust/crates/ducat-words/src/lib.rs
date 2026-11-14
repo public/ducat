@@ -35,6 +35,8 @@
 
 extern crate alloc;
 
+#[rustfmt::skip]
+mod cldr;
 mod digits;
 mod plural;
 mod rbnf;
@@ -133,13 +135,19 @@ impl Locale {
     /// The word for "and" between two items, with its spaces, as CLDR's list patterns give it.
     #[must_use]
     pub const fn conjunction(self) -> &'static str {
+        self.data().conjunction
+    }
+
+    /// What the language takes from CLDR 48 (src/cldr.rs, generated from data/cldr/).
+    pub(crate) const fn data(self) -> &'static cldr::LocaleData {
         match self {
-            Self::En => " and ",
-            Self::De => " und ",
-            Self::Fr => " et ",
-            Self::Es => " y ",
-            Self::It | Self::Pt => " e ",
-            Self::Nl => " en ",
+            Self::En => &cldr::EN,
+            Self::De => &cldr::DE,
+            Self::Fr => &cldr::FR,
+            Self::Es => &cldr::ES,
+            Self::It => &cldr::IT,
+            Self::Nl => &cldr::NL,
+            Self::Pt => &cldr::PT,
         }
     }
 }
