@@ -12,7 +12,7 @@ use crate::tables::Numbers;
 use crate::unicode::{self, digit_value};
 use crate::{Error, MAX_INPUT, SyntaxError};
 
-/// Options of [`parse`]: ducat's `ParseOptions`.
+/// Options of [`parse()`]: ducat's `ParseOptions`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct ParseOptions {
@@ -347,7 +347,7 @@ impl Detector<'_> {
 /// Reads a formatted amount and detects its currency from the text: ducat's `parseMoney`. It
 /// never guesses: it reads ISO codes (uppercase, among `currencies`) and symbols that mean one
 /// currency in the locale (or in English: US$, CA$, A$); a symbol several currencies share needs
-/// a `hint` or a `symbols` entry. The number is then read as [`parse`] reads it.
+/// a `hint` or a `symbols` entry. The number is then read as [`parse()`] reads it.
 ///
 /// English's symbols are read only in a build with the `en` feature.
 ///
@@ -355,8 +355,8 @@ impl Detector<'_> {
 ///
 /// [`Error::Syntax`] for no currency in the text (unless a `hint` and `lenient` are given),
 /// another currency than the `hint`, two currencies, text around the number that isn't a
-/// currency, a shared symbol without a `hint`, or what [`parse`] refuses; [`Error::NoLocaleData`];
-/// [`Error::InputTooLong`]; [`Error::Money`] as [`parse`].
+/// currency, a shared symbol without a `hint`, or what [`parse()`] refuses; [`Error::NoLocaleData`];
+/// [`Error::InputTooLong`]; [`Error::Money`] as [`parse()`].
 pub fn parse_money(
     input: &str,
     locale: &Locale,

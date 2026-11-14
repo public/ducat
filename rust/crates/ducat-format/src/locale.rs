@@ -264,7 +264,7 @@ impl Locale {
     }
 
     /// Whether the build has data for the tag's own language and region (`de-DE` and `de-CH` do;
-    /// `de-XX`, which falls back to `de`, doesn't). [`parse`](crate::parse) refuses a locale
+    /// `de-XX`, which falls back to `de`, doesn't). [`parse()`](crate::parse) refuses a locale
     /// without it, as ducat does.
     #[must_use]
     pub const fn has_data(&self) -> bool {

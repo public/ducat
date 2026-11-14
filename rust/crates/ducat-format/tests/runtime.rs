@@ -1,7 +1,9 @@
 //! What ducat writes through Node 24's `Intl` (ICU 78.3) where no spec vector looks: ICU's own
 //! overrides of CLDR's data (data/icu/README.md), currencies with their own pattern in a locale,
 //! and tags resolved through likely subtags. Each expected text was printed by ducat's
-//! TypeScript `format` on Node 24.22.2; each is parsed back where ducat's `parseMoney` reads it.
+//! TypeScript `format` on Node 24.22.2, except a name in a locale with its own currency pattern,
+//! which follows TR35 (ducat's decision; ICU's code garbles some); each is parsed back where
+//! ducat's `parseMoney` reads it.
 #![cfg(all(
     feature = "en",
     feature = "fr",
@@ -65,7 +67,7 @@ fn writes_a_currencys_own_pattern() {
     );
     assert_eq!(
         written("-1234.50", "EUR", "en-150", &name()),
-        "-€1,234.50 euros"
+        "-1,234.50 euros"
     );
     let code = options(CurrencyDisplay::Code, CurrencySign::Standard);
     let text = written("-1234.50", "EUR", "en-150", &code);
@@ -76,9 +78,18 @@ fn writes_a_currencys_own_pattern() {
     assert_eq!(read_back(&text, "EUR", "en-AT"), "1234.50 EUR");
     assert_eq!(
         written("1234.50", "EUR", "en-AT", &name()),
-        "€\u{a0}1.234,50 euros"
+        "1.234,50 euros"
     );
     assert_eq!(written("1234.50", "EUR", "en-NL", &standard), "€1,234.50");
+    // a name follows TR35 there: the locale's decimal and unit patterns, at the amount's scale
+    assert_eq!(
+        written("1234.567", "KWD", "en-NL", &name()),
+        "1.234,567 Kuwaiti dinars"
+    );
+    assert_eq!(
+        written("1234.567", "KWD", "en-150", &name()),
+        "1,234.567 Kuwaiti dinars"
+    );
     // ICU loads the region's currency's format (EUR's, inherited from en-150) for the locale and
     // writes other currencies in it too; without one (en-150's region has no currency) they keep
     // the locale's pattern

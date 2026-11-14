@@ -39,14 +39,14 @@ pub enum CurrencySign {
     Accounting,
 }
 
-/// Options of [`format`]: ducat's `FormatOptions`, which are `Intl.NumberFormat`'s options plus
+/// Options of [`format()`]: ducat's `FormatOptions`, which are `Intl.NumberFormat`'s options plus
 /// `digits` and `rounding`.
 ///
 /// Without any, the amount is shown with as many fraction digits as its scale, unrounded. With
 /// `digits`, it is first rounded once, exactly, to that many decimal places with `rounding`
 /// (default half-expand), then shown with them. `Intl`'s fraction and significant digits and
-/// rounding increment round too, half-expand, as `Intl` does; here exactly, on the decimal (ducat
-/// hands `Intl` a double below 10^15 minor units, so a tie such as 1.005 can round down there).
+/// rounding increment round too, half-expand, as `Intl` does: here on the decimal, exactly, with
+/// ducat's rounding kernel.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct FormatOptions {
@@ -248,6 +248,10 @@ fn shown(money: &AnyMoney, options: &FormatOptions) -> Result<Shown, Error> {
         };
         if intl_digits {
             return Err(Error::ConflictingOptions);
+        }
+        // Intl shows at most 100 fraction digits
+        if digits > MAX_FRACTION_DIGITS {
+            return Err(Error::InvalidOptions);
         }
         let rounded = rescale(
             money,
@@ -485,9 +489,10 @@ fn in_pattern(
 /// The parts of `money` formatted in `locale`: ducat's `formatToParts`.
 ///
 /// A currency CLDR gives its own pattern in the locale (EUR in en-150, en-AT and the other
-/// European English locales) is written in that pattern whatever the display and sign, as ICU
-/// does: the accounting form is that pattern too, and a name follows the amount with its symbol
-/// (`-€1,234.50 euros`).
+/// European English locales) is written in that pattern with a symbol, narrow symbol or code,
+/// whatever the sign, as ICU's data has it; the accounting form is that pattern too. A name
+/// follows TR35 everywhere: the locale's decimal pattern and the unit pattern
+/// (`-1,234.50 euros` in en-150), never the currency's own pattern or symbol.
 ///
 /// # Errors
 ///
@@ -522,36 +527,23 @@ pub fn format_to_parts(
         };
         return Ok(in_pattern(numbers, separators, source, &shown, currency)?.parts);
     }
-    // a name: the number in the decimal pattern, with the currency's separators and no
-    // accounting form (or the currency's own pattern, with its symbol), then the unit pattern for
-    // its plural category
-    let amount = match special_pattern {
-        Some(source) => {
-            let found = symbol(locale, &code, CurrencyDisplay::Symbol);
-            let currency = if found.is_empty() {
-                code.as_str()
-            } else {
-                found
-            };
-            in_pattern(numbers, separators, source, &shown, currency)?
-        }
-        None => {
-            let pattern =
-                pattern::parse(numbers.decimal_pattern).map_err(|_| Error::MalformedData)?;
-            let sub = if shown.negative {
-                &pattern.negative
-            } else {
-                &pattern.positive
-            };
-            let mut amount = Parts::default();
-            affixes(&mut amount, numbers, &sub.prefix, "");
-            for part in number(numbers, separators, &shown.digits, pattern.grouping).parts {
-                amount.push_text(part.kind, &part.value);
-            }
-            affixes(&mut amount, numbers, &sub.suffix, "");
-            amount
-        }
+    // a name, as TR35 has it: the number in the locale's decimal pattern, with its currency
+    // separators and no accounting form, then the unit pattern for its plural category. A
+    // currency's own pattern and symbol never enter it (where ICU's code writes them, it garbles
+    // the text: data/icu/README.md).
+    let pattern = pattern::parse(numbers.decimal_pattern).map_err(|_| Error::MalformedData)?;
+    let sub = if shown.negative {
+        &pattern.negative
+    } else {
+        &pattern.positive
     };
+    let mut amount = Parts::default();
+    affixes(&mut amount, numbers, &sub.prefix, "");
+    let plain = (numbers.decimal, numbers.group);
+    for part in number(numbers, plain, &shown.digits, pattern.grouping).parts {
+        amount.push_text(part.kind, &part.value);
+    }
+    affixes(&mut amount, numbers, &sub.suffix, "");
     let category = plural::category(locale.plurals(), &Operands::new(&shown.digits));
     let unit = numbers
         .unit_patterns
@@ -615,4 +607,33 @@ pub fn currency_symbol(code: &str, locale: &Locale, narrow: bool) -> &'static st
 #[must_use]
 pub fn currency_name(code: &str, locale: &Locale) -> Option<&'static str> {
     locale.currency_field(code, |entry| entry.field('d'))
+}
+
+#[cfg(test)]
+mod properties {
+    use super::*;
+    use crate::locale::Locale;
+    use proptest::prelude::*;
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(4096))]
+
+        /// Any pattern text, any digits, any currency text: parts or an error, no panic, and
+        /// the parts are the whole text.
+        #[test]
+        fn writes_any_pattern(
+            source in "\\PC{0,48}|[#0,.;'¤+\\- \u{a0}€()]{0,24}",
+            integer in "[0-9]{1,40}",
+            fraction in "[0-9]{0,12}",
+            negative in any::<bool>(),
+            currency in "\\PC{0,8}",
+        ) {
+            let locale = Locale::new("und").unwrap();
+            let digits = if fraction.is_empty() { integer } else { alloc::format!("{integer}.{fraction}") };
+            let shown = Shown { negative, digits };
+            if let Ok(parts) = in_pattern(locale.numbers(), (",", "."), &source, &shown, &currency) {
+                prop_assert!(parts.parts.iter().all(|part| !part.value.is_empty()));
+            }
+        }
+    }
 }

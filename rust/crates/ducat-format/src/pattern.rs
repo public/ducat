@@ -239,3 +239,50 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod properties {
+    use super::*;
+    use alloc::borrow::ToOwned;
+    use alloc::vec;
+    use proptest::prelude::*;
+
+    fn pattern_text() -> impl Strategy<Value = String> {
+        let piece = prop_oneof![
+            Just("#".to_owned()),
+            Just("0".to_owned()),
+            Just(",".to_owned()),
+            Just(".".to_owned()),
+            Just(";".to_owned()),
+            Just("'".to_owned()),
+            Just("''".to_owned()),
+            Just("¤".to_owned()),
+            Just("-".to_owned()),
+            Just("+".to_owned()),
+            Just("\u{a0}".to_owned()),
+            Just("\u{200f}".to_owned()),
+            Just("€".to_owned()),
+            any::<char>().prop_map(String::from),
+        ];
+        prop_oneof![
+            prop::collection::vec(piece, 0..40).prop_map(|pieces| pieces.concat()),
+            "\\PC{0,64}",
+            (0_usize..600).prop_map(|count| "¤#".repeat(count)),
+        ]
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(4096))]
+
+        /// Any text, multi-byte included, is a pattern or `Malformed`, without a panic; a read
+        /// pattern's group sizes are positive.
+        #[test]
+        fn reads_any_text(text in pattern_text()) {
+            if let Ok(pattern) = parse(&text) {
+                if let Some((primary, secondary)) = pattern.grouping {
+                    prop_assert!(primary > 0 && secondary > 0);
+                }
+            }
+        }
+    }
+}
