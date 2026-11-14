@@ -35,6 +35,8 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The Rust port gains allocation by weights with every remainder strategy, `split`, `instalments`,
   `schedule`, `chunk` and `round_to_increment`, and passes the spec's allocation and cash vectors
   (#339).
+- The Rust port's amounts, ratios and weights are unbounded, as in TypeScript: `i128` while they fit,
+  arbitrary precision beyond, so the 36 conformance vectors it used to skip as beyond `i128` now run.
 
 ### Documentation
 

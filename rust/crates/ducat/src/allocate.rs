@@ -16,6 +16,7 @@
 //! # Ok::<(), ducat::Error>(())
 //! ```
 
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::fmt;
@@ -24,8 +25,7 @@ use core::str::FromStr;
 use crate::amount::{Amount, check_scale};
 use crate::decimal::parse_decimal;
 use crate::rounding::Rounding;
-use crate::wide::{POW10, U256};
-use crate::{AnyMoney, Currency, Error, Money};
+use crate::{AnyMoney, Currency, Error, Int, Money};
 
 /// Where the units left over after every part gets the floor of its exact share go.
 ///
@@ -111,11 +111,11 @@ impl From<InstalmentRemainder> for Remainder {
     }
 }
 
-/// A non-negative allocation weight, read exactly: an integer, or a decimal string such as
-/// `"33.3"`. Multiplying every weight by the same positive number changes nothing.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+/// A non-negative allocation weight, read exactly: an integer of any size, or a decimal string
+/// such as `"33.3"`. Multiplying every weight by the same positive number changes nothing.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Weight {
-    digits: u128,
+    digits: Int,
     scale: u16,
 }
 
@@ -124,12 +124,17 @@ impl Weight {
     ///
     /// # Errors
     ///
-    /// [`Error::InvalidScale`] for a scale beyond [`MAX_SCALE`](crate::MAX_SCALE).
-    pub const fn new(digits: u128, scale: u16) -> Result<Self, Error> {
-        match check_scale(scale) {
-            Ok(scale) => Ok(Self { digits, scale }),
-            Err(error) => Err(error),
+    /// [`Error::NegativeWeight`] for negative digits; [`Error::InvalidScale`] for a scale beyond
+    /// [`MAX_SCALE`](crate::MAX_SCALE).
+    pub fn new(digits: impl Into<Int>, scale: u16) -> Result<Self, Error> {
+        let digits = digits.into();
+        if digits.is_negative() {
+            return Err(Error::NegativeWeight);
         }
+        Ok(Self {
+            digits,
+            scale: check_scale(scale)?,
+        })
     }
 }
 
@@ -141,19 +146,15 @@ impl FromStr for Weight {
     /// # Errors
     ///
     /// [`Error::Syntax`] outside the grammar; [`Error::NegativeWeight`] for a negative weight;
-    /// [`Error::ExponentOutOfRange`] and [`Error::Overflow`] as for amounts.
+    /// [`Error::ExponentOutOfRange`] as for amounts.
     fn from_str(text: &str) -> Result<Self, Error> {
         let decimal = parse_decimal(text)?;
-        let digits = u128::try_from(decimal.digits).map_err(|_| Error::NegativeWeight)?;
-        Ok(Self {
-            digits,
-            scale: decimal.scale,
-        })
+        Self::new(decimal.digits, decimal.scale)
     }
 }
 
-/// Anything that can be read as a [`Weight`]: the integer types, decimal strings, and `Weight`
-/// itself (and references to them).
+/// Anything that can be read as a [`Weight`]: the integer types, [`Int`], decimal strings, and
+/// `Weight` itself (and references to them).
 pub trait IntoWeight {
     /// The value as a weight.
     ///
@@ -169,15 +170,21 @@ impl IntoWeight for Weight {
     }
 }
 
+impl IntoWeight for &Weight {
+    fn into_weight(self) -> Result<Weight, Error> {
+        Ok(self.clone())
+    }
+}
+
 impl IntoWeight for &str {
     fn into_weight(self) -> Result<Weight, Error> {
         self.parse()
     }
 }
 
-impl<T: IntoWeight + Copy> IntoWeight for &T {
+impl IntoWeight for &String {
     fn into_weight(self) -> Result<Weight, Error> {
-        (*self).into_weight()
+        self.parse()
     }
 }
 
@@ -185,175 +192,172 @@ macro_rules! integer_weight {
     ($($integer:ty),*) => {$(
         impl IntoWeight for $integer {
             fn into_weight(self) -> Result<Weight, Error> {
-                let digits = u128::try_from(self).map_err(|_| Error::NegativeWeight)?;
-                Ok(Weight { digits, scale: 0 })
+                Weight::new(Int::from(self), 0)
+            }
+        }
+
+        impl IntoWeight for &$integer {
+            fn into_weight(self) -> Result<Weight, Error> {
+                Weight::new(Int::from(*self), 0)
             }
         }
     )*};
 }
-integer_weight!(
-    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
-);
+integer_weight!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128);
+
+impl IntoWeight for Int {
+    fn into_weight(self) -> Result<Weight, Error> {
+        Weight::new(self, 0)
+    }
+}
+
+impl IntoWeight for &Int {
+    fn into_weight(self) -> Result<Weight, Error> {
+        Weight::new(self.clone(), 0)
+    }
+}
 
 /// The weights as integers at their largest scale.
 fn scaled_weights(
     weights: impl IntoIterator<Item = impl IntoWeight>,
-) -> Result<(Vec<u128>, u16), Error> {
+) -> Result<(Vec<Int>, u16), Error> {
     let weights: Vec<Weight> = weights
         .into_iter()
         .map(IntoWeight::into_weight)
         .collect::<Result<_, _>>()?;
     let scale = weights.iter().map(|weight| weight.scale).max().unwrap_or(0);
     let scaled = weights
-        .iter()
-        .map(|weight| scale_up_u128(weight.digits, u32::from(scale - weight.scale)))
-        .collect::<Result<_, _>>()?;
+        .into_iter()
+        .map(|weight| weight.digits.mul_pow10(u32::from(scale - weight.scale)))
+        .collect();
     Ok((scaled, scale))
 }
 
 /// `count` copies of `value`, or [`Error::Overflow`] when that many can't be held.
-fn repeated(value: u128, count: usize) -> Result<Vec<u128>, Error> {
+fn repeated<T: Clone>(value: T, count: usize) -> Result<Vec<T>, Error> {
     let mut out = Vec::new();
     out.try_reserve_exact(count).map_err(|_| Error::Overflow)?;
     out.resize(count, value);
     Ok(out)
 }
 
-fn scale_up_u128(value: u128, exponent: u32) -> Result<u128, Error> {
-    if value == 0 {
-        return Ok(0);
-    }
-    let power = POW10.get(exponent as usize).ok_or(Error::Overflow)?;
-    value.checked_mul(*power).ok_or(Error::Overflow)
-}
-
-/// Gives each bucket `extra` more, by `mode`, among the buckets with a non-zero weight.
+/// Gives the buckets `extra` more units, by `mode`, among the buckets with a non-zero weight.
 fn distribute(
-    shares: &mut [u128],
-    extra: u128,
-    weights: &[u128],
-    fractions: &[u128],
+    shares: &mut [Int],
+    extra: &Int,
+    weights: &[Int],
+    fractions: &[Int],
     mode: Remainder,
 ) {
-    if extra == 0 {
+    if extra.is_zero() {
         return;
     }
     let mut eligible: Vec<usize> = (0..shares.len())
-        .filter(|&index| weights[index] > 0)
+        .filter(|&index| !weights[index].is_zero())
         .collect();
     // `extra` is below the number of eligible buckets for every strategy that spreads units
-    let spread = usize::try_from(extra)
+    let spread = extra
+        .to_i128()
+        .and_then(|extra| usize::try_from(extra).ok())
         .unwrap_or(usize::MAX)
         .min(eligible.len());
+    let mut add = |index: usize, amount: &Int| shares[index] = &shares[index] + amount;
     match mode {
-        Remainder::ToFirst => shares[eligible[0]] += extra,
-        Remainder::ToLast => shares[eligible[eligible.len() - 1]] += extra,
+        Remainder::ToFirst => add(eligible[0], extra),
+        Remainder::ToLast => add(eligible[eligible.len() - 1], extra),
         Remainder::First => eligible
             .iter()
             .take(spread)
-            .for_each(|&index| shares[index] += 1),
+            .for_each(|&index| add(index, &Int::ONE)),
         Remainder::Last => eligible
             .iter()
             .rev()
             .take(spread)
-            .for_each(|&index| shares[index] += 1),
+            .for_each(|&index| add(index, &Int::ONE)),
         Remainder::Largest => {
             // largest remainder first; the sort is stable, so equal remainders keep bucket order
             eligible.sort_by(|&left, &right| fractions[right].cmp(&fractions[left]));
             eligible
                 .iter()
                 .take(spread)
-                .for_each(|&index| shares[index] += 1);
+                .for_each(|&index| add(index, &Int::ONE));
         }
     }
 }
 
-/// `magnitude` split by `weights` (already scaled to integers), in units.
+/// `magnitude` (not negative) split by `weights` (already scaled to integers), in units.
 fn allocate_magnitude(
-    magnitude: u128,
-    weights: &[u128],
+    magnitude: &Int,
+    weights: &[Int],
     mode: Remainder,
-) -> Result<Vec<u128>, Error> {
+) -> Result<Vec<Int>, Error> {
     if weights.is_empty() {
         return Err(Error::NoWeights);
     }
-    let total = weights
-        .iter()
-        .try_fold(0u128, |sum, &weight| sum.checked_add(weight))
-        .ok_or(Error::Overflow)?;
-    if total == 0 {
+    let total: Int = weights.iter().sum();
+    if total.is_zero() {
         return Err(Error::ZeroWeights);
     }
-    let divisor = U256::from_u128(total);
     let mut shares = Vec::with_capacity(weights.len());
     let mut fractions = Vec::with_capacity(weights.len());
-    let mut assigned = 0u128;
-    for &weight in weights {
-        let (quotient, remainder) = U256::mul(magnitude, weight).div_rem(divisor);
-        // quotient ≤ magnitude and remainder < total, so both fit
-        let share = quotient.to_u128().ok_or(Error::Overflow)?;
+    let mut assigned = Int::ZERO;
+    for weight in weights {
+        let (share, fraction) = (magnitude * weight).div_rem(&total);
+        assigned = assigned + &share;
         shares.push(share);
-        fractions.push(remainder.to_u128().ok_or(Error::Overflow)?);
-        assigned += share;
+        fractions.push(fraction);
     }
-    distribute(&mut shares, magnitude - assigned, weights, &fractions, mode);
+    distribute(
+        &mut shares,
+        &(magnitude - &assigned),
+        weights,
+        &fractions,
+        mode,
+    );
     Ok(shares)
 }
 
 /// Applies the amount's sign to the magnitudes.
-fn signed(negative: bool, magnitudes: Vec<u128>, scale: u16) -> Result<Vec<Amount>, Error> {
+fn signed(negative: bool, magnitudes: Vec<Int>, scale: u16) -> Vec<Amount> {
     magnitudes
         .into_iter()
-        .map(|magnitude| {
-            let units = if negative {
-                0i128.checked_sub_unsigned(magnitude)
-            } else {
-                i128::try_from(magnitude).ok()
-            };
-            Ok(Amount {
-                units: units.ok_or(Error::Overflow)?,
-                scale,
-            })
+        .map(|magnitude| Amount {
+            units: if negative { -magnitude } else { magnitude },
+            scale,
         })
         .collect()
 }
 
 impl Amount {
-    pub(crate) fn allocate(self, weights: &[u128], mode: Remainder) -> Result<Vec<Self>, Error> {
-        let shares = allocate_magnitude(self.units.unsigned_abs(), weights, mode)?;
-        signed(self.units < 0, shares, self.scale)
+    pub(crate) fn allocate(&self, weights: &[Int], mode: Remainder) -> Result<Vec<Self>, Error> {
+        let shares = allocate_magnitude(&self.units.abs(), weights, mode)?;
+        Ok(signed(self.units.is_negative(), shares, self.scale))
     }
 
     pub(crate) fn instalments(
-        self,
+        &self,
         count: usize,
-        unit: Option<Self>,
+        unit: Option<&Self>,
         mode: InstalmentRemainder,
     ) -> Result<Vec<Self>, Error> {
         if count == 0 {
             return Err(Error::NoWeights);
         }
         let Some(unit) = unit else {
-            return self.allocate(&repeated(1, count)?, mode.into());
+            return self.allocate(&repeated(Int::ONE, count)?, mode.into());
         };
-        if unit.units <= 0 {
+        if !unit.units.is_positive() {
             return Err(Error::NotPositive);
         }
         let scale = self.scale.max(unit.scale);
         let total = self.rescale(scale, Rounding::Unnecessary)?;
-        let step = unit
-            .rescale(scale, Rounding::Unnecessary)?
-            .units
-            .unsigned_abs();
-        let magnitude = total.units.unsigned_abs();
-        let count_u128 = count as u128;
+        let step = unit.rescale(scale, Rounding::Unnecessary)?.units;
+        let magnitude = total.units.abs();
+        let count_int = Int::from(count);
         // regular instalments are the largest multiple of the unit that fits `count` times
-        let per = match step.checked_mul(count_u128) {
-            Some(block) => magnitude / block * step,
-            None => 0,
-        };
-        let mut parts = repeated(per, count)?;
-        let mut left = magnitude - per * count_u128;
+        let per = magnitude.div_rem(&(&step * &count_int)).0 * &step;
+        let mut parts = repeated(per.clone(), count)?;
+        let mut left = &magnitude - &(per * &count_int);
         // spread whole units first (for First and Last), then the sub-unit leftover
         if matches!(mode, InstalmentRemainder::First | InstalmentRemainder::Last) {
             let mut index = 0;
@@ -363,8 +367,8 @@ impl Amount {
                 } else {
                     count - 1 - index
                 };
-                parts[at] += step;
-                left -= step;
+                parts[at] = &parts[at] + &step;
+                left = left - &step;
                 index += 1;
             }
         }
@@ -376,35 +380,33 @@ impl Amount {
         } else {
             0
         };
-        parts[last] += left;
-        signed(total.units < 0, parts, scale)
+        parts[last] = &parts[last] + &left;
+        Ok(signed(total.units.is_negative(), parts, scale))
     }
 
-    pub(crate) fn chunk(self, max: Self) -> Result<Vec<Self>, Error> {
-        if max.units <= 0 {
+    pub(crate) fn chunk(&self, max: &Self) -> Result<Vec<Self>, Error> {
+        if !max.units.is_positive() {
             return Err(Error::NotPositive);
         }
-        if self.units < 0 {
+        if self.units.is_negative() {
             return Err(Error::NegativeTotal);
         }
         let scale = self.scale.max(max.scale);
         let total = self.rescale(scale, Rounding::Unnecessary)?.units;
         let step = max.rescale(scale, Rounding::Unnecessary)?.units;
-        // every chunk but the last is `max`; the last is what's left, and positive
-        let full = (total - 1).max(0) / step;
-        let last = total - full * step;
-        let count = usize::try_from(full)
-            .map_err(|_| Error::Overflow)?
-            .checked_add(1)
-            .ok_or(Error::Overflow)?;
-        if full == 0 {
-            // nothing was taken off, so the one chunk is the total itself, at its own scale
-            return Ok(alloc::vec![self]);
+        if total <= step {
+            // nothing is taken off, so the one chunk is the total itself, at its own scale
+            return Ok(alloc::vec![self.clone()]);
         }
+        // every chunk but the last is `max`; the last is what's left, and positive
+        let full = (&total - &Int::ONE).div_rem(&step).0;
+        let last = &total - &(&full * &step);
+        let full = usize::try_from(full).map_err(|_| Error::Overflow)?;
         let mut out = Vec::new();
-        out.try_reserve_exact(count).map_err(|_| Error::Overflow)?;
+        out.try_reserve_exact(full.checked_add(1).ok_or(Error::Overflow)?)
+            .map_err(|_| Error::Overflow)?;
         // the full chunks keep `max`'s own scale, as ducat returns `max` itself
-        out.extend(core::iter::repeat_n(max, count - 1));
+        out.extend(core::iter::repeat_n(max.clone(), full));
         out.push(Self { units: last, scale });
         Ok(out)
     }
@@ -412,12 +414,12 @@ impl Amount {
 
 /// One tranche of a [schedule](Money::schedule): a fixed amount, a percentage of the total
 /// (optionally capped), or the rest. `M` is [`Money<C>`] or [`AnyMoney`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Tranche<M> {
     kind: TrancheKind<M>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum TrancheKind<M> {
     Amount(M),
     Percent { percent: Weight, cap: Option<M> },
@@ -468,17 +470,17 @@ impl<M> Tranche<M> {
     }
 }
 
-/// The schedule on amounts; `same` checks each tranche's currency against the total's.
-fn schedule_amounts<M: Copy>(
-    total: Amount,
+/// The schedule on amounts; `amount_of` checks each tranche's currency against the total's.
+fn schedule_amounts<M>(
+    total: &Amount,
     tranches: &[Tranche<M>],
-    amount_of: impl Fn(M) -> Result<Amount, Error>,
+    amount_of: impl Fn(&M) -> Result<Amount, Error>,
 ) -> Result<Vec<Amount>, Error> {
     let mut rest = None;
     let mut percent_at = Vec::new();
     let mut percents = Vec::new();
     for (index, tranche) in tranches.iter().enumerate() {
-        match tranche.kind {
+        match &tranche.kind {
             TrancheKind::Percent { percent, .. } => {
                 percent_at.push(index);
                 percents.push(percent);
@@ -489,50 +491,50 @@ fn schedule_amounts<M: Copy>(
         }
     }
     let mut out: Vec<Option<Amount>> = alloc::vec![None; tranches.len()];
-    let mut left = total;
+    let mut left = total.clone();
     if !percents.is_empty() {
         let (mut weights, scale) = scaled_weights(percents)?;
-        let sum = weights
-            .iter()
-            .try_fold(0u128, |sum, &weight| sum.checked_add(weight))
-            .ok_or(Error::Overflow)?;
-        let hundred = scale_up_u128(100, u32::from(scale))?;
+        let sum: Int = weights.iter().sum();
+        let hundred = Int::from(100u8).mul_pow10(u32::from(scale));
         if sum > hundred {
             return Err(Error::InvalidSchedule);
         }
         weights.push(hundred - sum);
         let parts = total.allocate(&weights, Remainder::Largest)?;
-        for (&index, &part) in percent_at.iter().zip(&parts) {
-            let TrancheKind::Percent { cap, .. } = tranches[index].kind else {
+        for (&index, part) in percent_at.iter().zip(parts) {
+            let TrancheKind::Percent { cap, .. } = &tranches[index].kind else {
                 unreachable!()
             };
             let mut part = part;
             if let Some(cap) = cap {
                 let cap = amount_of(cap)?;
-                if part.cmp_value(cap) == Ordering::Greater {
+                if part.cmp_value(&cap) == Ordering::Greater {
                     part = cap;
                 }
             }
+            left = left.sub(&part);
             out[index] = Some(part);
-            left = left.checked_sub(part)?;
         }
     }
     for (index, tranche) in tranches.iter().enumerate() {
-        if let TrancheKind::Amount(amount) = tranche.kind {
+        if let TrancheKind::Amount(amount) = &tranche.kind {
             let amount = amount_of(amount)?;
+            left = left.sub(&amount);
             out[index] = Some(amount);
-            left = left.checked_sub(amount)?;
         }
     }
-    if left.units < 0 {
+    if left.units.is_negative() {
         return Err(Error::InvalidSchedule);
     }
     match rest {
-        Some(index) => out[index] = Some(left),
-        None if left.units != 0 => return Err(Error::InvalidSchedule),
+        Some(index) => out[index] = Some(left.clone()),
+        None if !left.units.is_zero() => return Err(Error::InvalidSchedule),
         None => {}
     }
-    Ok(out.into_iter().map(|part| part.unwrap_or(left)).collect())
+    Ok(out
+        .into_iter()
+        .map(|part| part.unwrap_or_else(|| left.clone()))
+        .collect())
 }
 
 impl<C: Currency> Money<C> {
@@ -553,7 +555,7 @@ impl<C: Currency> Money<C> {
     /// assert_eq!(parts[0].to_decimal(), "0.04");
     /// // the Alabama paradox: 3 cents by 1, 3, 3 is 1 each, but 4 cents is 0, 2, 2
     /// let four = Money::<Eur>::from_minor(4).allocate([1, 3, 3], Remainder::Largest)?;
-    /// assert_eq!(four.iter().map(Money::units).collect::<Vec<_>>(), [0, 2, 2]);
+    /// assert_eq!(four.iter().map(Money::to_decimal).collect::<Vec<_>>(), ["0.00", "0.02", "0.02"]);
     /// # Ok::<(), ducat::Error>(())
     /// ```
     ///
@@ -562,7 +564,7 @@ impl<C: Currency> Money<C> {
     /// [`Error::NoWeights`]; [`Error::ZeroWeights`] when every weight is zero;
     /// [`Error::NegativeWeight`]; and whatever reading a weight fails with.
     pub fn allocate(
-        self,
+        &self,
         weights: impl IntoIterator<Item = impl IntoWeight>,
         remainder: Remainder,
     ) -> Result<Vec<Self>, Error> {
@@ -574,10 +576,12 @@ impl<C: Currency> Money<C> {
     ///
     /// # Errors
     ///
-    /// [`Error::NoWeights`] for a count of zero.
-    pub fn split(self, count: usize, remainder: Remainder) -> Result<Vec<Self>, Error> {
+    /// [`Error::NoWeights`] for a count of zero; [`Error::Overflow`] for more parts than can be
+    /// held.
+    pub fn split(&self, count: usize, remainder: Remainder) -> Result<Vec<Self>, Error> {
         Ok(Self::wrap(
-            self.amount.allocate(&repeated(1, count)?, remainder)?,
+            self.amount
+                .allocate(&repeated(Int::ONE, count)?, remainder)?,
         ))
     }
 
@@ -592,7 +596,7 @@ impl<C: Currency> Money<C> {
     ///
     /// let total: Money<Eur> = "100.00".parse()?;
     /// let euro: Money<Eur> = "1".parse()?;
-    /// let plan = total.instalments(3, Some(euro), InstalmentRemainder::ToFirst)?;
+    /// let plan = total.instalments(3, Some(&euro), InstalmentRemainder::ToFirst)?;
     /// assert_eq!(plan.iter().map(Money::to_decimal).collect::<Vec<_>>(), ["34.00", "33.00", "33.00"]);
     /// # Ok::<(), ducat::Error>(())
     /// ```
@@ -600,16 +604,16 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::NoWeights`] for a count of zero; [`Error::NotPositive`] for a unit that isn't
-    /// positive; [`Error::Overflow`].
+    /// positive; [`Error::Overflow`] for more instalments than can be held.
     pub fn instalments(
-        self,
+        &self,
         count: usize,
-        unit: Option<Self>,
+        unit: Option<&Self>,
         remainder: InstalmentRemainder,
     ) -> Result<Vec<Self>, Error> {
         Ok(Self::wrap(self.amount.instalments(
             count,
-            unit.map(|unit| unit.amount),
+            unit.map(|unit| &unit.amount),
             remainder,
         )?))
     }
@@ -632,11 +636,11 @@ impl<C: Currency> Money<C> {
     ///
     /// [`Error::InvalidSchedule`] for more than one rest tranche, percentages over 100, tranches
     /// that exceed the total, or a leftover without a rest tranche.
-    pub fn schedule(self, tranches: &[Tranche<Self>]) -> Result<Vec<Self>, Error> {
+    pub fn schedule(&self, tranches: &[Tranche<Self>]) -> Result<Vec<Self>, Error> {
         Ok(Self::wrap(schedule_amounts(
-            self.amount,
+            &self.amount,
             tranches,
-            |money: Self| Ok(money.amount),
+            |money: &Self| Ok(money.amount.clone()),
         )?))
     }
 
@@ -647,13 +651,13 @@ impl<C: Currency> Money<C> {
     ///
     /// [`Error::NotPositive`] when `max` isn't positive; [`Error::NegativeTotal`] when `self` is
     /// negative; [`Error::Overflow`] when there are too many tranches to hold.
-    pub fn chunk(self, max: Self) -> Result<Vec<Self>, Error> {
-        Ok(Self::wrap(self.amount.chunk(max.amount)?))
+    pub fn chunk(&self, max: &Self) -> Result<Vec<Self>, Error> {
+        Ok(Self::wrap(self.amount.chunk(&max.amount)?))
     }
 }
 
 impl AnyMoney {
-    fn wrap(self, parts: Vec<Amount>) -> Vec<Self> {
+    fn wrap(&self, parts: Vec<Amount>) -> Vec<Self> {
         parts
             .into_iter()
             .map(|amount| Self::from_parts(amount, self.currency()))
@@ -666,7 +670,7 @@ impl AnyMoney {
     ///
     /// As [`Money::allocate`].
     pub fn allocate(
-        self,
+        &self,
         weights: impl IntoIterator<Item = impl IntoWeight>,
         remainder: Remainder,
     ) -> Result<Vec<Self>, Error> {
@@ -679,8 +683,11 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::split`].
-    pub fn split(self, count: usize, remainder: Remainder) -> Result<Vec<Self>, Error> {
-        Ok(self.wrap(self.amount.allocate(&repeated(1, count)?, remainder)?))
+    pub fn split(&self, count: usize, remainder: Remainder) -> Result<Vec<Self>, Error> {
+        Ok(self.wrap(
+            self.amount
+                .allocate(&repeated(Int::ONE, count)?, remainder)?,
+        ))
     }
 
     /// As [`Money::instalments`].
@@ -689,9 +696,9 @@ impl AnyMoney {
     ///
     /// As [`Money::instalments`], and [`Error::CurrencyMismatch`] for a unit in another currency.
     pub fn instalments(
-        self,
+        &self,
         count: usize,
-        unit: Option<Self>,
+        unit: Option<&Self>,
         remainder: InstalmentRemainder,
     ) -> Result<Vec<Self>, Error> {
         let unit = unit.map(|unit| self.amount_in(unit)).transpose()?;
@@ -704,9 +711,9 @@ impl AnyMoney {
     ///
     /// As [`Money::schedule`], and [`Error::CurrencyMismatch`] for a tranche amount or cap in
     /// another currency.
-    pub fn schedule(self, tranches: &[Tranche<Self>]) -> Result<Vec<Self>, Error> {
-        Ok(self.wrap(schedule_amounts(self.amount, tranches, |money| {
-            self.amount_in(money)
+    pub fn schedule(&self, tranches: &[Tranche<Self>]) -> Result<Vec<Self>, Error> {
+        Ok(self.wrap(schedule_amounts(&self.amount, tranches, |money| {
+            self.amount_in(money).cloned()
         })?))
     }
 
@@ -715,7 +722,7 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::chunk`], and [`Error::CurrencyMismatch`] for a `max` in another currency.
-    pub fn chunk(self, max: Self) -> Result<Vec<Self>, Error> {
+    pub fn chunk(&self, max: &Self) -> Result<Vec<Self>, Error> {
         let max = self.amount_in(max)?;
         Ok(self.wrap(self.amount.chunk(max)?))
     }

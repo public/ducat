@@ -8,9 +8,6 @@
 //! - a file that breaks the format, or a change in the number of cases in an area;
 //! - a judgement that can't fail (each implemented operation's first passing vector is changed
 //!   and must then fail).
-//!
-//! Vectors whose inputs or expected values are beyond `i128` are skipped, with that reason: ducat
-//! has unbounded integers and ducat-rs doesn't (see docs/design.md).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
@@ -19,7 +16,7 @@ use std::process::ExitCode;
 
 use ducat::allocate::{InstalmentRemainder, Remainder, Tranche};
 use ducat::iso::Eur;
-use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Money, Rounding};
+use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Rounding};
 use serde_json::Value;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
@@ -98,8 +95,6 @@ const NOT_YET: &[(&str, &str)] = &[
     ("words.spellOut", "not yet: milestone 6 (ducat-icu)"),
 ];
 
-const BEYOND_I128: &str = "beyond i128";
-
 fn not_yet(op: &str) -> Option<&'static str> {
     NOT_YET
         .iter()
@@ -164,35 +159,6 @@ fn minor_of(text: &str) -> i128 {
         .expect("minor units within i128 (checked before running)")
 }
 
-/// Whether the text is an integer, decimal or `a/b` rational whose digits don't fit an `i128`.
-fn beyond_i128(text: &str) -> bool {
-    text.split('/').any(|part| {
-        let digits = part.strip_prefix('-').unwrap_or(part);
-        let mut pieces = digits.splitn(2, '.');
-        let whole = pieces.next().unwrap_or("");
-        let fraction = pieces.next().unwrap_or("");
-        let numeric = !whole.is_empty()
-            && whole.bytes().all(|b| b.is_ascii_digit())
-            && fraction.bytes().all(|b| b.is_ascii_digit());
-        let all = format!("{whole}{fraction}");
-        let significant = all.trim_start_matches('0');
-        numeric && !significant.is_empty() && significant.parse::<i128>().is_err()
-    })
-}
-
-/// Whether any string in the value (outside a binary64's informational `exact`) is beyond i128.
-fn any_beyond_i128(value: &Value) -> bool {
-    match value {
-        Value::String(text) => beyond_i128(text),
-        Value::Array(items) => items.iter().any(any_beyond_i128),
-        Value::Object(fields) => fields.iter().any(|(key, field)| {
-            let informational = key == "exact" && fields.contains_key("binary64");
-            !informational && any_beyond_i128(field)
-        }),
-        _ => false,
-    }
-}
-
 // --- case operations ---------------------------------------------------------------------------
 
 type CaseOp = fn(&Value) -> Result<Outcome, Error>;
@@ -228,12 +194,12 @@ fn case_op(op: &str) -> Option<CaseOp> {
         "money.roundTrip" => |args| Ok(Outcome::Money(money_of(&args["money"])?)),
         "money.add" => |args| {
             Ok(Outcome::Money(
-                money_of(&args["first"])?.checked_add(money_of(&args["second"])?)?,
+                money_of(&args["first"])?.checked_add(&money_of(&args["second"])?)?,
             ))
         },
         "money.subtract" => |args| {
             Ok(Outcome::Money(
-                money_of(&args["first"])?.checked_sub(money_of(&args["second"])?)?,
+                money_of(&args["first"])?.checked_sub(&money_of(&args["second"])?)?,
             ))
         },
         "money.multiply" => |args| {
@@ -362,7 +328,10 @@ fn generated_allocations(args: &Value) -> Result<Vec<String>, Error> {
         let whole = AnyMoney::from_minor(minor, currency);
         let parts = whole.allocate(&weights, Remainder::Largest)?;
         let total: i128 = weights.iter().sum();
-        let units: Vec<i128> = parts.iter().map(AnyMoney::units).collect();
+        let units: Vec<i128> = parts
+            .iter()
+            .map(|part| part.units().to_i128().expect("parts of an i128 amount fit"))
+            .collect();
         let sums = units.iter().sum::<i128>() == minor;
         let scaled = parts.iter().all(|part| part.scale() == whole.scale());
         let near = units
@@ -423,7 +392,7 @@ fn meets(result: &Result<Outcome, Error>, expectation: &Value) -> bool {
         (Ok(Outcome::Parts(parts)), "sumOfParts") => {
             let currency = parts.first().map(AnyMoney::currency);
             currency.is_some_and(|currency| {
-                AnyMoney::try_sum(parts.iter().copied(), currency)
+                AnyMoney::try_sum(parts.iter(), currency)
                     .is_ok_and(|sum| spec_money(&sum) == *expected)
             })
         }
@@ -444,16 +413,7 @@ fn alternatives(expect: &Value) -> Vec<&Value> {
 /// Runs one case: `Ok(true)` for a pass, `Ok(false)` for a failure, `Err` for a skip.
 fn judge_case(run: CaseOp, case: &Value) -> Result<(bool, String), Skip> {
     let args = &case["args"];
-    if any_beyond_i128(args) {
-        return Err(BEYOND_I128);
-    }
-    let expected: Vec<&Value> = alternatives(&case["expect"])
-        .into_iter()
-        .filter(|e| !any_beyond_i128(e))
-        .collect();
-    if expected.is_empty() {
-        return Err(BEYOND_I128);
-    }
+    let expected = alternatives(&case["expect"]);
     let result = run(args);
     let passed = expected
         .iter()
@@ -482,7 +442,7 @@ type Fields = Vec<(&'static str, Value)>;
 type RowOp = fn(&Value) -> Fields;
 
 /// A result in minor units as the tables write it, or `null` for an error of `kind`.
-fn minor_field(result: Result<i128, Error>, kind: ErrorKind) -> Value {
+fn minor_field(result: Result<Int, Error>, kind: ErrorKind) -> Value {
     match result {
         Ok(units) => Value::String(units.to_string()),
         Err(error) if error.kind() == kind => Value::Null,
@@ -491,7 +451,7 @@ fn minor_field(result: Result<i128, Error>, kind: ErrorKind) -> Value {
 }
 
 /// Parts as the tables write them: their units, as integer strings, or `null` for a range error.
-fn parts_field<M>(result: Result<Vec<M>, Error>, units: fn(&M) -> i128) -> Value {
+fn parts_field<M>(result: Result<Vec<M>, Error>, units: fn(&M) -> &Int) -> Value {
     match result {
         Ok(parts) => parts
             .iter()
@@ -532,7 +492,10 @@ fn row_op(op: &str) -> Option<RowOp> {
     fn want(result: Result<AnyMoney, Error>) -> Fields {
         vec![(
             "want",
-            minor_field(result.map(|money| money.units()), ErrorKind::Rounding),
+            minor_field(
+                result.map(|money| money.units().clone()),
+                ErrorKind::Rounding,
+            ),
         )]
     }
     Some(match op {
@@ -599,7 +562,7 @@ fn row_op(op: &str) -> Option<RowOp> {
                     (
                         name,
                         parts_field(
-                            total.instalments(count, Some(unit), remainder),
+                            total.instalments(count, Some(&unit), remainder),
                             Money::units,
                         ),
                     )
@@ -610,7 +573,7 @@ fn row_op(op: &str) -> Option<RowOp> {
             vec![(
                 "chunks",
                 parts_field(
-                    eur(string(row, "total")).chunk(eur(string(row, "max"))),
+                    eur(string(row, "total")).chunk(&eur(string(row, "max"))),
                     Money::units,
                 ),
             )]
@@ -655,7 +618,9 @@ fn row_op(op: &str) -> Option<RowOp> {
                     (
                         mode.name(),
                         minor_field(
-                            amount.round_to_increment(step, mode).map(|m| m.units()),
+                            amount
+                                .round_to_increment(&step, mode)
+                                .map(|m| m.units().clone()),
                             ErrorKind::Rounding,
                         ),
                     )
@@ -668,9 +633,6 @@ fn row_op(op: &str) -> Option<RowOp> {
 
 /// Runs one row: every field the operation produces must equal the row's, as JSON text.
 fn judge_row(run: RowOp, row: &Value) -> Result<(bool, String), Skip> {
-    if any_beyond_i128(row) {
-        return Err(BEYOND_I128);
-    }
     let fields = run(row);
     let wrong: Vec<String> = fields
         .iter()

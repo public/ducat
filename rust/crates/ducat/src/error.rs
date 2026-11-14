@@ -21,7 +21,8 @@ pub enum Error {
         /// The currency of the other operand.
         actual: CurrencyCode,
     },
-    /// A result or an intermediate value doesn't fit an `i128`.
+    /// A value doesn't fit the type it is narrowed to (such as an [`Int`](crate::Int) beyond
+    /// `i128`, or a count beyond `usize`), or more parts are asked for than can be held.
     Overflow,
     /// A division by zero, or a ratio with a zero denominator.
     DivisionByZero,
@@ -109,7 +110,7 @@ impl fmt::Display for Error {
             Self::CurrencyMismatch { expected, actual } => {
                 write!(f, "currency mismatch: {expected} vs {actual}")
             }
-            Self::Overflow => f.write_str("the value doesn't fit an i128"),
+            Self::Overflow => f.write_str("the value doesn't fit the type it is narrowed to"),
             Self::DivisionByZero => f.write_str("division by zero"),
             Self::InvalidScale => {
                 write!(f, "invalid scale: use an integer from 0 to {}", crate::MAX_SCALE)

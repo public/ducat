@@ -2,8 +2,9 @@
 //! against ducat's conformance suite.
 //!
 //! - [`Money<C>`] is an amount in a currency known at compile time (`Money<Eur>`), and
-//!   [`AnyMoney`] one whose currency is known only at run time. Both are an `i128` count of
-//!   10^−scale units, `Copy`, and never use floats in arithmetic.
+//!   [`AnyMoney`] one whose currency is known only at run time. Both are an exact count of
+//!   10^−scale units of any size ([`Int`]: machine arithmetic while it is small, growing
+//!   onto the heap beyond), and never use floats in arithmetic.
 //! - Every operation that may round takes a [`Rounding`]; there is no default.
 //! - Every factor (multiplier, divisor, rate) is an exact [`Ratio`].
 //! - Fallible operations return [`Result`] with an [`Error`].
@@ -52,6 +53,7 @@ mod cash;
 mod currency;
 mod decimal;
 mod error;
+mod int;
 #[cfg(feature = "iso")]
 pub mod iso;
 #[rustfmt::skip] // generated: tests/iso_table.rs checks it byte for byte
@@ -70,6 +72,7 @@ pub use currency::__custom_or_panic;
 pub use currency::{Currency, CurrencyCode, MAX_CUSTOM_EXPONENT};
 pub use decimal::MAX_SCALE;
 pub use error::{Error, ErrorKind};
+pub use int::Int;
 pub use iso_table::ISO_4217_PUBLISHED;
 pub use money::Money;
 pub use ratio::Ratio;

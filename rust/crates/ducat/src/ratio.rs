@@ -3,10 +3,10 @@
 use core::fmt;
 use core::str::FromStr;
 
-use crate::Error;
 use crate::decimal::{Decimal, faithful_decimal, parse_decimal};
+use crate::{Error, Int};
 
-/// An exact rational number: a reduced `i128` numerator over a positive `i128` denominator.
+/// An exact rational number: a reduced numerator over a positive denominator, both of any size.
 ///
 /// Every multiplier, divisor, rate and percentage is a `Ratio`, so no factor is ever a float.
 /// Build one from an integer (`Ratio::from(3)`), a decimal string (`"1.075".parse()`), a fraction
@@ -17,152 +17,116 @@ use crate::decimal::{Decimal, faithful_decimal, parse_decimal};
 /// use ducat::Ratio;
 ///
 /// let rate: Ratio = "1.075".parse()?;
-/// assert_eq!((rate.numer(), rate.denom()), (43, 40));
+/// assert_eq!((rate.numer().to_i128(), rate.denom().to_i128()), (Some(43), Some(40)));
 /// assert_eq!(Ratio::try_from(0.1)?, Ratio::new(1, 10)?);
 /// # Ok::<(), ducat::Error>(())
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Ratio {
-    num: i128,
-    den: i128,
-}
-
-const fn gcd(mut left: u128, mut right: u128) -> u128 {
-    while right != 0 {
-        let remainder = left % right;
-        left = right;
-        right = remainder;
-    }
-    left
+    num: Int,
+    den: Int,
 }
 
 impl Ratio {
     /// Zero.
-    pub const ZERO: Self = Self { num: 0, den: 1 };
+    pub const ZERO: Self = Self {
+        num: Int::ZERO,
+        den: Int::ONE,
+    };
     /// One.
-    pub const ONE: Self = Self { num: 1, den: 1 };
+    pub const ONE: Self = Self {
+        num: Int::ONE,
+        den: Int::ONE,
+    };
 
     /// `num / den`, reduced, with a positive denominator.
     ///
     /// # Errors
     ///
-    /// [`Error::DivisionByZero`] when `den` is zero; [`Error::Overflow`] when the reduced value
-    /// doesn't fit (only `i128::MIN` over a negative denominator can do that).
-    pub const fn new(num: i128, den: i128) -> Result<Self, Error> {
-        if den == 0 {
+    /// [`Error::DivisionByZero`] when `den` is zero.
+    pub fn new(num: impl Into<Int>, den: impl Into<Int>) -> Result<Self, Error> {
+        Self::reduced(num.into(), den.into())
+    }
+
+    fn reduced(num: Int, den: Int) -> Result<Self, Error> {
+        if den.is_zero() {
             return Err(Error::DivisionByZero);
         }
-        let divisor = gcd(num.unsigned_abs(), den.unsigned_abs());
-        let negative = (num < 0) != (den < 0) && num != 0;
-        let magnitude = num.unsigned_abs() / divisor;
-        let den = den.unsigned_abs() / divisor;
-        if den > i128::MAX as u128 {
-            return Err(Error::Overflow);
+        if num.is_zero() {
+            return Ok(Self::ZERO);
         }
-        let num = if negative {
-            if magnitude > i128::MIN.unsigned_abs() {
-                return Err(Error::Overflow);
-            }
-            (magnitude as i128).wrapping_neg()
+        let divisor = num.gcd(&den);
+        let (num, den) = if divisor == 1 {
+            (num, den)
         } else {
-            if magnitude > i128::MAX as u128 {
-                return Err(Error::Overflow);
-            }
-            magnitude as i128
+            (num.exact_div(&divisor), den.exact_div(&divisor))
         };
-        Ok(Self {
-            num,
-            den: den as i128,
+        Ok(if den.is_negative() {
+            Self {
+                num: -num,
+                den: -den,
+            }
+        } else {
+            Self { num, den }
         })
     }
 
     /// The numerator, in lowest terms; it carries the sign.
     #[must_use]
-    pub const fn numer(self) -> i128 {
-        self.num
+    pub const fn numer(&self) -> &Int {
+        &self.num
     }
 
     /// The denominator, in lowest terms; always positive.
     #[must_use]
-    pub const fn denom(self) -> i128 {
-        self.den
+    pub const fn denom(&self) -> &Int {
+        &self.den
     }
 
     /// Whether the value is zero.
     #[must_use]
-    pub const fn is_zero(self) -> bool {
-        self.num == 0
+    pub fn is_zero(&self) -> bool {
+        self.num.is_zero()
     }
 
     /// `1 / self`.
     ///
     /// # Errors
     ///
-    /// [`Error::DivisionByZero`] for zero; [`Error::Overflow`] for `i128::MIN` over anything.
-    pub const fn recip(self) -> Result<Self, Error> {
-        Self::new(self.den, self.num)
-    }
-
-    /// `self / other`, cross-reduced before multiplying so a quotient that fits is found even when
-    /// the plain products don't.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::DivisionByZero`] when `other` is zero; [`Error::Overflow`] when the reduced
-    /// quotient doesn't fit.
-    pub fn checked_div(self, other: Self) -> Result<Self, Error> {
-        self.checked_mul(other.recip()?)
+    /// [`Error::DivisionByZero`] for zero.
+    pub fn recip(&self) -> Result<Self, Error> {
+        Self::reduced(self.den.clone(), self.num.clone())
     }
 
     /// `self × other`, cross-reduced before multiplying.
+    #[must_use]
+    pub fn mul(&self, other: &Self) -> Self {
+        let first = self.num.gcd(&other.den);
+        let second = other.num.gcd(&self.den);
+        // a gcd is zero only when both are zero, and denominators never are
+        let num = self.num.exact_div(&first) * other.num.exact_div(&second);
+        let den = self.den.exact_div(&second) * other.den.exact_div(&first);
+        if num.is_zero() {
+            Self::ZERO
+        } else {
+            Self { num, den }
+        }
+    }
+
+    /// `self / other`.
     ///
     /// # Errors
     ///
-    /// [`Error::Overflow`] when the reduced product doesn't fit.
-    pub fn checked_mul(self, other: Self) -> Result<Self, Error> {
-        let first = gcd(self.num.unsigned_abs(), other.den.unsigned_abs()).max(1);
-        let second = gcd(other.num.unsigned_abs(), self.den.unsigned_abs()).max(1);
-        let negative = (self.num < 0) != (other.num < 0);
-        let num = (self.num.unsigned_abs() / first)
-            .checked_mul(other.num.unsigned_abs() / second)
-            .ok_or(Error::Overflow)?;
-        let den = (self.den.unsigned_abs() / second)
-            .checked_mul(other.den.unsigned_abs() / first)
-            .ok_or(Error::Overflow)?;
-        let den = i128::try_from(den).map_err(|_| Error::Overflow)?;
-        let num = if negative {
-            0i128.checked_sub_unsigned(num).ok_or(Error::Overflow)?
-        } else {
-            i128::try_from(num).map_err(|_| Error::Overflow)?
-        };
-        Ok(Self { num, den })
+    /// [`Error::DivisionByZero`] when `other` is zero.
+    pub fn div(&self, other: &Self) -> Result<Self, Error> {
+        Ok(self.mul(&other.recip()?))
     }
 
-    /// An exact decimal `digits × 10^−scale` as a reduced ratio, cancelling twos and fives first
-    /// so that `"0.5"` with many trailing zeros still fits.
-    pub(crate) fn from_decimal(decimal: Decimal) -> Result<Self, Error> {
-        let Decimal { mut digits, scale } = decimal;
-        if digits == 0 {
-            return Ok(Self::ZERO);
-        }
-        let (mut twos, mut fives) = (u32::from(scale), u32::from(scale));
-        while twos > 0 && digits % 2 == 0 {
-            digits /= 2;
-            twos -= 1;
-        }
-        while fives > 0 && digits % 5 == 0 {
-            digits /= 5;
-            fives -= 1;
-        }
-        let den = 2i128
-            .checked_pow(twos)
-            .and_then(|power| {
-                5i128
-                    .checked_pow(fives)
-                    .and_then(|other| power.checked_mul(other))
-            })
-            .ok_or(Error::Overflow)?;
-        Ok(Self { num: digits, den })
+    /// An exact decimal `digits × 10^−scale` as a reduced ratio.
+    pub(crate) fn from_decimal(decimal: Decimal) -> Self {
+        let Decimal { digits, scale } = decimal;
+        // the denominator is a power of ten, so the reduction can't fail
+        Self::reduced(digits, Int::ONE.mul_pow10(u32::from(scale))).unwrap_or(Self::ZERO)
     }
 }
 
@@ -178,12 +142,12 @@ macro_rules! from_integer {
         impl From<$integer> for Ratio {
             /// The integer, exactly.
             fn from(value: $integer) -> Self {
-                Self { num: i128::from(value), den: 1 }
+                Self { num: Int::from(value), den: Int::ONE }
             }
         }
     )*};
 }
-from_integer!(i8, i16, i32, i64, i128, u8, u16, u32, u64);
+from_integer!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, usize, Int);
 
 impl TryFrom<f64> for Ratio {
     type Error = Error;
@@ -194,10 +158,9 @@ impl TryFrom<f64> for Ratio {
     ///
     /// [`Error::NotFinite`] for NaN and the infinities; [`Error::TooManyDigits`] for a value
     /// whose shortest form has more than 15 significant digits (such as `0.1 + 0.2`) and that
-    /// isn't a safe integer, since a float artefact can't be told from a decimal someone wrote;
-    /// [`Error::Overflow`] when the ratio doesn't fit.
+    /// isn't a safe integer, since a float artefact can't be told from a decimal someone wrote.
     fn try_from(value: f64) -> Result<Self, Error> {
-        Self::from_decimal(faithful_decimal(value, true)?)
+        Ok(Self::from_decimal(faithful_decimal(value, true)?))
     }
 }
 
@@ -205,21 +168,21 @@ impl FromStr for Ratio {
     type Err = Error;
 
     /// A decimal string in ducat's grammar (`"1.075"`, `"-2"`, `"1.5e3"`), or two of them around
-    /// a slash (`"1/3"`, `"1.5/2"`).
+    /// a slash (`"1/3"`, `"1.5/2"`). There is no limit on the number of digits, so the cost grows
+    /// with the length of the text: bound untrusted input first.
     ///
     /// # Errors
     ///
     /// [`Error::Syntax`] outside the grammar; [`Error::ExponentOutOfRange`] for an exponent or
-    /// decimal places beyond 1000; [`Error::DivisionByZero`] for a zero denominator;
-    /// [`Error::Overflow`] when the value doesn't fit.
+    /// decimal places beyond 1000; [`Error::DivisionByZero`] for a zero denominator.
     fn from_str(text: &str) -> Result<Self, Error> {
         match text.split_once('/') {
             Some((num, den)) => {
-                let num = Self::from_decimal(parse_decimal(num)?)?;
-                let den = Self::from_decimal(parse_decimal(den)?)?;
-                num.checked_div(den)
+                let num = Self::from_decimal(parse_decimal(num)?);
+                let den = Self::from_decimal(parse_decimal(den)?);
+                num.div(&den)
             }
-            None => Self::from_decimal(parse_decimal(text)?),
+            None => Ok(Self::from_decimal(parse_decimal(text)?)),
         }
     }
 }
@@ -237,11 +200,17 @@ impl fmt::Display for Ratio {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
+
     use super::*;
 
     fn ratio(text: &str) -> Result<(i128, i128), Error> {
-        text.parse::<Ratio>()
-            .map(|ratio| (ratio.numer(), ratio.denom()))
+        text.parse::<Ratio>().map(|ratio| {
+            (
+                ratio.numer().to_i128().unwrap(),
+                ratio.denom().to_i128().unwrap(),
+            )
+        })
     }
 
     #[test]
@@ -255,35 +224,44 @@ mod tests {
             ratio("0.50000000000000000000000000000000000000000000000000"),
             Ok((1, 2))
         );
-        assert_eq!(ratio("1e-39"), Err(Error::Overflow));
         assert_eq!(ratio("1/"), Err(Error::Syntax));
         assert_eq!(ratio("/1"), Err(Error::Syntax));
+        let tiny: Ratio = "1e-39".parse().unwrap();
+        assert_eq!(
+            tiny.denom().to_string(),
+            alloc::format!("1{}", "0".repeat(39))
+        );
     }
 
     #[test]
-    fn overflow_is_an_error() {
-        // T20: the reduced result fits even though the plain product doesn't
-        let small = Ratio::new(1, 3_000_000_000).unwrap();
+    fn wide_values_are_exact() {
+        // T20: what overflowed with i128 now just grows
+        let small = Ratio::new(1, 3_000_000_000u64).unwrap();
         let big = Ratio::from(3_080_000_000u64);
         assert_eq!(
-            small.checked_div(big).map(|r| (r.numer(), r.denom())),
-            Ok((1, 9_240_000_000_000_000_000))
+            small.div(&big).unwrap().denom().to_i128(),
+            Some(9_240_000_000_000_000_000)
         );
-        assert_eq!(Ratio::new(i128::MIN, -1), Err(Error::Overflow));
+        let min = Ratio::new(i128::MIN, -1).unwrap();
         assert_eq!(
-            Ratio::new(i128::MIN, 2).map(|r| r.numer()),
-            Ok(i128::MIN / 2)
+            min.numer().to_string(),
+            "170141183460469231731687303715884105728"
+        );
+        assert_eq!(
+            Ratio::new(i128::MIN, 2).unwrap().numer().to_i128(),
+            Some(i128::MIN / 2)
         );
         assert_eq!(Ratio::new(0, 0), Err(Error::DivisionByZero));
         assert_eq!(Ratio::new(0, -5), Ok(Ratio::ZERO));
+        let square = Ratio::from(i128::MAX).mul(&Ratio::from(i128::MAX));
+        assert_eq!(square.numer().to_i128(), None);
         assert_eq!(
-            Ratio::from(i128::MAX).checked_mul(Ratio::from(2)),
-            Err(Error::Overflow)
+            square.div(&Ratio::from(i128::MAX)).unwrap(),
+            Ratio::from(i128::MAX)
         );
-        assert_eq!(Ratio::from(i128::MIN).recip(), Err(Error::Overflow));
         assert_eq!(
-            Ratio::new(i128::MIN, 1).unwrap().checked_mul(Ratio::ONE),
-            Ok(Ratio::new(i128::MIN, 1).unwrap())
+            Ratio::from(i128::MIN).recip().unwrap().numer().to_i128(),
+            Some(-1)
         );
     }
 
@@ -299,7 +277,7 @@ mod tests {
         );
         assert_eq!(
             Ratio::try_from(20000.000001),
-            Ratio::new(20_000_000_001, 1_000_000)
+            Ratio::new(20_000_000_001u64, 1_000_000)
         );
     }
 }

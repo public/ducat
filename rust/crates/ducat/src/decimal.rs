@@ -2,8 +2,9 @@
 
 use core::fmt::{self, Write as _};
 
-use crate::Error;
-use crate::rounding::{Rounding, rescale_ratio};
+use alloc::vec::Vec;
+
+use crate::{Error, Int};
 
 /// The largest scale, and the largest exponent or number of decimal places a decimal string may
 /// have, as in ducat. Far beyond any real amount, it keeps input such as `"1e999999999"` from
@@ -14,9 +15,9 @@ pub const MAX_SCALE: u16 = 1000;
 const MAX_FAITHFUL_DIGITS: usize = 15;
 
 /// An exact decimal: `digits × 10^−scale`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Decimal {
-    pub(crate) digits: i128,
+    pub(crate) digits: Int,
     pub(crate) scale: u16,
 }
 
@@ -106,26 +107,17 @@ pub(crate) fn parse_decimal(input: &str) -> Result<Decimal, Error> {
         .rposition(|&byte| byte != b'0')
         .map_or(0, |last| last + 1);
     let scale = scale - i64::try_from(frac_len - kept).unwrap_or(0);
-    let mut digits: i128 = 0;
-    for &byte in bytes[int_start..int_start + int_len]
-        .iter()
-        .chain(&bytes[frac_start..frac_start + kept])
-    {
-        let digit = i128::from(byte - b'0');
-        // accumulate negatively, so i128::MIN parses too
-        digits = digits
-            .checked_mul(10)
-            .and_then(|value| value.checked_sub(digit))
-            .ok_or(Error::Overflow)?;
-    }
-    if !negative {
-        digits = digits.checked_neg().ok_or(Error::Overflow)?;
-    }
+    let mut all: Vec<u8> = Vec::with_capacity(int_len + kept);
+    all.extend_from_slice(&bytes[int_start..int_start + int_len]);
+    all.extend_from_slice(&bytes[frac_start..frac_start + kept]);
+    let digits = Int::from_digits(negative, &all);
     if scale < 0 {
         // a positive exponent beyond the fraction: scale the digits up to scale 0
         let up = u32::try_from(-scale).unwrap_or(u32::MAX);
-        digits = rescale_ratio(digits, 1, 1, up, 0, Rounding::Unnecessary)?;
-        return Ok(Decimal { digits, scale: 0 });
+        return Ok(Decimal {
+            digits: digits.mul_pow10(up),
+            scale: 0,
+        });
     }
     Ok(Decimal {
         digits,
@@ -187,42 +179,24 @@ pub(crate) fn faithful_decimal(value: f64, check_digits: bool) -> Result<Decimal
 
 /// Writes `units × 10^−scale` as a plain decimal with exactly `scale` decimal places: `-0.05`,
 /// `1000`, never an exponent.
-pub(crate) fn write_scaled(f: &mut dyn fmt::Write, units: i128, scale: u16) -> fmt::Result {
-    let mut digits = [0u8; 39];
-    let mut magnitude = units.unsigned_abs();
-    let mut len = 0;
-    loop {
-        digits[len] = b'0' + (magnitude % 10) as u8;
-        len += 1;
-        magnitude /= 10;
-        if magnitude == 0 {
-            break;
-        }
-    }
-    // digits[..len] is the magnitude, least significant first
-    if units < 0 {
+pub(crate) fn write_scaled(f: &mut dyn fmt::Write, units: &Int, scale: u16) -> fmt::Result {
+    let magnitude = units.magnitude_digits();
+    let digits = magnitude.as_bytes();
+    let scale = usize::from(scale);
+    if units.is_negative() {
         f.write_char('-')?;
     }
-    let scale = usize::from(scale);
-    let digit = |position: usize| {
-        if position < len {
-            char::from(digits[position])
-        } else {
-            '0'
-        }
-    };
-    if len > scale {
-        for position in (scale..len).rev() {
-            f.write_char(digit(position))?;
-        }
+    if digits.len() > scale {
+        f.write_str(&magnitude[..digits.len() - scale])?;
     } else {
         f.write_char('0')?;
     }
     if scale > 0 {
         f.write_char('.')?;
-        for position in (0..scale).rev() {
-            f.write_char(digit(position))?;
+        for _ in digits.len()..scale {
+            f.write_char('0')?;
         }
+        f.write_str(&magnitude[digits.len().saturating_sub(scale)..])?;
     }
     Ok(())
 }
@@ -234,7 +208,12 @@ mod tests {
     use super::*;
 
     fn parse(text: &str) -> Result<(i128, u16), Error> {
-        parse_decimal(text).map(|decimal| (decimal.digits, decimal.scale))
+        parse_decimal(text).and_then(|decimal| {
+            Ok((
+                decimal.digits.to_i128().ok_or(Error::Overflow)?,
+                decimal.scale,
+            ))
+        })
     }
 
     #[test]
@@ -263,7 +242,19 @@ mod tests {
         assert_eq!(parse("1e99999999999999"), Err(Error::ExponentOutOfRange));
         assert_eq!(parse("1e1001"), Err(Error::ExponentOutOfRange));
         assert_eq!(parse("0.1e-1000"), Err(Error::ExponentOutOfRange));
+        // beyond i128 (the helper above narrows), and exact in full
         assert_eq!(parse("1e100"), Err(Error::Overflow));
+        assert_eq!(
+            parse_decimal("1e100").unwrap().digits.to_string(),
+            alloc::format!("1{}", "0".repeat(100))
+        );
+        assert_eq!(
+            parse_decimal("-123456789012345678901234567890123456789012.5")
+                .unwrap()
+                .digits
+                .to_string(),
+            "-1234567890123456789012345678901234567890125"
+        );
         for bad in [
             "", "-", "+", ".5", "5.", "-.5", "1,000", "1_000", " 1", "1 ", "1.23abc", "1_1.2_2",
             "1e", "1e+", "١", "--1", "1.2.3", "0x10", "NaN", "inf",
@@ -275,7 +266,8 @@ mod tests {
     #[test]
     fn floats() {
         let digits = |value: f64| {
-            faithful_decimal(value, true).map(|decimal| (decimal.digits, decimal.scale))
+            faithful_decimal(value, true)
+                .map(|decimal| (decimal.digits.to_i128().unwrap(), decimal.scale))
         };
         assert_eq!(digits(0.1), Ok((1, 1)));
         assert_eq!(digits(7.9), Ok((79, 1)));
@@ -293,7 +285,7 @@ mod tests {
         assert_eq!(digits(f64::NAN), Err(Error::NotFinite));
         assert_eq!(digits(f64::INFINITY), Err(Error::NotFinite));
         assert_eq!(
-            faithful_decimal(0.1 + 0.2, false).map(|d| (d.digits, d.scale)),
+            faithful_decimal(0.1 + 0.2, false).map(|d| (d.digits.to_i128().unwrap(), d.scale)),
             Ok((30_000_000_000_000_004, 17))
         );
     }
@@ -302,7 +294,7 @@ mod tests {
     fn writing() {
         let text = |units: i128, scale: u16| {
             let mut out = String::new();
-            write_scaled(&mut out, units, scale).unwrap();
+            write_scaled(&mut out, &Int::from(units), scale).unwrap();
             out
         };
         assert_eq!(text(-5, 2), "-0.05");

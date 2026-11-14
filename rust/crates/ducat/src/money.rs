@@ -4,28 +4,31 @@ use alloc::string::String;
 use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{Hash, Hasher};
+use core::iter::Sum;
 use core::marker::PhantomData;
 use core::ops::{Add, Neg, Sub};
 use core::str::FromStr;
 
 use crate::amount::Amount;
-use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Rounding};
+use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Rounding};
 
-/// An exact amount of money in the currency `C`: an `i128` count of 10^−scale units.
+/// An exact amount of money in the currency `C`: a count of 10^−scale units of any size.
 ///
 /// The scale defaults to the currency's exponent (EUR 2, JPY 0, KWD 3) and can be larger for
-/// sub-minor precision (unit prices, conversion intermediates), up to [`MAX_SCALE`](crate::MAX_SCALE).
-/// `Money<Eur>` and `Money<Usd>` are different types, so mixing them is a compile error; for a
-/// currency known only at run time, use [`AnyMoney`].
+/// sub-minor precision (unit prices, conversion intermediates), or smaller, up to
+/// [`MAX_SCALE`](crate::MAX_SCALE). `Money<Eur>` and `Money<Usd>` are different types, so mixing
+/// them is a compile error; for a currency known only at run time, use [`AnyMoney`].
 ///
+/// - **Any size, as in ducat.** Amounts that fit an `i128` are computed with machine arithmetic;
+///   larger ones grow onto the heap, so nothing ever overflows. That is also why `Money` is
+///   `Clone` but not `Copy`: methods take `&self`, and the operators work on references
+///   (`&a + &b`) as well as values.
 /// - **Rounding is always an argument.** Anything that may round takes a [`Rounding`]; with
 ///   [`Rounding::Unnecessary`] an inexact result is an error.
 /// - **Equality is structural:** `PartialEq`, `Eq` and `Hash` compare the units *and the scale*,
-///   as ducat's conformance suite judges money, so 1.0 EUR at scale 1 is not `==` to 1.00 EUR.
+///   as ducat's conformance suite judges money, so 1.00 EUR is not `==` to 1.000 EUR at scale 3.
 ///   Compare by value with [`Money::eq_value`] and [`Money::compare`]. There is no `Ord`, since
 ///   it would disagree with `Eq` across scales.
-/// - `+`, `-` and unary `-` panic on overflow (beyond ±1.7 × 10³⁸ units), in release builds too,
-///   and never wrap; [`checked_add`](Money::checked_add) and friends return [`Error::Overflow`].
 /// - [`Display`](fmt::Display) is ducat's `toString`, exact: `"12.34 EUR"`. It ignores format
 ///   flags such as `{:.1}` rather than rounding or truncating; round explicitly with
 ///   [`Money::to_scale`] first.
@@ -37,7 +40,7 @@ use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Rounding};
 /// let price: Money<Eur> = "25.00".parse()?;
 /// let gross = price.multiply("1.075", Rounding::HalfEven)?;
 /// assert_eq!(gross.to_string(), "26.88 EUR");
-/// assert_eq!((price + gross).to_decimal(), "51.88");
+/// assert_eq!((&price + &gross).to_decimal(), "51.88");
 /// # Ok::<(), ducat::Error>(())
 /// ```
 pub struct Money<C: Currency> {
@@ -47,11 +50,9 @@ pub struct Money<C: Currency> {
 
 impl<C: Currency> Clone for Money<C> {
     fn clone(&self) -> Self {
-        *self
+        Self::from_amount(self.amount.clone())
     }
 }
-
-impl<C: Currency> Copy for Money<C> {}
 
 impl<C: Currency> PartialEq for Money<C> {
     /// Structural: the same units at the same scale. See [`Money::eq_value`] for equality by
@@ -64,9 +65,10 @@ impl<C: Currency> PartialEq for Money<C> {
 impl<C: Currency> Eq for Money<C> {}
 
 impl<C: Currency> Hash for Money<C> {
-    /// Hashes as the equal [`AnyMoney`] does: currency, units and scale.
+    /// Hashes as the equal [`AnyMoney`] does: units, scale and currency.
     fn hash<H: Hasher>(&self, state: &mut H) {
-        AnyMoney::from(*self).hash(state);
+        self.amount.hash(state);
+        C::CODE.hash(state);
     }
 }
 
@@ -95,17 +97,17 @@ impl<C: Currency> Money<C> {
     #[must_use]
     pub const fn zero() -> Self {
         Self::from_amount(Amount {
-            units: 0,
+            units: Int::ZERO,
             scale: C::CODE.exponent() as u16,
         })
     }
 
     /// The amount with this many minor units (cents for EUR), at the currency's exponent.
     #[must_use]
-    pub const fn from_minor(minor: i128) -> Self {
+    pub fn from_minor(minor: impl Into<Int>) -> Self {
         Self::from_amount(Amount {
-            units: minor,
-            scale: C::CODE.exponent() as u16,
+            units: minor.into(),
+            scale: u16::from(C::CODE.exponent()),
         })
     }
 
@@ -114,19 +116,22 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::InvalidScale`] for a scale beyond [`MAX_SCALE`](crate::MAX_SCALE).
-    pub fn from_units(units: i128, scale: u16) -> Result<Self, Error> {
-        Ok(Self::from_amount(Amount::new(units, scale)?))
+    pub fn from_units(units: impl Into<Int>, scale: u16) -> Result<Self, Error> {
+        Ok(Self::from_amount(Amount::new(units.into(), scale)?))
     }
 
     /// A decimal string in major units at `scale`, rounded with `rounding` if it has more
     /// decimals than that. [`FromStr`] is this at the currency's exponent with
     /// [`Rounding::Unnecessary`].
     ///
+    /// There is no limit on the number of digits, as in ducat, so the cost grows with the length
+    /// of the text: bound untrusted input before parsing it.
+    ///
     /// # Errors
     ///
     /// [`Error::Syntax`] outside ducat's grammar (see [`AnyMoney::parse_at`]);
     /// [`Error::ExponentOutOfRange`]; [`Error::InvalidScale`]; [`Error::Rounding`] for more
-    /// decimals than `scale` with [`Rounding::Unnecessary`]; [`Error::Overflow`].
+    /// decimals than `scale` with [`Rounding::Unnecessary`].
     pub fn parse_at(text: &str, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(Amount::parse(text, scale, rounding)?))
     }
@@ -167,8 +172,8 @@ impl<C: Currency> Money<C> {
     ///
     /// # Errors
     ///
-    /// [`Error::NotFinite`], [`Error::InvalidScale`], [`Error::Rounding`] (with
-    /// [`Rounding::Unnecessary`]) and [`Error::Overflow`].
+    /// [`Error::NotFinite`], [`Error::InvalidScale`], and [`Error::Rounding`] (with
+    /// [`Rounding::Unnecessary`]).
     pub fn from_f64_at(value: f64, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(Amount::from_f64(
             value, scale, rounding, false,
@@ -177,8 +182,8 @@ impl<C: Currency> Money<C> {
 
     /// The count of 10^−scale units: 1234 for 12.34 EUR, 12340 for 12.340 EUR at scale 3.
     #[must_use]
-    pub const fn units(&self) -> i128 {
-        self.amount.units
+    pub const fn units(&self) -> &Int {
+        &self.amount.units
     }
 
     /// The number of decimal places.
@@ -192,8 +197,8 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::Rounding`] when the amount has non-zero digits below the minor unit (round it
-    /// first); [`Error::Overflow`] when it doesn't fit.
-    pub fn to_minor(&self) -> Result<i128, Error> {
+    /// first).
+    pub fn to_minor(&self) -> Result<Int, Error> {
         Ok(self
             .amount
             .rescale(u16::from(C::CODE.exponent()), Rounding::Unnecessary)?
@@ -212,73 +217,25 @@ impl<C: Currency> Money<C> {
 
     /// The same amount with a run-time currency.
     #[must_use]
-    pub const fn to_any(self) -> AnyMoney {
-        AnyMoney::from_parts(self.amount, C::CODE)
-    }
-
-    /// `self + other`, exactly, at the larger of the two scales.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::Overflow`].
-    pub fn checked_add(self, other: Self) -> Result<Self, Error> {
-        Ok(Self::from_amount(self.amount.checked_add(other.amount)?))
-    }
-
-    /// `self − other`, exactly, at the larger of the two scales.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::Overflow`].
-    pub fn checked_sub(self, other: Self) -> Result<Self, Error> {
-        Ok(Self::from_amount(self.amount.checked_sub(other.amount)?))
-    }
-
-    /// `−self`.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::Overflow`] for `i128::MIN` units.
-    pub fn checked_neg(self) -> Result<Self, Error> {
-        Ok(Self::from_amount(self.amount.checked_neg()?))
+    pub fn to_any(&self) -> AnyMoney {
+        AnyMoney::from_parts(self.amount.clone(), C::CODE)
     }
 
     /// `|self|`.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::Overflow`] for `i128::MIN` units.
-    pub fn checked_abs(self) -> Result<Self, Error> {
-        if self.amount.units < 0 {
-            self.checked_neg()
-        } else {
-            Ok(self)
-        }
-    }
-
-    /// The exact sum of `items`, at the largest scale among them; zero at the currency's
-    /// exponent for none.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::Overflow`].
-    pub fn try_sum(items: impl IntoIterator<Item = Self>) -> Result<Self, Error> {
-        let mut items = items.into_iter();
-        let Some(first) = items.next() else {
-            return Ok(Self::zero());
-        };
-        items.try_fold(first, Self::checked_add)
+    #[must_use]
+    pub fn abs(&self) -> Self {
+        Self::from_amount(self.amount.abs())
     }
 
     /// `self × factor`, rounded once to `self`'s scale.
     ///
     /// # Errors
     ///
-    /// [`Error::Rounding`] for an inexact product with [`Rounding::Unnecessary`];
-    /// [`Error::Overflow`]; and whatever reading `factor` fails with.
-    pub fn multiply(self, factor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
+    /// [`Error::Rounding`] for an inexact product with [`Rounding::Unnecessary`], and whatever
+    /// reading `factor` fails with.
+    pub fn multiply(&self, factor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(self.amount.mul_ratio(
-            factor.to_ratio()?,
+            &factor.to_ratio()?,
             self.amount.scale,
             rounding,
         )?))
@@ -290,9 +247,9 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::DivisionByZero`]; otherwise as [`Money::multiply`].
-    pub fn divide(self, divisor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
+    pub fn divide(&self, divisor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(self.amount.div_ratio(
-            divisor.to_ratio()?,
+            &divisor.to_ratio()?,
             self.amount.scale,
             rounding,
         )?))
@@ -304,8 +261,8 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// [`Error::InvalidScale`]; [`Error::Rounding`] when digits would be lost with
-    /// [`Rounding::Unnecessary`]; [`Error::Overflow`] when raising the scale overflows.
-    pub fn to_scale(self, scale: u16, rounding: Rounding) -> Result<Self, Error> {
+    /// [`Rounding::Unnecessary`].
+    pub fn to_scale(&self, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(self.amount.rescale(scale, rounding)?))
     }
 
@@ -314,7 +271,7 @@ impl<C: Currency> Money<C> {
     /// # Errors
     ///
     /// As [`Money::to_scale`].
-    pub fn round(self, rounding: Rounding) -> Result<Self, Error> {
+    pub fn round(&self, rounding: Rounding) -> Result<Self, Error> {
         self.to_scale(u16::from(C::CODE.exponent()), rounding)
     }
 
@@ -335,7 +292,7 @@ impl<C: Currency> Money<C> {
     ///
     /// [`Error::NonPositiveRate`] for a rate of zero or less; otherwise as [`Money::multiply`].
     pub fn convert<T: Currency>(
-        self,
+        &self,
         rate: impl Factor,
         rounding: Rounding,
     ) -> Result<Money<T>, Error> {
@@ -346,11 +303,11 @@ impl<C: Currency> Money<C> {
     /// The order of the two values, whatever their scales.
     #[must_use]
     pub fn compare(&self, other: &Self) -> Ordering {
-        self.amount.cmp_value(other.amount)
+        self.amount.cmp_value(&other.amount)
     }
 
-    /// Whether the two values are equal, whatever their scales: 1.0 EUR at scale 1 equals
-    /// 1.00 EUR here, though not under `==`.
+    /// Whether the two values are equal, whatever their scales: 1.00 EUR equals 1.000 EUR at
+    /// scale 3 here, though not under `==`.
     #[must_use]
     pub fn eq_value(&self, other: &Self) -> bool {
         self.compare(other) == Ordering::Equal
@@ -358,67 +315,100 @@ impl<C: Currency> Money<C> {
 
     /// Whether the amount is zero.
     #[must_use]
-    pub const fn is_zero(&self) -> bool {
-        self.amount.units == 0
+    pub fn is_zero(&self) -> bool {
+        self.amount.units.is_zero()
     }
 
     /// Whether the amount is above zero.
     #[must_use]
-    pub const fn is_positive(&self) -> bool {
-        self.amount.units > 0
+    pub fn is_positive(&self) -> bool {
+        self.amount.units.is_positive()
     }
 
     /// Whether the amount is below zero.
     #[must_use]
-    pub const fn is_negative(&self) -> bool {
-        self.amount.units < 0
+    pub fn is_negative(&self) -> bool {
+        self.amount.units.is_negative()
     }
 
     /// −1, 0 or 1.
     #[must_use]
-    pub const fn signum(&self) -> i8 {
-        self.amount.units.signum() as i8
+    pub fn signum(&self) -> i8 {
+        self.amount.units.signum()
     }
 }
 
-impl<C: Currency> Add for Money<C> {
-    type Output = Self;
+macro_rules! money_operator {
+    ($trait:ident, $method:ident, $doc:literal) => {
+        impl<C: Currency> $trait<&Money<C>> for &Money<C> {
+            type Output = Money<C>;
 
-    /// `self + other`, at the larger scale.
-    ///
-    /// # Panics
-    ///
-    /// On overflow, in every build profile. Use [`Money::checked_add`] to get an error instead.
-    fn add(self, other: Self) -> Self {
-        self.checked_add(other)
-            .expect("Money addition overflowed i128")
-    }
+            #[doc = $doc]
+            fn $method(self, other: &Money<C>) -> Money<C> {
+                Money::from_amount(self.amount.$method(&other.amount))
+            }
+        }
+
+        impl<C: Currency> $trait for Money<C> {
+            type Output = Money<C>;
+
+            #[doc = $doc]
+            fn $method(self, other: Money<C>) -> Money<C> {
+                (&self).$method(&other)
+            }
+        }
+
+        impl<C: Currency> $trait<&Money<C>> for Money<C> {
+            type Output = Money<C>;
+
+            #[doc = $doc]
+            fn $method(self, other: &Money<C>) -> Money<C> {
+                (&self).$method(other)
+            }
+        }
+    };
 }
+money_operator!(
+    Add,
+    add,
+    "`self + other`, exactly, at the larger of the two scales."
+);
+money_operator!(
+    Sub,
+    sub,
+    "`self − other`, exactly, at the larger of the two scales."
+);
 
-impl<C: Currency> Sub for Money<C> {
-    type Output = Self;
+impl<C: Currency> Neg for &Money<C> {
+    type Output = Money<C>;
 
-    /// `self − other`, at the larger scale.
-    ///
-    /// # Panics
-    ///
-    /// On overflow, in every build profile. Use [`Money::checked_sub`] to get an error instead.
-    fn sub(self, other: Self) -> Self {
-        self.checked_sub(other)
-            .expect("Money subtraction overflowed i128")
+    /// `−self`.
+    fn neg(self) -> Money<C> {
+        Money::from_amount(self.amount.neg())
     }
 }
 
 impl<C: Currency> Neg for Money<C> {
-    type Output = Self;
+    type Output = Money<C>;
 
     /// `−self`.
-    ///
-    /// # Panics
-    ///
-    /// For `i128::MIN` units. Use [`Money::checked_neg`] to get an error instead.
-    fn neg(self) -> Self {
-        self.checked_neg().expect("Money negation overflowed i128")
+    fn neg(self) -> Money<C> {
+        -&self
+    }
+}
+
+impl<C: Currency> Sum for Money<C> {
+    /// The exact sum, at the largest scale among the items; zero at the currency's exponent for
+    /// none.
+    fn sum<I: Iterator<Item = Self>>(items: I) -> Self {
+        items.fold(Self::zero(), |sum, item| sum + item)
+    }
+}
+
+impl<'a, C: Currency> Sum<&'a Money<C>> for Money<C> {
+    /// As the sum of owned values.
+    fn sum<I: Iterator<Item = &'a Money<C>>>(items: I) -> Self {
+        items.fold(Self::zero(), |sum, item| sum + item)
     }
 }
 
@@ -451,7 +441,7 @@ impl<C: Currency> fmt::Debug for Money<C> {
 
 impl<C: Currency> From<Money<C>> for AnyMoney {
     fn from(money: Money<C>) -> Self {
-        money.to_any()
+        AnyMoney::from_parts(money.amount, C::CODE)
     }
 }
 
@@ -478,13 +468,13 @@ impl<C: Currency> TryFrom<AnyMoney> for Money<C> {
 impl<C: Currency> PartialEq<AnyMoney> for Money<C> {
     /// Structural, as `==` between two `Money<C>`.
     fn eq(&self, other: &AnyMoney) -> bool {
-        self.to_any() == *other
+        other.currency() == C::CODE && self.amount == other.amount
     }
 }
 
 impl<C: Currency> PartialEq<Money<C>> for AnyMoney {
     /// Structural, as `==` between two `AnyMoney`.
     fn eq(&self, other: &Money<C>) -> bool {
-        *self == other.to_any()
+        other == self
     }
 }

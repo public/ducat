@@ -3,18 +3,19 @@
 use alloc::string::String;
 use core::cmp::Ordering;
 use core::fmt;
+use core::ops::Neg;
 use core::str::FromStr;
 
 use crate::amount::Amount;
-use crate::{CurrencyCode, Error, Factor, Rounding};
+use crate::{CurrencyCode, Error, Factor, Int, Rounding};
 
 /// An exact amount of money whose currency is a run-time [`CurrencyCode`]: for values from
 /// databases, JSON and user input.
 ///
 /// It has the same operations as [`Money`](crate::Money), but those that combine two amounts
 /// return [`Error::CurrencyMismatch`] for different currencies. Narrow it to a typed `Money<C>`
-/// with `Money::<C>::try_from(any)`. Equality, `Hash`, `Display` and rounding follow the same
-/// rules as `Money`'s.
+/// with `Money::<C>::try_from(any)`. Size, equality, `Hash`, `Display` and rounding follow the
+/// same rules as `Money`'s.
 ///
 /// ```
 /// use ducat::{AnyMoney, CurrencyCode, Error, Money};
@@ -23,12 +24,12 @@ use crate::{CurrencyCode, Error, Factor, Rounding};
 /// let eur: CurrencyCode = "EUR".parse()?;
 /// let a = AnyMoney::parse("10.00", eur)?;
 /// let b = AnyMoney::parse("2.50", "USD".parse()?)?;
-/// assert!(matches!(a.checked_add(b), Err(Error::CurrencyMismatch { .. })));
+/// assert!(matches!(a.checked_add(&b), Err(Error::CurrencyMismatch { .. })));
 /// let typed = Money::<Eur>::try_from(a)?;
 /// assert_eq!(typed.to_string(), "10.00 EUR");
 /// # Ok::<(), ducat::Error>(())
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct AnyMoney {
     pub(crate) amount: Amount,
     currency: CurrencyCode,
@@ -39,7 +40,7 @@ impl AnyMoney {
         Self { amount, currency }
     }
 
-    fn with_amount(self, amount: Amount) -> Self {
+    fn with_amount(&self, amount: Amount) -> Self {
         Self {
             amount,
             currency: self.currency,
@@ -59,15 +60,9 @@ impl AnyMoney {
 
     /// `other`'s amount, when it is in this currency.
     #[cfg(any(feature = "allocate", feature = "cash"))]
-    pub(crate) fn amount_in(self, other: Self) -> Result<Amount, Error> {
-        if other.currency == self.currency {
-            Ok(other.amount)
-        } else {
-            Err(Error::CurrencyMismatch {
-                expected: self.currency,
-                actual: other.currency,
-            })
-        }
+    pub(crate) fn amount_in<'a>(&self, other: &'a Self) -> Result<&'a Amount, Error> {
+        self.same_currency(other)?;
+        Ok(&other.amount)
     }
 
     /// The currency.
@@ -79,16 +74,22 @@ impl AnyMoney {
     /// Zero in `currency`, at its exponent.
     #[must_use]
     pub const fn zero(currency: CurrencyCode) -> Self {
-        Self::from_minor(0, currency)
+        Self {
+            amount: Amount {
+                units: Int::ZERO,
+                scale: currency.exponent() as u16,
+            },
+            currency,
+        }
     }
 
     /// The amount with this many minor units of `currency`, at its exponent.
     #[must_use]
-    pub const fn from_minor(minor: i128, currency: CurrencyCode) -> Self {
+    pub fn from_minor(minor: impl Into<Int>, currency: CurrencyCode) -> Self {
         Self {
             amount: Amount {
-                units: minor,
-                scale: currency.exponent() as u16,
+                units: minor.into(),
+                scale: u16::from(currency.exponent()),
             },
             currency,
         }
@@ -99,9 +100,13 @@ impl AnyMoney {
     /// # Errors
     ///
     /// [`Error::InvalidScale`] for a scale beyond [`MAX_SCALE`](crate::MAX_SCALE).
-    pub fn from_units(units: i128, scale: u16, currency: CurrencyCode) -> Result<Self, Error> {
+    pub fn from_units(
+        units: impl Into<Int>,
+        scale: u16,
+        currency: CurrencyCode,
+    ) -> Result<Self, Error> {
         Ok(Self {
-            amount: Amount::new(units, scale)?,
+            amount: Amount::new(units.into(), scale)?,
             currency,
         })
     }
@@ -126,12 +131,14 @@ impl AnyMoney {
     /// The grammar is ducat's: an optional `+` or `-`, one or more ASCII digits, optionally a
     /// point and one or more digits, and optionally `e` or `E` with an optional sign and digits.
     /// `".5"`, `"5."`, grouping (`"1,000"`, `"1_000"`) and surrounding whitespace are errors.
+    /// There is no limit on the number of digits, as in ducat, so the cost grows with the length
+    /// of the text: bound untrusted input before parsing it.
     ///
     /// # Errors
     ///
     /// [`Error::Syntax`] outside the grammar; [`Error::ExponentOutOfRange`] for an exponent or
     /// decimal places beyond 1000; [`Error::InvalidScale`]; [`Error::Rounding`] for more
-    /// decimals than `scale` with [`Rounding::Unnecessary`]; [`Error::Overflow`].
+    /// decimals than `scale` with [`Rounding::Unnecessary`].
     pub fn parse_at(
         text: &str,
         currency: CurrencyCode,
@@ -176,8 +183,8 @@ impl AnyMoney {
 
     /// The count of 10^−scale units.
     #[must_use]
-    pub const fn units(&self) -> i128 {
-        self.amount.units
+    pub const fn units(&self) -> &Int {
+        &self.amount.units
     }
 
     /// The number of decimal places.
@@ -190,8 +197,8 @@ impl AnyMoney {
     ///
     /// # Errors
     ///
-    /// [`Error::Rounding`] for non-zero digits below the minor unit; [`Error::Overflow`].
-    pub fn to_minor(&self) -> Result<i128, Error> {
+    /// [`Error::Rounding`] for non-zero digits below the minor unit.
+    pub fn to_minor(&self) -> Result<Int, Error> {
         Ok(self
             .amount
             .rescale(u16::from(self.currency.exponent()), Rounding::Unnecessary)?
@@ -210,42 +217,26 @@ impl AnyMoney {
     ///
     /// # Errors
     ///
-    /// [`Error::CurrencyMismatch`]; [`Error::Overflow`].
-    pub fn checked_add(self, other: Self) -> Result<Self, Error> {
-        self.same_currency(&other)?;
-        Ok(self.with_amount(self.amount.checked_add(other.amount)?))
+    /// [`Error::CurrencyMismatch`].
+    pub fn checked_add(&self, other: &Self) -> Result<Self, Error> {
+        self.same_currency(other)?;
+        Ok(self.with_amount(self.amount.add(&other.amount)))
     }
 
     /// `self − other`, exactly, at the larger of the two scales.
     ///
     /// # Errors
     ///
-    /// [`Error::CurrencyMismatch`]; [`Error::Overflow`].
-    pub fn checked_sub(self, other: Self) -> Result<Self, Error> {
-        self.same_currency(&other)?;
-        Ok(self.with_amount(self.amount.checked_sub(other.amount)?))
-    }
-
-    /// `−self`.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::Overflow`] for `i128::MIN` units.
-    pub fn checked_neg(self) -> Result<Self, Error> {
-        Ok(self.with_amount(self.amount.checked_neg()?))
+    /// [`Error::CurrencyMismatch`].
+    pub fn checked_sub(&self, other: &Self) -> Result<Self, Error> {
+        self.same_currency(other)?;
+        Ok(self.with_amount(self.amount.sub(&other.amount)))
     }
 
     /// `|self|`.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::Overflow`] for `i128::MIN` units.
-    pub fn checked_abs(self) -> Result<Self, Error> {
-        if self.amount.units < 0 {
-            self.checked_neg()
-        } else {
-            Ok(self)
-        }
+    #[must_use]
+    pub fn abs(&self) -> Self {
+        self.with_amount(self.amount.abs())
     }
 
     /// The exact sum of `items` in `currency`, at the largest scale among them; zero at the
@@ -253,14 +244,14 @@ impl AnyMoney {
     ///
     /// # Errors
     ///
-    /// [`Error::CurrencyMismatch`] for an item in another currency; [`Error::Overflow`].
-    pub fn try_sum(
-        items: impl IntoIterator<Item = Self>,
+    /// [`Error::CurrencyMismatch`] for an item in another currency.
+    pub fn try_sum<'a>(
+        items: impl IntoIterator<Item = &'a Self>,
         currency: CurrencyCode,
     ) -> Result<Self, Error> {
         items
             .into_iter()
-            .try_fold(Self::zero(currency), Self::checked_add)
+            .try_fold(Self::zero(currency), |sum, item| sum.checked_add(item))
     }
 
     /// `self × factor`, rounded once to `self`'s scale.
@@ -268,9 +259,9 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::multiply`](crate::Money::multiply).
-    pub fn multiply(self, factor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
+    pub fn multiply(&self, factor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
         Ok(self.with_amount(self.amount.mul_ratio(
-            factor.to_ratio()?,
+            &factor.to_ratio()?,
             self.amount.scale,
             rounding,
         )?))
@@ -281,9 +272,9 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::divide`](crate::Money::divide).
-    pub fn divide(self, divisor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
+    pub fn divide(&self, divisor: impl Factor, rounding: Rounding) -> Result<Self, Error> {
         Ok(self.with_amount(self.amount.div_ratio(
-            divisor.to_ratio()?,
+            &divisor.to_ratio()?,
             self.amount.scale,
             rounding,
         )?))
@@ -294,7 +285,7 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::to_scale`](crate::Money::to_scale).
-    pub fn to_scale(self, scale: u16, rounding: Rounding) -> Result<Self, Error> {
+    pub fn to_scale(&self, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(self.with_amount(self.amount.rescale(scale, rounding)?))
     }
 
@@ -303,7 +294,7 @@ impl AnyMoney {
     /// # Errors
     ///
     /// As [`Money::to_scale`](crate::Money::to_scale).
-    pub fn round(self, rounding: Rounding) -> Result<Self, Error> {
+    pub fn round(&self, rounding: Rounding) -> Result<Self, Error> {
         self.to_scale(u16::from(self.currency.exponent()), rounding)
     }
 
@@ -315,19 +306,19 @@ impl AnyMoney {
     /// [`Error::NonPositiveRate`] for a rate of zero or less; otherwise as
     /// [`Money::multiply`](crate::Money::multiply).
     pub fn convert(
-        self,
+        &self,
         to: CurrencyCode,
         rate: impl Factor,
         rounding: Rounding,
     ) -> Result<Self, Error> {
         let rate = rate.to_ratio()?;
-        if rate.numer() <= 0 {
+        if !rate.numer().is_positive() {
             return Err(Error::NonPositiveRate);
         }
         Ok(Self {
             amount: self
                 .amount
-                .mul_ratio(rate, u16::from(to.exponent()), rounding)?,
+                .mul_ratio(&rate, u16::from(to.exponent()), rounding)?,
             currency: to,
         })
     }
@@ -339,7 +330,7 @@ impl AnyMoney {
     /// [`Error::CurrencyMismatch`] for different currencies.
     pub fn compare(&self, other: &Self) -> Result<Ordering, Error> {
         self.same_currency(other)?;
-        Ok(self.amount.cmp_value(other.amount))
+        Ok(self.amount.cmp_value(&other.amount))
     }
 
     /// Whether the two are the same currency and the same value, whatever their scales. Another
@@ -351,26 +342,44 @@ impl AnyMoney {
 
     /// Whether the amount is zero.
     #[must_use]
-    pub const fn is_zero(&self) -> bool {
-        self.amount.units == 0
+    pub fn is_zero(&self) -> bool {
+        self.amount.units.is_zero()
     }
 
     /// Whether the amount is above zero.
     #[must_use]
-    pub const fn is_positive(&self) -> bool {
-        self.amount.units > 0
+    pub fn is_positive(&self) -> bool {
+        self.amount.units.is_positive()
     }
 
     /// Whether the amount is below zero.
     #[must_use]
-    pub const fn is_negative(&self) -> bool {
-        self.amount.units < 0
+    pub fn is_negative(&self) -> bool {
+        self.amount.units.is_negative()
     }
 
     /// −1, 0 or 1.
     #[must_use]
-    pub const fn signum(&self) -> i8 {
-        self.amount.units.signum() as i8
+    pub fn signum(&self) -> i8 {
+        self.amount.units.signum()
+    }
+}
+
+impl Neg for &AnyMoney {
+    type Output = AnyMoney;
+
+    /// `−self`.
+    fn neg(self) -> AnyMoney {
+        self.with_amount(self.amount.neg())
+    }
+}
+
+impl Neg for AnyMoney {
+    type Output = AnyMoney;
+
+    /// `−self`.
+    fn neg(self) -> AnyMoney {
+        -&self
     }
 }
 
