@@ -190,7 +190,7 @@ impl Ratio {
 
     /// An exact decimal `digits × 10^−scale` as a reduced ratio.
     pub(crate) fn from_decimal(decimal: Decimal) -> Self {
-        let Decimal { digits, scale } = decimal;
+        let Decimal { digits, scale, .. } = decimal;
         // the denominator is a power of ten, so the reduction can't fail
         Self::reduced(digits, Int::ONE.mul_pow10(u32::from(scale))).unwrap_or(Self::ZERO)
     }

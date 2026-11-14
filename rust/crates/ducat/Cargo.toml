@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde", "allocate", "cash"]
+default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std", "num-bigint/std", "num-integer/std", "num-traits/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
@@ -22,6 +22,10 @@ cash = []
 exact = []
 ## Exchange rates: `Rate`, inverses, chains and conversions (`ducat::convert`).
 convert = ["exact"]
+## Percentages, discounts, and adding and extracting tax (`ducat::tax`).
+tax = []
+## `Fixed`, an exact decimal without a currency (`ducat::fixed`).
+fixed = []
 ## `Serialize` and `Deserialize` as `{"amount":"12.34","currency":"EUR"}`.
 serde = ["dep:serde"]
 

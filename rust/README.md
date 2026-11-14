@@ -19,7 +19,8 @@ assert_eq!(gross.to_string(), "26.88 EUR");
 - Factors and rates are exact `Ratio`s.
 
 Status: the core (parsing, rounding, add, subtract, multiply, divide, convert at a rate, compare, serde), allocation
-(allocate, split, instalments, schedule, chunk), cash rounding, and the conformance runner. See [docs/design.md](docs/design.md).
+(allocate, split, instalments, schedule, chunk), cash rounding, tax (percentages, discounts, adding and extracting
+tax), `Fixed` decimals, and the conformance runner. See [docs/design.md](docs/design.md).
 
 ## Conformance
 

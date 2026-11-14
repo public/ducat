@@ -57,6 +57,8 @@ mod decimal;
 mod error;
 #[cfg(feature = "exact")]
 pub mod exact;
+#[cfg(feature = "fixed")]
+pub mod fixed;
 mod int;
 #[cfg(feature = "iso")]
 pub mod iso;
@@ -67,6 +69,8 @@ mod ratio;
 mod rounding;
 #[cfg(feature = "serde")]
 mod serde_impl;
+#[cfg(feature = "tax")]
+pub mod tax;
 mod wide;
 
 pub use amount::Factor;

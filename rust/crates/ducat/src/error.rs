@@ -58,6 +58,8 @@ pub enum Error {
     /// A schedule that can't add up to its total: more than one rest tranche, percentages over
     /// 100, tranches that exceed the total, or a leftover with no rest tranche.
     InvalidSchedule,
+    /// A tax percentage of −100 or below, which no net amount can be extracted from.
+    InvalidPercent,
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -98,7 +100,8 @@ impl Error {
             | Self::NegativeWeight
             | Self::NotPositive
             | Self::NegativeTotal
-            | Self::InvalidSchedule => ErrorKind::Range,
+            | Self::InvalidSchedule
+            | Self::InvalidPercent => ErrorKind::Range,
         }
     }
 }
@@ -134,6 +137,7 @@ impl fmt::Display for Error {
             Self::InvalidSchedule => f.write_str(
                 "the tranches can't add up to the total: one rest at most, percentages at most 100, no more than the total, and a rest for any leftover",
             ),
+            Self::InvalidPercent => f.write_str("a tax percentage must be greater than -100"),
         }
     }
 }
