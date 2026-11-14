@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto"]
+default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto", "stripe", "adyen", "checkout", "paypal", "braintree", "klarna"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std", "num-bigint/std", "num-integer/std", "num-traits/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
@@ -27,6 +27,18 @@ historic = []
 territories = []
 ## Crypto currencies and tokens, and base units (`ducat::crypto`).
 crypto = []
+## Stripe's amounts, to and from its API (`ducat::processors::stripe`).
+stripe = []
+## Adyen's amounts (`ducat::processors::adyen`).
+adyen = []
+## Checkout.com's amounts (`ducat::processors::checkout`).
+checkout = []
+## PayPal's amounts, decimal strings (`ducat::processors::paypal`).
+paypal = []
+## Braintree's amounts, decimal strings (`ducat::processors::braintree`).
+braintree = []
+## Klarna's amounts, ISO minor units (`ducat::processors::klarna`).
+klarna = []
 ## `ExactMoney`, exact rational amounts that round once at the end (`ducat::exact`).
 exact = []
 ## Exchange rates: `Rate`, inverses, chains and conversions (`ducat::convert`).

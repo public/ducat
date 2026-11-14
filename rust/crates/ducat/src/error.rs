@@ -155,6 +155,14 @@ pub enum Error {
     InvalidNumericCode,
     /// No cash-rounding rule applies to the currency (EUR needs a country), so there is no cash policy.
     NoCashRule,
+    /// A currency the payment processor doesn't list.
+    UnsupportedCurrency,
+    /// A negative amount for a processor field that refuses them (send refunds as positive amounts).
+    NegativeAmount,
+    /// A zero amount for a processor field that refuses it (Braintree).
+    ZeroAmount,
+    /// A processor amount beyond what it takes: an integer beyond 2^53 − 1, or more than 15 digits before PayPal's point.
+    AmountTooLarge,
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -243,7 +251,11 @@ impl Error {
             | Self::BeyondLastTier
             | Self::NoAmounts
             | Self::InvalidNumericCode
-            | Self::NoCashRule => ErrorKind::Range,
+            | Self::NoCashRule
+            | Self::UnsupportedCurrency
+            | Self::NegativeAmount
+            | Self::ZeroAmount
+            | Self::AmountTooLarge => ErrorKind::Range,
         }
     }
 }
@@ -327,6 +339,10 @@ impl fmt::Display for Error {
             Self::NoAmounts => f.write_str("an average needs at least one amount"),
             Self::InvalidNumericCode => f.write_str("an ISO 4217 numeric code is one to three digits"),
             Self::NoCashRule => f.write_str("no cash-rounding rule applies to this currency (EUR needs a country)"),
+            Self::UnsupportedCurrency => f.write_str("the payment processor doesn't list this currency"),
+            Self::NegativeAmount => f.write_str("the processor doesn't take negative amounts; send refunds as positive amounts"),
+            Self::ZeroAmount => f.write_str("the processor's amounts must be greater than zero"),
+            Self::AmountTooLarge => f.write_str("the amount is too large for the processor"),
         }
     }
 }

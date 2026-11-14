@@ -22,7 +22,7 @@ Status: the core (parsing, rounding, add, subtract, multiply, divide, convert at
 (allocate, split, instalments, schedule, chunk), cash rounding, tax (percentages, discounts, adding and extracting
 tax), `Fixed` decimals, `ExactMoney`, exchange rates (`Rate`), finance (day counts, interest, loans, savings,
 proration), Excel's functions, rounding policies, pricing and tiers, math, currency data (historic codes, territories, crypto units, cash
-rules), and the conformance runner. See [docs/design.md](docs/design.md).
+rules), payment processors (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna), and the conformance runner. See [docs/design.md](docs/design.md).
 
 ## Conformance
 
