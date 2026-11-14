@@ -24,9 +24,9 @@ const MONTHS = [
   'november',
   'december',
 ];
-const DAY_CUBE = /<Cube\s+time=["'](\d{4}-\d\d-\d\d)["']\s*>([\s\S]*?)<\/Cube>/g;
-// One <Cube .../> element, and its attributes in any order and with any quoting or spacing.
-const INNER_CUBE = /<Cube\b([^>]*?)\/?>/g;
+// A <Cube ...>, <Cube .../> or </Cube> tag, and its attributes in any order, quoting or spacing.
+const CUBE_TAG = /<(\/?)Cube\b([^>]*?)(\/?)>/g;
+const DAY_ATTRIBUTES = /^\s+time=["'](\d{4}-\d\d-\d\d)["']\s*$/;
 const ATTRIBUTE = /([A-Za-z]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 const RATE_TEXT = /^\d+(?:\.\d+)?$/;
 const ISO_DAY = /^(\d{4})-(\d\d)-(\d\d)$/;
@@ -95,31 +95,27 @@ function withoutByteOrderMark(text: string): string {
   return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 }
 
-/** The currency → rate attributes of the <Cube> elements in one day's cube. */
-function ratesOfDay(body: string): Record<string, string> {
-  const rates: Record<string, string> = {};
-  for (const [, attributeText] of body.matchAll(INNER_CUBE)) {
-    const attributes: Record<string, string> = {};
-    for (const [, name, doubleQuoted, singleQuoted] of attributeText!.matchAll(ATTRIBUTE)) {
-      attributes[name!] = doubleQuoted ?? singleQuoted!;
-    }
-    const currency = attributes['currency'];
-    const rate = attributes['rate'];
-    if (currency === undefined && rate === undefined) {
-      continue;
-    }
-    // Fail rather than silently drop a currency: a missing rate would look like "not quoted".
-    if (
-      currency === undefined ||
-      !/^[A-Z]{3}$/.test(currency) ||
-      rate === undefined ||
-      !RATE_TEXT.test(rate)
-    ) {
-      throw new SyntaxError(`Malformed ECB rate entry <Cube${attributeText}>`);
-    }
-    rates[currency] = rate;
+/** Adds the currency → rate attributes of one <Cube> in a day's cube to `rates`. */
+function addRate(rates: Record<string, string>, attributeText: string): void {
+  const attributes: Record<string, string> = {};
+  for (const [, name, doubleQuoted, singleQuoted] of attributeText.matchAll(ATTRIBUTE)) {
+    attributes[name!] = doubleQuoted ?? singleQuoted!;
   }
-  return rates;
+  const currency = attributes['currency'];
+  const rate = attributes['rate'];
+  if (currency === undefined && rate === undefined) {
+    return;
+  }
+  // Fail rather than silently drop a currency: a missing rate would look like "not quoted".
+  if (
+    currency === undefined ||
+    !/^[A-Z]{3}$/.test(currency) ||
+    rate === undefined ||
+    !RATE_TEXT.test(rate)
+  ) {
+    throw new SyntaxError(`Malformed ECB rate entry <Cube${attributeText}>`);
+  }
+  rates[currency] = rate;
 }
 
 /**
@@ -135,16 +131,44 @@ export function parseEcbXml(xml: string, options?: EcbOptions): RateTable[] {
   checkAvailableAt(options?.availableAt);
   let days = 0;
   const tables: RateTable[] = [];
-  for (const [, asOf, body] of withoutByteOrderMark(xml).matchAll(DAY_CUBE)) {
-    days++;
-    const day = isoDay(asOf!);
-    const rates = ratesOfDay(body!);
-    if (Object.keys(rates).length > 0) {
-      tables.push(ecbTable(day, rates, options?.availableAt));
+  // The Cube elements must nest: a day's rates end at its own closing tag, and an inner cube may
+  // be written <Cube .../> or <Cube ...></Cube>.
+  let depth = 0;
+  let day: { asOf: string; rates: Record<string, string> } | undefined;
+  let open: string | undefined;
+  for (const [, close, attributes, selfClosing] of withoutByteOrderMark(xml).matchAll(CUBE_TAG)) {
+    if (close) {
+      if (open !== undefined) {
+        addRate(day!.rates, open);
+        open = undefined;
+      } else if (day !== undefined) {
+        if (Object.keys(day.rates).length > 0) {
+          tables.push(ecbTable(day.asOf, day.rates, options?.availableAt));
+        }
+        day = undefined;
+      }
+      depth--;
+    } else if (open !== undefined) {
+      notAnEcbFile();
+    } else if (day !== undefined && selfClosing) {
+      addRate(day.rates, attributes!);
+    } else if (day !== undefined) {
+      open = attributes;
+      depth++;
+    } else if (!selfClosing) {
+      const time = DAY_ATTRIBUTES.exec(attributes!);
+      if (time !== null) {
+        days++;
+        day = { asOf: isoDay(time[1]!), rates: {} };
+      }
+      depth++;
+    }
+    if (depth < 0) {
+      notAnEcbFile();
     }
   }
 
-  if (days === 0) {
+  if (days === 0 || depth !== 0) {
     notAnEcbFile();
   }
   return newestFirst(tables);

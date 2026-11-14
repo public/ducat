@@ -82,6 +82,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `parseEcbXml` ends each day at its own closing tag, so a day whose rates are written
+  `<Cube …></Cube>` keeps all of them, where it used to keep only the first and drop the rest
+  without an error; cubes that don't nest (an unclosed day, a stray `</Cube>`) now throw
+  `SyntaxError`.
 - A chained rate's `validUntil` is the one that ends first, with a date compared as its whole UTC
   day: `andThen` of a rate valid until `'2026-11-06'` and one valid until `'2026-11-06T15:00:00Z'`
   now ends at 15:00, where it used to keep the date and stay valid after one leg had expired.

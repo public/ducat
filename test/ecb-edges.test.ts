@@ -89,6 +89,20 @@ describe('the XML layout', () => {
     ]);
   });
 
+  it('ends a day at its own closing tag, keeping every rate written <Cube ...></Cube>', () => {
+    const closed = "<Cube currency='USD' rate='1.1'></Cube><Cube currency='JPY' rate='170'></Cube>";
+    const [table] = parseEcbXml(xml(day(closed)));
+    expect(table!.rates.map((rate) => `${rate.to} ${rate}`)).toEqual(['USD 1.1', 'JPY 170']);
+    // cubes that don't nest: an unclosed day, a stray </Cube>, an inner cube left open
+    for (const body of [
+      "<Cube time='2026-11-06'><Cube currency='USD' rate='1.1'/>",
+      `${day("<Cube currency='USD' rate='1.1'/>")}</Cube>`,
+      day("<Cube currency='USD' rate='1.1'><Cube currency='JPY' rate='170'/></Cube>"),
+    ]) {
+      expect(() => parseEcbXml(xml(body))).toThrow(notEcb);
+    }
+  });
+
   it('skips an empty inner cube, rejects a malformed one', () => {
     expect(parseEcbXml(xml(day("<Cube/><Cube currency='USD' rate='1.1'/>")))[0]!.rates.length).toBe(
       1,
