@@ -94,6 +94,18 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `parse` no longer turns a positive amount negative when the currency's long name has a
+  parenthesis or a hyphen: `parse(format(money('1.0000', 'CLF'), 'en', { currencyDisplay: 'name' }),
+  'CLF', 'en')` read `1.0000 Chilean units of account (UF)` as -1.0000, and BAM's
+  `Bosnia-Herzegovina convertible marks` did the same. The currency's own symbol, narrow symbol,
+  code and long names, as Intl writes them for the locale, now count as a whole and add no sign.
+- `parse` reads its own `format` output where the currency's symbol or name holds a character the
+  affixes otherwise refuse: PEN's `S/` in es-PE, PAB's `B/.` in es-PA, XOF's symbol in si (a
+  virama), Malayalam names (a virama) and French's `unité d’investissement chilienne`; so does
+  `parseMoney` for `S/ 1,234.50` in es-PE. Any other character around the number is still a
+  `SyntaxError`, and garbage beside a real symbol still fails.
+- `parse` accepts a long name's number grouped as the long name groups it, where that differs from
+  the symbol form (ml and mr write a name's number in lakhs).
 - Malformed or explosive custom rule text in `spellOut` and `amountInWords` now throws instead of
   hanging or overflowing the stack: an unclosed `[`, `$(` or substitution, a radix below 2, or a
   `>>>` with no rule before it is a `SyntaxError`, and rules nested more than 64 deep or needing more
