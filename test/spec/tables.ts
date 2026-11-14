@@ -94,7 +94,6 @@ import {
   type RateTableSpec,
 } from '../../src/provider.js';
 import { bag, sortByValue } from '../../src/bag.js';
-import { vi } from 'vitest';
 import {
   addTax,
   allocate,
@@ -716,18 +715,38 @@ function derive(row: Row): RateJSON {
   return rate.toJSON();
 }
 
-/** A conversion with strictValidity, with the system clock set to the row's `now`. */
+/**
+ * Runs `run` with the clock fixed at `now`: `new Date()` and `Date.now()` give that instant. A
+ * `Date` subclass rather than vitest's fake timers, which `bun test` doesn't support the same way,
+ * so the rows run alike on Node, Bun and Deno. ducat reads the clock only through `new Date()`.
+ */
+function atClock<T>(now: string, run: () => T): T {
+  const RealDate = globalThis.Date;
+  const fixed = new RealDate(now).getTime();
+  class FixedDate extends RealDate {
+    constructor(value?: number | string | Date) {
+      super(value === undefined ? fixed : value);
+    }
+    static override now(): number {
+      return fixed;
+    }
+  }
+  globalThis.Date = FixedDate as DateConstructor;
+  try {
+    return run();
+  } finally {
+    globalThis.Date = RealDate;
+  }
+}
+
+/** A conversion with strictValidity, with the clock at the row's `now`. */
 function strictConvert(row: Row): string {
   const rate = rateOfSpec(row['rate'] as RateSpec);
-  vi.useFakeTimers({ toFake: ['Date'] });
-  try {
-    vi.setSystemTime(new Date(text(row, 'now')));
-    const amount = moneyOf(text(row, 'amount'), rate.from);
-    const rounding = row['rounding'] as RoundingMode;
-    return rate.convert(amount, rounding, { strictValidity: true }).toDecimal();
-  } finally {
-    vi.useRealTimers();
-  }
+  const amount = moneyOf(text(row, 'amount'), rate.from);
+  const rounding = row['rounding'] as RoundingMode;
+  return atClock(text(row, 'now'), () =>
+    rate.convert(amount, rounding, { strictValidity: true }).toDecimal(),
+  );
 }
 
 const RATE_OPERATIONS: Record<string, TableOperation> = {
