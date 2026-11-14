@@ -13,7 +13,7 @@ const roundTrip = (amount: string, currency: string, locale: string, options?: o
 
 describe('parse: a name with a parenthesis or hyphen is not a sign', () => {
   it('reads positive amounts whose long name has a sign character as positive', () => {
-    const name = { currencyDisplay: 'name' };
+    const name = { currencyDisplay: 'name' } as const;
     expect(format(money('1.0000', 'CLF'), 'en', name)).toBe('1.0000 Chilean units of account (UF)');
     expect(roundTrip('1.0000', 'CLF', 'en', name)).toBe('1.0000');
     expect(format(money('5.00', 'BAM'), 'en', name)).toBe(
@@ -38,7 +38,7 @@ describe('parse: the currency’s own text outside the affix class', () => {
   });
 
   it('reads long names with a virama or a typographic apostrophe', () => {
-    const name = { currencyDisplay: 'name' };
+    const name = { currencyDisplay: 'name' } as const;
     expect(roundTrip('5.00', 'USD', 'ml', name)).toBe('5.00');
     expect(format(money('1.0000', 'CLF'), 'fr', name)).toContain(
       'unité d’investissement chilienne',
