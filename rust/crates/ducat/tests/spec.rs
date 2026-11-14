@@ -27,6 +27,9 @@ use ducat::iso::Eur;
 use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Ratio, Rounding};
 use serde_json::Value;
 
+#[path = "spec/excel.rs"]
+mod excel;
+
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
 /// count), never silently lost.
 const CASES_PER_AREA: &[(&str, usize)] = &[
@@ -45,45 +48,7 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
 
 /// Operations the runner knows about but the Rust port doesn't implement yet, with the milestone
 /// that brings them. Each is named in full, so a new operation in the spec is an error here.
-const NOT_YET: &[(&str, &str)] = &[
-    ("xnpv.scaled", "not yet: milestone 4 (excel)"),
-    ("xirr.floor", "not yet: milestone 4 (excel)"),
-    ("excel.annuities", "not yet: milestone 4 (excel)"),
-    ("excel.nper", "not yet: milestone 4 (excel)"),
-    ("excel.rate", "not yet: milestone 4 (excel)"),
-    ("excel.xnpv", "not yet: milestone 4 (excel)"),
-    ("excel.xirr", "not yet: milestone 4 (excel)"),
-    ("excelExample.npv", "not yet: milestone 4 (excel)"),
-    ("excelExample.irr", "not yet: milestone 4 (excel)"),
-    ("excelExample.rri", "not yet: milestone 4 (excel)"),
-    ("excelExample.effect", "not yet: milestone 4 (excel)"),
-    ("excelExample.fv", "not yet: milestone 4 (excel)"),
-    ("excelExample.pv", "not yet: milestone 4 (excel)"),
-    ("excelExample.pmt", "not yet: milestone 4 (excel)"),
-    ("excelExample.xnpv", "not yet: milestone 4 (excel)"),
-    ("excelExample.nper", "not yet: milestone 4 (excel)"),
-    ("excelExample.rate", "not yet: milestone 4 (excel)"),
-    ("excelExample.xirr", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.npv", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.irr", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.periodicRate", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.annualRate", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.fv", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.pv", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.pmt", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.nper", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.rate", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.xnpv", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.xirr", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.edge.fv", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.edge.pv", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.edge.pmt", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.edge.nper", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.edge.rate", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.edge.xnpv", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.edge.xirr", "not yet: milestone 4 (excel)"),
-    ("words.spellOut", "not yet: milestone 6 (ducat-icu)"),
-];
+const NOT_YET: &[(&str, &str)] = &[("words.spellOut", "not yet: milestone 6 (ducat-icu)")];
 
 fn not_yet(op: &str) -> Option<&'static str> {
     NOT_YET
@@ -759,6 +724,9 @@ fn proration_row(row: &Value) -> Fields {
 }
 
 fn row_op(op: &str) -> Option<RowOp> {
+    if let Some(run) = excel::row_op(op) {
+        return Some(run);
+    }
     fn start(row: &Value) -> Result<AnyMoney, Error> {
         Ok(AnyMoney::from_minor(
             minor_of(string(row, "minor")),
@@ -1106,7 +1074,13 @@ fn mutated_row(run: RowOp, row: &Value) -> Value {
     let (name, _) = run(row).into_iter().next().expect("a field");
     let mut changed = row.clone();
     changed[name] = match &row[name] {
-        Value::String(text) => Value::String(format!("{text}1")),
+        // a number stays a number, 9 prepended to its digits, which no tolerance in the tables
+        // absorbs; other text gets a 1 appended
+        Value::String(text) => Value::String(match text.strip_prefix('-') {
+            Some(rest) if rest.starts_with(|c: char| c.is_ascii_digit()) => format!("-9{rest}"),
+            None if text.starts_with(|c: char| c.is_ascii_digit()) => format!("9{text}"),
+            _ => format!("{text}1"),
+        }),
         Value::Array(items) if !items.is_empty() => {
             let mut items = items.clone();
             items.reverse();
@@ -1407,13 +1381,27 @@ fn main() -> ExitCode {
                 continue;
             };
             for (index, row) in rows.iter().enumerate() {
+                // a table's parameters (Microsoft's stated accuracy) reach its rows as `$parameters`
+                let with_parameters;
+                let row = match table.get("parameters") {
+                    Some(parameters) => {
+                        let mut copy = row.clone();
+                        copy["$parameters"] = parameters.clone();
+                        with_parameters = copy;
+                        &with_parameters
+                    }
+                    None => row,
+                };
                 match judge_row(run, row) {
                     Err(reason) => *tally.skipped.entry(reason).or_default() += 1,
                     Ok((true, _)) => {
                         tally.passed += 1;
                         if mutation_checked.insert(op.to_owned()) {
                             let changed = mutated_row(run, row);
-                            if !matches!(judge_row(run, &changed), Ok((false, _))) {
+                            excel::COUNTING.store(false, std::sync::atomic::Ordering::Relaxed);
+                            let still = judge_row(run, &changed);
+                            excel::COUNTING.store(true, std::sync::atomic::Ordering::Relaxed);
+                            if !matches!(still, Ok((false, _))) {
                                 errors.push(format!(
                                     "{relative} row {index}: a changed expectation still passes"
                                 ));
@@ -1431,6 +1419,7 @@ fn main() -> ExitCode {
         }
     }
 
+    errors.extend(excel::threshold_problems());
     for &(area, want) in CASES_PER_AREA {
         let got = per_area.get(area).copied().unwrap_or(0);
         if got != want {
@@ -1485,6 +1474,10 @@ fn main() -> ExitCode {
     )
     .unwrap();
     println!("{report}");
+    println!("Calc rows by how they passed (ducat's thresholds are checked):");
+    for line in excel::count_lines() {
+        println!("  {line}");
+    }
 
     for failure in failures.iter().take(40) {
         println!("FAIL {failure}");

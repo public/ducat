@@ -20,7 +20,7 @@ const MAX_ROOT_SIZE: u32 = 50_000;
 const MAX_DOUBLINGS: u32 = 1024;
 
 /// The flows' units at one common scale (the largest), with their currency.
-pub(super) fn flow_units<M: MoneyKind>(flows: &[M]) -> Result<(Vec<Int>, u16), Error> {
+pub(crate) fn flow_units<M: MoneyKind>(flows: &[M]) -> Result<(Vec<Int>, u16), Error> {
     let first = flows.first().ok_or(Error::NoFlows)?;
     let currency = first.parts().2;
     let mut scale = 0;
@@ -46,7 +46,7 @@ pub(super) fn flow_units<M: MoneyKind>(flows: &[M]) -> Result<(Vec<Int>, u16), E
 
 /// `Σ flowₜ · bᵗ · q^(n−t)` for a rate of `(q − b)/b`: the NPV times `q^n`, by Horner's rule. `q^n`
 /// is positive for a rate above −1, so this has the NPV's sign.
-pub(super) fn scaled_present_value(units: &[Int], growth: &Int, base: &Int) -> Int {
+pub(crate) fn scaled_present_value(units: &[Int], growth: &Int, base: &Int) -> Int {
     let mut accumulator = units[0].clone();
     let mut base_power = Int::ONE;
     for flow in &units[1..] {
@@ -147,6 +147,17 @@ pub fn npv<M: MoneyKind>(rate: impl Factor, flows: &[M], rounding: Rounding) -> 
     discounted(rate, flows, rounding, true)
 }
 
+/// Excel's NPV, exactly (see [`npv`]).
+///
+/// # Errors
+///
+/// As [`discounted_sum`], without the rounding.
+#[cfg(feature = "excel")]
+pub fn npv_exact<M: MoneyKind>(rate: impl Factor, flows: &[M]) -> Result<M::Exact, Error> {
+    let (numerator, denominator) = discounted_value(&rate.to_ratio()?, flows, true)?;
+    Ok(flows[0].exact_in(Ratio::new(numerator, denominator)?))
+}
+
 /// A rate known to `digits` decimal places: the grid point `lower` (in units of 10^−digits) at or
 /// below it, and `upper = lower + 10^−digits` above it.
 ///
@@ -158,6 +169,12 @@ pub struct GridRate {
 }
 
 impl GridRate {
+    /// The grid point `grid` at `digits` places.
+    #[cfg(feature = "excel")]
+    pub(crate) const fn new(grid: Int, digits: u16) -> Self {
+        Self { grid, digits }
+    }
+
     /// The lower end in units of 10^−digits: the rate floored to `digits` places, scaled by
     /// 10^digits.
     #[must_use]
@@ -202,7 +219,7 @@ impl fmt::Display for GridRate {
     }
 }
 
-fn check_digits(digits: u16) -> Result<Int, Error> {
+pub(crate) fn check_digits(digits: u16) -> Result<Int, Error> {
     if digits > MAX_DIGITS {
         return Err(Error::InvalidDigits);
     }
@@ -211,7 +228,7 @@ fn check_digits(digits: u16) -> Result<Int, Error> {
 
 #[cfg(feature = "excel")]
 /// Sign changes in the flows, zeros skipped, and the sign of the first non-zero flow.
-fn sign_changes(units: &[Int]) -> (usize, i8) {
+pub(crate) fn sign_changes(units: &[Int]) -> (usize, i8) {
     let (mut changes, mut first, mut previous) = (0, 0, 0);
     for flow in units {
         let sign = flow.signum();
@@ -229,7 +246,7 @@ fn sign_changes(units: &[Int]) -> (usize, i8) {
     (changes, first)
 }
 
-fn half(value: &Int) -> Int {
+pub(crate) fn half(value: &Int) -> Int {
     // truncated toward zero, as bigint division is in ducat
     value.div_rem(&Int::from(2u8)).0
 }
@@ -239,13 +256,13 @@ fn half(value: &Int) -> Int {
 /// with one sign change from 0 (the root is negative when the value at 0 has the first flow's
 /// sign, else positive, found by doubling, at most 1,024 times). `sign_at` takes a grid point,
 /// `sign_at_rate` an exact rate; `result` turns the grid point found into the answer.
-pub(super) fn bisect_rate<R>(
-    sign_at: impl Fn(&Int) -> i8,
+pub(crate) fn bisect_rate<R>(
+    sign_at: impl Fn(&Int) -> Result<i8, Error>,
     result: impl Fn(Int) -> Result<R, Error>,
     unit: &Int,
     first_sign: i8,
     bracket: Option<(&Ratio, &Ratio)>,
-    sign_at_rate: impl Fn(&Ratio) -> i8,
+    sign_at_rate: impl Fn(&Ratio) -> Result<i8, Error>,
 ) -> Result<R, Error> {
     let (mut low, mut high, low_sign);
     if let Some(bracket) = bracket {
@@ -259,7 +276,7 @@ pub(super) fn bisect_rate<R>(
         // One sign change: by Descartes' rule of signs in 1/(1 + rate) there is one IRR above −1.
         // The NPV has the first flow's sign for large rates and the last flow's sign near −1, and
         // that the search below finds that root is argued from these signs, not proved here.
-        let zero_sign = sign_at(&Int::ZERO);
+        let zero_sign = sign_at(&Int::ZERO)?;
         if zero_sign == 0 {
             return result(Int::ZERO);
         }
@@ -272,7 +289,7 @@ pub(super) fn bisect_rate<R>(
             (low, high, low_sign) = (Int::ZERO, unit.clone(), zero_sign);
             let mut doublings = 0;
             loop {
-                let high_sign = sign_at(&high);
+                let high_sign = sign_at(&high)?;
                 if high_sign == 0 {
                     return result(high);
                 }
@@ -293,7 +310,7 @@ pub(super) fn bisect_rate<R>(
     // digits asked for, and each step halves the bracket.
     while &high - &low > Int::ONE {
         let middle = half(&(&low + &high));
-        let middle_sign = sign_at(&middle);
+        let middle_sign = sign_at(&middle)?;
         if middle_sign == 0 {
             return result(middle);
         }
@@ -319,15 +336,15 @@ enum Grid {
 /// bracket ends first, so the root found is argued to be one inside the bracket (ducat#307).
 fn bracket_to_grid(
     (low_rate, high_rate): (&Ratio, &Ratio),
-    sign_at_rate: &impl Fn(&Ratio) -> i8,
+    sign_at_rate: &impl Fn(&Ratio) -> Result<i8, Error>,
     unit: &Int,
-    sign_at: &impl Fn(&Int) -> i8,
+    sign_at: &impl Fn(&Int) -> Result<i8, Error>,
 ) -> Result<Grid, Error> {
     if low_rate >= high_rate || !(low_rate.numer() + low_rate.denom()).is_positive() {
         return Err(Error::InvalidBracket);
     }
-    let low_sign = sign_at_rate(low_rate);
-    let high_sign = sign_at_rate(high_rate);
+    let low_sign = sign_at_rate(low_rate)?;
+    let high_sign = sign_at_rate(high_rate)?;
     let floor_grid = |rate: &Ratio| (rate.numer() * unit).div_floor(rate.denom());
     // an end that is itself a root: the grid point at or below it
     if low_sign == 0 {
@@ -347,7 +364,7 @@ fn bracket_to_grid(
         // no grid point inside: the root is between the two around the bracket
         return Ok(Grid::Point(grid_high));
     }
-    let grid_low_sign = sign_at(&grid_low);
+    let grid_low_sign = sign_at(&grid_low)?;
     if grid_low_sign == 0 {
         return Ok(Grid::Point(grid_low));
     }
@@ -358,7 +375,7 @@ fn bracket_to_grid(
     let grid_high_sign = if grid_high == grid_low {
         grid_low_sign
     } else {
-        sign_at(&grid_high)
+        sign_at(&grid_high)?
     };
     if grid_high_sign == 0 || grid_high_sign == low_sign {
         // a root on the last grid point, or between it and the bracket's high end
@@ -420,9 +437,9 @@ pub fn irr<M: MoneyKind>(
         return Err(Error::SeveralSignChanges);
     }
     // a rate of m / 10^digits: its growth factor is (10^digits + m) / 10^digits
-    let sign_at = |grid: &Int| scaled_present_value(&units, &(&unit + grid), &unit).signum();
+    let sign_at = |grid: &Int| Ok(scaled_present_value(&units, &(&unit + grid), &unit).signum());
     let sign_at_rate = |rate: &Ratio| {
-        scaled_present_value(&units, &(rate.numer() + rate.denom()), rate.denom()).signum()
+        Ok(scaled_present_value(&units, &(rate.numer() + rate.denom()), rate.denom()).signum())
     };
     let result = |grid: Int| {
         // the NPV is undefined at −1, so a lower end there is no answer
@@ -457,7 +474,7 @@ fn one_plus(rate: &Ratio) -> Result<Ratio, Error> {
 }
 
 /// The integer `power`th root of a positive integer, if it is a perfect `power`th power.
-fn exact_root(value: &Int, power: u32) -> Option<Int> {
+pub(crate) fn exact_root(value: &Int, power: u32) -> Option<Int> {
     // value has `bits` bits, so its root lies in [2^⌊(bits−1)/power⌋, 2^(⌊(bits−1)/power⌋ + 1))
     let bits = value.bits();
     if u64::from(power) >= bits {
