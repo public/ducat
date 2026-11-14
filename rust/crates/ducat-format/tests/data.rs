@@ -207,6 +207,17 @@ fn currency(code: &str, entry: &Value) -> String {
     )
 }
 
+/// The languages with a locale in the snapshot (root aside).
+fn languages_of(
+    entries: &[(String, String, String, Value, String, Vec<String>)],
+) -> BTreeSet<String> {
+    entries
+        .iter()
+        .map(|(_, lang, ..)| lang.clone())
+        .filter(|lang| lang != "und")
+        .collect()
+}
+
 struct Generated {
     data: String,
     icu: String,
@@ -339,6 +350,9 @@ fn generate() -> Generated {
     // which languages need which: a locale inheriting from another language's locale
     let mut needs: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut numbers_users: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    // each distinct number block is named after the first locale (in code order) that uses it, so
+    // a CLDR update renames few of them
+    let mut numbers_names: BTreeMap<String, String> = BTreeMap::new();
     let mut plural_users: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut entries = Vec::new();
     for locale in &locales {
@@ -360,6 +374,9 @@ fn generate() -> Generated {
         }
         let numbers_json = json(&format!("main/{locale}/numbers.json"));
         let body = numbers(locale, &numbers_json["main"][locale]["numbers"], systems);
+        numbers_names
+            .entry(body.clone())
+            .or_insert_with(|| ident("NUMBERS", locale));
         numbers_users
             .entry(body)
             .or_default()
@@ -393,12 +410,6 @@ fn generate() -> Generated {
         ));
     }
 
-    let numbers_ids: BTreeMap<&String, usize> = numbers_users
-        .keys()
-        .enumerate()
-        .map(|(index, body)| (body, index))
-        .collect();
-
     let mut out = String::new();
     writeln!(
         out,
@@ -419,15 +430,15 @@ fn generate() -> Generated {
     writeln!(out).unwrap();
     writeln!(out, "/// The CLDR release of these tables.").unwrap();
     writeln!(out, "pub(crate) const CLDR_VERSION: &str = \"48.0\";").unwrap();
-    for (body, users) in &numbers_users {
+    let mut blocks: Vec<(&String, &String)> = numbers_names
+        .iter()
+        .map(|(body, name)| (name, body))
+        .collect();
+    blocks.sort();
+    for (name, body) in blocks {
         writeln!(out).unwrap();
-        write!(out, "{}", cfg(users)).unwrap();
-        writeln!(
-            out,
-            "static NUMBERS_{}: Numbers = {body};",
-            numbers_ids[body]
-        )
-        .unwrap();
+        write!(out, "{}", cfg(&numbers_users[body])).unwrap();
+        writeln!(out, "static {name}: Numbers = {body};").unwrap();
     }
     for (key, users) in &plural_users {
         writeln!(out).unwrap();
@@ -451,13 +462,16 @@ fn generate() -> Generated {
         write!(out, "{}", cfg(&users)).unwrap();
         writeln!(
             out,
-            "static {}: LocaleData = LocaleData {{ name: {locale:?}, parent: {parent:?}, numbers: &NUMBERS_{}, plurals: {}, currencies: &[{}] }};",
+            "static {}: LocaleData = LocaleData {{ name: {locale:?}, parent: {parent:?}, numbers: &{}, plurals: {}, currencies: &[",
             ident("L", locale),
-            numbers_ids[&body],
+            numbers_names[&body],
             ident("PLURALS", key),
-            list.join(", ")
         )
         .unwrap();
+        for entry in list {
+            writeln!(out, "    {entry},").unwrap();
+        }
+        writeln!(out, "] }};").unwrap();
     }
     writeln!(out).unwrap();
     writeln!(
@@ -527,6 +541,57 @@ fn generate() -> Generated {
         writeln!(out, "        #[cfg(feature = {lang:?})] {tag:?} => true,").unwrap();
     }
     writeln!(out, "        _ => false,").unwrap();
+    writeln!(out, "    }}").unwrap();
+    writeln!(out, "}}").unwrap();
+
+    // the script a language-region tag means where it isn't the language's own (zh-TW is
+    // zh-Hant-TW, but zh is zh-Hans): from CLDR's likely subtags
+    let likely = &json("supplemental/likelySubtags.json")["supplemental"]["likelySubtags"];
+    let script_of = |value: &Value| text(value).split('-').nth(1).unwrap().to_owned();
+    let built = languages_of(&entries);
+    writeln!(out).unwrap();
+    writeln!(
+        out,
+        "/// The likely script of a language (`zh` is `Hans`) or of a `language-REGION` tag, where it"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "/// differs from the language's (CLDR's likely subtags): `zh-TW` is `Hant`, `sr-ME` `Latn`."
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "pub(crate) fn likely_script(tag: &str) -> Option<&'static str> {{"
+    )
+    .unwrap();
+    writeln!(out, "    match tag {{").unwrap();
+    for (key, value) in likely.as_object().unwrap() {
+        let Some((lang, _)) = key.split_once('-') else {
+            // a language's own script
+            if built.contains(key.as_str()) {
+                writeln!(
+                    out,
+                    "        #[cfg(feature = {key:?})] {key:?} => Some({:?}),",
+                    script_of(value)
+                )
+                .unwrap();
+            }
+            continue;
+        };
+        let Some(base) = likely.get(lang) else {
+            continue;
+        };
+        let script = script_of(value);
+        if script != script_of(base) && built.contains(lang) {
+            writeln!(
+                out,
+                "        #[cfg(feature = {lang:?})] {key:?} => Some({script:?}),"
+            )
+            .unwrap();
+        }
+    }
+    writeln!(out, "        _ => None,").unwrap();
     writeln!(out, "    }}").unwrap();
     writeln!(out, "}}").unwrap();
 

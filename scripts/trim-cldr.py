@@ -15,6 +15,7 @@ It checks the archive's sha256 against data/cldr/README.md's, then keeps only wh
 - cldr-core's list of available locales and default-content locales, which decide which tags
   have data (de-DE is de's default content; de-XX has none);
 - the en, de, fr, es, it, nl and pt list patterns, for ducat-words' word for "and";
+- the likely subtags of the kept languages, alone or with a region;
 - the Unicode License v3 the data is under.
 
 cldr-json's main/ files are already resolved (en-IN's carries everything it inherits), so no
@@ -186,6 +187,17 @@ def main() -> None:
         data = read(archive, "cldr-core/supplemental/numberingSystems.json")["supplemental"]
         systems_kept = {system: data["numberingSystems"][system] for system in sorted(systems)}
         write("supplemental/numberingSystems.json", {"supplemental": {"version": data["version"], "numberingSystems": systems_kept}})
+        # likely subtags of the kept languages, with or without a region: they give the script a
+        # tag such as zh-TW (zh-Hant-TW) or sr-ME (sr-Latn-ME) means
+        data = read(archive, "cldr-core/supplemental/likelySubtags.json")["supplemental"]
+        languages = {locale.split("-")[0] for locale in locales}
+        likely = {}
+        for key, value in sorted(data["likelySubtags"].items()):
+            parts = key.split("-")
+            region_only = len(parts) == 2 and (len(parts[1]) == 2 or parts[1].isdigit())
+            if parts[0] in languages and (len(parts) == 1 or region_only):
+                likely[key] = value
+        write("supplemental/likelySubtags.json", {"supplemental": {"version": data["version"], "likelySubtags": likely}})
         available = read(archive, "cldr-core/availableLocales.json")["availableLocales"]["full"]
         write("availableLocales.json", {"availableLocales": {"full": available}})
         write("defaultContent.json", read(archive, "cldr-core/defaultContent.json"))

@@ -153,6 +153,26 @@ fn language_and_region(name: &str) -> (&str, &str) {
     (language, region)
 }
 
+/// Drops subtags from the end of `start` until a built locale, or stops when the candidate is
+/// shorter than `floor` bytes. Returns the first candidate that is a built locale or the default
+/// content of one (the name the tag resolves to), and the data of the first built locale.
+fn walk(start: &str, floor: usize) -> Option<(&str, &'static LocaleData)> {
+    let mut candidate = start;
+    let mut resolved = None;
+    loop {
+        if candidate.len() < floor {
+            return None;
+        }
+        if let Some(found) = data::locale(candidate) {
+            return Some((resolved.unwrap_or(candidate), found));
+        }
+        if resolved.is_none() && data::is_default_content(candidate) {
+            resolved = Some(candidate);
+        }
+        candidate = &candidate[..candidate.rfind('-')?];
+    }
+}
+
 impl Locale {
     /// The locale for a BCP 47 tag (`"de-CH"`, `"ar-EG"`, `"sr-Latn-RS"`). Its data is the tag's
     /// own if the build has it, else its nearest ancestor's by TR35's fallback (`de-XX` is `de`,
@@ -165,24 +185,56 @@ impl Locale {
     pub fn new(tag: &str) -> Result<Self, Error> {
         let subtags = subtags(tag).ok_or(Error::InvalidLocale)?;
         let requested = normal(&subtags);
-        let mut candidate: &str = &requested;
-        let mut resolved_name: Option<&str> = None;
-        let data = loop {
-            if let Some(found) = data::locale(candidate) {
-                resolved_name.get_or_insert(candidate);
-                break found;
+        // A language-region tag is first looked up with its likely script, as CLDR's likely subtags
+        // give it: zh-TW is zh-Hant-TW, sr-ME sr-Latn-ME, zh-CN zh-Hans-CN. Without that script's
+        // locale in the build, the tag falls back as written.
+        let mut found = None;
+        if let (None, Some(region)) = (subtags.script, subtags.region) {
+            let language = subtags.language.to_ascii_lowercase();
+            let region = region.to_ascii_uppercase();
+            let mut key = String::with_capacity(language.len() + 1 + region.len());
+            key.push_str(&language);
+            key.push('-');
+            key.push_str(&region);
+            if let Some(script) =
+                data::likely_script(&key).or_else(|| data::likely_script(&language))
+            {
+                let scripted = normal(&Subtags {
+                    script: Some(script),
+                    ..subtags
+                });
+                // down to language-Script, never to the language, whose script is another
+                let floor = language.len() + 1 + script.len();
+                found = walk(&scripted, floor).map(|(name, data)| (String::from(name), data));
             }
-            if resolved_name.is_none() && data::is_default_content(candidate) {
-                resolved_name = Some(candidate);
-            }
-            match candidate.rfind('-') {
-                Some(at) => candidate = &candidate[..at],
-                None => break data::locale("und").ok_or(Error::InvalidLocale)?,
+        }
+        let (resolved_name, data) = match found {
+            Some(found) => found,
+            None => match walk(&requested, 0) {
+                Some((name, data)) => (String::from(name), data),
+                None => (
+                    String::new(),
+                    data::locale("und").ok_or(Error::InvalidLocale)?,
+                ),
+            },
+        };
+        // as ducat requires of Intl: data for the tag's own language and region, and for its script
+        // where it names one (uz-Arab isn't uz, whose script is Latn)
+        let language = subtags.language.to_ascii_lowercase();
+        let script_kept = match subtags.script {
+            None => true,
+            Some(script) => {
+                let resolved_script = resolved_name
+                    .split('-')
+                    .nth(1)
+                    .filter(|part| part.len() == 4)
+                    .or_else(|| data::likely_script(&language));
+                resolved_script.is_some_and(|found| found.eq_ignore_ascii_case(script))
             }
         };
-        // as ducat requires of Intl: data for the tag's own language and region
-        let has_data = resolved_name
-            .is_some_and(|name| language_and_region(name) == language_and_region(&requested));
+        let has_data = !resolved_name.is_empty()
+            && script_kept
+            && language_and_region(&resolved_name) == language_and_region(&requested);
         let numbers = icu::numbers(data.name).unwrap_or(data.numbers);
         Ok(Self {
             data,

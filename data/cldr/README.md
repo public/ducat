@@ -31,6 +31,8 @@ tests and vectors use):
 - `supplemental/plurals.json`, `supplemental/ordinals.json`: the plural rules of those locales and
   their languages;
 - `supplemental/numberingSystems.json`: the digits of the numbering systems used;
+- `supplemental/likelySubtags.json`: the likely subtags of the kept languages, alone or with a
+  region (`zh-TW` is `zh-Hant-TW`), which ducat-format resolves tags with;
 - `parents.json`: the locale each locale's currencies inherit from (CLDR's `parentLocales`, else
   the tag without its last subtag, else root);
 - `coverageLevels.json`: the locales kept;
@@ -56,6 +58,11 @@ describe different CLDR releases:
 4. `DUCAT_REGENERATE=1 cargo test -p ducat-words --test cldr` and
    `DUCAT_REGENERATE=1 cargo test -p ducat-format --test data` (from `rust/`) rewrite the Rust
    tables; the same commands without `DUCAT_REGENERATE` are the drift checks CI runs.
+   If the shape of the tables changed (`src/tables.rs`, or what `src/data.rs` must define), the
+   crate can't compile its own generator against the old file: first replace `src/data.rs` with
+   a placeholder that defines the items the crate reads (`CLDR_VERSION`, `NAMES`, `locale`,
+   `is_default_content`, `likely_script`, returning nothing), then regenerate. ducat-words'
+   `src/cldr.rs` is bootstrapped the same way.
 5. Survey the new ICU release's locale files against the new CLDR (`data/icu/README.md`) and
    update `data/icu/`; the format generator writes the override vectors and ducat-format's
    `src/icu.rs` from it.
