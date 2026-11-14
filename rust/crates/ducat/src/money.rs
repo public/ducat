@@ -134,11 +134,25 @@ impl<C: Currency> Money<C> {
     /// A float in major units, at its shortest round-trip form, at the currency's exponent and
     /// without rounding (ducat's `money(0.1, 'EUR')`).
     ///
+    /// Two checks apply, in this order, as in ducat: first the decimals must fit the exponent
+    /// ([`Error::Rounding`] otherwise), then the shortest form must have at most 15 significant
+    /// digits unless the value is a safe integer ([`Error::TooManyDigits`] otherwise). So
+    /// `0.1 + 0.2`, whose shortest form is `0.30000000000000004`, is a rounding error in EUR, not
+    /// a digits error.
+    ///
+    /// ```
+    /// use ducat::{Error, Money};
+    /// use ducat::iso::Eur;
+    ///
+    /// assert_eq!(Money::<Eur>::from_f64(0.1)?.to_decimal(), "0.10");
+    /// assert_eq!(Money::<Eur>::from_f64(0.1 + 0.2), Err(Error::Rounding));
+    /// # Ok::<(), Error>(())
+    /// ```
+    ///
     /// # Errors
     ///
-    /// [`Error::NotFinite`]; [`Error::Rounding`] for more decimals than the exponent (so
-    /// `0.1 + 0.2` is an error); then [`Error::TooManyDigits`] for a value that isn't a safe
-    /// integer and has more than 15 significant digits.
+    /// [`Error::NotFinite`] for NaN and the infinities; then [`Error::Rounding`] and
+    /// [`Error::TooManyDigits`], as above.
     pub fn from_f64(value: f64) -> Result<Self, Error> {
         Ok(Self::from_amount(Amount::from_f64(
             value,
