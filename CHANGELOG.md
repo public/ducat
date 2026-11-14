@@ -79,6 +79,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   day: `andThen` of a rate valid until `'2026-11-06'` and one valid until `'2026-11-06T15:00:00Z'`
   now ends at 15:00, where it used to keep the date and stay valid after one leg had expired.
   `isExpired` and the chain now share one definition of when a `validUntil` ends.
+- `exchangeRate` and `rateFromJSON` now refuse an inverted or scaled quote that isn't exactly the
+  rate (rate = quote ÷ `per`, or `per` ÷ quote when inverted), throwing the `RangeError` convert.md
+  always documented, where 0.4 accepted it and the rate's `inverse()` then threw.
 
 ### Documentation
 

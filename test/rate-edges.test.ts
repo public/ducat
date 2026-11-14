@@ -4,7 +4,13 @@ import '../src/plugins/iso.js';
 import { describe, expect, it } from 'vitest';
 import { fromMinor, money } from '../src/fn.js';
 import { roundingPolicy } from '../src/policy.js';
-import { exchangeRate, hasEnded, RateExpiredError, toIsoString } from '../src/rate.js';
+import {
+  exchangeRate,
+  hasEnded,
+  rateFromJSON,
+  RateExpiredError,
+  toIsoString,
+} from '../src/rate.js';
 
 describe('dates and instants', () => {
   it('keeps a date, normalises an instant, and rejects anything else', () => {
@@ -78,6 +84,31 @@ describe('derived rates', () => {
 });
 
 describe('metadata', () => {
+  // A quote must describe its rate exactly, or the inverse (which flips `inverted`) would print a
+  // number that isn't the rate.
+  it('refuses an inverted or scaled quote that is not the rate, so inverse() cannot fail', () => {
+    const wrong = { quote: { rate: '0.9100', inverted: true } } as const;
+    expect(() => exchangeRate('EUR', 'USD', '290', wrong)).toThrow(
+      new RangeError("Quote 0.9100 isn't the rate EUR→USD"),
+    );
+    expect(() => rateFromJSON({ from: 'EUR', to: 'USD', rate: '290', ...wrong })).toThrow(
+      RangeError,
+    );
+    const cad = exchangeRate('CAD', 'USD', '200/273', {
+      quote: { rate: '1.3650', inverted: true },
+    });
+    expect(cad.inverse().toString()).toBe('1.3650');
+    expect(rateFromJSON(cad.toJSON()).inverse().toString()).toBe('1.3650');
+    // NOK per 100 JPY: 136.80 / 100
+    const per = { rate: '136.80', per: 100 };
+    expect(exchangeRate('JPY', 'NOK', '1.368', { quote: per }).toString()).toBe('1.368');
+    expect(() => exchangeRate('JPY', 'NOK', '136.80', { quote: per })).toThrow(RangeError);
+    // inverted and per together: JPY per 100 NOK is 100 / 6.50 NOK→JPY
+    const both = { quote: { rate: '6.50', per: 100, inverted: true } };
+    expect(exchangeRate('NOK', 'JPY', '200/13', both).inverse().toString()).toBe('0.065');
+    expect(() => exchangeRate('NOK', 'JPY', '6.50', both)).toThrow(RangeError);
+  });
+
   it('a rate has no keys for metadata it was not given', () => {
     expect(Object.keys(exchangeRate('EUR', 'USD', '1.1')).sort()).toEqual(['from', 'ratio', 'to']);
     expect(Object.keys(exchangeRate('EUR', 'USD', '1.1', { source: 'ECB' })).sort()).toEqual([
