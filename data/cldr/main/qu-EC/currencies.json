@@ -1,0 +1,21 @@
+{
+ "main": {
+  "qu-EC": {
+   "identity": {
+    "language": "qu",
+    "territory": "EC"
+   },
+   "inherits": "qu",
+   "numbers": {
+    "currencies": {
+     "PEN": {
+      "symbol": "PEN"
+     },
+     "USD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

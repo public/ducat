@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-UG": {
+   "identity": {
+    "language": "en",
+    "territory": "UG"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "UGX": {
+      "symbol": "USh"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "pt-GW": {
+   "identity": {
+    "language": "pt",
+    "territory": "GW"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

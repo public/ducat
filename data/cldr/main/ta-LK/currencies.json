@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ta-LK": {
+   "identity": {
+    "language": "ta",
+    "territory": "LK"
+   },
+   "inherits": "ta",
+   "numbers": {
+    "currencies": {
+     "LKR": {
+      "symbol": "Rs."
+     }
+    }
+   }
+  }
+ }
+}

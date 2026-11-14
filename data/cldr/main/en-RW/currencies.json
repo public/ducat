@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-RW": {
+   "identity": {
+    "language": "en",
+    "territory": "RW"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "RWF": {
+      "symbol": "RF"
+     }
+    }
+   }
+  }
+ }
+}

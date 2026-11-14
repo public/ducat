@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-WS": {
+   "identity": {
+    "language": "en",
+    "territory": "WS"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "WST": {
+      "symbol": "WS$"
+     }
+    }
+   }
+  }
+ }
+}

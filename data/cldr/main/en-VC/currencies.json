@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-VC": {
+   "identity": {
+    "language": "en",
+    "territory": "VC"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "XCD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

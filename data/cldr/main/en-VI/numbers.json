@@ -1,0 +1,58 @@
+{
+ "main": {
+  "en-VI": {
+   "identity": {
+    "language": "en",
+    "territory": "VI"
+   },
+   "numbers": {
+    "defaultNumberingSystem": "latn",
+    "otherNumberingSystems": {
+     "native": "latn"
+    },
+    "minimumGroupingDigits": "1",
+    "symbols-numberSystem-latn": {
+     "decimal": ".",
+     "group": ",",
+     "list": ";",
+     "percentSign": "%",
+     "plusSign": "+",
+     "minusSign": "-",
+     "approximatelySign": "~",
+     "exponential": "E",
+     "superscriptingExponent": "×",
+     "perMille": "‰",
+     "infinity": "∞",
+     "nan": "NaN",
+     "timeSeparator": ":"
+    },
+    "decimalFormats-numberSystem-latn": {
+     "standard": "#,##0.###"
+    },
+    "currencyFormats-numberSystem-latn": {
+     "currencySpacing": {
+      "beforeCurrency": {
+       "currencyMatch": "[[:^S:]&[:^Z:]]",
+       "surroundingMatch": "[:digit:]",
+       "insertBetween": " "
+      },
+      "afterCurrency": {
+       "currencyMatch": "[[:^S:]&[:^Z:]]",
+       "surroundingMatch": "[:digit:]",
+       "insertBetween": " "
+      }
+     },
+     "standard": "¤#,##0.00",
+     "standard-alphaNextToNumber": "¤ #,##0.00",
+     "standard-noCurrency": "#,##0.00",
+     "accounting": "¤#,##0.00;(¤#,##0.00)",
+     "accounting-alphaNextToNumber": "¤ #,##0.00;(¤ #,##0.00)",
+     "accounting-noCurrency": "#,##0.00;(#,##0.00)",
+     "currencyPatternAppendISO": "{0} ¤¤",
+     "unitPattern-count-one": "{0} {1}",
+     "unitPattern-count-other": "{0} {1}"
+    }
+   }
+  }
+ }
+}

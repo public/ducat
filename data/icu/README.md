@@ -3,7 +3,8 @@
 ICU's locale data where it deliberately overrides CLDR's, for the ICU-overrides vectors
 (`spec/vectors/format/icu-overrides.json`, `spec/vectors/parse/icu-overrides.json`), which
 `scripts/gen-format-vectors.py` computes from the CLDR 48 snapshot in `data/cldr/` with these
-values applied. ducat's code doesn't read it, and the npm package leaves it out.
+values applied, and for ducat-format's `src/icu.rs` (`rust/crates/ducat-format/tests/data.rs`).
+ducat's TypeScript doesn't read it, and the npm package leaves it out.
 
 - `fr_CH.txt`: https://raw.githubusercontent.com/unicode-org/icu/release-78.3/icu4c/source/data/locales/fr_CH.txt
   (tag `release-78.3`), sha256 `ffb73f672e4bb219dbbdeacf25d98bfafc1f30f85003dc90725556f5cc7b2ef8`,

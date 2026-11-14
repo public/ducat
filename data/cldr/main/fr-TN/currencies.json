@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-TN": {
+   "identity": {
+    "language": "fr",
+    "territory": "TN"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "TND": {
+      "symbol": "DT"
+     }
+    }
+   }
+  }
+ }
+}

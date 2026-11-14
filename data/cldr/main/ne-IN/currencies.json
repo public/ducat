@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ne-IN": {
+   "identity": {
+    "language": "ne",
+    "territory": "IN"
+   },
+   "inherits": "ne",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

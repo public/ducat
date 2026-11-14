@@ -1,0 +1,14 @@
+{
+ "main": {
+  "kok-Deva": {
+   "identity": {
+    "language": "kok",
+    "script": "Deva"
+   },
+   "inherits": "kok",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

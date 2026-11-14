@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-SC": {
+   "identity": {
+    "language": "en",
+    "territory": "SC"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "SCR": {
+      "symbol": "SR"
+     }
+    }
+   }
+  }
+ }
+}

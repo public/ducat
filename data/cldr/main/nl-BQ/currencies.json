@@ -1,0 +1,18 @@
+{
+ "main": {
+  "nl-BQ": {
+   "identity": {
+    "language": "nl",
+    "territory": "BQ"
+   },
+   "inherits": "nl",
+   "numbers": {
+    "currencies": {
+     "USD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-TO": {
+   "identity": {
+    "language": "en",
+    "territory": "TO"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "TOP": {
+      "symbol": "T$"
+     }
+    }
+   }
+  }
+ }
+}

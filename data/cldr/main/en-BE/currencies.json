@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-BE": {
+   "identity": {
+    "language": "en",
+    "territory": "BE"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

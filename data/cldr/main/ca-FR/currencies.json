@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ca-FR": {
+   "identity": {
+    "language": "ca",
+    "territory": "FR"
+   },
+   "inherits": "ca",
+   "numbers": {
+    "currencies": {
+     "FRF": {
+      "symbol": "F"
+     }
+    }
+   }
+  }
+ }
+}

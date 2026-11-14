@@ -1,0 +1,32 @@
+{
+ "main": {
+  "zh-Hans-MO": {
+   "identity": {
+    "language": "zh",
+    "script": "Hans",
+    "territory": "MO"
+   },
+   "inherits": "zh-Hans",
+   "numbers": {
+    "currencies": {
+     "ANG": {
+      "displayName-count-other": "荷兰安的列斯盾"
+     },
+     "CNY": {
+      "symbol": "CN¥"
+     },
+     "MOP": {
+      "symbol": "MOP$"
+     },
+     "NIO": {
+      "displayName-count-other": "尼加拉瓜科多巴"
+     },
+     "XAG": {
+      "displayName": "白银",
+      "displayName-count-other": "白银"
+     }
+    }
+   }
+  }
+ }
+}

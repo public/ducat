@@ -1,0 +1,15 @@
+{
+ "main": {
+  "sr-Cyrl-ME": {
+   "identity": {
+    "language": "sr",
+    "script": "Cyrl",
+    "territory": "ME"
+   },
+   "inherits": "sr-Cyrl",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

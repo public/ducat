@@ -1,0 +1,18 @@
+{
+ "main": {
+  "af-NA": {
+   "identity": {
+    "language": "af",
+    "territory": "NA"
+   },
+   "inherits": "af",
+   "numbers": {
+    "currencies": {
+     "NAD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

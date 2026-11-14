@@ -1,0 +1,444 @@
+{
+ "main": {
+  "nn": {
+   "identity": {
+    "language": "nn"
+   },
+   "inherits": "no",
+   "numbers": {
+    "currencies": {
+     "ADP": {
+      "displayName": "andorranske peseta"
+     },
+     "AFA": {
+      "displayName": "afghanske afghani (1927–2002)"
+     },
+     "AOK": {
+      "displayName": "angolske kwanza (1977–1990)"
+     },
+     "AON": {
+      "displayName": "angolske nye kwanza (1990–2000)"
+     },
+     "AOR": {
+      "displayName": "angolske kwanza reajustado (1995–1999)"
+     },
+     "ARA": {
+      "displayName": "argentiske austral"
+     },
+     "ARP": {
+      "displayName": "argentinske peso (1983–1985)"
+     },
+     "ATS": {
+      "displayName": "austerrikske schilling"
+     },
+     "AWG": {
+      "displayName": "arubiske florinar"
+     },
+     "BAD": {
+      "displayName": "bosnisk-hercegovinske dinarar (1992–1994)"
+     },
+     "BAN": {
+      "displayName": "nye bosnisk-hercegovinske dinarar (1994–1997)"
+     },
+     "BEC": {
+      "displayName": "belgiske franc (konvertibel)"
+     },
+     "BEL": {
+      "displayName": "belgiske franc (finansiell)"
+     },
+     "BGL": {
+      "displayName": "bulgarsk hard lev"
+     },
+     "BHD": {
+      "displayName": "bahrainske dinarar"
+     },
+     "BOP": {
+      "displayName": "boliviske peso"
+     },
+     "BOV": {
+      "displayName": "boliviske mvdol",
+      "displayName-count-other": "boliviske mvdol"
+     },
+     "BRB": {
+      "displayName": "brasiliansk cruzeiro novo (1967–1986)"
+     },
+     "BRC": {
+      "displayName": "brasilianske cruzado"
+     },
+     "BRN": {
+      "displayName": "brasilianske cruzado novo"
+     },
+     "BRR": {
+      "displayName": "brasilianske cruzeiro"
+     },
+     "BUK": {
+      "displayName": "burmesisk kyat"
+     },
+     "BYB": {
+      "displayName": "belarusiske nye rublar (1994–1999)",
+      "displayName-count-one": "belarusisk ny rubel (BYB)",
+      "displayName-count-other": "belarusiske nye rublar (BYB)"
+     },
+     "BYN": {
+      "displayName": "nye belarusiske rublar"
+     },
+     "BYR": {
+      "displayName": "belarusiske rublar (2000–2016)",
+      "displayName-count-one": "belarusisk rubel (2000–2016)",
+      "displayName-count-other": "belarusiske rublar (2000–2016)"
+     },
+     "CHE": {
+      "displayName": "WIR-euro"
+     },
+     "CHW": {
+      "displayName": "WIR-franc"
+     },
+     "COP": {
+      "displayName": "kolombianske pesos",
+      "displayName-count-one": "kolombiansk peso",
+      "displayName-count-other": "kolombianske pesos"
+     },
+     "COU": {
+      "displayName": "unidad de valor real",
+      "displayName-count-one": "unidad de valor real",
+      "displayName-count-other": "unidad de valor real"
+     },
+     "CRC": {
+      "displayName": "kostarikanske colón",
+      "displayName-count-one": "kostarikansk colón",
+      "displayName-count-other": "kostarikanske colón"
+     },
+     "CSD": {
+      "displayName": "gamle serbiske dinarer",
+      "displayName-count-one": "gammal serbisk dinar",
+      "displayName-count-other": "gamle serbiske dinarar"
+     },
+     "CVE": {
+      "displayName": "kappverdiske escudo"
+     },
+     "DDM": {
+      "displayName": "austtyske mark",
+      "displayName-count-one": "austtysk mark",
+      "displayName-count-other": "austtyske mark"
+     },
+     "DZD": {
+      "displayName": "algeriske dinarar"
+     },
+     "EEK": {
+      "displayName-count-other": "estiske kroon"
+     },
+     "GBP": {
+      "symbol": "GBP"
+     },
+     "GHC": {
+      "displayName": "ghanesiske cedi (1979–2007)"
+     },
+     "GQE": {
+      "displayName-count-one": "ekvatorialguineansk ekwele",
+      "displayName-count-other": "ekvatorialguineanske ekwele"
+     },
+     "GRD": {
+      "displayName": "greske drakme",
+      "displayName-count-other": "greske drakmar"
+     },
+     "GWP": {
+      "displayName": "Guinea-Bissau-peso",
+      "displayName-count-other": "Guinea-Bissau-peso"
+     },
+     "HRD": {
+      "displayName": "kroatiske dinar",
+      "displayName-count-other": "kroatiske dinarar"
+     },
+     "HUF": {
+      "displayName": "ungarske forintar"
+     },
+     "IDR": {
+      "displayName": "indonesiske rupiahar",
+      "displayName-count-one": "indonesisk rupiah",
+      "displayName-count-other": "indonesiske rupiahar"
+     },
+     "ILS": {
+      "displayName": "nye israelske sheklar"
+     },
+     "INR": {
+      "displayName": "indiske rupiar"
+     },
+     "IQD": {
+      "displayName": "irakiske dinarar",
+      "displayName-count-one": "irakisk dinar",
+      "displayName-count-other": "irakiske dinarar"
+     },
+     "IRR": {
+      "displayName": "iranske rial"
+     },
+     "JOD": {
+      "displayName": "jordanske dinarar"
+     },
+     "KWD": {
+      "displayName": "kuwaitiske dinarar"
+     },
+     "LKR": {
+      "displayName": "srilankiske rupiar"
+     },
+     "LTL": {
+      "displayName": "litauiske lita"
+     },
+     "LTT": {
+      "displayName": "litauiske talona",
+      "displayName-count-one": "litauisk talona",
+      "displayName-count-other": "litauiske talona"
+     },
+     "LUC": {
+      "displayName": "luxemburgske konvertibel franc"
+     },
+     "LVL": {
+      "displayName": "latviske lat",
+      "displayName-count-one": "latvisk lat",
+      "displayName-count-other": "latviske lat"
+     },
+     "LVR": {
+      "displayName": "latviske rublar"
+     },
+     "LYD": {
+      "displayName": "libyske dinarar"
+     },
+     "MDL": {
+      "displayName": "moldovske leuar",
+      "displayName-count-other": "moldovske leuar"
+     },
+     "MKD": {
+      "displayName": "makedonske denarar"
+     },
+     "MKN": {
+      "displayName": "makedonske denarar (1992–1993)"
+     },
+     "MUR": {
+      "displayName": "mauritiske rupiar"
+     },
+     "MVP": {
+      "displayName": "maldiviske rupiar"
+     },
+     "MXP": {
+      "displayName": "meksikanske sølvpeso (1861–1992)",
+      "displayName-count-one": "meksikansk sølvpeso (MXP)",
+      "displayName-count-other": "meksikanske sølvpeso (MXP)"
+     },
+     "MZM": {
+      "displayName-count-one": "gammal mosambikisk metical"
+     },
+     "NIC": {
+      "displayName": "nicaraguanske cordoba",
+      "displayName-count-one": "nicaraguansk cordoba",
+      "displayName-count-other": "nicaraguanske cordoba"
+     },
+     "NPR": {
+      "displayName": "nepalske rupiar"
+     },
+     "NZD": {
+      "displayName": "nyzealandske dollar",
+      "displayName-count-one": "nyzealandsk dollar",
+      "displayName-count-other": "nyzealandske dollar"
+     },
+     "OMR": {
+      "displayName": "omanske rial"
+     },
+     "PKR": {
+      "displayName": "pakistanske rupiar"
+     },
+     "PLZ": {
+      "displayName-count-one": "polsk zloty (PLZ)",
+      "displayName-count-other": "polske zloty (PLZ)"
+     },
+     "PYG": {
+      "displayName": "paraguayanske guaraní",
+      "displayName-count-one": "paraguayansk guaraní",
+      "displayName-count-other": "paraguayanske guaraní"
+     },
+     "QAR": {
+      "displayName": "qatarske rial"
+     },
+     "ROL": {
+      "displayName": "gamle rumenske leu",
+      "displayName-count-one": "gammal rumensk leu",
+      "displayName-count-other": "gamle rumenske lei"
+     },
+     "RON": {
+      "displayName": "rumenske leuar",
+      "displayName-count-other": "rumenske leuar",
+      "symbol-alt-narrow": "lei"
+     },
+     "RSD": {
+      "displayName": "serbiske dinarar"
+     },
+     "RUB": {
+      "displayName": "russiske rublar"
+     },
+     "RUR": {
+      "displayName": "russiske rublar (1991–1998)"
+     },
+     "SAR": {
+      "displayName": "saudiarabiske rial",
+      "displayName-count-one": "saudiarabisk rial",
+      "displayName-count-other": "saudiarabiske rial"
+     },
+     "SCR": {
+      "displayName": "seychelliske rupiar"
+     },
+     "SDD": {
+      "displayName": "gamle sudanske dinarer",
+      "displayName-count-one": "gammal sudansk dinar",
+      "displayName-count-other": "gamle sudanske dinarar"
+     },
+     "SDP": {
+      "displayName": "gamle sudanske pund",
+      "displayName-count-one": "gammalt sudansk pund",
+      "displayName-count-other": "gamle sudanske pund"
+     },
+     "SLE": {
+      "displayName-count-other": "sierraleonske leonar"
+     },
+     "SLL": {
+      "displayName": "sierraleonsk leone (1964—2022)",
+      "displayName-count-other": "sierraleonske leonar (1964–2022)"
+     },
+     "SUR": {
+      "displayName": "sovjetiske rublar",
+      "displayName-count-other": "sovjetiske rublar"
+     },
+     "SZL": {
+      "displayName": "eswatinisk lilangeni",
+      "displayName-count-one": "eswatinisk lilangeni",
+      "displayName-count-other": "eswatiniske emalangeni"
+     },
+     "TJR": {
+      "displayName": "tadsjikiske rublar",
+      "displayName-count-other": "tadsjikiske rublar"
+     },
+     "TND": {
+      "displayName": "tunisiske dinarar"
+     },
+     "TRL": {
+      "displayName": "gamle tyrkiske lire",
+      "displayName-count-one": "gammal tyrkisk lire",
+      "displayName-count-other": "gamle tyrkiske lire"
+     },
+     "TRY": {
+      "displayName": "tyrkiske lira",
+      "displayName-count-one": "tyrkisk lira",
+      "displayName-count-other": "tyrkiske lira"
+     },
+     "TWD": {
+      "symbol-alt-narrow": "$"
+     },
+     "USS": {
+      "displayName": "amerikanske dollar (same dag)",
+      "displayName-count-one": "amerikansk dollar (same dag)",
+      "displayName-count-other": "amerikanske dollar (same dag)"
+     },
+     "UYI": {
+      "displayName": "uruguayanske peso en unidades indexadas",
+      "displayName-count-one": "uruguayansk peso en unidades indexadas",
+      "displayName-count-other": "uruguayanske peso en unidades indexadas"
+     },
+     "UYP": {
+      "displayName": "uruguayanske peso (1975–1993)",
+      "displayName-count-one": "uruguayansk peso (UYP)",
+      "displayName-count-other": "uruguayanske peso (UYP)"
+     },
+     "UYU": {
+      "displayName-count-one": "uruguayansk peso"
+     },
+     "UZS": {
+      "displayName": "usbekiske sum",
+      "displayName-count-one": "usbekisk sum",
+      "displayName-count-other": "usbekiske sum"
+     },
+     "VUV": {
+      "displayName": "vanuatuiske vatu",
+      "displayName-count-one": "vanuatuisk vatu",
+      "displayName-count-other": "vanuatuiske vatu"
+     },
+     "XBA": {
+      "displayName": "europeiske samansette einingar",
+      "displayName-count-one": "europeisk samansett eining",
+      "displayName-count-other": "europeiske samansette einingar"
+     },
+     "XBB": {
+      "displayName": "europeiske monetære einingar",
+      "displayName-count-one": "europeisk monetær eining",
+      "displayName-count-other": "europeiske monetære einingar"
+     },
+     "XBC": {
+      "displayName": "europeiske kontoeiningar (XBC)",
+      "displayName-count-one": "europeisk kontoeining (XBC)",
+      "displayName-count-other": "europeiske kontoeiningar (XBC)"
+     },
+     "XBD": {
+      "displayName": "europeiske kontoeiningar (XBD)",
+      "displayName-count-one": "europeisk kontoeining (XBD)",
+      "displayName-count-other": "europeiske kontoeiningar (XBD)"
+     },
+     "XCD": {
+      "displayName": "austkaribiske dollar",
+      "displayName-count-one": "austkaribisk dollar",
+      "displayName-count-other": "austkaribiske dollar"
+     },
+     "XDR": {
+      "displayName": "spesielle trekkrettar",
+      "displayName-count-one": "spesiell trekkrett",
+      "displayName-count-other": "spesielle trekkrettar"
+     },
+     "XEU": {
+      "displayName": "europeiske valutaeiningar",
+      "displayName-count-one": "europeisk valutaeining",
+      "displayName-count-other": "europeiske valutaeiningar"
+     },
+     "XPD": {
+      "displayName-count-one": "palladium",
+      "displayName-count-other": "palladium"
+     },
+     "XTS": {
+      "displayName-count-one": "testvalutakode",
+      "displayName-count-other": "testvalutakode"
+     },
+     "XXX": {
+      "displayName": "ukjend valuta",
+      "displayName-count-one": "(ukjend valuta)",
+      "displayName-count-other": "(ukjend valuta)"
+     },
+     "YDD": {
+      "displayName": "jemenittiske dinarar",
+      "displayName-count-other": "jemenittiske dinarar"
+     },
+     "YER": {
+      "displayName": "jemenittiske rial"
+     },
+     "YUD": {
+      "displayName": "jugoslaviske dinarar (hard)",
+      "displayName-count-other": "jugoslaviske dinarar (hard)"
+     },
+     "YUM": {
+      "displayName": "jugoslaviske noviy-dinarar",
+      "displayName-count-other": "jugoslaviske noviy-dinarar"
+     },
+     "YUN": {
+      "displayName": "jugoslaviske konvertibel dinarar",
+      "displayName-count-other": "jugoslaviske konvertible dinarar"
+     },
+     "ZAL": {
+      "displayName": "sørafrikanske rand (finansiell)"
+     },
+     "ZRN": {
+      "displayName": "zairisk ny zaire"
+     },
+     "ZRZ": {
+      "displayName": "zairisk zaire"
+     },
+     "ZWD": {
+      "displayName": "zimbabwisk dollar"
+     }
+    }
+   }
+  }
+ }
+}

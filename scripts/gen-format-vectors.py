@@ -88,12 +88,23 @@ def has_data(tag: str) -> bool:
     return base in AVAILABLE or base in DEFAULT_CONTENT
 
 
+def currencies(name: str) -> dict:
+    """A locale's currencies: data/cldr/ writes each locale's as what differs from the locale it
+    inherits from (its "inherits" field, up to root), so they are merged down the chain."""
+    body = load(f"main/{name}/currencies.json")["main"][name]
+    out = {} if "inherits" not in body else currencies(body["inherits"])
+    out = {code: dict(entry) for code, entry in out.items()}
+    for code, entry in body["numbers"]["currencies"].items():
+        out[code] = {**out.get(code, {}), **entry}
+    return out
+
+
 class Locale:
     def __init__(self, tag: str):
         name = folder(tag)
         self.folder = name
         self.numbers = load(f"main/{name}/numbers.json")["main"][name]["numbers"]
-        self.currencies = load(f"main/{name}/currencies.json")["main"][name]["numbers"]["currencies"]
+        self.currencies = currencies(name)
         self.system = self.numbers["defaultNumberingSystem"]
         self.symbols = self.numbers[f"symbols-numberSystem-{self.system}"]
         self.formats = self.numbers[f"currencyFormats-numberSystem-{self.system}"]

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-SZ": {
+   "identity": {
+    "language": "en",
+    "territory": "SZ"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "SZL": {
+      "symbol": "E"
+     }
+    }
+   }
+  }
+ }
+}

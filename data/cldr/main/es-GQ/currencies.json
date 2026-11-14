@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-GQ": {
+   "identity": {
+    "language": "es",
+    "territory": "GQ"
+   },
+   "inherits": "es",
+   "numbers": {
+    "currencies": {
+     "XAF": {
+      "symbol": "FCFA"
+     }
+    }
+   }
+  }
+ }
+}

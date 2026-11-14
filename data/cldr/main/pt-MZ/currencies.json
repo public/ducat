@@ -1,0 +1,18 @@
+{
+ "main": {
+  "pt-MZ": {
+   "identity": {
+    "language": "pt",
+    "territory": "MZ"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {
+     "MZN": {
+      "symbol": "MTn"
+     }
+    }
+   }
+  }
+ }
+}

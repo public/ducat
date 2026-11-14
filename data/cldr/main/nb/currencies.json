@@ -1,0 +1,13 @@
+{
+ "main": {
+  "nb": {
+   "identity": {
+    "language": "nb"
+   },
+   "inherits": "no",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

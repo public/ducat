@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-MU": {
+   "identity": {
+    "language": "fr",
+    "territory": "MU"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "MUR": {
+      "symbol": "Rs"
+     }
+    }
+   }
+  }
+ }
+}

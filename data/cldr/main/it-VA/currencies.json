@@ -1,0 +1,14 @@
+{
+ "main": {
+  "it-VA": {
+   "identity": {
+    "language": "it",
+    "territory": "VA"
+   },
+   "inherits": "it",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

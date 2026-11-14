@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ar-LB": {
+   "identity": {
+    "language": "ar",
+    "territory": "LB"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {
+     "SDG": {
+      "symbol": "SDG"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-PH": {
+   "identity": {
+    "language": "en",
+    "territory": "PH"
+   },
+   "inherits": "en",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

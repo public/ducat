@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-VU": {
+   "identity": {
+    "language": "en",
+    "territory": "VU"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "VUV": {
+      "symbol": "VT"
+     }
+    }
+   }
+  }
+ }
+}

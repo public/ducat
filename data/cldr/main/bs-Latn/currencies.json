@@ -1,0 +1,14 @@
+{
+ "main": {
+  "bs-Latn": {
+   "identity": {
+    "language": "bs",
+    "script": "Latn"
+   },
+   "inherits": "bs",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

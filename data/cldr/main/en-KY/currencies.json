@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-KY": {
+   "identity": {
+    "language": "en",
+    "territory": "KY"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "KYD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

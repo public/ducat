@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-NG": {
+   "identity": {
+    "language": "en",
+    "territory": "NG"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "NGN": {
+      "symbol": "₦"
+     }
+    }
+   }
+  }
+ }
+}

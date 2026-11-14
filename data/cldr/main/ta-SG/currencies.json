@@ -1,0 +1,24 @@
+{
+ "main": {
+  "ta-SG": {
+   "identity": {
+    "language": "ta",
+    "territory": "SG"
+   },
+   "inherits": "ta",
+   "numbers": {
+    "currencies": {
+     "MYR": {
+      "symbol": "RM"
+     },
+     "SGD": {
+      "symbol": "$"
+     },
+     "USD": {
+      "symbol": "US$"
+     }
+    }
+   }
+  }
+ }
+}

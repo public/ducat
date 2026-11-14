@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ms-ID": {
+   "identity": {
+    "language": "ms",
+    "territory": "ID"
+   },
+   "inherits": "ms",
+   "numbers": {
+    "currencies": {
+     "IDR": {
+      "symbol": "Rp"
+     }
+    }
+   }
+  }
+ }
+}

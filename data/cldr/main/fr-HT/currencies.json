@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-HT": {
+   "identity": {
+    "language": "fr",
+    "territory": "HT"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "HTG": {
+      "symbol": "G"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "main": {
+  "ur-IN": {
+   "identity": {
+    "language": "ur",
+    "territory": "IN"
+   },
+   "inherits": "ur",
+   "numbers": {
+    "currencies": {
+     "CRC": {
+      "displayName": "کوسٹا ریکا کولون",
+      "displayName-count-other": "کوسٹا ریکا کولون"
+     },
+     "CUC": {
+      "displayName": "قابل منتقلی کیوبائی پیسو",
+      "displayName-count-other": "قابل منتقلی کیوبائی پیسو"
+     },
+     "CUP": {
+      "displayName": "کیوبائی پیسو",
+      "displayName-count-other": "کیوبائی پیسو"
+     },
+     "CVE": {
+      "displayName": "کیپ ورڈی اسکیوڈو",
+      "displayName-count-other": "کیپ ورڈی اسکیوڈو"
+     },
+     "GBP": {
+      "displayName": "برطانوی پاونڈ سٹرلنگ",
+      "displayName-count-other": "برطانوی پاونڈ سٹرلنگ"
+     },
+     "GHS": {
+      "displayName": "گھانی سیڈی",
+      "displayName-count-other": "گھانی سیڈی"
+     },
+     "PKR": {
+      "displayName-count-one": "پاکستانی روپیہ",
+      "displayName-count-other": "پاکستانی روپے",
+      "symbol": "PKR"
+     },
+     "WST": {
+      "displayName": "ساموآئی ٹالا",
+      "displayName-count-other": "ساموآئی ٹالا"
+     }
+    }
+   }
+  }
+ }
+}

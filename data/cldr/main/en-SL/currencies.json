@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-SL": {
+   "identity": {
+    "language": "en",
+    "territory": "SL"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "SLE": {
+      "symbol": "Le"
+     }
+    }
+   }
+  }
+ }
+}

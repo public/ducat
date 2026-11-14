@@ -1,0 +1,22 @@
+{
+ "main": {
+  "ru-BY": {
+   "identity": {
+    "language": "ru",
+    "territory": "BY"
+   },
+   "inherits": "ru",
+   "numbers": {
+    "currencies": {
+     "BYN": {
+      "symbol": "Br",
+      "symbol-alt-narrow": "Br"
+     },
+     "RUR": {
+      "symbol": "RUR"
+     }
+    }
+   }
+  }
+ }
+}

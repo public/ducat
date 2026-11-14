@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-ZA": {
+   "identity": {
+    "language": "en",
+    "territory": "ZA"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "ZAR": {
+      "symbol": "R"
+     }
+    }
+   }
+  }
+ }
+}

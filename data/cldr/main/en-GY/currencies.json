@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-GY": {
+   "identity": {
+    "language": "en",
+    "territory": "GY"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GYD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-TD": {
+   "identity": {
+    "language": "ar",
+    "territory": "TD"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

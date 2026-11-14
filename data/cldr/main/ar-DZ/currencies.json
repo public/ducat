@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-DZ": {
+   "identity": {
+    "language": "ar",
+    "territory": "DZ"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-SK": {
+   "identity": {
+    "language": "en",
+    "territory": "SK"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

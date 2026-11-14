@@ -1,0 +1,18 @@
+{
+ "main": {
+  "sw-UG": {
+   "identity": {
+    "language": "sw",
+    "territory": "UG"
+   },
+   "inherits": "sw",
+   "numbers": {
+    "currencies": {
+     "UGX": {
+      "symbol": "USh"
+     }
+    }
+   }
+  }
+ }
+}

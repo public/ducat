@@ -1,0 +1,14 @@
+{
+ "main": {
+  "yue-Hant": {
+   "identity": {
+    "language": "yue",
+    "script": "Hant"
+   },
+   "inherits": "yue",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

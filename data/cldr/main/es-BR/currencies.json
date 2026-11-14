@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-BR": {
+   "identity": {
+    "language": "es",
+    "territory": "BR"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "BRL": {
+      "symbol": "R$"
+     }
+    }
+   }
+  }
+ }
+}

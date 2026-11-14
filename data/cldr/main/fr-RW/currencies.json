@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-RW": {
+   "identity": {
+    "language": "fr",
+    "territory": "RW"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "RWF": {
+      "symbol": "RF"
+     }
+    }
+   }
+  }
+ }
+}

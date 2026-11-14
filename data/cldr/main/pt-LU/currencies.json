@@ -1,0 +1,18 @@
+{
+ "main": {
+  "pt-LU": {
+   "identity": {
+    "language": "pt",
+    "territory": "LU"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {
+     "LUF": {
+      "symbol": "F"
+     }
+    }
+   }
+  }
+ }
+}

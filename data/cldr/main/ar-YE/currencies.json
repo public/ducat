@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-YE": {
+   "identity": {
+    "language": "ar",
+    "territory": "YE"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

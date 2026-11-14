@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-GD": {
+   "identity": {
+    "language": "en",
+    "territory": "GD"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "XCD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

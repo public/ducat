@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-GN": {
+   "identity": {
+    "language": "fr",
+    "territory": "GN"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "GNF": {
+      "symbol": "FG"
+     }
+    }
+   }
+  }
+ }
+}

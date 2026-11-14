@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-BI": {
+   "identity": {
+    "language": "fr",
+    "territory": "BI"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "BIF": {
+      "symbol": "FBu"
+     }
+    }
+   }
+  }
+ }
+}

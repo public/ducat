@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-SD": {
+   "identity": {
+    "language": "en",
+    "territory": "SD"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

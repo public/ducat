@@ -1,0 +1,14 @@
+{
+ "main": {
+  "pa-Guru": {
+   "identity": {
+    "language": "pa",
+    "script": "Guru"
+   },
+   "inherits": "pa",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

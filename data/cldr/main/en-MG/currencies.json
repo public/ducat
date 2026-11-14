@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-MG": {
+   "identity": {
+    "language": "en",
+    "territory": "MG"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "MGA": {
+      "symbol": "Ar"
+     }
+    }
+   }
+  }
+ }
+}

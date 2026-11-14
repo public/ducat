@@ -1,0 +1,14 @@
+{
+ "main": {
+  "sv-AX": {
+   "identity": {
+    "language": "sv",
+    "territory": "AX"
+   },
+   "inherits": "sv",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "main": {
+  "en-SH": {
+   "identity": {
+    "language": "en",
+    "territory": "SH"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GBP": {
+      "symbol": "GB£"
+     },
+     "SHP": {
+      "symbol": "£"
+     }
+    }
+   }
+  }
+ }
+}

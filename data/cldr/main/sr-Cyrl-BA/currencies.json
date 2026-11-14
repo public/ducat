@@ -1,0 +1,37 @@
+{
+ "main": {
+  "sr-Cyrl-BA": {
+   "identity": {
+    "language": "sr",
+    "script": "Cyrl",
+    "territory": "BA"
+   },
+   "inherits": "sr-Cyrl",
+   "numbers": {
+    "currencies": {
+     "BAM": {
+      "displayName": "Босанскохерцеговачка конвертибилна марка"
+     },
+     "BYN": {
+      "displayName": "Бјелоруска рубља",
+      "displayName-count-one": "бјелоруска рубља",
+      "displayName-count-few": "бјелоруске рубље",
+      "displayName-count-other": "бјелоруских рубљи"
+     },
+     "KPW": {
+      "displayName": "Сјевернокорејски вон",
+      "displayName-count-one": "сјевернокорејски вон",
+      "displayName-count-few": "сјевернокорејска вона",
+      "displayName-count-other": "сјевернокорејских вона"
+     },
+     "NIO": {
+      "displayName": "Никарагванска златна кордоба",
+      "displayName-count-one": "никарагванска златна кордоба",
+      "displayName-count-few": "никарагванске златне кордобе",
+      "displayName-count-other": "никарагванских златних кордоба"
+     }
+    }
+   }
+  }
+ }
+}

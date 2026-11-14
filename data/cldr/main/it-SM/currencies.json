@@ -1,0 +1,14 @@
+{
+ "main": {
+  "it-SM": {
+   "identity": {
+    "language": "it",
+    "territory": "SM"
+   },
+   "inherits": "it",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

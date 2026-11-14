@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-AI": {
+   "identity": {
+    "language": "en",
+    "territory": "AI"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "XCD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

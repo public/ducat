@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-KE": {
+   "identity": {
+    "language": "en",
+    "territory": "KE"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "KES": {
+      "symbol": "Ksh"
+     }
+    }
+   }
+  }
+ }
+}

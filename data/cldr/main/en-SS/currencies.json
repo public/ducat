@@ -1,0 +1,21 @@
+{
+ "main": {
+  "en-SS": {
+   "identity": {
+    "language": "en",
+    "territory": "SS"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GBP": {
+      "symbol": "GB£"
+     },
+     "SSP": {
+      "symbol": "£"
+     }
+    }
+   }
+  }
+ }
+}

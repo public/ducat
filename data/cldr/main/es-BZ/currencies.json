@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-BZ": {
+   "identity": {
+    "language": "es",
+    "territory": "BZ"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "BZD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

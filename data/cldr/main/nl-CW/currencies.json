@@ -1,0 +1,18 @@
+{
+ "main": {
+  "nl-CW": {
+   "identity": {
+    "language": "nl",
+    "territory": "CW"
+   },
+   "inherits": "nl",
+   "numbers": {
+    "currencies": {
+     "ANG": {
+      "symbol": "NAf."
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-VG": {
+   "identity": {
+    "language": "en",
+    "territory": "VG"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

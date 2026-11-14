@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-GM": {
+   "identity": {
+    "language": "en",
+    "territory": "GM"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GMD": {
+      "symbol": "D"
+     }
+    }
+   }
+  }
+ }
+}

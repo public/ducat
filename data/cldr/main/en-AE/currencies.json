@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-AE": {
+   "identity": {
+    "language": "en",
+    "territory": "AE"
+   },
+   "inherits": "en",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

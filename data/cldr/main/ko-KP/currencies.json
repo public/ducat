@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ko-KP": {
+   "identity": {
+    "language": "ko",
+    "territory": "KP"
+   },
+   "inherits": "ko",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

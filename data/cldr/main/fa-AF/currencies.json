@@ -1,0 +1,75 @@
+{
+ "main": {
+  "fa-AF": {
+   "identity": {
+    "language": "fa",
+    "territory": "AF"
+   },
+   "inherits": "fa",
+   "numbers": {
+    "currencies": {
+     "AUD": {
+      "displayName": "دالر آسترالیا",
+      "displayName-count-other": "دالر آسترالیا"
+     },
+     "BND": {
+      "displayName": "دالر برونی",
+      "displayName-count-other": "دالر برونی"
+     },
+     "BYN": {
+      "displayName": "روبل روسیهٔ سفید",
+      "displayName-count-other": "روبل روسیهٔ سفید"
+     },
+     "BYR": {
+      "displayName": "روبل روسیهٔ سفید (۲۰۰۰–۲۰۱۶)",
+      "displayName-count-other": "روبل روسیهٔ سفید (۲۰۰۰–۲۰۱۶)"
+     },
+     "CAD": {
+      "displayName": "دالر کانادا",
+      "displayName-count-other": "دالر کانادا"
+     },
+     "CHF": {
+      "displayName": "فرانک سویس",
+      "displayName-count-other": "فرانک سویس"
+     },
+     "DKK": {
+      "displayName": "کرون دنمارک",
+      "displayName-count-other": "کرون دنمارک"
+     },
+     "JPY": {
+      "displayName": "ین جاپان",
+      "displayName-count-other": "ین جاپان"
+     },
+     "MXN": {
+      "displayName": "پزوی مکسیکو",
+      "displayName-count-other": "پزوی مکسیکو"
+     },
+     "NLG": {
+      "displayName": "گیلدر هالند",
+      "displayName-count-other": "گیلدر هالند"
+     },
+     "NOK": {
+      "displayName": "کرون ناروی",
+      "displayName-count-other": "کرون ناروی"
+     },
+     "SEK": {
+      "displayName": "کرون سویدن",
+      "displayName-count-other": "کرون سویدن"
+     },
+     "SGD": {
+      "displayName": "دالر سینگاپور",
+      "displayName-count-other": "دالر سینگاپور"
+     },
+     "TJS": {
+      "displayName": "سامانی تاجکستان",
+      "displayName-count-other": "سامانی تاجکستان"
+     },
+     "USD": {
+      "displayName": "دالر امریکا",
+      "displayName-count-other": "دالر امریکا"
+     }
+    }
+   }
+  }
+ }
+}

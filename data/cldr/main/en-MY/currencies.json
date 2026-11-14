@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-MY": {
+   "identity": {
+    "language": "en",
+    "territory": "MY"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "MYR": {
+      "symbol": "RM"
+     }
+    }
+   }
+  }
+ }
+}

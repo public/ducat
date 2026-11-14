@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-BH": {
+   "identity": {
+    "language": "ar",
+    "territory": "BH"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

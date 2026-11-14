@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-UA": {
+   "identity": {
+    "language": "en",
+    "territory": "UA"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

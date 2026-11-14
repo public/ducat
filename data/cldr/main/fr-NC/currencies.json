@@ -1,0 +1,14 @@
+{
+ "main": {
+  "fr-NC": {
+   "identity": {
+    "language": "fr",
+    "territory": "NC"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

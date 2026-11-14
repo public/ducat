@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-PY": {
+   "identity": {
+    "language": "es",
+    "territory": "PY"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "PYG": {
+      "symbol": "Gs."
+     }
+    }
+   }
+  }
+ }
+}

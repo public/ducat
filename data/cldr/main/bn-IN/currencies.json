@@ -1,0 +1,50 @@
+{
+ "main": {
+  "bn-IN": {
+   "identity": {
+    "language": "bn",
+    "territory": "IN"
+   },
+   "inherits": "bn",
+   "numbers": {
+    "currencies": {
+     "ANG": {
+      "displayName": "নেদারল্যান্ডস অ্যান্টিলিয়ান গিল্ডার",
+      "displayName-count-other": "নেদারল্যান্ডস অ্যান্টিলিয়ান গিল্ডার"
+     },
+     "AWG": {
+      "displayName": "আরুবান গিল্ডার",
+      "displayName-count-other": "আরুবান গিল্ডার"
+     },
+     "BMD": {
+      "displayName": "বারমুডান ডলার",
+      "displayName-count-other": "বারমুডান ডলার"
+     },
+     "GTQ": {
+      "displayName": "গুয়াতেমালান কেৎসাল",
+      "displayName-count-other": "গুয়াতেমালান কেৎসাল"
+     },
+     "HNL": {
+      "displayName": "হন্ডুরান লেম্পিরা",
+      "displayName-count-other": "হন্ডুরান লেম্পিরা"
+     },
+     "HTG": {
+      "displayName": "হাইতিয়ান গুর্দ",
+      "displayName-count-other": "হাইতিয়ান গুর্দ"
+     },
+     "MXN": {
+      "displayName": "মেক্সিকান পেসো",
+      "displayName-count-other": "মেক্সিকান পেসো"
+     },
+     "USD": {
+      "symbol": "$"
+     },
+     "XCD": {
+      "displayName": "পূর্ব ক্যারিবিয়ান ডলার",
+      "displayName-count-other": "পূর্ব ক্যারিবিয়ান ডলার"
+     }
+    }
+   }
+  }
+ }
+}

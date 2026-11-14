@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-JM": {
+   "identity": {
+    "language": "en",
+    "territory": "JM"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "JMD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

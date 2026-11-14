@@ -1,0 +1,21 @@
+{
+ "main": {
+  "ar-SS": {
+   "identity": {
+    "language": "ar",
+    "territory": "SS"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {
+     "GBP": {
+      "symbol": "GB£"
+     },
+     "SSP": {
+      "symbol": "£"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,679 @@
+{
+ "main": {
+  "chr": {
+   "identity": {
+    "language": "chr"
+   },
+   "inherits": "und",
+   "numbers": {
+    "currencies": {
+     "AED": {
+      "displayName": "ᏌᏊ ᎢᏳᎾᎵᏍᏔᏅ ᎡᎳᏈ ᎢᎹᎵᏘᏏ ᎠᏕᎳ",
+      "displayName-count-one": "UAE ᎠᏕᎳ",
+      "displayName-count-other": "UAE ᎠᏕᎳ"
+     },
+     "AFN": {
+      "displayName": "ᎠᏫᎨᏂᏍᏖᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᏫᎨᏂᏍᏖᏂ ᎠᏕᎳ"
+     },
+     "ALL": {
+      "displayName": "ᎠᎵᏇᏂᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᎵᏇᏂᏯ ᎠᏕᎳ"
+     },
+     "AMD": {
+      "displayName": "ᎠᎵᎻᏂᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᎵᎻᏂᎠ ᎠᏕᎳ"
+     },
+     "ANG": {
+      "displayName": "ᎾᏍᎩᏁᏛᎳᏂ ᎠᏂᏘᎵᏏ ᎠᏕᎳ",
+      "displayName-count-other": "ᎾᏍᎩᏁᏛᎳᏂ ᎠᏂᏘᎵᏏ ᎠᏕᎳ"
+     },
+     "AOA": {
+      "displayName": "ᎠᏂᎪᎳ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᏂᎪᎳ ᎠᏕᎳ"
+     },
+     "ARS": {
+      "displayName": "ᎠᏥᏂᏘᏂᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᏥᏂᏘᏂᎠ ᎠᏕᎳ"
+     },
+     "AUD": {
+      "displayName": "ᎡᎳᏗᏜ ᎠᏕᎳ",
+      "displayName-count-other": "ᎡᎳᏗᏜ ᎠᏕᎳ"
+     },
+     "AWG": {
+      "displayName": "ᎠᎷᏆ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᎷᏆ ᎠᏕᎳ"
+     },
+     "AZN": {
+      "displayName": "ᎠᏏᎵᏆᏌᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᏏᎵᏆᏌᏂ ᎠᏕᎳ"
+     },
+     "BAM": {
+      "displayName": "ᏉᏏᏂᎠ-ᎲᏤᎪᏫ ᎦᏁᏟᏴᏍᏔᏅ ᎠᏕᎳ",
+      "displayName-count-other": "ᏉᏏᏂᎠ-ᎲᏤᎪᏫ ᎦᏁᏟᏴᏍᏔᏅ ᎠᏕᎳ"
+     },
+     "BBD": {
+      "displayName": "ᏆᏇᏙᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᏇᏙᏍ ᎠᏕᎳ"
+     },
+     "BDT": {
+      "displayName": "ᏆᏂᎦᎵᏕᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᏂᎦᎵᏕᏍ ᎠᏕᎳ"
+     },
+     "BGN": {
+      "displayName": "ᏊᎵᎨᎵᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᏊᎵᎨᎵᎠ ᎠᏕᎳ"
+     },
+     "BHD": {
+      "displayName": "ᏆᎭᎴᎢᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᎭᎴᎢᏂ ᎠᏕᎳ"
+     },
+     "BIF": {
+      "displayName": "ᏋᎷᏂᏗ ᎠᏕᎳ",
+      "displayName-count-other": "ᏋᎷᏂᏗ ᎠᏕᎳ"
+     },
+     "BMD": {
+      "displayName": "ᏆᏊᏓ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᏊᏓ ᎠᏕᎳ"
+     },
+     "BND": {
+      "displayName": "ᏊᎾᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᏊᎾᎢ ᎠᏕᎳ"
+     },
+     "BOB": {
+      "displayName": "ᏉᎵᏫᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᏉᎵᏫᎠ ᎠᏕᎳ"
+     },
+     "BRL": {
+      "displayName": "ᏆᏏᎵᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᏏᎵᎢ ᎠᏕᎳ"
+     },
+     "BSD": {
+      "displayName": "ᏆᎭᎹ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᎭᎹ ᎠᏕᎳ"
+     },
+     "BTN": {
+      "displayName": "ᏊᏔᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏊᏔᏂ ᎠᏕᎳ"
+     },
+     "BWP": {
+      "displayName": "ᏆᏣᏩᎾ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᏣᏩᎾ ᎠᏕᎳ"
+     },
+     "BYN": {
+      "displayName": "ᏇᎳᎷᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᏇᎳᎷᏍ ᎠᏕᎳ",
+      "symbol-alt-narrow": "р."
+     },
+     "BYR": {
+      "displayName": "ᏇᎳᎷᏍ ᎠᏕᎳ (2000–2016)",
+      "displayName-count-other": "ᏇᎳᎷᏍ ᎠᏕᎳ (2000–2016)"
+     },
+     "BZD": {
+      "displayName": "ᏇᎵᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᏇᎵᏍ ᎠᏕᎳ"
+     },
+     "CAD": {
+      "displayName": "ᎨᎾᏓ ᎠᏕᎳ",
+      "displayName-count-other": "ᎨᎾᏓ ᎠᏕᎳ"
+     },
+     "CDF": {
+      "displayName": "ᎧᏂᎪ ᎠᏕᎳ",
+      "displayName-count-other": "ᎧᏂᎪ ᎠᏕᎳ"
+     },
+     "CHF": {
+      "displayName": "ᏍᏫᏏ ᎠᏕᎳ",
+      "displayName-count-other": "ᏍᏫᏏ ᎠᏕᎳ"
+     },
+     "CLP": {
+      "displayName": "ᏥᎵ ᎠᏕᎳ",
+      "displayName-count-other": "ᏥᎵ ᎠᏕᎳ"
+     },
+     "CNH": {
+      "displayName": "ᏣᏂᏏ ᎠᏕᎳ (ᏓᎹᏳᏟᏗ)",
+      "displayName-count-other": "ᏣᏂᏏ ᎠᏕᎳ (ᏓᎹᏳᏟᏗ)"
+     },
+     "CNY": {
+      "displayName": "ᏓᎶᏂᎨ ᎠᏕᎳ",
+      "displayName-count-other": "ᏓᎶᏂᎨ ᎠᏕᎳ"
+     },
+     "COP": {
+      "displayName": "ᎪᎸᎻᏈᎢᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎪᎸᎻᏈᎢᎠ ᎠᏕᎳ"
+     },
+     "CRC": {
+      "displayName": "ᎪᏍᏓᎵᎧ ᎠᏕᎳ",
+      "displayName-count-other": "ᎪᏍᏓᎵᎧ ᎠᏕᎳ"
+     },
+     "CUC": {
+      "displayName": "ᎫᏆ ᎦᏁᏟᏴᏍᏔᏅ ᎠᏕᎳ",
+      "displayName-count-other": "ᎫᏆ ᎦᏁᏟᏴᏍᏔᏅ ᎠᏕᎳ"
+     },
+     "CUP": {
+      "displayName": "ᎫᏆ ᎠᏕᎳ",
+      "displayName-count-other": "ᎫᏆ ᎠᏕᎳ"
+     },
+     "CVE": {
+      "displayName": "ᎢᎬᎾᏕᎾ ᎢᏤᏳᏍᏗ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᎬᎾᏕᎾ ᎢᏤᏳᏍᏗ ᎠᏕᎳ"
+     },
+     "CZK": {
+      "displayName": "ᏤᎩ ᎠᏕᎳ",
+      "displayName-count-other": "ᏤᎩ ᎠᏕᎳ"
+     },
+     "DJF": {
+      "displayName": "ᏥᏊᏗ ᎠᏕᎳ",
+      "displayName-count-other": "ᏥᏊᏗ ᎠᏕᎳ"
+     },
+     "DKK": {
+      "displayName": "ᏕᏂᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᏕᏂᏍ ᎠᏕᎳ"
+     },
+     "DOP": {
+      "displayName": "ᏙᎻᏂᎧᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏙᎻᏂᎧᏂ ᎠᏕᎳ"
+     },
+     "DZD": {
+      "displayName": "ᎠᎵᏥᎵᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᎵᏥᎵᏯ ᎠᏕᎳ"
+     },
+     "EGP": {
+      "displayName": "ᎢᏥᏈᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᏥᏈᎢ ᎠᏕᎳ"
+     },
+     "ERN": {
+      "displayName": "ᎡᎵᏟᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎡᎵᏟᏯ ᎠᏕᎳ"
+     },
+     "ETB": {
+      "displayName": "ᎢᏗᎣᏈᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᏗᎣᏈᎠ ᎠᏕᎳ"
+     },
+     "EUR": {
+      "displayName": "ᏳᎳᏛ ᎠᏕᎳ",
+      "displayName-count-other": "ᏳᎳᏛ ᎠᏕᎳ"
+     },
+     "FJD": {
+      "displayName": "ᏫᎩ ᎠᏕᎳ",
+      "displayName-count-other": "ᏫᎩ ᎠᏕᎳ"
+     },
+     "FKP": {
+      "displayName": "ᏩᎩᎤ ᏚᎦᏚᏛᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᏩᎩᎤ ᏚᎦᏚᏛᎢ ᎠᏕᎳ"
+     },
+     "GBP": {
+      "displayName": "ᎩᎵᏏᏲ ᎠᏕᎳ",
+      "displayName-count-other": "ᎩᎵᏏᏲ ᎠᏕᎳ"
+     },
+     "GEL": {
+      "displayName": "ᏣᎠᏥᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᏣᎠᏥᎢ ᎠᏕᎳ"
+     },
+     "GHS": {
+      "displayName": "ᎦᎠᎾ ᎠᏕᎳ",
+      "displayName-count-other": "ᎦᎠᎾ ᎠᏕᎳ"
+     },
+     "GIP": {
+      "displayName": "ᏥᏆᎵᏓ ᎠᏕᎳ",
+      "displayName-count-other": "ᏥᏆᎵᏓ ᎠᏕᎳ"
+     },
+     "GMD": {
+      "displayName": "ᎦᎹᏈᎢᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎦᎹᏈᎢᎠ ᎠᏕᎳ"
+     },
+     "GNF": {
+      "displayName": "ᎩᎢᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎩᎢᏂ ᎠᏕᎳ"
+     },
+     "GTQ": {
+      "displayName": "ᏆᏖᎹᎳ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᏖᎹᎳ ᎠᏕᎳ"
+     },
+     "GYD": {
+      "displayName": "ᎦᏯᎾ ᎠᏕᎳ",
+      "displayName-count-other": "ᎦᏯᎾ ᎠᏕᎳ"
+     },
+     "HKD": {
+      "displayName": "ᎰᏂᎩ ᎪᏂᎩ ᎠᏕᎳ",
+      "displayName-count-other": "ᎰᏂᎩ ᎪᏂᎩ ᎠᏕᎳ"
+     },
+     "HNL": {
+      "displayName": "ᎭᏂᏚᎳᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᎭᏂᏚᎳᏍ ᎠᏕᎳ"
+     },
+     "HRK": {
+      "displayName": "ᎧᎶᎡᏏᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎧᎶᎡᏏᎠ ᎠᏕᎳ"
+     },
+     "HTG": {
+      "displayName": "ᎮᏘ ᎠᏕᎳ",
+      "displayName-count-other": "ᎮᏘ ᎠᏕᎳ"
+     },
+     "HUF": {
+      "displayName": "ᎲᏂᎦᎵ ᎠᏕᎳ",
+      "displayName-count-other": "ᎲᏂᎦᎵ ᎠᏕᎳ"
+     },
+     "IDR": {
+      "displayName": "ᎢᏂᏙᏂᏍᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᏂᏙᏂᏍᏯ ᎠᏕᎳ"
+     },
+     "ILS": {
+      "displayName": "ᎢᏏᎵᏱ ᎢᏤ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᏏᎵᏱ ᎢᏤ ᎠᏕᎳ"
+     },
+     "INR": {
+      "displayName": "ᎢᏂᏗᎢᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᏂᏗᎢᎠ ᎠᏕᎳ"
+     },
+     "IQD": {
+      "displayName": "ᎢᎳᎩ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᎳᎩ ᎠᏕᎳ"
+     },
+     "IRR": {
+      "displayName": "ᎢᎴᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᎴᏂ ᎠᏕᎳ"
+     },
+     "ISK": {
+      "displayName": "ᏧᏁᏍᏓᎸᎯ ᎠᏕᎳ",
+      "displayName-count-other": "ᏧᏁᏍᏓᎸᎯ ᎠᏕᎳ"
+     },
+     "JMD": {
+      "displayName": "ᏣᎺᎢᎧ ᎠᏕᎳ",
+      "displayName-count-other": "ᏣᎺᎢᎧ ᎠᏕᎳ"
+     },
+     "JOD": {
+      "displayName": "ᏦᏓᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏦᏓᏂ ᎠᏕᎳ"
+     },
+     "JPY": {
+      "displayName": "ᏣᏩᏂᏏ ᎠᏕᎳ",
+      "displayName-count-other": "ᏣᏩᏂᏏ ᎠᏕᎳ"
+     },
+     "KES": {
+      "displayName": "ᎨᏂᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎨᏂᏯ ᎠᏕᎳ"
+     },
+     "KGS": {
+      "displayName": "ᎩᎵᏣᎢᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᎩᎵᏣᎢᏍ ᎠᏕᎳ"
+     },
+     "KHR": {
+      "displayName": "ᎧᎹᏉᏗᎠᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎧᎹᏉᏗᎠᏂ ᎠᏕᎳ"
+     },
+     "KMF": {
+      "displayName": "ᎪᎼᎳᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᎪᎼᎳᏍ ᎠᏕᎳ"
+     },
+     "KPW": {
+      "displayName": "ᏧᏴᏢ ᎪᎵᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᏧᏴᏢ ᎪᎵᎠ ᎠᏕᎳ"
+     },
+     "KRW": {
+      "displayName": "ᏧᎦᎾᏮ ᎪᎵᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᏧᎦᎾᏮ ᎪᎵᎠ ᎠᏕᎳ"
+     },
+     "KWD": {
+      "displayName": "ᎫᏪᎢᏘ ᎠᏕᎳ",
+      "displayName-count-other": "ᎫᏪᎢᏘ ᎠᏕᎳ"
+     },
+     "KYD": {
+      "displayName": "ᎨᎢᎹᏂ ᏚᎦᏚᏛᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᎨᎢᎹᏂ ᏚᎦᏚᏛᎢ ᎠᏕᎳ"
+     },
+     "KZT": {
+      "displayName": "ᎧᏎᎧᏍᏕᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎧᏎᎧᏍᏕᏂ ᎠᏕᎳ"
+     },
+     "LAK": {
+      "displayName": "ᎳᎣ ᎠᏕᎳ",
+      "displayName-count-other": "ᎳᎣ ᎠᏕᎳ"
+     },
+     "LBP": {
+      "displayName": "ᎴᏆᎾᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎴᏆᎾᏂ ᎠᏕᎳ"
+     },
+     "LKR": {
+      "displayName": "ᏍᎵ ᎳᏂᎧ ᎠᏕᎳ",
+      "displayName-count-other": "ᏍᎵ ᎳᏂᎧ ᎠᏕᎳ"
+     },
+     "LRD": {
+      "displayName": "ᎳᏈᎵᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎳᏈᎵᏯ ᎠᏕᎳ"
+     },
+     "LSL": {
+      "displayName": "ᎴᏐᏠ ᎶᏘ",
+      "displayName-count-one": "ᎴᏐᏠ ᎶᏘ",
+      "displayName-count-other": "ᎴᏐᏠ ᎶᏘᏍ"
+     },
+     "LYD": {
+      "displayName": "ᎵᏈᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎵᏈᏯ ᎠᏕᎳ"
+     },
+     "MAD": {
+      "displayName": "ᎼᎶᎪ ᎠᏕᎳ",
+      "displayName-count-other": "ᎼᎶᎪ ᎠᏕᎳ"
+     },
+     "MDL": {
+      "displayName": "ᎹᎵᏙᏫᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᎵᏙᏫᎠ ᎠᏕᎳ"
+     },
+     "MGA": {
+      "displayName": "ᎹᎳᎦᏏ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᎳᎦᏏ ᎠᏕᎳ"
+     },
+     "MKD": {
+      "displayName": "ᎹᏎᏙᏂᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᏎᏙᏂᎠ ᎠᏕᎳ"
+     },
+     "MMK": {
+      "displayName": "ᎹᏯᎹᎵ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᏯᎹᎵ ᎠᏕᎳ"
+     },
+     "MNT": {
+      "displayName": "ᎹᏂᎪᎵᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᏂᎪᎵᎠ ᎠᏕᎳ"
+     },
+     "MOP": {
+      "displayName": "ᎹᎧᎣ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᎧᎣ ᎠᏕᎳ"
+     },
+     "MRO": {
+      "displayName": "ᎹᏈᏔᏂᎠ ᎠᏕᎳ (1973–2017)",
+      "displayName-count-other": "ᎹᏈᏔᏂᎠ ᎠᏕᎳ (1973–2017)"
+     },
+     "MRU": {
+      "displayName": "ᎹᏈᏔᏂᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᏈᏔᏂᎠ ᎠᏕᎳ"
+     },
+     "MUR": {
+      "displayName": "ᎹᏘᎢᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᏘᎢᏯ ᎠᏕᎳ"
+     },
+     "MVR": {
+      "displayName": "ᎹᎵᏗᏫᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᎵᏗᏫᏍ ᎠᏕᎳ"
+     },
+     "MWK": {
+      "displayName": "ᎹᎳᏫ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᎳᏫ ᎠᏕᎳ"
+     },
+     "MXN": {
+      "displayName": "ᏍᏆᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏍᏆᏂ ᎠᏕᎳ"
+     },
+     "MYR": {
+      "displayName": "ᎹᎴᏏᎢᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᎹᎴᏏᎢᎠ ᎠᏕᎳ"
+     },
+     "MZN": {
+      "displayName": "ᎼᏎᎻᏇᎩ ᎠᏕᎳ",
+      "displayName-count-other": "ᎼᏎᎻᏇᎩ ᎠᏕᎳ"
+     },
+     "NAD": {
+      "displayName": "ᎾᎻᏈᎢᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎾᎻᏈᎢᏯ ᎠᏕᎳ"
+     },
+     "NGN": {
+      "displayName": "ᏂᏥᎵᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᏂᏥᎵᏯ ᎠᏕᎳ"
+     },
+     "NIO": {
+      "displayName": "ᏂᎧᎳᏆ ᎠᏕᎳ",
+      "displayName-count-other": "ᏂᎧᎳᏆ ᎠᏕᎳ"
+     },
+     "NOK": {
+      "displayName": "ᏃᏪ ᎠᏕᎳ",
+      "displayName-count-other": "ᏃᏪ ᎠᏕᎳ"
+     },
+     "NPR": {
+      "displayName": "ᏁᏆᎵ ᎠᏕᎳ",
+      "displayName-count-other": "ᏁᏆᎵ ᎠᏕᎳ"
+     },
+     "NZD": {
+      "displayName": "ᎢᏤ ᏏᎢᎴᏂᏗ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᏤ ᏏᎢᎴᏂᏗ ᎠᏕᎳ"
+     },
+     "OMR": {
+      "displayName": "ᎣᎺᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎣᎺᏂ ᎠᏕᎳ"
+     },
+     "PAB": {
+      "displayName": "ᏆᎾᎹ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᎾᎹ ᎠᏕᎳ"
+     },
+     "PEN": {
+      "displayName": "ᏇᎷ ᎠᏕᎳ",
+      "displayName-count-other": "ᏇᎷ ᎠᏕᎳ"
+     },
+     "PGK": {
+      "displayName": "ᏆᏇ ᎢᏤ ᎩᎢᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᏇ ᎢᏤ ᎩᎢᏂ ᎠᏕᎳ"
+     },
+     "PHP": {
+      "displayName": "ᎠᏂᏈᎵᎩᏃ ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᏂᏈᎵᎩᏃ ᎠᏕᎳ",
+      "symbol": "PHP"
+     },
+     "PKR": {
+      "displayName": "ᏆᎩᏍᏖᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᎩᏍᏖᏂ ᎠᏕᎳ"
+     },
+     "PLN": {
+      "displayName": "ᏉᎳᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏉᎳᏂ ᎠᏕᎳ"
+     },
+     "PYG": {
+      "displayName": "ᏆᎳᏇᎢᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᏆᎳᏇᎢᏯ ᎠᏕᎳ"
+     },
+     "QAR": {
+      "displayName": "ᎧᏔᎵ ᎠᏕᎳ",
+      "displayName-count-other": "ᎧᏔᎵ ᎠᏕᎳ"
+     },
+     "RON": {
+      "displayName": "ᎶᎹᏂᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᎶᎹᏂᏯ ᎠᏕᎳ"
+     },
+     "RSD": {
+      "displayName": "ᏒᏈᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᏒᏈᏯ ᎠᏕᎳ"
+     },
+     "RUB": {
+      "displayName": "ᏲᏂᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᏲᏂᎢ ᎠᏕᎳ"
+     },
+     "RWF": {
+      "displayName": "ᎶᏩᏂᏓ ᎠᏕᎳ",
+      "displayName-count-other": "ᎶᏩᏂᏓ ᎠᏕᎳ"
+     },
+     "SAR": {
+      "displayName": "ᏌᎤᏗ ᎠᏕᎳ",
+      "displayName-count-other": "ᏌᎤᏗ ᎠᏕᎳ"
+     },
+     "SBD": {
+      "displayName": "ᏐᎶᎹᏂ ᏚᎦᏚᏛᎢ ᎠᏕᎳ",
+      "displayName-count-other": "ᏐᎶᎹᏂ ᏚᎦᏚᏛᎢ ᎠᏕᎳ"
+     },
+     "SCR": {
+      "displayName": "ᏏᎡᏥᎵᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᏏᎡᏥᎵᏍ ᎠᏕᎳ"
+     },
+     "SDG": {
+      "displayName": "ᏑᏕᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏑᏕᏂ ᎠᏕᎳ"
+     },
+     "SEK": {
+      "displayName": "ᏍᏫᏕᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏍᏫᏕᏂ ᎠᏕᎳ"
+     },
+     "SGD": {
+      "displayName": "ᏏᏂᎦᏉᎵ ᎠᏕᎳ",
+      "displayName-count-other": "ᏏᏂᎦᏉᎵ ᎠᏕᎳ"
+     },
+     "SHP": {
+      "displayName": "ᎤᏓᏅᏘ ᎮᎵᎾ ᎠᏕᎳ",
+      "displayName-count-other": "ᎤᏓᏅᏘ ᎮᎵᎾ ᎠᏕᎳ"
+     },
+     "SLE": {
+      "displayName": "ᏏᎡᎳᎴᎣᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏏᎡᎳᎴᎣᏂ ᎠᏕᎳ"
+     },
+     "SLL": {
+      "displayName": "ᏏᎡᎳᎴᎣᏂ ᎠᏕᎳ (1964—2022)",
+      "displayName-count-other": "ᏏᎡᎳᎴᎣᏂ ᎠᏕᎳ (1964—2022)"
+     },
+     "SOS": {
+      "displayName": "ᏐᎹᎵ ᎠᏕᎳ",
+      "displayName-count-other": "ᏐᎹᎵ ᎠᏕᎳ"
+     },
+     "SRD": {
+      "displayName": "ᏒᎵᎾᎻ ᎠᏕᎳ",
+      "displayName-count-other": "ᏒᎵᎾᎻ ᎠᏕᎳ"
+     },
+     "SSP": {
+      "displayName": "ᏧᎦᎾᏮ ᏑᏕᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏧᎦᎾᏮ ᏑᏕᏂ ᎠᏕᎳ"
+     },
+     "STD": {
+      "displayName": "ᏌᎣᏙᎺ ᎠᎴ ᏈᏂᏏᏇ ᎠᏕᎳ (1977–2017)",
+      "displayName-count-other": "ᏌᎣᏙᎺ ᎠᎴ ᏈᏂᏏᏇ ᎠᏕᎳ (1977–2017)"
+     },
+     "STN": {
+      "displayName": "ᏌᎣᏙᎺ & ᏈᏂᏏᏇ ᎠᏕᎳ",
+      "displayName-count-other": "ᏌᎣᏙᎺ & ᏈᏂᏏᏇ ᎠᏕᎳ"
+     },
+     "SYP": {
+      "displayName": "ᏏᎵᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᏏᎵᎠ ᎠᏕᎳ"
+     },
+     "SZL": {
+      "displayName": "ᏍᏩᏏ ᎠᏕᎳ",
+      "displayName-count-other": "ᏍᏩᏏ ᎠᏕᎳ"
+     },
+     "THB": {
+      "displayName": "ᏔᏯᎴᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏔᏯᎴᏂ ᎠᏕᎳ"
+     },
+     "TJS": {
+      "displayName": "ᏔᏥᎩᏍᏕᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏔᏥᎩᏍᏕᏂ ᎠᏕᎳ"
+     },
+     "TMT": {
+      "displayName": "ᏛᎵᎩᎺᏂᏍᏔᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏛᎵᎩᎺᏂᏍᏔᏂ ᎠᏕᎳ"
+     },
+     "TND": {
+      "displayName": "ᏚᏂᏏᏍᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᏚᏂᏏᏍᎠ ᎠᏕᎳ"
+     },
+     "TOP": {
+      "displayName": "ᏔᏂᎪ ᎠᏕᎳ",
+      "displayName-count-other": "ᏔᏂᎪ ᎠᏕᎳ"
+     },
+     "TRY": {
+      "displayName": "ᎬᏃ ᎠᏕᎳ",
+      "displayName-count-other": "ᎬᏃ ᎠᏕᎳ"
+     },
+     "TTD": {
+      "displayName": "ᏟᏂᏕᏗ & ᏙᏆᎪ ᎠᏕᎳ",
+      "displayName-count-other": "ᏟᏂᏕᏗ & ᏙᏆᎪ ᎠᏕᎳ"
+     },
+     "TWD": {
+      "displayName": "ᎢᏤ ᏔᎢᏩᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎢᏤ ᏔᎢᏩᏂ ᎠᏕᎳ"
+     },
+     "TZS": {
+      "displayName": "ᏖᏂᏏᏂᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᏖᏂᏏᏂᏯ ᎠᏕᎳ"
+     },
+     "UAH": {
+      "displayName": "ᏳᎧᎴᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏳᎧᎴᏂ ᎠᏕᎳ"
+     },
+     "UGX": {
+      "displayName": "ᏳᎦᏂᏓ ᎠᏕᎳ",
+      "displayName-count-other": "ᏳᎦᏂᏓ ᎠᏕᎳ"
+     },
+     "USD": {
+      "displayName": "US ᎠᏕᎳ",
+      "displayName-count-other": "US ᎠᏕᎳ",
+      "symbol": "$"
+     },
+     "UYU": {
+      "displayName": "ᏳᎷᏇ ᎠᏕᎳ",
+      "displayName-count-other": "ᏳᎷᏇ ᎠᏕᎳ"
+     },
+     "UZS": {
+      "displayName": "ᎤᏍᏇᎩᏍᏖᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᎤᏍᏇᎩᏍᏖᏂ ᎠᏕᎳ"
+     },
+     "VEF": {
+      "displayName": "ᏪᏁᏑᏪ ᎠᏕᎳ (2008–2018)",
+      "displayName-count-one": "ᏪᏁᏑᏪᎳ ᎠᏕᎳ",
+      "displayName-count-other": "ᏪᏁᏑᏪᎳ ᎠᏕᎳ"
+     },
+     "VES": {
+      "displayName": "ᏪᏁᏑᏪ ᎠᏕᎳ",
+      "displayName-count-other": "ᏪᏁᏑᏪ ᎠᏕᎳ"
+     },
+     "VND": {
+      "displayName": "ᏫᎡᏘᎾᎻᏍ ᎠᏕᎳ",
+      "displayName-count-other": "ᏫᎡᏘᎾᎻᏍ ᎠᏕᎳ"
+     },
+     "VUV": {
+      "displayName": "ᏩᏂᎤᏩᏚ ᎠᏕᎳ",
+      "displayName-count-other": "ᏩᏂᎤᏩᏚ ᎠᏕᎳ"
+     },
+     "WST": {
+      "displayName": "ᏌᎼᎠ ᎠᏕᎳ",
+      "displayName-count-other": "ᏌᎼᎠ ᎠᏕᎳ"
+     },
+     "XAF": {
+      "displayName": "ᎠᏰᏟ ᎬᎿᎨᏍᏛ CFA ᎠᏕᎳ",
+      "displayName-count-other": "ᎠᏰᏟ ᎬᎿᎨᏍᏛ CFA ᎠᏕᎳ"
+     },
+     "XCD": {
+      "displayName": "ᏗᎧᎸᎬ ᎨᏆᏙᏯ ᎠᏕᎳ",
+      "displayName-count-other": "ᏗᎧᎸᎬ ᎨᏆᏙᏯ ᎠᏕᎳ"
+     },
+     "XCG": {
+      "displayName": "ᎧᏈᏇᎠᎾ",
+      "displayName-count-one": "ᎧᏈᏇᎠᎾ ᎠᏕᎳ",
+      "displayName-count-other": "ᎧᏈᏇᎠᎾ ᎠᏕᎳ"
+     },
+     "XOF": {
+      "displayName": "ᏭᏕᎵᎬ ᎬᎿᎨᏍᏛ CFA ᎠᏕᎳ",
+      "displayName-count-other": "ᏭᏕᎵᎬ ᎬᎿᎨᏍᏛ CFA ᎠᏕᎳ"
+     },
+     "XPF": {
+      "displayName": "CFP ᎠᏕᎳ",
+      "displayName-count-other": "CFP ᎠᏕᎳ"
+     },
+     "XXX": {
+      "displayName": "ᏄᏬᎵᏍᏛᎾ ᎠᏕᎳ",
+      "displayName-count-one": "(ᏄᏬᎵᏍᏛᎾ ᎠᏕᎳ)",
+      "displayName-count-other": "(ᏄᏬᎵᏍᏛᎾ ᎠᏕᎳ)"
+     },
+     "YER": {
+      "displayName": "ᏰᎺᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏰᎺᏂ ᎠᏕᎳ"
+     },
+     "ZAR": {
+      "displayName": "ᏧᎦᎾᏮ ᎬᎿᎨᏍᏛ ᎠᏕᎳ",
+      "displayName-count-other": "ᏧᎦᎾᏮ ᎬᎿᎨᏍᏛ ᎠᏕᎳ"
+     },
+     "ZMW": {
+      "displayName": "ᏏᎻᏆᏇ ᎠᏕᎳ",
+      "displayName-count-other": "ᏏᎻᏆᏇ ᎠᏕᎳ"
+     },
+     "ZWG": {
+      "displayName": "ᏏᎻᏆᏇᎠᏂ",
+      "displayName-count-one": "ᏏᎻᏆᏇᎠᏂ ᎠᏕᎳ",
+      "displayName-count-other": "ᏏᎻᏆᏇᎠᏂ ᎠᏕᎳ"
+     }
+    }
+   }
+  }
+ }
+}

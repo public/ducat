@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ar-SO": {
+   "identity": {
+    "language": "ar",
+    "territory": "SO"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {
+     "SOS": {
+      "symbol": "S"
+     }
+    }
+   }
+  }
+ }
+}

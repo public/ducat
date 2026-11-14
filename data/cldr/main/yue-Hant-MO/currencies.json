@@ -1,0 +1,15 @@
+{
+ "main": {
+  "yue-Hant-MO": {
+   "identity": {
+    "language": "yue",
+    "script": "Hant",
+    "territory": "MO"
+   },
+   "inherits": "yue-Hant",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-DK": {
+   "identity": {
+    "language": "en",
+    "territory": "DK"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {
+     "DKK": {
+      "symbol": "kr."
+     }
+    }
+   }
+  }
+ }
+}

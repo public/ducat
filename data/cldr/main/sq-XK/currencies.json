@@ -1,0 +1,14 @@
+{
+ "main": {
+  "sq-XK": {
+   "identity": {
+    "language": "sq",
+    "territory": "XK"
+   },
+   "inherits": "sq",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

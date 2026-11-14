@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-TC": {
+   "identity": {
+    "language": "en",
+    "territory": "TC"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

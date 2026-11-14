@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-BB": {
+   "identity": {
+    "language": "en",
+    "territory": "BB"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "BBD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

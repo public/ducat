@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-SI": {
+   "identity": {
+    "language": "en",
+    "territory": "SI"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

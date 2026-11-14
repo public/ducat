@@ -1,0 +1,14 @@
+{
+ "main": {
+  "fr-BF": {
+   "identity": {
+    "language": "fr",
+    "territory": "BF"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

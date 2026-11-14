@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ms-BN": {
+   "identity": {
+    "language": "ms",
+    "territory": "BN"
+   },
+   "inherits": "ms",
+   "numbers": {
+    "currencies": {
+     "BND": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

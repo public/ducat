@@ -1,0 +1,18 @@
+{
+ "main": {
+  "nl-AW": {
+   "identity": {
+    "language": "nl",
+    "territory": "AW"
+   },
+   "inherits": "nl",
+   "numbers": {
+    "currencies": {
+     "AWG": {
+      "symbol": "Afl."
+     }
+    }
+   }
+  }
+ }
+}

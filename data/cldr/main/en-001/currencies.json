@@ -1,0 +1,85 @@
+{
+ "main": {
+  "en-001": {
+   "identity": {
+    "language": "en",
+    "territory": "001"
+   },
+   "inherits": "en",
+   "numbers": {
+    "currencies": {
+     "AFN": {
+      "displayName-count-one": "Afghan afghani",
+      "displayName-count-other": "Afghan afghanis"
+     },
+     "BMD": {
+      "displayName": "Bermudian Dollar",
+      "displayName-count-one": "Bermudian dollar",
+      "displayName-count-other": "Bermudian dollars"
+     },
+     "BYB": {
+      "displayName": "Belarusian New Rouble (1994–1999)",
+      "displayName-count-one": "Belarusian new rouble (1994–1999)",
+      "displayName-count-other": "Belarusian new roubles (1994–1999)"
+     },
+     "BYN": {
+      "displayName": "Belarusian Rouble",
+      "displayName-count-one": "Belarusian rouble",
+      "displayName-count-other": "Belarusian roubles"
+     },
+     "BYR": {
+      "displayName": "Belarusian Rouble (2000–2016)",
+      "displayName-count-one": "Belarusian rouble (2000–2016)",
+      "displayName-count-other": "Belarusian roubles (2000–2016)"
+     },
+     "ETB": {
+      "displayName-count-other": "Ethiopian birr"
+     },
+     "JPY": {
+      "symbol": "JP¥"
+     },
+     "LSL": {
+      "displayName-count-other": "Lesotho maloti"
+     },
+     "LVR": {
+      "displayName": "Latvian Rouble",
+      "displayName-count-one": "Latvian rouble",
+      "displayName-count-other": "Latvian roubles"
+     },
+     "MGA": {
+      "displayName-count-other": "Malagasy ariary"
+     },
+     "MVR": {
+      "displayName-count-other": "Maldivian rufiyaa"
+     },
+     "RUB": {
+      "displayName": "Russian Rouble",
+      "displayName-count-one": "Russian rouble",
+      "displayName-count-other": "Russian roubles"
+     },
+     "RUR": {
+      "displayName": "Russian Rouble (1991–1998)",
+      "displayName-count-one": "Russian rouble (1991–1998)",
+      "displayName-count-other": "Russian roubles (1991–1998)"
+     },
+     "SHP": {
+      "displayName": "St Helena Pound",
+      "displayName-count-one": "St Helena pound",
+      "displayName-count-other": "St Helena pounds"
+     },
+     "TJR": {
+      "displayName": "Tajikistani Rouble",
+      "displayName-count-one": "Tajikistani rouble",
+      "displayName-count-other": "Tajikistani roubles"
+     },
+     "USD": {
+      "symbol": "US$"
+     },
+     "VUV": {
+      "displayName-count-other": "Vanuatu vatu"
+     }
+    }
+   }
+  }
+ }
+}

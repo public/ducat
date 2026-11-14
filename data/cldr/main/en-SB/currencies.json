@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-SB": {
+   "identity": {
+    "language": "en",
+    "territory": "SB"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "SBD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

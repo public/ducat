@@ -1,0 +1,20 @@
+{
+ "main": {
+  "en-GG": {
+   "identity": {
+    "language": "en",
+    "territory": "GG"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GBP": {
+      "displayName": "UK Pound",
+      "displayName-count-one": "UK pound",
+      "displayName-count-other": "UK pounds"
+     }
+    }
+   }
+  }
+ }
+}

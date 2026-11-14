@@ -1,0 +1,18 @@
+{
+ "main": {
+  "pt-MO": {
+   "identity": {
+    "language": "pt",
+    "territory": "MO"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {
+     "MOP": {
+      "symbol": "MOP$"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-SE": {
+   "identity": {
+    "language": "en",
+    "territory": "SE"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {
+     "SEK": {
+      "symbol": "kr"
+     }
+    }
+   }
+  }
+ }
+}

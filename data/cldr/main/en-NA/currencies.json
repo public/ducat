@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-NA": {
+   "identity": {
+    "language": "en",
+    "territory": "NA"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "NAD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

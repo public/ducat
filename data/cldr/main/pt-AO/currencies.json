@@ -1,0 +1,18 @@
+{
+ "main": {
+  "pt-AO": {
+   "identity": {
+    "language": "pt",
+    "territory": "AO"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {
+     "AOA": {
+      "symbol": "Kz"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "da-GL": {
+   "identity": {
+    "language": "da",
+    "territory": "GL"
+   },
+   "inherits": "da",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

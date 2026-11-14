@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-PE": {
+   "identity": {
+    "language": "es",
+    "territory": "PE"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "PEN": {
+      "symbol": "S/"
+     }
+    }
+   }
+  }
+ }
+}

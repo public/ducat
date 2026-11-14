@@ -1,0 +1,21 @@
+{
+ "main": {
+  "en-GI": {
+   "identity": {
+    "language": "en",
+    "territory": "GI"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GBP": {
+      "symbol": "GB£"
+     },
+     "GIP": {
+      "symbol": "£"
+     }
+    }
+   }
+  }
+ }
+}

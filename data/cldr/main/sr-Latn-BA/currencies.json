@@ -1,0 +1,37 @@
+{
+ "main": {
+  "sr-Latn-BA": {
+   "identity": {
+    "language": "sr",
+    "script": "Latn",
+    "territory": "BA"
+   },
+   "inherits": "sr-Latn",
+   "numbers": {
+    "currencies": {
+     "BAM": {
+      "displayName": "Bosanskohercegovačka konvertibilna marka"
+     },
+     "BYN": {
+      "displayName": "Bjeloruska rublja",
+      "displayName-count-one": "bjeloruska rublja",
+      "displayName-count-few": "bjeloruske rublje",
+      "displayName-count-other": "bjeloruskih rublji"
+     },
+     "KPW": {
+      "displayName": "Sjevernokorejski von",
+      "displayName-count-one": "sjevernokorejski von",
+      "displayName-count-few": "sjevernokorejska vona",
+      "displayName-count-other": "sjevernokorejskih vona"
+     },
+     "NIO": {
+      "displayName": "Nikaragvanska zlatna kordoba",
+      "displayName-count-one": "nikaragvanska zlatna kordoba",
+      "displayName-count-few": "nikaragvanske zlatne kordobe",
+      "displayName-count-other": "nikaragvanskih zlatnih kordoba"
+     }
+    }
+   }
+  }
+ }
+}

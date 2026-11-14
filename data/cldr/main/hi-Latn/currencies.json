@@ -1,0 +1,54 @@
+{
+ "main": {
+  "hi-Latn": {
+   "identity": {
+    "language": "hi",
+    "script": "Latn"
+   },
+   "inherits": "en-IN",
+   "numbers": {
+    "currencies": {
+     "ALL": {
+      "displayName-count-other": "Albanian leke"
+     },
+     "CRC": {
+      "displayName": "Costa Rican colon",
+      "displayName-count-one": "Costa Rican colon",
+      "displayName-count-other": "Costa Rican colons"
+     },
+     "ISK": {
+      "displayName": "Icelandic krona",
+      "displayName-count-one": "Icelandic krona",
+      "displayName-count-other": "Icelandic kronur"
+     },
+     "LSL": {
+      "displayName-count-other": "Lesotho lotis"
+     },
+     "NIO": {
+      "displayName": "Nicaraguan cordoba",
+      "displayName-count-one": "Nicaraguan cordoba",
+      "displayName-count-other": "Nicaraguan cordobas"
+     },
+     "RUB": {
+      "displayName": "Russian ruble",
+      "displayName-count-one": "Russian ruble",
+      "displayName-count-other": "Russian rubles"
+     },
+     "STN": {
+      "displayName": "Sao Tome & Principe Dobra",
+      "displayName-count-one": "Sao Tome & Principe dobra",
+      "displayName-count-other": "Sao Tome & Principe dobras"
+     },
+     "VES": {
+      "displayName": "Venezuelan bolivar",
+      "displayName-count-one": "Venezuelan bolivar",
+      "displayName-count-other": "Venezuelan bolivars"
+     },
+     "XXX": {
+      "displayName-count-one": "currency ki unknown unit"
+     }
+    }
+   }
+  }
+ }
+}

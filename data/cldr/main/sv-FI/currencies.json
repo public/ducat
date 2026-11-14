@@ -1,0 +1,14 @@
+{
+ "main": {
+  "sv-FI": {
+   "identity": {
+    "language": "sv",
+    "territory": "FI"
+   },
+   "inherits": "sv",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}
