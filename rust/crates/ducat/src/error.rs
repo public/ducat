@@ -44,6 +44,19 @@ pub enum Error {
     TooManyDigits,
     /// An exchange rate that is zero or negative.
     NonPositiveRate,
+    /// An allocation with no weights, or a split or instalment plan with a count of zero.
+    NoWeights,
+    /// An allocation whose weights are all zero.
+    ZeroWeights,
+    /// A negative allocation weight or percentage.
+    NegativeWeight,
+    /// A unit, maximum or increment that must be positive and isn't.
+    NotPositive,
+    /// A total that must not be negative (for `chunk`) and is.
+    NegativeTotal,
+    /// A schedule that can't add up to its total: more than one rest tranche, percentages over
+    /// 100, tranches that exceed the total, or a leftover with no rest tranche.
+    InvalidSchedule,
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -78,7 +91,13 @@ impl Error {
             | Self::ExponentOutOfRange
             | Self::NotFinite
             | Self::TooManyDigits
-            | Self::NonPositiveRate => ErrorKind::Range,
+            | Self::NonPositiveRate
+            | Self::NoWeights
+            | Self::ZeroWeights
+            | Self::NegativeWeight
+            | Self::NotPositive
+            | Self::NegativeTotal
+            | Self::InvalidSchedule => ErrorKind::Range,
         }
     }
 }
@@ -106,6 +125,14 @@ impl fmt::Display for Error {
                 "the floating-point value has more than 15 significant digits; pass a decimal string",
             ),
             Self::NonPositiveRate => f.write_str("an exchange rate must be positive"),
+            Self::NoWeights => f.write_str("there must be at least one weight (or a count of at least one)"),
+            Self::ZeroWeights => f.write_str("the weights must not all be zero"),
+            Self::NegativeWeight => f.write_str("a weight must not be negative"),
+            Self::NotPositive => f.write_str("the unit, maximum or increment must be positive"),
+            Self::NegativeTotal => f.write_str("the total must not be negative"),
+            Self::InvalidSchedule => f.write_str(
+                "the tranches can't add up to the total: one rest at most, percentages at most 100, no more than the total, and a rest for any leftover",
+            ),
         }
     }
 }

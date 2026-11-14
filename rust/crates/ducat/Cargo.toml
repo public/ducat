@@ -9,11 +9,15 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde"]
+default = ["std", "iso", "serde", "allocate", "cash"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
 iso = []
+## Allocation, splits, instalments, schedules and chunks (`ducat::allocate`).
+allocate = []
+## Rounding to an increment (`round_to_increment`), for cash.
+cash = []
 ## `Serialize` and `Deserialize` as `{"amount":"12.34","currency":"EUR"}`.
 serde = ["dep:serde"]
 
