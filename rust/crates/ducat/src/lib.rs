@@ -57,6 +57,8 @@ mod decimal;
 mod error;
 #[cfg(feature = "exact")]
 pub mod exact;
+#[cfg(feature = "finance")]
+pub mod finance;
 #[cfg(feature = "fixed")]
 pub mod fixed;
 mod int;

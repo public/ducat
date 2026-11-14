@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert"]
+default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std", "num-bigint/std", "num-integer/std", "num-traits/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
@@ -26,6 +26,9 @@ convert = ["exact"]
 tax = []
 ## `Fixed`, an exact decimal without a currency (`ducat::fixed`).
 fixed = []
+## Day counts, interest, loan and savings schedules, discounted sums, Excel's NPV and IRR, and
+## proration, in exact arithmetic (`ducat::finance`).
+finance = ["allocate"]
 ## `Serialize` and `Deserialize` as `{"amount":"12.34","currency":"EUR"}`.
 serde = ["dep:serde"]
 
