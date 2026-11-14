@@ -19,13 +19,40 @@ beyond 2^53 − 1 on the way to the processor as in ducat, and read back whateve
 unsafe JavaScript numbers there, and reads any `bigint`); the `from_*` constructors take a `CurrencyCode`, so only the `&str` lookups are
 case-insensitive (Adyen's excepted).
 
+Milestone 5d1 extended `ducat::convert` to ducat's rates, providers and bags, still under the `convert` feature
+(ducat ships the bag in its convert entry):
+- **Times:** `Time` is a UTC day or a `UtcInstant` (UTC, to the millisecond), both `Copy`, on the crate-level `Date`
+  that `finance` and `convert` share. A date is the start of its day as an `as_of`, an `available_at` or a lookup
+  time, and the whole day as a `valid_until` (through 23:59:59.999Z). Parsing is strict: `YYYY-MM-DD`, or
+  `YYYY-MM-DDTHH:MM[:SS[.sss]]` with `Z` or `±HH:MM`. ducat reads times with `new Date`, which also takes
+  offset-less local times, `T24:00`, impossible dates and more; that is a deliberate divergence until ducat
+  tightens it ([#349](https://github.com/public/ducat/issues/349)).
+- **No clock:** `is_expired(now)`, `is_available(at)` and strict validity (`ConvertOptions::valid_at`, ducat's
+  `strictValidity`) take the time as an argument, so the library stays `no_std` and deterministic.
+- **Rates:** `Rate<F, T>` wraps an `AnyRate`, which holds the metadata (`RateInfo`: source, timing, `RateType`,
+  `RateQuote`) and `derived_from`. Derived rates follow ducat's rules for what they keep. A quote must describe its
+  rate exactly (ducat #351), so `inverse()` stays infallible. Equality is by value; metadata isn't compared.
+- **Rate text** now matches ducat's, a change from milestone 4: a decimal keeps its published digits only when its
+  canonical form would drop trailing zeros (`1.10`), so `01.50` prints as `1.5`, and a rounded rate prints as its
+  exact decimal (`1.10` rounded to 2 places is `1.1`).
+- **Providers:** `RateProvider::rate(from, to, &RateQuery) -> Option<AnyRate>` takes `CurrencyCode`s, so a provider
+  can be a trait object and `chain` can mix kinds as `BoxedProvider`s; `rate_of` and `Rate::lookup` are the
+  lookups that must succeed (`Error::RateUnavailable`). `RateTable` (a base with a builder, or a list), `identity`,
+  `reversed`, `via` and `from_fn` are the providers; `convert_through` on `Money` and `AnyMoney` converts through
+  one.
+- **Bags:** `MoneyBag` holds `AnyMoney` totals in first-seen order, with `exact_total`, `total` (rounded once),
+  `sum_by_currency`, `comparator` and `sort_by_value`. ducat installs no bag methods on money, and neither does the
+  port.
+- **JSON:** under `serde`, rates serialize in ducat's `RateJSON` shape and order, and deserialize as `rateFromJSON`.
+- **Left out:** `snapshots` and `snapshotsFrom`, which load tables asynchronously, and the rate-source parsers
+  (milestone 5d2).
+
 Known gaps, to close later:
 - Currency names and symbols (`currencyName`, `currencySymbol`): they come from `Intl` in ducat, so with
   formatting in `ducat-icu` (milestone 6).
-- `MoneyBag` (`/bag`): it converts through rate providers, so with them, milestone 5d. The rate-source
-parsers (ECB, BoC, Fed, BoE, HMRC, history, Stripe and Adyen FX) move to milestone 5, with the processors. Rate
-providers (tables, chains, `via`) and rate metadata (dates, validity) come with them. The decisions in "Choices that are expensive to reverse" are the coordinator's,
-flagged to Alex for review.
+- The rate-source parsers (ECB, BoC, Fed, BoE, HMRC, history, Stripe and Adyen FX) and `snapshots`: milestone 5d2.
+
+The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.
 
 ## Goals
 - **The same answers as ducat,** checked by running ducat's conformance vectors, pinned to a ducat commit. The suite's
@@ -155,7 +182,7 @@ lives").
 | `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | `cash::cldr_cash` is Rust-only (no ducat equivalent; the spec checks it against `data/` only), for `ducat-icu` |
 | `/fixed`, `/fixed/money` | `ducat::fixed::Fixed` | |
 | `/finance`, `/excel` | `finance`, `excel` | the Excel rule applies to `excel` |
-| `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | the parsers take text and never fetch |
+| `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | rates with metadata, providers and `MoneyBag` in `convert` (5d1); the parsers take text and never fetch (5d2) |
 | `/convert/fetch` | `ducat-fetch` | network code only here |
 | `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
 | `/wire` | `wire` (google.type.Money, ISO 20022, dinero objects) | |

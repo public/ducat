@@ -41,7 +41,8 @@ braintree = []
 klarna = []
 ## `ExactMoney`, exact rational amounts that round once at the end (`ducat::exact`).
 exact = []
-## Exchange rates: `Rate`, inverses, chains and conversions (`ducat::convert`).
+## Exchange rates with their metadata, inverses, chains and conversions; rate providers and tables;
+## multi-currency bags (`ducat::convert`).
 convert = ["exact"]
 ## Percentages, discounts, and adding and extracting tax (`ducat::tax`).
 tax = []

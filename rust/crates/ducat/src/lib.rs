@@ -66,6 +66,8 @@ mod currency;
 ))]
 #[rustfmt::skip] // generated: tests/currency_data.rs checks it byte for byte
 mod currency_data;
+#[cfg(any(feature = "finance", feature = "convert"))]
+mod date;
 mod decimal;
 mod error;
 #[cfg(feature = "exact")]

@@ -55,6 +55,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal --target thumbv7em-none-eabihf && rustup default stable
       - run: cargo build -p ducat --lib --locked --no-default-features --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features iso,serde,allocate,cash --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat --lib --locked --no-default-features --features convert,serde,finance --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto,stripe,adyen,checkout,paypal,braintree,klarna --target thumbv7em-none-eabihf
 
   lint:
@@ -67,6 +68,8 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features finance --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features convert --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features convert,serde --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features policy --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features pricing --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features math --locked -- -D warnings

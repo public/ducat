@@ -72,6 +72,13 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   them.
 - The Rust port gains `ducat::processors` (one feature per processor), and `CurrencyCode::custom`
   accepts the ISO codes without a minor unit (XDR, XAU…), as ducat's `defineCurrency` does.
+- Vectors for rate metadata, rate providers and multi-currency bags
+  (`spec/vectors/convert/providers.json`, in the `convert` area), modelled from the convert reference
+  by `scripts/gen-rate-provider-vectors.py` with Python's `fractions`; both ducat and the Rust port
+  run them. The Rust port's `ducat::convert` gains rate metadata (with a `Time` that is a UTC day or
+  instant, read strictly; see #349), the JSON form, rate providers and tables, conversion through a
+  provider, and `MoneyBag`; its rate text now matches ducat's (`01.50` prints as `1.5`, a rounded
+  rate as its exact decimal).
 
 ### Fixed
 

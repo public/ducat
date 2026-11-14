@@ -163,6 +163,32 @@ pub enum Error {
     ZeroAmount,
     /// A processor amount beyond what it takes: an integer beyond 2^53 − 1, or more than 15 digits before PayPal's point.
     AmountTooLarge,
+    /// A rate time that isn't a date `YYYY-MM-DD` or an instant `YYYY-MM-DDTHH:MM[:SS[.sss]]`
+    /// with `Z` or `±HH:MM` (see [`UtcInstant`](crate::convert::UtcInstant)).
+    InvalidTime,
+    /// A one-for-one quote in a rate's own direction that isn't the rate.
+    QuoteMismatch,
+    /// No provider has a rate for the pair (ducat's `RateUnavailableError`).
+    #[cfg(feature = "convert")]
+    RateUnavailable {
+        /// The source currency asked for.
+        from: CurrencyCode,
+        /// The target currency asked for.
+        to: CurrencyCode,
+        /// The time it was asked for.
+        as_of: Option<crate::convert::Time>,
+    },
+    /// A conversion with strict validity at a time the rate's `valid_until` had passed (ducat's
+    /// `RateExpiredError`).
+    #[cfg(feature = "convert")]
+    RateExpired {
+        /// The rate's source currency.
+        from: CurrencyCode,
+        /// The rate's target currency.
+        to: CurrencyCode,
+        /// When it expired.
+        valid_until: crate::convert::Time,
+    },
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -255,7 +281,11 @@ impl Error {
             | Self::UnsupportedCurrency
             | Self::NegativeAmount
             | Self::ZeroAmount
-            | Self::AmountTooLarge => ErrorKind::Range,
+            | Self::AmountTooLarge
+            | Self::InvalidTime
+            | Self::QuoteMismatch => ErrorKind::Range,
+            #[cfg(feature = "convert")]
+            Self::RateUnavailable { .. } | Self::RateExpired { .. } => ErrorKind::Range,
         }
     }
 }
@@ -343,6 +373,20 @@ impl fmt::Display for Error {
             Self::NegativeAmount => f.write_str("the processor doesn't take negative amounts; send refunds as positive amounts"),
             Self::ZeroAmount => f.write_str("the processor's amounts must be greater than zero"),
             Self::AmountTooLarge => f.write_str("the amount is too large for the processor"),
+            Self::InvalidTime => f.write_str("an invalid date or time: expected YYYY-MM-DD, or YYYY-MM-DDTHH:MM[:SS[.sss]] with Z or an offset ±HH:MM"),
+            Self::QuoteMismatch => f.write_str("the quote isn't the rate"),
+            #[cfg(feature = "convert")]
+            Self::RateUnavailable { from, to, as_of } => {
+                write!(f, "no exchange rate {from}→{to}")?;
+                match as_of {
+                    Some(as_of) => write!(f, " as of {as_of}"),
+                    None => Ok(()),
+                }
+            }
+            #[cfg(feature = "convert")]
+            Self::RateExpired { from, to, valid_until } => {
+                write!(f, "exchange rate {from}→{to} expired at {valid_until}")
+            }
         }
     }
 }
