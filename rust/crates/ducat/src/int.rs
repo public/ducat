@@ -120,12 +120,6 @@ impl Int {
         }
     }
 
-    pub(crate) fn is_odd(&self) -> bool {
-        match &self.0 {
-            Repr::Small(value) => value & 1 == 1,
-            Repr::Big(value) => value.is_odd(),
-        }
-    }
 
     /// `self × 10^exponent`.
     pub(crate) fn mul_pow10(&self, exponent: u32) -> Self {
