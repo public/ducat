@@ -47,10 +47,32 @@ Milestone 5d1 extended `ducat::convert` to ducat's rates, providers and bags, st
 - **Left out:** `snapshots` and `snapshotsFrom`, which load tables asynchronously, and the rate-source parsers
   (milestone 5d2).
 
+Milestone 5d2 ported the rate-source parsers, one feature each (`ecb`, `boc`, `fed`, `boe`, `hmrc`, `history`,
+`stripe-fx`, `adyen-fx`), under `ducat::convert`. They take `&str`, never fetch, return `Error::MalformedRates`
+(ducat's `SyntaxError`) for a file they can't read, and give `RateTable`s with the metadata ducat attaches. The
+fixtures live in `spec/fixtures/`, shared with ducat's tests, and `spec/vectors/convert/sources.json` checks both.
+- **Publication times without time-zone data:** the ECB's 16:00 in Frankfurt and the Bank of Canada's 16:30 in Toronto
+  use the EU rule (since 1996) and the North American one (since 2007) written out, which agree with tzdata for
+  1999 to 2039; ducat reads them from `Intl`. `Publication` is `Unknown`, `Stated` or `Given(&dyn Fn(Date) -> Time)`,
+  ducat's `false`, `true` and function.
+- **Currency codes** in files are ISO 4217 codes or withdrawn ones (`CurrencyCode::historic`: CYP, VEB…). Any other
+  code is skipped and listed in the table's `unknown()`, so a code new to ISO 4217 in a feed doesn't fail every parse
+  that day; ducat keeps such a code as a currency of its own (it takes any string).
+- **The ECB's XML** follows the Cube elements' nesting, as ducat does since #354: a day ends at its own closing tag,
+  inner cubes may be self-closing or explicitly closed, and a self-closing `<Cube time='…'/>` isn't a day.
+- **Decimals** a source is said to publish are 0 to 30, as ducat's `withDecimals` allows (`Error::InvalidDecimals`).
+- **A small JSON reader** for Valet (no dependency): depth-limited, last repeated key wins in the first one's place,
+  as `JSON.parse`.
+- **Stripe's `exchange_rate`** is passed as the JSON number's text, not a float, so the library reads no float; it is
+  read as ducat reads the number (at most 15 significant digits unless a safe integer).
+- **Years 0 to 99** are refused in file dates, as ducat's `Date.UTC` check refuses them.
+- **Left out:** Adyen's IANA `timeZone` option (it needs time-zone data; the TimeZone column's abbreviations and
+  offsets are read), and `src/fetch.ts`.
+
 Known gaps, to close later:
 - Currency names and symbols (`currencyName`, `currencySymbol`): they come from `Intl` in ducat, so with
   formatting in `ducat-icu` (milestone 6).
-- The rate-source parsers (ECB, BoC, Fed, BoE, HMRC, history, Stripe and Adyen FX) and `snapshots`: milestone 5d2.
+- `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
 
 The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.
 
@@ -182,7 +204,7 @@ lives").
 | `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | `cash::cldr_cash` is Rust-only (no ducat equivalent; the spec checks it against `data/` only), for `ducat-icu` |
 | `/fixed`, `/fixed/money` | `ducat::fixed::Fixed` | |
 | `/finance`, `/excel` | `finance`, `excel` | the Excel rule applies to `excel` |
-| `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | rates with metadata, providers and `MoneyBag` in `convert` (5d1); the parsers take text and never fetch (5d2) |
+| `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | rates with metadata, providers and `MoneyBag` in `convert` (5d1); the parsers, a feature each, take text and never fetch (5d2) |
 | `/convert/fetch` | `ducat-fetch` | network code only here |
 | `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
 | `/wire` | `wire` (google.type.Money, ISO 20022, dinero objects) | |

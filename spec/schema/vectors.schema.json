@@ -1179,7 +1179,15 @@
         "provider.rate",
         "provider.convert",
         "bag.total",
-        "bag.sort"
+        "bag.sort",
+        "source.parse",
+        "source.table",
+        "source.sdmxDecimals",
+        "history.fromQuote",
+        "history.lookup",
+        "fx.stripeRate",
+        "fx.stripeImplied",
+        "fx.adyenRate"
       ]
     },
     "rowsByOp": {
@@ -3364,6 +3372,174 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/bag.sort"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "source.parse"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/source.parse"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "source.table"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/source.table"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "source.sdmxDecimals"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/source.sdmxDecimals"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "history.fromQuote"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/history.fromQuote"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "history.lookup"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/history.lookup"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "fx.stripeRate"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/fx.stripeRate"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "fx.stripeImplied"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/fx.stripeImplied"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "fx.adyenRate"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/fx.adyenRate"
                 }
               }
             }
@@ -7144,6 +7320,301 @@
           }
         },
         "additionalProperties": false
+      },
+      "source.parse": {
+        "type": "object",
+        "required": ["parser", "days", "error"],
+        "properties": {
+          "parser": {
+            "enum": ["ecbXml", "ecbCsv", "ecbSdmx", "boc", "fed", "boe", "hmrc"]
+          },
+          "fixture": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object"
+          },
+          "days": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rateTime"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["syntax", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "source.table": {
+        "type": "object",
+        "required": ["parser", "index", "table"],
+        "properties": {
+          "parser": {
+            "enum": ["ecbXml", "ecbCsv", "ecbSdmx", "boc", "fed", "boe", "hmrc"]
+          },
+          "fixture": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "table": {
+            "$ref": "#/$defs/sourceTable"
+          }
+        },
+        "additionalProperties": false
+      },
+      "source.sdmxDecimals": {
+        "type": "object",
+        "required": ["decimals", "error"],
+        "properties": {
+          "fixture": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "decimals": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["syntax"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "history.fromQuote": {
+        "type": "object",
+        "required": ["from", "to", "quote", "rate", "error"],
+        "properties": {
+          "from": {
+            "$ref": "#/$defs/currency"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "quote": {
+            "type": "object"
+          },
+          "info": {
+            "type": "object"
+          },
+          "rate": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "history.lookup": {
+        "type": "object",
+        "required": ["tables", "from", "to", "rate", "skipped"],
+        "properties": {
+          "tables": {
+            "$ref": "#/$defs/sourceInput"
+          },
+          "from": {
+            "$ref": "#/$defs/currency"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "asOf": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "lookback": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rate": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "$ref": "#/$defs/date"
+                },
+                {
+                  "enum": ["noTable", "notYetAvailable", "expired", "missing", "notQuoted"]
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "fx.stripeRate": {
+        "type": "object",
+        "required": ["from", "transaction", "rate", "error"],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "transaction": {
+            "type": "object"
+          },
+          "rate": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "fx.stripeImplied": {
+        "type": "object",
+        "required": ["amount", "currency", "transaction", "rate", "error"],
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "transaction": {
+            "type": "object"
+          },
+          "rate": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "fx.adyenRate": {
+        "type": "object",
+        "required": ["row", "rate"],
+        "properties": {
+          "row": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "rate": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       }
     },
     "spreadsheetNumber": {
@@ -7447,6 +7918,58 @@
           "additionalProperties": false
         }
       ]
+    },
+    "sourceInput": {
+      "description": "A rate-source file: `parser` names the parser, and the file is `fixture` (a path under spec/fixtures/) or inline `text`; `options` are the parser's.",
+      "type": "object",
+      "required": ["parser"],
+      "properties": {
+        "parser": {
+          "enum": ["ecbXml", "ecbCsv", "ecbSdmx", "boc", "fed", "boe", "hmrc"]
+        },
+        "fixture": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "options": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sourceTable": {
+      "description": "A parsed table: its base and timing, the currencies listed without a value, and its rates in ducat's JSON form, in order.",
+      "type": "object",
+      "required": ["base", "missing", "rates"],
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/currency"
+        },
+        "asOf": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "availableAt": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "validUntil": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/currency"
+          }
+        },
+        "rates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rateJson"
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "oneOf": [

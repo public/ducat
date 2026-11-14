@@ -12,7 +12,7 @@ import { exchangeRate } from '../src/rate.js';
 
 // Downloaded from trade-tariff.service.gov.uk on 2026-11-08 (Open Government Licence v3.0).
 const november = readFileSync(
-  new URL('fixtures/hmrc/monthly_csv_2026-11.csv', import.meta.url),
+  new URL('../spec/fixtures/hmrc/monthly_csv_2026-11.csv', import.meta.url),
   'utf8',
 );
 const HMRC_HEADER =

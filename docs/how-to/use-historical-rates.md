@@ -6,7 +6,7 @@ This guide shows you how to load published exchange rates (ECB, Bank of Canada, 
 
 Parse the source's file, then hand the tables to `rateHistory`. It answers synchronously, falls back per pair (a currency missing on a holiday comes from the day before) up to `lookback` days (default 4), and `lookup()` says why it fell back: `noTable`, `notYetAvailable`, `expired`, `missing` or `notQuoted`.
 
-<!-- doctest: setup import { readFileSync } from 'node:fs'; const ecbXml = readFileSync('test/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const ecbXml = readFileSync('spec/fixtures/ecb/eurofxref-hist-2d.xml', 'utf8'); -->
 
 ```ts
 import { parseEcbXml } from '@ducatjs/money/convert/ecb';
@@ -40,7 +40,7 @@ Parse the daily, 90-day or full-history eurofxref XML or CSV files with `parseEc
 
 The ECB's files give no publication time. If you need historical lookups that respect it, pass `availableAt: true` (to the parsers, `fetchEcb` or `fetchEcbRange`) for the documented 16:00 CET, which is Frankfurt time (15:00 UTC in winter, 14:00 in summer), or a function of the day for your own.
 
-<!-- doctest: setup import { readFileSync } from 'node:fs'; const sdmxCsv = readFileSync('test/fixtures/ecb-sdmx/exr-d-full.csv', 'utf8'); -->
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const sdmxCsv = readFileSync('spec/fixtures/ecb-sdmx/exr-d-full.csv', 'utf8'); -->
 
 ```ts
 import { parseEcbSdmxCsv } from '@ducatjs/money/convert/ecb';
@@ -56,7 +56,7 @@ history.rate('EUR', 'USD', { asOf: '2025-12-26' })?.asOf; // → '2025-12-24' (C
 
 Parse the Valet API's JSON with `parseBankOfCanadaJson` (`@ducatjs/money/convert/boc`), or fetch it with `fetchBankOfCanada()` (keyless and CORS-enabled):
 
-<!-- doctest: setup import { readFileSync } from 'node:fs'; const valetJson = readFileSync('test/fixtures/boc/fx-rates-daily.json', 'utf8'); -->
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const valetJson = readFileSync('spec/fixtures/boc/fx-rates-daily.json', 'utf8'); -->
 
 ```ts
 import { parseBankOfCanadaJson } from '@ducatjs/money/convert/boc';
@@ -72,7 +72,7 @@ The Bank quotes four decimals (up to six for small rates), so a small rate has o
 
 Download the CSV from the Board's Data Download Program yourself (release H10, series in columns, with labels), and parse it with `parseFedH10Csv` (`@ducatjs/money/convert/fed`). There is no fetcher: the Board is retiring the Data Download Program in favour of FRED, whose terms (an API key, no storing or caching, no commercial use without consent) rule one out.
 
-<!-- doctest: setup import { readFileSync } from 'node:fs'; const h10Csv = readFileSync('test/fixtures/fed/h10-daily.csv', 'utf8'); -->
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const h10Csv = readFileSync('spec/fixtures/fed/h10-daily.csv', 'utf8'); -->
 
 ```ts
 import { parseFedH10Csv } from '@ducatjs/money/convert/fed';
@@ -86,7 +86,7 @@ latest?.rate('USD', 'EUR')?.inverse().toString(); // → '1.1689' (USD per euro,
 
 For the UK's customs and VAT rates, parse HMRC's monthly CSV with `parseHmrcMonthlyCsv` (`@ducatjs/money/convert/hmrc`). Each month's table is valid for that month only:
 
-<!-- doctest: setup import { readFileSync } from 'node:fs'; const hmrcCsv = readFileSync('test/fixtures/hmrc/monthly_csv_2026-11.csv', 'utf8'); -->
+<!-- doctest: setup import { readFileSync } from 'node:fs'; const hmrcCsv = readFileSync('spec/fixtures/hmrc/monthly_csv_2026-11.csv', 'utf8'); -->
 
 ```ts
 import { rateHistory } from '@ducatjs/money/convert/history';

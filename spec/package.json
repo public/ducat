@@ -11,12 +11,14 @@
   },
   "files": [
     "vectors",
+    "fixtures",
     "schema",
     "README.md"
   ],
   "exports": {
     "./package.json": "./package.json",
     "./schema/*": "./schema/*",
-    "./vectors/*": "./vectors/*"
+    "./vectors/*": "./vectors/*",
+    "./fixtures/*": "./fixtures/*"
   }
 }

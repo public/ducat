@@ -20,7 +20,7 @@ assert_eq!(gross.to_string(), "26.88 EUR");
 
 Status: the core (parsing, rounding, add, subtract, multiply, divide, convert at a rate, compare, serde), allocation
 (allocate, split, instalments, schedule, chunk), cash rounding, tax (percentages, discounts, adding and extracting
-tax), `Fixed` decimals, `ExactMoney`, exchange rates (`Rate`, with their metadata, rate providers and `MoneyBag`), finance (day counts, interest, loans, savings,
+tax), `Fixed` decimals, `ExactMoney`, exchange rates (`Rate`, with their metadata, rate providers, `MoneyBag` and the rate-source parsers), finance (day counts, interest, loans, savings,
 proration), Excel's functions, rounding policies, pricing and tiers, math, currency data (historic codes, territories, crypto units, cash
 rules), payment processors (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna), and the conformance runner. See [docs/design.md](docs/design.md).
 

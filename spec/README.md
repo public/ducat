@@ -32,6 +32,7 @@ spec/
 | `rounding`   | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                               |
 | `convert`    | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                                       |
 | `convert`    | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual                      |
+| `convert`    | `sources.json`          |   393 | reference data     | the rate-source parsers on spec/fixtures/, quoted rates, dated lookups, Stripe and Adyen rates  |
 | `convert`    | `providers.json`        | 1,434 | Python `fractions` | rate metadata and its JSON, validity at UTC day boundaries, rate providers, multi-currency bags |
 | `exact`      | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply                |
 | `tax`        | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                               |
@@ -521,6 +522,43 @@ and `derivedFrom`. Every field is judged exactly, as JSON; `error` names the out
 | `provider.convert`   | `want`: `amount` in `currency` converted to `to` through `provider` as of `asOf`, at `resultScale` (default `to`'s exponent); `null` with `error` `unavailable` or `rounding`                                              |
 | `bag.total`          | `totals`: the bag's per-currency totals in first-seen order; `exact`: `exactTotal` in `to`; `total`: rounded once with `rounding` at `resultScale`; `null`s with `error` `unavailable`                                     |
 | `bag.sort`           | `order`: the indices of `items` as `sortByValue` orders them by their exact value in `base` (stable); `null` with `error` `unavailable`                                                                                    |
+
+### Rate sources
+
+`convert/sources.json` holds what ducat's rate-source parsers make of the files in `spec/fixtures/`
+(each directory's README gives the file's source and fetch date) and of small inline variants, as
+`scripts/gen-rate-source-vectors.py` reads them with Python's standard library, independently of
+ducat. A row names its `parser` (`ecbXml`, `ecbCsv`, `ecbSdmx`, `boc`, `fed`, `boe`, `hmrc`), its
+file (`fixture`, a path under `spec/fixtures/`, or inline `text`) and the parser's `options`
+(`decimals` as `[currency, decimals]` pairs, or `decimalsFrom`, a fixture read with
+`parseEcbSdmxDecimals`). Rates are in ducat's JSON form, as in `providers.json`. Every field is
+judged exactly, as JSON; `error` is `syntax` for a file the parser can't read and `range` for a
+rate that isn't positive, or `null`.
+
+- **Tables:** one per day (per period for HMRC), newest first, each with its base, timing, the
+  currencies listed without a value (`missing`, in the file's order) and its rates in order. A day
+  without any rate is left out.
+- **The ECB's XML:** the Cube elements must nest; a day's rates end at its own closing tag, and an
+  inner cube is written `<Cube …/>` or `<Cube …></Cube>`. A day is a Cube with only a `time`
+  attribute, written with a closing tag: a self-closing `<Cube time='…'/>` is passed over, and a
+  file without a day is a `syntax` error.
+- **Publication times** are the sources' stated local times: the ECB's 16:00 in Frankfurt (CET, or
+  CEST from the last Sunday of March to the last Sunday of October) when asked for, the Bank of
+  Canada's 16:30 in Toronto (EST, or EDT from the second Sunday of March to the first Sunday of
+  November) by default, and HMRC's the start of the penultimate Thursday of the month before.
+- **Lookups** (`history.lookup`) are `rateHistory` over a file's tables: the rate, and the days
+  passed over, newest first, as `[day, reason]`.
+
+| op                    | expected fields and how each is judged                                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `source.parse`        | `days`: each table's `asOf`, newest first; `null` with `error`                                                                     |
+| `source.table`        | `table`: the parsed table at `index` (0 is the newest)                                                                             |
+| `source.sdmxDecimals` | `decimals`: `parseEcbSdmxDecimals` of the file, as pairs in the file's order; `null` with `error` `syntax`                         |
+| `history.fromQuote`   | `rate`: `rateFromQuote(from, to, quote, info)`; `null` with `error` `range`                                                        |
+| `history.lookup`      | `rate` (or `null`) and `skipped` for `from` → `to` as of `asOf`, with `lookback` (default 4), over the tables of `tables`          |
+| `fx.stripeRate`       | `rate`: `stripeRate(from, transaction)`, its `exchange_rate` the decimal of a JSON number; `null` with no rate, or `error` `range` |
+| `fx.stripeImplied`    | `rate`: `stripeImpliedRate` of `amount` in `currency` and the transaction; `null` with `error` `range`                             |
+| `fx.adyenRate`        | `rate`: `adyenRate(row)`, or `null` when the row has no rate                                                                       |
 
 ### Finance and Excel tables
 
