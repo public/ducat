@@ -120,7 +120,6 @@ impl Int {
         }
     }
 
-
     /// `self × 10^exponent`.
     pub(crate) fn mul_pow10(&self, exponent: u32) -> Self {
         if exponent == 0 || self.is_zero() {

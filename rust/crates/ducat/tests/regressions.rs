@@ -185,7 +185,7 @@ fn reference(n: &BigInt, d: &BigInt, mode: Rounding) -> Option<BigInt> {
     if remainder == BigInt::from(0) {
         return Some(floor);
     }
-    let ceil = &floor + 1;
+    let ceil: BigInt = &floor + BigInt::from(1);
     let negative = *n < BigInt::from(0);
     let toward_zero = if negative {
         ceil.clone()
@@ -197,7 +197,7 @@ fn reference(n: &BigInt, d: &BigInt, mode: Rounding) -> Option<BigInt> {
     } else {
         ceil.clone()
     };
-    let twice = &remainder * 2;
+    let twice: BigInt = &remainder * BigInt::from(2);
     let nearest = |tie: BigInt| match twice.cmp(d) {
         std::cmp::Ordering::Less => floor.clone(),
         std::cmp::Ordering::Greater => ceil.clone(),
