@@ -45,9 +45,11 @@ separators), and the unit patterns. What differs:
   and its symbols load the format of the locale's region's currency for the locale, which other
   currencies without one keep: en-NL writes USD as `US$1,234.50` too. ducat-format does the same
   for a symbol, narrow symbol or code (`Locale::currency_format`), from CLDR's data, so nothing
-  here is copied for it. A name it writes as TR35 has it, by ducat's decision: the locale's
-  decimal pattern and unit pattern (`1,234.50 euros` in en-150), never the currency's own pattern
-  or symbol; it follows ICU's data, not its code.
+  here is copied for it. A name it writes as TR35 has it, by ducat's decision: the number, with
+  the separators and grouping the symbol form uses for the currency (so parse reads it back) and
+  no symbol, in the unit pattern with the plural name (`1,234.567 Kuwaiti dinars` and
+  `1,234.50 euros` in en-NL, `1.234,50 euros` in en-AT), never the currency's own pattern or
+  symbol; it follows ICU's data, not its code.
 - **Locales ICU doesn't ship**: `be-tarask`, `ca-ES-valencia`, `el-polyton` and `ht` have no
   locales file, and `Intl` falls back (ht formats as English; nb-SJ and ht count as without data
   for ducat's parse). ducat-format has CLDR's data for them, so it formats them as CLDR does and
@@ -61,7 +63,8 @@ every locale through both:
 - a currency with its own pattern shown by name, at a scale other than the pattern's two digits,
   comes out garbled: `format(money('1234.567', 'KWD'), 'en-NL', { currencyDisplay: 'name' })` is
   `KWD 1,234.56 Kuwaiti dinars7` on Node 24 (ICU 78.3); ducat-format writes TR35's
-  `1.234,567 Kuwaiti dinars` (en-NL's own separators), and ducat's TypeScript is to match;
+  `1,234.567 Kuwaiti dinars`, with the separators of en-NL's currency format, and ducat's
+  TypeScript is to match (ducat#363);
 - sr-Cyrl-ME's currency names are Latin in ICU (`američkih dolara`), Cyrillic in CLDR.
 
 The files are under the Unicode License v3 (`../cldr/LICENSE`; see also `NOTICE`).

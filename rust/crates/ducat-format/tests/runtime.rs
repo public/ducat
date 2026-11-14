@@ -84,7 +84,7 @@ fn writes_a_currencys_own_pattern() {
     // a name follows TR35 there: the locale's decimal and unit patterns, at the amount's scale
     assert_eq!(
         written("1234.567", "KWD", "en-NL", &name()),
-        "1.234,567 Kuwaiti dinars"
+        "1,234.567 Kuwaiti dinars"
     );
     assert_eq!(
         written("1234.567", "KWD", "en-150", &name()),

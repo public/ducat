@@ -11,6 +11,15 @@ use ducat_format::{
 };
 use proptest::prelude::*;
 
+/// The text around the number: before its first digit and after its last.
+fn affix(text: &str) -> impl Iterator<Item = char> + '_ {
+    let first = text.find(|ch: char| ch.is_numeric()).unwrap_or(text.len());
+    let last = text.rfind(|ch: char| ch.is_numeric()).map_or(0, |at| {
+        at + text[at..].chars().next().map_or(0, char::len_utf8)
+    });
+    text[..first].chars().chain(text[last.max(first)..].chars())
+}
+
 /// Characters in CLDR's currency symbols that ducat's parse refuses around a number.
 const REFUSED: [char; 2] = ['/', '\u{dca}'];
 
@@ -151,19 +160,16 @@ fn options() -> impl Strategy<Value = FormatOptions> {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(2048))]
 
-    /// What format writes with a symbol, a narrow symbol or a code, standard or accounting,
-    /// parse reads back as the same amount, in every built locale that has data for parsing.
+    /// What format writes, with any display (a name too: parse takes the letters around the
+    /// number, as ducat's does), standard or accounting, parse reads back as the same amount, in
+    /// every built locale that has data for parsing.
     #[test]
     fn parse_reads_back_what_format_writes(
         name in prop::sample::select(built()),
         code in prop::sample::select(CURRENCIES.to_vec()),
         units in units(),
         extra in 0_u16..4,
-        display in prop_oneof![
-            Just(CurrencyDisplay::Symbol),
-            Just(CurrencyDisplay::NarrowSymbol),
-            Just(CurrencyDisplay::Code),
-        ],
+        display in display(),
         sign in sign(),
     ) {
         let locale = Locale::new(name).unwrap();
@@ -178,7 +184,19 @@ proptest! {
         // signs around the number, so it refuses symbols with other characters as ducat's
         // TypeScript does (PEN's `S/` in es-PE, PAB's `B/.`, XOF's Sinhala symbol with a virama):
         // see `refuses_symbols_outside_its_affix_characters`
-        if REFUSED.iter().any(|ch| text.contains(*ch)) {
+        // a name is letters, and some scripts' names carry combining marks ducat's affix set
+        // doesn't take (Malayalam's virama), so those are refused as the symbols above are
+        let name_refused = display == CurrencyDisplay::Name && affix(&text).any(|ch| {
+            !(ch.is_alphabetic()
+                || ch.is_whitespace()
+                || "().+-−\u{a0}\u{202f}\u{200b}\u{200e}\u{200f}\u{61c}".contains(ch))
+        });
+        // a name with a parenthesis or hyphen reads as negative, as ducat's TypeScript reads it:
+        // see `reads_signs_in_names_as_ducat_does`
+        let name_signed = display == CurrencyDisplay::Name
+            && text.trim_start_matches(|ch: char| !ch.is_alphabetic()).contains(['(', ')', '-', '−']);
+        prop_assume!(!name_signed);
+        if name_refused || REFUSED.iter().any(|ch| text.contains(*ch)) {
             prop_assert_eq!(back, Err(Error::Syntax(SyntaxError::UnexpectedCharacters)));
             return Ok(());
         }
@@ -305,5 +323,26 @@ fn refuses_symbols_outside_its_affix_characters() {
             parse(&text, amount.currency(), &locale, &ParseOptions::default()),
             Err(Error::Syntax(SyntaxError::UnexpectedCharacters))
         );
+    }
+}
+
+/// ducat's parse takes a parenthesis or minus anywhere around the number as negative, so a name
+/// with one reads as negative, as in ducat's TypeScript on Node 24:
+/// `parse(format(money('1.0000', 'CLF'), 'en', { currencyDisplay: 'name' }), 'CLF', 'en')` is
+/// -1.0000. ducat-format keeps to ducat's rule.
+#[cfg(feature = "en")]
+#[test]
+fn reads_signs_in_names_as_ducat_does() {
+    let english = Locale::new("en").unwrap();
+    let name = FormatOptions::new().display(CurrencyDisplay::Name);
+    for (amount, code, written) in [
+        ("1.0000", "CLF", "1.0000 Chilean units of account (UF)"),
+        ("5.00", "BAM", "5.00 Bosnia-Herzegovina convertible marks"),
+    ] {
+        let amount = AnyMoney::parse(amount, CurrencyCode::iso(code).unwrap()).unwrap();
+        let text = format(&amount, &english, &name).unwrap();
+        assert_eq!(text, written);
+        let back = parse(&text, amount.currency(), &english, &ParseOptions::default()).unwrap();
+        assert_eq!(back.to_decimal(), format!("-{}", amount.to_decimal()));
     }
 }

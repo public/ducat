@@ -119,9 +119,11 @@ ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped di
 - **ICU's data followed, not its code bugs:** a currency's own format (EUR in en-150, PTE in pt-PT) is used for every
   sign with a symbol, narrow symbol or code, with the separators of the locale that defines it, and the format of a
   locale's region's currency for currencies without one (en-NL writes USD as `US$1,234.50`), as ICU's data and symbols
-  have it (`data/icu/README.md`). A name follows TR35 everywhere, by ducat's decision: the locale's decimal pattern
-  and unit pattern (`1,234.50 euros` in en-150), never the currency's own pattern or symbol, which ICU's code puts there
-  and garbles at other scales (`KWD 1,234.56 Kuwaiti dinars7` on Node 24); ducat's TypeScript is to match.
+  have it (`data/icu/README.md`). A name follows TR35 everywhere, by ducat's decision: the number, with the separators
+  and grouping the symbol form uses for that currency in that locale, so `parse` reads it back, and no symbol, in the
+  unit pattern with the plural name (`1,234.50 euros` in en-150, `1,234.567 Kuwaiti dinars` and `1,234.50 euros` in
+  en-NL, `1.234,50 euros` in en-AT); never the currency's own pattern or symbol, which ICU's code puts there and
+  garbles at other scales (`KWD 1,234.56 Kuwaiti dinars7` on Node 24); ducat's TypeScript is to match (ducat#363).
 - **Conformance:** the core runner delegates `format.money`, `parse.money` and `parse.detect` to `ducat-format`'s own
   spec test (2,538, 1,629 and 1,757 rows, all passing, the icu-overrides files included). Its proptests round-trip
   format and parse in every built locale and feed arbitrary tags, options, amounts and text to the public API.

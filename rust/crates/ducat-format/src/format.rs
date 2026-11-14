@@ -491,8 +491,10 @@ fn in_pattern(
 /// A currency CLDR gives its own pattern in the locale (EUR in en-150, en-AT and the other
 /// European English locales) is written in that pattern with a symbol, narrow symbol or code,
 /// whatever the sign, as ICU's data has it; the accounting form is that pattern too. A name
-/// follows TR35 everywhere: the locale's decimal pattern and the unit pattern
-/// (`-1,234.50 euros` in en-150), never the currency's own pattern or symbol.
+/// follows TR35 everywhere: the number, with the separators and grouping the symbol form uses for
+/// the currency (so [`parse()`](crate::parse) reads it back) and no symbol, in the unit pattern
+/// with the plural name (`-1,234.50 euros` in en-150, `1,234.567 Kuwaiti dinars` in en-NL),
+/// never the currency's own pattern or symbol.
 ///
 /// # Errors
 ///
@@ -527,20 +529,24 @@ pub fn format_to_parts(
         };
         return Ok(in_pattern(numbers, separators, source, &shown, currency)?.parts);
     }
-    // a name, as TR35 has it: the number in the locale's decimal pattern, with its currency
-    // separators and no accounting form, then the unit pattern for its plural category. A
-    // currency's own pattern and symbol never enter it (where ICU's code writes them, it garbles
-    // the text: data/icu/README.md).
+    // a name, as TR35 has it: the number, then the unit pattern for its plural category. The
+    // number's sign comes from the locale's decimal pattern (no accounting form); its separators
+    // and grouping are those the symbol form uses for this currency (a currency's own format's,
+    // where it has one), so parse reads it back. A currency's own pattern and symbol never enter
+    // it (where ICU's code writes them, it garbles the text: data/icu/README.md).
     let pattern = pattern::parse(numbers.decimal_pattern).map_err(|_| Error::MalformedData)?;
     let sub = if shown.negative {
         &pattern.negative
     } else {
         &pattern.positive
     };
+    let currency_source = special_pattern.unwrap_or(numbers.currency_pattern);
+    let grouping = pattern::parse(currency_source)
+        .map_err(|_| Error::MalformedData)?
+        .grouping;
     let mut amount = Parts::default();
     affixes(&mut amount, numbers, &sub.prefix, "");
-    let plain = (numbers.decimal, numbers.group);
-    for part in number(numbers, plain, &shown.digits, pattern.grouping).parts {
+    for part in number(numbers, separators, &shown.digits, grouping).parts {
         amount.push_text(part.kind, &part.value);
     }
     affixes(&mut amount, numbers, &sub.suffix, "");
