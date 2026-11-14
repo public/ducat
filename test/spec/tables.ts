@@ -115,6 +115,8 @@ import {
   toMinorUnits,
   type WireReadOptions,
 } from '../../src/wire.js';
+import { format, formatToParts, type FormatOptions } from '../../src/format.js';
+import { parse, parseMoney, type ParseMoneyOptions, type ParseOptions } from '../../src/parse.js';
 import {
   addTax,
   allocate,
@@ -907,6 +909,69 @@ const WIRE_OPERATIONS: Record<string, TableOperation> = {
   ),
 };
 
+// --- format and parse ---------------------------------------------------------------------------
+
+/** The kind the spec names for a format or parse error (RoundingError is a RangeError). */
+function intlOutcome(error: unknown): string {
+  if (error instanceof RoundingError) {
+    return 'rounding';
+  }
+  if (error instanceof SyntaxError) {
+    return 'syntax';
+  }
+  if (error instanceof TypeError) {
+    return 'type';
+  }
+  if (error instanceof RangeError) {
+    return 'range';
+  }
+  throw error;
+}
+
+function intlOperation(
+  fields: readonly string[],
+  run: (row: Row) => Record<string, unknown>,
+): TableOperation {
+  return fieldsOperation([...fields, 'error'], (row) => {
+    try {
+      return { ...run(row), error: null };
+    } catch (error) {
+      return {
+        ...Object.fromEntries(fields.map((field) => [field, null])),
+        error: intlOutcome(error),
+      };
+    }
+  });
+}
+
+const FORMAT_OPERATIONS: Record<string, TableOperation> = {
+  'format.money': intlOperation(['text', 'parts'], (row) => {
+    const amount = wireMoney(row);
+    const options = row['options'] as FormatOptions | undefined;
+    const locale = text(row, 'locale');
+    return {
+      text: format(amount, locale, options),
+      parts: formatToParts(amount, locale, options),
+    };
+  }),
+  'parse.money': intlOperation(['amount'], (row) => ({
+    amount: parse(
+      text(row, 'input'),
+      text(row, 'currency'),
+      text(row, 'locale'),
+      row['options'] as ParseOptions | undefined,
+    ).toDecimal(),
+  })),
+  'parse.detect': intlOperation(['money'], (row) => {
+    const found = parseMoney(
+      text(row, 'input'),
+      text(row, 'locale'),
+      row['options'] as ParseMoneyOptions | undefined,
+    );
+    return { money: { amount: found.toDecimal(), currency: found.currency } };
+  }),
+};
+
 const SOURCE_OPERATIONS: Record<string, TableOperation> = {
   'source.parse': fieldsOperation(['days', 'error'], (row) =>
     attemptParse(['days'], () => ({ days: parseSource(row).map((table) => table.asOf) })),
@@ -1072,6 +1137,7 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   ...RATE_OPERATIONS,
   ...SOURCE_OPERATIONS,
   ...WIRE_OPERATIONS,
+  ...FORMAT_OPERATIONS,
   'allocate.byRemainder': { expects: REMAINDERS, checkRow: checkAllocation },
   'instalments.byRemainder': {
     expects: ['first', 'last', 'toFirst', 'toLast'],

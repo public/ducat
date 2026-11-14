@@ -1,0 +1,68 @@
+{
+ "supplemental": {
+  "version": {
+   "_unicodeVersion": "16.0.0",
+   "_cldrVersion": "48"
+  },
+  "plurals-type-ordinal": {
+   "ar": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "da": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "de": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "en": {
+    "pluralRule-count-one": "n % 10 = 1 and n % 100 != 11 @integer 1, 21, 31, 41, 51, 61, 71, 81, 101, 1001, …",
+    "pluralRule-count-two": "n % 10 = 2 and n % 100 != 12 @integer 2, 22, 32, 42, 52, 62, 72, 82, 102, 1002, …",
+    "pluralRule-count-few": "n % 10 = 3 and n % 100 != 13 @integer 3, 23, 33, 43, 53, 63, 73, 83, 103, 1003, …",
+    "pluralRule-count-other": " @integer 0, 4~18, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "es": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "fa": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "fr": {
+    "pluralRule-count-one": "n = 1 @integer 1",
+    "pluralRule-count-other": " @integer 0, 2~16, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "hi": {
+    "pluralRule-count-one": "n = 1 @integer 1",
+    "pluralRule-count-two": "n = 2,3 @integer 2, 3",
+    "pluralRule-count-few": "n = 4 @integer 4",
+    "pluralRule-count-many": "n = 6 @integer 6",
+    "pluralRule-count-other": " @integer 0, 5, 7~20, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "it": {
+    "pluralRule-count-many": "n = 11,8,80,800 @integer 8, 11, 80, 800",
+    "pluralRule-count-other": " @integer 0~7, 9, 10, 12~17, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "ja": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "nl": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "pt": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "ru": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "sv": {
+    "pluralRule-count-one": "n % 10 = 1,2 and n % 100 != 11,12 @integer 1, 2, 21, 22, 31, 32, 41, 42, 51, 52, 61, 62, 71, 72, 81, 82, 101, 1001, …",
+    "pluralRule-count-other": " @integer 0, 3~17, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "sw": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   },
+   "th": {
+    "pluralRule-count-other": " @integer 0~15, 100, 1000, 10000, 100000, 1000000, …"
+   }
+  }
+ }
+}

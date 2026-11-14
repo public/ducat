@@ -47,8 +47,10 @@ spec/
 | `excel`      | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                                   |
 | `words`      | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets              |
 | `words`      | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets                   |
-
-The other areas the schema names (`format`, `parse`) have no vectors yet.
+| `format`     | `cldr.json`             | 2,475 | CLDR 48 (TR35)     | money as currency text and parts: every display and sign, digits and rounding, large values     |
+| `format`     | `icu-overrides.json`    |    63 | CLDR 48 + ICU 78.3 | the same where ICU's shipped data overrides CLDR's (fr-CH's group separator)                    |
+| `parse`      | `cldr.json`             | 3,274 | CLDR 48 (TR35)     | parse and parseMoney: format's text read back, separators, leniency, signs, detection, errors   |
+| `parse`      | `icu-overrides.json`    |   112 | CLDR 48 + ICU 78.3 | the same where ICU's shipped data overrides CLDR's (fr-CH)                                      |
 
 The General Decimal Arithmetic test cases (decTest), which `test/dectest.test.ts` runs, aren't in
 the suite: they are IBM's copyright, so `scripts/fetch-dectest.mjs` downloads them at test time
@@ -685,6 +687,78 @@ Known gaps:
   NPVs, say), as a check that the error bounds aren't doing all the work. Those counts are in the
   tests, not in the spec.
 
+### Formatting and parsing
+
+`format/*.json` and `parse/*.json` come from `scripts/gen-format-vectors.py`, a formatter and
+parser written with Python's standard library from Unicode
+[TR35](https://www.unicode.org/reports/tr35/tr35-numbers.html) (patterns, symbols, numbering
+systems, grouping and minimum grouping digits, currency spacing, accounting patterns, currency names
+in their plural forms) and from the parse rules of
+[docs/reference/parse.md](../docs/reference/parse.md), over the CLDR 48 snapshot in
+[`data/cldr/`](../data/cldr/README.md). It never runs ducat or Intl. ducat formats and parses with
+the runtime's Intl, whose ICU 78.3 (Node 24, Bun) carries CLDR 48, so when ducat passes these rows
+two independent implementations of TR35 agree on one CLDR release. Every row depends on the
+runtime's Intl data (`runtimeIntl`): an engine with other CLDR data writes other text, and a port
+that formats without ICU needs the same data.
+
+A Money is `amount` (a decimal at the scale its fraction digits give) in `currency`. `locale` is a
+BCP 47 tag, and `options` are ducat's: `currencyDisplay` (`symbol`, `narrowSymbol`, `code`,
+`name`), `currencySign` (`standard`, `accounting`) and `digits` with `rounding` for `format`;
+`scale`, `rounding` and `lenient` for `parse`; and `hint`, `symbols`, `currencies`, `lenient`,
+`scale` and `rounding` for `parseMoney`. Other Intl options aren't covered. Every field is judged
+exactly, as JSON.
+
+| op             | expected fields and how each is judged                                                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `format.money` | `text`: `format`'s string; `parts`: `formatToParts`'s `{ type, value }` list; `null` with `error` `type` (Intl digit options beside `digits`, `rounding` without it) or `range` |
+| `parse.money`  | `amount`: what `parse(input, currency, locale, options)` reads, at the result's scale; `null` with `error` `syntax`, `range` (a locale without data) or `rounding`              |
+| `parse.detect` | `money`: `{ amount, currency }`, what `parseMoney(input, locale, options)` reads and detects; `null` with `error` as `parse.money`                                              |
+
+TR35 doesn't define the parts. The rows use Intl's part types: the digits, separators and signs
+are `integer`, `group`, `decimal`, `fraction` and `minusSign`; the symbol, code or name is
+`currency`; bidi marks (format characters) in a symbol, such as the ALM in ar-EG's minus sign, are
+`literal`, as are the pattern's other characters and the currency spacing; adjacent characters of
+one type form one part.
+
+That convention, and how a currency name is shown (the number in the decimal pattern with the
+currency's separators, never in the accounting form, then the locale's `unitPattern` with the name
+in the number's plural form), are where TR35 leaves a choice; the oracle's choices were settled after
+looking at ICU's output, so agreement on them isn't independent evidence. The rest is.
+
+#### Runtime divergences
+
+ICU doesn't always ship CLDR's data unchanged: its locale files (`icu4c/source/data/locales/`)
+can override a value. So the vectors come in two tables per area:
+
+- `cldr.json` is CLDR 48 alone, for every locale where ICU 78.3 ships CLDR's values.
+- `icu-overrides.json` holds the locales where ICU 78.3's data deliberately overrides CLDR, computed
+  by the same oracle with ICU's values applied, from ICU's own files at tag `release-78.3`
+  (copied to [`data/icu/`](../data/icu/README.md)). A port on CLDR data without ICU's overrides
+  would write CLDR's value here instead.
+
+A survey of ICU 78.3's number symbols, decimal patterns and currency and accounting patterns
+against CLDR 48 found one override among the locales used here and their parent chains: fr-CH's
+group separator. CLDR 48's `fr_CH.xml` sets only `currencyDecimal` "." and inherits fr's U+202F
+group; ICU's `fr_CH.txt` sets `group` "'" as well, so fr-CH writes `1'234.50 CHF`.
+
+Other runtimes ship other builds of the same ICU and CLDR versions. Deno 2.9.8 reports ICU 78.3
+and CLDR 48.0, but its data differs in three locales: de-CH's group is U+2019 (`CHF 1’234.50`,
+not `CHF 1'234.50`), fr-CA's currency names follow a space rather than U+00A0 (`1,00 dollar
+canadien`), and fr-CH keeps CLDR's U+202F group, without ICU's override.
+
+So the files declare the build they were checked on, `provenance.data.referenceRuntime` (`Node 24
+(ICU 78.3, CLDR 48.0)`), and a runner checks each locale with known build differences with a
+canary: it formats one value (de-CH `1234.50` CHF, fr-CA `1.00` CAD by name, fr-CH `1234.50` CHF)
+and compares the text with the file's row for it.
+
+- On the declared runtime (Node of that major version, with exactly that ICU and CLDR, decided
+  from the runtime and its versions), a canary mismatch is a failure: its data changed.
+- On any other runtime, a mismatch skips that locale's `format.money`, `parse.money` and
+  `parse.detect` rows, and the runner says which locale, how many rows, and the code points
+  expected and found. ducat's runner writes it as a GitHub Actions warning:
+  `::warning title=Intl data differs::de-CH skipped (166 rows): expected U+0027 got U+2019 …`.
+- Skipped rows still count as seen: the count per area stays exact, so a lost file still fails.
+
 ### Spelling out numbers
 
 `words.spellOut` tables come one per language and rule set, named in the table's
@@ -732,6 +806,7 @@ Every file says where its expected values come from (`provenance.source`):
 | `dectest`                 | the General Decimal Arithmetic test cases                                                                                                  |
 | `icu`                     | ICU's own output, on CLDR data                                                                                                             |
 | `reference-data`          | read from the reference data in ducat's `data/` (ISO 4217 lists, CLDR, curated sources), by a program independent of ducat's own generator |
+| `cldr`                    | computed by an independent implementation of Unicode TR35 over the CLDR snapshot in `data/cldr/` (with ICU's overrides where stated)       |
 
 `generator` names the program that wrote the file and its version, or is `null` for values
 written by hand or copied. Expected values never come from ducat's own output: a vector that

@@ -1,0 +1,22 @@
+{
+ "supplemental": {
+  "version": {
+   "_unicodeVersion": "16.0.0",
+   "_cldrVersion": "48"
+  },
+  "numberingSystems": {
+   "arab": {
+    "_digits": "٠١٢٣٤٥٦٧٨٩",
+    "_type": "numeric"
+   },
+   "arabext": {
+    "_digits": "۰۱۲۳۴۵۶۷۸۹",
+    "_type": "numeric"
+   },
+   "latn": {
+    "_digits": "0123456789",
+    "_type": "numeric"
+   }
+  }
+ }
+}

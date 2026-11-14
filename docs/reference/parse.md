@@ -17,7 +17,7 @@ Reads a locale-formatted amount in `currency`. The currency comes from the argum
 - **Accepts:** the locale's group and decimal separators; NBSP and narrow NBSP, Swiss `’`; Arabic-Indic, Persian, Devanagari and Thai digits; a minus sign (ASCII or U+2212) or accounting parentheses in the affixes, which make it negative.
 - **Group separators** must be where the locale puts them (`1.234,50` in de-DE, `1,23,456.78` in en-IN), because a misplaced one is usually another locale's decimal separator. `{ lenient: true }` accepts them anywhere.
 - **Scale and rounding:** as `money()`, with `options.scale` and `options.rounding`.
-- **Throws:** `SyntaxError` for no digits, unexpected characters, more than one decimal separator, or group separators in the wrong places; `RangeError` for a malformed locale tag (from `Intl`); `RoundingError` for more decimals than the scale without `rounding`. A locale the runtime has no data for isn't detected: `parse` uses the runtime's fallback separators (`parseMoney` rejects it).
+- **Throws:** `SyntaxError` for no digits, unexpected characters, more than one decimal separator, or group separators in the wrong places; `RangeError` for a malformed locale tag (from `Intl`) or a locale the runtime has no Intl number data for (`de-XX`, which Intl would read as `de`), as `parseMoney` does; `RoundingError` for more decimals than the scale without `rounding`.
 
 ### parseMoney
 
