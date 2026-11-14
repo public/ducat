@@ -169,6 +169,37 @@ impl Int {
         self.div_rem(divisor).0
     }
 
+    /// `self^exponent`.
+    #[cfg(feature = "finance")]
+    pub(crate) fn pow(&self, exponent: u32) -> Self {
+        if let Repr::Small(value) = &self.0 {
+            if let Some(power) = value.checked_pow(exponent) {
+                return Self(Repr::Small(power));
+            }
+        }
+        Self::from_big(num_traits::pow(self.to_big(), exponent as usize))
+    }
+
+    /// The quotient rounded toward −∞; `divisor` is non-zero.
+    #[cfg(feature = "excel")]
+    pub(crate) fn div_floor(&self, divisor: &Self) -> Self {
+        let (quotient, remainder) = self.div_rem(divisor);
+        if !remainder.is_zero() && remainder.is_negative() != divisor.is_negative() {
+            quotient - Self::ONE
+        } else {
+            quotient
+        }
+    }
+
+    /// The number of bits of the magnitude (0 for zero).
+    #[cfg(feature = "finance")]
+    pub(crate) fn bits(&self) -> u64 {
+        match &self.0 {
+            Repr::Small(value) => u64::from(128 - value.unsigned_abs().leading_zeros()),
+            Repr::Big(value) => value.bits(),
+        }
+    }
+
     /// The decimal digits of the magnitude, most significant first.
     pub(crate) fn magnitude_digits(&self) -> String {
         match &self.0 {

@@ -17,9 +17,14 @@ use std::process::ExitCode;
 use ducat::allocate::{InstalmentRemainder, Remainder, Tranche};
 use ducat::convert::AnyRate;
 use ducat::exact::AnyExactMoney;
+use ducat::excel::{irr, npv};
+use ducat::finance::{
+    AmortiseOptions, Date, DayCount, InterestPeriod, ProrationInstant, ProrationPeriod,
+    ProrationUnit, discounted_sum, payment_dates, year_fraction,
+};
 use ducat::fixed::Fixed;
 use ducat::iso::Eur;
-use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Rounding};
+use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Ratio, Rounding};
 use serde_json::Value;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
@@ -77,15 +82,6 @@ const NOT_YET: &[(&str, &str)] = &[
     ("spreadsheet.edge.rate", "not yet: milestone 4 (excel)"),
     ("spreadsheet.edge.xnpv", "not yet: milestone 4 (excel)"),
     ("spreadsheet.edge.xirr", "not yet: milestone 4 (excel)"),
-    ("finance.yearFraction", "not yet: milestone 4 (finance)"),
-    ("finance.interest", "not yet: milestone 4 (finance)"),
-    ("finance.compound", "not yet: milestone 4 (finance)"),
-    ("finance.amortise", "not yet: milestone 4 (finance)"),
-    ("finance.npv", "not yet: milestone 4 (finance)"),
-    ("finance.irr", "not yet: milestone 4 (finance)"),
-    ("finance.irrBracketed", "not yet: milestone 4 (finance)"),
-    ("finance.proration", "not yet: milestone 4 (finance)"),
-    ("finance.paymentDates", "not yet: milestone 4 (finance)"),
     ("words.spellOut", "not yet: milestone 6 (ducat-icu)"),
 ];
 
@@ -583,6 +579,185 @@ const INSTALMENT_REMAINDERS: [(&str, InstalmentRemainder); 4] = [
     ("toLast", InstalmentRemainder::ToLast),
 ];
 
+// --- finance rows --------------------------------------------------------------------------
+
+fn date(row: &Value, key: &str) -> Result<Date, Error> {
+    string(row, key).parse()
+}
+
+fn date_at(value: &Value) -> Result<Date, Error> {
+    value.as_str().expect("a date").parse()
+}
+
+fn count_arg(row: &Value, key: &str) -> u32 {
+    u32::try_from(
+        row[key]
+            .as_u64()
+            .unwrap_or_else(|| panic!("`{key}` is not a count")),
+    )
+    .expect("a small count")
+}
+
+/// Money from a row's minor units under `key`, in the row's `currency`.
+fn row_money(row: &Value, key: &str) -> Result<AnyMoney, Error> {
+    Ok(AnyMoney::from_minor(
+        minor_of(string(row, key)),
+        code(string(row, "currency"))?,
+    ))
+}
+
+fn row_flows(row: &Value) -> Result<Vec<AnyMoney>, Error> {
+    let currency = code(string(row, "currency"))?;
+    Ok(row["flows"]
+        .as_array()
+        .expect("flows")
+        .iter()
+        .map(|flow| AnyMoney::from_minor(minor_of(flow.as_str().expect("a flow")), currency))
+        .collect())
+}
+
+/// A table's text, or `"throws"` for a range error (ducat's `RangeError`).
+fn throws_field(result: Result<String, Error>) -> Value {
+    match result {
+        Ok(text) => Value::String(text),
+        Err(error) if error.kind() == ErrorKind::Range => Value::String("throws".into()),
+        Err(error) => Value::String(format!("error {} ({error})", kind_name(error.kind()))),
+    }
+}
+
+fn units_field(result: Result<AnyMoney, Error>) -> Value {
+    minor_field(
+        result.map(|money| money.units().clone()),
+        ErrorKind::Rounding,
+    )
+}
+
+fn error_field(error: &Error) -> Value {
+    Value::String(format!("error {} ({error})", kind_name(error.kind())))
+}
+
+/// `finance.amortise`: the payment, row count, total interest, last row and checksum.
+fn amortise_row(row: &Value) -> Fields {
+    let schedule = (|| {
+        let loan = row_money(row, "loan")?;
+        let mut options = AmortiseOptions::new(
+            string(row, "rate"),
+            count_arg(row, "perYear"),
+            count_arg(row, "periods"),
+            mode(row),
+        )?
+        .with_method(string(row, "method").parse()?)
+        .with_residual(string(row, "residual").parse()?);
+        if row.get("balloon").is_some() {
+            options = options.with_balloon(row_money(row, "balloon")?);
+        }
+        loan.amortise(&options)
+    })();
+    let schedule = match schedule {
+        Ok(schedule) => schedule,
+        Err(error) => {
+            let shown = error_field(&error);
+            return ["payment", "rows", "totalInterest", "last", "checksum"]
+                .into_iter()
+                .map(|name| (name, shown.clone()))
+                .collect();
+        }
+    };
+    let units = |money: &AnyMoney| money.units().clone();
+    let checksum: Int = schedule
+        .rows
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            Int::from(index + 1) * (units(&entry.payment) + Int::from(7) * units(&entry.interest))
+        })
+        .sum();
+    let last = schedule.rows.last().expect("a row");
+    vec![
+        (
+            "payment",
+            Value::String(units(&schedule.payment).to_string()),
+        ),
+        ("rows", Value::from(schedule.rows.len())),
+        (
+            "totalInterest",
+            Value::String(units(&schedule.total_interest).to_string()),
+        ),
+        (
+            "last",
+            [
+                &last.payment,
+                &last.interest,
+                &last.principal,
+                &last.balance,
+            ]
+            .into_iter()
+            .map(|money| Value::String(units(money).to_string()))
+            .collect(),
+        ),
+        ("checksum", Value::String(checksum.to_string())),
+    ]
+}
+
+/// `finance.irr` and `finance.irrBracketed`: the IRR's grid point.
+fn irr_row(row: &Value) -> Fields {
+    let digits = u16::try_from(row["digits"].as_u64().expect("digits")).expect("few digits");
+    let rate = (|| {
+        let flows = row_flows(row)?;
+        let bracket = match row.get("bracket") {
+            Some(bracket) => {
+                let ends = bracket.as_array().expect("a bracket");
+                let parse = |end: &Value| end.as_str().expect("a rate").parse::<Ratio>();
+                Some((parse(&ends[0])?, parse(&ends[1])?))
+            }
+            None => None,
+        };
+        irr(
+            &flows,
+            digits,
+            bracket.as_ref().map(|(low, high)| (low, high)),
+        )
+    })();
+    vec![(
+        "lower",
+        text_field(rate.map(|rate| rate.grid().to_string())),
+    )]
+}
+
+/// `finance.proration`: the prorated price and the split.
+fn proration_row(row: &Value) -> Fields {
+    let span = |key: &str| -> Result<ProrationPeriod, Error> {
+        let ends = row[key].as_array().expect("a period");
+        Ok(ProrationPeriod::new(date_at(&ends[0])?, date_at(&ends[1])?))
+    };
+    let prorated = (|| {
+        row_money(row, "price")?.prorate(
+            &span("period")?,
+            &span("used")?,
+            ProrationUnit::Day,
+            mode(row),
+        )
+    })();
+    let split = (|| {
+        let at: Vec<ProrationInstant> = row["at"]
+            .as_array()
+            .expect("change points")
+            .iter()
+            .map(|point| date_at(point).map(ProrationInstant::from))
+            .collect::<Result<_, _>>()?;
+        row_money(row, "price")?.split_period(
+            &span("period")?,
+            &at,
+            ProrationUnit::Day,
+            Remainder::Largest,
+        )
+    })();
+    vec![
+        ("prorate", units_field(prorated)),
+        ("split", parts_field(split, AnyMoney::units)),
+    ]
+}
+
 fn row_op(op: &str) -> Option<RowOp> {
     fn start(row: &Value) -> Result<AnyMoney, Error> {
         Ok(AnyMoney::from_minor(
@@ -845,6 +1020,71 @@ fn row_op(op: &str) -> Option<RowOp> {
                     )
                 })
                 .collect()
+        },
+        "finance.yearFraction" => |row| {
+            let fraction = (|| {
+                let convention: DayCount = string(row, "convention").parse()?;
+                let maturity = row.get("maturity").and_then(Value::as_bool);
+                year_fraction(date(row, "start")?, date(row, "end")?, convention, maturity)
+            })();
+            // the table writes a reduced num/den, with /1 for whole years
+            let text = fraction.map(|ratio| format!("{}/{}", ratio.numer(), ratio.denom()));
+            vec![("want", throws_field(text))]
+        },
+        "finance.interest" => |row| {
+            let interest = (|| {
+                let mut period = InterestPeriod::new(
+                    date(row, "from")?,
+                    date(row, "to")?,
+                    string(row, "dayCount").parse()?,
+                );
+                if let Some(maturity) = row.get("maturity").and_then(Value::as_bool) {
+                    period = period.with_maturity(maturity);
+                }
+                row_money(row, "principal")?.interest(string(row, "rate"), &period, mode(row))
+            })();
+            vec![("want", units_field(interest))]
+        },
+        "finance.compound" => |row| {
+            let compounded = row_money(row, "principal").and_then(|principal| {
+                principal.compound(
+                    string(row, "rate"),
+                    count_arg(row, "periods"),
+                    count_arg(row, "perYear"),
+                    mode(row),
+                )
+            });
+            vec![("want", units_field(compounded))]
+        },
+        "finance.amortise" => amortise_row,
+        "finance.npv" => |row| {
+            let flows = row_flows(row);
+            let rate = string(row, "rate");
+            vec![
+                (
+                    "npv",
+                    units_field(flows.clone().and_then(|flows| npv(rate, &flows, mode(row)))),
+                ),
+                (
+                    "discountedSum",
+                    units_field(flows.and_then(|flows| discounted_sum(rate, &flows, mode(row)))),
+                ),
+            ]
+        },
+        "finance.irr" | "finance.irrBracketed" => irr_row,
+        "finance.proration" => proration_row,
+        "finance.paymentDates" => |row| {
+            let dates = date(row, "firstPayment").and_then(|first| {
+                payment_dates(first, count_arg(row, "perYear"), count_arg(row, "count"))
+            });
+            let field = match dates {
+                Ok(dates) => dates
+                    .iter()
+                    .map(|date| Value::String(date.to_string()))
+                    .collect(),
+                Err(error) => error_field(&error),
+            };
+            vec![("dates", field)]
         },
         _ => return None,
     })

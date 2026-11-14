@@ -71,6 +71,18 @@ impl Ratio {
         })
     }
 
+    /// `num / den` from parts already in lowest terms with `den` positive (a power of a reduced
+    /// ratio, say), without the gcd.
+    #[cfg(feature = "finance")]
+    pub(crate) fn from_reduced(num: Int, den: Int) -> Self {
+        debug_assert!(den.is_positive());
+        if num.is_zero() {
+            Self::ZERO
+        } else {
+            Self { num, den }
+        }
+    }
+
     /// The numerator, in lowest terms; it carries the sign.
     #[must_use]
     pub const fn numer(&self) -> &Int {
