@@ -41,20 +41,6 @@ pub struct CurrencyCode {
     exponent: u8,
 }
 
-const fn same(left: &[u8], right: &[u8]) -> bool {
-    if left.len() != right.len() {
-        return false;
-    }
-    let mut index = 0;
-    while index < left.len() {
-        if left[index] != right[index] {
-            return false;
-        }
-        index += 1;
-    }
-    true
-}
-
 /// The ISO exponent of `code`, by binary search of the sorted table.
 const fn iso_exponent(code: &[u8]) -> Option<u8> {
     let (mut low, mut high) = (0, ISO_EXPONENTS.len());
@@ -83,17 +69,6 @@ const fn iso_exponent(code: &[u8]) -> Option<u8> {
         }
     }
     None
-}
-
-const fn is_non_monetary(code: &[u8]) -> bool {
-    let mut index = 0;
-    while index < NON_MONETARY.len() {
-        if same(NON_MONETARY[index].as_bytes(), code) {
-            return true;
-        }
-        index += 1;
-    }
-    false
 }
 
 impl CurrencyCode {
@@ -129,8 +104,10 @@ impl CurrencyCode {
     /// # Errors
     ///
     /// [`Error::InvalidCurrency`] unless `code` is 1 to 12 ASCII letters and digits, isn't an
-    /// ISO 4217 code (ISO codes can't be redefined: use an explicit scale for more precision),
-    /// and `exponent` is at most [`MAX_CUSTOM_EXPONENT`].
+    /// active ISO 4217 code with a minor unit (those can't be redefined: use an explicit scale for
+    /// more precision), and `exponent` is at most [`MAX_CUSTOM_EXPONENT`]. As in ducat's
+    /// `defineCurrency`, the codes ISO lists without a minor unit (XDR, XAU…, see
+    /// [`CurrencyCode::iso_non_monetary`]) can be defined, with the exponent you hold them at.
     pub const fn custom(code: &str, exponent: u8) -> Result<Self, Error> {
         let bytes = code.as_bytes();
         if bytes.is_empty() || bytes.len() > MAX_CODE_LEN || exponent > MAX_CUSTOM_EXPONENT {
@@ -143,7 +120,7 @@ impl CurrencyCode {
             }
             index += 1;
         }
-        if iso_exponent(bytes).is_some() || is_non_monetary(bytes) {
+        if iso_exponent(bytes).is_some() {
             return Err(Error::InvalidCurrency);
         }
         Ok(Self::build(bytes, exponent))
@@ -166,6 +143,13 @@ impl CurrencyCode {
     #[must_use]
     pub const fn is_iso(&self) -> bool {
         iso_exponent(self.bytes.split_at(self.len as usize).0).is_some()
+    }
+
+    /// The active ISO 4217 codes whose minor unit ISO lists as "N.A." (XAU, XDR, XTS…), as ducat's
+    /// `ISO_NON_MONETARY`. They have no exponent, so they aren't [`CurrencyCode::iso`] codes;
+    /// [`CurrencyCode::custom`] defines one at an exponent of your choosing.
+    pub fn iso_non_monetary() -> impl ExactSizeIterator<Item = &'static str> {
+        NON_MONETARY.iter().copied()
     }
 
     /// Every ISO 4217 currency with a minor unit, in code order (165 in the 2026-09-17 list).
@@ -299,13 +283,15 @@ mod tests {
         let btc = CurrencyCode::custom("BTC", 8).unwrap();
         assert!(!btc.is_iso());
         assert_ne!(btc, CurrencyCode::custom("BTC", 6).unwrap());
+        // ISO's codes without a minor unit can be defined, as ducat's defineCurrency allows
+        assert_eq!(CurrencyCode::custom("XDR", 2).map(|c| c.exponent()), Ok(2));
+        assert!(CurrencyCode::iso_non_monetary().any(|code| code == "XDR"));
         assert_eq!(
             CurrencyCode::custom("USDC", 6).map(|c| c.as_str().len()),
             Ok(4)
         );
         for (code, exponent) in [
             ("EUR", 2),
-            ("XAU", 0),
             ("", 2),
             ("B-TC", 2),
             ("ABCDEFGHIJKLM", 2),

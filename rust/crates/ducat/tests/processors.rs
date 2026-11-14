@@ -2,8 +2,8 @@
 //! test/paypal.test.ts, test/braintree.test.ts, test/klarna.test.ts), ported value by value except
 //! where the Rust API differs: reading takes a `CurrencyCode`, so ducat's lowercase-currency and
 //! non-string-value cases have no counterpart; an `i64` read back is never refused, where ducat
-//! refuses a JavaScript number past 2^53 − 1; and XDR, which ducat defines with `defineCurrency`,
-//! can't be a `CurrencyCode` (ISO lists it without a minor unit, and `custom` refuses ISO codes).
+//! refuses a JavaScript number past 2^53 − 1. XDR, which ducat defines with `defineCurrency`, is a
+//! `CurrencyCode::custom`.
 
 use ducat::iso::{
     Bhd, Clp, Cve, Eur, Gbp, Huf, Idr, Iqd, Isk, Jpy, Krw, Kwd, Lak, Lyd, Mga, Sek, Twd, Ugx, Usd,
@@ -353,6 +353,9 @@ fn checkout_historic_and_unlisted_currencies() -> Result {
     assert!(checkout::is_currency("SLL") && checkout::is_currency("usd"));
     let sll = AnyMoney::parse("1", CurrencyCode::historic("SLL")?)?;
     assert_eq!(sll.to_checkout_amount(&CheckoutOptions::default())?, 100);
+    // XDR: ISO lists it without a minor unit, so it is defined, as ducat's defineCurrency('XDR', 2)
+    let xdr = CurrencyCode::custom("XDR", 2)?;
+    assert_eq!(AnyMoney::from_checkout(250, xdr)?.to_decimal(), "2.50");
     assert!(!checkout::is_currency("CLF"));
     let clf = AnyMoney::parse("1", iso("CLF"))?;
     assert_eq!(
