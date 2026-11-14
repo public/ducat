@@ -25,10 +25,10 @@ use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Rounding};
 ///   (`&a + &b`) as well as values.
 /// - **Rounding is always an argument.** Anything that may round takes a [`Rounding`]; with
 ///   [`Rounding::Unnecessary`] an inexact result is an error.
-/// - **Equality is structural:** `PartialEq`, `Eq` and `Hash` compare the units *and the scale*,
-///   as ducat's conformance suite judges money, so 1.00 EUR is not `==` to 1.000 EUR at scale 3.
-///   Compare by value with [`Money::eq_value`] and [`Money::compare`]. There is no `Ord`, since
-///   it would disagree with `Eq` across scales.
+/// - **Equality is by value,** as ducat's `equals`: `==`, `Eq`, `Hash` and `Ord` ignore the scale, so
+///   1.0 EUR at scale 1 is `==` to 1.00 EUR, and they are the same `HashMap` or `BTreeMap` key
+///   (the representation inserted first is the one kept). Check the amount *and* the scale, as
+///   round-trip tests should, with [`Money::identical`].
 /// - [`Display`](fmt::Display) is ducat's `toString`, exact: `"12.34 EUR"`. It ignores format
 ///   flags such as `{:.1}` rather than rounding or truncating; round explicitly with
 ///   [`Money::to_scale`] first.
@@ -55,20 +55,34 @@ impl<C: Currency> Clone for Money<C> {
 }
 
 impl<C: Currency> PartialEq for Money<C> {
-    /// Structural: the same units at the same scale. See [`Money::eq_value`] for equality by
-    /// value.
+    /// By value, whatever the scales: 1.0 EUR equals 1.00 EUR, as ducat's `equals`. For amount
+    /// *and* scale, use [`Money::identical`].
     fn eq(&self, other: &Self) -> bool {
-        self.amount == other.amount
+        self.amount.cmp_value(&other.amount) == Ordering::Equal
     }
 }
 
 impl<C: Currency> Eq for Money<C> {}
 
 impl<C: Currency> Hash for Money<C> {
-    /// Hashes as the equal [`AnyMoney`] does: units, scale and currency.
+    /// Hashes the value at its smallest exact scale, so equal amounts hash alike whatever their
+    /// scales, and as the equal [`AnyMoney`] does.
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.amount.hash(state);
+        self.amount.normalized().hash(state);
         C::CODE.hash(state);
+    }
+}
+
+impl<C: Currency> PartialOrd for Money<C> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<C: Currency> Ord for Money<C> {
+    /// By value, whatever the scales, consistent with `==`.
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.compare(other)
     }
 }
 
@@ -306,11 +320,18 @@ impl<C: Currency> Money<C> {
         self.amount.cmp_value(&other.amount)
     }
 
-    /// Whether the two values are equal, whatever their scales: 1.00 EUR equals 1.000 EUR at
-    /// scale 3 here, though not under `==`.
+    /// Whether the two values are equal, whatever their scales: the same as `==`.
     #[must_use]
     pub fn eq_value(&self, other: &Self) -> bool {
         self.compare(other) == Ordering::Equal
+    }
+
+    /// Whether the two have the same amount *and* the same scale, as ducat's `identical`: 1.0 EUR
+    /// at scale 1 is `==` to 1.00 EUR, but not identical. For round-trip tests, where the scale
+    /// must survive too.
+    #[must_use]
+    pub fn identical(&self, other: &Self) -> bool {
+        self.amount.identical(&other.amount)
     }
 
     /// Whether the amount is zero.
@@ -466,14 +487,14 @@ impl<C: Currency> TryFrom<AnyMoney> for Money<C> {
 }
 
 impl<C: Currency> PartialEq<AnyMoney> for Money<C> {
-    /// Structural, as `==` between two `Money<C>`.
+    /// The same currency and the same value, whatever the scales.
     fn eq(&self, other: &AnyMoney) -> bool {
-        other.currency() == C::CODE && self.amount == other.amount
+        other.currency() == C::CODE && self.amount.cmp_value(&other.amount) == Ordering::Equal
     }
 }
 
 impl<C: Currency> PartialEq<Money<C>> for AnyMoney {
-    /// Structural, as `==` between two `AnyMoney`.
+    /// The same currency and the same value, whatever the scales.
     fn eq(&self, other: &Money<C>) -> bool {
         other == self
     }

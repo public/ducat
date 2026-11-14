@@ -69,13 +69,17 @@ flagged to Alex for review.
 Agreed with the coordinator on 2026-11-14. The port moved into ducat's repository the same day (see "Where it
 lives").
 
-1. **Equality is structural; value comparison is separate.**
-   - `PartialEq`, `Eq` and `Hash` on `Money<C>` and `AnyMoney` compare units, currency *and scale*, as the spec judges
-     money: 1.0 EUR at scale 1 is not `==` to 1.00 EUR. `Money<C>` and an `AnyMoney` in the same currency compare and
-     hash alike.
-   - `compare` (an `Ordering`, or `Result<Ordering>` for `AnyMoney`) and `eq_value` compare by value across scales,
-     as ducat's `compare` and `equals`. `AnyMoney::eq_value` is `false` for another currency, never an error.
-   - There is no `Ord`/`PartialOrd` on money: it would disagree with `Eq` across scales.
+1. **Equality is by value; `identical` also checks the scale** (Alex, 2026-11-14, reversing a first rule that made
+   `==` structural).
+   - `PartialEq`, `Eq`, `Hash` and (for `Money<C>`) `Ord` compare by value, as ducat's `equals` and `compare`: 1.0
+     EUR at scale 1 is `==` to 1.00 EUR, and they are one `HashMap` or `BTreeMap` key, with the representation
+     inserted first kept. `Hash` uses the value at its smallest exact scale, so it agrees with `==` across scales
+     and across the inline and heap representations; a proptest checks it, and a test checks 1 against 10^1000 at
+     scale 1000.
+   - `identical` compares amount, currency and scale, as ducat's `identical`, for round-trip tests. The conformance
+     runner judges by the spec's written `{amount, currency, scale}`, so it is unaffected.
+   - `AnyMoney` in different currencies is never `==`, and has no `Ord`; its `compare` returns a currency-mismatch
+     error, as ducat's does.
 2. **Currencies carry their exponent; there is no registry.**
    - `CurrencyCode` holds the code and its exponent. `FromStr` and `CurrencyCode::iso` accept only ISO 4217 List One
      codes with a minor unit (a typo is an error; XAU and the other "N.A." codes have no exponent).
