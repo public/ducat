@@ -23,6 +23,9 @@ const NANOS_PER_UNIT = 1_000_000_000n;
 const MAX_INT64 = 2n ** 63n - 1n;
 const MIN_INT64 = -(2n ** 63n);
 const CURRENCY_CODE = /^[A-Z]{3}$/;
+// A ProtoJSON integer as text: digits, maybe a fraction and an exponent (1e2 and 1.5e1 are 100
+// and 15); its value must be an integer.
+const PROTO_INTEGER = /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
 
 /** Options for the readers: the scale of the Money they return, and how to round to it. */
 export interface WireReadOptions {
@@ -69,6 +72,31 @@ function exactAt(money: Money, scale: number): bigint | undefined {
 // ---------------------------------------------------------------------------------------------
 
 /**
+ * A ProtoJSON integer field: a number, or a string (exponent form included), whose value is an
+ * integer; undefined for anything else or beyond int64. ProtoJSON accepts both forms for int32 and
+ * int64 (https://protobuf.dev/programming-guides/json/).
+ */
+function protoInteger(value: string | number | bigint): bigint | undefined {
+  if (typeof value === 'bigint') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? BigInt(value) : undefined;
+  }
+  if (typeof value !== 'string' || !PROTO_INTEGER.test(value)) {
+    return undefined;
+  }
+  try {
+    const { digits, scale } = parseDecimal(value);
+    const unit = 10n ** BigInt(scale);
+    return digits % unit === 0n ? digits / unit : undefined;
+  } catch {
+    // an exponent beyond MAX_DECIMAL_SCALE: far beyond int64
+    return undefined;
+  }
+}
+
+/**
  * `google.type.Money` in its proto3 JSON form: `units` is an int64, which proto3 JSON writes as a
  * string, and `nanos` the billionths, with the same sign as `units`.
  */
@@ -112,7 +140,7 @@ export function toGoogleMoney(money: Money, rounding: RoundingMode = 'unnecessar
 export interface GoogleMoneyInput {
   readonly currencyCode: string;
   readonly units?: string | number | bigint;
-  readonly nanos?: number;
+  readonly nanos?: string | number;
 }
 
 /**
@@ -137,27 +165,26 @@ export function fromGoogleMoney<C extends CurrencyInput>(
     return invalid(`currencyCode ${JSON.stringify(currencyCode)}`);
   }
 
-  let wholeUnits: bigint;
-  if (typeof units === 'bigint') {
-    wholeUnits = units;
-  } else if (typeof units === 'number' && Number.isSafeInteger(units)) {
-    wholeUnits = BigInt(units);
-  } else if (typeof units === 'string' && /^-?\d{1,19}$/.test(units)) {
-    wholeUnits = BigInt(units);
-  } else {
+  // a number past 2^53 - 1 may already have lost digits; ProtoJSON writes int64 as a string
+  if (typeof units === 'number' && Number.isInteger(units) && !Number.isSafeInteger(units)) {
+    return invalid(`units ${units} is beyond 2^53 - 1; send it as a string`);
+  }
+  const wholeUnits = protoInteger(units);
+  if (wholeUnits === undefined) {
     return invalid(`units ${JSON.stringify(String(units))}`);
   }
   if (wholeUnits > MAX_INT64 || wholeUnits < MIN_INT64) {
     return invalid(`units ${wholeUnits} is beyond int64`);
   }
-  if (!Number.isInteger(nanos) || nanos > 999_999_999 || nanos < -999_999_999) {
+  const nanoUnits = protoInteger(nanos);
+  if (nanoUnits === undefined || nanoUnits > 999_999_999n || nanoUnits < -999_999_999n) {
     return invalid(`nanos ${nanos}`);
   }
-  if ((wholeUnits > 0n && nanos < 0) || (wholeUnits < 0n && nanos > 0)) {
+  if ((wholeUnits > 0n && nanoUnits < 0n) || (wholeUnits < 0n && nanoUnits > 0n)) {
     return invalid(`units ${wholeUnits} and nanos ${nanos} have different signs`);
   }
 
-  const total = wholeUnits * NANOS_PER_UNIT + BigInt(nanos);
+  const total = wholeUnits * NANOS_PER_UNIT + nanoUnits;
   return atScale('google.type.Money', total, 9, currencyCode, options);
 }
 
@@ -174,8 +201,9 @@ export interface Iso20022Amount {
   readonly value: string;
 }
 
-// ActiveOrHistoricCurrencyAndAmount: xs:decimal, fractionDigits 5, totalDigits 18, minInclusive 0
-const ISO_20022_AMOUNT = /^(\d+)(?:\.(\d+))?$/;
+// ActiveOrHistoricCurrencyAndAmount: xs:decimal, fractionDigits 5, totalDigits 18, minInclusive 0.
+// XSD 1.0 allows a leading sign; "12." and ".5" only XSD 1.1 states, so they are refused.
+const ISO_20022_AMOUNT = /^([+-]?)(\d+)(?:\.(\d+))?$/;
 const ISO_20022_MAX_DECIMALS = 5;
 const ISO_20022_MAX_DIGITS = 18;
 
@@ -283,12 +311,18 @@ export function fromIso20022Amount<C extends CurrencyInput>(
   }
   requireIso4217(currency);
   const match = typeof value === 'string' ? ISO_20022_AMOUNT.exec(value) : null;
-  if (match === null || !fitsIso20022(match[1]!, match[2] ?? '')) {
+  if (match === null || !fitsIso20022(match[2]!, match[3] ?? '')) {
     throw new SyntaxError(
       `Invalid ISO 20022 amount ${JSON.stringify(value)}: at most 18 digits, 5 of them decimals`,
     );
   }
-  const parsed = parseDecimal(value);
+  const parsed = parseDecimal(value.replace(/^[+-]/, ''));
+  // minInclusive 0: '-0' is zero, any other negative is out of range
+  if (match[1] === '-' && parsed.digits !== 0n) {
+    throw new RangeError(
+      `ISO 20022 amounts can't be negative (${value}); use the credit/debit indicator`,
+    );
+  }
   return atScale('ISO 20022 amount', parsed.digits, parsed.scale, currency, options);
 }
 

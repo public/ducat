@@ -71,6 +71,52 @@ describe('google.type.Money', () => {
     expect(() => fromGoogleMoney(null as never)).toThrow('Invalid google.type.Money');
   });
 
+  // ProtoJSON (https://protobuf.dev/programming-guides/json/) accepts int32 and int64 as numbers
+  // or strings, exponent notation included, quoted or not
+  it('reads the integer forms ProtoJSON allows', () => {
+    for (const [units, nanos] of [
+      ['12', '340000000'],
+      [12, '340000000'],
+      ['1.2e1', '3.4e8'],
+      [1.2e1, 3.4e8],
+      ['120e-1', '340000000.0'],
+    ] as const) {
+      expect(show(fromGoogleMoney({ currencyCode: 'EUR', units, nanos }))).toBe('12.34 EUR');
+    }
+    expect(show(fromGoogleMoney({ currencyCode: 'EUR', units: '-1', nanos: '-75e7' }))).toBe(
+      '-1.75 EUR',
+    );
+    expect(show(fromGoogleMoney({ currencyCode: 'EUR', units: '9.223372036854775807e18' }))).toBe(
+      '9223372036854775807.00 EUR',
+    );
+    // not an integer, beyond int64, malformed: an error, never a rounding
+    for (const value of [
+      { currencyCode: 'EUR', units: '1.5e0' },
+      { currencyCode: 'EUR', units: '1e19' },
+      { currencyCode: 'EUR', units: '1e999999999' },
+      { currencyCode: 'EUR', units: '+1' },
+      { currencyCode: 'EUR', units: '1e' },
+      { currencyCode: 'EUR', units: '' },
+      { currencyCode: 'EUR', units: '1', nanos: '1e9' },
+      { currencyCode: 'EUR', units: '1', nanos: '0.5' },
+      { currencyCode: 'EUR', units: '1', nanos: '-1' },
+    ]) {
+      expect(() => fromGoogleMoney(value as never)).toThrow(/^Invalid google.type.Money/);
+    }
+  });
+
+  it('refuses a units number past 2^53 - 1, which may have lost digits', () => {
+    expect(() => fromGoogleMoney({ currencyCode: 'EUR', units: 2 ** 53 })).toThrow(
+      'Invalid google.type.Money: units 9007199254740992 is beyond 2^53 - 1; send it as a string',
+    );
+    expect(show(fromGoogleMoney({ currencyCode: 'EUR', units: '9007199254740993' }))).toBe(
+      '9007199254740993.00 EUR',
+    );
+    expect(show(fromGoogleMoney({ currencyCode: 'EUR', units: 2 ** 53 - 1 }))).toBe(
+      '9007199254740991.00 EUR',
+    );
+  });
+
   it('keeps sub-minor precision only when asked', () => {
     const value = { currencyCode: 'EUR', units: '1', nanos: 5_000_000 };
     expect(() => fromGoogleMoney(value)).toThrow(RoundingError);
@@ -135,21 +181,27 @@ describe('ISO 20022 amounts', () => {
     expect(show(fromIso20022Amount({ Ccy: 'EUR', value: '12.345' }, { scale: 3 }))).toBe(
       '12.345 EUR',
     );
-    for (const value of [
-      '',
-      '-1',
-      '+1',
-      '1e3',
-      ' 1',
-      '1,00',
-      '.5',
-      '5.',
-      '1.123456',
-      '1'.repeat(19),
-    ]) {
+    for (const value of ['', '1e3', ' 1', '1,00', '.5', '5.', '1.123456', '1'.repeat(19)]) {
       expect(() => fromIso20022Amount({ Ccy: 'EUR', value })).toThrow(SyntaxError);
     }
     expect(() => fromIso20022Amount({ Ccy: 'eur', value: '1' })).toThrow(SyntaxError);
+  });
+
+  // xs:decimal (https://www.w3.org/TR/xmlschema-2/#decimal, 3.2.3.1): "An optional leading sign is
+  // allowed"; minInclusive 0 makes any value below zero out of range. "5." and ".5" are only in
+  // XSD 1.1's lexical rule (https://www.w3.org/TR/xmlschema11-2/#decimal), so they stay refused.
+  it('reads the signs the schema allows', () => {
+    expect(show(fromIso20022Amount({ Ccy: 'EUR', value: '+12.34' }))).toBe('12.34 EUR');
+    expect(show(fromIso20022Amount({ Ccy: 'EUR', value: '+0012.3400' }))).toBe('12.34 EUR');
+    expect(show(fromIso20022Amount({ Ccy: 'EUR', value: '-0' }))).toBe('0.00 EUR');
+    expect(show(fromIso20022Amount({ Ccy: 'EUR', value: '-0.00' }))).toBe('0.00 EUR');
+    for (const value of ['-1', '-0.01']) {
+      expect(() => fromIso20022Amount({ Ccy: 'EUR', value })).toThrow(RangeError);
+      expect(() => fromIso20022Amount({ Ccy: 'EUR', value })).toThrow(/can't be negative/);
+    }
+    for (const value of ['+-1', '++1', '+', '-', '+.5', '-5.']) {
+      expect(() => fromIso20022Amount({ Ccy: 'EUR', value })).toThrow(SyntaxError);
+    }
   });
 
   it('round-trips exactly (property)', () => {

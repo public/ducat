@@ -21,9 +21,9 @@ Every reader checks the format strictly, and every writer throws rather than sen
 
 `fromGoogleMoney<C extends CurrencyInput>(value: GoogleMoneyInput & { currencyCode: C }, options?: WireReadOptions): Money<C>`
 
-Reads `google.type.Money` exactly: `{ currencyCode: 'USD', units: '12', nanos: 340000000 }` is 12.34 USD. Missing `units` or `nanos` mean 0, as in proto3.
+Reads `google.type.Money` exactly: `{ currencyCode: 'USD', units: '12', nanos: 340000000 }` is 12.34 USD. Missing `units` or `nanos` mean 0, as in proto3. As [ProtoJSON](https://protobuf.dev/programming-guides/json/) allows for its int32 and int64 fields, `units` and `nanos` may each be a number or a string, in exponent form too (`'1.2e1'` is 12), as long as the value is an exact integer: `'1.5e0'` is an error, never a rounding. A `units` number past 2^53 − 1 may already have lost digits, so it is refused: ProtoJSON writers send int64 as a string.
 
-- **Throws:** `RangeError` for a malformed value (`units` not an int64, `nanos` outside ±999,999,999 or with a sign other than a non-zero `units`'s); `RoundingError` for more decimals than the result's scale, unless `options.rounding` is given.
+- **Throws:** `RangeError` for a malformed value (`units` not an int64, or a number past 2^53 − 1; `nanos` outside ±999,999,999 or with a sign other than a non-zero `units`'s); `RoundingError` for more decimals than the result's scale, unless `options.rounding` is given.
 
 ## ISO 20022
 
@@ -42,9 +42,9 @@ The amount in `<InstdAmt Ccy="EUR">12.34</InstdAmt>`: `{ Ccy: 'EUR', value: '12.
 
 `fromIso20022Amount<C extends CurrencyInput>(amount: { Ccy: C; value: string }, options?: WireReadOptions): Money<C>`
 
-Reads an ISO 20022 amount exactly. The text must be plain digits with an optional decimal point, at most 5 decimals and 18 digits (not counting leading or trailing zeros, as XSD counts them), with no sign, exponent or spaces; trim XML whitespace in the XML reader.
+Reads an ISO 20022 amount exactly. The text is an `xs:decimal` as [XML Schema 1.0, 3.2.3.1](https://www.w3.org/TR/xmlschema-2/#decimal) writes one: digits with an optional decimal point and an optional leading sign, at most 5 decimals and 18 digits (not counting leading or trailing zeros, as XSD counts them), with no exponent or spaces; trim XML whitespace in the XML reader. `+12.34` is 12.34 and `-0` is zero, but any value below zero is out of range (minInclusive 0). `12.` and `.5` are refused: XSD 1.0's lexical space doesn't say whether digits are needed on both sides of the point, and only [XSD 1.1's lexical rule](https://www.w3.org/TR/xmlschema11-2/#decimal) allows them.
 
-- **Throws:** `SyntaxError` for any other text or a malformed currency; `RangeError` for a currency that isn't ISO 4217, by the same rule as `toIso20022Amount`; `RoundingError` for more decimals than the currency has without `options` (KWD's 3 decimals fit; 12.345 EUR needs `{ scale: 3 }` or a rounding mode).
+- **Throws:** `SyntaxError` for any other text or a malformed currency; `RangeError` for a negative amount, or a currency that isn't ISO 4217, by the same rule as `toIso20022Amount`; `RoundingError` for more decimals than the currency has without `options` (KWD's 3 decimals fit; 12.345 EUR needs `{ scale: 3 }` or a rounding mode).
 
 ## ISO minor units
 
