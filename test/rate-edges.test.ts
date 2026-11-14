@@ -32,6 +32,49 @@ describe('derived rates', () => {
     expect(first.andThen(second).availableAt).toBe('2026-11-06T16:00:00.000Z');
     expect(second.inverse().andThen(first.inverse()).availableAt).toBe('2026-11-06T16:00:00.000Z');
   });
+
+  // A date validUntil is valid all day (UTC), through 23:59:59.999Z, as hasEnded reads it; an
+  // instant through itself. A chain keeps whichever ends first, compared as times.
+  it('andThen keeps the validUntil that ends first, a date and an instant compared as times', () => {
+    const eurUsd = exchangeRate('EUR', 'USD', '1.10', { validUntil: '2026-11-06' });
+    const usdJpy = exchangeRate('USD', 'JPY', '150', { validUntil: '2026-11-06T15:00:00Z' });
+    const jpyKrw = exchangeRate('JPY', 'KRW', '9', { validUntil: '2026-11-06' });
+    const eurJpy = eurUsd.andThen(usdJpy);
+    expect(eurJpy.validUntil).toBe('2026-11-06T15:00:00.000Z');
+    expect(usdJpy.andThen(jpyKrw).validUntil).toBe('2026-11-06T15:00:00.000Z');
+    // the composite expires with its leg
+    expect(usdJpy.isExpired('2026-11-06T16:00:00Z')).toBe(true);
+    expect(eurJpy.isExpired('2026-11-06T16:00:00Z')).toBe(true);
+  });
+
+  it('a date validUntil ends 1 ms before an instant at the next midnight, and ties 23:59:59.999Z', () => {
+    const day = exchangeRate('EUR', 'USD', '1.10', { validUntil: '2026-11-06' });
+    // the date has ended at 00:00:00.000Z on the 7th; the instant hasn't, so the date is earlier
+    const midnight = exchangeRate('USD', 'JPY', '150', { validUntil: '2026-11-07T00:00:00Z' });
+    expect(hasEnded('2026-11-06', '2026-11-07T00:00:00Z')).toBe(true);
+    expect(hasEnded('2026-11-07T00:00:00.000Z', '2026-11-07T00:00:00Z')).toBe(false);
+    expect(day.andThen(midnight).validUntil).toBe('2026-11-06');
+    expect(midnight.inverse().andThen(day.inverse()).validUntil).toBe('2026-11-06');
+    // the date's last valid instant is a tie, which keeps the instant form
+    const last = exchangeRate('USD', 'JPY', '150', { validUntil: '2026-11-06T23:59:59.999Z' });
+    expect(day.andThen(last).validUntil).toBe('2026-11-06T23:59:59.999Z');
+    expect(last.inverse().andThen(day.inverse()).validUntil).toBe('2026-11-06T23:59:59.999Z');
+  });
+
+  it('asOf and availableAt still read a date as the start of its day', () => {
+    const dated = exchangeRate('EUR', 'USD', '1.10', {
+      asOf: '2026-11-06',
+      availableAt: '2026-11-06',
+    });
+    const timed = exchangeRate('USD', 'JPY', '150', {
+      asOf: '2026-11-06T15:00:00Z',
+      availableAt: '2026-11-06T09:00:00Z',
+    });
+    for (const chained of [dated.andThen(timed), timed.inverse().andThen(dated.inverse())]) {
+      expect(chained.asOf).toBe('2026-11-06');
+      expect(chained.availableAt).toBe('2026-11-06T09:00:00.000Z');
+    }
+  });
 });
 
 describe('metadata', () => {

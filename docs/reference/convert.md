@@ -38,7 +38,7 @@ exchangeRate('EUR', 'USD', '1.1165').convert(money('100', 'EUR'), 'halfEven'); /
 Converts like `convert` with a `Rate`, and also returns what rounding left out: `value + residual` is exactly `money × rate`, so a ledger can book the difference. With a rounding policy, `value` is on the policy's scale and increment, and `residual` is still the exact difference.
 
 - **Rounds:** `value` once, as `convert` does. `residual` is an unrounded `ExactMoney`.
-- **Throws:** as `convert` with a `Rate`, except that with a rounding mode `strictValidity` is ignored: `RateExpiredError` is thrown only when a rounding policy is passed.
+- **Throws:** as `convert` with a `Rate`. With `strictValidity: true` the rate's validity is checked first, with a rounding mode or a policy alike, so an expired rate throws `RateExpiredError` before anything is converted.
 
 ### multiplyByRatioAtScale
 
@@ -90,7 +90,9 @@ Rebuilds a `Rate`, with its metadata and its `derivedFrom` audit chain, from `ra
 
 `class Rate<From extends string, To extends string>`
 
-An exact exchange rate. Build it with `exchangeRate()`; the constructor isn't exported. Derived rates (`inverse`, `andThen`, `withMargin`, `round`) keep their inputs in `derivedFrom`. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain.
+An exact exchange rate. Build it with `exchangeRate()`; the constructor isn't exported. Derived rates (`inverse`, `andThen`, `withMargin`, `round`) keep their inputs in `derivedFrom`. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, so staleness can't hide in a chain. They are compared as times: a date `asOf` or `availableAt` stands for the start of its UTC day, and a date `validUntil` for the whole day, so `validUntil: '2026-11-06'` ends before `'2026-11-07T00:00:00Z'` and after `'2026-11-06T15:00:00Z'`; when two `validUntil`s end at the same instant, the instant form is kept.
+
+A derived rate keeps only the metadata that still describes it. None keeps `source`, which stays with the inputs in `derivedFrom`. `inverse` keeps the `type` (`'bid'` and `'ask'` swapped) and the `quote`, marked or unmarked as inverted; `andThen` keeps a `type` only when both inputs have the same one; `round` keeps the `type`; `withMargin` keeps neither the `type` nor the `quote`, since the margin makes it a different rate. Every derived rate keeps the timing (`asOf`, `availableAt`, `validUntil`).
 
 Fields (all readonly):
 
@@ -219,7 +221,7 @@ A new array of `items` in ascending order of their value in `options.base`, as `
 ## Errors
 
 - `RateUnavailableError` (extends `Error`): no provider has a rate for the pair. Fields `from`, `to`, `asOf`.
-- `RateExpiredError` (extends `Error`): a strict-validity conversion with a rate past its `validUntil`. Field `validUntil`.
+- `RateExpiredError` (extends `RangeError`): a strict-validity conversion with a rate past its `validUntil`. Field `validUntil`.
 
 ## Types
 

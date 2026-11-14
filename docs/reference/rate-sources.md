@@ -18,6 +18,15 @@ Related: [How to use historical rates](../how-to/use-historical-rates.md) · [Ho
 
 Every parser returns `RateTable[]`, newest first, reads missing-value markers the same way (they go in the table's `missing`), and throws `SyntaxError` for input it can't read.
 
+## Providers
+
+Every `RateTable` here is a `RateProvider`: it answers `rate(from, to, { asOf })` synchronously, for exactly the pairs its source published (an ECB table answers EUR → USD, not USD → EUR), and filters by its `asOf`, `availableAt` and `validUntil`. The combinators that make it answer more pairs, and the lookups and conversions through a provider, are in `@ducatjs/money/convert`; see [Providers](convert.md#providers) there:
+
+- `via('EUR', table)` triangulates through the base, each leg direct or as an exact inverse, so an ECB table answers USD → JPY;
+- `reversed(table)` answers the inverse pairs, and `chain(first, second)` asks each provider in turn;
+- `rateOf(provider, from, to, { asOf })` is a lookup that must succeed (`RateUnavailableError` otherwise), and `convert(amount, to, provider, rounding, { asOf })` converts through one;
+- for a history of dated tables, `rateHistory` below, or `snapshots` and `snapshotsFrom` in `@ducatjs/money/convert`.
+
 ## `@ducatjs/money/convert/ecb`
 
 The ECB publishes once per TARGET working day at about 16:00 CET, for information only, so its rates are typed `'reference'`, with `source: 'ECB'` and `asOf` the publication day. Its files give no publication time, so the parsers set no `availableAt` unless asked.

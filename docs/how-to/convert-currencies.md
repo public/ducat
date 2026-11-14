@@ -57,7 +57,7 @@ If a loader throws, the lookup fails instead of falling back to an older day, so
 
 ## Check that a rate is still valid
 
-A rate's `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs.
+A rate's `validUntil` is checked only when you pass `{ strictValidity: true }`, because ducat reads the clock only when asked to. A derived rate takes the oldest `asOf`, the latest `availableAt` and the earliest `validUntil` of its inputs, compared as times (a date `validUntil` covers its whole UTC day).
 
 ## Book the rounding residual
 
