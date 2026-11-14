@@ -155,18 +155,45 @@ export function hasStarted(time: string, at: string | Date): boolean {
   return asInstant(time) <= instant;
 }
 
+/**
+ * The last instant a `validUntil` covers: an instant is valid up to and including itself, and a
+ * date all day (UTC), so through 23:59:59.999 (instants have millisecond precision). It ends at
+ * 00:00:00.000Z the next day.
+ */
+function lastValidInstant(validUntil: string): string {
+  return ISO_DATE.test(validUntil) ? `${validUntil}T23:59:59.999Z` : validUntil;
+}
+
 /** @internal Whether `validUntil` (a date: valid all day, UTC) has passed at `at`. */
 export function hasEnded(validUntil: string, at: string | Date): boolean {
-  const instant = asInstant(toIsoString(at));
-  if (ISO_DATE.test(validUntil)) {
-    return instant.slice(0, 10) > validUntil;
+  return asInstant(toIsoString(at)) > lastValidInstant(validUntil);
+}
+
+/**
+ * The `validUntil` that ends first, compared as times by `lastValidInstant` (a date covers its
+ * whole UTC day); on a tie, the instant form. Undefined = no limit.
+ */
+function earliestValidUntil(
+  first: string | undefined,
+  second: string | undefined,
+): string | undefined {
+  if (first === undefined) {
+    return second;
   }
-  return instant > validUntil;
+  if (second === undefined) {
+    return first;
+  }
+  const [firstEnd, secondEnd] = [lastValidInstant(first), lastValidInstant(second)];
+  if (firstEnd !== secondEnd) {
+    return firstEnd < secondEnd ? first : second;
+  }
+  return ISO_DATE.test(first) ? second : first;
 }
 
 /**
  * The earlier of two ISO-8601 strings (one format compares lexicographically), or the later one
- * with `later`; undefined = no limit.
+ * with `later`; undefined = no limit. A date compares as the start of its day, which is right for
+ * `asOf` and `availableAt`; `validUntil` uses `earliestValidUntil`.
  */
 function earlier(
   first: string | undefined,
@@ -316,7 +343,7 @@ export class Rate<From extends string = string, To extends string = string> {
     // A composite is known only once both legs are, and is valid only while both are.
     const asOf = earlier(this.asOf, next.asOf);
     const availableAt = earlier(this.availableAt, next.availableAt, true);
-    const validUntil = earlier(this.validUntil, next.validUntil);
+    const validUntil = earliestValidUntil(this.validUntil, next.validUntil);
     const info = timing(asOf, availableAt, validUntil, type);
     return new Rate(this.from, next.to, product, info, [this, next]);
   }

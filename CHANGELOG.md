@@ -73,8 +73,19 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The Rust port gains `ducat::processors` (one feature per processor), and `CurrencyCode::custom`
   accepts the ISO codes without a minor unit (XDR, XAU…), as ducat's `defineCurrency` does.
 
+### Fixed
+
+- A chained rate's `validUntil` is the one that ends first, with a date compared as its whole UTC
+  day: `andThen` of a rate valid until `'2026-11-06'` and one valid until `'2026-11-06T15:00:00Z'`
+  now ends at 15:00, where it used to keep the date and stay valid after one leg had expired.
+  `isExpired` and the chain now share one definition of when a `validUntil` ends.
+
 ### Documentation
 
+- The convert reference matches the code: `convertDetailed` checks `strictValidity` first with a
+  rounding mode too, `RateExpiredError` extends `RangeError`, and the Rate section says which
+  metadata each derived rate keeps (none keeps `source`; `withMargin` drops `type`). The rate
+  sources reference gains a Providers section.
 - A new explanation page, [Where money arithmetic goes wrong](docs/explanation/footguns.md), shows each class of money bug in other JavaScript libraries (floats, rounding at every step, negative halves, lost cents, overflow past 2⁵³, lenient parsing and more) with the result the library returns and what ducat does instead, linked from the README, the comparison and the how-to guides where each one bites.
 
 ## [0.4.0] - 2026-11-12
