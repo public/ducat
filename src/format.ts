@@ -119,8 +119,9 @@ const SHAPE: Partial<Record<string, string>> = {
  * ICU 78.3 (Node 24) does in the English locales of euro countries that inherit en-150 (en-NL,
  * en-DE, en-FI ...): it applies en-150's euro pattern (¤#,##0.00) inside the long-name pattern, so
  * every currency shows its symbol beside its name, and fraction digits beyond two land after the
- * name: "KWD 1,234.56 Kuwaiti dinars7". A probe asks once per locale (one currency part, the
- * digits in one run); on a fixed runtime it passes and Intl's own text is used.
+ * name: "KWD 1,234.56 Kuwaiti dinars7"; en-150 itself shows the symbol beside the euro's name. A
+ * probe asks once per locale and currency (one currency part, the digits in one run, at three
+ * fraction digits); on a fixed runtime it passes and Intl's own text is used.
  *
  * Where it fails, the text is composed as the long form is meant to be (TR35's unitPattern): the
  * number as the locale's currency format writes it, with the separators parse() reads, then the
@@ -130,16 +131,17 @@ const SHAPE: Partial<Record<string, string>> = {
  * names.
  */
 function longName(numberFormat: Intl.NumberFormat, options: Intl.NumberFormatOptions): Formatter {
-  const { locale, currencyDisplay } = numberFormat.resolvedOptions();
+  const { locale, currency, currencyDisplay } = numberFormat.resolvedOptions();
   if (currencyDisplay !== 'name' || !locale.startsWith('en-')) {
     return numberFormat;
   }
-  let sound = longNameSound.get(locale);
+  const key = `${locale}|${currency}`;
+  let sound = longNameSound.get(key);
   if (sound === undefined) {
     // c: a currency part, d: a digit part (integer, group, decimal, fraction), x: anything else
     const shape = new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: 'KWD',
+      currency,
       currencyDisplay: 'name',
       minimumFractionDigits: 3,
     })
@@ -147,7 +149,7 @@ function longName(numberFormat: Intl.NumberFormat, options: Intl.NumberFormatOpt
       .map(({ type }) => SHAPE[type] ?? 'x')
       .join('');
     sound = /^[^c]*c[^c]*$/.test(shape) && !/d[^d]+d/.test(shape);
-    longNameSound.set(locale, sound);
+    longNameSound.set(key, sound);
   }
   if (sound) {
     return numberFormat;

@@ -92,7 +92,7 @@
     },
     "format: de-DE": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/format'; console.log(money('1234.5', 'EUR').format('de-DE'));",
-      "gzipped": 5.82
+      "gzipped": 5.83
     },
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",
@@ -116,7 +116,7 @@
     },
     "functions: a currency context with /iso/EUR, money, format": {
       "code": "import { currencyContext } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const eur = currencyContext('EUR', { locale: 'nl-NL' }); console.log(eur.format(eur.money('1234.5')));",
-      "gzipped": 3.58
+      "gzipped": 3.59
     },
     "functions: a currency context with parse": {
       "code": "import { currencyContext, parse } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const eur = currencyContext('EUR', { locale: 'nl-NL', parse }); console.log(eur.format(eur.parse('1.234,50')));",

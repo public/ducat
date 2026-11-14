@@ -74,12 +74,15 @@ describe('format with long currency names', () => {
       }
     }
   });
-  it.runIf(isNode24Icu783)('matches the long form, not ICU 78.3’s symbol-and-name text', () => {
+  it.skipIf(!isNode24Icu783)('matches the long form, not ICU 78.3’s symbol-and-name text', () => {
     expect(format(money('1234.567', 'KWD'), 'en-NL', { currencyDisplay: 'name' })).toBe(
       '1,234.567 Kuwaiti dinars',
     );
     expect(format(money('1234.5', 'USD'), 'en-DE', { currencyDisplay: 'name' })).toBe(
       '1,234.50 US dollars',
+    );
+    expect(format(money('1234.5', 'EUR'), 'en-150', { currencyDisplay: 'name' })).toBe(
+      '1,234.50 euros',
     );
     expect(format(money('1234.5', 'EUR'), 'en-AT', { currencyDisplay: 'name' })).toBe(
       '1.234,50 euros',
