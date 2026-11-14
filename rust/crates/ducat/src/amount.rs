@@ -191,15 +191,16 @@ impl Amount {
     }
 }
 
-/// Anything that can be read as an exact factor: a [`Ratio`], an integer, a decimal or fraction
-/// string (`"1.075"`, `"1/3"`), or a float under the binary64 rule ([`Ratio::try_from`]).
+/// Anything that can be read as an exact factor: a [`Ratio`], an integer, or a decimal or fraction
+/// string (`"1.075"`, `"1/3"`). A float is not a factor: convert it explicitly with
+/// [`Ratio::try_from`], which applies the binary64 rule.
 pub trait Factor {
     /// The factor as an exact ratio.
     ///
     /// # Errors
     ///
     /// Whatever building the [`Ratio`] fails with: [`Error::Syntax`] for a string outside the
-    /// grammar, [`Error::TooManyDigits`] or [`Error::NotFinite`] for a float, and so on.
+    /// grammar, [`Error::Overflow`] for one that doesn't fit, and so on.
     fn to_ratio(self) -> Result<Ratio, Error>;
 }
 
@@ -212,12 +213,6 @@ impl Factor for Ratio {
 impl Factor for &str {
     fn to_ratio(self) -> Result<Ratio, Error> {
         self.parse()
-    }
-}
-
-impl Factor for f64 {
-    fn to_ratio(self) -> Result<Ratio, Error> {
-        Ratio::try_from(self)
     }
 }
 

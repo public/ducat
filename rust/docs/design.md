@@ -90,10 +90,12 @@ lives").
 6. **Typed `+`, `-` and unary `-` panic on overflow in every build profile** (`checked_*` plus `expect`), never
    wrap. `checked_add`, `checked_sub`, `checked_neg` and `checked_abs` return `Error::Overflow`.
 7. **Boundaries are strict and never panic.** Parsing, serde and (later) the database decoders return errors for
-   excess precision, NaN and the infinities, and out-of-range values. No `f64` is used anywhere except as an input:
-   `Ratio::try_from(f64)` and `from_f64` constructors, under ducat's binary64 rule (shortest round-trip form; more
-   than 15 significant digits is refused unless the value is a safe integer or a rounding is given; the rounding
-   check comes first, so `0.1 + 0.2` in EUR is a rounding error as in ducat).
+   excess precision, NaN and the infinities, and out-of-range values. No `f64` is used in arithmetic, and a float is
+   never a `Factor`. Floats come in only through explicit conversions, under ducat's binary64 rule (the shortest
+   round-trip form; more than 15 significant digits is refused unless the value is a safe integer or a rounding is
+   given): `Ratio::try_from(f64)`, and `from_f64`/`from_f64_at` on the money types. The money constructors exist
+   because the spec's `money.fromBinary64` vectors check the order of the two errors: the rounding check comes
+   first, so `0.1 + 0.2` in EUR is a rounding error, as in ducat, which a `Ratio` can't express.
 8. **Intermediates are 256-bit.** Every multiply, divide, convert and rescale rounds once, through one private
    kernel that forms `units × numerator × 10^k` in 256 bits, so a result that fits `i128` is found even when the
    plain product doesn't.

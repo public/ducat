@@ -10,7 +10,7 @@ publish = false
 
 [features]
 default = ["std", "iso", "serde"]
-## The standard library: `std::error::Error` for `Error`. The core needs only `alloc`.
+## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
 iso = []

@@ -99,19 +99,37 @@ fn t9_carry() {
 /// T10: exact ties in division round by the mode asked for, with divisors beyond 96 bits.
 #[test]
 fn t10_ties_with_wide_divisors() {
-    let money = Money::<Eur>::from_units(15_845_632_502_852_867_518_708_790_069, 0).unwrap();
-    let divisor = Ratio::new(200_000_000_000_000_000_000, 1).unwrap();
-    // 15845632502852867518708790069 / 2e20 = 79228162.514264337593543950345: not a tie
+    let wide = 10i128.pow(30);
+    // 5·10^30 ÷ 2·10^30 = 2.5 exactly: the divisor stays wide after reduction (5/2)
+    let money = Money::<Jpy>::from_minor(5 * wide);
+    let divisor = Ratio::from(2 * wide);
     assert_eq!(
         money.divide(divisor, Rounding::HalfEven).unwrap().units(),
+        2
+    );
+    assert_eq!(
+        money.divide(divisor, Rounding::HalfExpand).unwrap().units(),
+        3
+    );
+    assert_eq!(
+        money.divide(divisor, Rounding::HalfTrunc).unwrap().units(),
+        2
+    );
+    // wide on both sides, and exact: no mode may move it
+    let odd = Money::<Jpy>::from_minor(-15_845_632_502_852_867_518_708_790_070);
+    let divisor = Ratio::from(-3_169_126_500_570_573_503_741_758_014i128);
+    // −15845632502852867518708790070 ÷ −3169126500570573503741758014 = 5 exactly
+    assert_eq!(
+        odd.divide(divisor, Rounding::Unnecessary).unwrap().units(),
+        5
+    );
+    // 15845632502852867518708790069 / 2·10^20 = 79228162.514…, rounding up in every half mode
+    let big = Money::<Eur>::from_units(15_845_632_502_852_867_518_708_790_069, 0).unwrap();
+    let divisor = Ratio::from(200_000_000_000_000_000_000i128);
+    assert_eq!(
+        big.divide(divisor, Rounding::HalfEven).unwrap().units(),
         79_228_163
     );
-    // 25 / 10 = 2.5 at scale 0, with a wide equal factor on both sides
-    let wide = 10i128.pow(30);
-    let tie = Money::<Jpy>::from_minor(25)
-        .multiply(Ratio::new(wide, 10 * wide).unwrap(), Rounding::HalfEven)
-        .unwrap();
-    assert_eq!(tie.units(), 2);
 }
 
 /// A slow, independent reference: the exact quotient `n/d` rounded with `mode`, for values small
@@ -174,15 +192,20 @@ proptest! {
         prop_assert_eq!(Some(got), reference(n, d, mode));
     }
 
-    /// T11 at the i128 limits: multiplying by k/k is exact whatever the size of k.
+    /// T11 at the i128 limits: a product that overflows i128 in the middle but not at the end,
+    /// against an i128-only reference: a × n / d floored is (a div d) × n + ((a mod d) × n) div d.
     #[test]
-    fn t11_wide_identity(units in any::<i128>(), k in 1i128..=i128::MAX) {
-        let money = Money::<Eur>::from_units(units, 2).unwrap();
-        let factor = Ratio::from(k).checked_div(Ratio::from(k)).unwrap();
-        prop_assert_eq!(money.multiply(factor, Rounding::Unnecessary).unwrap(), money);
-        // and through a factor that isn't reduced away: (units × k) / k, built as two steps
-        if let Ok(scaled) = money.to_scale(3, Rounding::Unnecessary) {
-            prop_assert_eq!(scaled.to_scale(2, Rounding::Unnecessary).unwrap(), money);
+    fn t11_wide_products(units in any::<i128>(), num in 1i128..(1 << 60), den in 1i128..(1 << 60)) {
+        let factor = Ratio::new(num, den).unwrap();
+        let (n, d) = (factor.numer(), factor.denom());
+        let want = units
+            .div_euclid(d)
+            .checked_mul(n)
+            .and_then(|high| high.checked_add((units.rem_euclid(d) * n).div_euclid(d)));
+        let got = Money::<Eur>::from_minor(units).multiply(factor, Rounding::Floor).map(|m| m.units());
+        match want {
+            Some(want) => prop_assert_eq!(got, Ok(want)),
+            None => prop_assert_eq!(got, Err(Error::Overflow)),
         }
     }
 

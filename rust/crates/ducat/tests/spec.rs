@@ -35,8 +35,8 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("words", 6904),
 ];
 
-/// Operations the runner knows about but ducat-rs doesn't implement yet, with the milestone that
-/// brings them. A name ending in `*` covers every operation with that prefix.
+/// Operations the runner knows about but the Rust port doesn't implement yet, with the milestone
+/// that brings them. Each is named in full, so a new operation in the spec is an error here.
 const NOT_YET: &[(&str, &str)] = &[
     ("money.split", "not yet: milestone 2 (allocate)"),
     ("money.allocate", "not yet: milestone 2 (allocate)"),
@@ -53,26 +53,66 @@ const NOT_YET: &[(&str, &str)] = &[
     ("minor.discount", "not yet: milestone 3 (tax)"),
     ("minor.addTax", "not yet: milestone 3 (tax)"),
     ("minor.extractTax", "not yet: milestone 3 (tax)"),
-    ("fixed.*", "not yet: milestone 3 (fixed)"),
+    ("fixed.roundTrip", "not yet: milestone 3 (fixed)"),
+    ("fixed.add", "not yet: milestone 3 (fixed)"),
+    ("fixed.multiply", "not yet: milestone 3 (fixed)"),
+    ("fixed.divide", "not yet: milestone 3 (fixed)"),
+    ("fixed.round", "not yet: milestone 3 (fixed)"),
+    ("fixed.compare", "not yet: milestone 3 (fixed)"),
     ("xnpv.scaled", "not yet: milestone 4 (excel)"),
     ("xirr.floor", "not yet: milestone 4 (excel)"),
-    ("finance.*", "not yet: milestone 4 (finance)"),
-    ("excel.*", "not yet: milestone 4 (excel)"),
-    ("excelExample.*", "not yet: milestone 4 (excel)"),
-    ("spreadsheet.*", "not yet: milestone 4 (excel)"),
+    ("excel.annuities", "not yet: milestone 4 (excel)"),
+    ("excel.nper", "not yet: milestone 4 (excel)"),
+    ("excel.rate", "not yet: milestone 4 (excel)"),
+    ("excel.xnpv", "not yet: milestone 4 (excel)"),
+    ("excel.xirr", "not yet: milestone 4 (excel)"),
+    ("excelExample.npv", "not yet: milestone 4 (excel)"),
+    ("excelExample.irr", "not yet: milestone 4 (excel)"),
+    ("excelExample.rri", "not yet: milestone 4 (excel)"),
+    ("excelExample.effect", "not yet: milestone 4 (excel)"),
+    ("excelExample.fv", "not yet: milestone 4 (excel)"),
+    ("excelExample.pv", "not yet: milestone 4 (excel)"),
+    ("excelExample.pmt", "not yet: milestone 4 (excel)"),
+    ("excelExample.xnpv", "not yet: milestone 4 (excel)"),
+    ("excelExample.nper", "not yet: milestone 4 (excel)"),
+    ("excelExample.rate", "not yet: milestone 4 (excel)"),
+    ("excelExample.xirr", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.npv", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.irr", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.periodicRate", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.annualRate", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.fv", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.pv", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.pmt", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.nper", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.rate", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.xnpv", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.xirr", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.edge.fv", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.edge.pv", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.edge.pmt", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.edge.nper", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.edge.rate", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.edge.xnpv", "not yet: milestone 4 (excel)"),
+    ("spreadsheet.edge.xirr", "not yet: milestone 4 (excel)"),
+    ("finance.yearFraction", "not yet: milestone 4 (finance)"),
+    ("finance.interest", "not yet: milestone 4 (finance)"),
+    ("finance.compound", "not yet: milestone 4 (finance)"),
+    ("finance.amortise", "not yet: milestone 4 (finance)"),
+    ("finance.npv", "not yet: milestone 4 (finance)"),
+    ("finance.irr", "not yet: milestone 4 (finance)"),
+    ("finance.irrBracketed", "not yet: milestone 4 (finance)"),
+    ("finance.proration", "not yet: milestone 4 (finance)"),
+    ("finance.paymentDates", "not yet: milestone 4 (finance)"),
     ("words.spellOut", "not yet: milestone 6 (ducat-icu)"),
 ];
 
 const BEYOND_I128: &str = "beyond i128";
 
 fn not_yet(op: &str) -> Option<&'static str> {
-    NOT_YET.iter().find_map(|&(name, reason)| {
-        let matches = match name.strip_suffix('*') {
-            Some(prefix) => op.starts_with(prefix),
-            None => op == name,
-        };
-        matches.then_some(reason)
-    })
+    NOT_YET
+        .iter()
+        .find_map(|&(name, reason)| (name == op).then_some(reason))
 }
 
 /// The spec's own version, from `spec/package.json`.

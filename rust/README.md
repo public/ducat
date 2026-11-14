@@ -10,7 +10,6 @@ use ducat::iso::Eur;
 let price: Money<Eur> = "25.00".parse()?;
 let gross = price.multiply("1.075", Rounding::HalfEven)?;
 assert_eq!(gross.to_string(), "26.88 EUR");
-# Ok::<(), ducat::Error>(())
 ```
 
 - `Money<C>` (a currency known at compile time) and `AnyMoney` (one known at run time), both an `i128` count of
