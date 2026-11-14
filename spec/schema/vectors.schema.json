@@ -1170,7 +1170,16 @@
         "cash.round",
         "processor.rule",
         "processor.toWire",
-        "processor.fromWire"
+        "processor.fromWire",
+        "rate.derive",
+        "rate.validity",
+        "rate.fromJSON",
+        "rate.strictConvert",
+        "provider.table",
+        "provider.rate",
+        "provider.convert",
+        "bag.total",
+        "bag.sort"
       ]
     },
     "rowsByOp": {
@@ -3166,6 +3175,195 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/processor.fromWire"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "rate.derive"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/rate.derive"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "rate.validity"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/rate.validity"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "rate.fromJSON"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/rate.fromJSON"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "rate.strictConvert"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/rate.strictConvert"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "provider.table"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/provider.table"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "provider.rate"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/provider.rate"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "provider.convert"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/provider.convert"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "bag.total"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/bag.total"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "bag.sort"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/bag.sort"
                 }
               }
             }
@@ -6508,6 +6706,444 @@
           }
         },
         "additionalProperties": false
+      },
+      "rate.derive": {
+        "type": "object",
+        "required": ["rate", "steps", "json", "error"],
+        "properties": {
+          "rate": {
+            "$ref": "#/$defs/rateSpec"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["op"],
+              "properties": {
+                "op": {
+                  "enum": ["inverse", "andThen", "withMargin", "round"]
+                },
+                "rate": {
+                  "$ref": "#/$defs/rateSpec"
+                },
+                "margin": {
+                  "$ref": "#/$defs/rational"
+                },
+                "places": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "rounding": {
+                  "$ref": "#/$defs/roundingMode"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "json": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range", "mismatch"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "rate.validity": {
+        "type": "object",
+        "required": ["at", "expired", "available"],
+        "properties": {
+          "availableAt": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "validUntil": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "at": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "expired": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "rate.fromJSON": {
+        "type": "object",
+        "required": ["json", "want", "error"],
+        "properties": {
+          "json": {
+            "$ref": "#/$defs/rateJson"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "rate.strictConvert": {
+        "type": "object",
+        "required": ["rate", "amount", "rounding", "now", "want", "error"],
+        "properties": {
+          "rate": {
+            "$ref": "#/$defs/rateSpec"
+          },
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "now": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["expired", "rounding"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "provider.table": {
+        "type": "object",
+        "required": ["header", "pairs", "error"],
+        "properties": {
+          "table": true,
+          "list": true,
+          "header": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "base": {
+                    "$ref": "#/$defs/currency"
+                  },
+                  "asOf": {
+                    "$ref": "#/$defs/rateTime"
+                  },
+                  "availableAt": {
+                    "$ref": "#/$defs/rateTime"
+                  },
+                  "validUntil": {
+                    "$ref": "#/$defs/rateTime"
+                  },
+                  "missing": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/currency"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pairs": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}/[A-Z]{3}$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range", "mismatch"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "provider.rate": {
+        "type": "object",
+        "required": ["provider", "from", "to", "rate", "error"],
+        "properties": {
+          "provider": {
+            "$ref": "#/$defs/rateProvider"
+          },
+          "from": {
+            "$ref": "#/$defs/currency"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "asOf": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "rate": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rateJson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["unavailable", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "provider.convert": {
+        "type": "object",
+        "required": ["amount", "currency", "to", "provider", "rounding", "want", "error"],
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "provider": {
+            "$ref": "#/$defs/rateProvider"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "asOf": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "resultScale": {
+            "$ref": "#/$defs/scale"
+          },
+          "want": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["unavailable", "rounding", "range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "bag.total": {
+        "type": "object",
+        "required": ["items", "to", "provider", "rounding", "totals", "exact", "total", "error"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "$ref": "#/$defs/decimal"
+                },
+                {
+                  "$ref": "#/$defs/currency"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "to": {
+            "$ref": "#/$defs/currency"
+          },
+          "provider": {
+            "$ref": "#/$defs/rateProvider"
+          },
+          "rounding": {
+            "$ref": "#/$defs/roundingMode"
+          },
+          "asOf": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "resultScale": {
+            "$ref": "#/$defs/scale"
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "$ref": "#/$defs/currency"
+                },
+                {
+                  "$ref": "#/$defs/decimal"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "exact": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/rational"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["unavailable"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "bag.sort": {
+        "type": "object",
+        "required": ["items", "base", "provider", "order", "error"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "$ref": "#/$defs/decimal"
+                },
+                {
+                  "$ref": "#/$defs/currency"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "base": {
+            "$ref": "#/$defs/currency"
+          },
+          "provider": {
+            "$ref": "#/$defs/rateProvider"
+          },
+          "asOf": {
+            "$ref": "#/$defs/rateTime"
+          },
+          "order": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["unavailable"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       }
     },
     "spreadsheetNumber": {
@@ -6568,6 +7204,249 @@
         }
       },
       "additionalProperties": false
+    },
+    "rateText": {
+      "description": "An exchange rate as text: a decimal (trailing zeros kept as published) or numerator/denominator.",
+      "type": "string",
+      "pattern": "^-?[0-9]+((\\.[0-9]+)|(/[1-9][0-9]*))?$"
+    },
+    "rateTime": {
+      "description": "A date (YYYY-MM-DD, a whole UTC day) or an instant: YYYY-MM-DDTHH:MM, with optional seconds and milliseconds, then Z or an offset ±HH:MM.",
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?(Z|[+-]\\d{2}:\\d{2}))?$"
+    },
+    "rateQuote": {
+      "type": "object",
+      "required": ["rate"],
+      "properties": {
+        "rate": {
+          "$ref": "#/$defs/rateText"
+        },
+        "per": {
+          "description": "A positive integer in a quote that describes its rate; error rows also carry 0, a negative number or a fraction, which a port must refuse.",
+          "type": "number"
+        },
+        "inverted": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rateInfo": {
+      "description": "ducat's RateInfo: where a rate came from, when it applies, and how it was quoted.",
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "asOf": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "availableAt": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "validUntil": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "type": {
+          "type": "string"
+        },
+        "quote": {
+          "$ref": "#/$defs/rateQuote"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rateSpec": {
+      "description": "A rate as exchangeRate(from, to, rate, info) builds it.",
+      "type": "object",
+      "required": ["from", "to", "rate"],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/currency"
+        },
+        "to": {
+          "$ref": "#/$defs/currency"
+        },
+        "rate": {
+          "$ref": "#/$defs/rateText"
+        },
+        "info": {
+          "$ref": "#/$defs/rateInfo"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rateJson": {
+      "description": "A rate's JSON form, as ducat's toJSON writes it and rateFromJSON reads it.",
+      "type": "object",
+      "required": ["from", "to", "rate"],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/currency"
+        },
+        "to": {
+          "$ref": "#/$defs/currency"
+        },
+        "rate": {
+          "$ref": "#/$defs/rateText"
+        },
+        "source": {
+          "type": "string"
+        },
+        "asOf": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "availableAt": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "validUntil": {
+          "$ref": "#/$defs/rateTime"
+        },
+        "type": {
+          "type": "string"
+        },
+        "quote": {
+          "$ref": "#/$defs/rateQuote"
+        },
+        "derivedFrom": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rateJson"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "rateTableSpec": {
+      "description": "A rate table: one base against many (`table`, its rates as [currency, rate text, a rate, or null] pairs in order), or a list of rates (`list`).",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["table"],
+          "properties": {
+            "table": {
+              "type": "object",
+              "required": ["base", "rates"],
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/currency"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "asOf": {
+                  "$ref": "#/$defs/rateTime"
+                },
+                "availableAt": {
+                  "$ref": "#/$defs/rateTime"
+                },
+                "validUntil": {
+                  "$ref": "#/$defs/rateTime"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "rates": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "$ref": "#/$defs/currency"
+                      },
+                      {
+                        "oneOf": [
+                          {
+                            "$ref": "#/$defs/rateText"
+                          },
+                          {
+                            "$ref": "#/$defs/rateSpec"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    ],
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["list"],
+          "properties": {
+            "list": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rateSpec"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "rateProvider": {
+      "description": "A rate provider: a table, identity(), chain(...), reversed(provider) or via(base, provider).",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/rateTableSpec"
+        },
+        {
+          "type": "object",
+          "required": ["identity"],
+          "properties": {
+            "identity": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["chain"],
+          "properties": {
+            "chain": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rateProvider"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["reversed"],
+          "properties": {
+            "reversed": {
+              "$ref": "#/$defs/rateProvider"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["via", "of"],
+          "properties": {
+            "via": {
+              "$ref": "#/$defs/currency"
+            },
+            "of": {
+              "$ref": "#/$defs/rateProvider"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "oneOf": [

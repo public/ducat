@@ -22,14 +22,13 @@
 //! # Ok::<(), ducat::Error>(())
 //! ```
 
-mod date;
 mod day_count;
 mod loan;
 mod proration;
 pub(crate) mod rates;
 mod savings;
 
-pub use date::Date;
+pub use crate::date::Date;
 pub use day_count::{DayCount, InterestPeriod, year_fraction};
 pub use loan::{
     Amortisation, AmortisationMethod, AmortisationResidual, AmortisationRow, AmortiseOptions,
