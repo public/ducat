@@ -69,6 +69,14 @@ fixtures live in `spec/fixtures/`, shared with ducat's tests, and `spec/vectors/
 - **Left out:** Adyen's IANA `timeZone` option (it needs time-zone data; the TimeZone column's abbreviations and
   offsets are read), and `src/fetch.ts`.
 
+Milestone 5e added `ducat::wire` (the default `wire` feature): `GoogleMoney`, `Iso20022Amount`, `MinorUnitAmount`
+and `DineroObject`, plain structs with conversions to and from `Money` and `AnyMoney`, and with `serde` each in its
+format's JSON shape. Malformed input is an error, never a rounding (`Error::InvalidWire`, `Error::Syntax` for ISO
+20022 text). The readers take what the specs allow, as ducat does since #356: ProtoJSON's numbers or strings for
+`units` and `nanos`, exponent form included, and `xs:decimal`'s leading sign and `-0`. ducat's rule that a `units`
+*number* past 2^53 − 1 is refused is JavaScript's: serde reads JSON integers without loss, so the port has no such
+rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either.
+
 Known gaps, to close later:
 - Currency names and symbols (`currencyName`, `currencySymbol`): they come from `Intl` in ducat, so with
   formatting in `ducat-icu` (milestone 6).
@@ -207,7 +215,7 @@ lives").
 | `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | rates with metadata, providers and `MoneyBag` in `convert` (5d1); the parsers, a feature each, take text and never fetch (5d2) |
 | `/convert/fetch` | `ducat-fetch` | network code only here |
 | `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
-| `/wire` | `wire` (google.type.Money, ISO 20022, dinero objects) | |
+| `/wire` | `wire` (google.type.Money, ISO 20022, minor units, dinero objects) | ported in 5e |
 | `/format`, `/parse`, `/words/*` | `ducat-icu` | first check what ICU4X offers for currency formatting; RBNF is an interpreter over CLDR rules, as ducat's is |
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
 | `/zod`, `/valibot` | not ported | TypeScript schema libraries; `serde` covers validation |

@@ -57,6 +57,7 @@ jobs:
       - run: cargo build -p ducat --lib --locked --no-default-features --features iso,serde,allocate,cash --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features convert,serde,finance --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features ecb,boc,fed,boe,hmrc,history,stripe-fx,adyen-fx --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat --lib --locked --no-default-features --features wire,serde --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto,stripe,adyen,checkout,paypal,braintree,klarna --target thumbv7em-none-eabihf
 
   lint:
@@ -79,6 +80,8 @@ jobs:
       - run: cargo clippy -p ducat --lib --no-default-features --features hmrc --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features stripe-fx --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features adyen-fx --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features wire --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features wire,serde --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features policy --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features pricing --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features math --locked -- -D warnings

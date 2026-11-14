@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto", "stripe", "adyen", "checkout", "paypal", "braintree", "klarna", "ecb", "boc", "fed", "boe", "hmrc", "history", "stripe-fx", "adyen-fx"]
+default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto", "stripe", "adyen", "checkout", "paypal", "braintree", "klarna", "ecb", "boc", "fed", "boe", "hmrc", "history", "stripe-fx", "adyen-fx", "wire"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std", "num-bigint/std", "num-integer/std", "num-traits/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
@@ -55,6 +55,9 @@ hmrc = ["convert", "historic"]
 stripe-fx = ["convert", "stripe", "historic"]
 ## The rate on an Adyen settlement row (`ducat::convert::adyen_fx`).
 adyen-fx = ["convert", "historic"]
+## Money to and from google.type.Money, ISO 20022 amounts, ISO minor units and dinero.js objects
+## (`ducat::wire`).
+wire = ["historic"]
 ## `ExactMoney`, exact rational amounts that round once at the end (`ducat::exact`).
 exact = []
 ## Exchange rates with their metadata, inverses, chains and conversions; rate providers and tables;

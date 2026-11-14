@@ -39,6 +39,8 @@ mod processors;
 mod rates;
 #[path = "spec/sources.rs"]
 mod sources;
+#[path = "spec/wire.rs"]
+mod wire;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
 /// count), never silently lost.
@@ -57,6 +59,7 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("processors", 2372),
     ("rounding", 1800),
     ("tax", 1000),
+    ("wire", 610),
     ("words", 6904),
 ];
 
@@ -744,6 +747,7 @@ fn row_op(op: &str) -> Option<RowOp> {
         .or_else(|| processors::row_op(op))
         .or_else(|| rates::row_op(op))
         .or_else(|| sources::row_op(op))
+        .or_else(|| wire::row_op(op))
     {
         return Some(run);
     }
@@ -1133,6 +1137,7 @@ const AREAS: &[&str] = &[
     "math",
     "currency",
     "processors",
+    "wire",
 ];
 const EXPECTATIONS: &[&str] = &[
     "money",
