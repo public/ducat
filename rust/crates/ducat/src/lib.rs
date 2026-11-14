@@ -43,8 +43,12 @@ macro_rules! iso_markers {
     )*};
 }
 
+#[cfg(feature = "allocate")]
+pub mod allocate;
 mod amount;
 mod any;
+#[cfg(feature = "cash")]
+mod cash;
 mod currency;
 mod decimal;
 mod error;

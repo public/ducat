@@ -32,6 +32,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   multiply, divide, convert at a rate, compare, and serde as `{"amount","currency"}`) and a runner for
   `@ducatjs/money-spec`, which it passes for every core, rounding and conversion vector it covers
   (#338).
+- The Rust port gains allocation by weights with every remainder strategy, `split`, `instalments`,
+  `schedule`, `chunk` and `round_to_increment`, and passes the spec's allocation and cash vectors
+  (#339).
 
 ### Documentation
 

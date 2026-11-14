@@ -17,7 +17,9 @@ use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Rounding};
+use ducat::allocate::{InstalmentRemainder, Remainder, Tranche};
+use ducat::iso::Eur;
+use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Money, Rounding};
 use serde_json::Value;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
@@ -38,17 +40,6 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
 /// Operations the runner knows about but the Rust port doesn't implement yet, with the milestone
 /// that brings them. Each is named in full, so a new operation in the spec is an error here.
 const NOT_YET: &[(&str, &str)] = &[
-    ("money.split", "not yet: milestone 2 (allocate)"),
-    ("money.allocate", "not yet: milestone 2 (allocate)"),
-    (
-        "money.allocate.generated",
-        "not yet: milestone 2 (allocate)",
-    ),
-    ("allocate.byRemainder", "not yet: milestone 2 (allocate)"),
-    ("instalments.byRemainder", "not yet: milestone 2 (allocate)"),
-    ("chunk", "not yet: milestone 2 (allocate)"),
-    ("schedule", "not yet: milestone 2 (allocate)"),
-    ("roundToIncrement.byMode", "not yet: milestone 2 (cash)"),
     ("minor.percentage", "not yet: milestone 3 (tax)"),
     ("minor.discount", "not yet: milestone 3 (tax)"),
     ("minor.addTax", "not yet: milestone 3 (tax)"),
@@ -133,6 +124,9 @@ fn spec_dir() -> PathBuf {
 #[derive(Debug, Clone)]
 enum Outcome {
     Money(AnyMoney),
+    Parts(Vec<AnyMoney>),
+    /// The generated allocations that break the property, described.
+    Failures(Vec<String>),
     Integer(i64),
     Boolean(bool),
 }
@@ -269,8 +263,117 @@ fn case_op(op: &str) -> Option<CaseOp> {
                 money_of(&args["first"])?.eq_value(&money_of(&args["second"])?),
             ))
         },
+        "money.split" => |args| {
+            let count =
+                usize::try_from(args["count"].as_u64().expect("a count")).expect("a small count");
+            Ok(Outcome::Parts(
+                money_of(&args["money"])?.split(count, Remainder::First)?,
+            ))
+        },
+        "money.allocate" => |args| {
+            let weights: Vec<u64> = args["weights"]
+                .as_array()
+                .expect("weights")
+                .iter()
+                .map(|w| w.as_u64().expect("a weight"))
+                .collect();
+            Ok(Outcome::Parts(
+                money_of(&args["money"])?.allocate(&weights, Remainder::Largest)?,
+            ))
+        },
+        "money.allocate.generated" => |args| Ok(Outcome::Failures(generated_allocations(args)?)),
         _ => return None,
     })
+}
+
+/// The spec's linear congruential generator, in exact integer arithmetic.
+struct Lcg {
+    state: u128,
+    multiplier: u128,
+    increment: u128,
+    modulus: u128,
+}
+
+impl Lcg {
+    fn draw(&mut self, limit: i128, offset: i128) -> i128 {
+        self.state = (self.state * self.multiplier + self.increment) % self.modulus;
+        (self.state % limit as u128) as i128 + offset
+    }
+}
+
+/// The allocations a `money.allocate.generated` case describes: (minor units, weights).
+fn draws(args: &Value) -> Vec<(i128, Vec<i128>)> {
+    let generator = &args["generator"];
+    assert_eq!(
+        generator["kind"], "lcg",
+        "the only generator the spec defines"
+    );
+    let number = |value: &Value| value.as_u64().expect("a generator parameter") as u128;
+    let mut lcg = Lcg {
+        state: number(&generator["seed"]),
+        multiplier: number(&generator["multiplier"]),
+        increment: number(&generator["increment"]),
+        modulus: number(&generator["modulus"]),
+    };
+    let spec: Vec<&Value> = args["draws"].as_array().expect("draws").iter().collect();
+    let names: Vec<&str> = spec
+        .iter()
+        .map(|draw| draw["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        names,
+        ["minor", "weightCount", "weights"],
+        "the draws the spec documents"
+    );
+    let limit = |draw: &Value| draw["limit"].as_i64().expect("a limit") as i128;
+    let offset = |draw: &Value| draw["offset"].as_i64().expect("an offset") as i128;
+    let count = args["count"].as_u64().expect("a count");
+    (0..count)
+        .map(|_| {
+            let minor = lcg.draw(limit(spec[0]), offset(spec[0]));
+            let weight_count = lcg.draw(limit(spec[1]), offset(spec[1]));
+            let weights = (0..weight_count)
+                .map(|_| lcg.draw(limit(spec[2]), offset(spec[2])))
+                .collect();
+            (minor, weights)
+        })
+        .collect()
+}
+
+/// Every part is within one minor unit of its exact share, at the whole's scale, and the parts
+/// sum to the whole (the spec's `allocation-within-one-unit`).
+fn generated_allocations(args: &Value) -> Result<Vec<String>, Error> {
+    let currency = code(string(args, "currency"))?;
+    let mut failures = Vec::new();
+    let all = draws(args);
+    // the spec gives the first draw from seed 12345, so a port shows it draws the same ones
+    if args["generator"]["seed"] == 12345
+        && all
+            .first()
+            .map(|(minor, weights)| (*minor, weights.clone()))
+            != Some((306_932_606, vec![925, 574, 179, 460, 193, 794, 311]))
+    {
+        failures.push(format!(
+            "the first draw is {:?}, not the spec's",
+            all.first()
+        ));
+    }
+    for (minor, weights) in all {
+        let whole = AnyMoney::from_minor(minor, currency);
+        let parts = whole.allocate(&weights, Remainder::Largest)?;
+        let total: i128 = weights.iter().sum();
+        let units: Vec<i128> = parts.iter().map(AnyMoney::units).collect();
+        let sums = units.iter().sum::<i128>() == minor;
+        let scaled = parts.iter().all(|part| part.scale() == whole.scale());
+        let near = units
+            .iter()
+            .zip(&weights)
+            .all(|(part, weight)| (part * total - minor * weight).abs() <= total);
+        if !(sums && scaled && near) {
+            failures.push(format!("{minor} by {weights:?}: {units:?}"));
+        }
+    }
+    Ok(failures)
 }
 
 fn kind_name(kind: ErrorKind) -> &'static str {
@@ -299,6 +402,34 @@ fn meets(result: &Result<Outcome, Error>, expectation: &Value) -> bool {
         (Ok(Outcome::Money(money)), "money") => spec_money(money) == *expected,
         (Ok(Outcome::Integer(value)), "integer") => expected.as_i64() == Some(*value),
         (Ok(Outcome::Boolean(value)), "boolean") => expected.as_bool() == Some(*value),
+        (Ok(Outcome::Parts(parts)), "moneyList") => {
+            Value::Array(parts.iter().map(spec_money).collect()) == *expected
+        }
+        (Ok(Outcome::Parts(parts)), "moneyMultiset") => {
+            let mut got: Vec<String> = parts
+                .iter()
+                .map(|part| spec_money(part).to_string())
+                .collect();
+            let mut want: Vec<String> = expected
+                .as_array()
+                .into_iter()
+                .flatten()
+                .map(Value::to_string)
+                .collect();
+            got.sort();
+            want.sort();
+            got == want
+        }
+        (Ok(Outcome::Parts(parts)), "sumOfParts") => {
+            let currency = parts.first().map(AnyMoney::currency);
+            currency.is_some_and(|currency| {
+                AnyMoney::try_sum(parts.iter().copied(), currency)
+                    .is_ok_and(|sum| spec_money(&sum) == *expected)
+            })
+        }
+        (Ok(Outcome::Failures(failures)), "property") => {
+            expected == "allocation-within-one-unit" && failures.is_empty()
+        }
         _ => false,
     }
 }
@@ -329,6 +460,14 @@ fn judge_case(run: CaseOp, case: &Value) -> Result<(bool, String), Skip> {
         .any(|expectation| meets(&result, expectation));
     let shown = match &result {
         Ok(Outcome::Money(money)) => spec_money(money).to_string(),
+        Ok(Outcome::Parts(parts)) => {
+            Value::Array(parts.iter().map(spec_money).collect()).to_string()
+        }
+        Ok(Outcome::Failures(failures)) => format!(
+            "{} failures: {:?}",
+            failures.len(),
+            failures.iter().take(3).collect::<Vec<_>>()
+        ),
         Ok(other) => format!("{other:?}"),
         Err(error) => format!("error {} ({error})", kind_name(error.kind())),
     };
@@ -337,7 +476,51 @@ fn judge_case(run: CaseOp, case: &Value) -> Result<(bool, String), Skip> {
 
 // --- table operations --------------------------------------------------------------------------
 
-type RowOp = fn(&Value) -> Result<i128, Error>;
+/// What one row produced: each expected field with the value the Rust API gave for it.
+type Fields = Vec<(&'static str, Value)>;
+
+type RowOp = fn(&Value) -> Fields;
+
+/// A result in minor units as the tables write it, or `null` for an error of `kind`.
+fn minor_field(result: Result<i128, Error>, kind: ErrorKind) -> Value {
+    match result {
+        Ok(units) => Value::String(units.to_string()),
+        Err(error) if error.kind() == kind => Value::Null,
+        Err(error) => Value::String(format!("error {} ({error})", kind_name(error.kind()))),
+    }
+}
+
+/// Parts as the tables write them: their units, as integer strings, or `null` for a range error.
+fn parts_field<M>(result: Result<Vec<M>, Error>, units: fn(&M) -> i128) -> Value {
+    match result {
+        Ok(parts) => parts
+            .iter()
+            .map(|part| Value::String(units(part).to_string()))
+            .collect(),
+        Err(error) if error.kind() == ErrorKind::Range => Value::Null,
+        Err(error) => Value::String(format!("error {} ({error})", kind_name(error.kind()))),
+    }
+}
+
+/// Minor units of EUR, the tables' currency when a row names none.
+fn eur(text: &str) -> Money<Eur> {
+    Money::from_minor(minor_of(text))
+}
+
+const REMAINDERS: [(&str, Remainder); 5] = [
+    ("largest", Remainder::Largest),
+    ("first", Remainder::First),
+    ("last", Remainder::Last),
+    ("toFirst", Remainder::ToFirst),
+    ("toLast", Remainder::ToLast),
+];
+
+const INSTALMENT_REMAINDERS: [(&str, InstalmentRemainder); 4] = [
+    ("first", InstalmentRemainder::First),
+    ("last", InstalmentRemainder::Last),
+    ("toFirst", InstalmentRemainder::ToFirst),
+    ("toLast", InstalmentRemainder::ToLast),
+];
 
 fn row_op(op: &str) -> Option<RowOp> {
     fn start(row: &Value) -> Result<AnyMoney, Error> {
@@ -346,48 +529,173 @@ fn row_op(op: &str) -> Option<RowOp> {
             code(string(row, "currency"))?,
         ))
     }
+    fn want(result: Result<AnyMoney, Error>) -> Fields {
+        vec![(
+            "want",
+            minor_field(result.map(|money| money.units()), ErrorKind::Rounding),
+        )]
+    }
     Some(match op {
-        "minor.multiply" => |row| {
-            Ok(start(row)?
-                .multiply(string(row, "factor"), mode(row))?
-                .units())
-        },
-        "minor.divide" => |row| {
-            Ok(start(row)?
-                .divide(string(row, "divisor"), mode(row))?
-                .units())
-        },
+        "minor.multiply" => {
+            |row| want(start(row).and_then(|m| m.multiply(string(row, "factor"), mode(row))))
+        }
+        "minor.divide" => {
+            |row| want(start(row).and_then(|m| m.divide(string(row, "divisor"), mode(row))))
+        }
         "minor.toScale" => |row| {
-            let scale = u16::try_from(row["scale"].as_u64().expect("a scale"))
-                .map_err(|_| Error::InvalidScale)?;
-            Ok(start(row)?.to_scale(scale, mode(row))?.units())
+            let scale =
+                u16::try_from(row["scale"].as_u64().expect("a scale")).expect("a small scale");
+            want(start(row).and_then(|m| m.to_scale(scale, mode(row))))
         },
-        "minor.convert" => |row| {
-            Ok(start(row)?
-                .convert(code(string(row, "to"))?, string(row, "rate"), mode(row))?
-                .units())
+        "minor.convert" => {
+            |row| {
+                want(start(row).and_then(|m| {
+                    m.convert(code(string(row, "to"))?, string(row, "rate"), mode(row))
+                }))
+            }
+        }
+        "allocate.byRemainder" => |row| {
+            let amount = eur(string(row, "amount"));
+            let weights: Vec<&str> = row["weights"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|w| w.as_str().unwrap())
+                .collect();
+            // integer weights, and the same weights as decimal strings ("2.0"), which must agree
+            let decimals: Vec<String> =
+                weights.iter().map(|weight| format!("{weight}.0")).collect();
+            let integers: Vec<u128> = weights
+                .iter()
+                .map(|weight| weight.parse().unwrap())
+                .collect();
+            REMAINDERS
+                .iter()
+                .map(|&(name, remainder)| {
+                    let by_integers =
+                        parts_field(amount.allocate(&integers, remainder), Money::units);
+                    let by_decimals = parts_field(
+                        amount.allocate(decimals.iter().map(String::as_str), remainder),
+                        Money::units,
+                    );
+                    let field = if by_integers == by_decimals {
+                        by_integers
+                    } else {
+                        Value::String(format!(
+                            "{by_integers} but {by_decimals} by decimal weights"
+                        ))
+                    };
+                    (name, field)
+                })
+                .collect()
+        },
+        "instalments.byRemainder" => |row| {
+            let total = eur(string(row, "total"));
+            let unit = eur(string(row, "unit"));
+            let count = usize::try_from(row["count"].as_u64().unwrap()).unwrap();
+            INSTALMENT_REMAINDERS
+                .iter()
+                .map(|&(name, remainder)| {
+                    (
+                        name,
+                        parts_field(
+                            total.instalments(count, Some(unit), remainder),
+                            Money::units,
+                        ),
+                    )
+                })
+                .collect()
+        },
+        "chunk" => |row| {
+            vec![(
+                "chunks",
+                parts_field(
+                    eur(string(row, "total")).chunk(eur(string(row, "max"))),
+                    Money::units,
+                ),
+            )]
+        },
+        "schedule" => |row| {
+            let tranches: Result<Vec<Tranche<Money<Eur>>>, Error> = row["tranches"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|tranche| {
+                    if let Some(amount) = tranche["amount"].as_str() {
+                        Ok(Tranche::amount(eur(amount)))
+                    } else if let Some(percent) = tranche["percent"].as_str() {
+                        match tranche["cap"].as_str() {
+                            Some(cap) => Tranche::percent_capped(percent, eur(cap)),
+                            None => Tranche::percent(percent),
+                        }
+                    } else {
+                        assert_eq!(
+                            tranche["rest"], true,
+                            "a tranche is an amount, a percent or the rest"
+                        );
+                        Ok(Tranche::rest())
+                    }
+                })
+                .collect();
+            let total = eur(string(row, "total"));
+            vec![(
+                "result",
+                parts_field(
+                    tranches.and_then(|tranches| total.schedule(&tranches)),
+                    Money::units,
+                ),
+            )]
+        },
+        "roundToIncrement.byMode" => |row| {
+            let amount = eur(string(row, "amount"));
+            let step = eur(string(row, "step"));
+            Rounding::ALL
+                .iter()
+                .map(|&mode| {
+                    (
+                        mode.name(),
+                        minor_field(
+                            amount.round_to_increment(step, mode).map(|m| m.units()),
+                            ErrorKind::Rounding,
+                        ),
+                    )
+                })
+                .collect()
         },
         _ => return None,
     })
 }
 
-/// Runs one row of a `minor.*` table: `want` is the result in minor units, or `null` for a
-/// rounding error.
+/// Runs one row: every field the operation produces must equal the row's, as JSON text.
 fn judge_row(run: RowOp, row: &Value) -> Result<(bool, String), Skip> {
     if any_beyond_i128(row) {
         return Err(BEYOND_I128);
     }
-    let result = run(row);
-    let passed = match (&result, &row["want"]) {
-        (Ok(value), Value::String(want)) => value.to_string() == *want,
-        (Err(error), Value::Null) => error.kind() == ErrorKind::Rounding,
-        _ => false,
+    let fields = run(row);
+    let wrong: Vec<String> = fields
+        .iter()
+        .filter(|(name, value)| row.get(*name) != Some(value))
+        .map(|(name, value)| format!("{name} {value}"))
+        .collect();
+    Ok((wrong.is_empty(), wrong.join("; ")))
+}
+
+/// The row with its first expected field changed, which a correct implementation must fail.
+fn mutated_row(run: RowOp, row: &Value) -> Value {
+    let (name, _) = run(row).into_iter().next().expect("a field");
+    let mut changed = row.clone();
+    changed[name] = match &row[name] {
+        Value::String(text) => Value::String(format!("{text}1")),
+        Value::Array(items) if !items.is_empty() => {
+            let mut items = items.clone();
+            items.reverse();
+            items.push(Value::String("1".into()));
+            Value::Array(items)
+        }
+        Value::Null => Value::String("0".into()),
+        _ => Value::Null,
     };
-    let shown = match result {
-        Ok(value) => value.to_string(),
-        Err(error) => format!("error {} ({error})", kind_name(error.kind())),
-    };
-    Ok((passed, shown))
+    changed
 }
 
 // --- the file format ---------------------------------------------------------------------------
@@ -682,17 +990,10 @@ fn main() -> ExitCode {
                     Ok((true, _)) => {
                         tally.passed += 1;
                         if mutation_checked.insert(op.to_owned()) {
-                            let mut changed = row.clone();
-                            changed["want"] = match &row["want"] {
-                                Value::String(want) => serde_json::json!(format!(
-                                    "{}",
-                                    want.parse::<i128>().unwrap().wrapping_add(1)
-                                )),
-                                _ => serde_json::json!("0"),
-                            };
+                            let changed = mutated_row(run, row);
                             if !matches!(judge_row(run, &changed), Ok((false, _))) {
                                 errors.push(format!(
-                                    "{relative} row {index}: a changed `want` still passes"
+                                    "{relative} row {index}: a changed expectation still passes"
                                 ));
                             }
                         }

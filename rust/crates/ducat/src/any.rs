@@ -57,6 +57,19 @@ impl AnyMoney {
         }
     }
 
+    /// `other`'s amount, when it is in this currency.
+    #[cfg(any(feature = "allocate", feature = "cash"))]
+    pub(crate) fn amount_in(self, other: Self) -> Result<Amount, Error> {
+        if other.currency == self.currency {
+            Ok(other.amount)
+        } else {
+            Err(Error::CurrencyMismatch {
+                expected: self.currency,
+                actual: other.currency,
+            })
+        }
+    }
+
     /// The currency.
     #[must_use]
     pub const fn currency(&self) -> CurrencyCode {
