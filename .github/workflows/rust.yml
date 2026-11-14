@@ -55,6 +55,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal --target thumbv7em-none-eabihf && rustup default stable
       - run: cargo build -p ducat --lib --locked --no-default-features --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features iso,serde,allocate,cash --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto --target thumbv7em-none-eabihf
 
   lint:
     name: fmt, clippy and docs
@@ -69,6 +70,11 @@ jobs:
       - run: cargo clippy -p ducat --lib --no-default-features --features policy --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features pricing --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features math --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features cash --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features currencies --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features historic --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features territories --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features crypto --locked -- -D warnings
       - run: cargo doc -p ducat --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings

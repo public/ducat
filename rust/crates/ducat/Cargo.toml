@@ -9,15 +9,24 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math"]
+default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std", "num-bigint/std", "num-integer/std", "num-traits/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
 iso = []
 ## Allocation, splits, instalments, schedules and chunks (`ducat::allocate`).
 allocate = []
-## Rounding to an increment (`round_to_increment`), for cash.
+## Cash rounding: to an increment (`round_to_increment`), and by the cash-rounding rules
+## (`ducat::cash`: `cash_rule`, `cash_round`, `cash_unit`, `cash_digits`; `cash_policy` with `policy`).
 cash = []
+## ISO 4217 numeric codes both ways, and the size of a minor unit (`ducat::currencies`).
+currencies = []
+## Withdrawn ISO 4217 codes and non-ISO ones, with the exponent each had (`ducat::historic`).
+historic = []
+## The currencies each territory uses and used, from CLDR (`ducat::territories`).
+territories = []
+## Crypto currencies and tokens, and base units (`ducat::crypto`).
+crypto = []
 ## `ExactMoney`, exact rational amounts that round once at the end (`ducat::exact`).
 exact = []
 ## Exchange rates: `Rate`, inverses, chains and conversions (`ducat::convert`).

@@ -49,10 +49,23 @@ pub mod allocate;
 mod amount;
 mod any;
 #[cfg(feature = "cash")]
-mod cash;
+pub mod cash;
 #[cfg(feature = "convert")]
 pub mod convert;
+#[cfg(feature = "crypto")]
+pub mod crypto;
+#[cfg(feature = "currencies")]
+pub mod currencies;
 mod currency;
+#[cfg(any(
+    feature = "cash",
+    feature = "crypto",
+    feature = "currencies",
+    feature = "historic",
+    feature = "territories"
+))]
+#[rustfmt::skip] // generated: tests/currency_data.rs checks it byte for byte
+mod currency_data;
 mod decimal;
 mod error;
 #[cfg(feature = "exact")]
@@ -63,6 +76,8 @@ pub mod excel;
 pub mod finance;
 #[cfg(feature = "fixed")]
 pub mod fixed;
+#[cfg(feature = "historic")]
+pub mod historic;
 mod int;
 #[cfg(feature = "iso")]
 pub mod iso;
@@ -82,6 +97,8 @@ mod rounding;
 mod serde_impl;
 #[cfg(feature = "tax")]
 pub mod tax;
+#[cfg(feature = "territories")]
+pub mod territories;
 mod wide;
 
 pub use amount::Factor;

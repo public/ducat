@@ -1,0 +1,450 @@
+//! The generator of `src/currency_data.rs`, and the check that the committed file is its output.
+//!
+//! The tables come from the repository's `data/`: ISO 4217 List One (numeric codes) and List Three
+//! (withdrawn codes), `historic.json` (their exponents), `cldr-territories.json`, `cldr-cash.json`,
+//! `cash-rounding.json` and `crypto-units.json`. To regenerate it after updating any of them:
+//!
+//! ```text
+//! DUCAT_REGENERATE=1 cargo test -p ducat --test currency_data
+//! ```
+
+use std::collections::BTreeMap;
+use std::fmt::Write as _;
+use std::path::PathBuf;
+
+use serde_json::Value;
+
+fn root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
+}
+
+fn read(name: &str) -> String {
+    std::fs::read_to_string(root().join("data").join(name)).unwrap()
+}
+
+fn json(name: &str) -> Value {
+    serde_json::from_str(&read(name)).unwrap()
+}
+
+/// The text of the first `<tag>…</tag>` inside `entry`.
+fn element<'a>(entry: &'a str, tag: &str) -> Option<&'a str> {
+    let open = entry
+        .find(&format!("<{tag}>"))
+        .or_else(|| entry.find(&format!("<{tag} ")))?;
+    let start = open + entry[open..].find('>')? + 1;
+    let end = start + entry[start..].find(&format!("</{tag}>"))?;
+    Some(entry[start..end].trim())
+}
+
+fn unescape(text: &str) -> String {
+    text.replace("&apos;", "'")
+        .replace("&quot;", "\"")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&amp;", "&")
+}
+
+fn published(xml: &str) -> String {
+    let at = xml.find("Pblshd=\"").unwrap() + "Pblshd=\"".len();
+    xml[at..at + 10].to_owned()
+}
+
+/// List One: code → numeric code, for every code (with or without a minor unit).
+fn list_one() -> BTreeMap<String, String> {
+    let xml = read("iso4217-list-one.xml");
+    let mut codes = BTreeMap::new();
+    for entry in xml.split("<CcyNtry>").skip(1) {
+        let entry = &entry[..entry.find("</CcyNtry>").unwrap()];
+        let Some(code) = element(entry, "Ccy") else {
+            continue;
+        };
+        let numeric = element(entry, "CcyNbr").unwrap().to_owned();
+        let previous = codes
+            .entry(code.to_owned())
+            .or_insert_with(|| numeric.clone());
+        assert_eq!(*previous, numeric, "{code} has two numeric codes");
+    }
+    codes
+}
+
+fn is_word(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || byte == b'_'
+}
+
+/// The dates in a List Three withdrawal date: `\b\d{4}(?:-\d{2}\b)?`, as text.
+fn dates(text: &str) -> Vec<&str> {
+    let bytes = text.as_bytes();
+    let digits = |range: std::ops::Range<usize>| {
+        range.end <= bytes.len() && bytes[range].iter().all(u8::is_ascii_digit)
+    };
+    let mut found = Vec::new();
+    let mut index = 0;
+    while index < bytes.len() {
+        let at_boundary = index == 0 || !is_word(bytes[index - 1]);
+        if at_boundary && digits(index..index + 4) {
+            let month = bytes.get(index + 4) == Some(&b'-')
+                && digits(index + 5..index + 7)
+                && bytes.get(index + 7).is_none_or(|&next| !is_word(next));
+            let end = if month { index + 7 } else { index + 4 };
+            found.push(&text[index..end]);
+            index = end;
+        } else {
+            index += 1;
+        }
+    }
+    found
+}
+
+/// List Three: code → (name, numeric code, withdrawn). A withdrawal date is the latest of the dates
+/// in the entry, as text; a code in several entries takes the latest, and the first of two that tie.
+/// A List Three entry: name, numeric code, withdrawal date.
+type Withdrawn = (String, Option<String>, String);
+
+fn list_three() -> (String, BTreeMap<String, Withdrawn>) {
+    let xml = read("iso4217-list-three.xml");
+    let mut entries: BTreeMap<String, Withdrawn> = BTreeMap::new();
+    for entry in xml.split("<HstrcCcyNtry>").skip(1) {
+        let entry = &entry[..entry.find("</HstrcCcyNtry>").unwrap()];
+        let Some(code) = element(entry, "Ccy") else {
+            continue;
+        };
+        let mut found = dates(element(entry, "WthdrwlDt").unwrap_or(""));
+        found.sort_unstable();
+        let withdrawn = (*found.last().unwrap_or_else(|| panic!("{code}: no date"))).to_owned();
+        let name = unescape(element(entry, "CcyNm").unwrap());
+        let numeric = element(entry, "CcyNbr").map(str::to_owned);
+        let later = entries
+            .get(code)
+            .is_none_or(|(_, _, previous)| *previous < withdrawn);
+        if later {
+            entries.insert(code.to_owned(), (name, numeric, withdrawn));
+        }
+    }
+    (published(&xml), entries)
+}
+
+fn text(value: &Value) -> &str {
+    value.as_str().unwrap()
+}
+
+fn optional(value: &Value) -> String {
+    match value.as_str() {
+        Some(text) => format!("Some({text:?})"),
+        None => "None".to_owned(),
+    }
+}
+
+fn generate() -> String {
+    let active = list_one();
+    let mut out = String::new();
+    let mut line = |text: &str| writeln!(out, "{text}").unwrap();
+    line(
+        "// GENERATED by rust/crates/ducat/tests/currency_data.rs from data/: iso4217-list-one.xml,",
+    );
+    line("// iso4217-list-three.xml, historic.json, cldr-territories.json, cldr-cash.json,");
+    line("// cash-rounding.json and crypto-units.json.");
+    line(
+        "// Do not edit by hand: run `DUCAT_REGENERATE=1 cargo test -p ducat --test currency_data`.",
+    );
+    line("");
+    line("// the tables are plain tuples, so the generated file needs no types of its own");
+    line("#![allow(clippy::type_complexity)]");
+    line("");
+
+    // numeric codes, both ways
+    let mut by_numeric: Vec<(&String, &String)> = active
+        .iter()
+        .map(|(code, numeric)| (numeric, code))
+        .collect();
+    by_numeric.sort();
+    assert!(
+        by_numeric.windows(2).all(|pair| pair[0].0 != pair[1].0),
+        "two codes share a numeric code"
+    );
+    line(&format!(
+        "/// The ISO 4217 numeric code of every List One code ({} codes), sorted by code.",
+        active.len()
+    ));
+    line("#[cfg(feature = \"currencies\")]");
+    line(&format!(
+        "pub(crate) const NUMERIC_CODES: [(&str, &str); {}] = [",
+        active.len()
+    ));
+    for (code, numeric) in &active {
+        line(&format!("    ({code:?}, {numeric:?}),"));
+    }
+    line("];");
+    line("");
+    line("/// The same codes, sorted by numeric code.");
+    line("#[cfg(feature = \"currencies\")]");
+    line(&format!(
+        "pub(crate) const CODES_BY_NUMERIC: [(&str, &str); {}] = [",
+        by_numeric.len()
+    ));
+    for (numeric, code) in &by_numeric {
+        line(&format!("    ({numeric:?}, {code:?}),"));
+    }
+    line("];");
+    line("");
+
+    // historic codes: data/historic.json's, with List Three's name, numeric code and date
+    let (three_published, three) = list_three();
+    let historic = json("historic.json");
+    let mut table: BTreeMap<String, (u64, String, Option<String>, Option<String>)> =
+        BTreeMap::new();
+    for (code, exponent) in historic["exponents"].as_object().unwrap() {
+        assert!(
+            !active.contains_key(code),
+            "{code} is an active ISO 4217 code"
+        );
+        let (name, numeric, withdrawn) = three
+            .get(code)
+            .unwrap_or_else(|| panic!("{code} is not in List Three"));
+        table.insert(
+            code.clone(),
+            (
+                exponent.as_u64().unwrap(),
+                name.clone(),
+                numeric.clone(),
+                Some(withdrawn.clone()),
+            ),
+        );
+    }
+    for (code, entry) in historic["nonIso"].as_object().unwrap() {
+        assert!(
+            !active.contains_key(code) && !three.contains_key(code),
+            "{code} is an ISO 4217 code"
+        );
+        table.insert(
+            code.clone(),
+            (
+                entry["exponent"].as_u64().unwrap(),
+                text(&entry["name"]).to_owned(),
+                None,
+                None,
+            ),
+        );
+    }
+    line(
+        "/// The publication date of the ISO 4217 List Three snapshot the historic table comes from.",
+    );
+    line("#[cfg(feature = \"historic\")]");
+    line(&format!(
+        "pub(crate) const ISO_4217_LIST_THREE_PUBLISHED: &str = {three_published:?};"
+    ));
+    line("");
+    line(&format!(
+        "/// Withdrawn ISO 4217 codes and non-ISO ones ({} codes), sorted: code, the exponent ISO gave it",
+        table.len()
+    ));
+    line(
+        "/// while it was current, name, numeric code and withdrawal month (`None` for non-ISO codes).",
+    );
+    line("#[cfg(feature = \"historic\")]");
+    line(&format!(
+        "pub(crate) const HISTORIC: [(&str, u8, &str, Option<&str>, Option<&str>); {}] = [",
+        table.len()
+    ));
+    for (code, (exponent, name, numeric, withdrawn)) in &table {
+        let numeric = numeric
+            .as_deref()
+            .map_or("None".to_owned(), |text| format!("Some({text:?})"));
+        let withdrawn = withdrawn
+            .as_deref()
+            .map_or("None".to_owned(), |text| format!("Some({text:?})"));
+        line(&format!(
+            "    ({code:?}, {exponent}, {name:?}, {numeric}, {withdrawn}),"
+        ));
+    }
+    line("];");
+    line("");
+
+    // territories, in code order, each newest first
+    let regions = json("cldr-territories.json");
+    let regions = regions["regions"].as_object().unwrap();
+    let mut names: Vec<&String> = regions.keys().collect();
+    names.sort();
+    line(&format!(
+        "/// The currencies each territory has used ({} territories, sorted), newest first, from CLDR:",
+        names.len()
+    ));
+    line("/// code, first day, last day, legal tender.");
+    line("#[cfg(feature = \"territories\")]");
+    line(&format!(
+        "pub(crate) const TERRITORIES: [(&str, &[(&str, Option<&str>, Option<&str>, bool)]); {}] = [",
+        names.len()
+    ));
+    for name in names {
+        let uses: Vec<String> = regions[name]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|use_| {
+                format!(
+                    "({:?}, {}, {}, {})",
+                    text(&use_["currency"]),
+                    optional(&use_["from"]),
+                    optional(&use_["to"]),
+                    use_.get("tender").and_then(Value::as_bool).unwrap_or(true)
+                )
+            })
+            .collect();
+        line(&format!("    ({name:?}, &[{}]),", uses.join(", ")));
+    }
+    line("];");
+    line("");
+
+    // crypto units
+    let crypto = json("crypto-units.json");
+    let units = crypto["units"].as_object().unwrap();
+    let mut codes: Vec<&String> = units.keys().collect();
+    codes.sort();
+    line(&format!(
+        "/// Crypto currencies and tokens ({} codes), sorted: code, name, decimals, base unit, network,",
+        codes.len()
+    ));
+    line("/// contract.");
+    line("#[cfg(feature = \"crypto\")]");
+    line(&format!(
+        "pub(crate) const CRYPTO: [(&str, &str, u8, Option<&str>, &str, Option<&str>); {}] = [",
+        codes.len()
+    ));
+    for code in codes {
+        assert!(!active.contains_key(code), "{code} is an ISO 4217 code");
+        let unit = &units[code];
+        line(&format!(
+            "    ({code:?}, {:?}, {}, {}, {:?}, {}),",
+            text(&unit["name"]),
+            unit["decimals"].as_u64().unwrap(),
+            optional(&unit["baseUnit"]),
+            text(&unit["network"]),
+            optional(&unit["contract"])
+        ));
+    }
+    line("];");
+    line("");
+
+    // cash rules, in table order (the first that applies wins), each step in ISO minor units
+    let iso_exponents: BTreeMap<String, usize> = {
+        let xml = read("iso4217-list-one.xml");
+        xml.split("<CcyNtry>")
+            .skip(1)
+            .filter_map(|entry| {
+                let code = element(entry, "Ccy")?;
+                let units = element(entry, "CcyMnrUnts")?.parse().ok()?;
+                Some((code.to_owned(), units))
+            })
+            .collect()
+    };
+    let rules = json("cash-rounding.json");
+    let rules = rules["rules"].as_array().unwrap();
+    line(&format!(
+        "/// The cash-rounding rules ({} rules), in table order: currency, step in ISO minor units,",
+        rules.len()
+    ));
+    line("/// countries, scope, verified, source, tie rule.");
+    line("#[cfg(feature = \"cash\")]");
+    line(&format!(
+        "pub(crate) const CASH_RULES: [(&str, u64, &[&str], &str, bool, &str, crate::Rounding); {}] = [",
+        rules.len()
+    ));
+    for rule in rules {
+        let currency = text(&rule["currency"]);
+        let exponent = iso_exponents[currency];
+        let (whole, fraction) = text(&rule["increment"])
+            .split_once('.')
+            .unwrap_or((text(&rule["increment"]), ""));
+        assert!(
+            fraction.len() <= exponent,
+            "{currency}'s step is finer than its exponent"
+        );
+        let increment: u64 = format!("{whole}{fraction:0<exponent$}").parse().unwrap();
+        let countries: Vec<String> = rule["countries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|country| format!("{:?}", text(country)))
+            .collect();
+        let rounding = match rule
+            .get("rounding")
+            .and_then(Value::as_str)
+            .unwrap_or("halfExpand")
+        {
+            "halfExpand" => "HalfExpand",
+            "halfTrunc" => "HalfTrunc",
+            "halfEven" => "HalfEven",
+            other => panic!("{currency}: unknown tie rule {other}"),
+        };
+        line(&format!(
+            "    ({currency:?}, {increment}, &[{}], {:?}, {}, {:?}, crate::Rounding::{rounding}),",
+            countries.join(", "),
+            text(&rule["scope"]),
+            rule["verified"].as_bool().unwrap(),
+            text(&rule["source"])
+        ));
+    }
+    line("];");
+    line("");
+
+    // CLDR's cash fractions
+    let cldr = json("cldr-cash.json");
+    let release = text(&cldr["source"])
+        .split("release-")
+        .nth(1)
+        .unwrap()
+        .split('/')
+        .next()
+        .unwrap()
+        .to_owned();
+    let currencies = cldr["currencies"].as_object().unwrap();
+    let mut codes: Vec<&String> = currencies.keys().collect();
+    codes.sort();
+    line("/// The CLDR release `CLDR_CASH` comes from.");
+    line("#[cfg(feature = \"cash\")]");
+    line(&format!(
+        "pub(crate) const CLDR_RELEASE: &str = {release:?};"
+    ));
+    line("");
+    line(&format!(
+        "/// CLDR's fractions for the currencies it cash-rounds ({} codes), sorted: code, digits, cash",
+        codes.len()
+    ));
+    line("/// digits, cash rounding.");
+    line("#[cfg(feature = \"cash\")]");
+    line(&format!(
+        "pub(crate) const CLDR_CASH: [(&str, u8, u8, u16); {}] = [",
+        codes.len()
+    ));
+    for code in codes {
+        let entry = &currencies[code];
+        line(&format!(
+            "    ({code:?}, {}, {}, {}),",
+            entry["digits"].as_u64().unwrap(),
+            entry["cashDigits"].as_u64().unwrap(),
+            entry["cashRounding"].as_u64().unwrap()
+        ));
+    }
+    line("];");
+    out
+}
+
+#[test]
+fn committed_tables_are_the_generators_output() {
+    let path = root().join("rust/crates/ducat/src/currency_data.rs");
+    let generated = generate();
+    if std::env::var_os("DUCAT_REGENERATE").is_some() {
+        std::fs::write(&path, &generated).unwrap();
+    }
+    let committed = std::fs::read_to_string(&path).unwrap_or_default();
+    assert!(
+        committed == generated,
+        "src/currency_data.rs is stale: run `DUCAT_REGENERATE=1 cargo test -p ducat --test currency_data`"
+    );
+}
+
+#[test]
+fn withdrawal_dates_take_the_latest() {
+    assert_eq!(dates("1989 to 1990"), ["1989", "1990"]);
+    assert_eq!(dates("1990-07 to 1990-09"), ["1990-07", "1990-09"]);
+    assert_eq!(dates("2023-01"), ["2023-01"]);
+}

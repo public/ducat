@@ -27,6 +27,8 @@ use ducat::iso::Eur;
 use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Ratio, Rounding};
 use serde_json::Value;
 
+#[path = "spec/currency.rs"]
+mod currency;
 #[path = "spec/excel.rs"]
 mod excel;
 #[path = "spec/policy_math.rs"]
@@ -36,7 +38,8 @@ mod policy_math;
 /// count), never silently lost.
 const CASES_PER_AREA: &[(&str, usize)] = &[
     ("allocate", 5400),
-    ("cash", 1500),
+    ("cash", 2014),
+    ("currency", 1367),
     ("convert", 850),
     ("core", 41),
     ("exact", 1000),
@@ -728,7 +731,10 @@ fn proration_row(row: &Value) -> Fields {
 }
 
 fn row_op(op: &str) -> Option<RowOp> {
-    if let Some(run) = excel::row_op(op).or_else(|| policy_math::row_op(op)) {
+    if let Some(run) = excel::row_op(op)
+        .or_else(|| policy_math::row_op(op))
+        .or_else(|| currency::row_op(op))
+    {
         return Some(run);
     }
     fn start(row: &Value) -> Result<AnyMoney, Error> {
@@ -1101,7 +1107,7 @@ fn mutated_row(run: RowOp, row: &Value) -> Value {
 
 const AREAS: &[&str] = &[
     "core", "rounding", "allocate", "tax", "convert", "cash", "format", "words", "parse", "fixed",
-    "exact", "excel", "finance", "pricing", "math",
+    "exact", "excel", "finance", "pricing", "math", "currency",
 ];
 const EXPECTATIONS: &[&str] = &[
     "money",
@@ -1125,6 +1131,7 @@ const SOURCES: &[&str] = &[
     "microsoft-documentation",
     "dectest",
     "icu",
+    "reference-data",
 ];
 const TOP_LEVEL: &[&str] = &[
     "$schema",
