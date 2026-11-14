@@ -211,6 +211,26 @@ fn json_shapes() {
             "{text}"
         );
     }
+    // a float token past 2^53 − 1 may have lost digits before we see it: refused, as in ducat;
+    // the same value as a string, or as an integer token, reads exactly
+    assert!(
+        serde_json::from_str::<GoogleMoney>(
+            r#"{"currencyCode":"EUR","units":12345678901234567890e-1}"#
+        )
+        .is_err()
+    );
+    assert!(
+        serde_json::from_str::<GoogleMoney>(
+            r#"{"currencyCode":"EUR","units":"1234567890123456789e0"}"#
+        )
+        .is_ok()
+    );
+    assert!(
+        serde_json::from_str::<GoogleMoney>(
+            r#"{"currencyCode":"EUR","units":1234567890123456789}"#
+        )
+        .is_ok()
+    );
     for text in [
         r#"{"currencyCode":"EUR","units":"1.5"}"#,
         r#"{"currencyCode":"EUR","units":"+1"}"#,

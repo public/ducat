@@ -573,6 +573,12 @@ mod json {
                     Ok(ProtoInteger::Value(Ratio::from(value)))
                 }
                 fn visit_f64<E: de::Error>(self, value: f64) -> Result<ProtoInteger, E> {
+                    // A JSON number with a fraction or exponent arrives as a double: past 2^53 − 1
+                    // its digits may already be lost, so it is refused, as ducat does (send it as a
+                    // string, as ProtoJSON writers do for int64). Integer tokens arrive exactly.
+                    if !(-9_007_199_254_740_991.0..=9_007_199_254_740_991.0).contains(&value) {
+                        return Ok(ProtoInteger::Invalid);
+                    }
                     Ok(crate::decimal::faithful_decimal(value, false)
                         .map_or(ProtoInteger::Invalid, |decimal| {
                             ProtoInteger::Value(Ratio::from_decimal(decimal))
