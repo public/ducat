@@ -64,8 +64,11 @@ pub enum Error {
     PluralTruncation,
     /// Rule text that can't be read or applied.
     MalformedRules,
-    /// Rules that nest deeper than any CLDR rule set does.
+    /// Rules that nest deeper than any CLDR rule set does (64 levels).
     TooDeep,
+    /// Rules that need more than 10,000 rule applications for one number: far more than any CLDR
+    /// rule set does.
+    TooManySteps,
     /// A negative amount: words are for amounts to pay.
     NegativeAmount,
 }
@@ -83,7 +86,8 @@ impl fmt::Display for Error {
                 "ICU picks this plural form from the value cut to 32 bits, which gives another form"
             }
             Self::MalformedRules => "the RBNF rules can't be read",
-            Self::TooDeep => "the RBNF rules nest too deeply",
+            Self::TooDeep => "the RBNF rules nest more than 64 deep",
+            Self::TooManySteps => "the RBNF rules take more than 10000 steps",
             Self::NegativeAmount => "amounts in words are zero or more",
         })
     }
@@ -141,6 +145,10 @@ impl Locale {
 }
 
 /// A language's spell-out rules: its locale and CLDR's RBNF rule text. ducat's `SpelloutRules`.
+///
+/// Rule text of your own is bounded by a depth cap (64 levels, [`Error::TooDeep`]) and a work
+/// budget (10,000 rule applications per number, [`Error::TooManySteps`]), and is
+/// [`Error::MalformedRules`] where it can't be read; still treat untrusted rule text with care.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct SpelloutRules {
     /// The language.

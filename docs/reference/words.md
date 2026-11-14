@@ -59,6 +59,6 @@ amountInWords(money('-1', 'EUR'), english); // throws RangeError
 
 ## Types
 
-- `SpelloutRules`: `{ locale: string; rules: string }`: the locale (which also picks plural rules and number formats) and CLDR's RBNF rule text. Import one from `@ducatjs/money/words/<language>`.
+- `SpelloutRules`: `{ locale: string; rules: string }`: the locale (which also picks plural rules and number formats) and CLDR's RBNF rule text. Import one from `@ducatjs/money/words/<language>`. Rule text of your own is bounded by a depth cap (64 levels) and a work budget (10,000 rule applications per number): past either it throws a `RangeError`, and text it can't read (an unclosed `[`, `$(` or substitution, a radix below 2) a `SyntaxError`. Still treat untrusted rule text with care.
 - `AmountInWordsOptions`: `{ gender?: 'masculine' | 'feminine' | 'neuter'; ruleSet?: string; minor?: UnitNames }`. `gender` picks the number's agreement where the language has genders (Spanish "veintiún euros", "veintiuna libras"); CLDR doesn't record a currency's gender, so it's the caller's, default masculine. `ruleSet` picks any public rule set instead of the gender's cardinal.
 - `UnitNames`: plural forms of a minor unit's name by `Intl.PluralRules` category, `other` required: `{ one: 'cent', other: 'cents' }`. CLDR has no names for minor units.

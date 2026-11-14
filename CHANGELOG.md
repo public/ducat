@@ -94,6 +94,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- Malformed or explosive custom rule text in `spellOut` and `amountInWords` now throws instead of
+  hanging or overflowing the stack: an unclosed `[`, `$(` or substitution, a radix below 2, or a
+  `>>>` with no rule before it is a `SyntaxError`, and rules nested more than 64 deep or needing more
+  than 10,000 rule applications for one number are a `RangeError`.
 - The wire readers accept what their specs allow, which widens the input they take:
   `fromIso20022Amount` reads a leading `+` and `-0` (XML Schema's `xs:decimal`), and
   `fromGoogleMoney` reads `units` and `nanos` as numbers or strings, exponent form included, when

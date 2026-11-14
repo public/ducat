@@ -47,7 +47,7 @@
     "@ducatjs/money/currencies": 1.5,
     "@ducatjs/money/wire": 1.71,
     "@ducatjs/money/context": 0.69,
-    "@ducatjs/money/words": 2.2,
+    "@ducatjs/money/words": 2.32,
     "@ducatjs/money/words/de": 0.93,
     "@ducatjs/money/words/en": 0.9,
     "@ducatjs/money/words/es": 1.01,

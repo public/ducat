@@ -16,6 +16,21 @@ use crate::{Error, Locale, SpelloutRules};
 /// and shallow enough that adversarial rule text can't overflow the stack.
 const MAX_DEPTH: usize = 64;
 
+/// The most rule applications one spell-out may make, counted in steps, never in time, so rules
+/// that branch (a rule substituting two rule sets that each substitute two more, 40 levels deep, is
+/// 2^40 applications) end in an error rather than running for hours within the depth cap. Measured
+/// by counting applications over every words vector and, for every public rule set of every
+/// shipped language, 0 to 1999, 10^e and its neighbours to 10^18, ±(2^63 − 1), 10^18 ± 1 and
+/// their negatives: at most 82 (English `%spellout-numbering-verbose`, −999999999999999999).
+/// 10,000 is about 120 times that; ducat's TypeScript uses the same budget.
+const MAX_STEPS: usize = 10_000;
+
+/// The words written so far, and the rule applications made, shared across one spell-out.
+struct Walk {
+    text: String,
+    steps: usize,
+}
+
 /// ICU's RBNF formats int64 values; past them it writes plain digits, so this refuses instead.
 const INT64_MAX: i128 = i64::MAX as i128;
 
@@ -288,7 +303,7 @@ impl CompiledRules {
     /// [`Error::OutOfRange`] outside ±(2^63 − 1), ICU's range for the rules;
     /// [`Error::PrivateRuleSet`] for a `%%` rule set; [`Error::NoRuleSet`];
     /// [`Error::PluralTruncation`] where ICU picks a plural form from the value cut to 32 bits and
-    /// that form differs; [`Error::MalformedRules`] and [`Error::TooDeep`] for rules that can't be
+    /// that form differs; [`Error::MalformedRules`], [`Error::TooDeep`] and [`Error::TooManySteps`] for rules that can't be
     /// applied.
     pub fn spell_out(&self, value: i128, rule_set: Option<&str>) -> Result<String, Error> {
         if !(-INT64_MAX..=INT64_MAX).contains(&value) {
@@ -298,9 +313,12 @@ impl CompiledRules {
         if name.starts_with("%%") {
             return Err(Error::PrivateRuleSet);
         }
-        let mut output = String::new();
+        let mut output = Walk {
+            text: String::new(),
+            steps: 0,
+        };
         self.spell(self.set(name)?, value, 0, &mut output)?;
-        Ok(output)
+        Ok(output.text)
     }
 
     fn spell(
@@ -308,7 +326,7 @@ impl CompiledRules {
         set: &RuleSet,
         value: i128,
         depth: usize,
-        output: &mut String,
+        output: &mut Walk,
     ) -> Result<(), Error> {
         if depth > MAX_DEPTH {
             return Err(Error::TooDeep);
@@ -340,16 +358,20 @@ impl CompiledRules {
         value: i128,
         parts: &[Part],
         depth: usize,
-        output: &mut String,
+        output: &mut Walk,
     ) -> Result<(), Error> {
         if depth > MAX_DEPTH {
             return Err(Error::TooDeep);
+        }
+        output.steps += 1;
+        if output.steps > MAX_STEPS {
+            return Err(Error::TooManySteps);
         }
         let quotient = value / rule.divisor;
         let remainder = value % rule.divisor;
         for part in parts {
             match part {
-                Part::Text(text) => output.push_str(text),
+                Part::Text(text) => output.text.push_str(text),
                 Part::Optional(present, omitted) => {
                     // the bracketed text is left out when the value is a multiple of the divisor
                     let chosen = if remainder == 0 { omitted } else { present };
@@ -362,7 +384,7 @@ impl CompiledRules {
                         .find(|(name, _)| name == category)
                         .or_else(|| cases.iter().find(|(name, _)| name == "other"))
                         .map_or("", |(_, text)| text.as_str());
-                    output.push_str(text);
+                    output.text.push_str(text);
                 }
                 Part::Substitution(Kind::PreviousRemainder, _) => {
                     // the remainder, through the rule before this one rather than by the usual
@@ -388,7 +410,12 @@ impl CompiledRules {
                         _ => value,
                     };
                     if !target.is_empty() && !target.starts_with('%') {
-                        crate::digits::write(self.locale, target.contains(','), operand, output);
+                        crate::digits::write(
+                            self.locale,
+                            target.contains(','),
+                            operand,
+                            &mut output.text,
+                        );
                     } else {
                         let target_set = if target.is_empty() {
                             set
