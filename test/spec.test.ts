@@ -27,6 +27,7 @@ import {
 } from './spec/format.ts';
 import { loadVectorFiles, vectorSchema } from './spec/load.ts';
 import { TABLE_OPERATIONS } from './spec/tables.ts';
+import { CANARIES, INTL_OPERATIONS, intlVerdict, warningLine } from './spec/intl-data.ts';
 
 /** Cases per area. A vector may be added (raise the count), never silently lost. */
 const CASES_PER_AREA: Record<string, number> = {
@@ -54,6 +55,16 @@ const schema = vectorSchema;
 const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
 
 const files = loadVectorFiles();
+
+// The format and parse rows hold one Intl data build's output (spec/README.md, "Runtime
+// divergences"): on another runtime, a locale whose canary differs is skipped and reported, as a
+// GitHub Actions warning; on the declared runtime it is a failure (the test below).
+const intl = intlVerdict(files);
+// written straight to stdout, one line each, so GitHub reads them as workflow commands (vitest's
+// console capture doesn't pass module-level logs through on every runtime)
+for (const divergence of intl.skipped.values()) {
+  process.stdout.write(`${warningLine(divergence)}\n`);
+}
 
 // --- ducat's side of each operation ----------------------------------------------------------------
 
@@ -327,6 +338,37 @@ describe('@ducatjs/money-spec', () => {
     expect(files.size).toBeGreaterThan(0);
   });
 
+  it('matches every Intl canary on the runtime the format and parse files declare', () => {
+    expect(intl.failures.map(warningLine)).toEqual([]);
+  });
+
+  it('fails a canary mismatch on the declared runtime and skips the locale elsewhere', () => {
+    // every canary's expected text, from a run where nothing matches
+    const expected = new Map(
+      [...intlVerdict(files, () => '', false).skipped].map(([locale, found]) => [
+        locale,
+        found.expected,
+      ]),
+    );
+    expect([...expected.keys()]).toEqual(CANARIES.map((canary) => canary.locale));
+    // de-CH as Deno 2.9.8 writes it; the others as expected
+    const stub = (canary: { locale: string }) => {
+      const text = expected.get(canary.locale)!;
+      return canary.locale === 'de-CH' ? text.replace("'", '’') : text;
+    };
+    const onReference = intlVerdict(files, stub, true);
+    expect(onReference.failures.map((failure) => failure.locale)).toEqual(['de-CH']);
+    expect(onReference.skipped.size).toBe(0);
+    const elsewhere = intlVerdict(files, stub, false);
+    expect(elsewhere.failures).toEqual([]);
+    expect([...elsewhere.skipped.keys()]).toEqual(['de-CH']);
+    const skipped = elsewhere.skipped.get('de-CH')!;
+    expect(skipped.rows).toBeGreaterThan(100);
+    expect(warningLine(skipped)).toMatch(
+      /^::warning title=Intl data differs::de-CH skipped \(\d+ rows\): expected U\+0027 got U\+2019 /,
+    );
+  });
+
   it.each([...files.keys()])('%s follows the schema', (path) => {
     const isValid = validate(files.get(path));
     expect({ path, errors: validate.errors ?? [] }).toEqual({ path, errors: [] });
@@ -537,11 +579,13 @@ for (const [path, file] of files) {
           });
           return;
         }
+        // a locale whose Intl data differs on this runtime is skipped (and reported above)
+        const rows = INTL_OPERATIONS.has(table.op)
+          ? table.rows.filter((row) => !intl.skipped.has(row['locale'] as string))
+          : table.rows;
         const mismatches = [
-          ...(operation.checkTable?.(table.rows) ?? []),
-          ...table.rows.flatMap((row, index) =>
-            operation.checkRow(row, index, table.parameters ?? {}),
-          ),
+          ...(operation.checkTable?.(rows) ?? []),
+          ...rows.flatMap((row, index) => operation.checkRow(row, index, table.parameters ?? {})),
         ];
         expect(mismatches.slice(0, 5)).toEqual([]);
       },

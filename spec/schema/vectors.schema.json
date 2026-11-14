@@ -164,6 +164,11 @@
             "iso4217ListThree": {
               "description": "ISO 4217 List Three (withdrawn codes) publication date.",
               "$ref": "#/$defs/date"
+            },
+            "referenceRuntime": {
+              "description": "The runtime and Intl data build the expected values were checked on, as `Node <major> (ICU <version>, CLDR <version>)`: there a mismatch is a failure; other runtimes may skip the locales whose data differs (spec/README.md, \"Runtime divergences\").",
+              "type": "string",
+              "pattern": "^Node [0-9]+ \\(ICU [0-9.]+, CLDR [0-9.]+\\)$"
             }
           }
         }

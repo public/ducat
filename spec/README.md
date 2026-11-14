@@ -741,6 +741,24 @@ against CLDR 48 found one override among the locales used here and their parent 
 group separator. CLDR 48's `fr_CH.xml` sets only `currencyDecimal` "." and inherits fr's U+202F
 group; ICU's `fr_CH.txt` sets `group` "'" as well, so fr-CH writes `1'234.50 CHF`.
 
+Other runtimes ship other builds of the same ICU and CLDR versions. Deno 2.9.8 reports ICU 78.3
+and CLDR 48.0, but its data differs in three locales: de-CH's group is U+2019 (`CHF 1’234.50`,
+not `CHF 1'234.50`), fr-CA's currency names follow a space rather than U+00A0 (`1,00 dollar
+canadien`), and fr-CH keeps CLDR's U+202F group, without ICU's override.
+
+So the files declare the build they were checked on, `provenance.data.referenceRuntime` (`Node 24
+(ICU 78.3, CLDR 48.0)`), and a runner checks each locale with known build differences with a
+canary: it formats one value (de-CH `1234.50` CHF, fr-CA `1.00` CAD by name, fr-CH `1234.50` CHF)
+and compares the text with the file's row for it.
+
+- On the declared runtime (Node of that major version, with exactly that ICU and CLDR, decided
+  from the runtime and its versions), a canary mismatch is a failure: its data changed.
+- On any other runtime, a mismatch skips that locale's `format.money`, `parse.money` and
+  `parse.detect` rows, and the runner says which locale, how many rows, and the code points
+  expected and found. ducat's runner writes it as a GitHub Actions warning:
+  `::warning title=Intl data differs::de-CH skipped (166 rows): expected U+0027 got U+2019 …`.
+- Skipped rows still count as seen: the count per area stays exact, so a lost file still fails.
+
 ### Spelling out numbers
 
 `words.spellOut` tables come one per language and rule set, named in the table's

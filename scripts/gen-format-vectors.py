@@ -868,12 +868,14 @@ def main() -> None:
         + PARTS_RULE
     )
     runtime = "every row: ducat formats and parses with the runtime's Intl (ICU 78.3, CLDR 48 on Node 24 and Bun); an engine with other CLDR data writes other text"
-    provenance = {"source": "cldr", "generator": {"name": "scripts/gen-format-vectors.py", "version": GENERATOR_VERSION}, "method": method, "data": {"cldr": CLDR_VERSION, "iso4217": ISO4217_PUBLISHED, "runtimeIntl": runtime}}
+    # the build these rows were checked on: there a canary mismatch fails; elsewhere it skips the locale
+    reference = "Node 24 (ICU 78.3, CLDR 48.0)"
+    provenance = {"source": "cldr", "generator": {"name": "scripts/gen-format-vectors.py", "version": GENERATOR_VERSION}, "method": method, "data": {"cldr": CLDR_VERSION, "iso4217": ISO4217_PUBLISHED, "runtimeIntl": runtime, "referenceRuntime": reference}}
     icu_provenance = {
         "source": "cldr",
         "generator": {"name": "scripts/gen-format-vectors.py", "version": GENERATOR_VERSION},
         "method": icu_method,
-        "data": {"cldr": CLDR_VERSION, "icu": ICU_VERSION, "iso4217": ISO4217_PUBLISHED, "runtimeIntl": runtime + "; these rows also need ICU's own locale data, which overrides CLDR's"},
+        "data": {"cldr": CLDR_VERSION, "icu": ICU_VERSION, "iso4217": ISO4217_PUBLISHED, "runtimeIntl": runtime + "; these rows also need ICU's own locale data, which overrides CLDR's", "referenceRuntime": reference},
     }
     tags = [tag for tag in TAGS if tag not in ICU_TAGS]
     parse, money = parse_rows(tags, True)
