@@ -4,7 +4,7 @@
 //! every case and table row it knows, and prints implemented, skipped (with the reason) and
 //! failed counts per area and operation. It fails on:
 //! - a failed case or row;
-//! - an operation it doesn't know, unless that operation is listed in `NOT_YET`;
+//! - an operation it doesn't know, unless that operation is listed in `NOT_YET` or `DELEGATED`;
 //! - a file that breaks the format, or a change in the number of cases in an area;
 //! - a judgement that can't fail (each implemented operation's first passing vector is changed
 //!   and must then fail).
@@ -65,7 +65,17 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
 
 /// Operations the runner knows about but the Rust port doesn't implement yet, with the milestone
 /// that brings them. Each is named in full, so a new operation in the spec is an error here.
-const NOT_YET: &[(&str, &str)] = &[("words.spellOut", "not yet: milestone 6 (ducat-icu)")];
+const NOT_YET: &[(&str, &str)] = &[];
+
+/// Operations another crate of the workspace runs, with its own spec test over the same files:
+/// they are counted here, and reported on their own, never as passes.
+const DELEGATED: &[(&str, &str)] = &[("words.spellOut", "delegated to ducat-words")];
+
+fn delegated(op: &str) -> Option<&'static str> {
+    DELEGATED
+        .iter()
+        .find_map(|&(name, crate_name)| (name == op).then_some(crate_name))
+}
 
 fn not_yet(op: &str) -> Option<&'static str> {
     NOT_YET
@@ -1305,6 +1315,7 @@ struct Tally {
     passed: usize,
     failed: usize,
     skipped: BTreeMap<&'static str, usize>,
+    delegated: Option<(&'static str, usize)>,
 }
 
 fn vector_files(dir: &Path) -> Vec<PathBuf> {
@@ -1370,6 +1381,10 @@ fn main() -> ExitCode {
             let id = case["id"].as_str().unwrap_or("?");
             let tally = tallies.entry((area.clone(), op.to_owned())).or_default();
             let Some(run) = case_op(op) else {
+                if let Some(to) = delegated(op) {
+                    tally.delegated.get_or_insert((to, 0)).1 += 1;
+                    continue;
+                }
                 match not_yet(op) {
                     Some(reason) => *tally.skipped.entry(reason).or_default() += 1,
                     None => {
@@ -1412,6 +1427,10 @@ fn main() -> ExitCode {
             *per_area.entry(area.clone()).or_default() += rows.len();
             let tally = tallies.entry((area.clone(), op.to_owned())).or_default();
             let Some(run) = row_op(op) else {
+                if let Some(to) = delegated(op) {
+                    tally.delegated.get_or_insert((to, 0)).1 += rows.len();
+                    continue;
+                }
                 match not_yet(op) {
                     Some(reason) => *tally.skipped.entry(reason).or_default() += rows.len(),
                     None => {
@@ -1488,7 +1507,12 @@ fn main() -> ExitCode {
     )
     .unwrap();
     let (mut passed, mut failed, mut skipped) = (0, 0, 0);
+    let mut delegated_rows: Vec<String> = Vec::new();
     for ((area, op), tally) in &tallies {
+        if let Some((to, count)) = tally.delegated {
+            delegated_rows.push(format!("{area:<10} {op:<26} {count:>7}  {to}"));
+            continue;
+        }
         let skip_total: usize = tally.skipped.values().sum();
         let reasons: Vec<String> = tally
             .skipped
@@ -1514,6 +1538,16 @@ fn main() -> ExitCode {
         "total"
     )
     .unwrap();
+    if !delegated_rows.is_empty() {
+        writeln!(
+            report,
+            "\nDelegated, run by another crate's spec test (not counted as passes):"
+        )
+        .unwrap();
+        for line in &delegated_rows {
+            writeln!(report, "{line}").unwrap();
+        }
+    }
     println!("{report}");
     println!("Calc rows by how they passed (ducat's thresholds are checked):");
     for line in excel::count_lines() {

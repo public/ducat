@@ -59,6 +59,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ducat-words"
+version = "0.0.0"
+dependencies = [
+ "ducat",
+ "serde_json",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
