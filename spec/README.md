@@ -32,6 +32,7 @@ spec/
 | `rounding`   | `pydecimal.json`        |   750 | Python `decimal`   | multiply, divide and rescale, every rounding mode                                               |
 | `convert`    | `pydecimal.json`        |   250 | Python `decimal`   | conversion at a rate, every rounding mode                                                       |
 | `convert`    | `rates-fractions.json`  |   600 | Python `fractions` | rate inverses and chains, and converting through a chain with the residual                      |
+| `convert`    | `providers.json`        | 1,429 | Python `fractions` | rate metadata and its JSON, validity at UTC day boundaries, rate providers, multi-currency bags |
 | `exact`      | `fractions.json`        | 1,000 | Python `fractions` | exact amounts: divide and round with the residual, exact decimals, tax, multiply                |
 | `tax`        | `pydecimal.json`        | 1,000 | Python `decimal`   | percentages, discounts, adding and extracting tax                                               |
 | `finance`    | `fractions.json`        | 2,420 | Python `fractions` | day counts, interest, amortisation, proration, NPV and IRR                                      |
@@ -468,6 +469,56 @@ digits give. Every field is judged exactly, as JSON; `error` names the kind of e
 | `processor.rule`     | for `currency`: `exponent`, `multiple` (Stripe's charge, Checkout.com's payment, else 1) and `contextMultiple` (Stripe's payout, Checkout.com's Standalone API, else `multiple`), all `null` when the processor doesn't list it |
 | `processor.toWire`   | `wire`: the processor's amount for `amount` in `currency` (an integer string, or PayPal's and Braintree's decimal string), with `payout`, `standalone` and `rounding` where given; `null` with `error` `rounding` or `range`    |
 | `processor.fromWire` | `amount`: the money a processor's `wire` amount in `currency` is; `null` with `error` `range` (an unlisted currency) or `syntax` (a string outside the format)                                                                  |
+
+### Rate metadata, providers and bags
+
+`convert/providers.json` holds ducat's rates with their metadata, its rate providers and its
+multi-currency bags, as `scripts/gen-rate-provider-vectors.py` models them from ducat's convert
+reference with Python's `fractions` and `datetime`, independently of ducat. A rate is given as
+`exchangeRate(from, to, rate, info)` takes it (`rateSpec`), and expected rates in the JSON form
+`toJSON` writes (`rateJson`), whose fields are in that order: `from`, `to`, `rate`, `source`,
+`asOf`, `availableAt`, `validUntil`, `type`, `quote` (only when it has a `per` or is `inverted`)
+and `derivedFrom`. Every field is judged exactly, as JSON; `error` names the outcome
+(`unavailable`, `expired`, `rounding`, `mismatch` or `range`), or is `null`.
+
+- **Rate text:** a published decimal keeps its digits when its canonical form would drop trailing
+  zeros (`1.10`, `136.80`); otherwise a rate prints as its exact decimal (`01.50` is `1.5`), or as
+  `num/den` when that doesn't terminate. A rounded rate prints canonically.
+- **Quotes** must describe their rate exactly: the rate is `quote ÷ per`, or `per ÷ quote` when
+  `inverted` (`per` defaults to 1). A rate whose quote doesn't is refused when it is built
+  (`range`), so its inverse, which flips `inverted`, always describes its rate too. A `per` of 0
+  describes nothing, and a negative `per` (with a positive quote) describes a negative rate. The
+  error rows carry such a `per`, including a fractional one: the one place a JSON number in these
+  files isn't a small integer, which a port must refuse (as ducat does) rather than read.
+- **Times:** a date or an instant (`rateTime`); an instant is stored as UTC to the millisecond
+  (`2026-11-06T15:00:00.000Z`), a date as given. A date counts as the start of its UTC day for
+  `asOf`, `availableAt` and a lookup's start, and as the whole day for `validUntil` and for a date
+  `at`: a date `validUntil` is valid through 23:59:59.999Z. An instant `validUntil` is valid at
+  itself. Every time in the file is one of these unambiguous forms.
+- **Derived rates:** `inverse`, `andThen`, `withMargin` and `round` record their inputs in
+  `derivedFrom` and drop `source`. A chain takes the oldest `asOf`, the latest `availableAt` and the
+  `validUntil` that ends first, compared as times (the instant form on a tie). `inverse` swaps `bid`
+  and `ask` and marks or unmarks the quote as inverted; `andThen` keeps a `type` both inputs share;
+  `round` keeps the `type`; `withMargin` keeps neither `type` nor `quote`.
+- **Tables:** a `table` is a base against many, its rates as `[currency, rate]` pairs in order (a
+  rate text, a ready-made rate, which must be `base` → that currency, or `null` for a missing
+  value); its own `source`, timing and `type` go on every rate it builds. A `list` is a list of
+  rates. The last rate for a pair wins. A lookup with an `asOf` gets nothing from a rate, or a
+  table, dated after that UTC day, published after it, or expired at it.
+- **Providers** nest: `identity`, `chain`, `reversed` and `via` (`base`, each leg direct or as an
+  exact inverse), as ducat's functions of those names.
+
+| op                   | expected fields and how each is judged                                                                                                                                                                                     |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rate.derive`        | `json`: the rate after `steps` (`inverse`, `andThen` with `rate`, `withMargin` with `margin`, `round` with `places` and `rounding`); `null` with `error` `range` (not positive, or a quote that doesn't describe the rate) |
+| `rate.validity`      | `expired`: `isExpired(at)`, and `available`: `isAvailable(at)`, of a rate with the row's `availableAt` and `validUntil`                                                                                                    |
+| `rate.fromJSON`      | `want`: `rateFromJSON(json).toJSON()`; `null` with `error` `range` (not positive, or a quote that doesn't describe the rate, including a `per` of 0, a negative or a fractional one)                                       |
+| `rate.strictConvert` | `want`: `amount` converted at `rate` to its target's exponent with `rounding` and strict validity at the instant `now`; `null` with `error` `expired` or `rounding`                                                        |
+| `provider.table`     | `header` (`base`, `asOf`, `availableAt`, `validUntil`, `missing`, where present) and `pairs` of the table; `null`s with `error` `mismatch` or `range`                                                                      |
+| `provider.rate`      | `rate`: what `rateOf(provider, from, to, { asOf })` returns; `null` with `error` `unavailable`                                                                                                                             |
+| `provider.convert`   | `want`: `amount` in `currency` converted to `to` through `provider` as of `asOf`, at `resultScale` (default `to`'s exponent); `null` with `error` `unavailable` or `rounding`                                              |
+| `bag.total`          | `totals`: the bag's per-currency totals in first-seen order; `exact`: `exactTotal` in `to`; `total`: rounded once with `rounding` at `resultScale`; `null`s with `error` `unavailable`                                     |
+| `bag.sort`           | `order`: the indices of `items` as `sortByValue` orders them by their exact value in `base` (stable); `null` with `error` `unavailable`                                                                                    |
 
 ### Finance and Excel tables
 

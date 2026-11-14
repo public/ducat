@@ -74,7 +74,27 @@ import {
 } from '../../src/math.js';
 import { assertScale, roundingPolicy } from '../../src/policy.js';
 import { priceEnding, tieredPrice, type PriceTier, type TiersMode } from '../../src/pricing.js';
-import { exchangeRate, type Rate } from '../../src/rate.js';
+import {
+  exchangeRate,
+  RateExpiredError,
+  rateFromJSON,
+  type Rate,
+  type RateInfo,
+  type RateJSON,
+} from '../../src/rate.js';
+import {
+  chain as chainProviders,
+  identity,
+  rateOf,
+  rateTable,
+  RateUnavailableError,
+  reversed,
+  via as viaBase,
+  type RateProvider,
+  type RateTableSpec,
+} from '../../src/provider.js';
+import { bag, sortByValue } from '../../src/bag.js';
+import { vi } from 'vitest';
 import {
   addTax,
   allocate,
@@ -599,6 +619,209 @@ function fromWire(row: Row): Money<string> {
   }
 }
 
+// --- rate metadata, providers and bags, from the convert reference ------------------------------
+
+interface RateSpec {
+  from: string;
+  to: string;
+  rate: string;
+  info?: RateInfo;
+}
+
+const rateOfSpec = (spec: RateSpec): Rate => exchangeRate(spec.from, spec.to, spec.rate, spec.info);
+
+/** The outcome the spec names for an error ducat throws. */
+function outcome(error: unknown): string {
+  if (error instanceof RateUnavailableError) {
+    return 'unavailable';
+  }
+  if (error instanceof RateExpiredError) {
+    return 'expired';
+  }
+  if (error instanceof RoundingError) {
+    return 'rounding';
+  }
+  if (error instanceof CurrencyMismatchError) {
+    return 'mismatch';
+  }
+  if (error instanceof RangeError) {
+    return 'range';
+  }
+  throw error;
+}
+
+/** `fields` on success, or every one of `nulls` null with the error's outcome. */
+function attemptOutcome(
+  nulls: readonly string[],
+  run: () => Record<string, unknown>,
+): Record<string, unknown> {
+  try {
+    return { ...run(), error: null };
+  } catch (error) {
+    return { ...Object.fromEntries(nulls.map((field) => [field, null])), error: outcome(error) };
+  }
+}
+
+function tableOf(spec: Row): ReturnType<typeof rateTable> {
+  if (spec['list'] !== undefined) {
+    return rateTable((spec['list'] as RateSpec[]).map(rateOfSpec));
+  }
+  const { rates, ...header } = spec['table'] as Row & { rates: [string, unknown][] };
+  const entries = rates.map(([code, entry]) => [
+    code,
+    entry !== null && typeof entry === 'object' ? rateOfSpec(entry as RateSpec) : entry,
+  ]);
+  return rateTable({ ...header, rates: Object.fromEntries(entries) } as RateTableSpec);
+}
+
+function providerOf(spec: Row): RateProvider {
+  if (spec['table'] !== undefined || spec['list'] !== undefined) {
+    return tableOf(spec);
+  }
+  if (spec['identity'] === true) {
+    return identity();
+  }
+  if (spec['chain'] !== undefined) {
+    return chainProviders(...(spec['chain'] as Row[]).map(providerOf));
+  }
+  if (spec['reversed'] !== undefined) {
+    return reversed(providerOf(spec['reversed'] as Row));
+  }
+  return viaBase(text(spec, 'via'), providerOf(spec['of'] as Row));
+}
+
+const asOfQuery = (row: Row) =>
+  row['asOf'] === undefined ? undefined : { asOf: text(row, 'asOf') };
+
+const itemsOf = (row: Row) =>
+  (row['items'] as [string, string][]).map(([amount, currency]) => moneyOf(amount, currency));
+
+function derive(row: Row): RateJSON {
+  let rate = rateOfSpec(row['rate'] as RateSpec);
+  for (const step of row['steps'] as Row[]) {
+    switch (step['op']) {
+      case 'inverse':
+        rate = rate.inverse();
+        break;
+      case 'andThen':
+        rate = rate.andThen(rateOfSpec(step['rate'] as RateSpec));
+        break;
+      case 'withMargin':
+        rate = rate.withMargin(text(step, 'margin'));
+        break;
+      default:
+        rate = rate.round(step['places'] as number, step['rounding'] as RoundingMode);
+    }
+  }
+  return rate.toJSON();
+}
+
+/** A conversion with strictValidity, with the system clock set to the row's `now`. */
+function strictConvert(row: Row): string {
+  const rate = rateOfSpec(row['rate'] as RateSpec);
+  vi.useFakeTimers({ toFake: ['Date'] });
+  try {
+    vi.setSystemTime(new Date(text(row, 'now')));
+    const amount = moneyOf(text(row, 'amount'), rate.from);
+    const rounding = row['rounding'] as RoundingMode;
+    return rate.convert(amount, rounding, { strictValidity: true }).toDecimal();
+  } finally {
+    vi.useRealTimers();
+  }
+}
+
+const RATE_OPERATIONS: Record<string, TableOperation> = {
+  'rate.derive': fieldsOperation(['json', 'error'], (row) =>
+    attemptOutcome(['json'], () => ({ json: derive(row) })),
+  ),
+  'rate.validity': fieldsOperation(['expired', 'available'], (row) => {
+    const info: { availableAt?: string; validUntil?: string } = {};
+    if (row['availableAt'] !== undefined) {
+      info.availableAt = text(row, 'availableAt');
+    }
+    if (row['validUntil'] !== undefined) {
+      info.validUntil = text(row, 'validUntil');
+    }
+    const rate = exchangeRate('EUR', 'USD', '1.1', info);
+    const at = text(row, 'at');
+    return { expired: rate.isExpired(at), available: rate.isAvailable(at) };
+  }),
+  'rate.fromJSON': fieldsOperation(['want', 'error'], (row) =>
+    attemptOutcome(['want'], () => ({ want: rateFromJSON(row['json'] as RateJSON).toJSON() })),
+  ),
+  'rate.strictConvert': fieldsOperation(['want', 'error'], (row) =>
+    attemptOutcome(['want'], () => ({ want: strictConvert(row) })),
+  ),
+  'provider.table': fieldsOperation(['header', 'pairs', 'error'], (row) =>
+    attemptOutcome(['header', 'pairs'], () => {
+      const table = tableOf(row);
+      const header: Record<string, unknown> = {};
+      for (const key of ['base', 'asOf', 'availableAt', 'validUntil', 'missing'] as const) {
+        if (table[key] !== undefined) {
+          header[key] = table[key];
+        }
+      }
+      return { header, pairs: table.rates.map((rate) => `${rate.from}/${rate.to}`) };
+    }),
+  ),
+  'provider.rate': fieldsOperation(['rate', 'error'], (row) =>
+    attemptOutcome(['rate'], () => ({
+      rate: rateOf(
+        providerOf(row['provider'] as Row),
+        text(row, 'from'),
+        text(row, 'to'),
+        asOfQuery(row),
+      ).toJSON(),
+    })),
+  ),
+  'provider.convert': fieldsOperation(['want', 'error'], (row) =>
+    attemptOutcome(['want'], () => {
+      const options: { asOf?: string; scale?: number } = {};
+      if (row['asOf'] !== undefined) {
+        options.asOf = text(row, 'asOf');
+      }
+      if (row['resultScale'] !== undefined) {
+        options.scale = row['resultScale'] as number;
+      }
+      const amount = moneyOf(text(row, 'amount'), text(row, 'currency'));
+      const provider = providerOf(row['provider'] as Row);
+      const rounding = row['rounding'] as RoundingMode;
+      return { want: convert(amount, text(row, 'to'), provider, rounding, options).toDecimal() };
+    }),
+  ),
+  'bag.total': fieldsOperation(['totals', 'exact', 'total', 'error'], (row) => {
+    const held = bag(...itemsOf(row));
+    const totals = held.values().map((money) => [money.currency, money.toDecimal()]);
+    const provider = providerOf(row['provider'] as Row);
+    const to = text(row, 'to');
+    const options: { asOf?: string; scale?: number } = {};
+    if (row['asOf'] !== undefined) {
+      options.asOf = text(row, 'asOf');
+    }
+    if (row['resultScale'] !== undefined) {
+      options.scale = row['resultScale'] as number;
+    }
+    return {
+      totals,
+      ...attemptOutcome(['exact', 'total'], () => ({
+        exact: exactText(held.exactTotal(to, provider, options)),
+        total: held.total(to, provider, row['rounding'] as RoundingMode, options).toDecimal(),
+      })),
+    };
+  }),
+  'bag.sort': fieldsOperation(['order', 'error'], (row) =>
+    attemptOutcome(['order'], () => {
+      const items = itemsOf(row);
+      const options: { base: string; asOf?: string } = { base: text(row, 'base') };
+      if (row['asOf'] !== undefined) {
+        options.asOf = text(row, 'asOf');
+      }
+      const sorted = sortByValue(items, providerOf(row['provider'] as Row), options);
+      return { order: sorted.map((money) => items.indexOf(money)) };
+    }),
+  ),
+};
+
 // --- spelling out numbers, from ICU ------------------------------------------------------------------
 
 const SPELLOUT_RULES: Record<string, SpelloutRules> = {
@@ -620,6 +843,7 @@ function checkSpellOut(row: Row, _index: number, parameters: Row): string[] {
 }
 
 export const TABLE_OPERATIONS: Record<string, TableOperation> = {
+  ...RATE_OPERATIONS,
   'allocate.byRemainder': { expects: REMAINDERS, checkRow: checkAllocation },
   'instalments.byRemainder': {
     expects: ['first', 'last', 'toFirst', 'toLast'],
