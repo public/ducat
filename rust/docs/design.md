@@ -77,6 +77,18 @@ format's JSON shape. Malformed input is an error, never a rounding (`Error::Inva
 *number* past 2^53 − 1 is refused is JavaScript's: serde reads JSON integers without loss, so the port has no such
 rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either.
 
+Milestone 6a added amounts and numbers in words, in their own crate, `ducat-words`, so a program that wants only words
+never pulls in ICU (the rest of milestone 6, format and parse, may build on ICU4X). It is ducat's own RBNF interpreter
+over CLDR's rule text (`data/rbnf/*.txt`, CLDR 49, embedded by `tests/rules.rs` with a drift check, without its comment
+lines as ducat's generator drops them), one feature per language: `en` (4,081 bytes of rules), `de` (8,506), `fr`
+(4,312), `es` (5,829), `it` (11,871), `nl` (2,284), `pt` (4,676), about 41 KB in all, so every language is a default. Values are `i128` within ±(2^63 − 1), ICU's range;
+recursion is bounded, so adversarial rule text is an error, not a stack overflow. Plural rules (cardinal and ordinal),
+the digit grouping of numbers the rules write as digits, and the word for "and" are written out for the seven
+languages, where ducat reads them from `Intl`. `Intl` also gives ducat the currency's name; there is none here, and
+CLDR's names aren't in ducat's data, so `amount_in_words` takes the currency's names from the caller, as both take the
+minor unit's. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
+and runs every row; the MSRV is the core's, 1.85.
+
 Known gaps, to close later:
 - Currency names and symbols (`currencyName`, `currencySymbol`): they come from `Intl` in ducat, so with
   formatting in `ducat-icu` (milestone 6).
@@ -216,7 +228,8 @@ lives").
 | `/convert/fetch` | `ducat-fetch` | network code only here |
 | `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
 | `/wire` | `wire` (google.type.Money, ISO 20022, minor units, dinero objects) | ported in 5e |
-| `/format`, `/parse`, `/words/*` | `ducat-icu` | first check what ICU4X offers for currency formatting; RBNF is an interpreter over CLDR rules, as ducat's is |
+| `/words/*` | `ducat-words` (6a) | its own interpreter, no ICU |
+| `/format`, `/parse` | `ducat-icu` | first check what ICU4X offers for currency formatting |
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
 | `/zod`, `/valibot` | not ported | TypeScript schema libraries; `serde` covers validation |
 | `/prisma`, `/drizzle/*`, `/kysely`, `/typeorm`, `/pg` | `ducat-sqlx`, `ducat-diesel` | Postgres numeric and bigint, plus the composite type |

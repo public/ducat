@@ -88,6 +88,9 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - Vectors for the wire formats (`spec/vectors/wire/formats.json`, a new `wire` area): google.type.Money,
   ISO 20022 amounts, ISO minor units and dinero.js objects, from the formats' published definitions by
   `scripts/gen-wire-vectors.py`. The Rust port gains `ducat::wire` behind a default `wire` feature.
+- The Rust port gains `ducat-words`, a crate of its own with ducat's RBNF interpreter over CLDR's
+  rule text (no ICU), a feature per language, and `spell_out` and `amount_in_words`; it passes all
+  6,904 `words.spellOut` vectors, which the core runner now delegates to it.
 
 ### Fixed
 

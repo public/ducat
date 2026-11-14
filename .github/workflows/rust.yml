@@ -34,7 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
-      # the conformance runner (tests/spec.rs) prints its counts per area and operation
+      # the conformance runner (tests/spec.rs) prints its counts per area and operation; ducat-words
+      # runs the words area, which the core runner delegates to it
       - run: cargo test --workspace --locked --no-fail-fast -- --nocapture
 
   msrv:
@@ -46,6 +47,8 @@ jobs:
       # the tests' dev-dependencies (proptest) need a newer Rust; the MSRV is the library's
       - run: cargo +1.85 check -p ducat --lib --locked
       - run: cargo +1.85 check -p ducat --lib --locked --no-default-features
+      - run: cargo +1.85 check -p ducat-words --lib --locked
+      - run: cargo +1.85 check -p ducat-words --lib --locked --no-default-features
 
   no-std:
     name: no_std
@@ -58,6 +61,7 @@ jobs:
       - run: cargo build -p ducat --lib --locked --no-default-features --features convert,serde,finance --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features ecb,boc,fed,boe,hmrc,history,stripe-fx,adyen-fx --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features wire,serde --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat-words --lib --locked --no-default-features --features en,de,fr,es,it,nl,pt --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto,stripe,adyen,checkout,paypal,braintree,klarna --target thumbv7em-none-eabihf
 
   lint:
@@ -96,6 +100,14 @@ jobs:
       - run: cargo clippy -p ducat --lib --no-default-features --features paypal --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features braintree --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features klarna --locked -- -D warnings
-      - run: cargo doc -p ducat --no-deps --locked
+      - run: cargo clippy -p ducat-words --lib --no-default-features --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features en --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features de --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features fr --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features es --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features it --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features nl --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features pt --locked -- -D warnings
+      - run: cargo doc -p ducat -p ducat-words --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings
