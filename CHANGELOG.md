@@ -36,9 +36,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `schedule`, `chunk` and `round_to_increment`, and passes the spec's allocation and cash vectors
   (#339).
 - The Rust port's amounts, ratios and weights are unbounded, as in TypeScript: `i128` while they fit,
-  arbitrary precision beyond, so the 36 conformance vectors it used to skip as beyond `i128` now run.
+  arbitrary precision beyond, so the 36 conformance vectors it used to skip as beyond `i128` now run
+  (#340). Its `==` on money is ducat's `equals`, by value, with `identical()` for the scale (#341).
 - The Rust port gains tax (`percentage`, `discount`, `add_tax`, `extract_tax`) and `Fixed`, an exact
-  decimal without a currency, and passes the spec's tax and fixed-point vectors.
+  decimal without a currency, and passes the spec's tax and fixed-point vectors (#342).
 
 ### Documentation
 
