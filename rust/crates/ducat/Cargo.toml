@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto", "stripe", "adyen", "checkout", "paypal", "braintree", "klarna"]
+default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto", "stripe", "adyen", "checkout", "paypal", "braintree", "klarna", "ecb", "boc", "fed", "boe", "hmrc", "history", "stripe-fx", "adyen-fx"]
 ## The standard library. The core needs only `alloc`; `Error` implements `core::error::Error` either way.
 std = ["serde?/std", "num-bigint/std", "num-integer/std", "num-traits/std"]
 ## A zero-sized marker type for every ISO 4217 currency (`ducat::iso::Eur`).
@@ -39,6 +39,22 @@ paypal = []
 braintree = []
 ## Klarna's amounts, ISO minor units (`ducat::processors::klarna`).
 klarna = []
+## The ECB's reference rates: eurofxref XML and CSV, and SDMX-CSV (`ducat::convert::ecb`).
+ecb = ["convert", "historic"]
+## Quoted rates and tables, and lookups over dated tables (`ducat::convert::history`).
+history = ["convert", "historic"]
+## The Bank of Canada's Valet JSON (`ducat::convert::boc`).
+boc = ["history"]
+## The Federal Reserve's H.10 CSV (`ducat::convert::fed`).
+fed = ["history"]
+## The Bank of England's spot-rate CSV (`ducat::convert::boe`).
+boe = ["history"]
+## HMRC's monthly exchange rates CSV (`ducat::convert::hmrc`).
+hmrc = ["convert", "historic"]
+## The rate on a Stripe balance transaction (`ducat::convert::stripe_fx`).
+stripe-fx = ["convert", "stripe", "historic"]
+## The rate on an Adyen settlement row (`ducat::convert::adyen_fx`).
+adyen-fx = ["convert", "historic"]
 ## `ExactMoney`, exact rational amounts that round once at the end (`ducat::exact`).
 exact = []
 ## Exchange rates with their metadata, inverses, chains and conversions; rate providers and tables;

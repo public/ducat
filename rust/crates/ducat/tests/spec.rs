@@ -37,6 +37,8 @@ mod policy_math;
 mod processors;
 #[path = "spec/rates.rs"]
 mod rates;
+#[path = "spec/sources.rs"]
+mod sources;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
 /// count), never silently lost.
@@ -44,7 +46,7 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("allocate", 5400),
     ("cash", 2014),
     ("currency", 1367),
-    ("convert", 2284),
+    ("convert", 2614),
     ("core", 41),
     ("exact", 1000),
     ("excel", 2878),
@@ -741,6 +743,7 @@ fn row_op(op: &str) -> Option<RowOp> {
         .or_else(|| currency::row_op(op))
         .or_else(|| processors::row_op(op))
         .or_else(|| rates::row_op(op))
+        .or_else(|| sources::row_op(op))
     {
         return Some(run);
     }

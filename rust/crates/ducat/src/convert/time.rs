@@ -80,6 +80,29 @@ impl UtcInstant {
         self.date
     }
 
+    /// The instant `millis` milliseconds after the start of `date` (before it, for a negative
+    /// count), across days as needed.
+    pub(crate) fn shifted(date: Date, millis: i64) -> Result<Self, Error> {
+        let days = millis.div_euclid(i64::from(MILLIS_PER_DAY));
+        let within = millis.rem_euclid(i64::from(MILLIS_PER_DAY));
+        Ok(Self {
+            date: date.add_days(days)?,
+            // within a day
+            millis: within as u32,
+        })
+    }
+
+    /// The instant `seconds` after the Unix epoch, 1970-01-01T00:00:00Z.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::DateOutOfRange`] before 0000-01-01 or after 9999-12-31.
+    pub fn from_unix_seconds(seconds: i64) -> Result<Self, Error> {
+        let epoch = Date::from_day_number(0)?;
+        let millis = seconds.checked_mul(1000).ok_or(Error::DateOutOfRange)?;
+        Self::shifted(epoch, millis)
+    }
+
     /// Milliseconds since the start of the UTC day, 0 to 86 399 999.
     #[must_use]
     pub const fn millis_of_day(&self) -> u32 {

@@ -36,10 +36,35 @@
 //! `new Date` does; that is a deliberate divergence, ducat issue
 //! [#349](https://github.com/public/ducat/issues/349).
 
+#[cfg(feature = "adyen-fx")]
+pub mod adyen_fx;
 mod bag;
+#[cfg(feature = "boc")]
+pub mod boc;
+#[cfg(feature = "boe")]
+pub mod boe;
+#[cfg(feature = "ecb")]
+pub mod ecb;
+#[cfg(feature = "fed")]
+pub mod fed;
+#[cfg(feature = "history")]
+pub mod history;
+#[cfg(feature = "hmrc")]
+pub mod hmrc;
 #[cfg(feature = "serde")]
 mod json;
+#[cfg(feature = "boc")]
+mod json_value;
 mod provider;
+#[cfg(any(
+    feature = "ecb",
+    feature = "history",
+    feature = "hmrc",
+    feature = "adyen-fx"
+))]
+mod rate_text;
+#[cfg(feature = "stripe-fx")]
+pub mod stripe_fx;
 mod time;
 
 use alloc::boxed::Box;
@@ -230,6 +255,28 @@ impl RateInfo {
             rate_type,
             ..Self::default()
         }
+    }
+}
+
+/// When a source's tables were published, for the parsers that can give a publication time.
+#[derive(Clone, Copy, Default)]
+pub enum Publication<'a> {
+    /// Not known: a lookup at any time on a table's day gets it.
+    #[default]
+    Unknown,
+    /// The time the source says it publishes at (each parser documents it).
+    Stated,
+    /// The caller's, for each day (or period start), from a fetch log, say.
+    Given(&'a dyn Fn(Date) -> Time),
+}
+
+impl fmt::Debug for Publication<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Unknown => "Unknown",
+            Self::Stated => "Stated",
+            Self::Given(_) => "Given(..)",
+        })
     }
 }
 

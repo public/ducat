@@ -15,7 +15,7 @@ fn code(text: &str) -> CurrencyCode {
     text.parse().expect("an ISO 4217 code")
 }
 
-fn time(value: &Value) -> Option<Time> {
+pub(super) fn time(value: &Value) -> Option<Time> {
     value
         .as_str()
         .map(|text| text.parse().expect("a strict rate time"))
@@ -52,7 +52,7 @@ fn fields(nulls: &[&'static str], result: Result<Fields, Error>) -> Fields {
     }
 }
 
-fn info(value: &Value) -> RateInfo {
+pub(super) fn info(value: &Value) -> RateInfo {
     let quote = value.get("quote").map(|quote| RateQuote {
         rate: string(quote, "rate").to_owned(),
         per: quote
@@ -86,7 +86,7 @@ fn rate_spec(spec: &Value) -> Result<AnyRate, Error> {
     }
 }
 
-fn rate_json(rate: &AnyRate) -> Value {
+pub(super) fn rate_json(rate: &AnyRate) -> Value {
     serde_json::to_value(rate).expect("a rate serializes")
 }
 

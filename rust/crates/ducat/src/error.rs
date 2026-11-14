@@ -166,6 +166,9 @@ pub enum Error {
     /// A rate time that isn't a date `YYYY-MM-DD` or an instant `YYYY-MM-DDTHH:MM[:SS[.sss]]`
     /// with `Z` or `±HH:MM` (see [`UtcInstant`](crate::convert::UtcInstant)).
     InvalidTime,
+    /// A rate-source file that can't be read: not the source's format, a bad date, an unreadable
+    /// cell, or two different values for one rate (ducat's `SyntaxError`).
+    MalformedRates,
     /// A quote that doesn't describe its rate exactly.
     QuoteMismatch,
     /// A quote whose number isn't positive, or whose `per` isn't a positive integer: a quote is a
@@ -217,7 +220,7 @@ impl Error {
         match self {
             Self::Rounding => ErrorKind::Rounding,
             Self::CurrencyMismatch { .. } => ErrorKind::CurrencyMismatch,
-            Self::Syntax => ErrorKind::Syntax,
+            Self::Syntax | Self::MalformedRates => ErrorKind::Syntax,
             Self::InvalidCurrency | Self::ScaleWithPolicy | Self::ChargeQuantityNeedsVolume => {
                 ErrorKind::Type
             }
@@ -379,6 +382,7 @@ impl fmt::Display for Error {
             Self::AmountTooLarge => f.write_str("the amount is too large for the processor"),
             Self::InvalidTime => f.write_str("an invalid date or time: expected YYYY-MM-DD, or YYYY-MM-DDTHH:MM[:SS[.sss]] with Z or an offset ±HH:MM"),
             Self::QuoteMismatch => f.write_str("the quote isn't the rate"),
+            Self::MalformedRates => f.write_str("the rate file can't be read"),
             Self::InvalidQuote => f.write_str("a quote's number must be positive, and its per a positive integer"),
             #[cfg(feature = "convert")]
             Self::RateUnavailable { from, to, as_of } => {
