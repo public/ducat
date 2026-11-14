@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/ducat", "crates/ducat-words"]
+members = ["crates/ducat", "crates/ducat-words", "crates/ducat-format"]
 
 [workspace.package]
 edition = "2024"

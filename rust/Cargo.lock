@@ -59,6 +59,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ducat-format"
+version = "0.0.0"
+dependencies = [
+ "ducat",
+ "proptest",
+ "serde_json",
+]
+
+[[package]]
 name = "ducat-words"
 version = "0.0.0"
 dependencies = [
