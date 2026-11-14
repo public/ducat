@@ -106,6 +106,14 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `SyntaxError`, and garbage beside a real symbol still fails.
 - `parse` accepts a long name's number grouped as the long name groups it, where that differs from
   the symbol form (ml and mr write a name's number in lakhs).
+- `format` and `formatToParts` with `currencyDisplay: 'name'` no longer show a wrong amount in the
+  English locales of euro countries (en-NL, en-DE, en-BE, en-FI, en-FR, en-IT, en-ES, en-PT, en-EE,
+  en-LT, en-LV, en-SI, en-SK, en-AT). ICU 78.3 (Node 24) puts en-150's euro pattern inside the
+  long-name pattern there, so every currency showed its symbol beside its name and fraction digits
+  past two landed after the name: `KWD 1,234.56 Kuwaiti dinars7`. ducat probes each locale once;
+  where the runtime's long names are unsound it writes the amount as the currency format does
+  (the separators `parse` reads) followed by the name: `1,234.567 Kuwaiti dinars`. On a runtime
+  without the bug, nothing changes.
 - Malformed or explosive custom rule text in `spellOut` and `amountInWords` now throws instead of
   hanging or overflowing the stack: an unclosed `[`, `$(` or substitution, a radix below 2, or a
   `>>>` with no rule before it is a `SyntaxError`, and rules nested more than 64 deep or needing more

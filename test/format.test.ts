@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { runs } from './fc-config.js';
 import fc from 'fast-check';
 import { RoundingError, equals, format, fromMinor, money, parse, toDecimal } from '../src/fn.js';
+import { formatToParts } from '../src/format.js';
 
 const norm = (s: string) => s.replace(/[  ]/g, ' ');
 
@@ -25,6 +26,93 @@ describe('format', () => {
   });
   it('shows sub-minor scale when present', () => {
     expect(format(money('0.1234', 'USD', { scale: 4 }), 'en-US')).toBe('$0.1234');
+  });
+});
+
+// ICU 78.3 puts en-150's euro pattern inside the long-name pattern in these locales (src/format.ts)
+const EURO_ENGLISH = [
+  'en-AT',
+  'en-BE',
+  'en-DE',
+  'en-EE',
+  'en-ES',
+  'en-FI',
+  'en-FR',
+  'en-IT',
+  'en-LT',
+  'en-LV',
+  'en-NL',
+  'en-PT',
+  'en-SI',
+  'en-SK',
+];
+const isNode24Icu783 =
+  !('Deno' in globalThis) &&
+  process.versions['bun'] === undefined &&
+  process.versions.icu === '78.3';
+
+describe('format with long currency names', () => {
+  it('writes the whole amount once, before the name, in every euro-country English locale', () => {
+    for (const locale of EURO_ENGLISH) {
+      // runtimes with smaller Intl data (Deno) lack some of these locales, and parse refuses those
+      if (
+        Intl.NumberFormat.supportedLocalesOf(locale).length === 0 ||
+        new Intl.NumberFormat(locale).resolvedOptions().locale !== locale
+      ) {
+        console.warn(`no Intl data for ${locale} in this runtime: skipped`);
+        continue;
+      }
+      for (const [amount, currency] of [
+        ['1234.567', 'KWD'],
+        ['1234.5', 'USD'],
+        ['-1234', 'JPY'],
+        ['1', 'EUR'],
+      ] as const) {
+        const value = money(amount, currency);
+        const parts = formatToParts(value, locale, { currencyDisplay: 'name' });
+        const types = parts.map((part) => part.type);
+        expect(
+          types.filter((type) => type === 'currency'),
+          `${locale} ${currency}`,
+        ).toHaveLength(1);
+        expect(types.at(-1), `${locale} ${currency}`).toBe('currency');
+        const text = format(value, locale, { currencyDisplay: 'name' });
+        expect(text).toBe(parts.map((part) => part.value).join(''));
+        expect(equals(parse(text, currency, locale), value), `${locale} ${text}`).toBe(true);
+      }
+    }
+  });
+  it.skipIf(!isNode24Icu783)('matches the long form, not ICU 78.3’s symbol-and-name text', () => {
+    expect(format(money('1234.567', 'KWD'), 'en-NL', { currencyDisplay: 'name' })).toBe(
+      '1,234.567 Kuwaiti dinars',
+    );
+    expect(format(money('1234.5', 'USD'), 'en-DE', { currencyDisplay: 'name' })).toBe(
+      '1,234.50 US dollars',
+    );
+    expect(format(money('1234.5', 'EUR'), 'en-150', { currencyDisplay: 'name' })).toBe(
+      '1,234.50 euros',
+    );
+    expect(format(money('1234.5', 'EUR'), 'en-AT', { currencyDisplay: 'name' })).toBe(
+      '1.234,50 euros',
+    );
+    expect(format(money('1234.5', 'KWD', { scale: 1 }), 'en-NL', { currencyDisplay: 'name' })).toBe(
+      '1,234.5 Kuwaiti dinars',
+    );
+    expect(format(money('1', 'EUR'), 'en-NL', { currencyDisplay: 'name', digits: 0 })).toBe(
+      '1 euro',
+    );
+  });
+  it('leaves locales whose long names are sound to Intl', () => {
+    const intl = new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'KWD',
+      currencyDisplay: 'name',
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    });
+    expect(format(money('1234.567', 'KWD'), 'en-GB', { currencyDisplay: 'name' })).toBe(
+      intl.format(1234.567),
+    );
   });
 });
 
