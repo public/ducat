@@ -46,6 +46,8 @@ It runs on Node 24 or later, Bun, Deno and browsers. ducat is an ES module; Comm
 
 Coming from dinero.js? [How to migrate from dinero.js](https://github.com/public/ducat/blob/main/docs/how-to/migrate-from-dinero.md) maps its API, rounding defaults and stored data to ducat.
 
+A Rust port lives in [`rust/`](https://github.com/public/ducat/tree/main/rust): the same operations as an idiomatic Rust crate, run against the same conformance suite in [`spec/`](https://github.com/public/ducat/tree/main/spec). It is in progress and not yet published.
+
 ## Why ducat
 
 Choosing a money library for JavaScript today means choosing which problem to live with.

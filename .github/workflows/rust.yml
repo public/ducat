@@ -1,0 +1,70 @@
+name: Rust
+
+# The Rust port in rust/, checked against the conformance suite in spec/ and the data in data/.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'rust/**'
+      - 'spec/**'
+      - 'data/**'
+      - '.github/workflows/rust.yml'
+  pull_request:
+    paths:
+      - 'rust/**'
+      - 'spec/**'
+      - 'data/**'
+      - '.github/workflows/rust.yml'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  test:
+    name: test (stable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      # the conformance runner (tests/spec.rs) prints its counts per area and operation
+      - run: cargo test --workspace --locked -- --nocapture
+
+  msrv:
+    name: MSRV 1.85 (library)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install 1.85 --profile minimal
+      # the tests' dev-dependencies (proptest) need a newer Rust; the MSRV is the library's
+      - run: cargo +1.85 check -p ducat --lib --locked
+      - run: cargo +1.85 check -p ducat --lib --locked --no-default-features
+
+  no-std:
+    name: no_std
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal --target thumbv7em-none-eabihf && rustup default stable
+      - run: cargo build -p ducat --lib --locked --no-default-features --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat --lib --locked --no-default-features --features iso,serde --target thumbv7em-none-eabihf
+
+  lint:
+    name: fmt, clippy and docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal --component rustfmt,clippy && rustup default stable
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --locked -- -D warnings
+      - run: cargo doc -p ducat --no-deps --locked
+        env:
+          RUSTDOCFLAGS: -D warnings
