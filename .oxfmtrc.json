@@ -4,6 +4,7 @@
   "singleQuote": true,
   "ignorePatterns": [
     "proofs",
+    "rust",
     "dist",
     "examples/prisma/generated",
     "bench/out",

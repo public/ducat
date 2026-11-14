@@ -15,6 +15,9 @@ test-results/
 playwright-report/
 test/vectors/dectest/
 
+# Rust build output
+rust/target/
+
 # Lean build output
 proofs/.lake/
 test/.doctest/
