@@ -8,7 +8,7 @@ use crate::rounding::{Rounding, rescale_ratio};
 use crate::{Error, Int, Ratio};
 
 /// `units × 10^−scale`, with `scale` at most `MAX_SCALE`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug)]
 pub(crate) struct Amount {
     pub(crate) units: Int,
     pub(crate) scale: u16,
@@ -159,6 +159,30 @@ impl Amount {
         }
         let scale = self.scale.max(other.scale);
         self.units_at(scale).cmp(&other.units_at(scale))
+    }
+
+    /// The value at its smallest exact scale (trailing zeros dropped): equal values give the same
+    /// key, whatever their scales and however their units are held, so it is what `Hash` uses.
+    pub(crate) fn normalized(&self) -> (Int, u16) {
+        if self.units.is_zero() {
+            return (Int::ZERO, 0);
+        }
+        let ten = Int::from(10u8);
+        let (mut units, mut scale) = (self.units.clone(), self.scale);
+        while scale > 0 {
+            let (quotient, remainder) = units.div_rem(&ten);
+            if !remainder.is_zero() {
+                break;
+            }
+            units = quotient;
+            scale -= 1;
+        }
+        (units, scale)
+    }
+
+    /// Whether the two hold the same units at the same scale.
+    pub(crate) fn identical(&self, other: &Self) -> bool {
+        self.scale == other.scale && self.units == other.units
     }
 
     pub(crate) fn write(&self, f: &mut dyn fmt::Write) -> fmt::Result {

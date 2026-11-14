@@ -15,7 +15,10 @@ use crate::{CurrencyCode, Error, Factor, Int, Rounding};
 /// It has the same operations as [`Money`](crate::Money), but those that combine two amounts
 /// return [`Error::CurrencyMismatch`] for different currencies. Narrow it to a typed `Money<C>`
 /// with `Money::<C>::try_from(any)`. Size, equality, `Hash`, `Display` and rounding follow the
-/// same rules as `Money`'s.
+/// same rules as `Money`'s: `==` is the same currency and the same value, whatever the scales
+/// (amounts in different currencies are simply not equal), and [`AnyMoney::identical`] also checks
+/// the scale. There is no `Ord`, since amounts in different currencies have no order;
+/// [`AnyMoney::compare`] returns an error for them.
 ///
 /// ```
 /// use ducat::{AnyMoney, CurrencyCode, Error, Money};
@@ -29,7 +32,7 @@ use crate::{CurrencyCode, Error, Factor, Int, Rounding};
 /// assert_eq!(typed.to_string(), "10.00 EUR");
 /// # Ok::<(), ducat::Error>(())
 /// ```
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone)]
 pub struct AnyMoney {
     pub(crate) amount: Amount,
     currency: CurrencyCode,
@@ -340,6 +343,12 @@ impl AnyMoney {
         self.compare(other) == Ok(Ordering::Equal)
     }
 
+    /// Whether the two have the same currency, amount *and* scale, as ducat's `identical`.
+    #[must_use]
+    pub fn identical(&self, other: &Self) -> bool {
+        self.currency == other.currency && self.amount.identical(&other.amount)
+    }
+
     /// Whether the amount is zero.
     #[must_use]
     pub fn is_zero(&self) -> bool {
@@ -362,6 +371,23 @@ impl AnyMoney {
     #[must_use]
     pub fn signum(&self) -> i8 {
         self.amount.units.signum()
+    }
+}
+
+impl PartialEq for AnyMoney {
+    /// The same currency and the same value, whatever the scales, as ducat's `equals`.
+    fn eq(&self, other: &Self) -> bool {
+        self.eq_value(other)
+    }
+}
+
+impl Eq for AnyMoney {}
+
+impl core::hash::Hash for AnyMoney {
+    /// Hashes the value at its smallest exact scale, and the currency, as `Money` does.
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.amount.normalized().hash(state);
+        self.currency.hash(state);
     }
 }
 
