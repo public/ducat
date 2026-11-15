@@ -170,6 +170,65 @@ sign: PEN's `S/` in es-PE and CLF's `Chilean units of account (UF)` read back ex
 is still refused. It also takes a long name's number grouped in the decimal pattern, as `Intl` writes it (lakhs in ml, mr
 and or).
 
+Milestone 7c, part 1, added `ducat-sqlx`, money columns for sqlx 0.8: the counterpart of ducat's `./pg` and of the
+column shapes `./drizzle/mysql` and `./drizzle/sqlite` (through `src/sql.ts`) store.
+
+- **Layout:** `crates/ducat-sqlx`, with a feature per database, `postgres` (the default, as ducat's `./pg` is its own
+  entry), `mysql` and `sqlite`, each enabling only the matching sqlx feature. The crate picks no runtime, TLS backend
+  or macros; the application's sqlx does. Without a database feature it still has the database-neutral types and
+  checks. Modules: `pg` (`postgres`), `mysql`, `sqlite`; the types are at the root.
+- **Types** (no impls on `Money`/`AnyMoney` themselves: the orphan rule forbids them, and a column's shape is a choice):
+  - `Decimal`: an exact NUMERIC/DECIMAL value, ducat's `Int` and a scale (at most `MAX_SCALE`, 1000), with no
+    currency. Postgres NUMERIC, MySQL DECIMAL and SQLite TEXT decode to it; `to_money` keeps the scale (never below the
+    exponent, as `parseMoneyComposite`), `to_money_at_exponent` reads as `decimalFromDriver` (trailing zeros only).
+    Text is `-?[0-9]+(\.[0-9]+)?`, as `parseNumeric`.
+  - `DecimalColumn<C>` and `MinorColumn<C>`: ducat's `moneyDecimal` and `moneyMinor`, a fixed currency in the type.
+    Writes refuse money at another scale than the exponent (`checkIsoScale`) and minor units beyond ±(2^63 − 1).
+  - `minor_units` (`minorToDriver`) and `DecimalColumnSize::fit` (`toNumeric`, with `checkDecimalSize` and
+    `checkIntegerDigits`) for money whose currency is in another column, or a sized NUMERIC(p, s).
+  - `pg::PgMoney<M>` (`M` is `AnyMoney` or `Money<C>`, through the sealed `MoneyValue`) and `pg::MoneyRecord` (the
+    fields, currency unresolved, for custom currencies): the composite type `ducat_money (amount numeric, currency
+    text)`, in Postgres's binary record format and its text (`toMoneyComposite` and `parseMoneyComposite`, ported
+    with their quoting). `pg::money_type_sql` is `moneyTypeSql`. Array types (NUMERIC[], BIGINT[], `ducat_money[]`)
+    come with each.
+  - `Error`, `#[non_exhaustive]`: `NotANumber`, `Infinite`, `Malformed`, `UnexpectedType`, `OutOfRange`,
+    `ScaleMismatch`, `CurrencyMismatch`, `UnknownCurrency`, `NullField`, the column-size errors and `Ducat`.
+- **NUMERIC's binary format** is read and written in `pg::decode_numeric` and `pg::encode_numeric`, from the
+  base-10000 digits, weight, sign and display scale straight to the decimal digits of `Int` and back: no float, no
+  `rust_decimal` or `bigdecimal`, and not sqlx's own `PgNumeric` (crate-private, and its decoder panics on a
+  truncated buffer). `NaN` and `±Infinity` (Postgres 14's signs) are refused; so are digits beyond 9999, a
+  length that doesn't match the digit count, and non-zero digits the display scale would hide, which Postgres's
+  `numeric_recv` truncates silently. Encoding writes Postgres's canonical form (no leading or trailing zero digits,
+  zero as no digits). The text format is read too: the simple protocol (`sqlx::raw_sql`) returns text.
+- **Strict readers, per database:** MySQL sends DECIMAL as text in both protocols; a FLOAT/DOUBLE or BIGINT
+  UNSIGNED value is refused even through `try_get_unchecked`, because sqlx's integer decoding reads any eight bytes.
+  SQLite types values, not columns, so each value's storage class is checked: sqlx would otherwise convert a REAL to
+  text or truncate it to an integer.
+- **Differences from ducat's TypeScript:** `AnyMoney` reads only ISO 4217 codes from the composite (custom codes
+  aren't registered anywhere in the port; read a `MoneyRecord` and give its `CurrencyCode`, or use a
+  `define_currency!` type); parameters are sent as the type named `ducat_money` (a composite of another name or
+  schema still decodes, by its `(numeric, text)` fields); record text with a backslash before its closing
+  parenthesis is refused, where `parseRecord` reads the `)` into the field (Postgres refuses it too); a NUMERIC
+  display scale beyond 1000 is refused (ducat's limit; Postgres allows 16383).
+- **Not in part 1:** the JSON column shapes (`moneyJson`, `jsonToDriver`), which need sqlx's `json` feature and
+  serde; `exactTypes`, `parseArray` and `moneyTypeOids`, which configure node-postgres's text parsers and have no
+  counterpart in sqlx (it decodes by type, and resolves type names itself).
+- **sqlx quirk handled:** in the simple protocol sqlx leaves custom types unresolved and `PgTypeInfo::kind()` panics
+  on them; `PgMoney`'s compatibility check never calls it on an unresolved type.
+- **Tests** (`tests/it/`, one binary): the NUMERIC codec against hand-built wire bytes (0, −0, 2^63 ± 1, i128's limits,
+  10^±1000, every scale 0 to 1000, trailing zeros, negative weights, malformed and special values), proptests with
+  `ducat::testing` (round trips, an independent model of the digits, arbitrary bytes and text never panicking, the
+  `toNumeric` property), the composite's text against `test/pg.test.ts`'s cases, SQLite in memory, and Postgres and
+  MySQL against `DUCAT_PG_URL` and `DUCAT_MYSQL_URL` (skipped without them, failing without them when
+  `DUCAT_REQUIRE_DB=1`), run in CI against the same digest-pinned postgres:18 and mysql:8.4 services as ducat's
+  TypeScript database tests.
+- **Dependencies (normal):** `ducat` (without default features, with `std`), and `sqlx` 0.8 with
+  `default-features = false` and only `postgres`, `mysql` or `sqlite` as chosen. sqlx's `sqlite` feature builds
+  SQLite from source (`libsqlite3-sys/bundled`, with a C compiler); sqlx's `sqlite-unbundled` isn't offered yet.
+  Dev-dependencies: `ducat` with `iso` and `proptest`, `proptest`, `sqlx` with `runtime-tokio`, and `tokio` (`rt`,
+  `macros`). sqlx 0.8.6 and every dependency it resolves to need Rust 1.85 at most, so the crate keeps the
+  workspace's MSRV (CI checks it); sqlx 0.9 needs 1.94 and isn't used.
+
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
 
@@ -313,7 +372,9 @@ lives").
 | `currencyName`, `currencySymbol` | `ducat-format` (6c) | from CLDR, as `currency_name` and `currency_symbol` |
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
 | `/zod`, `/valibot` | not ported | TypeScript schema libraries; `serde` covers validation |
-| `/prisma`, `/drizzle/*`, `/kysely`, `/typeorm`, `/pg` | `ducat-sqlx`, `ducat-diesel` | Postgres numeric and bigint, plus the composite type |
+| `/pg` | `ducat-sqlx` (`pg`, M7c) | exact NUMERIC (binary and text) and BIGINT, the composite type and its DDL; `exactTypes`, `parseArray` and `moneyTypeOids` configure node-postgres's parsers and have no sqlx counterpart |
+| `/drizzle/pg`, `/drizzle/mysql`, `/drizzle/sqlite` (and `src/sql.ts` under them) | `ducat-sqlx` (M7c): `DecimalColumn<C>`, `MinorColumn<C>`, `Decimal`, `minor_units`, `DecimalColumnSize::fit` | the column shapes, not Drizzle (a TypeScript ORM); the JSON shapes are left for a later part |
+| `/prisma`, `/kysely`, `/typeorm` | not ported | adapters for TypeScript ORMs and query builders (Prisma's `Decimal`, Kysely's dialects, TypeORM's transformers) with no Rust counterpart; the storage layouts they support (minor units or a decimal beside a currency column) are `minor_units` and `Decimal` with plain sqlx, and Diesel gets `ducat-diesel` |
 | `/testing`, `/testing/arbitraries` | `ducat::testing`, behind the `proptest` feature (M7a): strategies and `Arbitrary` impls for `Int`, `Money<C>`, `AnyMoney`, `CurrencyCode`, `Rounding`, `RoundingPolicy` and `Ratio`, with `CurrencyOptions` and `MoneyOptions` for ducat's arbitrary options; `assert_money_eq!` and `assert_identical!` | `==` is already by value, so `moneyEquality` needs no counterpart; `Display` and `Debug` already print `12.34 EUR` |
 | `/testing/vitest`, `/testing/jest` | not ported | they install matchers, an equality tester and a snapshot serializer on a JavaScript runner's `expect`; Rust's test harness has no `expect` to extend, and the macros, `==`, `Debug` and `Display` cover what they add |
 | `/all`, plugins, `extendMoney` | not ported | Rust uses extension traits; there's no prototype to install on |

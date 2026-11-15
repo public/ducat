@@ -10,11 +10,33 @@
 //!   [`minor_units`] for any money.
 //! - [`DecimalColumnSize::fit`]: the decimal to bind for a NUMERIC(p, s) column, or an error if
 //!   the database would round or clamp it.
-//! - [`pg`] (feature `postgres`, the default): NUMERIC's binary format read and written
-//!   directly, and ducat's composite money type ([`pg::PgMoney`], [`pg::MoneyRecord`],
-//!   [`pg::money_type_sql`]).
-//! - [`mysql`] (feature `mysql`) and [`sqlite`] (feature `sqlite`): the sqlx impls for those
-//!   databases.
+#![cfg_attr(
+    feature = "postgres",
+    doc = "- [`pg`] (feature `postgres`, the default): NUMERIC's binary format read and written \
+           directly, and ducat's composite money type ([`pg::PgMoney`], [`pg::MoneyRecord`], \
+           [`pg::money_type_sql`])."
+)]
+#![cfg_attr(
+    not(feature = "postgres"),
+    doc = "- `pg` (feature `postgres`, the default): NUMERIC's binary format read and written \
+           directly, and ducat's composite money type."
+)]
+#![cfg_attr(
+    feature = "mysql",
+    doc = "- [`mysql`] (feature `mysql`): the sqlx impls for MySQL and MariaDB."
+)]
+#![cfg_attr(
+    not(feature = "mysql"),
+    doc = "- `mysql` (feature `mysql`): the sqlx impls for MySQL and MariaDB."
+)]
+#![cfg_attr(
+    feature = "sqlite",
+    doc = "- [`sqlite`] (feature `sqlite`): the sqlx impls for SQLite."
+)]
+#![cfg_attr(
+    not(feature = "sqlite"),
+    doc = "- `sqlite` (feature `sqlite`): the sqlx impls for SQLite."
+)]
 //!
 //! Every reader is strict: `NaN`, the infinities, a float where a decimal or integer was expected,
 //! more decimals than a fixed-currency column's exponent, and malformed bytes or text are
