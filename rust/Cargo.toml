@@ -8,7 +8,28 @@ rust-version = "1.85"
 license = "MIT"
 repository = "https://github.com/public/ducat"
 
-# Tests (the conformance runner above all, whose XNPV and XIRR tables do large-integer arithmetic)
-# build with light optimisation; debug assertions and overflow checks stay on.
+# Tests build the workspace's own crates (each library and its `it` test binary) unoptimised, which
+# keeps an incremental `cargo test` quick: ducat's `it` crate is the biggest unit of that build, and
+# compiles much faster without optimisation. Profile overrides are per package, not per target, so the
+# libraries and their tests share one opt-level. The dependencies build lightly optimised, except
+# num-bigint, num-integer and num-traits (the conformance runner's XNPV and XIRR tables do
+# large-integer arithmetic), which build fully optimised; they rarely rebuild. Debug assertions and
+# overflow checks stay on throughout.
+#
+# CI measured (-j1, cold build+run / incremental build+run after a lib.rs change): A (opt-level 1
+# everywhere) 83 s / 60 s, B (workspace at 0, deps at 1) 52 s / 27 s, C (B with the num-* crates at
+# 3) 46 s / 22 s. The spec runner's big-integer tables run in the num-* crates, so C keeps them fast.
 [profile.test]
+opt-level = 0
+
+[profile.test.package."*"]
 opt-level = 1
+
+[profile.test.package.num-bigint]
+opt-level = 3
+
+[profile.test.package.num-integer]
+opt-level = 3
+
+[profile.test.package.num-traits]
+opt-level = 3

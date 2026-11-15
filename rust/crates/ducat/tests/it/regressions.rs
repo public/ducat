@@ -6,6 +6,8 @@
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
 
+use crate::common::budget;
+
 use ducat::iso::{Eur, Jpy, Usd};
 use ducat::{AnyMoney, CurrencyCode, Error, Int, Money, Ratio, Rounding};
 use num_bigint::BigInt;
@@ -425,6 +427,12 @@ fn hundred_thousand_digits() {
         serde_json::from_str::<Money<Eur>>(&json)
             .unwrap()
             .identical(&money)
+    );
+    budget::report(
+        budget::test_path!(hundred_thousand_digits),
+        "",
+        start.elapsed(),
+        Duration::from_secs(60),
     );
     assert!(
         start.elapsed() < Duration::from_secs(60),
