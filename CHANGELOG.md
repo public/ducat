@@ -7,6 +7,19 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Fixed
+
+- `format` and `formatToParts` with `currencyDisplay: 'name'` no longer garble the amount in the
+  other locales where ICU 78.3 (Node 24) applies one currency's pattern inside the long-name
+  pattern: tr and tr-CY for the lira and tr-TR for every currency (`₺1.234,57 Türk lirası`), and
+  pt-CV and kea-CV for every currency and kea for the escudo, which glued the symbol to the name
+  (`1 234 567$88 US$ dólares dos Estados Unidos`). The probe from 0.4.1 now runs in every locale
+  and also catches a glued symbol; where it fails, the number and the bare name are placed as Intl
+  places them in the language's long name for USD (`1 234 567$88 dólares dos Estados Unidos`).
+  `parse` reads such a name with or without the glued symbol, so `1234$50 escudos cabo-verdianos`
+  in pt-CV, read as negative before, is positive. On a runtime without the bug, nothing
+  changes.
+
 ## [0.4.1] - 2026-11-15
 
 A patch release of fixes. Nothing in the package's API is added or removed.

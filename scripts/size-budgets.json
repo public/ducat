@@ -17,7 +17,7 @@
     "@ducatjs/money/policy": 0.4,
     "@ducatjs/money/pricing": 2.86,
     "@ducatjs/money/cash": 3.1,
-    "@ducatjs/money/format": 0.93,
+    "@ducatjs/money/format": 1.07,
     "@ducatjs/money/fixed": 1.27,
     "@ducatjs/money/fixed/money": 1.42,
     "@ducatjs/money/parse": 2.61,
@@ -46,7 +46,7 @@
     "@ducatjs/money/crypto": 0.76,
     "@ducatjs/money/currencies": 1.5,
     "@ducatjs/money/wire": 1.71,
-    "@ducatjs/money/context": 1.06,
+    "@ducatjs/money/context": 1.19,
     "@ducatjs/money/words": 2.32,
     "@ducatjs/money/words/de": 0.93,
     "@ducatjs/money/words/en": 0.9,
@@ -92,7 +92,7 @@
     },
     "format: de-DE": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/format'; console.log(money('1234.5', 'EUR').format('de-DE'));",
-      "gzipped": 5.83
+      "gzipped": 5.96
     },
     "stripe: toStripeAmount": {
       "code": "import { money } from '@ducatjs/money'; import '@ducatjs/money/stripe'; console.log(money('5', 'ISK').toStripeAmount());",
@@ -116,11 +116,11 @@
     },
     "functions: a currency context with /iso/EUR, money, format": {
       "code": "import { currencyContext } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const eur = currencyContext('EUR', { locale: 'nl-NL' }); console.log(eur.format(eur.money('1234.5')));",
-      "gzipped": 3.59
+      "gzipped": 3.72
     },
     "functions: a currency context with parse": {
       "code": "import { currencyContext, parse } from '@ducatjs/money/fn'; import '@ducatjs/money/iso/EUR'; const eur = currencyContext('EUR', { locale: 'nl-NL', parse }); console.log(eur.format(eur.parse('1.234,50')));",
-      "gzipped": 5.2
+      "gzipped": 5.32
     },
     "functions with every ISO code: /iso, fromMinor, add, toDecimal": {
       "code": "import '@ducatjs/money/iso'; import { fromMinor, add, toDecimal } from '@ducatjs/money/fn'; const a = fromMinor(100, 'EUR'); console.log(toDecimal(add(a, a)));",

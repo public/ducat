@@ -102,6 +102,84 @@ describe('format with long currency names', () => {
       '1 euro',
     );
   });
+  // ICU 78.3 garbles long names in these non-English locales too (src/format.ts): tr and tr-CY for
+  // the lira and tr-TR for every currency (the symbol before the number), pt-CV and kea-CV for every
+  // currency and kea for the escudo (the symbol glued to the name)
+  const OTHER_LOCALES = [
+    ['tr', 'TRY'],
+    ['tr-CY', 'TRY'],
+    ['tr-TR', 'TRY'],
+    ['pt-CV', 'CVE'],
+    ['kea', 'CVE'],
+    ['kea-CV', 'CVE'],
+    ['en-150', 'EUR'],
+    ['en-CH', 'CHF'],
+    ['en-SE', 'SEK'],
+  ] as const;
+  it('writes the number once and the bare name in the other locales ICU 78.3 garbles', () => {
+    for (const [locale, own] of OTHER_LOCALES) {
+      if (
+        Intl.NumberFormat.supportedLocalesOf(locale).length === 0 ||
+        new Intl.NumberFormat(locale).resolvedOptions().locale !== locale
+      ) {
+        console.warn(`no Intl data for ${locale} in this runtime: skipped`);
+        continue;
+      }
+      for (const [amount, currency] of [
+        ['1234567.88', 'USD'],
+        ['-1234.5', 'EUR'],
+        ['1234.567', 'KWD'],
+        ['-1234', 'JPY'],
+        ['1', own],
+        ['-1234.56', own],
+      ] as const) {
+        const value = money(amount, currency);
+        const parts = formatToParts(value, locale, { currencyDisplay: 'name' });
+        const types = parts.map((part) => part.type);
+        expect(
+          types.filter((type) => type === 'currency'),
+          `${locale} ${currency}`,
+        ).toHaveLength(1);
+        expect(types.at(-1), `${locale} ${currency}`).toBe('currency');
+        // the digits in one run, and no symbol glued to the name
+        expect(types.join(' '), `${locale} ${currency}`).not.toMatch(
+          /(integer|fraction).*(literal|currency).*integer/,
+        );
+        const symbol = formatToParts(value, locale).find((part) => part.type === 'currency')!.value;
+        expect(parts.at(-1)!.value.startsWith(`${symbol} `), `${locale} ${currency}`).toBe(false);
+        const text = format(value, locale, { currencyDisplay: 'name' });
+        expect(text).toBe(parts.map((part) => part.value).join(''));
+        const read = parse(text, currency, locale);
+        expect(equals(read, value), `${locale} ${currency} ${text}`).toBe(true);
+        expect(toDecimal(read), `${locale} ${currency} ${text}`).toBe(toDecimal(value));
+      }
+    }
+  });
+  it.skipIf(!isNode24Icu783)('matches CLDR’s long form in the non-English locales', () => {
+    // pt-CV and kea group with a no-break space; unitPattern's space before the name is a plain one
+    expect(format(money('1234567.88', 'USD'), 'pt-CV', { currencyDisplay: 'name' })).toBe(
+      '1\u00a0234\u00a0567$88 dólares dos Estados Unidos',
+    );
+    expect(format(money('1234.5', 'CVE'), 'pt-CV', { currencyDisplay: 'name' })).toBe(
+      '1234$50 escudos cabo-verdianos',
+    );
+    expect(format(money('1', 'EUR'), 'pt-CV', { currencyDisplay: 'name' })).toBe('1$00 euro');
+    expect(format(money('-1234.5', 'USD'), 'kea-CV', { currencyDisplay: 'name' })).toBe(
+      '-1\u00a0234$50 Dola merkanu',
+    );
+    expect(format(money('1234.5', 'CVE'), 'kea', { currencyDisplay: 'name' })).toBe(
+      '1\u00a0234$50 Skudu Kabuverdianu',
+    );
+    expect(format(money('1234.56', 'TRY'), 'tr', { currencyDisplay: 'name' })).toBe(
+      '1.234,56 Türk lirası',
+    );
+    expect(format(money('-1234.56', 'TRY'), 'tr-CY', { currencyDisplay: 'name' })).toBe(
+      '-1.234,56 Türk lirası',
+    );
+    expect(format(money('1234.56', 'USD'), 'tr-TR', { currencyDisplay: 'name' })).toBe(
+      '1.234,56 ABD doları',
+    );
+  });
   it('leaves locales whose long names are sound to Intl', () => {
     const intl = new Intl.NumberFormat('en-GB', {
       style: 'currency',
@@ -112,6 +190,17 @@ describe('format with long currency names', () => {
     });
     expect(format(money('1234.567', 'KWD'), 'en-GB', { currencyDisplay: 'name' })).toBe(
       intl.format(1234.567),
+    );
+    // a name that starts with the currency's symbol is the name, not ICU 78.3's glued symbol
+    const rial = new Intl.NumberFormat('fa', {
+      style: 'currency',
+      currency: 'IRR',
+      currencyDisplay: 'name',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    expect(format(money('1234.5', 'IRR', { scale: 2 }), 'fa', { currencyDisplay: 'name' })).toBe(
+      rial.format(1234.5),
     );
   });
 });
