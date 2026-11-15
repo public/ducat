@@ -413,6 +413,19 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
   output-only conversions, documented "for display or interop only; never round-trip", and never called inside
   ducat.
 
+- **Adyen's Creation Date.** `adyen_rate` reads the Creation Date as `Date.parse` would but never fails on it: a date
+  or time it can't read gives the local day (or no `as_of`), where ducat throws a `RangeError`; and it takes ISO and
+  historic codes only (`UnknownCurrency`), where ducat takes any string.
+- **Column and test-strategy shapes.** `DecimalColumn<C>` carries no size and checks only the scale: a sized
+  NUMERIC/DECIMAL is checked with `DecimalColumnSize::check_currency` and `fit` (ducat's `moneyDecimal` checks the
+  integer digits itself). Decimal text read from a column (SQLite TEXT, a MySQL string column) is held to
+  `-?[0-9]+(\.[0-9]+)?`, where ducat reads it with `money()`, which also takes a `+` sign and an exponent.
+  `parseBigInt` has no reader of its own: sqlx and diesel decode BIGINT as `i64`, and `Int`'s `FromStr`, which also
+  takes a leading `+`, stands in for hand-read text. `Decimal`'s `FromStr` is `parseNumeric` returning a value, so text
+  with more than 1000 decimals, which `parseNumeric` returns unchanged, is an error. The proptest strategies
+  (`arb_currency`, `arb_money`) panic, with ducat's message, where ducat's arbitraries throw a `RangeError`: a strategy
+  is built in test code, where a panic is the failure.
+
 ## Goals
 - **The same answers as ducat,** checked by running ducat's conformance vectors, pinned to a ducat commit. The suite's
   implemented/skipped counts per operation are the measurable definition of "the feature set".

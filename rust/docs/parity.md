@@ -1011,7 +1011,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 |---|---|---|---|
 | `Money#toStripe` | `Money::to_stripe`, `AnyMoney::to_stripe` | same |  |
 | `Money#toStripeAmount` | `Money::to_stripe_amount` | same |  |
-| `STRIPE_RULES` | `ducat::processors::stripe::rule` | same | a lookup per currency, not a record |
+| `STRIPE_RULES` | `ducat::processors::stripe::rule` | missing | per-currency `rule` only; the table can't be listed. Fix: a public `currencies()` iterator (or `pub` table) |
 | `StripeAmountOptions` | `ducat::processors::stripe::StripeOptions` | same |  |
 | `StripeAmountOptions#payout` | `StripeOptions::payout` | same |  |
 | `StripeAmountOptions#rounding` | `StripeOptions::rounding` | same |  |
@@ -1027,7 +1027,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `ADYEN_EXPONENTS` | `ducat::processors::adyen::exponent`, `rule` | same | a lookup, not a record |
+| `ADYEN_EXPONENTS` | `ducat::processors::adyen::exponent`, `rule` | missing | `exponent`/`rule` lookups only; the table can't be listed. Fix: a public `currencies()` iterator |
 | `Money#toAdyen` | `Money::to_adyen`, `AnyMoney::to_adyen` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `adyenExponent` | `ducat::processors::adyen::exponent` | same |  |
 | `fromAdyen` | `Money::from_adyen`, `AnyMoney::from_adyen` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
@@ -1040,16 +1040,16 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `CHECKOUT_RULES` | `ducat::processors::checkout::rule` (`CheckoutRule`) | same | a lookup, not a record |
+| `CHECKOUT_RULES` | `ducat::processors::checkout::rule` (`CheckoutRule`) | missing | `rule` lookup only; the table can't be listed. Fix: a public `currencies()` iterator |
 | `CheckoutAmountOptions` | `ducat::processors::checkout::CheckoutOptions` | same |  |
 | `CheckoutAmountOptions#rounding` | `CheckoutOptions::rounding` | same |  |
 | `CheckoutAmountOptions#standalone` | `CheckoutOptions::standalone` | same |  |
-| `Money#toCheckout` | `Money::to_checkout`, `AnyMoney::to_checkout` | same |  |
+| `Money#toCheckout` | `Money::to_checkout`, `AnyMoney::to_checkout` | missing | the `currency` field isn't uppercased. Fix: `to_ascii_uppercase()` the code, as TS does |
 | `Money#toCheckoutAmount` | `Money::to_checkout_amount` | same |  |
 | `checkoutExponent` | `ducat::processors::checkout::exponent` | same |  |
 | `fromCheckout` | `Money::from_checkout`, `AnyMoney::from_checkout` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
 | `isCheckoutCurrency` | `ducat::processors::checkout::is_currency` | same |  |
-| `toCheckout` | `Money::to_checkout` | same |  |
+| `toCheckout` | `Money::to_checkout` | missing | as `Money#toCheckout` |
 | `toCheckoutAmount` | `Money::to_checkout_amount` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
 
 ### `./paypal`
@@ -1058,15 +1058,15 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `Money#toPayPal` | `Money::to_paypal`, `AnyMoney::to_paypal` | same |  |
+| `Money#toPayPal` | `Money::to_paypal`, `AnyMoney::to_paypal` | missing | `currency_code` isn't uppercased. Fix: `to_ascii_uppercase()` the code |
 | `Money#toPayPalValue` | `Money::to_paypal_value` | same |  |
-| `PAYPAL_EXPONENTS` | `ducat::processors::paypal::exponent`, `rule` | same | a lookup, not a record |
+| `PAYPAL_EXPONENTS` | `ducat::processors::paypal::exponent`, `rule` | missing | `exponent`/`rule` lookups only. Fix: a public `currencies()` iterator |
 | `PayPalAmountOptions` | the `Rounding` argument | same |  |
 | `PayPalAmountOptions#rounding` | the `Rounding` argument of `to_paypal` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `fromPayPal` | `Money::from_paypal`, `AnyMoney::from_paypal` | same |  |
 | `isPayPalCurrency` | `ducat::processors::paypal::is_currency` | same |  |
 | `paypalExponent` | `ducat::processors::paypal::exponent` | same |  |
-| `toPayPal` | `Money::to_paypal` | same | `PayPalAmount` |
+| `toPayPal` | `Money::to_paypal` | missing | as `Money#toPayPal` |
 | `toPayPalValue` | `Money::to_paypal_value` | same |  |
 
 ### `./braintree`
@@ -1075,7 +1075,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `BRAINTREE_EXPONENTS` | `ducat::processors::braintree::exponent`, `rule` | same | a lookup, not a record |
+| `BRAINTREE_EXPONENTS` | `ducat::processors::braintree::exponent`, `rule` | missing | `exponent`/`rule` lookups only. Fix: a public `currencies()` iterator |
 | `BraintreeAmountOptions` | the `Rounding` argument | same |  |
 | `BraintreeAmountOptions#rounding` | the `Rounding` argument of `to_braintree` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `Money#toBraintree` | `Money::to_braintree`, `AnyMoney::to_braintree` | same |  |
@@ -1090,7 +1090,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `KLARNA_EXPONENTS` | `ducat::processors::klarna::exponent`, `rule` | same | a lookup, not a record |
+| `KLARNA_EXPONENTS` | `ducat::processors::klarna::exponent`, `rule` | missing | `exponent`/`rule` lookups only. Fix: a public `currencies()` iterator |
 | `KlarnaAmountOptions` | the `Rounding` argument | same |  |
 | `KlarnaAmountOptions#rounding` | the `Rounding` argument of `to_klarna` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `Money#toKlarna` | `Money::to_klarna`, `AnyMoney::to_klarna` | same |  |
@@ -1106,8 +1106,8 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 | TS | Rust | status | note |
 |---|---|---|---|
 | `StripeBalanceTransaction` | `ducat::convert::stripe_fx::StripeBalanceTransaction` | same | `exchange_rate` is the JSON number's text |
-| `stripeImpliedRate` | `ducat::convert::stripe_fx::stripe_implied_rate` | same |  |
-| `stripeRate` | `ducat::convert::stripe_fx::stripe_rate` | same |  |
+| `stripeImpliedRate` | `ducat::convert::stripe_fx::stripe_implied_rate` | same | takes `&AnyMoney`; the balance currency must be a Stripe currency (`UnsupportedCurrency`); a zero or negative quotient is `NonPositiveRate`; `amount` is an `i64`, as `fromStripe` |
+| `stripeRate` | `ducat::convert::stripe_fx::stripe_rate` | same | `exchange_rate` is the number's text, read as ducat reads the number (`TooManyDigits` past 15 significant digits unless a safe integer); codes must be ISO 4217 or `historic` (`UnknownCurrency`) |
 
 ### `./adyen-fx`
 
@@ -1118,7 +1118,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 | `AdyenRateOptions` | — | missing | its one field is `timeZone` |
 | `AdyenRateOptions#timeZone` | — | missing | an IANA zone for the TimeZone column all year; decided: optional `tz` feature on `ducat` (jiff, bundled tzdb, off by default, not `no_std`) |
 | `AdyenSettlementRow` | the row argument of `adyen_rate` (column name to value) | same |  |
-| `adyenRate` | `ducat::convert::adyen_fx::adyen_rate` | same | abbreviations and offsets only |
+| `adyenRate` | `ducat::convert::adyen_fx::adyen_rate` | divergent: [Adyen's Creation Date](design.md#parity-decisions) | abbreviations and offsets only; a Creation Date `Date.parse` refuses gives the local day, not ducat's `RangeError`; codes ISO or historic, as given |
 
 ### `./prisma`
 
@@ -1144,10 +1144,10 @@ The column shapes (not Drizzle, a TypeScript ORM) are in `ducat-sqlx` and `ducat
 | TS | Rust | status | note |
 |---|---|---|---|
 | `DEFAULT_DECIMAL_SIZE` | [`ducat_sqlx::DEFAULT_DECIMAL_SIZE`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DEFAULT_DECIMAL_SIZE`](../crates/ducat-diesel/src/decimal.rs) | same | NUMERIC(19,4) |
-| `DecimalColumnSize` | [`ducat_sqlx::DecimalColumnSize`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DecimalColumnSize`](../crates/ducat-diesel/src/decimal.rs) | same | a validated struct (`new(precision, scale)`, `Error::InvalidColumnSize`) with `precision()`/`scale()` getters, `check_currency` and `fit` |
-| `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | same | the `size` argument is `DecimalColumnSize::check_currency` and `fit` (bind its `Decimal`), not part of the column type; errors `ScaleMismatch`, `NotANumber`, `Infinite`, `Malformed`, `ColumnScaleBelowExponent`, `WouldRound`, `TooManyIntegerDigits` |
+| `DecimalColumnSize` | [`ducat_sqlx::DecimalColumnSize`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DecimalColumnSize`](../crates/ducat-diesel/src/decimal.rs) | same | a validated struct (`new(precision, scale)`: precision at least 1, scale at most precision, else `Error::InvalidColumnSize`) with `precision()`/`scale()`, `check_currency` and `fit` |
+| `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | `DecimalColumn<C>` has no size: check it with `DecimalColumnSize::check_currency`, and bind `fit`'s `Decimal` after `to_decimal`'s scale check |
 | `moneyJson` | — | missing | design.md Known gaps: the JSON column shapes (`moneyJson`, `jsonToDriver`) in both crates; workaround: a JSON/TEXT column with `ducat`'s `serde` impls |
-| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | BIGINT; `ScaleMismatch`, `OutOfRange` beyond ±(2^63 − 1); `minor_units` for money whose currency is in another column; its `{ scale }` option (`ScaleColumnOption`, a scale column) is missing in Rust |
+| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | missing | BIGINT; `ScaleMismatch`, `OutOfRange` beyond the i64 range; the `{ scale }` option (a scale column) has no Rust counterpart (ducat#380) |
 | `scaledMoney` | — | missing | reads a minor-units column with its scale column (ducat#380); Rust needs a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
 
 ### `./drizzle/mysql`
@@ -1156,9 +1156,9 @@ The MySQL column shapes are `ducat-sqlx`'s and `ducat-diesel`'s root types with 
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | same | DECIMAL; size via `DecimalColumnSize::fit`; a FLOAT/DOUBLE value is `Error::UnexpectedType` |
+| `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | DECIMAL; size via `DecimalColumnSize::check_currency`/`fit`, not the column; FLOAT/DOUBLE is `Error::UnexpectedType`; text read as `-?[0-9]+(\.[0-9]+)?` |
 | `moneyJson` | — | missing | design.md Known gaps (JSON column shapes); workaround: a JSON column with `ducat`'s `serde` impls |
-| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | BIGINT; unsigned and float types refused (`Error::UnexpectedType`); its `{ scale }` option (`ScaleColumnOption`, a scale column) is missing in Rust |
+| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | missing | BIGINT; signed integer types only (`UnexpectedType`); the `{ scale }` option has no Rust counterpart |
 | `scaledMoney` | — | missing | reads a minor-units column with its scale column (ducat#380); Rust needs a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
 
 ### `./drizzle/sqlite`
@@ -1167,9 +1167,9 @@ The SQLite column shapes are `ducat-sqlx`'s and `ducat-diesel`'s root types with
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | same | TEXT holding the exact decimal; a REAL value is `Error::UnexpectedType` |
+| `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | TEXT read as `-?[0-9]+(\.[0-9]+)?` only (ducat's `money()` also takes `+` and exponents); a REAL value is `Error::UnexpectedType` |
 | `moneyJson` | — | missing | design.md Known gaps (JSON column shapes); workaround: a TEXT column with `ducat`'s `serde` impls |
-| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | INTEGER; storage class checked per value; its `{ scale }` option (`ScaleColumnOption`, a scale column) is missing in Rust |
+| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | missing | INTEGER; storage class checked per value; the `{ scale }` option has no Rust counterpart |
 | `scaledMoney` | — | missing | reads a minor-units column with its scale column (ducat#380); Rust needs a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
 
 ### `./zod`
@@ -1218,11 +1218,11 @@ Not ported: valibot is a TypeScript schema library; `ducat`'s `serde` feature co
 | `moneyTypeOids` | — | not ported: by design (node-postgres OID lookup; sqlx and diesel resolve type names themselves) | |
 | `moneyTypeSql` | [`ducat_sqlx::pg::money_type_sql`](../crates/ducat-sqlx/src/pg/composite.rs), [`ducat_diesel::pg::money_type_sql`](../crates/ducat-diesel/src/pg/composite.rs) | same | `name` is required (pass `MONEY_TYPE_NAME`); returns `[String; 3]`; a bad name is `Error::Malformed` (TS `RangeError`) |
 | `parseArray` | — | not ported: by design (configures node-postgres's text parsers; sqlx and diesel decode by type) | arrays (NUMERIC[], BIGINT[], `ducat_money[]`) decode as `Vec<_>` |
-| `parseBigInt` | `ducat::Int`'s `FromStr` | same | sqlx and diesel decode BIGINT as `i64` themselves; malformed text is `ducat::Error::Syntax` (TS `SyntaxError`) |
+| `parseBigInt` | `ducat::Int`'s `FromStr` | divergent: [column and test-strategy shapes](design.md#parity-decisions) | `ducat::Int`'s `FromStr`, which also takes a leading `+`; sqlx and diesel decode BIGINT as `i64` |
 | `parseMoneyComposite` | `FromStr` for [`ducat_sqlx::pg::MoneyRecord`](../crates/ducat-sqlx/src/pg/composite.rs) / [`ducat_diesel::pg::MoneyRecord`](../crates/ducat-diesel/src/pg/composite.rs), then `MoneyRecord::to_money` or `to_any_money` | divergent: [AnyMoney reads ISO codes only](design.md#milestone-7c-part-1-sqlx) | a custom code is `Error::UnknownCurrency` (give its `CurrencyCode` to `to_any_money`); a backslash before the closing `)` is refused; errors `Malformed`, `NullField` (TS `TypeError`), `NotANumber`, `Infinite`: every TS kind has a variant |
-| `parseNumeric` | `FromStr` for [`ducat_sqlx::Decimal`](../crates/ducat-sqlx/src/decimal.rs) / [`ducat_diesel::Decimal`](../crates/ducat-diesel/src/decimal.rs) | same | returns a `Decimal`, not a string; `NotANumber`, `Infinite`, `Malformed` (TS has one `SyntaxError`) |
+| `parseNumeric` | `FromStr` for [`ducat_sqlx::Decimal`](../crates/ducat-sqlx/src/decimal.rs) / [`ducat_diesel::Decimal`](../crates/ducat-diesel/src/decimal.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | returns a `Decimal`, not the text; more than 1000 decimals is `Ducat(InvalidScale)`; `NotANumber`, `Infinite`, `Malformed` (TS one `SyntaxError`) |
 | `toMoneyComposite` | `Display` for [`ducat_sqlx::pg::MoneyRecord`](../crates/ducat-sqlx/src/pg/composite.rs) / [`ducat_diesel::pg::MoneyRecord`](../crates/ducat-diesel/src/pg/composite.rs) (`MoneyRecord::from_money`) | same | `PgMoney<M>` binds the composite directly in binary |
-| `toNumeric` | [`ducat_sqlx::DecimalColumnSize::fit`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DecimalColumnSize::fit`](../crates/ducat-diesel/src/decimal.rs) | same | returns a `Decimal`; `WouldRound`, `TooManyIntegerDigits` |
+| `toNumeric` | [`ducat_sqlx::DecimalColumnSize::fit`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DecimalColumnSize::fit`](../crates/ducat-diesel/src/decimal.rs) | same | returns a `Decimal`; `ColumnScaleBelowExponent`, `WouldRound`, `TooManyIntegerDigits` |
 
 ### `./testing`
 
@@ -1273,8 +1273,8 @@ No rows of its own: it re-exports `./testing` (`src/testing/jest.ts`, which also
 | `ArbMoneyOptions#max` | `ducat::testing::MoneyOptions::max` | same | a `Ratio` in major units |
 | `ArbMoneyOptions#min` | `ducat::testing::MoneyOptions::min` | same | a `Ratio` in major units |
 | `ArbMoneyOptions#scale` | `ducat::testing::MoneyOptions::scale`, `MoneyOptions::scales` | same | an arbitrary of scales is a range |
-| `arbCurrency` | [`ducat::testing::currency_code`](../crates/ducat/src/testing.rs) | same | returns `BoxedStrategy<CurrencyCode>` |
-| `arbMoney` | [`ducat::testing::money`](../crates/ducat/src/testing.rs), [`ducat::testing::any_money`](../crates/ducat/src/testing.rs) | same | `BoxedStrategy<Money<C>>` / `BoxedStrategy<AnyMoney>` |
+| `arbCurrency` | [`ducat::testing::currency_code`](../crates/ducat/src/testing.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | returns `BoxedStrategy<CurrencyCode>`; an empty pool panics (ducat: `RangeError`) |
+| `arbMoney` | [`ducat::testing::money`](../crates/ducat/src/testing.rs), [`ducat::testing::any_money`](../crates/ducat/src/testing.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | `BoxedStrategy<Money<C>>` / `BoxedStrategy<AnyMoney>`; a bad scale or empty range panics (ducat: `RangeError`) |
 
 ### `./kysely`
 
@@ -1352,26 +1352,32 @@ Every `missing` row, grouped into pull requests in the order users would hit the
    first thing an application does, and a JSON column is the layout that needs no currency column.
 7. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
    `./drizzle/mysql` `scaledMoney`, `./drizzle/sqlite` `scaledMoney`, `./prisma` `ScaleColumnOption`,
-   `./prisma` `ScaleColumnOption#scale` (the `{ scale }` option of `moneyMinor`, Kysely's `setMoney` and
+   `./prisma` `ScaleColumnOption#scale`, `./drizzle/pg` `moneyMinor`, `./drizzle/mysql` `moneyMinor`,
+   `./drizzle/sqlite` `moneyMinor` (the `{ scale }` option of `moneyMinor`, Kysely's `setMoney` and
    `selectMoney`, from ducat#380). A `MinorColumn<C>` with the scale stored beside the units, for money kept at more
    decimals than its currency's exponent.
-8. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
+8. **Processor tables and wire currency case** (`ducat`; from the re-audit): `./stripe` `STRIPE_RULES`,
+   `./adyen` `ADYEN_EXPONENTS`, `./checkout` `CHECKOUT_RULES`, `./paypal` `PAYPAL_EXPONENTS`,
+   `./braintree` `BRAINTREE_EXPONENTS`, `./klarna` `KLARNA_EXPONENTS` (a public `currencies()` iterator: the tables
+   are private), `./checkout` `Money#toCheckout`, `./checkout` `toCheckout`, `./paypal` `Money#toPayPal`,
+   `./paypal` `toPayPal` (uppercase the code, as ducat does).
+9. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
    `./format` `FormatOptions#useGrouping`, `./format` `FormatOptions#minimumIntegerDigits`,
    `./format` `FormatOptions#minimumSignificantDigits`, `./format` `FormatOptions#roundingMode`,
    `./format` `FormatOptions#roundingPriority`, `./format` `FormatOptions#trailingZeroDisplay`. Invoices (`+`/`−`
    signs, no grouping) and price displays (`€5` for whole amounts) use these; all are TR35 number formatting over data
    the crate already has.
-9. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
+10. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
    `ducat-fetch` on `Transport`): `./convert` `snapshots`, `./convert` `snapshotsFrom`, `./convert` `Snapshots`,
    `./convert` `Snapshots#at`, `./convert` `SnapshotOptions`, `./convert` `SnapshotOptions#lookback`,
    `./convert` `SnapshotOptions#max`. Converting at historical dates without loading every table up front.
-10. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
+11. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
    generated names without all its data): no `missing` row; `./words` `amountInWords` is `divergent` until then,
    because the caller must pass `UnitNames`.
-11. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
+12. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
    default, not `no_std`): `./adyen-fx` `AdyenRateOptions`, `./adyen-fx` `AdyenRateOptions#timeZone`. Only reports
    whose TimeZone column switches with daylight saving need it; abbreviations and offsets already work.
-12. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
+13. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
    `./format` `FormatOptions#compactDisplay`, `./format` `FormatOptions#numberingSystem`,
    `./format` `FormatOptions#localeMatcher`. Dashboards (`€1.2M`) and native digits; compact patterns and numbering systems add
    data to every locale, so they want their own features. `localeMatcher` chooses between `Intl`'s algorithms; the
