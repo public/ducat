@@ -1,0 +1,12 @@
+# Floats only go out (rust/docs/design.md, "Parity decisions"): the lossy conversions are for
+# display and interop, so nothing in the workspace calls them. Their own tests opt out with
+# #[allow(clippy::disallowed_methods)].
+disallowed-methods = [
+    { path = "ducat::Money::to_f64", reason = "floats only go out: for display or interop only, never inside ducat" },
+    { path = "ducat::Money::to_minor_f64", reason = "floats only go out: for display or interop only, never inside ducat" },
+    { path = "ducat::AnyMoney::to_f64", reason = "floats only go out: for display or interop only, never inside ducat" },
+    { path = "ducat::AnyMoney::to_minor_f64", reason = "floats only go out: for display or interop only, never inside ducat" },
+    { path = "ducat::fixed::Fixed::to_f64", reason = "floats only go out: for display or interop only, never inside ducat" },
+    { path = "ducat::exact::ExactMoney::to_f64", reason = "floats only go out: for display or interop only, never inside ducat" },
+    { path = "ducat::exact::AnyExactMoney::to_f64", reason = "floats only go out: for display or interop only, never inside ducat" },
+]

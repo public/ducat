@@ -184,6 +184,24 @@ impl<C: Currency> ExactMoney<C> {
         C::CODE
     }
 
+    /// The amount in major units as the nearest double: 10/3 EUR is 3.3333333333333335. **For
+    /// display or interop only; never round-trip** (and never do arithmetic on it). Rounded once,
+    /// to the nearest double (ties to even), and ±infinity beyond the largest double, bit for bit
+    /// as ducat's `ExactMoney#toNumber`.
+    ///
+    /// ```
+    /// use ducat::Money;
+    /// use ducat::iso::Eur;
+    ///
+    /// let third = Money::<Eur>::from_units(10, 0)?.exact().divide(3)?;
+    /// assert_eq!(third.to_f64(), 10.0 / 3.0);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::ratio_to_f64(&self.value)
+    }
+
     /// The value in major units, exactly.
     #[must_use]
     pub const fn value(&self) -> &Ratio {
@@ -398,6 +416,13 @@ impl AnyExactMoney {
     #[must_use]
     pub const fn currency(&self) -> CurrencyCode {
         self.currency
+    }
+
+    /// As [`ExactMoney::to_f64`]: the nearest double in major units. **For display or interop
+    /// only; never round-trip.**
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::ratio_to_f64(&self.value)
     }
 
     /// The value in major units, exactly.

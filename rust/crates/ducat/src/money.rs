@@ -220,6 +220,52 @@ impl<C: Currency> Money<C> {
             .units)
     }
 
+    /// The amount in major units as the nearest double: 12.34 for 12.34 EUR. **For display or
+    /// interop only; never round-trip** (and never do arithmetic on it). Lossy on purpose, for
+    /// charts and APIs that take numbers: beyond a double's 15 to 17 significant digits the value
+    /// is rounded once, to the nearest double (ties to even), and beyond the largest double it is
+    /// ±infinity, bit for bit as ducat's `toNumber` (`Number` of the exact decimal string).
+    ///
+    /// ```
+    /// use ducat::Money;
+    /// use ducat::iso::Eur;
+    ///
+    /// let price: Money<Eur> = "12.34".parse()?;
+    /// assert_eq!(price.to_f64(), 12.34);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::decimal_to_f64(&self.amount.units, self.amount.scale)
+    }
+
+    /// The amount in the currency's minor units as a double: 1234.0 for 12.34 EUR. **For display
+    /// or interop only; never round-trip.** Exact up to 2^53 − 1 minor units; beyond that, the
+    /// nearest double (ties to even, ±infinity beyond the largest) with
+    /// [`lossy`](crate::ToMinorF64Options::lossy), as ducat's `toMinorNumber`.
+    ///
+    /// ```
+    /// use ducat::{Error, Money, ToMinorF64Options};
+    /// use ducat::iso::Eur;
+    ///
+    /// let price: Money<Eur> = "12.34".parse()?;
+    /// assert_eq!(price.to_minor_f64(ToMinorF64Options::default())?, 1234.0);
+    /// let huge = Money::<Eur>::from_units(1i64 << 53, 2)?;
+    /// assert_eq!(huge.to_minor_f64(ToMinorF64Options::default()), Err(Error::Overflow));
+    /// let lossy = ToMinorF64Options { lossy: true };
+    /// assert_eq!(huge.to_minor_f64(lossy)?, 9_007_199_254_740_992.0);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Rounding`] for non-zero digits below the minor unit (round first, or use
+    /// `to_f64`), where ducat throws `RoundingError`; then [`Error::Overflow`] beyond 2^53 − 1
+    /// minor units without `lossy`, where ducat throws `RangeError`.
+    pub fn to_minor_f64(&self, options: crate::ToMinorF64Options) -> Result<f64, Error> {
+        crate::float::minor_to_f64(&self.to_minor()?, options)
+    }
+
     /// The exact decimal in major units, with every place of the scale: `"12.34"`, `"-0.05"`,
     /// `"1000"` for JPY. Never an exponent, never `-0`.
     #[must_use]

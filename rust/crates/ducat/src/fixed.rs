@@ -200,6 +200,24 @@ impl Fixed {
         self.amount.identical(&other.amount)
     }
 
+    /// The nearest double, for display, charts and other places that take a float. **For
+    /// display or interop only; never round-trip** (and never do arithmetic on it). Lossy on
+    /// purpose, so it has a name: `0.1` is 0.1, and a value beyond a double's 15 to 17 digits is
+    /// rounded once, to the nearest double (ties to even), ±infinity beyond the largest double,
+    /// bit for bit as ducat's `Fixed#toNumber` (`Number` of the exact decimal string).
+    ///
+    /// ```
+    /// use ducat::fixed::Fixed;
+    ///
+    /// let tenth: Fixed = "0.1".parse()?;
+    /// assert_eq!(tenth.to_f64(), 0.1);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::decimal_to_f64(&self.amount.units, self.amount.scale)
+    }
+
     /// The value as a reduced [`Ratio`].
     #[must_use]
     pub fn to_ratio(&self) -> Ratio {

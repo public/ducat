@@ -78,6 +78,7 @@ pub mod excel;
 pub mod finance;
 #[cfg(feature = "fixed")]
 pub mod fixed;
+mod float;
 #[cfg(feature = "historic")]
 pub mod historic;
 mod int;
@@ -123,6 +124,7 @@ pub use currency::__custom_or_panic;
 pub use currency::{Currency, CurrencyCode, MAX_CUSTOM_EXPONENT};
 pub use decimal::MAX_SCALE;
 pub use error::{Error, ErrorKind};
+pub use float::ToMinorF64Options;
 pub use int::Int;
 pub use iso_table::ISO_4217_PUBLISHED;
 pub use kind::MoneyKind;
