@@ -373,7 +373,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `RateLookup` | `ducat::convert::history::RateLookup` | same | `rate: Option<AnyRate>`, `skipped` |
 | `quotedTable` | `ducat::convert::history::quoted_table` | same | the rates' text is trimmed, as ducat; `Err(InvalidQuote)`, `Err(InvalidDecimals)`, `Err(NonPositiveRate)` where ducat throws `RangeError` |
 | `rateFromQuote` | `ducat::convert::history::rate_from_quote` | same | an `AnyRate`; `Err(InvalidQuote)` for a quote that isn't a plain positive decimal or a `per` below 1, ducat's `RangeError`; the `info` is a `RateInfo` (see `./convert` `RateInfo`) |
-| `rateHistory` | `ducat::convert::history::rate_history` | missing | a table without an `as_of` is `Err(MalformedRates)`, a *syntax*-kind error, where ducat throws `RangeError`: the failure differs in kind. Fix: a range-kind variant (an `InvalidDate`-style `Error::UndatedTable`) |
+| `rateHistory` | `ducat::convert::history::rate_history` | same | a table without an `as_of` is `Err(UndatedTable)`, a range-kind error with ducat's message (`RangeError: rateHistory needs tables with an asOf`); `lookback` is a `u32`, so ducat's first check (a non-negative integer) has no failing input |
 
 ### `./convert/boc`
 
@@ -1327,9 +1327,6 @@ Re-exports every plugin entry and `./fn`'s functions, and installs every plugin'
 Every `missing` row, grouped into pull requests in the order users would hit them. Five pieces are decided (marked
 **decided**); the rest are proposals.
 
-3. **Error kinds that match ducat's** (`ducat`; from the re-audit): `./convert/history` `rateHistory`. A table
-   without an `as_of` is `MalformedRates`, a syntax-kind error, where ducat throws `RangeError`: a range-kind
-   variant makes the failure the same.
 4. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
    `./fn` `hasFraction`, `./fn` `majorPart`, `./fn` `minorPart`. Receipts, cheques and display code ask for the whole
    and fractional parts first; small, exact, no design question.
