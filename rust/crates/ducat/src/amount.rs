@@ -84,6 +84,16 @@ impl Amount {
         })
     }
 
+    /// The whole major units, truncated toward zero, and what is left in 10^−scale units, with
+    /// the amount's sign: (12, 34) for 12.34 and (−12, −34) for −12.34.
+    pub(crate) fn parts(&self) -> (Int, Int) {
+        if self.scale == 0 {
+            return (self.units.clone(), Int::ZERO);
+        }
+        self.units
+            .div_rem(&Int::ONE.mul_pow10(u32::from(self.scale)))
+    }
+
     /// The units at a larger (or equal) scale, exactly.
     fn units_at(&self, scale: u16) -> Int {
         self.units

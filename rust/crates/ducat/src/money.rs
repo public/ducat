@@ -207,6 +207,29 @@ impl<C: Currency> Money<C> {
         self.amount.scale
     }
 
+    /// The whole major units, truncated toward zero, as ducat's `majorPart`: 12 for 12.34 EUR,
+    /// −12 for −12.34 EUR, 0 for −0.05 EUR.
+    #[must_use]
+    pub fn major_part(&self) -> Int {
+        self.amount.parts().0
+    }
+
+    /// What is left after [`major_part`](Self::major_part), in 10^−scale units (not the
+    /// currency's minor units) and with the amount's sign, as ducat's `minorPart`: 34 for
+    /// 12.34 EUR, −34 for −12.34 EUR, 5 for 1.005 EUR at scale 3, 0 for JPY.
+    #[must_use]
+    pub fn minor_part(&self) -> Int {
+        self.amount.parts().1
+    }
+
+    /// Whether the amount has a non-zero fractional part, as ducat's `hasFraction`: true for
+    /// 12.34 EUR, −0.05 EUR and 1.005 EUR at scale 3; false for 12.00 EUR and 12.000 EUR at
+    /// scale 3.
+    #[must_use]
+    pub fn has_fraction(&self) -> bool {
+        !self.amount.parts().1.is_zero()
+    }
+
     /// The amount in the currency's minor units, whatever its scale.
     ///
     /// # Errors
