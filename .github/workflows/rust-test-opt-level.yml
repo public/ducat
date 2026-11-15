@@ -1,0 +1,79 @@
+name: Rust test opt-level
+
+# Measurement only: what each [profile.test] candidate costs a test build and run, from an empty
+# target and incrementally after a change to ducat's library. No caching, so every job starts cold.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/rust-test-opt-level.yml'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+defaults:
+  run:
+    working-directory: rust
+    shell: bash
+
+jobs:
+  measure:
+    name: ${{ matrix.candidate }}, jobs ${{ matrix.jobs }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # A: today's profile; B: the workspace crates at 0, dependencies at 1; C: B with the
+        # big-integer crates at 3
+        candidate: [A, B, C]
+        jobs: ['1', default]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: CARGO_BUILD_JOBS
+        if: matrix.jobs != 'default'
+        run: echo "CARGO_BUILD_JOBS=${{ matrix.jobs }}" >> "$GITHUB_ENV"
+      - name: write candidate ${{ matrix.candidate }}'s profile into Cargo.toml
+        env:
+          CANDIDATE: ${{ matrix.candidate }}
+        run: |
+          python3 - <<'EOF'
+          import os, re
+
+          A = '[profile.test]\nopt-level = 1\n'
+          B = '[profile.test]\nopt-level = 0\n\n[profile.test.package."*"]\nopt-level = 1\n'
+          C = B + ''.join(
+              f'\n[profile.test.package.{name}]\nopt-level = 3\n'
+              for name in ('num-bigint', 'num-integer', 'num-traits')
+          )
+          profile = {'A': A, 'B': B, 'C': C}[os.environ['CANDIDATE']]
+
+          text = open('Cargo.toml').read()
+          # the profile tables are the last in the file; drop them and put the candidate's in
+          start = re.search(r'^\[profile\.', text, re.M)
+          head = text[: start.start()] if start else text + '\n'
+          if start and re.search(r'^\[(?!profile\.)', text[start.start():], re.M):
+              raise SystemExit('a non-profile table follows [profile.*] in Cargo.toml')
+          open('Cargo.toml', 'w').write(head + profile)
+          EOF
+          sed -n '/^\[profile\./,$p' Cargo.toml
+          rm -rf target
+      - name: cold build and run
+        run: |
+          /usr/bin/time -v -o time.txt cargo test --workspace --locked --no-fail-fast 2>&1 | tee test.log
+          grep -E 'Running |test result:' test.log
+          grep -E 'Elapsed \(wall clock\)|Maximum resident set size' time.txt
+      - name: incremental build after a change to ducat's lib
+        run: |
+          echo '// touched by rust-test-opt-level.yml' >> crates/ducat/src/lib.rs
+          /usr/bin/time -v -o time.txt cargo test --workspace --locked --no-run
+          grep -E 'Elapsed \(wall clock\)|Maximum resident set size' time.txt
+      - name: incremental build and run after another change to ducat's lib
+        run: |
+          echo '// touched again by rust-test-opt-level.yml' >> crates/ducat/src/lib.rs
+          /usr/bin/time -v -o time.txt cargo test --workspace --locked 2>&1 | tee test.log
+          grep -E 'Running |test result:' test.log
+          grep -E 'Elapsed \(wall clock\)|Maximum resident set size' time.txt
