@@ -51,7 +51,8 @@ pub use proptest;
 use proptest::arbitrary::{Arbitrary, any};
 use proptest::collection::vec;
 use proptest::sample::select;
-use proptest::strategy::{BoxedStrategy, Just, Strategy, Union};
+use proptest::strategy::{BoxedStrategy, Just, NewTree, Strategy, Union, ValueTree};
+use proptest::test_runner::TestRunner;
 
 #[cfg(feature = "policy")]
 use crate::policy::{MAX_INCREMENT, RoundingPolicy};
@@ -94,8 +95,9 @@ fn edges() -> [Int; 6] {
     ]
 }
 
-/// Integers within `radius` of `centre` and within `min..=max`, if any are; they shrink toward
-/// `centre`.
+/// Integers within `radius` of `centre` and within `min..=max`, if any are: `centre` itself (when
+/// in range) a quarter of the time, within 2 of it another quarter, anywhere in the window
+/// otherwise.
 fn window(
     parts: &mut Vec<(u32, BoxedStrategy<Int>)>,
     weight: u32,
@@ -111,10 +113,16 @@ fn window(
     // both offsets are within ±radius, so they fit an i128
     let from = (&low - centre).to_i128().unwrap_or(0);
     let to = (&high - centre).to_i128().unwrap_or(0);
+    let near = ((-2i128).clamp(from, to), 2i128.clamp(from, to));
+    let offsets = Union::new_weighted(alloc::vec![
+        (1, Just(0i128.clamp(from, to)).boxed()),
+        (1, (near.0..=near.1).boxed()),
+        (2, (from..=to).boxed()),
+    ]);
     let centre = centre.clone();
     parts.push((
         weight,
-        (from..=to)
+        offsets
             .prop_map(move |offset| &centre + &Int::from(offset))
             .boxed(),
     ));
@@ -145,7 +153,7 @@ fn magnitude_up_to(bound: BigUint) -> BoxedStrategy<BigUint> {
         .boxed()
 }
 
-/// Integers anywhere in `min..=max`, log-uniform, shrinking toward the value nearest zero.
+/// Integers anywhere in `min..=max`, log-uniform.
 fn spread(min: &Int, max: &Int) -> BoxedStrategy<Int> {
     if !min.is_positive() && !max.is_negative() {
         let up = magnitude_up_to(max.to_big().magnitude().clone())
@@ -176,7 +184,10 @@ fn spread(min: &Int, max: &Int) -> BoxedStrategy<Int> {
 /// Integers in `range`, weighted toward the interesting places: within 10,000 of zero, within
 /// 1,000 of ±(2^53 − 1), of the `i64` limits and of the `i128` limits (on both sides, so values
 /// move onto the heap and back), the range's own ends, and anywhere in between, log-uniformly.
-/// Values shrink toward zero, or toward the end nearest zero.
+/// Each place is weighted on the value itself too (`i128::MAX`, the ends).
+///
+/// A failing value shrinks by binary search toward zero, or toward the end nearest zero, so a
+/// property that fails from some value up reports exactly that value.
 ///
 /// # Panics
 ///
@@ -195,15 +206,102 @@ fn spread(min: &Int, max: &Int) -> BoxedStrategy<Int> {
 pub fn int_in(range: RangeInclusive<Int>) -> BoxedStrategy<Int> {
     let (min, max) = range.into_inner();
     assert!(min <= max, "int_in: the range {min}..={max} is empty");
-    let mut parts = Vec::new();
+    let mut parts = alloc::vec![(4, spread(&min, &max))];
     window(&mut parts, 3, &Int::ZERO, 10_000, (&min, &max));
     for edge in edges() {
         window(&mut parts, 1, &edge, 1_000, (&min, &max));
     }
     parts.push((1, Just(min.clone()).boxed()));
     parts.push((1, Just(max.clone()).boxed()));
-    parts.push((4, spread(&min, &max)));
-    Union::new_weighted(parts).boxed()
+    let target = if min.is_positive() {
+        min
+    } else if max.is_negative() {
+        max
+    } else {
+        Int::ZERO
+    };
+    IntStrategy {
+        values: Union::new_weighted(parts).boxed(),
+        target,
+    }
+    .boxed()
+}
+
+/// Draws with `values`, and shrinks by binary search toward `target`, whichever arm of the
+/// union drew the value. A union alone can't shrink a value one of its `Just` arms drew.
+#[derive(Debug)]
+struct IntStrategy {
+    values: BoxedStrategy<Int>,
+    target: Int,
+}
+
+impl Strategy for IntStrategy {
+    type Tree = IntTree;
+    type Value = Int;
+
+    fn new_tree(&self, runner: &mut TestRunner) -> NewTree<Self> {
+        let value = self.values.new_tree(runner)?.current();
+        let distance = (&value - &self.target).abs();
+        Ok(IntTree {
+            target: self.target.clone(),
+            negative: value < self.target,
+            low: Int::ZERO,
+            high: distance.clone(),
+            current: distance,
+        })
+    }
+}
+
+/// A binary search between `target` and a failing value, by distance from `target`: `high` is
+/// the closest distance known to fail, and every distance below `low` passed.
+#[derive(Clone, Debug)]
+struct IntTree {
+    target: Int,
+    negative: bool,
+    low: Int,
+    high: Int,
+    current: Int,
+}
+
+impl IntTree {
+    /// Halfway from `low` to `high`, rounded toward `low`.
+    fn midpoint(&self) -> Int {
+        let (half, _) = (&self.high - &self.low).div_rem(&Int::from(2));
+        &self.low + &half
+    }
+}
+
+impl ValueTree for IntTree {
+    type Value = Int;
+
+    fn current(&self) -> Int {
+        if self.negative {
+            &self.target - &self.current
+        } else {
+            &self.target + &self.current
+        }
+    }
+
+    /// Called after `current` failed.
+    fn simplify(&mut self) -> bool {
+        self.high = self.current.clone();
+        if self.low >= self.high {
+            return false;
+        }
+        self.current = self.midpoint();
+        true
+    }
+
+    /// Called after `current` passed.
+    fn complicate(&mut self) -> bool {
+        self.low = &self.current + &Int::ONE;
+        if self.low >= self.high {
+            self.current = self.high.clone();
+            return false;
+        }
+        self.current = self.midpoint();
+        true
+    }
 }
 
 /// Integers within ±2^256: the whole `i128` range and the heap beyond it, weighted as
