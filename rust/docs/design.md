@@ -7,18 +7,26 @@ Status: milestones 1 to 7 are done: milestones 1 to 3 (the core, allocation and 
 `Rate`), milestone 4 (`finance`, and `excel` for the functions named after Excel's, as in ducat), and milestones 5 to 7
 below. Milestone 8 (fuzzing) hasn't started.
 
+### Milestone 5a: policies, pricing, tiers and math
+
 Milestone 5a added rounding policies (`RoundingPolicy`, accepted wherever a mode is, as `impl Into<RoundingInput>`),
 pricing, tiers and math, with their vectors in `spec/`.
+
+### Milestone 5b: currency data
 
 Milestone 5b added the currency data (numeric codes, historic codes, territories, crypto units, CLDR's cash
 rules and `cash_policy`), generated from `data/` by `tests/it/currency_data.rs` with a drift check, as for ISO. The
 ISO exponent, CLDR's display digits and the cash rules stay separate figures.
+
+### Milestone 5c: payment processors
 
 Milestone 5c added the payment processors, one feature and module each under `ducat::processors`, with their
 tables generated from `data/` by `tests/it/processor_tables.rs` with a drift check. Integer amounts are `i64`, refused
 beyond 2^53 − 1 on the way to the processor as in ducat, and read back whatever their size (ducat refuses only
 unsafe JavaScript numbers there, and reads any `bigint`); the `from_*` constructors take a `CurrencyCode`, so only the `&str` lookups are
 case-insensitive (Adyen's excepted).
+
+### Milestone 5d1: rates, providers and bags
 
 Milestone 5d1 extended `ducat::convert` to ducat's rates, providers and bags, still under the `convert` feature
 (ducat ships the bag in its convert entry):
@@ -48,6 +56,8 @@ Milestone 5d1 extended `ducat::convert` to ducat's rates, providers and bags, st
 - **Left out:** `snapshots` and `snapshotsFrom`, which load tables asynchronously, and the rate-source parsers
   (milestone 5d2).
 
+### Milestone 5d2: rate sources
+
 Milestone 5d2 ported the rate-source parsers, one feature each (`ecb`, `boc`, `fed`, `boe`, `hmrc`, `history`,
 `stripe-fx`, `adyen-fx`), under `ducat::convert`. They take `&str`, never fetch, return `Error::MalformedRates`
 (ducat's `SyntaxError`) for a file they can't read, and give `RateTable`s with the metadata ducat attaches. The
@@ -70,6 +80,8 @@ fixtures live in `spec/fixtures/`, shared with ducat's tests, and `spec/vectors/
 - **Left out:** Adyen's IANA `timeZone` option (it needs time-zone data; the TimeZone column's abbreviations and
   offsets are read), and `src/fetch.ts` (milestone 7b's `ducat-fetch`).
 
+### Milestone 5e: wire formats
+
 Milestone 5e added `ducat::wire` (the default `wire` feature): `GoogleMoney`, `Iso20022Amount`, `MinorUnitAmount`
 and `DineroObject`, plain structs with conversions to and from `Money` and `AnyMoney`, and with `serde` each in its
 format's JSON shape. Malformed input is an error, never a rounding (`Error::InvalidWire`, `Error::Syntax` for ISO
@@ -77,6 +89,8 @@ format's JSON shape. Malformed input is an error, never a rounding (`Error::Inva
 `units` and `nanos`, exponent form included, and `xs:decimal`'s leading sign and `-0`. ducat's rule that a `units`
 *number* past 2^53 − 1 is refused is JavaScript's: serde reads JSON integers without loss, so the port has no such
 rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either.
+
+### Milestone 6a: words
 
 Milestone 6a added amounts and numbers in words, in their own crate, `ducat-words`, so a program that wants only words
 never pulls in format and parse data (milestone 6c's `ducat-format`). It is ducat's own RBNF interpreter
@@ -88,6 +102,8 @@ the digit grouping of numbers the rules write as digits (separator and minimum g
 come from the CLDR 48 snapshot (`data/cldr/`), generated into `src/cldr.rs` by `tests/it/cldr.rs` with a drift check, as the
 rule text is; ducat reads them from `Intl`, CLDR 48 on Node 24. The rule text is CLDR 49 and these values
 CLDR 48, the release ducat's `Intl` carries. `amount_in_words` takes the currency's names from the caller, as both take the minor unit's.
+
+#### Currency names in words
 
 **Currency names diverge here.** ducat's `amountInWords` takes the currency's name, its plural form and its place next to
 the number from the runtime's `Intl` (a currency format with `currencyDisplay: 'name'`, its digits replaced by the
@@ -101,6 +117,8 @@ data isn't CLDR 48 (or isn't ICU's build of it), and for `many` (a million euros
 in `data/cldr/` carries CLDR's names (`main/<locale>/currencies.json`), so a later milestone can offer them as
 defaults; until then they are the caller's, and the words vectors (`words.spellOut`) don't cover names. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
 and runs every row; the MSRV is the core's, 1.85.
+
+### Milestone 6c: format and parse
 
 Milestone 6c added locale formatting and parsing, in their own crate, `ducat-format`, from CLDR 48's data and ducat's own
 code, with no ICU. ICU4X was the plan; ducat chose otherwise because no ICU4X release carries CLDR 48.0 throughout
@@ -130,7 +148,7 @@ ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped di
   spec test (2,538, 1,629 and 1,757 rows, all passing, the icu-overrides files included). Its proptests round-trip
   format and parse in every built locale and feed arbitrary tags, options, amounts and text to the public API.
 
-### Coverage
+#### Coverage
 
 The crate has the locales CLDR rates modern: 430 (root, `und`, included) in 101 languages, a feature each (`full`
 for all); `hi` also needs `en` (hi-Latn inherits en-IN), `ht` needs `fr`, `nb` and `nn` need `no`. The default set is
@@ -170,6 +188,8 @@ symbol and long names (from the CLDR tables) as a whole beside the number, whate
 sign: PEN's `S/` in es-PE and CLF's `Chilean units of account (UF)` read back exactly, and anything else around the number
 is still refused. It also takes a long name's number grouped in the decimal pattern, as `Intl` writes it (lakhs in ml, mr
 and or).
+
+### Milestone 7b: fetching rates
 
 Milestone 7b added ducat's `./convert/fetch` entry (`src/fetch.ts`: `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada`,
 `ECB_URLS`, `ECB_DATA_API`, `BANK_OF_CANADA_URL`, `FetchRatesError`) as its own crate, `ducat-fetch`, the only code
@@ -227,6 +247,8 @@ of the port that touches the network. It reuses `ducat::convert`'s `ecb` and `bo
   asserted as literals, byte for byte, and were checked against `fetch.ts` run under vitest with a recording fetch.
   `spec/vectors/` has no fetch area, so there is no spec test; a test fails if one appears. `tests/it/live.rs` calls the
   real endpoints through `UreqTransport` and is `#[ignore]`d: CI makes no requests.
+
+### Milestone 7c, part 1: sqlx
 
 Milestone 7c, part 1, added `ducat-sqlx`, money columns for sqlx 0.8: the counterpart of ducat's `./pg` and of the
 column shapes `./drizzle/mysql` and `./drizzle/sqlite` (through `src/sql.ts`) store.
@@ -287,6 +309,8 @@ column shapes `./drizzle/mysql` and `./drizzle/sqlite` (through `src/sql.ts`) st
   `macros`). sqlx 0.8.6 and every dependency it resolves to need Rust 1.85 at most, so the crate keeps the
   workspace's MSRV (CI checks it); sqlx 0.9 needs 1.94 and isn't used.
 
+### Milestone 7c, part 2: the shared SQL core
+
 Milestone 7c, part 2, first moved the database-library independent half of `ducat-sqlx` into an internal crate,
 `crates/ducat-sql-core` (`publish = false`, depending on `ducat` alone, no sqlx or diesel), so that `ducat-diesel` shares
 it instead of copying it:
@@ -305,6 +329,8 @@ it instead of copying it:
 - **Why not duplicate:** the shells left in each crate are mostly documentation; the copied logic would have been the
   NUMERIC conversion, the decimal grammar, the size checks and the record parser, where a fix in one crate and not the
   other would make the two disagree on what a column holds.
+
+### Milestone 7c, part 2: diesel
 
 Milestone 7c, part 2, then added `ducat-diesel`, money columns for diesel 2: the diesel counterpart of `ducat-sqlx`,
 with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
@@ -358,6 +384,8 @@ with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
 - **MSRV:** diesel 2.2.12 and its dependencies need Rust 1.78 at most, so the crate keeps the workspace's 1.85 and the
   lockfile stays on diesel 2.2 (2.3 needs 1.86, 2.4 1.88). The requirement `2.2` admits them; the library was checked
   against diesel 2.4.0 outside the workspace and compiles unchanged.
+
+### Known gaps
 
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
