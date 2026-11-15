@@ -344,15 +344,15 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | TS | Rust | status | note |
 |---|---|---|---|
 | `EcbAvailableAt` | `ducat::convert::Publication` | divergent: [publication times without time-zone data](design.md#milestone-5d2-rate-sources) | `Unknown`, `Stated`, `Given(&dyn Fn)` |
-| `EcbOptions` | `ducat::convert::ecb::EcbOptions` | same |  |
-| `EcbOptions#availableAt` | `EcbOptions::available_at` | same |  |
-| `EcbSdmxOptions` | `ducat::convert::ecb::EcbSdmxOptions` | same |  |
-| `EcbSdmxOptions#availableAt` | `EcbSdmxOptions::available_at` | same |  |
-| `EcbSdmxOptions#decimals` | `EcbSdmxOptions::decimals` | same |  |
-| `parseEcbCsv` | `ducat::convert::ecb::parse_ecb_csv` | same |  |
-| `parseEcbSdmxCsv` | `ducat::convert::ecb::parse_ecb_sdmx_csv` | same |  |
-| `parseEcbSdmxDecimals` | `ducat::convert::ecb::parse_ecb_sdmx_decimals` | same |  |
-| `parseEcbXml` | `ducat::convert::ecb::parse_ecb_xml` | same |  |
+| `EcbOptions` | `ducat::convert::ecb::EcbOptions` | same | `Default` is ducat's no-options call |
+| `EcbOptions#availableAt` | `EcbOptions::available_at` | divergent: [publication times without time-zone data](design.md#milestone-5d2-rate-sources) | `Publication::Stated` is ducat's `true`: 16:00 Frankfurt time by the EU summer-time rule written out (agrees with tzdata 1999 to 2039), where ducat asks `Intl` for Europe/Berlin; `Given` returns a `Time`, where ducat's function may return any date string or `Date` |
+| `EcbSdmxOptions` | `ducat::convert::ecb::EcbSdmxOptions` | same | `Default` is ducat's no-options call |
+| `EcbSdmxOptions#availableAt` | `EcbSdmxOptions::available_at` | divergent: [publication times without time-zone data](design.md#milestone-5d2-rate-sources) | as `EcbOptions#availableAt` |
+| `EcbSdmxOptions#decimals` | `EcbSdmxOptions::decimals` | same | a slice of `(code, u8)`, as `parse_ecb_sdmx_decimals` returns it; more than 30 is `Err(InvalidDecimals)`, ducat's `RangeError` |
+| `parseEcbCsv` | `ducat::convert::ecb::parse_ecb_csv` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | a code that isn't ISO 4217 (current or withdrawn) is skipped and listed in `RateTable::unknown()`, where ducat keeps it as a currency; `Err(MalformedRates)` where ducat throws `SyntaxError` |
+| `parseEcbSdmxCsv` | `ducat::convert::ecb::parse_ecb_sdmx_csv` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | as `parseEcbCsv` |
+| `parseEcbSdmxDecimals` | `ducat::convert::ecb::parse_ecb_sdmx_decimals` | same | a `Vec<(String, u8)>` (ducat's record), codes as text; `Err(MalformedRates)` for a DECIMALS past 30, as ducat's `SyntaxError` |
+| `parseEcbXml` | `ducat::convert::ecb::parse_ecb_xml` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | as `parseEcbCsv` |
 
 ### `./convert/history`
 
@@ -360,20 +360,20 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `Fallback` | `ducat::convert::history::Fallback` | same |  |
-| `FallbackReason` | `ducat::convert::history::FallbackReason` | same |  |
-| `QuotedRate` | `ducat::convert::history::QuotedRate` | same |  |
-| `QuotedTableSpec` | `ducat::convert::history::QuotedTableSpec` | same |  |
+| `Fallback` | `ducat::convert::history::Fallback` | same | `day` a `Date`, `reason` a `FallbackReason` |
+| `FallbackReason` | `ducat::convert::history::FallbackReason` | same | `NoTable`, `NotYetAvailable`, `Expired`, `Missing`, `NotQuoted` |
+| `QuotedRate` | `ducat::convert::history::QuotedRate` | same | `per: Option<i64>` (below 1 is `Err(InvalidQuote)`), `decimals: Option<u8>` (past 30 `Err(InvalidDecimals)`), as ducat's `RangeError`s |
+| `QuotedTableSpec` | `ducat::convert::history::QuotedTableSpec` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | `base` and the rates' codes are `CurrencyCode`s (`unknown` holds other codes), the timing a `RateInfo` of `Time`s read strictly (see `./convert` `RateInfo`) |
 | `RateHistory` | `ducat::convert::history::RateHistory` | same |  |
-| `RateHistory#lookup` | `RateHistory::lookup` | same |  |
+| `RateHistory#lookup` | `RateHistory::lookup` | same | a `RateLookup` with the days passed over, as ducat |
 | `RateHistory#rate` | `RateProvider::rate` for `RateHistory` | same |  |
-| `RateHistory#tables` | `RateHistory::tables` | same |  |
-| `RateHistoryOptions` | the arguments of `rate_history` | same |  |
-| `RateHistoryOptions#lookback` | the `lookback` argument of `rate_history` | same |  |
-| `RateLookup` | `ducat::convert::history::RateLookup` | same |  |
-| `quotedTable` | `ducat::convert::history::quoted_table` | same |  |
-| `rateFromQuote` | `ducat::convert::history::rate_from_quote` | same |  |
-| `rateHistory` | `ducat::convert::history::rate_history` | same |  |
+| `RateHistory#tables` | `RateHistory::tables` | same | newest first |
+| `RateHistoryOptions` | the arguments of `rate_history` | same | the `lookback` argument |
+| `RateHistoryOptions#lookback` | the `lookback` argument of `rate_history` | same | a `u32`, required (ducat defaults to 4), so ducat's `RangeError` for a negative or fractional one can't happen |
+| `RateLookup` | `ducat::convert::history::RateLookup` | same | `rate: Option<AnyRate>`, `skipped` |
+| `quotedTable` | `ducat::convert::history::quoted_table` | same | the rates' text is trimmed, as ducat; `Err(InvalidQuote)`, `Err(InvalidDecimals)`, `Err(NonPositiveRate)` where ducat throws `RangeError` |
+| `rateFromQuote` | `ducat::convert::history::rate_from_quote` | same | an `AnyRate`; `Err(InvalidQuote)` for a quote that isn't a plain positive decimal or a `per` below 1, ducat's `RangeError`; the `info` is a `RateInfo` (see `./convert` `RateInfo`) |
+| `rateHistory` | `ducat::convert::history::rate_history` | missing | a table without an `as_of` is `Err(MalformedRates)`, a *syntax*-kind error, where ducat throws `RangeError`: the failure differs in kind. Fix: a range-kind variant (an `InvalidDate`-style `Error::UndatedTable`) |
 
 ### `./convert/boc`
 
@@ -381,9 +381,9 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `BankOfCanadaOptions` | `ducat::convert::boc::BankOfCanadaOptions` | same |  |
+| `BankOfCanadaOptions` | `ducat::convert::boc::BankOfCanadaOptions` | same | `Default` (`Publication::Stated`) is ducat's no-options call |
 | `BankOfCanadaOptions#availableAt` | `BankOfCanadaOptions::available_at` | divergent: [publication times without time-zone data](design.md#milestone-5d2-rate-sources) | Toronto 16:30 by the written-out DST rule |
-| `parseBankOfCanadaJson` | `ducat::convert::boc::parse_bank_of_canada_json` | same |  |
+| `parseBankOfCanadaJson` | `ducat::convert::boc::parse_bank_of_canada_json` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | as `./convert/ecb` `parseEcbCsv`; `Err(MalformedRates)` where ducat throws `SyntaxError` |
 
 ### `./convert/fed`
 
@@ -391,7 +391,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `parseFedH10Csv` | `ducat::convert::fed::parse_fed_h10_csv` | same |  |
+| `parseFedH10Csv` | `ducat::convert::fed::parse_fed_h10_csv` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | as `./convert/ecb` `parseEcbCsv` |
 
 ### `./words`
 
@@ -740,9 +740,9 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `BankOfEnglandOptions` | `ducat::convert::boe::BankOfEnglandOptions` | same |  |
-| `BankOfEnglandOptions#decimals` | `BankOfEnglandOptions::decimals` | same | 0 to 30 (`Error::InvalidDecimals`) |
-| `parseBankOfEnglandCsv` | `ducat::convert::boe::parse_bank_of_england_csv` | same |  |
+| `BankOfEnglandOptions` | `ducat::convert::boe::BankOfEnglandOptions` | same | `Default` (4 decimals) is ducat's no-options call |
+| `BankOfEnglandOptions#decimals` | `BankOfEnglandOptions::decimals` | same | a `u8`, 0 to 30 (`Err(InvalidDecimals)`, ducat's `RangeError`) |
+| `parseBankOfEnglandCsv` | `ducat::convert::boe::parse_bank_of_england_csv` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | as `./convert/ecb` `parseEcbCsv` |
 
 ### `./convert/hmrc`
 
@@ -750,9 +750,9 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `HmrcOptions` | `ducat::convert::hmrc::HmrcOptions` | same |  |
-| `HmrcOptions#availableAt` | `HmrcOptions::available_at` | same |  |
-| `parseHmrcMonthlyCsv` | `ducat::convert::hmrc::parse_hmrc_monthly_csv` | same |  |
+| `HmrcOptions` | `ducat::convert::hmrc::HmrcOptions` | same | `Default` (`Publication::Stated`) is ducat's no-options call |
+| `HmrcOptions#availableAt` | `HmrcOptions::available_at` | same | `Stated` is ducat's default (the end of the Wednesday before the month before's penultimate Thursday, UTC: no time zone involved), `Unknown` its `false`, `Given` its function (returning a `Time`) |
+| `parseHmrcMonthlyCsv` | `ducat::convert::hmrc::parse_hmrc_monthly_csv` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | as `./convert/ecb` `parseEcbCsv` |
 
 ### `./convert/fetch`
 
@@ -1340,52 +1340,55 @@ Every `missing` row, grouped into pull requests in the order users would hit the
    held as one) is `UnknownCurrency` even when the target type names it; ducat reads any `defineCurrency`'d code.
    Accept `C::CODE` when the text matches it; `AnyMoney`'s readers, with no registry, could take the known
    `CurrencyCode`s as an argument.
-3. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
+3. **Error kinds that match ducat's** (`ducat`; from the re-audit): `./convert/history` `rateHistory`. A table
+   without an `as_of` is `MalformedRates`, a syntax-kind error, where ducat throws `RangeError`: a range-kind
+   variant makes the failure the same.
+4. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
    `./fn` `hasFraction`, `./fn` `majorPart`, `./fn` `minorPart`. Receipts, cheques and display code ask for the whole
    and fractional parts first; small, exact, no design question.
-4. **Floats out** (**decided**: [explicitly lossy, output-only](design.md#parity-decisions) `to_f64` and `to_minor_f64`, "for display or interop only; never round-trip", never called inside ducat) (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
+5. **Floats out** (**decided**: [explicitly lossy, output-only](design.md#parity-decisions) `to_f64` and `to_minor_f64`, "for display or interop only; never round-trip", never called inside ducat) (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
    `.` `ToMinorNumberOptions#lossy`, `./fn` `toNumber`, `./fn` `toMinorNumber`, `./fixed` `Fixed#toNumber`,
    `./exact` `ExactMoney#toNumber`. Charts and JavaScript interop need an `f64`.
-5. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
+6. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
    `./exact` `ExactMoney#isNegative`, `./exact` `ExactMoney#toJSON`. The predicates are one-liners over `signum`;
    `serde` for exact amounts lets a total be stored before it is rounded.
-6. **`ExactMoney` and `Fixed` gaps** (`ducat`, feature `exact`; from the re-audit): `./exact` `ExactMoney#abs`,
+7. **`ExactMoney` and `Fixed` gaps** (`ducat`, feature `exact`; from the re-audit): `./exact` `ExactMoney#abs`,
    `./exact` `ExactMoney#negate`, `./exact` `ExactMoney#sign`, `./exact` `ExactMoney#percentage`,
    `./exact` `ExactMoney#ratioOf`, `./exact` `ExactMoney#min`, `./exact` `ExactMoney#max` (on `AnyExactMoney`),
    `./exact` `ExactMoney#isExact`, `./exact` `ExactMoney#toMoney`, `./exact` `Money#multiplyExact`,
    `./exact` `multiplyExact`, `./fixed` `Fixed#trimScale` (`InvalidScale` past `MAX_SCALE`, where TS throws
    `RangeError`), `./fixed` `FixedOptions#rounding` (`Fixed::from_f64_at`).
-7. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
+8. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
    `./drizzle/pg` `moneyJson`, `./drizzle/mysql` `moneyJson`, `./drizzle/sqlite` `moneyJson`. Storing money is the
    first thing an application does, and a JSON column is the layout that needs no currency column.
-8. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
+9. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
    `./drizzle/mysql` `scaledMoney`, `./drizzle/sqlite` `scaledMoney`, `./prisma` `ScaleColumnOption`,
    `./prisma` `ScaleColumnOption#scale`, `./drizzle/pg` `moneyMinor`, `./drizzle/mysql` `moneyMinor`,
    `./drizzle/sqlite` `moneyMinor` (the `{ scale }` option of `moneyMinor`, Kysely's `setMoney` and
    `selectMoney`, from ducat#380). A `MinorColumn<C>` with the scale stored beside the units, for money kept at more
    decimals than its currency's exponent.
-9. **Processor tables and wire currency case** (`ducat`; from the re-audit): `./stripe` `STRIPE_RULES`,
+10. **Processor tables and wire currency case** (`ducat`; from the re-audit): `./stripe` `STRIPE_RULES`,
    `./adyen` `ADYEN_EXPONENTS`, `./checkout` `CHECKOUT_RULES`, `./paypal` `PAYPAL_EXPONENTS`,
    `./braintree` `BRAINTREE_EXPONENTS`, `./klarna` `KLARNA_EXPONENTS` (a public `currencies()` iterator: the tables
    are private), `./checkout` `Money#toCheckout`, `./checkout` `toCheckout`, `./paypal` `Money#toPayPal`,
    `./paypal` `toPayPal` (uppercase the code, as ducat does).
-10. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
+11. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
    `./format` `FormatOptions#useGrouping`, `./format` `FormatOptions#minimumIntegerDigits`,
    `./format` `FormatOptions#minimumSignificantDigits`, `./format` `FormatOptions#roundingMode`,
    `./format` `FormatOptions#roundingPriority`, `./format` `FormatOptions#trailingZeroDisplay`. Invoices (`+`/`−`
    signs, no grouping) and price displays (`€5` for whole amounts) use these; all are TR35 number formatting over data
    the crate already has.
-11. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
+12. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
    `ducat-fetch` on `Transport`): `./convert` `snapshots`, `./convert` `snapshotsFrom`, `./convert` `Snapshots`,
    `./convert` `Snapshots#at`, `./convert` `SnapshotOptions`, `./convert` `SnapshotOptions#lookback`,
    `./convert` `SnapshotOptions#max`. Converting at historical dates without loading every table up front.
-12. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
+13. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
    generated names without all its data): no `missing` row; `./words` `amountInWords` is `divergent` until then,
    because the caller must pass `UnitNames`.
-13. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
+14. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
    default, not `no_std`): `./adyen-fx` `AdyenRateOptions`, `./adyen-fx` `AdyenRateOptions#timeZone`. Only reports
    whose TimeZone column switches with daylight saving need it; abbreviations and offsets already work.
-14. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
+15. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
    `./format` `FormatOptions#compactDisplay`, `./format` `FormatOptions#numberingSystem`,
    `./format` `FormatOptions#localeMatcher`. Dashboards (`€1.2M`) and native digits; compact patterns and numbering systems add
    data to every locale, so they want their own features. `localeMatcher` chooses between `Intl`'s algorithms; the
