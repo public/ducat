@@ -639,19 +639,19 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 | `YearFractionOptions` | the `maturity` argument of `ducat::finance::year_fraction` | same | an argument, not an options bag |
 | `YearFractionOptions#maturity` | the `maturity: Option<bool>` argument of [`ducat::finance::year_fraction`](../crates/ducat/src/finance/day_count.rs), `InterestPeriod::maturity` | same | `Error::MaturityRequired` where TS throws |
 | `amortise` | [`Money::amortise`, `AnyMoney::amortise`](../crates/ducat/src/finance/loan.rs) | same | errors: `InvalidPeriods`, `InvalidPerYear`, `InvalidLoan`, `InvalidBalloon`, `NotAMultiple`, `NegativeRate`, `InvalidResidual`, `DateOutOfRange`, `Rounding`, `CurrencyMismatch` (TS: `RangeError`s) |
-| `annualRate` | [`ducat::finance::annual_rate`](../crates/ducat/src/finance/rates.rs) | same | |
+| `annualRate` | [`ducat::finance::annual_rate`](../crates/ducat/src/finance/rates.rs) | same | `Err(InvalidPerYear)` outside 1 to `MAX_PERIODS`, then `Err(RateTooLow)` at or below −1, in ducat's order (its `RangeError`s) |
 | `compound` | [`Money::compound`, `AnyMoney::compound`](../crates/ducat/src/finance/day_count.rs) | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | rounding is required; TS defaults to `'halfExpand'` |
 | `discountedSum` | [`ducat::finance::discounted_sum`](../crates/ducat/src/finance/rates.rs) | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | rounding is required; TS defaults to `'halfExpand'` |
-| `discountedSumExact` | [`ducat::finance::discounted_sum_exact`](../crates/ducat/src/finance/rates.rs) | same | also needs the `exact` feature |
+| `discountedSumExact` | [`ducat::finance::discounted_sum_exact`](../crates/ducat/src/finance/rates.rs) | same | also needs the `exact` feature; `Err(NoFlows)`, `Err(CurrencyMismatch)`, `Err(RateTooLow)` where ducat throws, in its order |
 | `interest` | [`Money::interest`, `AnyMoney::interest`](../crates/ducat/src/finance/day_count.rs) | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | rounding is required; TS defaults to `'halfExpand'` |
 | `interestExact` | [`Money::interest_exact`, `AnyMoney::interest_exact`](../crates/ducat/src/finance/day_count.rs) | same | `exact` feature |
 | `irr` | [`ducat::excel::irr`](../crates/ducat/src/finance/rates.rs) | divergent: [only in `ducat::excel`](design.md#mapping-ducats-entries) | undocumented: a deprecated TS re-export of `./excel`'s `irr`; there's no `ducat::finance::irr` |
 | `npv` | [`ducat::excel::npv`](../crates/ducat/src/finance/rates.rs) | divergent: [only in `ducat::excel`](design.md#mapping-ducats-entries) | undocumented: a deprecated TS re-export of `./excel`'s `npv`; there's no `ducat::finance::npv` (and rounding is required) |
 | `npvExact` | [`ducat::excel::npv_exact`](../crates/ducat/src/finance/rates.rs) | divergent: [only in `ducat::excel`](design.md#mapping-ducats-entries) | undocumented: a deprecated TS re-export of `./excel`'s `npvExact`; there's no `ducat::finance::npv_exact` |
-| `periodicRate` | [`ducat::finance::periodic_rate`](../crates/ducat/src/finance/rates.rs) | same | |
+| `periodicRate` | [`ducat::finance::periodic_rate`](../crates/ducat/src/finance/rates.rs) | same | `Err(InvalidPerYear)` outside 1 to 50,000, `Err(InvalidDigits)` past 100 or past 50,000 with `per_year`, `Err(RateTooLow)`, in ducat's order (its `RangeError`s) |
 | `prorate` | [`Money::prorate`, `AnyMoney::prorate`](../crates/ducat/src/finance/proration.rs) | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | rounding is required; TS defaults to `'halfExpand'`. Errors: `InvalidPeriod`, `OutsidePeriod`, `InvalidInstant`, `Rounding` |
-| `savingsPlan` | [`ducat::finance::savings_plan`](../crates/ducat/src/finance/savings.rs) | same | |
-| `splitPeriod` | [`Money::split_period`, `AnyMoney::split_period`](../crates/ducat/src/finance/proration.rs) | same | |
+| `savingsPlan` | [`ducat::finance::savings_plan`](../crates/ducat/src/finance/savings.rs) | same | errors in ducat's order: `InvalidPeriods`, `InvalidPerYear`, `InvalidSavingsPlan`, `CurrencyMismatch`, `NotAMultiple`, `RateTooLow`, `PowerTooLarge` (ducat's same 2^20-bit limit), `Unsettled`, `DateOutOfRange` (ducat's `RangeError`s and `CurrencyMismatchError`) |
+| `splitPeriod` | [`Money::split_period`, `AnyMoney::split_period`](../crates/ducat/src/finance/proration.rs) | same | errors: `InvalidPeriod`, `InvalidInstant`, `OutsidePeriod` for change points that don't increase inside the period (ducat's `RangeError`s) |
 | `yearFraction` | [`ducat::finance::year_fraction`](../crates/ducat/src/finance/day_count.rs) | same | errors: `EndBeforeStart`, `MaturityRequired` |
 
 ### `./excel`
