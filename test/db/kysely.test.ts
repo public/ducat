@@ -29,6 +29,8 @@ kyselyScenario('Postgres (node-postgres)', Boolean(pgUrl), {
     'CREATE TABLE ducat_kysely_orders (id INTEGER PRIMARY KEY, total_minor BIGINT NOT NULL, ' +
       'price NUMERIC(19,4))',
     'CREATE TABLE ducat_kysely_ledger (id INTEGER PRIMARY KEY, amount_minor BIGINT, currency CHAR(3))',
+    'CREATE TABLE ducat_kysely_scaled (id INTEGER PRIMARY KEY, amount_minor BIGINT, ' +
+      'currency CHAR(3) NOT NULL, amount_scale SMALLINT)',
   ],
   canStream: true,
 });
@@ -45,6 +47,8 @@ kyselyScenario('MySQL (mysql2)', Boolean(mysqlUrl), {
       'amount_minor BIGINT NOT NULL, currency CHAR(3))',
     'CREATE TABLE ducat_kysely_orders (id INT PRIMARY KEY, total_minor BIGINT NOT NULL, price DECIMAL(19,4))',
     'CREATE TABLE ducat_kysely_ledger (id INT PRIMARY KEY, amount_minor BIGINT, currency CHAR(3))',
+    'CREATE TABLE ducat_kysely_scaled (id INT PRIMARY KEY, amount_minor BIGINT, ' +
+      'currency CHAR(3) NOT NULL, amount_scale SMALLINT)',
   ],
   canStream: true,
 });

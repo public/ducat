@@ -4,9 +4,9 @@ import Database from 'better-sqlite3';
 import { and, asc, eq, gt, lt, relations, sql, type SQL } from 'drizzle-orm';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
 import { drizzle as drizzleMysql, type MySql2Database } from 'drizzle-orm/mysql2';
-import { int, mysqlTable } from 'drizzle-orm/mysql-core';
+import { int, mysqlTable, smallint as mysqlSmallint } from 'drizzle-orm/mysql-core';
 import { drizzle as drizzlePg, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { integer as pgInteger, pgTable } from 'drizzle-orm/pg-core';
+import { integer as pgInteger, pgTable, smallint as pgSmallint } from 'drizzle-orm/pg-core';
 import { integer as sqliteInteger, sqliteTable } from 'drizzle-orm/sqlite-core';
 import mysql from 'mysql2/promise';
 import pg from 'pg';
@@ -52,6 +52,49 @@ const sqliteOrders = sqliteTable('ducat_drizzle_orders', {
   price: sqliteColumns.moneyDecimal('EUR')('price'),
   refund: sqliteColumns.moneyJson()('refund'),
 });
+
+// a scale column: amounts above, at and below EUR's scale, beyond 2^53 units too
+const pgScaled = pgTable('ducat_drizzle_scaled', {
+  id: pgInteger('id').primaryKey(),
+  amount: pgColumns.moneyMinor('EUR', { scale: 'amountScale' })('amount_minor'),
+  amountScale: pgSmallint('amount_scale'),
+});
+const mysqlScaled = mysqlTable('ducat_drizzle_scaled', {
+  id: int('id').primaryKey(),
+  amount: mysqlColumns.moneyMinor('EUR', { scale: 'amountScale' })('amount_minor'),
+  amountScale: mysqlSmallint('amount_scale'),
+});
+const sqliteScaled = sqliteTable('ducat_drizzle_scaled', {
+  id: sqliteInteger('id').primaryKey(),
+  amount: sqliteColumns.moneyMinor('EUR', { scale: 'amountScale' })('amount_minor'),
+  amountScale: sqliteInteger('amount_scale'),
+});
+const SCALED_EUROS = [
+  money('1.005', 'EUR', { scale: 3 }),
+  money('0.000000000000000001', 'EUR', { scale: 18 }),
+  money('12.34', 'EUR'),
+  money('-92233720368547758.08', 'EUR'),
+  money('12', 'EUR', { scale: 0 }),
+  money('-0.1', 'EUR', { scale: 1 }),
+  money('9223372036.854775807', 'EUR', { scale: 9 }),
+];
+
+/** The rows of the scaled table: one per amount, then a NULL amount. */
+function scaledRows(): { id: number; amount: Money<'EUR'> | null; amountScale: number | null }[] {
+  return [
+    ...SCALED_EUROS.map((amount, index) => ({ id: index + 1, amount, amountScale: amount.scale })),
+    { id: 100, amount: null, amountScale: null },
+  ];
+}
+
+/** Rows as strings with each amount's scale, so values compare by amount, currency and scale. */
+function showScaled(rows: { id: number; amount: Money<'EUR'> | null }[]): string[] {
+  return rows.map((row) =>
+    row.amount === null
+      ? `${row.id}: null`
+      : `${row.id}: ${row.amount} at scale ${row.amount.scale}`,
+  );
+}
 
 // payments in the currencies at the ends of the exponent range, for the relational queries
 const pgPayments = pgTable('ducat_drizzle_payments', {
@@ -159,6 +202,29 @@ describe('Drizzle column types', () => {
     expectTypeOf<(typeof mysqlOrders.$inferSelect)['price']>().toEqualTypeOf<Money<'EUR'> | null>();
   });
 
+  // oxlint-disable-next-line vitest/expect-expect
+  it('type a scaled column and its read expression as Money<C>', () => {
+    expectTypeOf<(typeof pgScaled.$inferSelect)['amount']>().toEqualTypeOf<Money<'EUR'> | null>();
+    expectTypeOf(pgColumns.scaledMoney(pgScaled.amount)).toEqualTypeOf<SQL<Money<'EUR'> | null>>();
+    // a NOT NULL amount column reads as Money<C>
+    type NotNullRead = ReturnType<typeof sqliteColumns.scaledMoney<typeof sqliteOrders.total>>;
+    expectTypeOf<NotNullRead>().toEqualTypeOf<SQL<Money<'EUR'>>>();
+    expectTypeOf(money('1', 'USD')).not.toExtend<(typeof mysqlScaled.$inferInsert)['amount']>();
+  });
+
+  it('scaledMoney needs a moneyMinor column with a scale column in its table', () => {
+    expect(pgScaled.amount.getSQLType()).toBe('bigint');
+    expect(sqliteScaled.amount.getSQLType()).toBe('integer');
+    expect(() => pgColumns.scaledMoney(pgOrders.total)).toThrow(/needs a moneyMinor column/);
+    expect(() => sqliteColumns.scaledMoney(sqliteOrders.id)).toThrow(/needs a moneyMinor column/);
+    const misnamed = sqliteTable('ducat_drizzle_misnamed', {
+      amount: sqliteColumns.moneyMinor('EUR', { scale: 'scale' })('amount_minor'),
+      amountScale: sqliteInteger('amount_scale'),
+    });
+    expect(() => sqliteColumns.scaledMoney(misnamed.amount)).toThrow(/no column "scale"/);
+    expect(() => mysqlColumns.moneyMinor('XXX1', { scale: 's' })).toThrow(/Unknown currency/);
+  });
+
   it('reject a decimal column that would round the currency, or an unknown currency', () => {
     expect(() => pgColumns.moneyDecimal('KWD', { precision: 19, scale: 2 })).toThrow(/round KWD/);
     expect(() => mysqlColumns.moneyDecimal('CLF', { precision: 19, scale: 3 })).toThrow(RangeError);
@@ -178,7 +244,9 @@ describe('Drizzle on SQLite (better-sqlite3)', () => {
       'CREATE TABLE ducat_drizzle_orders ' +
         '(id INTEGER PRIMARY KEY, total_minor INTEGER NOT NULL, price TEXT, refund TEXT);' +
         'CREATE TABLE ducat_drizzle_payments ' +
-        '(id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL, amount_minor INTEGER NOT NULL, fee TEXT)',
+        '(id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL, amount_minor INTEGER NOT NULL, fee TEXT);' +
+        'CREATE TABLE ducat_drizzle_scaled ' +
+        '(id INTEGER PRIMARY KEY, amount_minor INTEGER, amount_scale SMALLINT)',
     );
     db = drizzleSqlite({ client: connection, schema: sqliteSchema });
   });
@@ -192,6 +260,35 @@ describe('Drizzle on SQLite (better-sqlite3)', () => {
     await db.insert(sqliteOrders).values(rows);
     const readBack = await db.select().from(sqliteOrders).orderBy(asc(sqliteOrders.id));
     expect(show(readBack)).toEqual(show(rows));
+  });
+
+  it("a scale column round-trips amounts above, at and below the currency's scale", async () => {
+    await db.insert(sqliteScaled).values(scaledRows());
+    const readBack = await db
+      .select({ id: sqliteScaled.id, amount: sqliteColumns.scaledMoney(sqliteScaled.amount) })
+      .from(sqliteScaled)
+      .orderBy(asc(sqliteScaled.id));
+    expect(showScaled(readBack)).toEqual(showScaled(scaledRows()));
+  });
+
+  it('a scale column: a NULL scale throws, and so does the column read by itself', () => {
+    connection.exec('INSERT INTO ducat_drizzle_scaled VALUES (101, 5, NULL)');
+    const read = () =>
+      db
+        .select({ amount: sqliteColumns.scaledMoney(sqliteScaled.amount) })
+        .from(sqliteScaled)
+        .where(eq(sqliteScaled.id, 101))
+        .all();
+    expect(read).toThrow(/integer scale from 0 to 1000 in "amountScale", got null/);
+    expect(() => db.select().from(sqliteScaled).where(eq(sqliteScaled.id, 1)).all()).toThrow(
+      /select it with scaledMoney/,
+    );
+    expect(() =>
+      db
+        .insert(sqliteScaled)
+        .values({ id: 102, amount: money('1', 'USD') as never, amountScale: 2 })
+        .run(),
+    ).toThrow(CurrencyMismatchError);
   });
 
   it('round-trips JPY and KWD, the ends of the exponent range', async () => {
@@ -296,6 +393,11 @@ describe('Drizzle on Postgres (node-postgres)', () => {
         'CREATE TABLE ducat_drizzle_payments (id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL, ' +
           'amount_minor BIGINT NOT NULL, fee NUMERIC(19,4))',
       );
+      await client.query('DROP TABLE IF EXISTS ducat_drizzle_scaled');
+      await client.query(
+        'CREATE TABLE ducat_drizzle_scaled ' +
+          '(id INTEGER PRIMARY KEY, amount_minor BIGINT, amount_scale SMALLINT)',
+      );
       db = drizzlePg({ client, schema: pgSchema });
     });
 
@@ -317,6 +419,25 @@ describe('Drizzle on Postgres (node-postgres)', () => {
         (
           await db.select({ id: pgOrders.id }).from(pgOrders).where(where).orderBy(asc(pgOrders.id))
         ).map((row) => Number(row.id)),
+      );
+    });
+
+    it("a scale column round-trips amounts above, at and below the currency's scale", async () => {
+      await db.insert(pgScaled).values(scaledRows());
+      const readBack = await db
+        .select({ id: pgScaled.id, amount: pgColumns.scaledMoney(pgScaled.amount) })
+        .from(pgScaled)
+        .orderBy(asc(pgScaled.id));
+      expect(showScaled(readBack)).toEqual(showScaled(scaledRows()));
+
+      await client.query('INSERT INTO ducat_drizzle_scaled VALUES (101, 5, NULL)');
+      const nullScale = db
+        .select({ amount: pgColumns.scaledMoney(pgScaled.amount) })
+        .from(pgScaled)
+        .where(eq(pgScaled.id, 101));
+      await expect(nullScale).rejects.toThrow(/integer scale from 0 to 1000/);
+      await expect(db.select().from(pgScaled).where(eq(pgScaled.id, 1))).rejects.toThrow(
+        /select it with scaledMoney/,
       );
     });
 
@@ -390,6 +511,11 @@ describe('Drizzle on MySQL (mysql2)', () => {
         'CREATE TABLE ducat_drizzle_orders ' +
           '(id INT PRIMARY KEY, total_minor BIGINT NOT NULL, price DECIMAL(19,4), refund JSON)',
       );
+      await connection.query('DROP TABLE IF EXISTS ducat_drizzle_scaled');
+      await connection.query(
+        'CREATE TABLE ducat_drizzle_scaled ' +
+          '(id INT PRIMARY KEY, amount_minor BIGINT, amount_scale SMALLINT)',
+      );
       db = drizzleMysql({ client: connection });
     });
 
@@ -402,6 +528,25 @@ describe('Drizzle on MySQL (mysql2)', () => {
       await db.insert(mysqlOrders).values(rows);
       const readBack = await db.select().from(mysqlOrders).orderBy(asc(mysqlOrders.id));
       expect(show(readBack)).toEqual(show(rows));
+    });
+
+    it("a scale column round-trips amounts above, at and below the currency's scale", async () => {
+      await db.insert(mysqlScaled).values(scaledRows());
+      const readBack = await db
+        .select({ id: mysqlScaled.id, amount: mysqlColumns.scaledMoney(mysqlScaled.amount) })
+        .from(mysqlScaled)
+        .orderBy(asc(mysqlScaled.id));
+      expect(showScaled(readBack)).toEqual(showScaled(scaledRows()));
+
+      await connection.query('INSERT INTO ducat_drizzle_scaled VALUES (101, 5, NULL)');
+      const nullScale = db
+        .select({ amount: mysqlColumns.scaledMoney(mysqlScaled.amount) })
+        .from(mysqlScaled)
+        .where(eq(mysqlScaled.id, 101));
+      // a Drizzle query is a lazy thenable, not a Promise; Bun's `rejects` needs a real Promise
+      await expect((async () => await nullScale)()).rejects.toThrow(/integer scale from 0 to 1000/);
+      const plain = db.select().from(mysqlScaled).where(eq(mysqlScaled.id, 1));
+      await expect((async () => await plain)()).rejects.toThrow(/select it with scaledMoney/);
     });
 
     it('how MySQL compares string parameters beyond 2^53 (#258)', async () => {
