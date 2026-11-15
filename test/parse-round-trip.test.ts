@@ -60,7 +60,8 @@ const signOf = (amount: Money<string>) => (isZero(amount) ? 0 : isNegative(amoun
 
 describe('parse reads back what format writes', () => {
   it(`covers ${LOCALES.length} locales`, () => {
-    expect(LOCALES.length).toBeGreaterThan(600);
+    // Node and Bun ship full ICU data (658 of these); Deno 2.9.8's smaller build has 382
+    expect(LOCALES.length).toBeGreaterThan('Deno' in globalThis ? 300 : 600);
   });
 
   it.each(LOCALES.map((locale, index) => [locale, index] as const))('%s', (locale, index) => {
