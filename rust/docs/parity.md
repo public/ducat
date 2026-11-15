@@ -181,24 +181,24 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `AllocateOptions` | the `Remainder` argument | same | |
-| `AllocateOptions#remainder` | `ducat::allocate::Remainder` argument of `allocate`/`split` | same | |
-| `InstalmentOptions` | the arguments of `Money::instalments` | same | |
-| `InstalmentOptions#remainder` | `ducat::allocate::InstalmentRemainder` argument | same | |
-| `InstalmentOptions#unit` | the `unit` argument of `Money::instalments` | same | |
-| `Money#allocate` | `Money::allocate`, `AnyMoney::allocate` | same | |
-| `Money#chunk` | `Money::chunk`, `AnyMoney::chunk` | same | |
-| `Money#instalments` | `Money::instalments`, `AnyMoney::instalments` | same | |
-| `Money#schedule` | `Money::schedule`, `AnyMoney::schedule` | same | |
-| `Money#split` | `Money::split`, `AnyMoney::split` | same | |
+| `AllocateOptions` | the `Remainder` argument | same | the `Remainder` argument of `allocate` and `split` (required: ducat defaults to `Largest` for `allocate`, `First` for `split`) |
+| `AllocateOptions#remainder` | `ducat::allocate::Remainder` argument of `allocate`/`split` | same | an enum, so no invalid strategy (ducat throws `RangeError` for one); `FromStr` reads ducat's names |
+| `InstalmentOptions` | the arguments of `Money::instalments` | same | the `unit` and `remainder` arguments |
+| `InstalmentOptions#remainder` | `ducat::allocate::InstalmentRemainder` argument | same | required (ducat defaults to `toFirst`); `Largest` is left out of the enum, as ducat's type leaves it out |
+| `InstalmentOptions#unit` | the `unit` argument of `Money::instalments` | same | an `Option<&Money<C>>`: `Err(NotPositive)` for a unit that isn't positive, `Err(CurrencyMismatch)` on `AnyMoney` (ducat's `RangeError`, `CurrencyMismatchError`). `AnyMoney` checks the unit's currency before the count, ducat after |
+| `Money#allocate` | `Money::allocate`, `AnyMoney::allocate` | same | `Err(NoWeights)`, `Err(ZeroWeights)`, `Err(NegativeWeight)` where ducat throws `RangeError`, and a weight's own reading errors (see `Weight`) |
+| `Money#chunk` | `Money::chunk`, `AnyMoney::chunk` | same | `Err(NotPositive)` for a `max` that isn't positive, then `Err(NegativeTotal)` (ducat's two `RangeError`s, in its order); `Err(CurrencyMismatch)` on `AnyMoney`; `Err(Overflow)` for more tranches than can be held |
+| `Money#instalments` | `Money::instalments`, `AnyMoney::instalments` | same | a count of 0 is `Err(NoWeights)` (ducat's `RangeError`; the `usize` rules out negative and fractional counts); see `InstalmentOptions#unit` |
+| `Money#schedule` | `Money::schedule`, `AnyMoney::schedule` | same | `Err(InvalidSchedule)` for each of ducat's `RangeError`s (two rest tranches, percentages over 100, tranches over the total, a leftover without a rest); `Err(CurrencyMismatch)` on `AnyMoney` for an amount or cap in another currency |
+| `Money#split` | `Money::split`, `AnyMoney::split` | same | a count of 0 is `Err(NoWeights)` (ducat's `RangeError`); `Err(Overflow)` for more parts than can be held |
 | `Remainder` | `ducat::allocate::Remainder` | same | `Largest`, `First`, `Last`, `ToFirst`, `ToLast` |
-| `Tranche` | `ducat::allocate::Tranche` | same | `amount`, `percent`, `percent_capped`, `rest` |
-| `Weight` | `ducat::allocate::Weight`, `IntoWeight` | same | |
-| `allocate` | `Money::allocate` | same | |
-| `chunk` | `Money::chunk` | same | |
-| `instalments` | `Money::instalments` | same | |
-| `schedule` | `Money::schedule` | same | |
-| `split` | `Money::split` | same | |
+| `Tranche` | `ducat::allocate::Tranche` | same | `Tranche::amount`, `percent`, `percent_capped`, `rest`; the percentage is read when the tranche is built |
+| `Weight` | `ducat::allocate::Weight`, `IntoWeight` | divergent: [floats come in only through explicit conversions](design.md#decisions-made-while-building-milestone-1) | integers, `Int` and decimal strings (`Err(NegativeWeight)` for a negative one, as ducat's `RangeError`); ducat also takes a float (`allocate(m, [0.7, 0.3])`, read at its shortest form under the 15-digit rule), which has no `IntoWeight` impl: pass `"0.7"` |
+| `allocate` | `Money::allocate`, `AnyMoney::allocate` | same | as `Money#allocate` |
+| `chunk` | `Money::chunk`, `AnyMoney::chunk` | same | as `Money#chunk` |
+| `instalments` | `Money::instalments`, `AnyMoney::instalments` | same | as `Money#instalments` |
+| `schedule` | `Money::schedule`, `AnyMoney::schedule` | same | as `Money#schedule` |
+| `split` | `Money::split`, `AnyMoney::split` | same | as `Money#split` |
 
 ### `./tax`
 
