@@ -1,14 +1,6 @@
 //! Locale resolution: TR35's fallback, CLDR's likely scripts, and whether a tag has data as
 //! ducat requires it of `Intl`. The expected names are what Node 24 (ICU 78.3) resolves the tags
 //! to, where this build has the locale.
-#![cfg(all(
-    feature = "en",
-    feature = "de",
-    feature = "zh",
-    feature = "sr",
-    feature = "pa",
-    feature = "uz"
-))]
 
 use ducat_format::{Error, Locale};
 

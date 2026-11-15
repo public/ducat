@@ -4,13 +4,6 @@
 //! TypeScript `format` on Node 24.22.2, except a name in a locale with its own currency pattern,
 //! which follows TR35 (ducat's decision; ICU's code garbles some); each is parsed back where
 //! ducat's `parseMoney` reads it.
-#![cfg(all(
-    feature = "en",
-    feature = "fr",
-    feature = "my",
-    feature = "zh",
-    feature = "sr"
-))]
 
 use ducat::{AnyMoney, CurrencyCode};
 use ducat_format::{

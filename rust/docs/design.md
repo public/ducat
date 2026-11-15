@@ -107,7 +107,7 @@ code, with no ICU. ICU4X was the plan; ducat chose otherwise because no ICU4X re
 is pre-1.0 experimental and re-rounds to CLDR's digits. ducat's TypeScript formats through the runtime's `Intl`, whose
 ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped differences from it:
 
-- **Data:** `tests/data.rs` generates `src/data.rs` (numbers, currency symbols, names and formats, unit patterns,
+- **Data:** `tests/it/data.rs` generates `src/data.rs` (numbers, currency symbols, names and formats, unit patterns,
   plural rules, parents, default content and likely scripts of the 430 modern-coverage locales) and `src/icu.rs`
   (ICU 78.3's overrides: fr-CH's group, my's unit pattern) from `data/cldr/` and `data/icu/`, with a drift check, and
   the Cargo feature per language. `data/cldr/README.md` has the one regeneration that updates the spec, `ducat-words`
@@ -144,7 +144,7 @@ root): it still formats, and `Locale::has_data` is false, so parsing refuses it,
 no data for.
 
 A tag is resolved through CLDR's likely scripts first, so a region that writes another script finds that script's
-locale. What Node 24 (ICU 78.3) and `ducat-format` resolve, checked in `tests/locale.rs` and `tests/runtime.rs`:
+locale. What Node 24 (ICU 78.3) and `ducat-format` resolve, checked in `tests/it/locale.rs` and `tests/it/runtime.rs`:
 
 | tag | Node 24 | ducat-format data | has data | |
 |---|---|---|---|---|

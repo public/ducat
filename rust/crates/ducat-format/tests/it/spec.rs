@@ -201,7 +201,9 @@ fn check(op: &str, row: &Value) -> Result<(), String> {
     }
 }
 
-fn main() -> ExitCode {
+/// The whole suite as one test: its counts print with `--nocapture`.
+#[test]
+fn conformance() -> ExitCode {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../spec/vectors");
     let mut paths = Vec::new();
     for area in ["format", "parse"] {
