@@ -45,7 +45,7 @@ use sqlx::postgres::{
 use sqlx::{Decode, Encode, Type, TypeInfo};
 
 pub use composite::{MONEY_TYPE_NAME, MoneyRecord, PgMoney, money_type_sql};
-use composite::{NUMERIC_OID, TEXT_OID, VARCHAR_OID};
+use ducat_sql_core::record::{NUMERIC_OID, TEXT_OID, VARCHAR_OID};
 pub use numeric::{decode_numeric, encode_numeric};
 
 use crate::{Decimal, DecimalColumn, MinorColumn, MoneyValue};

@@ -19,6 +19,7 @@ sqlite = ["sqlx/sqlite"]
 
 [dependencies]
 ducat = { path = "../ducat", default-features = false, features = ["std"] }
+ducat-sql-core = { path = "../ducat-sql-core" }
 sqlx = { version = "0.8", default-features = false }
 
 [dev-dependencies]

@@ -286,6 +286,25 @@ column shapes `./drizzle/mysql` and `./drizzle/sqlite` (through `src/sql.ts`) st
   `macros`). sqlx 0.8.6 and every dependency it resolves to need Rust 1.85 at most, so the crate keeps the
   workspace's MSRV (CI checks it); sqlx 0.9 needs 1.94 and isn't used.
 
+Milestone 7c, part 2, first moved the database-library independent half of `ducat-sqlx` into an internal crate,
+`crates/ducat-sql-core` (`publish = false`, depending on `ducat` alone, no sqlx or diesel), so that `ducat-diesel` shares
+it instead of copying it:
+
+- **What moved:** the exact decimal (units and scale) with its text grammar and `Display`, `to_money` and
+  `to_money_at_exponent`; NUMERIC(p, s) sizes with `check_currency` and `fit` (`toNumeric`); `check_exponent_scale`
+  (`checkIsoScale`); Postgres NUMERIC's base-10000 digits (`numeric::Numeric`, with `to_decimal` and `from_decimal`) and
+  its binary format; the composite's binary record and text forms and `money_type_sql`. Those are the parts that have
+  to be exactly right, and now have one implementation, tested through both crates' suites.
+- **What can't move:** the public types. sqlx's `Type`/`Encode`/`Decode` and diesel's `ToSql`/`FromSql`/`AsExpression`
+  can only be implemented for a crate's own types (the orphan rule), so `Decimal`, `DecimalColumnSize`,
+  `DecimalColumn<C>`, `MinorColumn<C>`, `MoneyValue`, `MoneyRecord`, `PgMoney<M>` and `Error` stay in each crate.
+  `Decimal` and `DecimalColumnSize` are newtypes over the core's (private fields, `Debug` unchanged), each crate's
+  `Error` converts from the core's `Error`, and their docs and examples stay where users read them. `ducat-sqlx`'s
+  public API is unchanged.
+- **Why not duplicate:** the shells left in each crate are mostly documentation; the copied logic would have been the
+  NUMERIC conversion, the decimal grammar, the size checks and the record parser, where a fix in one crate and not the
+  other would make the two disagree on what a column holds.
+
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
 

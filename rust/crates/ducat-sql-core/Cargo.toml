@@ -1,0 +1,12 @@
+[package]
+name = "ducat-sql-core"
+version = "0.0.0"
+description = "The database-library independent core of ducat-sqlx and ducat-diesel: exact decimals, column sizes, Postgres NUMERIC digits and ducat's money composite"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+ducat = { path = "../ducat", default-features = false, features = ["std"] }

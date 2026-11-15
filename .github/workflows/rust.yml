@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
-      - run: cargo test -p ducat-sqlx --locked --no-fail-fast --all-features --test it -- --nocapture postgres:: mysql::
+      - run: 'cargo test -p ducat-sqlx --locked --no-fail-fast --all-features --test it -- --nocapture postgres:: mysql::'
 
   format-features:
     name: ducat-format, one language and root only
@@ -125,6 +125,8 @@ jobs:
       # ureq 3, ureq-proto and zeroize declare 1.85; rustls, ring and webpki-roots less
       - run: cargo +1.85 check -p ducat-fetch --lib --locked
       - run: cargo +1.85 check -p ducat-fetch --lib --locked --no-default-features
+      # ducat-sql-core, shared by ducat-sqlx and ducat-diesel, needs only ducat
+      - run: cargo +1.85 check -p ducat-sql-core --lib --locked
       # sqlx 0.8.6 and its dependencies need 1.85 at most, so ducat-sqlx keeps the workspace's MSRV
       - run: cargo +1.85 check -p ducat-sqlx --lib --locked
       - run: cargo +1.85 check -p ducat-sqlx --lib --locked --no-default-features
@@ -202,7 +204,7 @@ jobs:
       - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features mysql --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features sqlite --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --all-features --locked -- -D warnings
-      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-fetch -p ducat-sqlx --no-deps --locked
+      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-fetch -p ducat-sql-core -p ducat-sqlx --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings
       - run: cargo doc -p ducat-sqlx --no-deps --locked --no-default-features

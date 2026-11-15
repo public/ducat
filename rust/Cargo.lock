@@ -238,10 +238,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ducat-sql-core"
+version = "0.0.0"
+dependencies = [
+ "ducat",
+]
+
+[[package]]
 name = "ducat-sqlx"
 version = "0.0.0"
 dependencies = [
  "ducat",
+ "ducat-sql-core",
  "proptest",
  "sqlx",
  "tokio",
