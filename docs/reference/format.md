@@ -28,6 +28,13 @@ Method: `m.formatToParts(locale?, options?)`.
 
 As `format`, as Intl's parts, for styling the currency symbol separately. It takes `digits` and `rounding` too.
 
+With `currencyDisplay: 'name'`, ICU 78.3 (Node 24) writes a wrong amount in the English locales of euro countries
+(en-NL, en-DE, en-BE, en-FI and ten more): `KWD 1,234.56 Kuwaiti dinars7`. ducat checks each locale once and, where
+the runtime gets it wrong, writes the amount the way the currency format does, followed by the name:
+`1,234.567 Kuwaiti dinars`. On runtimes without the bug, Intl's own text is used. The ICU tickets are
+[ICU-23618](https://unicode-org.atlassian.net/browse/ICU-23618) (the doubled currency symbol, which also
+splits the digits) and [ICU-23514](https://unicode-org.atlassian.net/browse/ICU-23514) (fixed in ICU 80.1).
+
 ```ts
 import { money } from '@ducatjs/money';
 import '@ducatjs/money/format';
