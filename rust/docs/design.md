@@ -67,7 +67,7 @@ fixtures live in `spec/fixtures/`, shared with ducat's tests, and `spec/vectors/
   read as ducat reads the number (at most 15 significant digits unless a safe integer).
 - **Years 0 to 99** are refused in file dates, as ducat's `Date.UTC` check refuses them.
 - **Left out:** Adyen's IANA `timeZone` option (it needs time-zone data; the TimeZone column's abbreviations and
-  offsets are read), and `src/fetch.ts`.
+  offsets are read), and `src/fetch.ts` (milestone 7b's `ducat-fetch`).
 
 Milestone 5e added `ducat::wire` (the default `wire` feature): `GoogleMoney`, `Iso20022Amount`, `MinorUnitAmount`
 and `DineroObject`, plain structs with conversions to and from `Money` and `AnyMoney`, and with `serde` each in its
@@ -128,6 +128,63 @@ ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped di
 - **Conformance:** the core runner delegates `format.money`, `parse.money` and `parse.detect` to `ducat-format`'s own
   spec test (2,538, 1,629 and 1,757 rows, all passing, the icu-overrides files included). Its proptests round-trip
   format and parse in every built locale and feed arbitrary tags, options, amounts and text to the public API.
+
+Milestone 7b added ducat's `./convert/fetch` entry (`src/fetch.ts`: `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada`,
+`ECB_URLS`, `ECB_DATA_API`, `BANK_OF_CANADA_URL`, `FetchRatesError`) as its own crate, `ducat-fetch`, the only code
+of the port that touches the network. It reuses `ducat::convert`'s `ecb` and `boc` parsers.
+
+- **Layout:** `crates/ducat-fetch/src/` has `transport.rs` (`Request`, `Response`, the `Transport` trait,
+  `TransportError`), `ecb.rs` and `boc.rs` (the sans-IO core and the blocking fetchers), `error.rs` (`FetchError`,
+  `Feed`) and `ureq.rs` (`UreqTransport`, behind the `ureq` feature). The README is the crate's front page
+  (`#![doc = include_str!]`), with the blocking, own-transport and async examples compiled as doctests.
+- **Sans-IO core:** `ecb_request`, `ecb_range_requests` and `bank_of_canada_request` build the GETs (URL and query,
+  `accept` header) exactly as `fetch.ts` does, checking the options first; `ecb_tables`, `ecb_range_tables` and
+  `bank_of_canada_tables` turn a status and body into `RateTable`s with `fetch.ts`'s rules: the eurofxref file for
+  `history`, `available_at` passed to the ECB parsers (Valet's parser keeps its default, `Stated`, as ducat passes
+  none), the range's two requests (`detail=nodata` for DECIMALS, `detail=dataonly` for the observations, merged by
+  `parse_ecb_sdmx_csv`'s `decimals`), a 404 for the range's data as no tables, and Valet's `recent=1`,
+  `start_date` and `end_date`. `fetch_ecb`, `fetch_ecb_range` and `fetch_bank_of_canada` drive the core through a
+  `&mut impl Transport`; any `FnMut(&str, &[(&str, &str)]) -> Result<Response, TransportError>` is one. There is no
+  async API and no runtime: an async user calls the core around their own client (the README's example).
+- **Errors:** `FetchError` is `#[non_exhaustive]`, `Display` (ducat's messages) and `std::error::Error` (with
+  `source`): `Status { url, status }` is `FetchRatesError`; `Parse { url, source: ducat::Error }` is the
+  `SyntaxError` with ` (from url)`; `Transport { url, source }` is the platform fetch's rejection;
+  `InvalidCurrency`, `StartTooEarly`, `EndBeforeStart` and `EndWithoutStart` are the `RangeError`s ducat throws
+  before any request. `TransportError` has a kind (`Timeout`, `Cancelled`, `Other`) and a boxed source.
+- **Dependencies:** `ducat` (`default-features = false`, features `std`, `ecb`, `boc`); `ureq` 3, optional, the
+  default `ureq` feature, with `default-features = false, features = ["rustls"]`. ureq's `rustls` feature is
+  `rustls-no-provider` (rustls, rustls-pki-types), `_ring` (`rustls/ring`) and `rustls-webpki-roots` (the Mozilla
+  roots compiled in), so rustls's provider is ring, not aws-lc-rs: no cmake, NASM or Go, only `cc` for ring's C and
+  assembly. Not enabled: `gzip` (ureq's default), `brotli`, `charset`, `json`, `cookies`, `native-tls`,
+  `platform-verifier`, `socks-proxy`. No tokio, reqwest or hyper. `cargo tree -p ducat-fetch -e normal` lists 25
+  crates besides the two ducat crates (num-bigint, num-integer and num-traits through ducat; the rest through ureq:
+  base64, http, bytes, itoa, httparse, log, percent-encoding, rustls, rustls-pki-types, rustls-webpki, ring,
+  untrusted, getrandom, libc, cfg-if, once_cell, subtle, zeroize, ureq-proto, utf8-zero, webpki-roots); without
+  `ureq`, only ducat's. ureq 3.5, ureq-proto and zeroize declare Rust 1.85 and the rest less, so the crate keeps the
+  workspace's MSRV, 1.85.
+- **Divergences from ducat:**
+  - `signal`, `timeout` and `fetch` aren't options: cancellation and timeouts are the transport's, and the transport
+    replaces `fetch`. `UreqTransport::new()` has ducat's 30-second default, as ureq's `timeout_global` (connection
+    to last byte); `with_timeout(None)` is `timeout: 0`; `from_agent` takes the caller's `ureq::Agent`. ducat's
+    `RangeError` for a negative or non-finite timeout can't arise (`Duration`).
+  - `fetchEcbRange` starts both requests at once and aborts the other when one fails; `fetch_ecb_range` makes them
+    one after the other, the series first, and doesn't make the second when the first fails. When both fail, ducat
+    reports whichever failed first in time; the port reports the series' error.
+  - Days are `ducat::convert::Date`, so ducat's `start must be a date` and `end must be a date` are the caller's
+    `Date` parse error, and a JavaScript `Date`'s UTC day has no counterpart. `history` is the `EcbHistory` enum
+    (`Daily`, `NinetyDays`, `All`) and `ECB_URLS` a struct (`daily`, `ninety_days`, `all`; `'90d'` isn't a Rust
+    name). `availableAt`'s type check (`checkAvailableAt`) is the type system's.
+  - Currencies are `&[&str]` checked as ducat checks them (three ASCII capitals), so a code ducat accepts the port
+    accepts, whether or not ISO 4217 lists it.
+  - The body is read as UTF-8 with replacement characters, as `Response.text()` does. `UreqTransport` limits it to
+    64 MiB by default (`body_limit`; the full SDMX history is about 15 MB): ureq's own default is 10 MB.
+  - No global fetch, so ducat's `No fetch available` error has no counterpart.
+- **Tests:** `tests/fetch.rs` reads the fixtures ducat's fetch tests read (`spec/fixtures/ecb/eurofxref-daily.xml`,
+  `ecb/eurofxref-hist-2d.xml`, `ecb-sdmx/exr-d-nodata.csv`, `ecb-sdmx/exr-d-dataonly.csv`,
+  `boc/fx-rates-daily.json`) in place, through a fake transport that records each request; the URLs and headers are
+  asserted as literals, byte for byte, and were checked against `fetch.ts` run under vitest with a recording fetch.
+  `spec/vectors/` has no fetch area, so there is no spec test; a test fails if one appears. `tests/live.rs` calls the
+  real endpoints through `UreqTransport` and is `#[ignore]`d: CI makes no requests.
 
 ### Coverage
 
@@ -231,7 +288,8 @@ The decisions in "Choices that are expensive to reverse" are the coordinator's, 
    - `ducat` holds core, allocate, tax, math, convert (rates and providers, without fetchers), cash, policy, pricing,
      exact, fixed, finance, excel and the processors, each behind a feature.
    - Separate crates hold heavy or optional data and dependencies: `ducat-words` (amounts in words), `ducat-format`
-     (format and parse, on CLDR's data), `ducat-sqlx`, `ducat-diesel` and `ducat-fetch` (rate fetchers, on reqwest).
+     (format and parse, on CLDR's data), `ducat-sqlx`, `ducat-diesel` and `ducat-fetch` (rate fetchers: sans-IO, with a blocking ureq transport;
+     reqwest was the plan, M7b chose otherwise to need no async runtime).
 8. **The licence is MIT,** as ducat's is.
 
 ## Decisions made while building milestone 1
@@ -305,7 +363,7 @@ lives").
 | `/fixed`, `/fixed/money` | `ducat::fixed::Fixed` | |
 | `/finance`, `/excel` | `finance`, `excel` | the Excel rule applies to `excel` |
 | `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | rates with metadata, providers and `MoneyBag` in `convert` (5d1); the parsers, a feature each, take text and never fetch (5d2) |
-| `/convert/fetch` | `ducat-fetch` | network code only here |
+| `/convert/fetch` | `ducat-fetch` (M7b): `fetch_ecb`, `fetch_ecb_range`, `fetch_bank_of_canada` over a `Transport`, the sans-IO request and table functions, `ECB_URLS`, `ECB_DATA_API`, `BANK_OF_CANADA_URL`, `FetchError`; `UreqTransport` behind the default `ureq` feature | network code only here; timeouts and cancellation are the transport's |
 | `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
 | `/wire` | `wire` (google.type.Money, ISO 20022, minor units, dinero objects) | ported in 5e |
 | `/words/*` | `ducat-words` (6a) | its own interpreter, no ICU |
