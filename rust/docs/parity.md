@@ -527,13 +527,13 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 | TS | Rust | status | note |
 |---|---|---|---|
 | `CryptoCurrencies` | — | not ported: by design (no registry: currencies carry their exponent) | a TS declaration-merging registry |
-| `CryptoCurrencyCode` | `ducat::CurrencyCode::crypto` | same |  |
-| `CryptoUnit` | `ducat::crypto::CryptoUnit` | same |  |
-| `cryptoUnit` | `ducat::crypto::unit` | same |  |
-| `cryptoUnits` | `ducat::crypto::units` | same |  |
+| `CryptoCurrencyCode` | `ducat::CurrencyCode::crypto` | same | a `CurrencyCode` from the table, `Err(UnknownCurrency)` for another code |
+| `CryptoUnit` | `ducat::crypto::CryptoUnit` | same | getters: `code` (with the decimals as its exponent), `decimals`, `name`, `base_unit`, `network`, `contract` |
+| `cryptoUnit` | `ducat::crypto::unit` | same | `None` for a code not in the table, as ducat's `undefined` |
+| `cryptoUnits` | `ducat::crypto::units` | same | an iterator, by code |
 | `defineCryptoCurrencies` | `ducat::CurrencyCode::crypto` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) | a code from the table, nothing registered |
-| `fromBaseUnits` | `Money::from_base_units`, `AnyMoney::from_base_units` | same |  |
-| `toBaseUnits` | `Money::to_base_units`, `AnyMoney::to_base_units` | same |  |
+| `fromBaseUnits` | `Money::from_base_units`, `AnyMoney::from_base_units` | same | text read as ducat reads it (an optional minus, digits, no leading zeros, at most 1000 digits; `Err(Syntax)` where ducat throws `SyntaxError`); a `bigint` or number count is `from_minor`. ducat looks the currency up (`RangeError` for an unknown one); a `CurrencyCode` already carries the exponent |
+| `toBaseUnits` | `Money::to_base_units`, `AnyMoney::to_base_units` | same | an `Int`; `Err(Rounding)` for a fraction of a base unit, where ducat throws `RoundingError` |
 
 ### `./currencies`
 
@@ -541,13 +541,13 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `CurrencySymbolOptions` | the `narrow` argument of `ducat_format::currency_symbol` | same |  |
-| `CurrencySymbolOptions#display` | the `narrow: bool` argument of `currency_symbol` | same |  |
-| `currencyFromNumeric` | `ducat::currencies::currency_from_numeric`, `currency_from_number` | same |  |
+| `CurrencySymbolOptions` | the `narrow` argument of `ducat_format::currency_symbol` | same | `narrow: bool` |
+| `CurrencySymbolOptions#display` | the `narrow: bool` argument of `currency_symbol` | same | `true` for `'narrow'`, `false` for `'symbol'` (ducat's default) |
+| `currencyFromNumeric` | `ducat::currencies::currency_from_numeric`, `currency_from_number` | same | `currency_from_numeric(&str)` (trimmed, one to three ASCII digits) and `currency_from_number(u16)`: `Ok(None)` for a number ISO doesn't assign, as ducat's `undefined`, and `Err(InvalidNumericCode)` for anything else (above 999, not digits), where ducat throws `RangeError` |
 | `currencyName` | `ducat_format::currency_name` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) | TS reads the runtime's `Intl` |
 | `currencySymbol` | `ducat_format::currency_symbol` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) |  |
-| `minorUnit` | `ducat::currencies::minor_unit` | same |  |
-| `numericCode` | `ducat::currencies::numeric_code`, `CurrencyCode::numeric_code` | same |  |
+| `minorUnit` | `ducat::currencies::minor_unit` | same | an `AnyMoney` (`to_decimal()` is ducat's string, `"0.01"`); it takes a `CurrencyCode`, so ducat's `RangeError` for an unknown code is the code's parse error (`UnknownCurrency`) |
+| `numericCode` | `ducat::currencies::numeric_code`, `CurrencyCode::numeric_code` | same | `None` for a code without one, as ducat's `undefined` |
 
 ### `./territories`
 
@@ -555,12 +555,12 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `TerritoryCurrency` | `ducat::territories::TerritoryCurrency` | same |  |
-| `TerritoryOptions` | `ducat::territories::TerritoryOptions` | same |  |
-| `TerritoryOptions#includeNonTender` | `TerritoryOptions::include_non_tender` | same |  |
-| `TerritoryOptions#on` | `TerritoryOptions::on` | same | a `Date` |
-| `currencyTerritories` | `ducat::territories::currency_territories` | same |  |
-| `territoryCurrencies` | `ducat::territories::territory_currencies` | same |  |
+| `TerritoryCurrency` | `ducat::territories::TerritoryCurrency` | same | `currency`, `from`, `to` (`Option<&str>`), `tender` |
+| `TerritoryOptions` | `ducat::territories::TerritoryOptions` | same | `Default` is ducat's no-options call |
+| `TerritoryOptions#includeNonTender` | `TerritoryOptions::include_non_tender` | same | `false` by default, as ducat |
+| `TerritoryOptions#on` | `TerritoryOptions::on` | same | an `Option<&str>`, checked only for its `YYYY-MM-DD` shape and compared as text, as ducat: `Err(InvalidDate)` where ducat throws `RangeError` |
+| `currencyTerritories` | `ducat::territories::currency_territories` | same | in code order; `Err(InvalidDate)` as `TerritoryOptions#on` |
+| `territoryCurrencies` | `ducat::territories::territory_currencies` | same | an unknown territory gives an empty list, as ducat; `Err(InvalidDate)` as `TerritoryOptions#on` |
 
 ### `./historic`
 
@@ -569,12 +569,12 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 | TS | Rust | status | note |
 |---|---|---|---|
 | `HistoricCurrencies` | — | not ported: by design (no registry: currencies carry their exponent) | a TS declaration-merging registry |
-| `HistoricCurrency` | `ducat::historic::HistoricCurrency` | same |  |
-| `HistoricCurrencyCode` | `ducat::CurrencyCode::historic` | same |  |
-| `ISO_4217_LIST_THREE_PUBLISHED` | `ducat::historic::LIST_THREE_PUBLISHED` | same |  |
+| `HistoricCurrency` | `ducat::historic::HistoricCurrency` | same | getters: `code`, `exponent`, `name`, `numeric`, `withdrawn` |
+| `HistoricCurrencyCode` | `ducat::CurrencyCode::historic` | same | a `CurrencyCode` from the table, `Err(UnknownCurrency)` for another code |
+| `ISO_4217_LIST_THREE_PUBLISHED` | `ducat::historic::LIST_THREE_PUBLISHED` | same | the same date |
 | `defineHistoricCurrencies` | `ducat::CurrencyCode::historic` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) |  |
-| `historicCurrencies` | `ducat::historic::currencies` | same |  |
-| `historicCurrency` | `ducat::historic::currency` | same |  |
+| `historicCurrencies` | `ducat::historic::currencies` | same | an iterator, by code |
+| `historicCurrency` | `ducat::historic::currency` | same | `None` for a code not in the table, as ducat's `undefined` |
 
 ### `./finance`
 
