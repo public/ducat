@@ -43,6 +43,12 @@ export interface Schema {
     total_minor: MinorUnitsColumn;
     price: DecimalAmountColumn | null;
   };
+  ducat_kysely_scaled: {
+    id: number;
+    amount_minor: MinorUnitsColumn | null;
+    currency: string;
+    amount_scale: number | null;
+  };
 }
 
 /** The same tables with camelCase names, for CamelCasePlugin. */
@@ -58,7 +64,7 @@ interface CamelSchema {
 export interface ScenarioOptions {
   readonly dialect: MoneyDialect;
   readonly makeDialect: () => Dialect;
-  /** CREATE TABLE statements for ducat_kysely_payments and ducat_kysely_orders. */
+  /** CREATE TABLE statements for each table in `Schema`. */
   readonly ddl: readonly string[];
   /** Whether the driver supports `stream()` (Postgres through pg-cursor). */
   readonly canStream: boolean;
@@ -72,6 +78,18 @@ const PAYMENTS = [
   { id: 5, order_id: 3, amount: money('-92233720368547758.08', 'EUR') },
   { id: 6, order_id: 3, amount: money('1.234', 'KWD') },
   { id: 7, order_id: 3, amount: money('90071992547409.93', 'EUR') },
+];
+// amounts above, at and below their currency's scale, beyond 2^53 units too
+const SCALED = [
+  money('1.005', 'EUR', { scale: 3 }),
+  money('12.34', 'EUR'),
+  money('12', 'EUR', { scale: 0 }),
+  money('-0.1', 'EUR', { scale: 1 }),
+  money('1.5', 'JPY', { scale: 1 }),
+  money('1000', 'JPY'),
+  money('0.000001', 'KWD', { scale: 6 }),
+  money('-120', 'KWD', { scale: 0 }),
+  money('9223372036.854775807', 'EUR', { scale: 9 }),
 ];
 const ORDERS = [
   { id: 1, total: money('12.34', 'EUR'), price: money('9.99', 'EUR') },
@@ -104,6 +122,7 @@ export function kyselyScenario(name: string, enabled: boolean, options: Scenario
       await db.schema.dropTable('ducat_kysely_payments').ifExists().execute();
       await db.schema.dropTable('ducat_kysely_orders').ifExists().execute();
       await db.schema.dropTable('ducat_kysely_ledger').ifExists().execute();
+      await db.schema.dropTable('ducat_kysely_scaled').ifExists().execute();
       for (const statement of ddl) {
         await sql.raw(statement).execute(db);
       }
@@ -156,6 +175,74 @@ export function kyselyScenario(name: string, enabled: boolean, options: Scenario
       expect(orders.map((row) => [String(row.total), String(row.price)])).toEqual(
         ORDERS.map((row) => [String(row.total), String(row.price)]),
       );
+    });
+
+    it("a scale column round-trips Money above, at and below its currency's scale", async () => {
+      const scale = { scale: 'amount_scale' } as const;
+      await db
+        .insertInto('ducat_kysely_scaled')
+        .values(
+          SCALED.map((amount, index) => ({
+            id: index + 1,
+            ...setMoney(amount, 'amount_minor', 'currency', scale),
+          })),
+        )
+        .execute();
+
+      const rows = await db
+        .selectFrom('ducat_kysely_scaled')
+        .select((eb) => helpers.selectMoney(eb, 'amount_minor', 'currency', scale).as('amount'))
+        .orderBy('id')
+        .execute();
+      expectTypeOf(rows[0]!.amount).toEqualTypeOf<Money<CurrencyInput> | null>();
+      expect(rows).toHaveLength(SCALED.length);
+      expect(rows.every((row, index) => identical(row.amount!, SCALED[index]!))).toBe(true);
+
+      // with a fixed currency, and a qualified scale column
+      const euros = await db
+        .selectFrom('ducat_kysely_scaled as s')
+        .select((eb) =>
+          helpers
+            .selectMoney(eb, 's.amount_minor', fixed('EUR'), { scale: 's.amount_scale' })
+            .as('amount'),
+        )
+        .where('s.currency', '=', 'EUR')
+        .orderBy('s.id')
+        .execute();
+      expectTypeOf(euros[0]!.amount).toEqualTypeOf<Money<'EUR'> | null>();
+      expect(euros.map((row) => String(row.amount))).toEqual(
+        SCALED.filter((amount) => amount.currency === 'EUR').map(String),
+      );
+    });
+
+    it('a scale column: a NULL amount reads as null, and a NULL scale throws', async () => {
+      await db
+        .insertInto('ducat_kysely_scaled')
+        .values([
+          { id: 100, amount_minor: null, currency: 'EUR', amount_scale: null },
+          { id: 101, amount_minor: '5', currency: 'EUR', amount_scale: null },
+        ])
+        .execute();
+      const read = (id: number) =>
+        db
+          .selectFrom('ducat_kysely_scaled')
+          .select((eb) =>
+            helpers
+              .selectMoney(eb, 'amount_minor', 'currency', { scale: 'amount_scale' })
+              .as('amount'),
+          )
+          .where('id', '=', id)
+          .executeTakeFirstOrThrow();
+
+      expect((await read(100)).amount).toBeNull();
+      await expect(read(101)).rejects.toThrow(/integer scale from 0 to 1000 in "scale", got null/);
+      // without the scale column, the same units read at the currency's exponent
+      const atIso = await db
+        .selectFrom('ducat_kysely_scaled')
+        .select((eb) => helpers.selectMoney(eb, 'amount_minor', 'currency').as('amount'))
+        .where('id', '=', 101)
+        .executeTakeFirstOrThrow();
+      expect(String(atIso.amount)).toBe('0.05 EUR');
     });
 
     it('leaves raw columns raw: only helper expressions are Money', async () => {

@@ -129,7 +129,7 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
       expect(readBack).toEqual(AMOUNTS.map(([decimal]) => decimal));
     });
 
-    it('a scale column round-trips minor units at any scale, beyond 2^53 too', async () => {
+    it("a scale column round-trips minor units above, at and below the currency's scale", async () => {
       const { bigint, text } = database.types;
       await database.execute(`DROP TABLE IF EXISTS ${tableName('scaled')}`);
       await database.execute(
@@ -143,6 +143,11 @@ export function databaseSuite(name: string, options: SuiteOptions): void {
         money('1.5', 'JPY', { scale: 1 }),
         money('1.2345', 'KWD', { scale: 4 }),
         money('9223372036.854775807', 'EUR', { scale: 9 }),
+        // below the currency's scale
+        money('12', 'EUR', { scale: 0 }),
+        money('-0.1', 'EUR', { scale: 1 }),
+        money('1.2', 'KWD', { scale: 1 }),
+        money('-92233720368547758.08', 'EUR'),
       ];
       const placeholders = [1, 2, 3, 4]
         .map((position) => database.placeholder(position))

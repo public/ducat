@@ -7,6 +7,17 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
+### Added
+
+- A scale column for the Drizzle and Kysely minor-unit helpers, with the same `{ scale }` option
+  and semantics as the Prisma helpers' `toMinorColumns` and `minorMoneyField`: Kysely's `setMoney`
+  and `selectMoney` take `{ scale: 'amount_scale' }`, and Drizzle's `moneyMinor` takes
+  `{ scale: 'amountScale' }`, read with the new `scaledMoney(table.column)` in `/drizzle/pg`,
+  `/drizzle/mysql` and `/drizzle/sqlite`. Any scale then round-trips, above or below the
+  currency's; a NULL scale throws on read. Without the option nothing changes: minor-unit columns
+  still refuse values off the currency's scale. `ScaleColumnOption` is exported from `/kysely` and
+  the Drizzle entries too (#327).
+
 ### Fixed
 
 - `format` and `formatToParts` with `currencyDisplay: 'name'` no longer garble the amount in the

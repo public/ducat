@@ -10,6 +10,7 @@ import {
   jsonToDriver,
   minorFromDriver,
   minorToDriver,
+  readScale,
 } from '../src/sql.js';
 import { runs } from './fc-config.js';
 
@@ -152,5 +153,28 @@ describe('JSON', () => {
     expect(() => jsonFromDriver(42, 'EUR')).toThrow(TypeError);
     expect(() => jsonFromDriver(null, 'EUR')).toThrow(TypeError);
     expect(() => jsonFromDriver({ amount: 1, currency: 'EUR' }, 'EUR')).toThrow(TypeError);
+  });
+});
+
+describe('readScale', () => {
+  it('reads a scale column as a number or a bigint, from 0 to 1000', () => {
+    expect(readScale(0, 's')).toBe(0);
+    expect(readScale(2n, 's')).toBe(2);
+    expect(readScale(1000, 's')).toBe(1000);
+  });
+
+  it('throws for NULL, a negative, fractional or too large scale, and anything else', () => {
+    for (const value of [null, undefined, -1, 1.5, 1001, 1001n, NaN, '2', {}]) {
+      expect(() => readScale(value, 'amount_scale')).toThrow(
+        /integer scale from 0 to 1000 in "amount_scale"/,
+      );
+    }
+  });
+
+  it('a stored scale pairs with units at that scale: above, at and below the currency', () => {
+    expect(String(minorFromDriver('1005', 'EUR', readScale(3, 's')))).toBe('1.005 EUR');
+    expect(String(minorFromDriver('12', 'EUR', readScale(0n, 's')))).toBe('12 EUR');
+    expect(minorToDriver(money('1.005', 'EUR', { scale: 3 }), 'EUR', 3)).toBe(1005n);
+    expect(minorToDriver(money('12', 'EUR', { scale: 0 }), undefined, 0)).toBe(12n);
   });
 });
