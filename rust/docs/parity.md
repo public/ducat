@@ -86,8 +86,8 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `Money#toDecimal` | `Money::to_decimal`, `AnyMoney::to_decimal` | same | |
 | `Money#toJSON` | `serde::Serialize` (feature `serde`) | divergent: [serde writes the value's scale, reads at the exponent](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#toMinor` | `Money::to_minor`, `AnyMoney::to_minor` | same | `Int`, not a `bigint`; `Err(Rounding)` for digits below the minor unit, where ducat throws `RoundingError` |
-| `Money#toMinorNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
-| `Money#toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `Money#toMinorNumber` | `Money::to_minor_f64`, `AnyMoney::to_minor_f64` | same | [floats only go out](design.md#parity-decisions): for display or interop only, never round-trip, never called inside ducat (`rust/clippy.toml`). `Err(Rounding)` for digits below the minor unit (`RoundingError`), then `Err(Overflow)` past 2^53 − 1 minor units without `lossy` (`RangeError`); bit for bit as ducat |
+| `Money#toNumber` | `Money::to_f64`, `AnyMoney::to_f64` | same | [floats only go out](design.md#parity-decisions): for display or interop only, never round-trip, never called inside ducat (`rust/clippy.toml`). The exact decimal rounded once to the nearest double, bit for bit as ducat's `Number` of it: ±infinity beyond the largest double, −0.0 for a negative amount below the smallest subnormal |
 | `Money#toScale` | `Money::to_scale`, `AnyMoney::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the `Rounding` is required (ducat defaults to halfExpand); a scale past `MAX_SCALE` is `Err(InvalidScale)` where ducat throws `RangeError`, and the `u16` rules out negative and fractional scales |
 | `Money#toScaledUnits` | `Money::units`, `AnyMoney::units` | same | an `&Int`, ducat's `bigint` |
 | `Money#toString` | `Display` (`12.34 EUR`) | same | exact, as ducat's `formatScaled(minor, scale) + ' ' + currency`: the amount at its own scale, a space and the code. Format flags (`{:.1}`) are ignored rather than rounding, so there is nothing Rust-only |
@@ -104,8 +104,8 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `RoundingInput` | `ducat::RoundingInput` | same | `Mode` or `Policy` |
 | `RoundingMode` | `ducat::Rounding` | same | an enum, so no invalid mode (ducat throws `RangeError` for one, when rounding is needed); `FromStr` reads ducat's strings (`"halfEven"`) |
 | `RoundingPolicy` | [`ducat::policy::RoundingPolicy`](../crates/ducat/src/policy.rs) | same | |
-| `ToMinorNumberOptions` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
-| `ToMinorNumberOptions#lossy` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `ToMinorNumberOptions` | `ToMinorF64Options` | same | the options argument of `to_minor_f64`; `Default` is ducat's `{}` |
+| `ToMinorNumberOptions#lossy` | `ToMinorF64Options::lossy` | same | `false` by default, as ducat: the nearest double (ties to even, ±infinity) instead of `Err(Overflow)` past 2^53 − 1; `Err(Rounding)` still comes first |
 | `assertCurrency` | `TryFrom<AnyMoney> for Money<C>` | same | `Err(CurrencyMismatch)` where ducat throws `CurrencyMismatchError`; ducat's `TypeError` for a non-`Money` has no Rust counterpart |
 | `currencyExponent` | `ducat::CurrencyCode::exponent` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) | on a `CurrencyCode` value; a string goes through `parse::<CurrencyCode>()?` first (`Err(UnknownCurrency)` where ducat throws `RangeError`). A custom currency carries its exponent: there is no `defineCurrency`'d code to look up by string |
 | `defineCurrency` | `ducat::CurrencyCode::custom`, `ducat::define_currency!` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) | |
@@ -158,8 +158,8 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `subtract` | `Sub`; `AnyMoney::checked_sub` | same | as `.` `Money#subtract` |
 | `toDecimal` | `Money::to_decimal`, `AnyMoney::to_decimal` | same |  |
 | `toMinor` | `Money::to_minor`, `AnyMoney::to_minor` | same | as `.` `Money#toMinor` |
-| `toMinorNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
-| `toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `toMinorNumber` | `Money::to_minor_f64`, `AnyMoney::to_minor_f64` | same | as `.` `Money#toMinorNumber` |
+| `toNumber` | `Money::to_f64`, `AnyMoney::to_f64` | same | as `.` `Money#toNumber` |
 | `toScale` | `Money::to_scale`, `AnyMoney::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | as `.` `Money#toScale`: the `Rounding` is required |
 | `toScaledUnits` | `Money::units`, `AnyMoney::units` | same | an `&Int` |
 
@@ -835,7 +835,7 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | `ExactMoney#subtract` | `Sub`; `AnyExactMoney::checked_sub` | same | as add: `checked_sub` takes only `&AnyExactMoney` |
 | `ExactMoney#toJSON` | — | missing | no `serde` impls for `ExactMoney` |
 | `ExactMoney#toMoney` | `ExactMoney::to_money`, `AnyExactMoney::to_money` | missing | Err(InvalidScale) for minimum_scale > MAX_SCALE and for a value needing > MAX_SCALE places |
-| `ExactMoney#toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `ExactMoney#toNumber` | `ExactMoney::to_f64`, `AnyExactMoney::to_f64` | same | [floats only go out](design.md#parity-decisions): for display or interop only, never round-trip, never called inside ducat. ducat's algorithm step for step (a 65- or 66-bit quotient with a sticky bit, rounded once, scaled by powers of two), so the bits match, subnormals included |
 | `ExactMoney#toString` | `Display` | same | |
 | `ExactTaxBreakdown` | `ducat::exact::ExactTaxBreakdown` | same | |
 | `Money#addTaxExact` | `ExactMoney::add_tax` (via `Money::exact`) | same | |
@@ -956,7 +956,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | `Fixed#sign` | `Fixed::signum` | same | |
 | `Fixed#subtract` | `Sub` | same | |
 | `Fixed#toJSON` | `serde::Serialize` for `Fixed` | same | |
-| `Fixed#toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `Fixed#toNumber` | `Fixed::to_f64` | same | as `.` `Money#toNumber` |
 | `Fixed#toRatio` | `Fixed::to_ratio` | same | |
 | `Fixed#toScale` | `Fixed::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the mode is required |
 | `Fixed#toScaled` | `Fixed::units`, `Fixed::scale` | same | |
@@ -1324,15 +1324,12 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 Re-exports every plugin entry and `./fn`'s functions, and installs every plugin's methods on `Money`; its rows are in those entries. Rust has no prototype to install on: every method is there once its feature is on ([mapping](design.md#mapping-ducats-entries)).
 
 ## Missing, in proposed order
-Every `missing` row, grouped into pull requests in the order users would hit them. Five pieces are decided (marked
+Every `missing` row, grouped into pull requests in the order users would hit them. Four pieces are decided (marked
 **decided**); the rest are proposals.
 
 4. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
    `./fn` `hasFraction`, `./fn` `majorPart`, `./fn` `minorPart`. Receipts, cheques and display code ask for the whole
    and fractional parts first; small, exact, no design question.
-5. **Floats out** (**decided**: [explicitly lossy, output-only](design.md#parity-decisions) `to_f64` and `to_minor_f64`, "for display or interop only; never round-trip", never called inside ducat) (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
-   `.` `ToMinorNumberOptions#lossy`, `./fn` `toNumber`, `./fn` `toMinorNumber`, `./fixed` `Fixed#toNumber`,
-   `./exact` `ExactMoney#toNumber`. Charts and JavaScript interop need an `f64`.
 6. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
    `./exact` `ExactMoney#isNegative`, `./exact` `ExactMoney#toJSON`. The predicates are one-liners over `signum`;
    `serde` for exact amounts lets a total be stored before it is rounded.

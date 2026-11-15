@@ -12,6 +12,7 @@ mod currency_data_api;
 mod exact_rate;
 mod excel;
 mod finance;
+mod floats;
 mod iso_table;
 mod order;
 mod policy;
