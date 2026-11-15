@@ -9,6 +9,7 @@ mod common;
 mod allocate;
 mod currency_data;
 mod currency_data_api;
+mod exact;
 mod exact_rate;
 mod excel;
 mod finance;
