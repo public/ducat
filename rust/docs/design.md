@@ -289,10 +289,11 @@ lives").
 10. **Features:** `std`, `iso` (the marker types; the ISO table itself is always present, since `CurrencyCode`
     parsing needs it) and `serde`, all default.
 11. **Dependencies:** num-bigint, num-integer and num-traits (without default features, so the core stays
-    `no_std + alloc`), for amounts beyond `i128`; serde, optional. For tests, `serde_json` (reading the vectors) and
-    `proptest`. The
-    runner checks the vector files' structure by hand rather than with a JSON Schema crate. proptest needs Rust
-    1.88, so the 1.85 MSRV applies to the library, not its tests.
+    `no_std + alloc`), for amounts beyond `i128`; serde, optional; proptest (without default features, with `std`),
+    optional, for the `proptest` feature (`ducat::testing`, which re-exports it). For tests, `serde_json` (reading the
+    vectors) and `proptest`. The runner checks the vector files' structure by hand rather than with a JSON Schema
+    crate. proptest needs Rust 1.88, so the 1.85 MSRV applies to the library without the `proptest` feature, not to
+    the feature or the tests. The feature implies `std`; `no_std` builds without it are unaffected.
 
 ## Mapping ducat's entries
 | ducat entry | ducat-rs | notes |
@@ -313,7 +314,8 @@ lives").
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
 | `/zod`, `/valibot` | not ported | TypeScript schema libraries; `serde` covers validation |
 | `/prisma`, `/drizzle/*`, `/kysely`, `/typeorm`, `/pg` | `ducat-sqlx`, `ducat-diesel` | Postgres numeric and bigint, plus the composite type |
-| `/testing`, `/testing/{vitest,jest,arbitraries}` | a `proptest` feature: `Arbitrary` strategies and assertion helpers | |
+| `/testing`, `/testing/arbitraries` | `ducat::testing`, behind the `proptest` feature (M7a): strategies and `Arbitrary` impls for `Int`, `Money<C>`, `AnyMoney`, `CurrencyCode`, `Rounding`, `RoundingPolicy` and `Ratio`, with `CurrencyOptions` and `MoneyOptions` for ducat's arbitrary options; `assert_money_eq!` and `assert_identical!` | `==` is already by value, so `moneyEquality` needs no counterpart; `Display` and `Debug` already print `12.34 EUR` |
+| `/testing/vitest`, `/testing/jest` | not ported | they install matchers, an equality tester and a snapshot serializer on a JavaScript runner's `expect`; Rust's test harness has no `expect` to extend, and the macros, `==`, `Debug` and `Display` cover what they add |
 | `/all`, plugins, `extendMoney` | not ported | Rust uses extension traits; there's no prototype to install on |
 
 ## Where it lives, and the conformance runner

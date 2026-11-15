@@ -130,7 +130,14 @@ impl FromStr for Rounding {
 }
 
 /// What every rounding parameter accepts: a [`Rounding`] mode, or (with the `policy` feature) a
-/// [`RoundingPolicy`](crate::policy::RoundingPolicy), as ducat's `RoundingInput`.
+#[cfg_attr(
+    feature = "policy",
+    doc = "[`RoundingPolicy`](crate::policy::RoundingPolicy), as ducat's `RoundingInput`."
+)]
+#[cfg_attr(
+    not(feature = "policy"),
+    doc = "`RoundingPolicy`, as ducat's `RoundingInput`."
+)]
 ///
 /// Parameters take `impl Into<RoundingInput>`, so a mode, a policy or a reference to a policy goes
 /// straight in. A mode rounds to the scale the operation names (the amount's own, or the
