@@ -4,7 +4,7 @@ A trimmed copy of the Unicode Common Locale Data Repository's JSON release. Thre
 
 - the format and parse oracle, `scripts/gen-format-vectors.py`, which writes `spec/vectors/format/`
   and `spec/vectors/parse/`;
-- ducat-words' generator, `rust/crates/ducat-words/tests/cldr.rs` (plural rules, digit grouping
+- ducat-words' generator, `rust/crates/ducat-words/tests/it/cldr.rs` (plural rules, digit grouping
   and the word for "and" of its seven languages);
 - ducat-format's generator, `rust/crates/ducat-format/tests/data.rs` (its locale tables and Cargo
   features).
@@ -55,7 +55,7 @@ describe different CLDR releases:
 3. `python3 scripts/gen-format-vectors.py` rewrites the format and parse vectors (and their
    provenance's `cldr`). Review every changed row: a change is CLDR's, and ducat's Intl must carry
    the same release, so update the files' `referenceRuntime` and the runtime it names in step 6.
-4. `DUCAT_REGENERATE=1 cargo test -p ducat-words --test cldr` and
+4. `DUCAT_REGENERATE=1 cargo test -p ducat-words --test it cldr::` and
    `DUCAT_REGENERATE=1 cargo test -p ducat-format --test data` (from `rust/`) rewrite the Rust
    tables; the same commands without `DUCAT_REGENERATE` are the drift checks CI runs.
    If the shape of the tables changed (`src/tables.rs`, or what `src/data.rs` must define), the

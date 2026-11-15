@@ -36,7 +36,9 @@ fn check(rules: &CompiledRules, rule_set: &str, row: &Value) -> Result<bool, Str
     Ok(got == want)
 }
 
-fn main() -> ExitCode {
+/// The whole suite as one test: its counts print with `--nocapture`.
+#[test]
+fn conformance() -> ExitCode {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../spec/vectors/words");
     let mut paths: Vec<PathBuf> = std::fs::read_dir(&dir)
         .expect("spec/vectors/words")
