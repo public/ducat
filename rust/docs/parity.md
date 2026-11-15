@@ -471,24 +471,24 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `DineroObject` | `ducat::wire::DineroObject` | same |  |
-| `GoogleMoney` | `ducat::wire::GoogleMoney` | same |  |
+| `DineroObject` | `ducat::wire::DineroObject` | same | `amount` an `i64`, `precision` a `u16`; serde in dinero.js's JSON shape |
+| `GoogleMoney` | `ducat::wire::GoogleMoney` | same | `units` an `i64`, `nanos` an `i32`, checked by `GoogleMoney::new` (`Err(InvalidWire)`, ducat's `RangeError`); serde writes ProtoJSON (`units` a string) |
 | `GoogleMoneyInput` | `ducat::wire::GoogleMoney` (serde reads numbers or strings) | divergent: [no 2^53 rule for `units`](design.md#milestone-5e-wire-formats) |  |
-| `Iso20022Amount` | `ducat::wire::Iso20022Amount` | same |  |
-| `Iso20022WriteOptions` | the arguments of `Money::to_iso20022_amount` | same |  |
-| `Iso20022WriteOptions#scale` | the `scale` argument of `to_iso20022_amount` | same |  |
-| `MinorUnitAmount` | `ducat::wire::MinorUnitAmount` | same |  |
-| `WireReadOptions` | `ducat::wire::WireReadOptions` | same |  |
-| `WireReadOptions#rounding` | `WireReadOptions::rounding` | same |  |
-| `WireReadOptions#scale` | `WireReadOptions::scale` | same |  |
-| `fromDineroObject` | `Money::from_dinero_object`, `AnyMoney::from_dinero_object` | same |  |
-| `fromGoogleMoney` | `Money::from_google_money`, `AnyMoney::from_google_money` | same |  |
-| `fromIso20022Amount` | `Money::from_iso20022_amount`, `AnyMoney::from_iso20022_amount` | same |  |
-| `fromMinorUnits` | `Money::from_minor_units`, `AnyMoney::from_minor_units` | same |  |
-| `toDineroObject` | `Money::to_dinero_object` | same |  |
-| `toGoogleMoney` | `Money::to_google_money` | same |  |
-| `toIso20022Amount` | `Money::to_iso20022_amount` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
-| `toMinorUnits` | `Money::to_minor_units` | same |  |
+| `Iso20022Amount` | `ducat::wire::Iso20022Amount` | same | `ccy` and `value`; serde as `{ "Ccy", "value" }` |
+| `Iso20022WriteOptions` | the arguments of `Money::to_iso20022_amount` | same | the `scale: Option<u16>` argument |
+| `Iso20022WriteOptions#scale` | the `scale` argument of `to_iso20022_amount` | same | `None` is the currency's exponent; above 5 is `Err(InvalidWire)` where ducat throws `RangeError` (the `u16` rules out negative and fractional scales) |
+| `MinorUnitAmount` | `ducat::wire::MinorUnitAmount` | same | `value` an `i64` |
+| `WireReadOptions` | `ducat::wire::WireReadOptions` | same | `Default` is ducat's no-options call |
+| `WireReadOptions#rounding` | `WireReadOptions::rounding` | same | `Rounding::Unnecessary` by default, as ducat (`Err(Rounding)` where it throws `RoundingError`) |
+| `WireReadOptions#scale` | `WireReadOptions::scale` | same | an `Option<u16>`: `Err(InvalidScale)` past `MAX_SCALE`, ducat's `RangeError` |
+| `fromDineroObject` | `Money::from_dinero_object`, `AnyMoney::from_dinero_object` | missing | ISO and withdrawn codes only: a custom currency is `Err(UnknownCurrency)` even for a typed `Money<C>` whose code it is, where ducat reads any `defineCurrency`'d code (`{ amount: 1, currency: 'POINTS', precision: 0 }`). Otherwise the same failures: `Err(InvalidScale)` past 1000 (`RangeError`); the `i64` amount rules out ducat's fractional and unsafe numbers. Withdrawn codes need no `defineHistoricCurrencies` (no registry). Fix: the `Money<C>` readers accept `C`'s own code |
+| `fromGoogleMoney` | `Money::from_google_money`, `AnyMoney::from_google_money` | missing | ISO and withdrawn codes only, as `fromDineroObject`: ducat reads a `defineCurrency`'d three-letter code (`BTC`). Otherwise the same checks and failures: `Err(InvalidWire)` for a malformed value (`RangeError`), `Err(UnknownCurrency)`, `Err(Rounding)` (`RoundingError`). Fix as `fromDineroObject` |
+| `fromIso20022Amount` | `Money::from_iso20022_amount`, `AnyMoney::from_iso20022_amount` | missing | a non-monetary code (XAU) that ducat reads once `defineCurrency`'d is `Err(UnknownCurrency)` even for a typed `Money<C>` in it. Otherwise the same checks in ducat's order: `Err(Syntax)` for the code's shape or the text (`SyntaxError`), `Err(UnknownCurrency)` for a code that isn't ISO 4217 (`RangeError`), `Err(InvalidWire)` for a negative amount (`RangeError`), `Err(Rounding)`. Fix as `fromDineroObject` |
+| `fromMinorUnits` | `Money::from_minor_units`, `AnyMoney::from_minor_units` | missing | ISO and withdrawn codes only, as `fromDineroObject`: ducat reads `{ value: 1, currency: 'BTC' }` once `BTC` is defined. The `i64` value is read whatever its size, where ducat refuses an unsafe *number* (`RangeError`) but reads any `bigint`, as the processors' readers ([integer amounts](design.md#milestone-5c-payment-processors)). Fix as `fromDineroObject` |
+| `toDineroObject` | `Money::to_dinero_object`, `AnyMoney::to_dinero_object` | same | `Err(Overflow)` past 2^53 − 1 units, where ducat throws `RangeError`; any currency, custom ones included, as ducat |
+| `toGoogleMoney` | `Money::to_google_money`, `AnyMoney::to_google_money` | same | the rounding is an argument (`Rounding::Unnecessary` is ducat's default). The same failures in ducat's order: `Err(InvalidWire)` for a code that isn't three capital letters (`RangeError`), `Err(Rounding)` past 9 decimals (`RoundingError`), `Err(Overflow)` past int64 units (`RangeError`) |
+| `toIso20022Amount` | `Money::to_iso20022_amount`, `AnyMoney::to_iso20022_amount` | same | the rounding is an argument (`Rounding::Unnecessary` is ducat's default, which doesn't round). The same failures in ducat's order: `Err(UnknownCurrency)` for a code that isn't ISO 4217 (`RangeError`), `Err(InvalidWire)` for a scale above 5, `Err(Rounding)`, `Err(InvalidWire)` for a negative amount, `Err(Overflow)` past 18 digits (`RangeError`s) |
+| `toMinorUnits` | `Money::to_minor_units`, `AnyMoney::to_minor_units` | same | the rounding is an argument (ducat's default `'unnecessary'`); `Err(Rounding)`, then `Err(Overflow)` past 2^53 − 1 (ducat's `RoundingError`, `RangeError`) |
 
 ### `./context`
 
@@ -1334,52 +1334,58 @@ Every `missing` row, grouped into pull requests in the order users would hit the
    `AnyMoney` and `ExactMoney` (an `Err` for `lo > hi` and across currencies, where `Ord::clamp` panics; `Money`
    bounds for `ExactMoney`), and a public `Rate::check_validity(&self, at) -> Result<(), Error>`. `multiply_at` is
    not needed: `multiply` with a scaled `RoundingPolicy` already rounds once into another scale.
-2. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
+2. **Wire readers for custom currencies** (`ducat`, feature `wire`; from the re-audit): `./wire` `fromMinorUnits`,
+   `./wire` `fromDineroObject`, `./wire` `fromGoogleMoney`, `./wire` `fromIso20022Amount`. The `Money<C>` readers
+   resolve the code as ISO or withdrawn only, so a `define_currency!` currency (or a non-monetary code such as XAU
+   held as one) is `UnknownCurrency` even when the target type names it; ducat reads any `defineCurrency`'d code.
+   Accept `C::CODE` when the text matches it; `AnyMoney`'s readers, with no registry, could take the known
+   `CurrencyCode`s as an argument.
+3. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
    `./fn` `hasFraction`, `./fn` `majorPart`, `./fn` `minorPart`. Receipts, cheques and display code ask for the whole
    and fractional parts first; small, exact, no design question.
-3. **Floats out** (**decided**: [explicitly lossy, output-only](design.md#parity-decisions) `to_f64` and `to_minor_f64`, "for display or interop only; never round-trip", never called inside ducat) (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
+4. **Floats out** (**decided**: [explicitly lossy, output-only](design.md#parity-decisions) `to_f64` and `to_minor_f64`, "for display or interop only; never round-trip", never called inside ducat) (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
    `.` `ToMinorNumberOptions#lossy`, `./fn` `toNumber`, `./fn` `toMinorNumber`, `./fixed` `Fixed#toNumber`,
    `./exact` `ExactMoney#toNumber`. Charts and JavaScript interop need an `f64`.
-4. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
+5. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
    `./exact` `ExactMoney#isNegative`, `./exact` `ExactMoney#toJSON`. The predicates are one-liners over `signum`;
    `serde` for exact amounts lets a total be stored before it is rounded.
-5. **`ExactMoney` and `Fixed` gaps** (`ducat`, feature `exact`; from the re-audit): `./exact` `ExactMoney#abs`,
+6. **`ExactMoney` and `Fixed` gaps** (`ducat`, feature `exact`; from the re-audit): `./exact` `ExactMoney#abs`,
    `./exact` `ExactMoney#negate`, `./exact` `ExactMoney#sign`, `./exact` `ExactMoney#percentage`,
    `./exact` `ExactMoney#ratioOf`, `./exact` `ExactMoney#min`, `./exact` `ExactMoney#max` (on `AnyExactMoney`),
    `./exact` `ExactMoney#isExact`, `./exact` `ExactMoney#toMoney`, `./exact` `Money#multiplyExact`,
    `./exact` `multiplyExact`, `./fixed` `Fixed#trimScale` (`InvalidScale` past `MAX_SCALE`, where TS throws
    `RangeError`), `./fixed` `FixedOptions#rounding` (`Fixed::from_f64_at`).
-6. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
+7. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
    `./drizzle/pg` `moneyJson`, `./drizzle/mysql` `moneyJson`, `./drizzle/sqlite` `moneyJson`. Storing money is the
    first thing an application does, and a JSON column is the layout that needs no currency column.
-7. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
+8. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
    `./drizzle/mysql` `scaledMoney`, `./drizzle/sqlite` `scaledMoney`, `./prisma` `ScaleColumnOption`,
    `./prisma` `ScaleColumnOption#scale`, `./drizzle/pg` `moneyMinor`, `./drizzle/mysql` `moneyMinor`,
    `./drizzle/sqlite` `moneyMinor` (the `{ scale }` option of `moneyMinor`, Kysely's `setMoney` and
    `selectMoney`, from ducat#380). A `MinorColumn<C>` with the scale stored beside the units, for money kept at more
    decimals than its currency's exponent.
-8. **Processor tables and wire currency case** (`ducat`; from the re-audit): `./stripe` `STRIPE_RULES`,
+9. **Processor tables and wire currency case** (`ducat`; from the re-audit): `./stripe` `STRIPE_RULES`,
    `./adyen` `ADYEN_EXPONENTS`, `./checkout` `CHECKOUT_RULES`, `./paypal` `PAYPAL_EXPONENTS`,
    `./braintree` `BRAINTREE_EXPONENTS`, `./klarna` `KLARNA_EXPONENTS` (a public `currencies()` iterator: the tables
    are private), `./checkout` `Money#toCheckout`, `./checkout` `toCheckout`, `./paypal` `Money#toPayPal`,
    `./paypal` `toPayPal` (uppercase the code, as ducat does).
-9. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
+10. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
    `./format` `FormatOptions#useGrouping`, `./format` `FormatOptions#minimumIntegerDigits`,
    `./format` `FormatOptions#minimumSignificantDigits`, `./format` `FormatOptions#roundingMode`,
    `./format` `FormatOptions#roundingPriority`, `./format` `FormatOptions#trailingZeroDisplay`. Invoices (`+`/`−`
    signs, no grouping) and price displays (`€5` for whole amounts) use these; all are TR35 number formatting over data
    the crate already has.
-10. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
+11. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
    `ducat-fetch` on `Transport`): `./convert` `snapshots`, `./convert` `snapshotsFrom`, `./convert` `Snapshots`,
    `./convert` `Snapshots#at`, `./convert` `SnapshotOptions`, `./convert` `SnapshotOptions#lookback`,
    `./convert` `SnapshotOptions#max`. Converting at historical dates without loading every table up front.
-11. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
+12. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
    generated names without all its data): no `missing` row; `./words` `amountInWords` is `divergent` until then,
    because the caller must pass `UnitNames`.
-12. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
+13. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
    default, not `no_std`): `./adyen-fx` `AdyenRateOptions`, `./adyen-fx` `AdyenRateOptions#timeZone`. Only reports
    whose TimeZone column switches with daylight saving need it; abbreviations and offsets already work.
-13. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
+14. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
    `./format` `FormatOptions#compactDisplay`, `./format` `FormatOptions#numberingSystem`,
    `./format` `FormatOptions#localeMatcher`. Dashboards (`€1.2M`) and native digits; compact patterns and numbering systems add
    data to every locale, so they want their own features. `localeMatcher` chooses between `Intl`'s algorithms; the
