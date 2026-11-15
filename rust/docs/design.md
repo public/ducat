@@ -395,6 +395,24 @@ Known gaps, to close later:
 
 The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.
 
+## Parity decisions
+
+Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this section, and decisions it records:
+
+- **Single rounding into another scale.** TS's public kernel `multiplyByRatioAtScale(minor, ratio, scaleShift, mode)`
+  isn't public in Rust; the same single rounding is `Money::multiply` (or `AnyMoney::multiply`) with a
+  `RoundingPolicy` that carries the target scale (`RoundingPolicy::new(mode).with_scale(s)?`), which rounds the product
+  once, at `s`. `multiply` then `to_scale` would round twice.
+- **Two functions, not a `usage` field.** `currencyDigits(code, { usage })` is two functions: `cash_digits` for
+  `'cash'` and `CurrencyCode::exponent` for `'standard'`.
+- **Money is always formatted as its own currency.** `ducat-format` takes no `style`, `currency`, `unit` or
+  `unitDisplay`: a `Money` formats as a currency amount in its own currency; formatting another code or style would
+  drop or misstate the currency.
+- **Floats only go out.** "No floats in arithmetic" still holds. `to_f64` and `to_minor_f64` (TS `toNumber`,
+  `toMinorNumber` with `lossy`, `Fixed#toNumber`, `ExactMoney#toNumber`) will be ported as explicitly lossy,
+  output-only conversions, documented "for display or interop only; never round-trip", and never called inside
+  ducat.
+
 ## Goals
 - **The same answers as ducat,** checked by running ducat's conformance vectors, pinned to a ducat commit. The suite's
   implemented/skipped counts per operation are the measurable definition of "the feature set".

@@ -58,7 +58,7 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `Money` | `ducat::Money<C>`, `ducat::AnyMoney` | same | |
 | `Money#abs` | `Money::abs`, `AnyMoney::abs` | same | |
 | `Money#add` | `Add` for `Money<C>`; `AnyMoney::checked_add` | same | |
-| `Money#clamp` | `Ord::clamp` for `Money<C>` | same | `AnyMoney` has none (no `Ord` across currencies) |
+| `Money#clamp` | — | missing | `Ord::clamp` panics for `lo > hi` where TS throws `RangeError`; `AnyMoney` has none. The fix adds `clamp(&self, lo, hi) -> Result` on `Money<C>` and `AnyMoney` (an `Err` for `lo > hi`, `CurrencyMismatch` across currencies) |
 | `Money#compare` | `Ord::cmp` for `Money<C>`; `AnyMoney::compare` | same | |
 | `Money#currency` | `Money::currency`, `AnyMoney::currency` | same | |
 | `Money#divide` | `Money::divide`, `AnyMoney::divide` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the `Rounding` is required |
@@ -86,8 +86,8 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `Money#toDecimal` | `Money::to_decimal`, `AnyMoney::to_decimal` | same | |
 | `Money#toJSON` | `serde::Serialize` (feature `serde`) | divergent: [serde writes the value's scale, reads at the exponent](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#toMinor` | `Money::to_minor`, `AnyMoney::to_minor` | same | |
-| `Money#toMinorNumber` | — | missing | a JavaScript number of minor units; the Rust equivalent would be an `i64` (`to_minor` gives `Int`, then `Int::to_i64`) |
-| `Money#toNumber` | — | missing | a float for charts and display; no `f64` out of money exists |
+| `Money#toMinorNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `Money#toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `Money#toScale` | `Money::to_scale`, `AnyMoney::to_scale` | same | the `Rounding` is required |
 | `Money#toScaledUnits` | `Money::units`, `AnyMoney::units` | same | |
 | `Money#toString` | `Display` (`12.34 EUR`) | divergent: [display is exact](design.md#decisions-made-while-building-milestone-1) | |
@@ -104,8 +104,8 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `RoundingInput` | `ducat::RoundingInput` | same | `Mode` or `Policy` |
 | `RoundingMode` | `ducat::Rounding` | same | |
 | `RoundingPolicy` | [`ducat::policy::RoundingPolicy`](../crates/ducat/src/policy.rs) | same | |
-| `ToMinorNumberOptions` | — | missing | with `toMinorNumber` |
-| `ToMinorNumberOptions#lossy` | — | missing | with `toMinorNumber` |
+| `ToMinorNumberOptions` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `ToMinorNumberOptions#lossy` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `assertCurrency` | `TryFrom<AnyMoney> for Money<C>` | same | |
 | `currencyExponent` | `ducat::CurrencyCode::exponent` | same | |
 | `defineCurrency` | `ducat::CurrencyCode::custom`, `ducat::define_currency!` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) | |
@@ -134,7 +134,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `Money#toString` | `Display` | divergent: [display is exact](design.md#decisions-made-while-building-milestone-1) | |
 | `abs` | `Money::abs` | same | methods, not free functions |
 | `add` | `Add`; `AnyMoney::checked_add` | same | |
-| `clamp` | `Ord::clamp` | same | `Money<C>` only |
+| `clamp` | — | missing | as `Money#clamp` |
 | `compare` | `Ord::cmp`; `AnyMoney::compare` | same | |
 | `divide` | `Money::divide` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `equals` | `==` | same | |
@@ -158,8 +158,8 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `subtract` | `Sub`; `AnyMoney::checked_sub` | same | |
 | `toDecimal` | `Money::to_decimal` | same | |
 | `toMinor` | `Money::to_minor` | same | |
-| `toMinorNumber` | — | missing | as `Money#toMinorNumber` |
-| `toNumber` | — | missing | as `Money#toNumber` |
+| `toMinorNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
+| `toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `toScale` | `Money::to_scale` | same | |
 | `toScaledUnits` | `Money::units` | same | |
 
@@ -269,7 +269,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `Rate#andThen` | `Rate::and_then`, `AnyRate::and_then` | same |  |
 | `Rate#asOf` | `RateInfo::as_of` (`Rate::info`) | same |  |
 | `Rate#availableAt` | `RateInfo::available_at` | same |  |
-| `Rate#checkValidity` | `Rate::is_expired`; `ConvertOptions::valid_at` in `convert_with` | divergent: [no clock: times are arguments](design.md#milestone-5d1-rates-providers-and-bags) | no public throwing check: the check is private, inside `convert_with` |
+| `Rate#checkValidity` | `Rate::is_expired`; `ConvertOptions::valid_at` in `convert_with` | missing | TS has a public throwing check; Rust's is private, inside `convert_with` (`Rate::is_expired` only answers yes/no). The fix adds `Rate::check_validity(&self, at) -> Result<(), Error>` |
 | `Rate#convert` | `Rate::convert`, `convert_with`, `AnyRate::convert` | same |  |
 | `Rate#derivedFrom` | `Rate::derived_from` | same |  |
 | `Rate#from` | `Rate::from` | same |  |
@@ -326,7 +326,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `identity` | `ducat::convert::identity` | same |  |
 | `impliedRate` | `Rate::implied` | same |  |
 | `isRate` | — | not ported: by design (the type system) |  |
-| `multiplyByRatioAtScale` | — | not ported: by design (one private rounding kernel) | `Money::multiply` with a `Ratio` does the same |
+| `multiplyByRatioAtScale` | `Money::multiply`, `AnyMoney::multiply` with a scaled `RoundingPolicy` | divergent: [single rounding into another scale](design.md#parity-decisions) | `Money::multiply`/`AnyMoney::multiply` with a `RoundingPolicy::new(mode).with_scale(s)?` rounds the product once at scale `s` (money.rs `multiply`: "with a rounding policy to the policy's scale"); the minor-unit kernel on `Int` isn't public |
 | `rateFromJSON` | `serde::Deserialize` for `Rate`/`AnyRate` | same |  |
 | `rateOf` | `ducat::convert::rate_of`, `Rate::lookup` | same | `Error::RateUnavailable` |
 | `rateTable` | `RateTable::with_base`, `RateTable::from_rates` | same |  |
@@ -717,21 +717,21 @@ Not ported ([mapping](design.md#mapping-ducats-entries)): `Money<Eur>` already b
 |---|---|---|---|
 | `PriceEnding` | `ducat::pricing::PriceEnding` | same | |
 | `PriceEndingOptions` | `PriceEnding::new` | same | |
-| `PriceEndingOptions#ending` | `PriceEnding::ending` | same | |
-| `PriceEndingOptions#rounding` | `PriceEnding::mode` | same | |
-| `PriceEndingOptions#step` | `PriceEnding::step` | same | |
+| `PriceEndingOptions#ending` | `PriceEnding::ending` | same | the `ending` argument of `PriceEnding::new` (`&str`; write an integer as `"0"`); `PriceEnding::ending` reads it back as a `Ratio` |
+| `PriceEndingOptions#rounding` | `PriceEnding::mode` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the `mode` argument of `PriceEnding::new` (required; TS defaults to `'ceil'`), read back with `PriceEnding::mode` |
+| `PriceEndingOptions#step` | `PriceEnding::step` | same | the `step` argument of `PriceEnding::new` (required: TS defaults to 1); `PriceEnding::step` reads it back |
 | `PriceTier` | `ducat::pricing::PriceTier` | same | |
 | `Quantity` | `ducat::Int` / `Ratio` quantity argument of `TieredPricing::price` | same | |
-| `TierLine` | `ducat::pricing::TierLine` | same | |
+| `TierLine` | `ducat::pricing::TierLine` | same | `ducat::pricing::TierLine`; `quantity` is a `Ratio`, not TS's decimal string |
 | `TieredPrice` | `ducat::pricing::TieredPrice` | same | |
 | `TieredPriceOptions` | `ducat::pricing::TieredPricing` | same | |
 | `TieredPriceOptions#beyondLastTier` | `TieredPricing::with_beyond_last_tier`, `BeyondLastTier` | same | |
 | `TieredPriceOptions#chargeQuantity` | `TieredPricing::with_charge_quantity` | same | |
 | `TieredPriceOptions#mode` | `TieredPricing::mode`, `TiersMode` | same | |
-| `TieredPriceOptions#rounding` | `TieredPricing::rounding` | same | |
+| `TieredPriceOptions#rounding` | `TieredPricing::rounding` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the `rounding` argument of `TieredPricing::new` (required; TS defaults to halfExpand) |
 | `TieredPriceOptions#tiers` | `TieredPricing::tiers` | same | |
 | `TiersMode` | `ducat::pricing::TiersMode` | same | |
-| `priceEnding` | `Money::with_price_ending`, `AnyMoney::with_price_ending` | same | |
+| `priceEnding` | `Money::with_price_ending`, `AnyMoney::with_price_ending` | same | `PriceEnding::new` builds the rule; `Money::with_price_ending` / `AnyMoney::with_price_ending` apply it |
 | `tieredPrice` | `TieredPricing::price` | same | |
 
 ### `./convert/boe`
@@ -803,51 +803,51 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | TS | Rust | status | note |
 |---|---|---|---|
 | `ExactMoney` | `ducat::exact::ExactMoney<C>`, `AnyExactMoney` | same | |
-| `ExactMoney#abs` | `ExactMoney::abs` | same | `AnyExactMoney` has none |
-| `ExactMoney#add` | `Add` for `ExactMoney<C>`; `AnyExactMoney::checked_add` | same | |
-| `ExactMoney#clamp` | `Ord::clamp` | same | `ExactMoney<C>` only; TS also takes a `Money` bound |
+| `ExactMoney#abs` | `ExactMoney::abs` | missing | add `AnyExactMoney::abs` |
+| `ExactMoney#add` | `Add` for `ExactMoney<C>`; `AnyExactMoney::checked_add` | same | `AnyExactMoney::checked_add` takes only `&AnyExactMoney`: call `.exact()` on an `AnyMoney` first |
+| `ExactMoney#clamp` | — | missing | `Ord::clamp` panics for `lo > hi` where TS throws `RangeError`, and TS also takes `Money` bounds; the fix adds a `Result`-returning `clamp` taking exact or `Money` bounds |
 | `ExactMoney#compare` | `Ord`; `AnyExactMoney::compare` | same | |
 | `ExactMoney#convert` | `ducat::convert::Rate::convert_exact`, `AnyRate::convert_exact` | same | on the rate, not the money |
 | `ExactMoney#currency` | `ExactMoney::currency` | same | |
 | `ExactMoney#den` | `ExactMoney::value` → `Ratio::denom` | same | |
 | `ExactMoney#denominator` | `ExactMoney::value` → `Ratio::denom` | same | |
 | `ExactMoney#divide` | `ExactMoney::divide` | same | |
-| `ExactMoney#equals` | `==` | same | |
-| `ExactMoney#greaterThan` | `>` | same | |
-| `ExactMoney#greaterThanOrEqual` | `>=` | same | |
-| `ExactMoney#isExact` | `ExactMoney::is_exact` | same | |
+| `ExactMoney#equals` | `==` | same | `==` within one type only; call `.exact()` on a `Money` first; `AnyExactMoney` in different currencies is `!=` |
+| `ExactMoney#greaterThan` | `>` | same | `>`; `compare(..)?.is_gt()`; call `.exact()` on a `Money` first |
+| `ExactMoney#greaterThanOrEqual` | `>=` | same | `>=`; `compare(..)?.is_ge()`; call `.exact()` on a `Money` first |
+| `ExactMoney#isExact` | `ExactMoney::is_exact` | missing | return `Result` with Err(InvalidScale) for scale > MAX_SCALE; add `AnyExactMoney::is_exact` |
 | `ExactMoney#isNegative` | — | missing | `signum() < 0` is the workaround |
 | `ExactMoney#isPositive` | — | missing | `signum() > 0` |
 | `ExactMoney#isZero` | — | missing | `signum() == 0` |
-| `ExactMoney#lessThan` | `<` | same | |
-| `ExactMoney#lessThanOrEqual` | `<=` | same | |
-| `ExactMoney#max` | `Ord::max` | same | |
-| `ExactMoney#min` | `Ord::min` | same | |
+| `ExactMoney#lessThan` | `<` | same | `<` (typed); `AnyExactMoney::compare(..)?.is_lt()`; call `.exact()` on a `Money` first |
+| `ExactMoney#lessThanOrEqual` | `<=` | same | `<=`; `compare(..)?.is_le()`; call `.exact()` on a `Money` first |
+| `ExactMoney#max` | `Ord::max` | missing | add `AnyExactMoney::max` (Err CurrencyMismatch) |
+| `ExactMoney#min` | `Ord::min` | missing | add `AnyExactMoney::min` (Err CurrencyMismatch), variadic via iterator |
 | `ExactMoney#multiply` | `ExactMoney::multiply` | same | |
-| `ExactMoney#negate` | `Neg` | same | |
+| `ExactMoney#negate` | `Neg` | missing | add `Neg` for `AnyExactMoney` |
 | `ExactMoney#num` | `ExactMoney::value` → `Ratio::numer` | same | |
 | `ExactMoney#numerator` | `ExactMoney::value` → `Ratio::numer` | same | |
-| `ExactMoney#percentage` | `ExactMoney::percentage` | same | |
-| `ExactMoney#ratioOf` | `ExactMoney::ratio_of` | same | |
+| `ExactMoney#percentage` | `ExactMoney::percentage` | missing | add `AnyExactMoney::percentage` |
+| `ExactMoney#ratioOf` | `ExactMoney::ratio_of` | missing | add `AnyExactMoney::ratio_of` (Err CurrencyMismatch/DivisionByZero); accept a `Money` total |
 | `ExactMoney#round` | `ExactMoney::round`, `AnyExactMoney::round` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
-| `ExactMoney#roundWithResidual` | `ExactMoney::round_with_residual` | same | |
-| `ExactMoney#sign` | `ExactMoney::signum` | same | |
-| `ExactMoney#subtract` | `Sub`; `AnyExactMoney::checked_sub` | same | |
+| `ExactMoney#roundWithResidual` | `ExactMoney::round_with_residual` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the mode is required |
+| `ExactMoney#sign` | `ExactMoney::signum` | missing | add `AnyExactMoney::signum` |
+| `ExactMoney#subtract` | `Sub`; `AnyExactMoney::checked_sub` | same | as add: `checked_sub` takes only `&AnyExactMoney` |
 | `ExactMoney#toJSON` | — | missing | no `serde` impls for `ExactMoney` |
-| `ExactMoney#toMoney` | `ExactMoney::to_money`, `AnyExactMoney::to_money` | same | |
-| `ExactMoney#toNumber` | — | missing | as `Money#toNumber` |
+| `ExactMoney#toMoney` | `ExactMoney::to_money`, `AnyExactMoney::to_money` | missing | Err(InvalidScale) for minimum_scale > MAX_SCALE and for a value needing > MAX_SCALE places |
+| `ExactMoney#toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `ExactMoney#toString` | `Display` | same | |
 | `ExactTaxBreakdown` | `ducat::exact::ExactTaxBreakdown` | same | |
 | `Money#addTaxExact` | `ExactMoney::add_tax` (via `Money::exact`) | same | |
 | `Money#exact` | `Money::exact`, `AnyMoney::exact` | same | |
 | `Money#extractTaxExact` | `ExactMoney::extract_tax` | same | |
-| `Money#multiplyExact` | `Money::multiply_exact`, `AnyMoney::multiply_exact` | same | |
+| `Money#multiplyExact` | `Money::multiply_exact`, `AnyMoney::multiply_exact` | missing | Err(InvalidScale) (not Rounding) when the product needs > MAX_SCALE places |
 | `Rounded` | `ducat::exact::Rounded` | same | `value`, `residual` |
 | `addTaxExact` | `ExactMoney::add_tax` | same | |
 | `exact` | `Money::exact` | same | |
 | `extractTaxExact` | `ExactMoney::extract_tax` | same | |
 | `isExactMoney` | — | not ported: by design (the type system) | |
-| `multiplyExact` | `Money::multiply_exact` | same | |
+| `multiplyExact` | `Money::multiply_exact` | missing | as Money#multiplyExact |
 | `sumExact` | `Sum` for `ExactMoney<C>` | same | `AnyExactMoney` folds with `checked_add` |
 
 ### `./policy`
@@ -862,7 +862,7 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | `RoundingPolicyOptions#rounding` | `RoundingPolicy::with_mode` | same | |
 | `RoundingPolicyOptions#scale` | `RoundingPolicy::with_scale` | same | |
 | `assertScale` | `Money::check_policy`, `AnyMoney::check_policy` | same | `Error::OffPolicy` |
-| `isoPolicy` | `RoundingPolicy::new` (the currency's exponent, no increment) | same | |
+| `isoPolicy` | `RoundingPolicy::new` (the currency's exponent, no increment) | same | `RoundingPolicy::ISO` (= `new(Rounding::HalfExpand)`, also `Default`) |
 | `roundingPolicy` | `RoundingPolicy::new` and its builder | same | |
 
 ### `./cash`
@@ -883,14 +883,14 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | `CurrencyDigitsOptions` | `ducat::cash::CashOptions` | same | |
 | `CurrencyDigitsOptions#country` | `CashOptions::country` | same | |
 | `CurrencyDigitsOptions#includeUnverified` | `CashOptions::verified_only` | same | |
-| `CurrencyDigitsOptions#usage` | `cash_digits` (`'cash'`), `cldr_cash(..).digits` (`'standard'`) | same | two functions instead of a field |
+| `CurrencyDigitsOptions#usage` | `ducat::cash_digits`, `CurrencyCode::exponent` | divergent: [two functions, not a `usage` field](design.md#parity-decisions) | `'cash'`: `cash_digits`; `'standard'`: `CurrencyCode::exponent` |
 | `Money#cashRound` | `Money::cash_round`, `AnyMoney::cash_round` | same | |
 | `Money#roundToIncrement` | `Money::round_to_increment`, `AnyMoney::round_to_increment` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `cashPolicy` | `ducat::cash::cash_policy` (with `policy`) | same | |
 | `cashRound` | `Money::cash_round` | same | |
 | `cashRule` | `ducat::cash::cash_rule` | same | |
-| `cashUnit` | `ducat::cash::cash_unit` | same | |
-| `currencyDigits` | `ducat::cash::cash_digits`, `ducat::cash::cldr_cash` | same | `cldr_cash` is Rust-only beside it |
+| `cashUnit` | `ducat::cash::cash_unit` | same | returns an `AnyMoney` at the exponent; `.to_decimal()` gives TS's string |
+| `currencyDigits` | `ducat::cash::cash_digits`, `ducat::cash::cldr_cash` | same | `'cash'`: `cash_digits`; `'standard'` (the default): `CurrencyCode::exponent()`; `cldr_cash` is Rust-only and a different figure (HUF) |
 | `roundToIncrement` | `Money::round_to_increment` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 
 ### `./format`
@@ -901,7 +901,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 |---|---|---|---|
 | `FormatOptions` | `ducat_format::FormatOptions` | same |  |
 | `FormatOptions#compactDisplay` | — | missing | Intl's `compactDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#currency` | — | not ported: by design (the money's own currency is formatted) | ducat sets it from the money; overriding it formats another code |
+| `FormatOptions#currency` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions)) | ducat sets it from the money; overriding it formats another code |
 | `FormatOptions#currencyDisplay` | `FormatOptions::currency_display`, `display` (`CurrencyDisplay`) | same |  |
 | `FormatOptions#currencySign` | `FormatOptions::currency_sign`, `sign` (`CurrencySign`) | same |  |
 | `FormatOptions#digits` | `FormatOptions::digits` | same |  |
@@ -918,10 +918,10 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | `FormatOptions#roundingMode` | — | missing | Intl's `roundingMode`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#roundingPriority` | — | missing | Intl's `roundingPriority`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#signDisplay` | — | missing | Intl's `signDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#style` | — | not ported: by design (money is always formatted as a currency) | ducat sets `currency`; another style drops the currency |
+| `FormatOptions#style` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions)) | ducat sets `currency`; another style drops the currency |
 | `FormatOptions#trailingZeroDisplay` | — | missing | Intl's `trailingZeroDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#unit` | — | not ported: by design (only with `style: 'unit'`, as `style`) |  |
-| `FormatOptions#unitDisplay` | — | not ported: by design (only with `style: 'unit'`, as `style`) |  |
+| `FormatOptions#unit` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions); only with `style: 'unit'`) |  |
+| `FormatOptions#unitDisplay` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions); only with `style: 'unit'`) |  |
 | `FormatOptions#useGrouping` | — | missing | Intl's `useGrouping`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `Money#format` | `ducat_format::format` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) | a free function over `AnyMoney` and a `Locale` |
 | `Money#formatToParts` | `ducat_format::format_to_parts` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) | `Part`, `PartKind` |
@@ -956,16 +956,16 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | `Fixed#sign` | `Fixed::signum` | same | |
 | `Fixed#subtract` | `Sub` | same | |
 | `Fixed#toJSON` | `serde::Serialize` for `Fixed` | same | |
-| `Fixed#toNumber` | — | missing | as `Money#toNumber` |
+| `Fixed#toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `Fixed#toRatio` | `Fixed::to_ratio` | same | |
-| `Fixed#toScale` | `Fixed::to_scale` | same | |
+| `Fixed#toScale` | `Fixed::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the mode is required |
 | `Fixed#toScaled` | `Fixed::units`, `Fixed::scale` | same | |
 | `Fixed#toString` | `Display` | same | |
-| `Fixed#trimScale` | `Fixed::trim_scale` | same | |
+| `Fixed#trimScale` | `Fixed::trim_scale` | missing | Err(InvalidScale) for minimum > MAX_SCALE (return `Result`) |
 | `Fixed#value` | `Fixed::units` | same | |
 | `FixedInput` | `Fixed::new`, `FromStr`, `parse_at`, `from_f64`, `From<Int>` | same | |
 | `FixedOptions` | arguments of `Fixed::parse_at` | same | |
-| `FixedOptions#rounding` | the `Rounding` argument of `parse_at` | same | |
+| `FixedOptions#rounding` | the `Rounding` argument of `parse_at` | missing | add `Fixed::from_f64_at(value, scale, rounding)` (as `Money::from_f64_at`) |
 | `FixedOptions#scale` | the `scale` argument of `parse_at` | same | |
 | `ScaledInteger` | `Fixed::units`, `Fixed::scale` | same | no named type |
 | `fixed` | `FromStr`, `Fixed::parse_at`, `Fixed::from_f64` | same | |
@@ -1324,45 +1324,54 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 Re-exports every plugin entry and `./fn`'s functions, and installs every plugin's methods on `Money`; its rows are in those entries. Rust has no prototype to install on: every method is there once its feature is on ([mapping](design.md#mapping-ducats-entries)).
 
 ## Missing, in proposed order
-
-Every `missing` row, grouped into pull requests in the order users would hit them. Four pieces are decided (marked
+Every `missing` row, grouped into pull requests in the order users would hit them. Five pieces are decided (marked
 **decided**); the rest are proposals.
 
-1. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
+1. **Checked clamp and rate validity** (`ducat`, one small PR): `.` `Money#clamp`, `./fn` `clamp`,
+   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`. `clamp(&self, lo, hi) -> Result` on `Money`,
+   `AnyMoney` and `ExactMoney` (an `Err` for `lo > hi` and across currencies, where `Ord::clamp` panics; `Money`
+   bounds for `ExactMoney`), and a public `Rate::check_validity(&self, at) -> Result<(), Error>`. `multiply_at` is
+   not needed: `multiply` with a scaled `RoundingPolicy` already rounds once into another scale.
+2. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
    `./fn` `hasFraction`, `./fn` `majorPart`, `./fn` `minorPart`. Receipts, cheques and display code ask for the whole
    and fractional parts first; small, exact, no design question.
-2. **Floats out** (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
+3. **Floats out** (**decided**: [explicitly lossy, output-only](design.md#parity-decisions) `to_f64` and `to_minor_f64`, "for display or interop only; never round-trip", never called inside ducat) (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
    `.` `ToMinorNumberOptions#lossy`, `./fn` `toNumber`, `./fn` `toMinorNumber`, `./fixed` `Fixed#toNumber`,
-   `./exact` `ExactMoney#toNumber`. Charts and JavaScript interop need an `f64` (and an `i64` of minor units); it needs
-   a `design.md` decision first, since the port so far lets floats in only through explicit conversions.
-3. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
+   `./exact` `ExactMoney#toNumber`. Charts and JavaScript interop need an `f64`.
+4. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
    `./exact` `ExactMoney#isNegative`, `./exact` `ExactMoney#toJSON`. The predicates are one-liners over `signum`;
    `serde` for exact amounts lets a total be stored before it is rounded.
-4. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
+5. **`ExactMoney` and `Fixed` gaps** (`ducat`, feature `exact`; from the re-audit): `./exact` `ExactMoney#abs`,
+   `./exact` `ExactMoney#negate`, `./exact` `ExactMoney#sign`, `./exact` `ExactMoney#percentage`,
+   `./exact` `ExactMoney#ratioOf`, `./exact` `ExactMoney#min`, `./exact` `ExactMoney#max` (on `AnyExactMoney`),
+   `./exact` `ExactMoney#isExact`, `./exact` `ExactMoney#toMoney`, `./exact` `Money#multiplyExact`,
+   `./exact` `multiplyExact`, `./fixed` `Fixed#trimScale` (`InvalidScale` past `MAX_SCALE`, where TS throws
+   `RangeError`), `./fixed` `FixedOptions#rounding` (`Fixed::from_f64_at`).
+6. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
    `./drizzle/pg` `moneyJson`, `./drizzle/mysql` `moneyJson`, `./drizzle/sqlite` `moneyJson`. Storing money is the
    first thing an application does, and a JSON column is the layout that needs no currency column.
-5. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
+7. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
    `./drizzle/mysql` `scaledMoney`, `./drizzle/sqlite` `scaledMoney`, `./prisma` `ScaleColumnOption`,
    `./prisma` `ScaleColumnOption#scale` (the `{ scale }` option of `moneyMinor`, Kysely's `setMoney` and
    `selectMoney`, from ducat#380). A `MinorColumn<C>` with the scale stored beside the units, for money kept at more
    decimals than its currency's exponent.
-6. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
+8. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
    `./format` `FormatOptions#useGrouping`, `./format` `FormatOptions#minimumIntegerDigits`,
    `./format` `FormatOptions#minimumSignificantDigits`, `./format` `FormatOptions#roundingMode`,
    `./format` `FormatOptions#roundingPriority`, `./format` `FormatOptions#trailingZeroDisplay`. Invoices (`+`/`−`
    signs, no grouping) and price displays (`€5` for whole amounts) use these; all are TR35 number formatting over data
    the crate already has.
-7. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
+9. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
    `ducat-fetch` on `Transport`): `./convert` `snapshots`, `./convert` `snapshotsFrom`, `./convert` `Snapshots`,
    `./convert` `Snapshots#at`, `./convert` `SnapshotOptions`, `./convert` `SnapshotOptions#lookback`,
    `./convert` `SnapshotOptions#max`. Converting at historical dates without loading every table up front.
-8. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
+10. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
    generated names without all its data): no `missing` row; `./words` `amountInWords` is `divergent` until then,
    because the caller must pass `UnitNames`.
-9. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
+11. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
    default, not `no_std`): `./adyen-fx` `AdyenRateOptions`, `./adyen-fx` `AdyenRateOptions#timeZone`. Only reports
    whose TimeZone column switches with daylight saving need it; abbreviations and offsets already work.
-10. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
+12. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
    `./format` `FormatOptions#compactDisplay`, `./format` `FormatOptions#numberingSystem`,
    `./format` `FormatOptions#localeMatcher`. Dashboards (`€1.2M`) and native digits; compact patterns and numbering systems add
    data to every locale, so they want their own features. `localeMatcher` chooses between `Intl`'s algorithms; the
