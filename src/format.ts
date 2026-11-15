@@ -105,75 +105,106 @@ function formatter(
   return numberFormat;
 }
 
-const longNameSound = /* @__PURE__ */ new Map<string, boolean>();
-const SHAPE: Partial<Record<string, string>> = {
-  currency: 'c',
-  integer: 'd',
-  group: 'd',
-  decimal: 'd',
-  fraction: 'd',
-};
+/**
+ * Whether a part of the probe below is a digit part (integer, group, decimal or fraction). The
+ * probe writes no other part whose type starts with one of these letters.
+ */
+const digit = (part?: Intl.NumberFormatPart): boolean => /^[igdf]/.test(String(part?.type));
+
+/** The name begins with the symbol and a space: ICU 78.3's pt-CV "US$ dólares dos Estados Unidos". */
+const glued = (name: string, symbol: string): boolean => name.startsWith(`${symbol} `);
+
+const currencyPart = (parts: Intl.NumberFormatPart[]): string =>
+  parts.find(({ type }) => type === 'currency')?.value ?? '';
+
+const symbolOf = (locale: string, currency: string): string =>
+  currencyPart(new Intl.NumberFormat(locale, { style: 'currency', currency }).formatToParts(0));
+
+/**
+ * The parts of a long name at three fraction digits if the runtime writes it soundly: one currency
+ * part, the digits in one run, and no symbol glued to the name (unless the locale's display name
+ * of the currency starts with it too, as Persian's "ریال ایران" does with the symbol ریال).
+ */
+function sound(locale: string, currency: string): Intl.NumberFormatPart[] | undefined {
+  const parts = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'name',
+    minimumFractionDigits: 3,
+  }).formatToParts(1234.567);
+  const symbol = symbolOf(locale, currency);
+  // each part's initial: c the currency, l a literal, [igdf] a digit part
+  const shape = parts.map(({ type }) => type[0]).join('');
+  return /^l*([igdf]+l*c|cl*[igdf]+)l*$/.test(shape) &&
+    !(
+      glued(currencyPart(parts), symbol) &&
+      !glued(new Intl.DisplayNames(locale, { type: 'currency' }).of(currency) ?? '', symbol)
+    )
+    ? parts
+    : undefined;
+}
+
+const joined = (parts: readonly Intl.NumberFormatPart[]): string =>
+  parts.map(({ value }) => value).join('');
 
 /**
  * `numberFormat` itself, unless it shows long names in a locale where the runtime gets them wrong.
- * ICU 78.3 (Node 24) does in the English locales of euro countries that inherit en-150 (en-NL,
- * en-DE, en-FI ...): it applies en-150's euro pattern (¤#,##0.00) inside the long-name pattern, so
- * every currency shows its symbol beside its name, and fraction digits beyond two land after the
- * name: "KWD 1,234.56 Kuwaiti dinars7"; en-150 itself shows the symbol beside the euro's name. A
- * probe asks once per locale and currency (one currency part, the digits in one run, at three
- * fraction digits); on a fixed runtime it passes and Intl's own text is used.
+ * ICU 78.3 (Node 24) applies a pattern meant for one currency inside the long-name pattern
+ * (ICU-23618, ICU-23514), in three ways:
  *
- * Where it fails, the text is composed as the long form is meant to be (TR35's unitPattern): the
- * number as the locale's currency format writes it, with the separators parse() reads, then the
- * plural name Intl chose. Only English locales are affected, and CLDR 48's English unitPattern is
- * "{0} {1}" for every count. The number is the code form's at the same options without the code:
- * English writes no other literal into a currency's number, and Intl ignores currencySign for long
- * names.
+ * - the English locales of euro countries that inherit en-150 (en-NL, en-DE, en-FI ...) get
+ *   en-150's euro pattern (¤#,##0.00) for every currency, so the symbol shows beside the name and
+ *   fraction digits beyond two land after it: "KWD 1,234.56 Kuwaiti dinars7"; en-150 and its other
+ *   children (en-CH, en-SE ...) do it for the euro alone;
+ * - tr and tr-CY do it for the lira ("₺1.234,57 Türk lirası"), and tr-TR for every currency;
+ * - pt-CV and kea-CV glue the symbol to the name for every currency ("1 234 567$88 US$ dólares
+ *   dos Estados Unidos"), and kea for the escudo alone.
+ *
+ * A probe asks once for each formatter format() builds and caches (a cache of its own would cost
+ * more bundle than the probe costs time); on a fixed runtime it passes and Intl's own text is
+ * used. Where it fails, the text is composed as the long form is meant to be (TR35's unitPattern):
+ * the number as the locale's code form writes it (with the separators parse() reads, without the
+ * code and the space beside it; Intl ignores currencySign for long names), and the plural name
+ * Intl chose (its last currency part, without a glued symbol). They are placed as Intl places them
+ * in a sound long name of USD in the locale's language (pt for pt-CV, tr for tr-TR, en for en-NL,
+ * where every currency is garbled): that is Intl's own reading of CLDR's unitPattern, which
+ * varies ("{0}{1}" in ja, "{1} {0}" in sw), where a pattern written here would be a guess. If the
+ * language's USD long name isn't sound either, Intl's text is left as it is.
  */
 function longName(numberFormat: Intl.NumberFormat, options: Intl.NumberFormatOptions): Formatter {
   const { locale, currency, currencyDisplay } = numberFormat.resolvedOptions();
-  if (currencyDisplay !== 'name' || !locale.startsWith('en-')) {
+  if (currencyDisplay !== 'name' || currency === undefined) {
     return numberFormat;
   }
-  const key = `${locale}|${currency}`;
-  let sound = longNameSound.get(key);
-  if (sound === undefined) {
-    // c: a currency part, d: a digit part (integer, group, decimal, fraction), x: anything else
-    const shape = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency,
-      currencyDisplay: 'name',
-      minimumFractionDigits: 3,
-    })
-      .formatToParts(1234.567)
-      .map(({ type }) => SHAPE[type] ?? 'x')
-      .join('');
-    sound = /^[^c]*c[^c]*$/.test(shape) && !/d[^d]+d/.test(shape);
-    longNameSound.set(key, sound);
-  }
-  if (sound) {
+  // asked once per formatter, which format() caches
+  const parts =
+    sound(locale, currency) === undefined
+      ? sound(new Intl.Locale(locale).language, 'USD')
+      : undefined;
+  if (parts === undefined) {
     return numberFormat;
   }
+  const symbol = symbolOf(locale, currency);
+  const template = parts.filter((part, i) => !digit(part) || !digit(parts[i - 1]));
   const { currencySign: _sign, ...rest } = options;
   const code = new Intl.NumberFormat(locale, { ...rest, currencyDisplay: 'code' });
   const toParts = (value: number): Intl.NumberFormatPart[] => {
-    const parts = numberFormat.formatToParts(value);
-    const name = parts.findLast((part) => part.type === 'currency');
-    return name === undefined
-      ? parts
-      : [
-          ...code
-            .formatToParts(value)
-            .filter(({ type }) => type !== 'currency' && type !== 'literal'),
-          { type: 'literal', value: ' ' },
-          name,
-        ];
+    const name =
+      numberFormat.formatToParts(value).findLast(({ type }) => type === 'currency')?.value ?? '';
+    return template.flatMap((part) => {
+      if (digit(part)) {
+        // the number as the code form writes it, without the code and the space beside it
+        return code
+          .formatToParts(value)
+          .filter(({ type }) => type !== 'currency' && type !== 'literal');
+      }
+      return part.type === 'currency'
+        ? { type: 'currency', value: glued(name, symbol) ? name.slice(symbol.length + 1) : name }
+        : part;
+    });
   };
   return {
-    format: (value) =>
-      toParts(value)
-        .map((part) => part.value)
-        .join(''),
+    format: (value) => joined(toParts(value)),
     formatToParts: toParts,
   };
 }

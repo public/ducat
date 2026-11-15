@@ -109,6 +109,7 @@ function ownTexts(locale: string | undefined, currency: string): readonly string
   let texts = ownTextCache.get(key);
   if (texts === undefined) {
     const found = new Set<string>([currency]);
+    let symbol: string | undefined;
     try {
       for (const currencyDisplay of ['symbol', 'narrowSymbol', 'name'] as const) {
         const samples = currencyDisplay === 'name' ? NAME_SAMPLES : [1];
@@ -121,9 +122,17 @@ function ownTexts(locale: string | undefined, currency: string): readonly string
             maximumFractionDigits: fractionDigits,
           });
           for (const sample of samples) {
-            for (const part of numberFormat.formatToParts(sample)) {
-              if (part.type === 'currency' && part.value.trim() !== '') {
-                found.add(part.value.trim());
+            for (const { type, value } of numberFormat.formatToParts(sample)) {
+              const text = value.trim();
+              if (type === 'currency' && text !== '') {
+                // the first is the symbol; a name may begin with it and a space, as ICU 78.3
+                // writes pt-CV's (" escudos cabo-verdianos" after a zero-width space), and is
+                // also read without it, as format() writes it there
+                symbol ??= text;
+                found.add(text);
+                if (text.startsWith(`${symbol} `)) {
+                  found.add(text.slice(symbol.length).trim());
+                }
               }
             }
           }
