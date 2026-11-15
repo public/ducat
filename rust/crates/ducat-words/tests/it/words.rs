@@ -337,6 +337,12 @@ fn rules_that_branch_past_the_work_budget_are_an_error() {
     let started = std::time::Instant::now();
     assert_eq!(spell_out(5, &rules, Some("%s0")), Err(Error::TooManySteps));
     // the budget is the bound; the clock is only a safety net
+    crate::common::budget::report(
+        crate::common::budget::test_path!(rules_that_branch_past_the_work_budget_are_an_error),
+        "",
+        started.elapsed(),
+        std::time::Duration::from_secs(10),
+    );
     assert!(started.elapsed() < std::time::Duration::from_secs(10));
     // 12 levels (8,191 applications) are within it
     let small: &'static str = Box::leak(fan_out(12).into_boxed_str());
@@ -382,11 +388,23 @@ mod arbitrary_rules {
         ]
     }
 
+    use crate::common::budget::{self, Worst};
+
+    static WORST: Worst = Worst::new();
+
+    #[test]
+    fn any_rule_text_ends_quickly_in_ok_or_err() {
+        cases();
+        WORST.report(
+            budget::test_path!(any_rule_text_ends_quickly_in_ok_or_err),
+            std::time::Duration::from_secs(5),
+        );
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(512))]
 
-        #[test]
-        fn any_rule_text_ends_quickly_in_ok_or_err(pieces in prop::collection::vec(fragment(), 0..60), value in any::<i64>()) {
+        fn cases(pieces in prop::collection::vec(fragment(), 0..60), value in any::<i64>()) {
             let text: &'static str = Box::leak(pieces.concat().into_boxed_str());
             let rules = SpelloutRules { locale: Locale::En, rules: text };
             let started = std::time::Instant::now();
@@ -395,6 +413,7 @@ mod arbitrary_rules {
                 let _ = spell_out(5, &rules, Some(set));
             }
             // a generous safety net: the depth cap and the work budget are the real bounds
+            WORST.record(started.elapsed());
             prop_assert!(started.elapsed() < std::time::Duration::from_secs(5));
         }
     }

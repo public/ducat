@@ -11,6 +11,8 @@ use ducat_format::{
 };
 use proptest::prelude::*;
 
+use crate::common::budget::{self, Worst};
+
 /// The most one call may take, a generous bound for the work the limits allow.
 const SLOW: Duration = Duration::from_secs(2);
 
@@ -205,9 +207,8 @@ proptest! {
         );
     }
 
-    /// Any tag, options and amount give text or an error, quickly; parts join to the text.
-    #[test]
-    fn format_takes_anything(
+    /// The cases of [`format_takes_anything`].
+    fn format_takes_anything_cases(
         tag in tag(),
         code in prop::sample::select(CURRENCIES.to_vec()),
         units in units(),
@@ -230,12 +231,12 @@ proptest! {
                 Error::ConflictingOptions | Error::InvalidOptions | Error::Money(_)
             ), "{error:?}"),
         }
+        FORMAT_WORST.record(start.elapsed());
         prop_assert!(start.elapsed() < SLOW);
     }
 
-    /// Any text, in any tag, with any options, parses or fails, quickly.
-    #[test]
-    fn parse_takes_anything(
+    /// The cases of [`parse_takes_anything`].
+    fn parse_takes_anything_cases(
         tag in tag(),
         input in prop_oneof![text(), "\\PC{0,40}", (0_usize..3000).prop_map(|count| "9".repeat(count))],
         code in prop::sample::select(CURRENCIES.to_vec()),
@@ -262,8 +263,26 @@ proptest! {
         detect.scale = scale;
         detect.rounding = mode;
         let _ = parse_money(&input, &locale, &detect);
+        PARSE_WORST.record(start.elapsed());
         prop_assert!(start.elapsed() < SLOW);
     }
+}
+
+static FORMAT_WORST: Worst = Worst::new();
+static PARSE_WORST: Worst = Worst::new();
+
+/// Any tag, options and amount give text or an error, quickly; parts join to the text.
+#[test]
+fn format_takes_anything() {
+    format_takes_anything_cases();
+    FORMAT_WORST.report(budget::test_path!(format_takes_anything), SLOW);
+}
+
+/// Any text, in any tag, with any options, parses or fails, quickly.
+#[test]
+fn parse_takes_anything() {
+    parse_takes_anything_cases();
+    PARSE_WORST.report(budget::test_path!(parse_takes_anything), SLOW);
 }
 
 #[test]
