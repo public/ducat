@@ -899,22 +899,22 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `FormatOptions` | `ducat_format::FormatOptions` | same |  |
+| `FormatOptions` | `ducat_format::FormatOptions` | same | `Default` is ducat's no-options call; the fields ducat passes to `Intl` are checked as `Intl` checks them (`Error::InvalidOptions` for its `RangeError`s) |
 | `FormatOptions#compactDisplay` | — | missing | Intl's `compactDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#currency` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions)) | ducat sets it from the money; overriding it formats another code |
-| `FormatOptions#currencyDisplay` | `FormatOptions::currency_display`, `display` (`CurrencyDisplay`) | same |  |
-| `FormatOptions#currencySign` | `FormatOptions::currency_sign`, `sign` (`CurrencySign`) | same |  |
-| `FormatOptions#digits` | `FormatOptions::digits` | same |  |
+| `FormatOptions#currencyDisplay` | `FormatOptions::currency_display`, `display` (`CurrencyDisplay`) | same | `CurrencyDisplay`: `Symbol` (default), `NarrowSymbol`, `Code`, `Name` |
+| `FormatOptions#currencySign` | `FormatOptions::currency_sign`, `sign` (`CurrencySign`) | same | `CurrencySign`: `Standard` (default), `Accounting` |
+| `FormatOptions#digits` | `FormatOptions::digits` | same | `Option<u16>`, rounded once by ducat's kernel; beside `Intl`'s digit options it is `Error::ConflictingOptions`, ducat's `TypeError` |
 | `FormatOptions#localeMatcher` | — | missing | Intl's `localeMatcher`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#maximumFractionDigits` | `FormatOptions::maximum_fraction_digits` | same |  |
-| `FormatOptions#maximumSignificantDigits` | `FormatOptions::maximum_significant_digits` | same |  |
-| `FormatOptions#minimumFractionDigits` | `FormatOptions::minimum_fraction_digits` | same |  |
+| `FormatOptions#maximumFractionDigits` | `FormatOptions::maximum_fraction_digits` | same | `Option<u16>`; past 100, or below the minimum, `Error::InvalidOptions` (`Intl`'s `RangeError`) |
+| `FormatOptions#maximumSignificantDigits` | `FormatOptions::maximum_significant_digits` | same | `Option<u16>`, 1 to 21 (`Error::InvalidOptions` outside) |
+| `FormatOptions#minimumFractionDigits` | `FormatOptions::minimum_fraction_digits` | same | `Option<u16>`, as `#maximumFractionDigits` |
 | `FormatOptions#minimumIntegerDigits` | — | missing | Intl's `minimumIntegerDigits`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#minimumSignificantDigits` | — | missing | Intl's `minimumSignificantDigits`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#notation` | — | missing | Intl's `notation`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#numberingSystem` | — | missing | Intl's `numberingSystem`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#rounding` | `FormatOptions::rounding` | same |  |
-| `FormatOptions#roundingIncrement` | `FormatOptions::rounding_increment` | same |  |
+| `FormatOptions#rounding` | `FormatOptions::rounding` | same | `Option<Rounding>`, `None` is ducat's default halfExpand; without `digits` it is `Error::ConflictingOptions`, ducat's `TypeError` |
+| `FormatOptions#roundingIncrement` | `FormatOptions::rounding_increment` | same | `Option<u16>`, one of `Intl`'s 15 increments (`Error::InvalidOptions` otherwise) |
 | `FormatOptions#roundingMode` | — | missing | Intl's `roundingMode`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#roundingPriority` | — | missing | Intl's `roundingPriority`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#signDisplay` | — | missing | Intl's `signDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
@@ -989,17 +989,17 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `ParseMoneyOptions` | `ducat_format::ParseMoneyOptions` | same |  |
-| `ParseMoneyOptions#currencies` | `ParseMoneyOptions::currencies` | same |  |
-| `ParseMoneyOptions#hint` | `ParseMoneyOptions::hint` | same |  |
-| `ParseMoneyOptions#lenient` | `ParseMoneyOptions::lenient` | same |  |
-| `ParseMoneyOptions#rounding` | `ParseMoneyOptions::rounding` | same |  |
-| `ParseMoneyOptions#scale` | `ParseMoneyOptions::scale` | same |  |
-| `ParseMoneyOptions#symbols` | `ParseMoneyOptions::symbols` | same |  |
-| `ParseOptions` | `ducat_format::ParseOptions` | same |  |
-| `ParseOptions#lenient` | `ParseOptions::lenient` | same |  |
-| `ParseOptions#rounding` | `ParseOptions::rounding` | same |  |
-| `ParseOptions#scale` | `ParseOptions::scale` | same |  |
+| `ParseMoneyOptions` | `ducat_format::ParseMoneyOptions` | same | `Default` is ducat's no-options call |
+| `ParseMoneyOptions#currencies` | `ParseMoneyOptions::currencies` | same | `Option<&[CurrencyCode]>`; `None` is every ISO 4217 currency with a minor unit, ducat's default |
+| `ParseMoneyOptions#hint` | `ParseMoneyOptions::hint` | same | `Option<CurrencyCode>`; a text naming another currency is `Syntax(NotTheHint)`, ducat's `SyntaxError` |
+| `ParseMoneyOptions#lenient` | `ParseMoneyOptions::lenient` | same | `false` by default, as ducat |
+| `ParseMoneyOptions#rounding` | `ParseMoneyOptions::rounding` | same | `Option<Rounding>`; `None` makes extra decimals `Error::Money(Rounding)`, ducat's `RoundingError` |
+| `ParseMoneyOptions#scale` | `ParseMoneyOptions::scale` | same | `Option<u16>`; past `MAX_SCALE` `Error::Money(InvalidScale)` |
+| `ParseMoneyOptions#symbols` | `ParseMoneyOptions::symbols` | same | a slice of `(symbol, CurrencyCode)`, ducat's record |
+| `ParseOptions` | `ducat_format::ParseOptions` | same | `Default` is ducat's no-options call |
+| `ParseOptions#lenient` | `ParseOptions::lenient` | same | `false` by default, as ducat |
+| `ParseOptions#rounding` | `ParseOptions::rounding` | same | as `ParseMoneyOptions#rounding` |
+| `ParseOptions#scale` | `ParseOptions::scale` | same | as `ParseMoneyOptions#scale` |
 | `parse` | `ducat_format::parse` | divergent: [refuses a locale the build lacks](design.md#coverage) | `Locale::has_data` |
 | `parseMoney` | `ducat_format::parse_money` | divergent: [refuses a locale the build lacks](design.md#coverage) |  |
 
