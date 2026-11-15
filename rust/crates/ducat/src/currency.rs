@@ -186,9 +186,23 @@ impl fmt::Debug for CurrencyCode {
 }
 
 /// A currency known at compile time: a zero-sized marker type such as
-/// [`ducat::iso::Eur`](crate::iso::Eur), so that `Money<Eur>` and `Money<Usd>` can't be mixed.
+#[cfg_attr(
+    feature = "iso",
+    doc = "[`ducat::iso::Eur`](crate::iso::Eur), so that `Money<Eur>` and `Money<Usd>` can't be mixed."
+)]
+#[cfg_attr(
+    not(feature = "iso"),
+    doc = "`ducat::iso::Eur`, so that `Money<Eur>` and `Money<Usd>` can't be mixed."
+)]
 ///
-/// The ISO markers are generated in [`crate::iso`]. Define your own with
+#[cfg_attr(
+    feature = "iso",
+    doc = "The ISO markers are generated in [`crate::iso`]. Define your own with"
+)]
+#[cfg_attr(
+    not(feature = "iso"),
+    doc = "The ISO markers are generated in `crate::iso`. Define your own with"
+)]
 /// [`define_currency!`](crate::define_currency).
 pub trait Currency: Copy + Eq + Ord + Hash + Default + fmt::Debug + Send + Sync + 'static {
     /// The currency's code and exponent.
