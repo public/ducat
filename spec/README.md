@@ -3,7 +3,7 @@
 Language-neutral conformance vectors for [`@ducatjs/money`](../README.md): test cases as JSON, with
 where each expected value came from, a JSON Schema, and the rules for running them. ducat's
 TypeScript is the first implementation that runs them; the Rust port in [`rust/`](../rust) is the second
-(`rust/crates/ducat/tests/spec.rs`).
+(`rust/crates/ducat/tests/it/spec.rs`).
 
 The package is data only: no code and no dependencies. It is private for now, so the
 repository's `spec/` directory is the only copy.

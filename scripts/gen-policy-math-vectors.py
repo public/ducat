@@ -9,7 +9,7 @@ as tables of @ducatjs/money-spec:
     spec/vectors/math/fractions.json
     spec/vectors/finance/exact-fractions.json
 
-and checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/spec.rs.
+and checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/it/spec.rs.
 
 Every expected value is computed here, independently of ducat, from the definitions in ducat's
 docs (docs/reference/policy.md, pricing.md, math.md and finance.md): exact Fractions throughout,

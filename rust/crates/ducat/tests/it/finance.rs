@@ -11,17 +11,9 @@ use ducat::finance::{
 use ducat::iso::{Eur, Usd};
 use ducat::{AnyMoney, Error, Money, Ratio, Rounding};
 
-type Result = core::result::Result<(), Error>;
+use crate::common::{Result, eur, usd};
 
 fn day(text: &str) -> Date {
-    text.parse().unwrap()
-}
-
-fn eur(text: &str) -> Money<Eur> {
-    text.parse().unwrap()
-}
-
-fn usd(text: &str) -> Money<Usd> {
     text.parse().unwrap()
 }
 

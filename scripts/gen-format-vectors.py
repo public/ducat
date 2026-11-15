@@ -17,7 +17,7 @@ release agree. The rows depend on the runtime's Intl data, and the files say so 
     spec/vectors/format/icu-overrides.json CLDR 48 with ICU 78.3's overrides (fr-CH)
     spec/vectors/parse/icu-overrides.json
 
-checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/spec.rs.
+checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/it/spec.rs.
 
 Deterministic: regenerate with
     python3 scripts/gen-format-vectors.py

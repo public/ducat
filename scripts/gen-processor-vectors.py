@@ -6,7 +6,7 @@ independently of ducat's TypeScript and its generator:
 
     spec/vectors/processors/rules.json
 
-checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/spec.rs.
+checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/it/spec.rs.
 
 Deterministic: the same seed always writes the same files. Regenerate with
     python3 scripts/gen-processor-vectors.py

@@ -17,6 +17,8 @@ use ducat::convert::{Date, Publication, RateProvider, RateQuery, Time};
 use ducat::{CurrencyCode, Error};
 use proptest::prelude::*;
 
+use crate::common::time;
+
 fn fixture(path: &str) -> String {
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../spec/fixtures");
     std::fs::read_to_string(root.join(path)).unwrap()
@@ -139,10 +141,6 @@ fn deep_json_is_an_error() {
         parse_bank_of_canada_json(&deep, &BankOfCanadaOptions::default()).err(),
         Some(Error::MalformedRates)
     );
-}
-
-fn time(text: &str) -> Time {
-    text.parse().unwrap()
 }
 
 #[test]

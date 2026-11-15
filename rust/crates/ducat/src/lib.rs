@@ -64,7 +64,7 @@ mod currency;
     feature = "historic",
     feature = "territories"
 ))]
-#[rustfmt::skip] // generated: tests/currency_data.rs checks it byte for byte
+#[rustfmt::skip] // generated: tests/it/currency_data.rs checks it byte for byte
 mod currency_data;
 #[cfg(any(feature = "finance", feature = "convert"))]
 mod date;
@@ -99,7 +99,7 @@ pub mod pricing;
     feature = "klarna"
 ))]
 pub mod processors;
-#[rustfmt::skip] // generated: tests/iso_table.rs checks it byte for byte
+#[rustfmt::skip] // generated: tests/it/iso_table.rs checks it byte for byte
 mod iso_table;
 mod money;
 mod ratio;

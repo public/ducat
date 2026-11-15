@@ -6,7 +6,7 @@ independently of ducat's TypeScript:
 
     spec/vectors/convert/sources.json
 
-checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/spec.rs.
+checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/it/spec.rs.
 
 Publication times follow the sources' stated rules with the clock rules written out here rather
 than read from the system's time-zone data, so the output doesn't depend on the machine: the ECB's

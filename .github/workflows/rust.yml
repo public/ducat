@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
-      # the conformance runner (tests/spec.rs) prints its counts per area and operation; ducat-words
+      # the conformance runner (tests/it/spec.rs) prints its counts per area and operation; ducat-words
       # runs the words area, which the core runner delegates to it
       - run: cargo test --workspace --locked --no-fail-fast -- --nocapture
       # every language, for the locale and ICU-behaviour tests that need pa, uz, sr and my

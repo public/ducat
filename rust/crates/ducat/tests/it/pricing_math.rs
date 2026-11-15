@@ -2,20 +2,12 @@
 //! test/math.test.ts), ported value by value: negative prices, the error paths, and policies in
 //! averages, which the vectors don't reach.
 
-use ducat::iso::{Eur, Jpy, Usd};
+use ducat::iso::{Eur, Jpy};
 use ducat::policy::RoundingPolicy;
 use ducat::pricing::{BeyondLastTier, PriceEnding, PriceTier, TieredPricing, TiersMode};
 use ducat::{AnyMoney, Error, Money, Rounding};
 
-type Result = core::result::Result<(), Error>;
-
-fn eur(text: &str) -> Money<Eur> {
-    text.parse().unwrap()
-}
-
-fn usd(text: &str) -> Money<Usd> {
-    text.parse().unwrap()
-}
+use crate::common::{Result, eur, usd};
 
 fn ended(rule: &PriceEnding, price: &str) -> String {
     eur(price).with_price_ending(rule).unwrap().to_string()

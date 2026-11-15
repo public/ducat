@@ -1,4 +1,4 @@
-//! The shapes of the generated CLDR tables (`data.rs`, `icu.rs`), which `tests/data.rs` and
+//! The shapes of the generated CLDR tables (`data.rs`, `icu.rs`), which `tests/it/data.rs` and
 //! `tests/icu.rs` write from the repository's `data/cldr/` and `data/icu/`.
 
 /// A locale's number data in its default numbering system, resolved (cldr-json's `main/` files

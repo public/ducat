@@ -10,11 +10,11 @@ Milestone 5a added rounding policies (`RoundingPolicy`, accepted wherever a mode
 pricing, tiers and math, with their vectors in `spec/`.
 
 Milestone 5b added the currency data (numeric codes, historic codes, territories, crypto units, CLDR's cash
-rules and `cash_policy`), generated from `data/` by `tests/currency_data.rs` with a drift check, as for ISO. The
+rules and `cash_policy`), generated from `data/` by `tests/it/currency_data.rs` with a drift check, as for ISO. The
 ISO exponent, CLDR's display digits and the cash rules stay separate figures.
 
 Milestone 5c added the payment processors, one feature and module each under `ducat::processors`, with their
-tables generated from `data/` by `tests/processor_tables.rs` with a drift check. Integer amounts are `i64`, refused
+tables generated from `data/` by `tests/it/processor_tables.rs` with a drift check. Integer amounts are `i64`, refused
 beyond 2^53 − 1 on the way to the processor as in ducat, and read back whatever their size (ducat refuses only
 unsafe JavaScript numbers there, and reads any `bigint`); the `from_*` constructors take a `CurrencyCode`, so only the `&str` lookups are
 case-insensitive (Adyen's excepted).
@@ -79,12 +79,12 @@ rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so no
 
 Milestone 6a added amounts and numbers in words, in their own crate, `ducat-words`, so a program that wants only words
 never pulls in format and parse data (milestone 6c's `ducat-format`). It is ducat's own RBNF interpreter
-over CLDR's rule text (`data/rbnf/*.txt`, CLDR 49, embedded by `tests/rules.rs` with a drift check, without its comment
+over CLDR's rule text (`data/rbnf/*.txt`, CLDR 49, embedded by `tests/it/rules.rs` with a drift check, without its comment
 lines as ducat's generator drops them), one feature per language: `en` (4,081 bytes of rules), `de` (8,506), `fr`
 (4,312), `es` (5,829), `it` (11,871), `nl` (2,284), `pt` (4,676), about 41 KB in all, so every language is a default. Values are `i128` within ±(2^63 − 1), ICU's range;
 recursion is bounded, so adversarial rule text is an error, not a stack overflow. Plural rules (cardinal and ordinal),
 the digit grouping of numbers the rules write as digits (separator and minimum grouping digits), and the word for "and"
-come from the CLDR 48 snapshot (`data/cldr/`), generated into `src/cldr.rs` by `tests/cldr.rs` with a drift check, as the
+come from the CLDR 48 snapshot (`data/cldr/`), generated into `src/cldr.rs` by `tests/it/cldr.rs` with a drift check, as the
 rule text is; ducat reads them from `Intl`, CLDR 48 on Node 24. The rule text is CLDR 49 and these values
 CLDR 48, the release ducat's `Intl` carries. `amount_in_words` takes the currency's names from the caller, as both take the minor unit's.
 
@@ -107,7 +107,7 @@ code, with no ICU. ICU4X was the plan; ducat chose otherwise because no ICU4X re
 is pre-1.0 experimental and re-rounds to CLDR's digits. ducat's TypeScript formats through the runtime's `Intl`, whose
 ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped differences from it:
 
-- **Data:** `tests/data.rs` generates `src/data.rs` (numbers, currency symbols, names and formats, unit patterns,
+- **Data:** `tests/it/data.rs` generates `src/data.rs` (numbers, currency symbols, names and formats, unit patterns,
   plural rules, parents, default content and likely scripts of the 430 modern-coverage locales) and `src/icu.rs`
   (ICU 78.3's overrides: fr-CH's group, my's unit pattern) from `data/cldr/` and `data/icu/`, with a drift check, and
   the Cargo feature per language. `data/cldr/README.md` has the one regeneration that updates the spec, `ducat-words`
@@ -201,7 +201,7 @@ root): it still formats, and `Locale::has_data` is false, so parsing refuses it,
 no data for.
 
 A tag is resolved through CLDR's likely scripts first, so a region that writes another script finds that script's
-locale. What Node 24 (ICU 78.3) and `ducat-format` resolve, checked in `tests/locale.rs` and `tests/runtime.rs`:
+locale. What Node 24 (ICU 78.3) and `ducat-format` resolve, checked in `tests/it/locale.rs` and `tests/it/runtime.rs`:
 
 | tag | Node 24 | ducat-format data | has data | |
 |---|---|---|---|---|
@@ -342,7 +342,7 @@ lives").
    result doesn't fit, it computes the same quotient in arbitrary precision. Differential proptests check the two
    paths against each other and against num-bigint around the boundaries (±`i128::MAX`, `i128::MIN`, and products
    just past them).
-9. **The ISO table is committed generated code.** `tests/iso_table.rs` is the generator (it reads the repository's
+9. **The ISO table is committed generated code.** `tests/it/iso_table.rs` is the generator (it reads the repository's
    `data/iso4217-list-one.xml`) and fails when `src/iso_table.rs` is stale; `DUCAT_REGENERATE=1` rewrites it.
 10. **Features:** `std`, `iso` (the marker types; the ISO table itself is always present, since `CurrencyCode`
     parsing needs it) and `serde`, all default.
@@ -381,7 +381,7 @@ lives").
   and `data/` from the same checkout, so the Rust port always runs the spec at its own commit: a spec change and the
   Rust change it needs land in one pull request, and there is no vendored copy to drift. `rust/` is not part of the
   npm package.
-- **The runner:** `rust/crates/ducat/tests/spec.rs` maps each neutral operation to the Rust API. It runs every vector
+- **The runner:** `rust/crates/ducat/tests/it/spec.rs` maps each neutral operation to the Rust API. It runs every vector
   it knows, and fails on an unknown operation unless that operation is listed as "not yet". It prints implemented,
   skipped (with the reason) and failed counts per operation and area, checks each file's structure, checks the
   number of cases per area (so a lost file fails), and changes one expectation per implemented operation to show

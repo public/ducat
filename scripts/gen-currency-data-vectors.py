@@ -6,7 +6,7 @@ library (json and xml.etree), independently of ducat's own generator (scripts/ge
                                       cash fractions, territories, crypto units
     spec/vectors/cash/rules.json      the cash-rounding rules, and amounts rounded through them
 
-checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/spec.rs.
+checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/it/spec.rs.
 
 The three figures a currency can have are kept apart, and none is derived from another: the ISO 4217
 exponent (an amount's scale; for a withdrawn code, the one ISO gave it while it was current), CLDR's

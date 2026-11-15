@@ -5,14 +5,14 @@ use ducat::iso::{Eur, Jpy, Kwd, Usd};
 use ducat::wire::{DineroObject, GoogleMoney, Iso20022Amount, MinorUnitAmount, WireReadOptions};
 use ducat::{AnyMoney, CurrencyCode, Error, Money, Rounding};
 
+use crate::common::EXACT;
+
 fn eur(text: &str) -> Money<Eur> {
     let places = text
         .split_once('.')
         .map_or(0, |(_, fraction)| fraction.len());
     Money::parse_at(text, u16::try_from(places).unwrap(), Rounding::Unnecessary).unwrap()
 }
-
-const EXACT: Rounding = Rounding::Unnecessary;
 
 #[test]
 fn google_money_splits_into_units_and_nanos_with_one_sign() {

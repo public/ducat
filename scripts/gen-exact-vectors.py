@@ -2,7 +2,7 @@
 """Reference vectors from Python's fractions module for exact amounts and exchange rates, written as
 tables of @ducatjs/money-spec (spec/vectors/exact/fractions.json and
 spec/vectors/convert/rates-fractions.json) and checked by test/spec.test.ts and the Rust port's
-rust/crates/ducat/tests/spec.rs.
+rust/crates/ducat/tests/it/spec.rs.
 
 Deterministic: the same seed always writes the same files. Regenerate with
     python3 scripts/gen-exact-vectors.py

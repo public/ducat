@@ -15,7 +15,7 @@ use ducat::processors::stripe::{StripeAmount, StripeOptions};
 use ducat::processors::{adyen, braintree, checkout, klarna, paypal, stripe};
 use ducat::{AnyMoney, Currency, CurrencyCode, Error, Int, Money, Rounding};
 
-type Result = core::result::Result<(), Error>;
+use crate::common::{EXACT, Result};
 
 /// ducat's `money(text, code)`: the amount at the scale its digits give, or at least the
 /// currency's.
@@ -47,8 +47,6 @@ fn checkout_with(standalone: bool, rounding: Rounding) -> CheckoutOptions {
         rounding,
     }
 }
-
-const EXACT: Rounding = Rounding::Unnecessary;
 
 // --- Stripe -------------------------------------------------------------------------------------
 
