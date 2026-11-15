@@ -85,9 +85,15 @@ impl MoneyRecord {
         self.amount.to_money(currency)
     }
 
-    /// Postgres's binary record format: the field count, then each field's type OID, length and
-    /// value (NUMERIC's binary format, then the code's UTF-8).
-    pub(crate) fn encode_binary(&self, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    /// Appends the record in Postgres's binary record format (`record_send`), as the sqlx
+    /// `Encode` impls send it: the field count (2), then each field's type OID, length and value,
+    /// NUMERIC's binary format ([`encode_numeric`](super::encode_numeric)) for the amount and the
+    /// code's UTF-8 as TEXT.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::OutOfRange`] for an amount NUMERIC can't carry; nothing is appended then.
+    pub fn encode_binary(&self, buffer: &mut Vec<u8>) -> Result<(), Error> {
         let mut amount = Vec::new();
         encode_numeric(&self.amount, &mut amount)?;
         let amount_len = i32::try_from(amount.len()).map_err(|_| Error::OutOfRange)?;
@@ -102,9 +108,16 @@ impl MoneyRecord {
         Ok(())
     }
 
-    /// The binary record format, as [`MoneyRecord::encode_binary`] writes it. The currency may
-    /// also be VARCHAR.
-    pub(crate) fn decode_binary(bytes: &[u8]) -> Result<Self, Error> {
+    /// A record in Postgres's binary record format (`record_recv`), as
+    /// [`MoneyRecord::encode_binary`] writes it and the sqlx `Decode` impls read it. The currency
+    /// may also be VARCHAR.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Malformed`] for a record that isn't two fields of NUMERIC and TEXT, is truncated
+    /// or has bytes after it, or whose currency isn't UTF-8; [`Error::NullField`] for a NULL
+    /// field; the amount's errors as [`decode_numeric`](super::decode_numeric)'s.
+    pub fn decode_binary(bytes: &[u8]) -> Result<Self, Error> {
         let mut reader = Reader(bytes);
         if reader.u32()? != 2 {
             return Err(Error::Malformed("a money composite has two fields"));

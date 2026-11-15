@@ -127,7 +127,7 @@ pub fn decode_numeric(bytes: &[u8]) -> Result<Decimal, Error> {
 ///
 /// let mut bytes = Vec::new();
 /// encode_numeric(&"-0.0005".parse::<Decimal>()?, &mut bytes)?;
-/// assert_eq!(bytes, [0, 1, 0xFF, 0xFF, 0x40, 0, 0, 4, 0x13, 0x88]); // 5000 × 10000^−1
+/// assert_eq!(bytes, [0, 1, 0xFF, 0xFF, 0x40, 0, 0, 4, 0, 5]); // −5 × 10000^−1
 /// # Ok::<(), ducat_sqlx::Error>(())
 /// ```
 ///

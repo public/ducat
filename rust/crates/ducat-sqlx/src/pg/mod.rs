@@ -42,7 +42,7 @@ use sqlx::postgres::types::Oid;
 use sqlx::postgres::{
     PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgTypeKind, PgValueFormat, PgValueRef, Postgres,
 };
-use sqlx::{Decode, Encode, Type};
+use sqlx::{Decode, Encode, Type, TypeInfo};
 
 pub use composite::{MONEY_TYPE_NAME, MoneyRecord, PgMoney, money_type_sql};
 use composite::{NUMERIC_OID, TEXT_OID, VARCHAR_OID};
@@ -172,6 +172,16 @@ fn money_type() -> PgTypeInfo {
 
 /// The composite money type, or any composite of `(numeric, text)` (or `varchar`) fields.
 fn is_money_type(ty: &PgTypeInfo) -> bool {
+    // A type declared by name (ours) has no OID until a connection resolves it.
+    if ty.oid().is_none() {
+        return *ty == money_type();
+    }
+    // In the simple (text) protocol sqlx doesn't look custom types up: a column of one is
+    // declared by its OID alone, shown as "?", and `kind()` would panic on it. Accept it, as
+    // sqlx's own comparison does for such types; the text decoder still checks the value.
+    if ty.name() == "?" {
+        return true;
+    }
     if let PgTypeKind::Composite(fields) = ty.kind() {
         if let [(_, amount), (_, currency)] = &fields[..] {
             return amount.oid() == Some(Oid(NUMERIC_OID))
@@ -179,7 +189,7 @@ fn is_money_type(ty: &PgTypeInfo) -> bool {
         }
         return false;
     }
-    *ty == money_type()
+    false
 }
 
 fn decode_record(value: PgValueRef<'_>) -> Result<MoneyRecord, BoxDynError> {

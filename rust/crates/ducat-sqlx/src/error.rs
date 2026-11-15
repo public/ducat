@@ -6,8 +6,11 @@ use crate::DecimalColumnSize;
 
 /// Why a value couldn't be read from, or written to, a column.
 ///
-/// Every decoder and encoder in this crate returns this (boxed, as sqlx's `BoxDynError`, inside
-/// sqlx's own error); nothing panics on any input. Downcast sqlx's error source to match on it.
+/// Every decoder and encoder in this crate returns this, boxed as sqlx's `BoxDynError`; nothing
+/// panics on any input. A decoding error reaches the caller as `sqlx::Error::ColumnDecode`, whose
+/// `source` downcasts to this. sqlx's `Query::bind` keeps only the text of an encoding error, so
+/// use `Query::try_bind` (or the conversions, such as [`minor_units`](crate::minor_units) and
+/// [`DecimalColumnSize::fit`](crate::DecimalColumnSize::fit), before binding) to match on it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Error {
