@@ -164,7 +164,14 @@ pub enum Error {
     /// A processor amount beyond what it takes: an integer beyond 2^53 − 1, or more than 15 digits before PayPal's point.
     AmountTooLarge,
     /// A rate time that isn't a date `YYYY-MM-DD` or an instant `YYYY-MM-DDTHH:MM[:SS[.sss]]`
-    /// with `Z` or `±HH:MM` (see [`UtcInstant`](crate::convert::UtcInstant)).
+    #[cfg_attr(
+        feature = "convert",
+        doc = "with `Z` or `±HH:MM` (see [`UtcInstant`](crate::convert::UtcInstant))."
+    )]
+    #[cfg_attr(
+        not(feature = "convert"),
+        doc = "with `Z` or `±HH:MM` (see `UtcInstant`)."
+    )]
     InvalidTime,
     /// A rate-source file that can't be read: not the source's format, a bad date, an unreadable
     /// cell, or two different values for one rate (ducat's `SyntaxError`).

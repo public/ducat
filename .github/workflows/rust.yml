@@ -150,3 +150,15 @@ jobs:
       - run: cargo doc -p ducat -p ducat-words -p ducat-format --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings
+      # intra-doc links to feature-gated items must resolve with every feature and with none
+      - run: cargo doc --workspace --no-deps --locked --no-default-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+      # in the workspace build ducat-format enables ducat's territories feature (feature
+      # unification), so ducat's own no-default-features docs need a build of their own
+      - run: cargo doc -p ducat --no-deps --locked --no-default-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc --workspace --no-deps --locked --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
