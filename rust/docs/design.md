@@ -88,7 +88,11 @@ format's JSON shape. Malformed input is an error, never a rounding (`Error::Inva
 20022 text). The readers take what the specs allow, as ducat does since #356: ProtoJSON's numbers or strings for
 `units` and `nanos`, exponent form included, and `xs:decimal`'s leading sign and `-0`. ducat's rule that a `units`
 *number* past 2^53 − 1 is refused is JavaScript's: serde reads JSON integers without loss, so the port has no such
-rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either.
+rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either. Currencies outside ISO 4217
+have no registry to look up ([decision 2](#decisions-made-while-building-milestone-1)): a `Money<C>` reader reads `C::CODE` at its exponent, and `AnyMoney`'s
+`from_*_with` readers take the currencies ducat's `defineCurrency` would have registered as an argument
+(`wire::KnownCurrencies`: a code, a slice, or a resolver closure). ISO codes resolve first, then the caller's, then
+the withdrawn table, so a withdrawn code held at another exponent is the caller's.
 
 ### Milestone 6a: words
 
