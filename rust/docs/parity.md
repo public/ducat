@@ -245,96 +245,96 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `ComparatorOptions` | arguments of `ducat::convert::comparator` | same |  |
-| `ComparatorOptions#asOf` | the `RateQuery` argument of `comparator` | same |  |
-| `ComparatorOptions#base` | the base `CurrencyCode` argument of `comparator` | same |  |
-| `ConvertOptions` | `ducat::convert::ConvertOptions` | same |  |
-| `ConvertOptions#scale` | `ConvertOptions::scale` | same |  |
+| `ComparatorOptions` | arguments of `ducat::convert::comparator` | same | the `base` and `query` arguments of `comparator` and `sort_by_value` |
+| `ComparatorOptions#asOf` | the `RateQuery` argument of `comparator` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | a `Time` in the `RateQuery`, parsed strictly (`YYYY-MM-DD` or an instant with `Z`/`±HH:MM`, `Err(InvalidTime)`); ducat takes a `Date` or any string `new Date` reads, `RangeError` for one it can't |
+| `ComparatorOptions#base` | the base `CurrencyCode` argument of `comparator` | same | a `CurrencyCode` |
+| `ConvertOptions` | `ducat::convert::ConvertOptions` | same | `Default` is ducat's no-options call |
+| `ConvertOptions#scale` | `ConvertOptions::scale` | same | an `Option<u16>`: `Err(InvalidScale)` past `MAX_SCALE` (ducat's `RangeError`), `Err(ScaleWithPolicy)` with a rounding policy (ducat's `TypeError`) |
 | `ConvertOptions#strictValidity` | `ConvertOptions::valid_at` | divergent: [no clock: times are arguments](design.md#milestone-5d1-rates-providers-and-bags) | the time to check against is given, not read from a clock |
-| `DetailedConversion` | the result of `Rate::convert_detailed` | same |  |
-| `Money#convert` | `Money::convert`, `AnyMoney::convert`, `convert_through` | same |  |
-| `MoneyBag` | [`ducat::convert::MoneyBag`](../crates/ducat/src/convert/bag.rs) | same |  |
-| `MoneyBag#add` | `MoneyBag::with` | same |  |
-| `MoneyBag#currencies` | `MoneyBag::currencies` | same |  |
-| `MoneyBag#exactTotal` | `MoneyBag::exact_total` | same |  |
-| `MoneyBag#get` | `MoneyBag::get` | same |  |
-| `MoneyBag#toJSON` | `serde::Serialize` for `MoneyBag` | same |  |
-| `MoneyBag#total` | `MoneyBag::total` | same | rounded once |
-| `MoneyBag#values` | `MoneyBag::values` | same |  |
-| `ProviderConvertOptions` | `ducat::convert::ProviderConvertOptions` | same |  |
-| `ProviderConvertOptions#asOf` | `ProviderConvertOptions::as_of` | same |  |
-| `ProviderConvertOptions#scale` | `ProviderConvertOptions::scale` | same |  |
+| `DetailedConversion` | the result of `Rate::convert_detailed` | same | `Rounded<Money<T>, ExactMoney<T>>`: `value` and `residual`; ducat's `rate` field is the receiver |
+| `Money#convert` | `Money::convert`, `AnyMoney::convert`, `Rate::convert`, `convert_through` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the rounding is required (ducat defaults to halfExpand). At a `Rate`, at a factor (`Err(NonPositiveRate)` for one that isn't positive, ducat's `RangeError`) or through a provider (`Err(RateUnavailable)`) |
+| `MoneyBag` | [`ducat::convert::MoneyBag`](../crates/ducat/src/convert/bag.rs) | same | of `AnyMoney`, in first-seen order |
+| `MoneyBag#add` | `MoneyBag::with` | same | returns a `Result` that can't fail (one currency's amounts always add) |
+| `MoneyBag#currencies` | `MoneyBag::currencies` | same | an iterator |
+| `MoneyBag#exactTotal` | `MoneyBag::exact_total` | same | `Err(RateUnavailable)` or `Err(CurrencyMismatch)` from `rate_of`, as ducat's `rateOf` throws |
+| `MoneyBag#get` | `MoneyBag::get` | same | `None` when the bag has none, as ducat's `undefined` |
+| `MoneyBag#toJSON` | `serde::Serialize` for `MoneyBag` | same | a list of money JSON values, as ducat |
+| `MoneyBag#total` | `MoneyBag::total` | same | rounded once; the rounding is required in ducat too; errors as `MoneyBag#exactTotal`, then `Err(Rounding)` |
+| `MoneyBag#values` | `MoneyBag::values` | same | a slice, in first-seen order |
+| `ProviderConvertOptions` | `ducat::convert::ProviderConvertOptions` | same | `Default` is ducat's no-options call |
+| `ProviderConvertOptions#asOf` | `ProviderConvertOptions::as_of` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | a `Time`, as `ComparatorOptions#asOf` |
+| `ProviderConvertOptions#scale` | `ProviderConvertOptions::scale` | same | as `ConvertOptions#scale` |
 | `ProviderConvertOptions#strictValidity` | `ProviderConvertOptions::valid_at` | divergent: [no clock: times are arguments](design.md#milestone-5d1-rates-providers-and-bags) |  |
-| `Rate` | `ducat::convert::Rate<F, T>`, `AnyRate` | same |  |
-| `Rate#andThen` | `Rate::and_then`, `AnyRate::and_then` | same |  |
-| `Rate#asOf` | `RateInfo::as_of` (`Rate::info`) | same |  |
-| `Rate#availableAt` | `RateInfo::available_at` | same |  |
+| `Rate` | `ducat::convert::Rate<F, T>`, `AnyRate` | same | `Rate<F, T>` with the pair in the type, `AnyRate` at run time |
+| `Rate#andThen` | `Rate::and_then`, `AnyRate::and_then` | same | typed: a pair that doesn't chain doesn't compile; `AnyRate::and_then` returns `Err(CurrencyMismatch)` (expected this rate's `to`, actual `next`'s `from`), as ducat throws |
+| `Rate#asOf` | `RateInfo::as_of` (`Rate::info`) | same | an `Option<Time>` |
+| `Rate#availableAt` | `RateInfo::available_at` | same | an `Option<Time>` |
 | `Rate#checkValidity` | `Rate::is_expired`; `ConvertOptions::valid_at` in `convert_with` | missing | TS has a public throwing check; Rust's is private, inside `convert_with` (`Rate::is_expired` only answers yes/no). The fix adds `Rate::check_validity(&self, at) -> Result<(), Error>` |
-| `Rate#convert` | `Rate::convert`, `convert_with`, `AnyRate::convert` | same |  |
-| `Rate#derivedFrom` | `Rate::derived_from` | same |  |
-| `Rate#from` | `Rate::from` | same |  |
+| `Rate#convert` | `Rate::convert`, `convert_with`, `AnyRate::convert` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the rounding is required (ducat defaults to halfExpand). The same failures: `Err(CurrencyMismatch)` on `AnyRate`, `Err(RateExpired)` with `valid_at`, `Err(ScaleWithPolicy)` (ducat's `TypeError`), `Err(Rounding)` |
+| `Rate#derivedFrom` | `Rate::derived_from` | same | a slice of `AnyRate` |
+| `Rate#from` | `Rate::from` | same | a `CurrencyCode` |
 | `Rate#inverse` | `Rate::inverse` | same | infallible: a quote describes its rate exactly |
 | `Rate#isAvailable` | `Rate::is_available` | divergent: [no clock: times are arguments](design.md#milestone-5d1-rates-providers-and-bags) | takes the time |
 | `Rate#isExpired` | `Rate::is_expired` | divergent: [no clock: times are arguments](design.md#milestone-5d1-rates-providers-and-bags) | takes `now` |
 | `Rate#quote` | `RateInfo::quote` | same |  |
 | `Rate#ratio` | `Rate::ratio` | same |  |
-| `Rate#round` | `Rate::round` | same |  |
+| `Rate#round` | `Rate::round`, `AnyRate::round` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the rounding is required (ducat defaults to halfEven); `places` is a `u16` up to `MAX_SCALE` (`Err(InvalidScale)`), where ducat takes any non-negative integer; `Err(NonPositiveRate)` when it rounds to zero, as ducat's `RangeError` |
 | `Rate#source` | `RateInfo::source` | same |  |
-| `Rate#to` | `Rate::to` | same |  |
-| `Rate#toDecimal` | `Rate::to_decimal` | same |  |
-| `Rate#toJSON` | `serde::Serialize` for `Rate`/`AnyRate` (`RateJSON` shape) | same |  |
-| `Rate#toString` | `Display` for `Rate` | same |  |
+| `Rate#to` | `Rate::to` | same | a `CurrencyCode` |
+| `Rate#toDecimal` | `Rate::to_decimal`, `AnyRate::to_decimal` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the rounding is required (ducat defaults to halfEven); `places` up to `MAX_SCALE` as `Rate#round` |
+| `Rate#toJSON` | `serde::Serialize` for `Rate`/`AnyRate` (`RateJSON` shape) | same | ducat's `RateJSON` shape and field order |
+| `Rate#toString` | `Display` for `Rate` | same | the published digits for a one-for-one quote, else the exact decimal or `num/den`, as ducat |
 | `Rate#type` | `RateInfo::rate_type` | same |  |
 | `Rate#validUntil` | `RateInfo::valid_until` | same |  |
-| `Rate#withMargin` | `Rate::with_margin` | same |  |
-| `RateExpiredError` | `ducat::Error::RateExpired` | same |  |
-| `RateExpiredError#validUntil` | `Error::RateExpired { valid_until }` | same |  |
-| `RateInfo` | `ducat::convert::RateInfo` | same |  |
+| `Rate#withMargin` | `Rate::with_margin`, `AnyRate::with_margin` | same | `Err(NonPositiveRate)` for a margin of −100% or less, where ducat throws `RangeError` |
+| `RateExpiredError` | `ducat::Error::RateExpired` | same | with `from` and `to` too |
+| `RateExpiredError#validUntil` | `Error::RateExpired { valid_until }` | same | a `Time` |
+| `RateInfo` | `ducat::convert::RateInfo` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | `as_of`, `available_at` and `valid_until` are `Time`s, parsed strictly (`Err(InvalidTime)`); ducat takes a `Date` or any string `new Date` reads (local times, `T24:00`), `RangeError` for one it can't. The quote is checked by `with_info`: `Err(InvalidQuote)`, `Err(QuoteMismatch)` for ducat's `RangeError`s |
 | `RateJSON` | the `serde` shape of `Rate` | same | no named Rust type |
-| `RateProvider` | `ducat::convert::RateProvider`, `BoxedProvider` | same |  |
+| `RateProvider` | `ducat::convert::RateProvider`, `BoxedProvider` | same | a trait over `CurrencyCode`s, so providers can be trait objects |
 | `RateProvider#rate` | `RateProvider::rate` | same | returns `Option<AnyRate>` |
-| `RateQuery` | `ducat::convert::RateQuery` | same |  |
-| `RateQuote` | `ducat::convert::RateQuote` | same |  |
+| `RateQuery` | `ducat::convert::RateQuery` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | `as_of: Option<Time>`, as `ComparatorOptions#asOf` |
+| `RateQuote` | `ducat::convert::RateQuote` | same | `per` an `Option<i64>`: below 1 is `Err(InvalidQuote)` (from `with_info`), as ducat's `RangeError` for one that isn't a positive safe integer |
 | `RateTable` | [`ducat::convert::RateTable`](../crates/ducat/src/convert/provider.rs) | same |  |
-| `RateTable#asOf` | `RateTable::as_of` | same |  |
-| `RateTable#availableAt` | `RateTable::available_at` | same |  |
-| `RateTable#base` | `RateTable::base` | same |  |
-| `RateTable#missing` | `RateTable::missing` | same | plus `unknown()` for codes the port skips |
-| `RateTable#rate` | `RateProvider::rate` for `RateTable` | same |  |
-| `RateTable#rates` | `RateTable::rates` | same |  |
-| `RateTable#validUntil` | `RateTable::valid_until` | same |  |
-| `RateTableSpec` | `ducat::convert::RateTableBuilder`, `RateTable::from_rates` | same |  |
-| `RateType` | `ducat::convert::RateType` | same |  |
+| `RateTable#asOf` | `RateTable::as_of` | same | an `Option<Time>` |
+| `RateTable#availableAt` | `RateTable::available_at` | same | an `Option<Time>` |
+| `RateTable#base` | `RateTable::base` | same | an `Option<CurrencyCode>` |
+| `RateTable#missing` | `RateTable::missing` | same | `CurrencyCode`s; plus `unknown()` for codes the port skips |
+| `RateTable#rate` | `RateProvider::rate` for `RateTable` | same | filters by the rate's and the table's timing, as ducat |
+| `RateTable#rates` | `RateTable::rates` | same | in the order given |
+| `RateTable#validUntil` | `RateTable::valid_until` | same | an `Option<Time>` |
+| `RateTableSpec` | `ducat::convert::RateTableBuilder`, `RateTable::from_rates` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | `RateTable::with_base(base, info)` with `.rate(currency, text)`, `.entry(currency, rate)` (`Err(CurrencyMismatch)` for another pair, as ducat) and `.missing(currency)` for ducat's `null`; the timing is a `RateInfo` of `Time`s, read strictly (see `RateInfo`). `.rate` takes text: a `bigint` or `Ratio` entry goes through `entry` |
+| `RateType` | `ducat::convert::RateType` | same | `Mid`, `Bid`, `Ask` and any other name, as ducat's open string type |
 | `RateUnavailableError` | `ducat::Error::RateUnavailable` | same |  |
-| `RateUnavailableError#asOf` | `Error::RateUnavailable { as_of }` | same |  |
-| `RateUnavailableError#from` | `Error::RateUnavailable { from }` | same |  |
-| `RateUnavailableError#to` | `Error::RateUnavailable { to }` | same |  |
+| `RateUnavailableError#asOf` | `Error::RateUnavailable { as_of }` | same | an `Option<Time>` |
+| `RateUnavailableError#from` | `Error::RateUnavailable { from }` | same | a `CurrencyCode` |
+| `RateUnavailableError#to` | `Error::RateUnavailable { to }` | same | a `CurrencyCode` |
 | `SnapshotOptions` | — | missing | with `snapshots` |
 | `SnapshotOptions#lookback` | — | missing | with `snapshots` |
 | `SnapshotOptions#max` | — | missing | with `snapshots` |
 | `Snapshots` | — | missing | with `snapshots` |
 | `Snapshots#at` | — | missing | with `snapshots` |
-| `TotalOptions` | `ducat::convert::TotalOptions` | same |  |
-| `TotalOptions#asOf` | `TotalOptions::query` | same |  |
-| `TotalOptions#scale` | `TotalOptions::scale` | same |  |
-| `bag` | `MoneyBag::new`, `MoneyBag::of` | same |  |
-| `chain` | `ducat::convert::chain` | same |  |
-| `comparator` | `ducat::convert::comparator` | same |  |
-| `convert` | `Rate::convert`, `Money::convert` | same |  |
-| `convertDetailed` | `Rate::convert_detailed`, `convert_detailed_with` | same |  |
-| `exchangeRate` | `Rate::new`, `Rate::parse`, `AnyRate::new` | same |  |
+| `TotalOptions` | `ducat::convert::TotalOptions` | same | `Default` is ducat's no-options call |
+| `TotalOptions#asOf` | `TotalOptions::query` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | the `RateQuery`'s `Time`, as `ComparatorOptions#asOf` |
+| `TotalOptions#scale` | `TotalOptions::scale` | same | an `Option<u16>`: `Err(InvalidScale)` past `MAX_SCALE` |
+| `bag` | `MoneyBag::new`, `MoneyBag::of` | same | `MoneyBag::of(items)` (a `Result` that can't fail), `MoneyBag::new()` for none |
+| `chain` | `ducat::convert::chain` | same | providers of one type; mix kinds as `BoxedProvider`s |
+| `comparator` | `ducat::convert::comparator` | same | a `Comparator` whose `compare` returns `Result<Ordering, _>`: `Err(RateUnavailable)` where ducat's function throws |
+| `convert` | `Rate::convert`, `Money::convert`, `AnyMoney::convert`, `convert_through` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | as `Money#convert`; a factor conversion at a scale is `AnyRate::new(..)?.convert_with` |
+| `convertDetailed` | `Rate::convert_detailed`, `convert_detailed_with`, `AnyRate::convert_detailed` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the rounding is required (ducat defaults to halfExpand); validity is checked first, as ducat |
+| `exchangeRate` | `Rate::new`, `Rate::parse`, `AnyRate::new` | same | the codes are `CurrencyCode`s (ducat takes any string); `Err(NonPositiveRate)` for a rate that isn't positive, as ducat's `RangeError`; ducat's `info` is `with_info` (see `RateInfo`); `parse` keeps the published digits |
 | `identity` | `ducat::convert::identity` | same |  |
-| `impliedRate` | `Rate::implied` | same |  |
+| `impliedRate` | `Rate::implied` | missing | `Rate::implied` takes typed `Money<F>` and `Money<T>` only, and no `info` (chain `with_info`): there is no `AnyRate::implied` for amounts in run-time currencies, which ducat's takes. `Err(NonPositiveRate)` for a zero or negative amount, where ducat throws `RangeError`. Fix: `AnyRate::implied(&AnyMoney, &AnyMoney)` |
 | `isRate` | — | not ported: by design (the type system) |  |
 | `multiplyByRatioAtScale` | `Money::multiply`, `AnyMoney::multiply` with a scaled `RoundingPolicy` | divergent: [single rounding into another scale](design.md#parity-decisions) | `Money::multiply`/`AnyMoney::multiply` with a `RoundingPolicy::new(mode).with_scale(s)?` rounds the product once at scale `s`; the minor-unit kernel on `Int` isn't public. Failures differ: the TS kernel checks no argument (any integer `scaleShift`, negative or past 1000, works; a fractional or infinite one is a native `RangeError` from `BigInt`, a huge one `RangeError: Maximum BigInt size exceeded`; `NaN` acts as 0), where Rust's target scale is a `u16` and `with_scale` returns `Err(InvalidScale)` past `MAX_SCALE` (1000), so no shift to a negative or a >1000 scale; nothing panics |
-| `rateFromJSON` | `serde::Deserialize` for `Rate`/`AnyRate` | same |  |
-| `rateOf` | `ducat::convert::rate_of`, `Rate::lookup` | same | `Error::RateUnavailable` |
-| `rateTable` | `RateTable::with_base`, `RateTable::from_rates` | same |  |
+| `rateFromJSON` | `serde::Deserialize` for `Rate`/`AnyRate` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | `Deserialize` reads the times strictly (see `RateInfo`) and the rate as `Ratio`'s `FromStr`; ducat reads them with `new Date` and `ratio()` |
+| `rateOf` | `ducat::convert::rate_of`, `Rate::lookup` | same | `Err(RateUnavailable)` when the provider has none, `Err(CurrencyMismatch)` when it answers for another pair, as ducat |
+| `rateTable` | `RateTable::with_base`, `RateTable::from_rates` | same | see `RateTableSpec` |
 | `reversed` | `ducat::convert::reversed` | same |  |
 | `snapshots` | — | missing | tables loaded on demand by date; decided: a sync loader closure/trait in `ducat`, async in `ducat-fetch` |
 | `snapshotsFrom` | — | missing | as `snapshots`, from a list of loaders |
-| `sortByValue` | `ducat::convert::sort_by_value` | same |  |
-| `sumByCurrency` | `ducat::convert::sum_by_currency` | same |  |
+| `sortByValue` | `ducat::convert::sort_by_value` | same | every rate is looked up before anything is reordered; `Err(RateUnavailable)` where ducat throws |
+| `sumByCurrency` | `ducat::convert::sum_by_currency` | same | a `Vec` in first-seen order, ducat's `Map` |
 | `via` | `ducat::convert::via` | same |  |
 
 ### `./convert/ecb`
@@ -1328,7 +1328,7 @@ Every `missing` row, grouped into pull requests in the order users would hit the
 **decided**); the rest are proposals.
 
 1. **Checked clamp, min and max, and rate validity** (`ducat`, one small PR): `.` `Money#clamp`, `./fn` `clamp`,
-   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`, `.` `Money#min`, `.` `Money#max`, `./fn` `min`, `./fn` `max`. `min` and `max`
+   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`, `.` `Money#min`, `.` `Money#max`, `./fn` `min`, `./fn` `max`, `./convert` `impliedRate`. `AnyRate::implied(&AnyMoney, &AnyMoney)` for run-time currencies; `min` and `max`
    on `AnyMoney` (`Err(CurrencyMismatch)`), and a `max` on `Money<C>` that keeps the first of equal values, as ducat
    (`Ord::max` keeps the second). `clamp(&self, lo, hi) -> Result` on `Money`,
    `AnyMoney` and `ExactMoney` (an `Err` for `lo > hi` and across currencies, where `Ord::clamp` panics; `Money`
