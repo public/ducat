@@ -11,7 +11,7 @@
 //! |---|---|
 //! | `arbCurrency(options)` | [`currency_code`] with [`CurrencyOptions`], `any::<CurrencyCode>()` |
 //! | `arbMoney(options)` | [`money`] and [`any_money`] with [`MoneyOptions`], `any::<Money<Eur>>()` and `any::<AnyMoney>()` |
-//! | (none) | [`int`], [`int_in`], [`ratio`], [`rounding`], [`rounding_policy`], and `any::<T>()` for each type |
+//! | (none) | [`int`], [`int_in`], [`ratio`], [`rounding`], `rounding_policy` (with the `policy` feature), and `any::<T>()` for each type |
 //! | `moneyEquality` | nothing to install: `==` on [`Money`] and [`AnyMoney`] is already by value |
 //! | `toBeMoney` | [`assert_money_eq!`](crate::assert_money_eq) |
 //! | `identical` in tests | [`assert_identical!`](crate::assert_identical) (same value and scale) |
