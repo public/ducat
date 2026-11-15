@@ -415,10 +415,18 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
 - **Money is always formatted as its own currency.** `ducat-format` takes no `style`, `currency`, `unit` or
   `unitDisplay`: a `Money` formats as a currency amount in its own currency; formatting another code or style would
   drop or misstate the currency.
-- **Floats only go out.** "No floats in arithmetic" still holds. `to_f64` and `to_minor_f64` (TS `toNumber`,
-  `toMinorNumber` with `lossy`, `Fixed#toNumber`, `ExactMoney#toNumber`) will be ported as explicitly lossy,
-  output-only conversions, documented "for display or interop only; never round-trip", and never called inside
-  ducat.
+- **Floats only go out.** "No floats in arithmetic" still holds: no float is read back or computed with. `to_f64`
+  and `to_minor_f64` (TS `toNumber`, `toMinorNumber` with `ToMinorF64Options::lossy`, `Fixed#toNumber`,
+  `ExactMoney#toNumber`) are explicitly lossy, output-only conversions, documented "for display or interop only;
+  never round-trip", and never called inside ducat: `rust/clippy.toml` disallows them across the workspace
+  (`clippy::disallowed_methods`), and only their own tests opt out. Each is rounded once, bit for bit as ducat: a
+  decimal amount is its exact decimal parsed with `str::parse::<f64>` (in `core`, correctly rounded, ties to even, as
+  JavaScript's `Number` of the decimal string), with no float arithmetic on the way; an `ExactMoney` follows ducat's
+  own algorithm (a 65- or 66-bit quotient with a sticky bit, converted once, then scaled by two exact powers of two),
+  which also keeps ducat's second rounding below 2^−1022. Overflow is ±infinity, as `Number('1e400')`, not an error;
+  `to_minor_f64` without `lossy` is `Err(Overflow)` past 2^53 − 1 minor units (ducat's `RangeError`), after
+  `Err(Rounding)` for digits below the minor unit. A zero amount has no sign, so it is +0.0 at any scale; −0.0 comes
+  only from a negative amount below the smallest subnormal (−1 at scale 400), as in ducat.
 
 - **Adyen's Creation Date.** `adyen_rate` reads the Creation Date as `Date.parse` would but never fails on it: a date
   or time it can't read gives the local day (or no `as_of`), where ducat throws a `RangeError`; and it takes ISO and
