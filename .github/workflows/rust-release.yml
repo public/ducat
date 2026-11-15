@@ -57,13 +57,9 @@ jobs:
           # the release notes name this commit: the spec/ the crates were verified against
           echo "Rust crates $VERSION, verified against spec/ at $(git rev-parse HEAD)." >> "$GITHUB_STEP_SUMMARY"
 
-      # TODO: unverified, and not pinned by SHA yet. crates.io's trusted publishing
-      # (https://crates.io/docs/trusted-publishing) is understood to use
-      # rust-lang/crates-io-auth-action@v1 with the token in its `token` output, but neither the
-      # action's README nor its tags could be read when this was written. Before the first tag push:
-      # check the action and its inputs and outputs against that README, and replace @v1 with the
-      # commit SHA of the release tag (# v1.x.y), as the other actions are pinned.
-      - uses: rust-lang/crates-io-auth-action@v1
+      # crates.io's trusted publishing (https://crates.io/docs/trusted-publishing): a short-lived token
+      # in the action's `token` output; its optional `url` input is left at its default
+      - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: auth
 
       - name: Publish, in dependency order
