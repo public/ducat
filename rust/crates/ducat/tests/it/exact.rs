@@ -11,33 +11,38 @@ fn exact<C: Currency>(text: &str) -> ExactMoney<C> {
     text.parse::<Money<C>>().unwrap().exact()
 }
 
-/// (amount, `toString`, isZero, isPositive, isNegative), as ducat gives them.
-fn cases() -> Vec<(ExactMoney<Eur>, &'static str, bool, bool, bool)> {
+const POSITIVE: [bool; 3] = [false, true, false];
+const ZERO: [bool; 3] = [true, false, false];
+const NEGATIVE: [bool; 3] = [false, false, true];
+
+/// (amount, `toString`, [isZero, isPositive, isNegative]), as ducat gives them.
+fn cases() -> Vec<(ExactMoney<Eur>, &'static str, [bool; 3])> {
     let third = exact::<Eur>("1").divide(3).unwrap();
+    let minus_third = exact::<Eur>("-1").divide(3).unwrap();
+    // ducat's numerator is the number -0 here, and still zero
+    let minus_zero = exact::<Eur>("0").multiply(-1).unwrap();
     let big = exact::<Eur>("18446744073709551616").divide(-3).unwrap();
     vec![
-        (third.clone(), "1/3 EUR", false, true, false),
-        (exact("-1").divide(3).unwrap(), "-1/3 EUR", false, false, true),
-        (exact("0"), "0 EUR", true, false, false),
-        // ducat's numerator is the number -0 here, and still zero
-        (exact("0").multiply(-1).unwrap(), "0 EUR", true, false, false),
-        (third.clone() - third, "0 EUR", true, false, false),
-        (big.clone(), "-18446744073709551616/3 EUR", false, false, true),
-        (-big, "18446744073709551616/3 EUR", false, true, false),
+        (third.clone(), "1/3 EUR", POSITIVE),
+        (minus_third, "-1/3 EUR", NEGATIVE),
+        (exact("0"), "0 EUR", ZERO),
+        (minus_zero, "0 EUR", ZERO),
+        (third.clone() - third, "0 EUR", ZERO),
+        (big.clone(), "-18446744073709551616/3 EUR", NEGATIVE),
+        (-big, "18446744073709551616/3 EUR", POSITIVE),
     ]
 }
 
 #[test]
 fn sign_predicates_match_ducat() {
-    for (value, text, zero, positive, negative) in cases() {
+    for (value, text, expected) in cases() {
+        let [zero, positive, negative] = expected;
         assert_eq!(value.to_string(), text);
         let any: AnyExactMoney = value.to_any();
-        for (is_zero, is_positive, is_negative) in [
-            (value.is_zero(), value.is_positive(), value.is_negative()),
-            (any.is_zero(), any.is_positive(), any.is_negative()),
-        ] {
-            assert_eq!((is_zero, is_positive, is_negative), (zero, positive, negative), "{text}");
-        }
+        let typed = [value.is_zero(), value.is_positive(), value.is_negative()];
+        let any = [any.is_zero(), any.is_positive(), any.is_negative()];
+        assert_eq!(typed, expected, "{text}");
+        assert_eq!(any, expected, "{text}");
         assert_eq!(value.signum() == 0, zero, "{text}");
         assert_eq!(value.signum() > 0, positive, "{text}");
         assert_eq!(value.signum() < 0, negative, "{text}");
@@ -52,7 +57,7 @@ fn sign_predicates_match_ducat() {
 
 /// ducat's `ExactMoney#toJSON` always throws; here the impls are absent, so storing an exact
 /// amount doesn't compile. An inherent const with a `Serialize` bound shadows the trait's
-/// `false` only where the bound holds.
+/// `false` only where the bound holds; the checks run at compile time.
 #[cfg(feature = "serde")]
 mod no_json {
     use core::marker::PhantomData;
@@ -80,12 +85,12 @@ mod no_json {
 
     #[test]
     fn exact_money_has_no_serde_form() {
-        assert!(!Ser::<ExactMoney<Eur>>::SERIALIZE);
-        assert!(!Ser::<AnyExactMoney>::SERIALIZE);
-        assert!(!De::<ExactMoney<Eur>>::DESERIALIZE);
-        assert!(!De::<AnyExactMoney>::DESERIALIZE);
+        const { assert!(!Ser::<ExactMoney<Eur>>::SERIALIZE) };
+        const { assert!(!Ser::<AnyExactMoney>::SERIALIZE) };
+        const { assert!(!De::<ExactMoney<Eur>>::DESERIALIZE) };
+        const { assert!(!De::<AnyExactMoney>::DESERIALIZE) };
         // the probe sees the impls that are there: rounded money has its JSON form
-        assert!(Ser::<Money<Eur>>::SERIALIZE && Ser::<AnyMoney>::SERIALIZE);
-        assert!(De::<Money<Eur>>::DESERIALIZE && De::<AnyMoney>::DESERIALIZE);
+        const { assert!(Ser::<Money<Eur>>::SERIALIZE && Ser::<AnyMoney>::SERIALIZE) };
+        const { assert!(De::<Money<Eur>>::DESERIALIZE && De::<AnyMoney>::DESERIALIZE) };
     }
 }
