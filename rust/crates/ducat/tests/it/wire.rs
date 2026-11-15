@@ -3,7 +3,7 @@
 
 use ducat::iso::{Eur, Jpy, Kwd, Usd};
 use ducat::wire::{DineroObject, GoogleMoney, Iso20022Amount, MinorUnitAmount, WireReadOptions};
-use ducat::{AnyMoney, CurrencyCode, Error, Money, Rounding};
+use ducat::{AnyMoney, Currency, CurrencyCode, Error, Money, Rounding};
 
 use crate::common::EXACT;
 
@@ -262,5 +262,221 @@ fn json_shapes() {
     assert!(
         serde_json::from_str::<DineroObject>(r#"{"amount":"500","currency":"USD","precision":2}"#)
             .is_err()
+    );
+}
+
+// --- currencies outside ISO 4217 (ducat's defineCurrency) ----------------------------------------
+
+ducat::define_currency! {
+    /// Bitcoin, in satoshis.
+    Btc = "BTC", 8
+}
+ducat::define_currency! {
+    /// Loyalty points: a code longer than three letters.
+    Points = "POINTS", 0
+}
+ducat::define_currency! {
+    /// Gold, an ISO 4217 code with no minor unit, held to the gram's thousandth.
+    Xau = "XAU", 3
+}
+ducat::define_currency! {
+    /// The kuna, withdrawn, held at another exponent than the one it had.
+    Kuna = "HRK", 3
+}
+
+fn minor(value: i64, currency: &str) -> MinorUnitAmount {
+    MinorUnitAmount {
+        value,
+        currency: currency.into(),
+    }
+}
+
+fn dinero(amount: i64, currency: &str, precision: u16) -> DineroObject {
+    DineroObject {
+        amount,
+        currency: currency.into(),
+        precision,
+    }
+}
+
+/// Unchecked, so that a code `GoogleMoney::new` refuses reaches the reader.
+fn google(currency: &str, units: i64, nanos: i32) -> GoogleMoney {
+    GoogleMoney {
+        currency_code: currency.into(),
+        units,
+        nanos,
+    }
+}
+
+fn iso(currency: &str, value: &str) -> Iso20022Amount {
+    Iso20022Amount {
+        ccy: currency.into(),
+        value: value.into(),
+    }
+}
+
+#[test]
+fn typed_readers_take_their_own_custom_currency() {
+    let options = WireReadOptions::default();
+    let sat = Money::<Btc>::from_minor_units(&minor(1, "BTC")).unwrap();
+    assert_eq!(sat.to_decimal(), "0.00000001");
+    let fee = Money::<Btc>::from_dinero_object(&dinero(15, "BTC", 1)).unwrap();
+    assert_eq!((fee.to_decimal(), fee.scale()), ("1.5".into(), 1));
+    let google_btc = Money::<Btc>::from_google_money(&google("BTC", 1, 500_000_000), &options);
+    assert_eq!(google_btc.unwrap().to_decimal(), "1.50000000");
+    // ISO 20022 takes ISO 4217 codes only: ducat refuses BTC, defined or not
+    assert_eq!(
+        Money::<Btc>::from_iso20022_amount(&iso("BTC", "1"), &options),
+        Err(Error::UnknownCurrency)
+    );
+
+    let points = Money::<Points>::from_dinero_object(&dinero(1, "POINTS", 0)).unwrap();
+    assert_eq!(points.to_decimal(), "1");
+    let points = Money::<Points>::from_minor_units(&minor(250, "POINTS")).unwrap();
+    assert_eq!(points.to_decimal(), "250");
+    // google.type.Money's code is three capital letters
+    assert_eq!(
+        Money::<Points>::from_google_money(&google("POINTS", 1, 0), &options),
+        Err(Error::InvalidWire)
+    );
+
+    // another currency is still a mismatch, and an undefined one still unknown
+    assert_eq!(
+        Money::<Btc>::from_minor_units(&minor(1, "EUR")),
+        Err(Error::CurrencyMismatch {
+            expected: Btc::CODE,
+            actual: CurrencyCode::iso("EUR").unwrap(),
+        })
+    );
+    assert_eq!(
+        Money::<Btc>::from_minor_units(&minor(1, "ETH")),
+        Err(Error::UnknownCurrency)
+    );
+    assert_eq!(
+        Money::<Btc>::from_dinero_object(&dinero(1, "btc", 0)),
+        Err(Error::UnknownCurrency)
+    );
+    assert_eq!(
+        Money::<Eur>::from_minor_units(&minor(1, "BTC")),
+        Err(Error::UnknownCurrency)
+    );
+}
+
+#[test]
+fn typed_readers_take_a_non_monetary_iso_code() {
+    let options = WireReadOptions::default();
+    let ounces = Money::<Xau>::from_iso20022_amount(&iso("XAU", "1.5"), &options).unwrap();
+    assert_eq!(ounces.to_decimal(), "1.500");
+    let ounces = Money::<Xau>::from_minor_units(&minor(1500, "XAU")).unwrap();
+    assert_eq!(ounces.to_decimal(), "1.500");
+    let ounces = Money::<Xau>::from_dinero_object(&dinero(15, "XAU", 1)).unwrap();
+    assert_eq!(ounces.to_decimal(), "1.5");
+    let ounces = Money::<Xau>::from_google_money(&google("XAU", 2, 0), &options).unwrap();
+    assert_eq!(ounces.to_decimal(), "2.000");
+    assert_eq!(
+        Money::<Xau>::from_iso20022_amount(&iso("XAU", "1.2345"), &options),
+        Err(Error::Rounding)
+    );
+    // round trip
+    assert_eq!(
+        ounces.to_iso20022_amount(EXACT, None).unwrap(),
+        iso("XAU", "2.000")
+    );
+    // a withdrawn code held at its own exponent, not the table's
+    let kuna = Money::<Kuna>::from_iso20022_amount(&iso("HRK", "7.531"), &options).unwrap();
+    assert_eq!(kuna.to_decimal(), "7.531");
+    let kuna = Money::<Kuna>::from_minor_units(&minor(7531, "HRK")).unwrap();
+    assert_eq!(kuna.to_decimal(), "7.531");
+}
+
+#[test]
+fn any_readers_take_the_known_currencies() {
+    let options = WireReadOptions::default();
+    let btc = Btc::CODE;
+    let known = [btc, Points::CODE, Xau::CODE];
+
+    for read in [
+        AnyMoney::from_minor_units(&minor(1, "BTC")),
+        AnyMoney::from_dinero_object(&dinero(1, "POINTS", 0)),
+        AnyMoney::from_google_money(&google("BTC", 1, 0), &options),
+        AnyMoney::from_iso20022_amount(&iso("XAU", "1"), &options),
+        AnyMoney::from_minor_units_with(&minor(1, "ETH"), &known),
+        AnyMoney::from_iso20022_amount_with(&iso("BTC", "1"), &options, &known),
+        AnyMoney::from_minor_units_with(&minor(1, "BTC"), &[]),
+    ] {
+        assert_eq!(read, Err(Error::UnknownCurrency));
+    }
+
+    let sat = AnyMoney::from_minor_units_with(&minor(1, "BTC"), &known).unwrap();
+    assert_eq!(
+        (sat.to_decimal(), sat.currency()),
+        ("0.00000001".into(), btc)
+    );
+    let one = AnyMoney::from_minor_units_with(&minor(1, "BTC"), &btc).unwrap();
+    assert_eq!(one, sat);
+    let points = AnyMoney::from_dinero_object_with(&dinero(1, "POINTS", 0), &known[..]).unwrap();
+    assert_eq!(points.currency(), Points::CODE);
+    let google_btc =
+        AnyMoney::from_google_money_with(&google("BTC", 1, 0), &options, &known).unwrap();
+    assert_eq!(google_btc.to_decimal(), "1.00000000");
+    let gold = AnyMoney::from_iso20022_amount_with(&iso("XAU", "1"), &options, &known).unwrap();
+    assert_eq!(
+        (gold.to_decimal(), gold.currency()),
+        ("1.000".into(), Xau::CODE)
+    );
+
+    // a resolver: the whole crypto table, as ducat's defineCryptoCurrencies
+    let crypto = |code: &str| CurrencyCode::crypto(code).ok();
+    let eth = AnyMoney::from_minor_units_with(&minor(1, "ETH"), &crypto).unwrap();
+    assert_eq!(eth.currency(), CurrencyCode::crypto("ETH").unwrap());
+    // an answer for another code is ignored
+    let wrong = |_: &str| Some(btc);
+    assert_eq!(
+        AnyMoney::from_minor_units_with(&minor(1, "ETH"), &wrong),
+        Err(Error::UnknownCurrency)
+    );
+
+    // ISO codes come first and can't be redefined; a known withdrawn code beats the table's
+    let euro = AnyMoney::from_minor_units_with(&minor(1, "EUR"), &known).unwrap();
+    assert_eq!(euro.currency(), CurrencyCode::iso("EUR").unwrap());
+    let kuna = AnyMoney::from_minor_units_with(&minor(7531, "HRK"), &Kuna::CODE).unwrap();
+    assert_eq!(kuna.to_decimal(), "7.531");
+    let table = AnyMoney::from_minor_units_with(&minor(753, "HRK"), &known).unwrap();
+    assert_eq!(table.currency(), CurrencyCode::historic("HRK").unwrap());
+}
+
+#[test]
+fn custom_currency_refusals_keep_ducats_order() {
+    let options = WireReadOptions::default();
+    // ISO 20022: the code's shape, then ISO 4217, then the text, then the sign, then the exponent
+    assert_eq!(
+        AnyMoney::from_iso20022_amount(&iso("btc", "x"), &options),
+        Err(Error::Syntax)
+    );
+    assert_eq!(
+        AnyMoney::from_iso20022_amount(&iso("BTC", "x"), &options),
+        Err(Error::UnknownCurrency)
+    );
+    assert_eq!(
+        AnyMoney::from_iso20022_amount(&iso("XAU", "x"), &options),
+        Err(Error::Syntax)
+    );
+    assert_eq!(
+        AnyMoney::from_iso20022_amount(&iso("XAU", "-1"), &options),
+        Err(Error::InvalidWire)
+    );
+    // google.type.Money: the whole value is checked before the currency
+    assert_eq!(
+        AnyMoney::from_google_money(&google("BTC", 1, -1), &options),
+        Err(Error::InvalidWire)
+    );
+    // dinero.js: the precision before the currency
+    assert_eq!(
+        AnyMoney::from_dinero_object(&dinero(1, "BTC", 1001)),
+        Err(Error::InvalidScale)
+    );
+    assert_eq!(
+        Money::<Btc>::from_dinero_object(&dinero(1, "BTC", 1001)),
+        Err(Error::InvalidScale)
     );
 }
