@@ -326,7 +326,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `identity` | `ducat::convert::identity` | same |  |
 | `impliedRate` | `Rate::implied` | same |  |
 | `isRate` | — | not ported: by design (the type system) |  |
-| `multiplyByRatioAtScale` | `Money::multiply`, `AnyMoney::multiply` with a scaled `RoundingPolicy` | divergent: [single rounding into another scale](design.md#parity-decisions) | `Money::multiply`/`AnyMoney::multiply` with a `RoundingPolicy::new(mode).with_scale(s)?` rounds the product once at scale `s` (money.rs `multiply`: "with a rounding policy to the policy's scale"); the minor-unit kernel on `Int` isn't public |
+| `multiplyByRatioAtScale` | `Money::multiply`, `AnyMoney::multiply` with a scaled `RoundingPolicy` | divergent: [single rounding into another scale](design.md#parity-decisions) | `Money::multiply`/`AnyMoney::multiply` with a `RoundingPolicy::new(mode).with_scale(s)?` rounds the product once at scale `s`; the minor-unit kernel on `Int` isn't public. Failures differ: the TS kernel checks no argument (any integer `scaleShift`, negative or past 1000, works; a fractional or infinite one is a native `RangeError` from `BigInt`, a huge one `RangeError: Maximum BigInt size exceeded`; `NaN` acts as 0), where Rust's target scale is a `u16` and `with_scale` returns `Err(InvalidScale)` past `MAX_SCALE` (1000), so no shift to a negative or a >1000 scale; nothing panics |
 | `rateFromJSON` | `serde::Deserialize` for `Rate`/`AnyRate` | same |  |
 | `rateOf` | `ducat::convert::rate_of`, `Rate::lookup` | same | `Error::RateUnavailable` |
 | `rateTable` | `RateTable::with_base`, `RateTable::from_rates` | same |  |
@@ -1019,7 +1019,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 | `isStripeCurrency` | `ducat::processors::stripe::is_currency` | same |  |
 | `stripeExponent` | `ducat::processors::stripe::exponent` | same |  |
 | `toStripe` | `Money::to_stripe` | same |  |
-| `toStripeAmount` | `Money::to_stripe_amount` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) | `i64`, refused beyond 2^53 − 1 |
+| `toStripeAmount` | `Money::to_stripe_amount`, `AnyMoney::to_stripe_amount` | same | an `i64`; the same failures in ducat's order: `UnsupportedCurrency` (TS `RangeError`), `Rounding` (`RoundingError`), `AmountTooLarge` beyond 2^53 − 1 (`RangeError`). The `i64` divergence is the read-back path (`fromStripe`) only |
 
 ### `./adyen`
 
@@ -1050,7 +1050,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 | `fromCheckout` | `Money::from_checkout`, `AnyMoney::from_checkout` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
 | `isCheckoutCurrency` | `ducat::processors::checkout::is_currency` | same |  |
 | `toCheckout` | `Money::to_checkout` | missing | as `Money#toCheckout` |
-| `toCheckoutAmount` | `Money::to_checkout_amount` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
+| `toCheckoutAmount` | `Money::to_checkout_amount`, `AnyMoney::to_checkout_amount` | same | an `i64`; the same failures in ducat's order: `UnsupportedCurrency` (TS `RangeError`), `Rounding` (`RoundingError`), `AmountTooLarge` beyond 2^53 − 1, `NegativeAmount` (`RangeError`). The `i64` divergence is the read-back path (`fromCheckout`) only |
 
 ### `./paypal`
 
@@ -1097,7 +1097,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 | `fromKlarna` | `Money::from_klarna`, `AnyMoney::from_klarna` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
 | `isKlarnaCurrency` | `ducat::processors::klarna::is_currency` | same |  |
 | `klarnaExponent` | `ducat::processors::klarna::exponent` | same |  |
-| `toKlarna` | `Money::to_klarna` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
+| `toKlarna` | `Money::to_klarna`, `AnyMoney::to_klarna` | same | an `i64`; the rounding is an argument (`Rounding::Unnecessary` is TS's default); the same failures in ducat's order: `UnsupportedCurrency` (TS `RangeError`), `Rounding` (`RoundingError`), `AmountTooLarge` beyond 2^53 − 1 (`RangeError`). The `i64` divergence is the read-back path (`fromKlarna`) only |
 
 ### `./stripe-fx`
 

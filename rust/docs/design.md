@@ -402,7 +402,10 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
 - **Single rounding into another scale.** TS's public kernel `multiplyByRatioAtScale(minor, ratio, scaleShift, mode)`
   isn't public in Rust; the same single rounding is `Money::multiply` (or `AnyMoney::multiply`) with a
   `RoundingPolicy` that carries the target scale (`RoundingPolicy::new(mode).with_scale(s)?`), which rounds the product
-  once, at `s`. `multiply` then `to_scale` would round twice.
+  once, at `s`. `multiply` then `to_scale` would round twice. The failures differ: the TS kernel checks none of its
+  arguments (any integer `scaleShift` works, including one to a negative or a past-1000 scale; a fractional or
+  infinite shift is a native `RangeError` from `BigInt`, and `NaN` acts as 0), where the Rust target scale is a `u16`
+  that `with_scale` refuses past `MAX_SCALE` with `Error::InvalidScale`. No path panics.
 - **Two functions, not a `usage` field.** `currencyDigits(code, { usage })` is two functions: `cash_digits` for
   `'cash'` and `CurrencyCode::exponent` for `'standard'`.
 - **Money is always formatted as its own currency.** `ducat-format` takes no `style`, `currency`, `unit` or
