@@ -1,0 +1,144 @@
+//! The crate's error type.
+
+use core::fmt;
+
+use crate::DecimalColumnSize;
+
+/// Why a value couldn't be read from, or written to, a column.
+///
+/// Every decoder and encoder in this crate returns this (boxed, as sqlx's `BoxDynError`, inside
+/// sqlx's own error); nothing panics on any input. Downcast sqlx's error source to match on it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Error {
+    /// A Postgres NUMERIC `NaN`, which is not an amount.
+    NotANumber,
+    /// A Postgres NUMERIC `Infinity` or `-Infinity`, which is not an amount.
+    Infinite {
+        /// `-Infinity`.
+        negative: bool,
+    },
+    /// Bytes or text that aren't a valid value of the column's type: a truncated NUMERIC, a
+    /// digit beyond 9999, NUMERIC digits the display scale would hide, decimal text outside
+    /// `-?[0-9]+(\.[0-9]+)?`, or composite text that isn't `(amount,currency)`.
+    Malformed(&'static str),
+    /// A value of a column type this column shape doesn't read: a SQLite REAL where TEXT or
+    /// INTEGER was expected, a MySQL DOUBLE where DECIMAL was. The name is the database's.
+    UnexpectedType(String),
+    /// An amount beyond what the column type holds: more than ±(2^63 − 1) minor units for a
+    /// BIGINT or INTEGER, or more digits than Postgres NUMERIC's binary format can carry.
+    OutOfRange,
+    /// Money at another scale than the column stores. Columns of minor units and fixed-currency
+    /// decimals hold amounts at the currency's exponent; round the money first (with the
+    /// rounding you choose), as ducat's `checkIsoScale` asks.
+    ScaleMismatch {
+        /// The money's scale.
+        scale: u16,
+        /// The scale the column stores.
+        expected: u16,
+    },
+    /// A composite value in another currency than the `Money<C>` it is read into.
+    CurrencyMismatch {
+        /// The column's (the type's) currency.
+        expected: String,
+        /// The value's.
+        actual: String,
+    },
+    /// A composite currency code that isn't an ISO 4217 code with a minor unit. Custom currencies
+    /// aren't registered anywhere: read them as a `MoneyRecord` and give the `CurrencyCode`, or
+    /// into a `Money<C>` of a `define_currency!` type.
+    UnknownCurrency(String),
+    /// A composite value with a NULL amount (`"amount"`) or currency (`"currency"`).
+    NullField(&'static str),
+    /// A NUMERIC(precision, scale) that isn't valid: precision at least 1, scale from 0 to the
+    /// precision.
+    InvalidColumnSize(DecimalColumnSize),
+    /// A column scale below the currency's exponent, which would round every amount.
+    ColumnScaleBelowExponent {
+        /// The column's size.
+        size: DecimalColumnSize,
+        /// The currency's exponent.
+        exponent: u8,
+    },
+    /// Money with more significant decimals than the column's scale: Postgres would round it on
+    /// insert, silently.
+    WouldRound {
+        /// The column's size.
+        size: DecimalColumnSize,
+        /// The significant decimals of the money (trailing zeros don't count).
+        decimals: u16,
+    },
+    /// Money with more integer digits than the column holds: Postgres rejects it, and MySQL
+    /// outside strict mode stores the column's limit instead.
+    TooManyIntegerDigits {
+        /// The column's size.
+        size: DecimalColumnSize,
+    },
+    /// An error from ducat itself, such as a scale beyond [`ducat::MAX_SCALE`]
+    /// ([`ducat::Error::InvalidScale`]) or a decimal with more digits than the currency's exponent
+    /// ([`ducat::Error::Rounding`]).
+    Ducat(ducat::Error),
+}
+
+impl From<ducat::Error> for Error {
+    fn from(error: ducat::Error) -> Self {
+        Self::Ducat(error)
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NotANumber => f.write_str("NUMERIC 'NaN' is not an amount"),
+            Self::Infinite { negative: false } => {
+                f.write_str("NUMERIC 'Infinity' is not an amount")
+            }
+            Self::Infinite { negative: true } => {
+                f.write_str("NUMERIC '-Infinity' is not an amount")
+            }
+            Self::Malformed(reason) => write!(f, "malformed column value: {reason}"),
+            Self::UnexpectedType(name) => {
+                write!(f, "a {name} value can't be read as an exact amount")
+            }
+            Self::OutOfRange => f.write_str("the amount is beyond the range of the column type"),
+            Self::ScaleMismatch { scale, expected } => write!(
+                f,
+                "the money has scale {scale}; round it to {expected} decimals before storing it"
+            ),
+            Self::CurrencyMismatch { expected, actual } => {
+                write!(f, "expected an amount in {expected}, got one in {actual}")
+            }
+            Self::UnknownCurrency(code) => write!(f, "unknown currency code {code:?}"),
+            Self::NullField(field) => {
+                write!(
+                    f,
+                    "a money composite needs both an amount and a currency; the {field} is NULL"
+                )
+            }
+            Self::InvalidColumnSize(size) => write!(f, "{size} is not a valid column size"),
+            Self::ColumnScaleBelowExponent { size, exponent } => {
+                write!(f, "{size} would round a currency with {exponent} decimals")
+            }
+            Self::WouldRound { size, decimals } => write!(
+                f,
+                "the money has {decimals} decimals; {size} would round it to {}",
+                size.scale()
+            ),
+            Self::TooManyIntegerDigits { size } => write!(
+                f,
+                "the money does not fit {size}, which holds {} integer digits",
+                size.precision() - size.scale()
+            ),
+            Self::Ducat(error) => fmt::Display::fmt(error, f),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Ducat(error) => Some(error),
+            _ => None,
+        }
+    }
+}
