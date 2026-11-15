@@ -765,35 +765,35 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | `AbortSignalLike#addEventListener` | — | not ported: by design (as `AbortSignalLike`) |  |
 | `AbortSignalLike#reason` | — | not ported: by design (as `AbortSignalLike`) |  |
 | `AbortSignalLike#removeEventListener` | — | not ported: by design (as `AbortSignalLike`) |  |
-| `BANK_OF_CANADA_URL` | `ducat_fetch::BANK_OF_CANADA_URL` | same |  |
-| `ECB_DATA_API` | `ducat_fetch::ECB_DATA_API` | same |  |
+| `BANK_OF_CANADA_URL` | `ducat_fetch::BANK_OF_CANADA_URL` | same | the same URL |
+| `ECB_DATA_API` | `ducat_fetch::ECB_DATA_API` | same | the same URL |
 | `ECB_URLS` | `ducat_fetch::ECB_URLS` (`EcbUrls`) | divergent: [a struct, `ninety_days` for `90d`](design.md#milestone-7b-fetching-rates) |  |
 | `Fetch` | `ducat_fetch::Transport` | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
-| `FetchBankOfCanadaOptions` | `ducat_fetch::FetchBankOfCanadaOptions` | same |  |
-| `FetchBankOfCanadaOptions#end` | `FetchBankOfCanadaOptions::end` | same | a `ducat::convert::Date` |
+| `FetchBankOfCanadaOptions` | `ducat_fetch::FetchBankOfCanadaOptions` | same | `Default` is ducat's no-options call (`recent=1`) |
+| `FetchBankOfCanadaOptions#end` | `FetchBankOfCanadaOptions::end` | divergent: [days are `Date`s](design.md#milestone-7b-fetching-rates) | an `Option<Date>`: ducat's `RangeError` for text that isn't a calendar day is the caller's `Date` parse error, and a JavaScript `Date`'s UTC day has no counterpart; `FetchError::EndBeforeStart`, `EndWithoutStart` as ducat's `RangeError`s |
 | `FetchBankOfCanadaOptions#fetch` | the `&mut impl Transport` argument | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
 | `FetchBankOfCanadaOptions#signal` | — | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) | the transport cancels |
-| `FetchBankOfCanadaOptions#start` | `FetchBankOfCanadaOptions::start` | same |  |
+| `FetchBankOfCanadaOptions#start` | `FetchBankOfCanadaOptions::start` | divergent: [days are `Date`s](design.md#milestone-7b-fetching-rates) | an `Option<Date>`, as `#end`; `FetchError::StartTooEarly` before 2017-01-03, as ducat's `RangeError` |
 | `FetchBankOfCanadaOptions#timeout` | `UreqTransport::with_timeout` | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
-| `FetchEcbOptions` | `ducat_fetch::FetchEcbOptions` | same |  |
-| `FetchEcbOptions#availableAt` | `FetchEcbOptions::available_at` | same |  |
+| `FetchEcbOptions` | `ducat_fetch::FetchEcbOptions` | same | `Default` is ducat's no-options call (`daily`) |
+| `FetchEcbOptions#availableAt` | `FetchEcbOptions::available_at` | divergent: [publication times without time-zone data](design.md#milestone-5d2-rate-sources) | a `Publication`, passed to the parser as ducat passes it: see `./convert/ecb` `EcbOptions#availableAt` |
 | `FetchEcbOptions#fetch` | the `&mut impl Transport` argument | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
 | `FetchEcbOptions#history` | `FetchEcbOptions::history` (`EcbHistory`) | divergent: [an enum](design.md#milestone-7b-fetching-rates) |  |
 | `FetchEcbOptions#signal` | — | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
 | `FetchEcbOptions#timeout` | `UreqTransport::with_timeout` | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
 | `FetchEcbRangeOptions` | `ducat_fetch::FetchEcbRangeOptions` | same |  |
-| `FetchEcbRangeOptions#availableAt` | `FetchEcbRangeOptions::available_at` | same |  |
-| `FetchEcbRangeOptions#currencies` | `FetchEcbRangeOptions::currencies` | same | `&[&str]` |
-| `FetchEcbRangeOptions#end` | `FetchEcbRangeOptions::end` | same |  |
+| `FetchEcbRangeOptions#availableAt` | `FetchEcbRangeOptions::available_at` | divergent: [publication times without time-zone data](design.md#milestone-5d2-rate-sources) | as `FetchEcbOptions#availableAt` |
+| `FetchEcbRangeOptions#currencies` | `FetchEcbRangeOptions::currencies` | same | `&[&str]`, checked as ducat checks them (three ASCII capitals): `FetchError::InvalidCurrency` for ducat's `RangeError` |
+| `FetchEcbRangeOptions#end` | `FetchEcbRangeOptions::end` | divergent: [days are `Date`s](design.md#milestone-7b-fetching-rates) | an `Option<Date>`, as `FetchBankOfCanadaOptions#end` |
 | `FetchEcbRangeOptions#fetch` | the `&mut impl Transport` argument | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
 | `FetchEcbRangeOptions#signal` | — | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
-| `FetchEcbRangeOptions#start` | `FetchEcbRangeOptions::start` | same |  |
+| `FetchEcbRangeOptions#start` | `FetchEcbRangeOptions::start` | divergent: [days are `Date`s](design.md#milestone-7b-fetching-rates) | a `Date`, as `FetchBankOfCanadaOptions#start`; `FetchError::StartTooEarly` before 1999-01-04 |
 | `FetchEcbRangeOptions#timeout` | `UreqTransport::with_timeout` | divergent: [the transport replaces `fetch`, `signal` and `timeout`](design.md#milestone-7b-fetching-rates) |  |
-| `FetchRatesError` | `ducat_fetch::FetchError::Status` | same |  |
-| `FetchRatesError#status` | `FetchError::status` | same |  |
-| `FetchRatesError#url` | `FetchError::url` | same |  |
-| `fetchBankOfCanada` | `ducat_fetch::fetch_bank_of_canada`, `bank_of_canada_request`/`bank_of_canada_tables` | same |  |
-| `fetchEcb` | `ducat_fetch::fetch_ecb`, `ecb_request`/`ecb_tables` | same |  |
+| `FetchRatesError` | `ducat_fetch::FetchError::Status` | same | `FetchError::Status { url, status }` |
+| `FetchRatesError#status` | `FetchError::status` | same | `Option<u16>`, `Some` for `Status` |
+| `FetchRatesError#url` | `FetchError::url` | same | `Option<&str>`, also for `Parse` and `Transport` |
+| `fetchBankOfCanada` | `ducat_fetch::fetch_bank_of_canada`, `bank_of_canada_request`/`bank_of_canada_tables` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | the tables come from `parse_bank_of_canada_json`, which skips codes that aren't ISO 4217 into `unknown()`; the request and its failures (`FetchError::Status`, `Parse` for ducat's `SyntaxError` with ` (from url)`, `Transport`) as ducat |
+| `fetchEcb` | `ducat_fetch::fetch_ecb`, `ecb_request`/`ecb_tables` | divergent: [currency codes in files](design.md#milestone-5d2-rate-sources) | the tables come from `parse_ecb_xml`, as `fetchBankOfCanada` |
 | `fetchEcbRange` | `ducat_fetch::fetch_ecb_range`, `ecb_range_requests`/`ecb_range_tables` | divergent: [the two requests run one after the other](design.md#milestone-7b-fetching-rates) |  |
 
 ### `./exact`
