@@ -65,18 +65,18 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `Money#equals` | `==` (`PartialEq` by value), `eq_value` | same | another currency is `false`, never an error, as ducat's (`AnyMoney`'s `==` and `eq_value`) |
 | `Money#greaterThan` | `>` (`PartialOrd`) for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_gt()`: `Err(CurrencyMismatch)` where ducat throws |
 | `Money#greaterThanOrEqual` | `>=` for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_ge()`: `Err(CurrencyMismatch)` where ducat throws |
-| `Money#hasFraction` | — | missing | whether the amount has a sub-unit part; `units() % 10^scale` by hand |
+| `Money#hasFraction` | `Money::has_fraction`, `AnyMoney::has_fraction` | same | whether the amount has a non-zero part below the major unit, at any scale: `false` for 12.000 EUR at scale 3 |
 | `Money#identical` | `Money::identical`, `AnyMoney::identical` | same | another currency is `false`, as ducat's |
 | `Money#isNegative` | `Money::is_negative`, `AnyMoney::is_negative` | same | |
 | `Money#isPositive` | `Money::is_positive`, `AnyMoney::is_positive` | same | |
 | `Money#isZero` | `Money::is_zero`, `AnyMoney::is_zero` | same | |
 | `Money#lessThan` | `<` for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_lt()`: `Err(CurrencyMismatch)` where ducat throws |
 | `Money#lessThanOrEqual` | `<=` for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_le()`: `Err(CurrencyMismatch)` where ducat throws |
-| `Money#majorPart` | — | missing | the whole units; with `minorPart`, for receipts and cheque printing |
+| `Money#majorPart` | `Money::major_part`, `AnyMoney::major_part` | same | the whole units, truncated toward zero (−12 for −12.34 EUR, 0 for −0.05 EUR); an `Int`, ducat's `number` or `bigint` |
 | `Money#max` | `Money::max`, `Money::max_of`; `AnyMoney::max`, `AnyMoney::max_of` | same | the first of equal values wins, as ducat (1.0 EUR at scale 1 against 1.00 EUR keeps scale 1), where `Ord::max` keeps the *second*: the inherent `Money::max` takes `self` by value so that `a.max(b)` resolves to it; `core::cmp::max`, `Iterator::max` and `Ord`-generic code keep `Ord`'s rule (documented). `max_of` is the variadic form over an iterator (`None` for none). `AnyMoney`'s return `Err(CurrencyMismatch)` where ducat throws, with ducat's `expected` (the candidate's currency) and `actual` (the largest so far's) |
 | `Money#min` | `Money::min`, `Money::min_of`; `AnyMoney::min`, `AnyMoney::min_of` | same | the first of equal values wins, as ducat (and `Ord::min`); `min_of` is the variadic form over an iterator (`None` for none). `AnyMoney`'s return `Err(CurrencyMismatch)` where ducat throws, with ducat's `expected` (the candidate's currency) and `actual` (the smallest so far's) |
 | `Money#minor` | `Money::units`, `AnyMoney::units` | same | the integer at the value's scale |
-| `Money#minorPart` | — | missing | the sub-unit digits |
+| `Money#minorPart` | `Money::minor_part`, `AnyMoney::minor_part` | same | what is left after `major_part`, in 10^−scale units (not the currency's minor units: 5 for 1.005 EUR at scale 3) and with the amount's sign (−34 for −12.34 EUR); an `Int` |
 | `Money#multiply` | `Money::multiply`, `AnyMoney::multiply` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#negate` | `Neg` for `Money<C>` and `AnyMoney` | same | |
 | `Money#round` | `Money::round`, `AnyMoney::round` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
@@ -140,17 +140,17 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `equals` | `==`; `AnyMoney::eq_value` | same | as `.` `Money#equals` |
 | `greaterThan` | `>`; `AnyMoney::compare` | same | as `.` `Money#greaterThan` |
 | `greaterThanOrEqual` | `>=`; `AnyMoney::compare` | same | as `.` `Money#greaterThanOrEqual` |
-| `hasFraction` | — | missing | as `Money#hasFraction` |
+| `hasFraction` | `Money::has_fraction`, `AnyMoney::has_fraction` | same | as `.` `Money#hasFraction` |
 | `identical` | `Money::identical`, `AnyMoney::identical` | same | as `.` `Money#identical` |
 | `isNegative` | `Money::is_negative`, `AnyMoney::is_negative` | same |  |
 | `isPositive` | `Money::is_positive`, `AnyMoney::is_positive` | same |  |
 | `isZero` | `Money::is_zero`, `AnyMoney::is_zero` | same |  |
 | `lessThan` | `<`; `AnyMoney::compare` | same | as `.` `Money#lessThan` |
 | `lessThanOrEqual` | `<=`; `AnyMoney::compare` | same | as `.` `Money#lessThanOrEqual` |
-| `majorPart` | — | missing | as `Money#majorPart` |
+| `majorPart` | `Money::major_part`, `AnyMoney::major_part` | same | as `.` `Money#majorPart` |
 | `max` | `Money::max`, `Money::max_of`; `AnyMoney::max`, `AnyMoney::max_of` | same | as `.` `Money#max`: the first of equal values wins (not `Ord::max`'s second) |
 | `min` | `Money::min`, `Money::min_of`; `AnyMoney::min`, `AnyMoney::min_of` | same | as `.` `Money#min` |
-| `minorPart` | — | missing | as `Money#minorPart` |
+| `minorPart` | `Money::minor_part`, `AnyMoney::minor_part` | same | as `.` `Money#minorPart` |
 | `multiply` | `Money::multiply` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `negate` | `Neg` for `Money<C>` and `AnyMoney` | same |  |
 | `round` | `Money::round` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
@@ -1330,9 +1330,6 @@ Every `missing` row, grouped into pull requests in the order users would hit the
 3. **Error kinds that match ducat's** (`ducat`; from the re-audit): `./convert/history` `rateHistory`. A table
    without an `as_of` is `MalformedRates`, a syntax-kind error, where ducat throws `RangeError`: a range-kind
    variant makes the failure the same.
-4. **Money's parts and numbers** (`ducat`): `.` `Money#hasFraction`, `.` `Money#majorPart`, `.` `Money#minorPart`,
-   `./fn` `hasFraction`, `./fn` `majorPart`, `./fn` `minorPart`. Receipts, cheques and display code ask for the whole
-   and fractional parts first; small, exact, no design question.
 5. **Floats out** (**decided**: [explicitly lossy, output-only](design.md#parity-decisions) `to_f64` and `to_minor_f64`, "for display or interop only; never round-trip", never called inside ducat) (`ducat`): `.` `Money#toNumber`, `.` `Money#toMinorNumber`, `.` `ToMinorNumberOptions`,
    `.` `ToMinorNumberOptions#lossy`, `./fn` `toNumber`, `./fn` `toMinorNumber`, `./fixed` `Fixed#toNumber`,
    `./exact` `ExactMoney#toNumber`. Charts and JavaScript interop need an `f64`.
