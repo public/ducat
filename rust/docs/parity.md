@@ -1327,13 +1327,15 @@ Re-exports every plugin entry and `./fn`'s functions, and installs every plugin'
 Every `missing` row, grouped into pull requests in the order users would hit them. Five pieces are decided (marked
 **decided**); the rest are proposals.
 
-1. **Checked clamp, min and max, and rate validity** (`ducat`, one small PR): `.` `Money#clamp`, `./fn` `clamp`,
-   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`, `.` `Money#min`, `.` `Money#max`, `./fn` `min`, `./fn` `max`, `./convert` `impliedRate`. `AnyRate::implied(&AnyMoney, &AnyMoney)` for run-time currencies; `min` and `max`
-   on `AnyMoney` (`Err(CurrencyMismatch)`), and a `max` on `Money<C>` that keeps the first of equal values, as ducat
-   (`Ord::max` keeps the second). `clamp(&self, lo, hi) -> Result` on `Money`,
-   `AnyMoney` and `ExactMoney` (an `Err` for `lo > hi` and across currencies, where `Ord::clamp` panics; `Money`
-   bounds for `ExactMoney`), and a public `Rate::check_validity(&self, at) -> Result<(), Error>`. `multiply_at` is
-   not needed: `multiply` with a scaled `RoundingPolicy` already rounds once into another scale.
+1. **Checked clamp, min and max, rate validity and implied rates** (`ducat`, one small PR): `.` `Money#clamp`,
+   `./fn` `clamp`, `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`, `.` `Money#min`, `.` `Money#max`,
+   `./fn` `min`, `./fn` `max`, `./convert` `impliedRate`. `clamp(&self, lo, hi) -> Result` on `Money`, `AnyMoney`
+   and `ExactMoney` (an `Err` for `lo > hi` and across currencies, where `Ord::clamp` panics; `Money` bounds for
+   `ExactMoney`); `min` and `max` on `AnyMoney` (`Err(CurrencyMismatch)`), and a `max` on `Money<C>` that keeps the
+   first of equal values, as ducat (`Ord::max` keeps the second); a public
+   `Rate::check_validity(&self, at) -> Result<(), Error>`; and `AnyRate::implied(&AnyMoney, &AnyMoney)` for amounts
+   in run-time currencies. `multiply_at` is not needed: `multiply` with a scaled `RoundingPolicy` already rounds once
+   into another scale.
 2. **Wire readers for custom currencies** (`ducat`, feature `wire`; from the re-audit): `./wire` `fromMinorUnits`,
    `./wire` `fromDineroObject`, `./wire` `fromGoogleMoney`, `./wire` `fromIso20022Amount`. The `Money<C>` readers
    resolve the code as ISO or withdrawn only, so a `define_currency!` currency (or a non-monetary code such as XAU
