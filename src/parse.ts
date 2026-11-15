@@ -39,6 +39,7 @@ function separatorParts(
   locale: string | undefined,
   currency: string,
   currencySign: 'standard' | 'accounting' = 'standard',
+  currencyDisplay: 'symbol' | 'name' = 'symbol',
 ): Intl.NumberFormatPart[] {
   try {
     // Two fraction digits even for JPY and the like, so the decimal separator always appears.
@@ -46,6 +47,7 @@ function separatorParts(
       style: 'currency',
       currency,
       currencySign,
+      currencyDisplay,
       useGrouping: true,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -88,6 +90,79 @@ function asciiDigit(cp: number): number {
   return -1;
 }
 
+const AFFIX = /^[\p{L}\p{Sc}\p{Z}\s\p{Cf}.()+\-−]*$/u;
+const SIGN = /[-−(]/;
+/** What may stand beside a currency's own text in an affix: spaces, bidi marks and signs. */
+const BOUNDARY = /[\s\p{Z}\p{Cf}()+\-−]/u;
+
+const ownTextCache = /* @__PURE__ */ new Map<string, readonly string[]>();
+/** Amounts whose long names cover every plural form a locale uses (0, 1, 2, few, many, other). */
+const NAME_SAMPLES = [0, 1, 2, 3, 5, 7, 11, 12, 21, 22, 100, 101, 1e6, 0.5, 1.5, 2.25];
+
+/**
+ * The text the runtime's Intl writes for `currency` in `locale`, besides the number: its symbol,
+ * narrow symbol, code and long name in each plural form, longest first. Built once per locale and
+ * currency, only for affixes that need it.
+ */
+function ownTexts(locale: string | undefined, currency: string): readonly string[] {
+  const key = `${locale ?? ''}|${currency}`;
+  let texts = ownTextCache.get(key);
+  if (texts === undefined) {
+    const found = new Set<string>([currency]);
+    try {
+      for (const currencyDisplay of ['symbol', 'narrowSymbol', 'name'] as const) {
+        const samples = currencyDisplay === 'name' ? NAME_SAMPLES : [1];
+        for (const fractionDigits of currencyDisplay === 'name' ? [0, 2] : [2]) {
+          const numberFormat = new Intl.NumberFormat(locale, {
+            style: 'currency',
+            currency,
+            currencyDisplay,
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
+          });
+          for (const sample of samples) {
+            for (const part of numberFormat.formatToParts(sample)) {
+              if (part.type === 'currency' && part.value.trim() !== '') {
+                found.add(part.value.trim());
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // a code Intl can't format: only the code itself
+    }
+    texts = [...found].sort((left, right) => right.length - left.length);
+    if (ownTextCache.size >= 256) {
+      ownTextCache.clear();
+    }
+    ownTextCache.set(key, texts);
+  }
+  return texts;
+}
+
+/**
+ * `side` with each of the currency's own texts that stands there as a whole (bounded by the
+ * side's ends, spaces, bidi marks or signs) replaced by a space: it adds no sign and no digits.
+ */
+function withoutOwnTexts(side: string, texts: readonly string[]): string {
+  let out = side;
+  for (const text of texts) {
+    let at = out.indexOf(text);
+    while (at >= 0) {
+      const before = at === 0 ? '' : out.charAt(at - 1);
+      const after = out.charAt(at + text.length);
+      if ((before === '' || BOUNDARY.test(before)) && (after === '' || BOUNDARY.test(after))) {
+        out = `${out.slice(0, at)} ${out.slice(at + text.length)}`;
+        at = out.indexOf(text, at + 1);
+      } else {
+        at = out.indexOf(text, at + 1);
+      }
+    }
+  }
+  return out;
+}
+
 /**
  * Parses a locale-formatted amount: parse('1.234,50 €', 'EUR', 'de-DE'), parse('CHF 1’234.50',
  * 'CHF', 'de-CH'), parse('١٢٣٫٤٥ US$', 'USD', 'ar-EG'). Currency symbols/codes, spaces and bidi
@@ -122,13 +197,21 @@ export function parse<C extends CurrencyInput>(
   if (first < 0) {
     throw new SyntaxError(`Cannot parse "${input}": no digits`);
   }
-  const prefix = chars.slice(0, first).join('');
-  const suffix = chars.slice(last + 1).join('');
+  let prefix = chars.slice(0, first).join('');
+  let suffix = chars.slice(last + 1).join('');
+  // The currency's own symbol, code or name, as Intl writes it for this locale, stands for itself
+  // as a whole and adds no sign: PEN's "S/" in es-PE, "(UF)" in CLF's English name. Looked up only
+  // for affixes with a sign or a character outside the class below.
+  if (!AFFIX.test(prefix + suffix) || SIGN.test(prefix + suffix)) {
+    const texts = ownTexts(locale, currency);
+    prefix = withoutOwnTexts(prefix, texts);
+    suffix = withoutOwnTexts(suffix, texts);
+  }
   const affix = prefix + suffix;
-  if (!/^[\p{L}\p{Sc}\p{Z}\s\p{Cf}.()+\-−]*$/u.test(affix)) {
+  if (!AFFIX.test(affix)) {
     throw new SyntaxError(`Cannot parse "${input}": unexpected characters`);
   }
-  const neg = /[-−(]/.test(affix);
+  const neg = SIGN.test(affix);
   const isGroup = (ch: string) =>
     ch === group ||
     (/^[\s\p{Z}]$/u.test(group) && /^[\s\p{Z}]$/u.test(ch)) ||
@@ -350,16 +433,22 @@ function meaningsOf(
 }
 
 /**
- * The group sizes the locale formats this currency with, in its standard and its accounting
- * format: they can differ (en-IN writes JP¥1,00,000, but (JP¥100,000) in accounting style).
+ * The group sizes the locale formats this currency with, in its standard and accounting format and
+ * its long name: they can differ (en-IN writes JP¥1,00,000, but (JP¥100,000) in accounting style;
+ * ml groups a name's number in lakhs, its symbol form in thousands).
  */
 function groupSizes(locale: string | undefined, currency: string): readonly GroupSizes[] {
   const key = `${locale ?? ''}|${currency}`;
   let sizes = groupSizeCache.get(key);
   if (sizes === undefined) {
     sizes = [];
-    for (const currencySign of ['standard', 'accounting'] as const) {
-      const found = sizesOf(separatorParts(locale, currency, currencySign));
+    // the long name writes the number in the decimal pattern, whose grouping can differ (ml, mr)
+    for (const [currencySign, currencyDisplay] of [
+      ['standard', 'symbol'],
+      ['accounting', 'symbol'],
+      ['standard', 'name'],
+    ] as const) {
+      const found = sizesOf(separatorParts(locale, currency, currencySign, currencyDisplay));
       if (!sizes.some((known) => known[0] === found[0] && known[1] === found[1])) {
         sizes.push(found);
       }
