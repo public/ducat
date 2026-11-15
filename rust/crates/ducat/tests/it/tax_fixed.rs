@@ -124,9 +124,9 @@ fn fixed_examples() {
             .to_string(),
         "2"
     );
-    assert_eq!(fixed("12.3400").trim_scale(0).to_string(), "12.34");
-    assert_eq!(fixed("5.000").trim_scale(2).to_string(), "5.00");
-    assert_eq!(fixed("5.1").trim_scale(3).to_string(), "5.1");
+    assert_eq!(fixed("12.3400").trim_scale(0).unwrap().to_string(), "12.34");
+    assert_eq!(fixed("5.000").trim_scale(2).unwrap().to_string(), "5.00");
+    assert_eq!(fixed("5.1").trim_scale(3).unwrap().to_string(), "5.1");
     assert_eq!(fixed("1.5e3").to_string(), "1500");
     assert_eq!(fixed("0.0725").to_ratio().to_string(), "29/400");
     assert_eq!(

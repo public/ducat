@@ -20,7 +20,7 @@
 //! # Ok::<(), ducat::Error>(())
 //! ```
 
-use crate::amount::{Amount, check_scale};
+use crate::amount::Amount;
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Int, Money, Ratio, RoundingInput};
 
 impl Ratio {
@@ -87,21 +87,6 @@ impl Amount {
             units: left.div_rem(&right).1,
             scale,
         })
-    }
-
-    fn trim_scale(&self, minimum: u16) -> Result<Self, Error> {
-        let minimum = check_scale(minimum)?;
-        let ten = Int::from(10u8);
-        let (mut units, mut scale) = (self.units.clone(), self.scale);
-        while scale > minimum {
-            let (quotient, rest) = units.div_rem(&ten);
-            if !rest.is_zero() {
-                break;
-            }
-            units = quotient;
-            scale -= 1;
-        }
-        Ok(Self { units, scale })
     }
 }
 

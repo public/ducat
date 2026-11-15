@@ -72,6 +72,24 @@ impl Amount {
         Ok(amount)
     }
 
+    /// The smallest scale, at least `minimum`, that keeps the value exact: trailing zeros dropped,
+    /// never digits added (a value at or below `minimum` stays as it is).
+    #[cfg(any(feature = "math", feature = "fixed"))]
+    pub(crate) fn trim_scale(&self, minimum: u16) -> Result<Self, Error> {
+        let minimum = check_scale(minimum)?;
+        let ten = Int::from(10u8);
+        let (mut units, mut scale) = (self.units.clone(), self.scale);
+        while scale > minimum {
+            let (quotient, rest) = units.div_rem(&ten);
+            if !rest.is_zero() {
+                break;
+            }
+            units = quotient;
+            scale -= 1;
+        }
+        Ok(Self { units, scale })
+    }
+
     pub(crate) fn rescale(&self, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         let scale = check_scale(scale)?;
         if scale == self.scale {
