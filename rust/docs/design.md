@@ -451,6 +451,10 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
   in only through an explicit conversion, and a weight is written as a string (`"0.7"`).
 - **A ratio string has one slash.** `Ratio`'s `FromStr` reads `"a/b"` with a decimal on each side; ducat's `ratio()`
   splits at the first slash and reads the rest as a ratio again, so `"1/2/3"` is 3/2 there and `Error::Syntax` here.
+- **`max`, `min` and `clamp` on a reference are std's.** On a `&Money` (a reference receiver), `max`/`min`/`clamp` are
+  std's `Ord` methods: the second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().max(..)`
+  or the free `max_of` instead. The inherent methods (on `Money<C>` and `ExactMoney<C>`) keep ducat's: the first of
+  equal values, and `Err(LowAboveHigh)` for `clamp`.
 
 ## Goals
 - **The same answers as ducat,** checked by running ducat's conformance vectors, pinned to a ducat commit. The suite's
