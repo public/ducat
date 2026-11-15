@@ -231,6 +231,23 @@ impl AnyMoney {
             .units)
     }
 
+    /// As [`Money::to_f64`](crate::Money::to_f64): the nearest double in major units. **For
+    /// display or interop only; never round-trip.**
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::decimal_to_f64(&self.amount.units, self.amount.scale)
+    }
+
+    /// As [`Money::to_minor_f64`](crate::Money::to_minor_f64): the minor units as a double.
+    /// **For display or interop only; never round-trip.**
+    ///
+    /// # Errors
+    ///
+    /// As [`Money::to_minor_f64`](crate::Money::to_minor_f64).
+    pub fn to_minor_f64(&self, options: crate::ToMinorF64Options) -> Result<f64, Error> {
+        crate::float::minor_to_f64(&self.to_minor()?, options)
+    }
+
     /// The exact decimal in major units, with every place of the scale.
     #[must_use]
     pub fn to_decimal(&self) -> String {
