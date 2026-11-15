@@ -1,12 +1,19 @@
 [package]
 name = "ducat-fetch"
-version = "0.0.0"
+version.workspace = true
 description = "Fetchers for published reference rates (ECB, Bank of Canada) for ducat: ducat's /fetch, sans-IO with an optional blocking ureq transport"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-publish = false
+homepage.workspace = true
+documentation = "https://docs.rs/ducat-fetch"
+readme = "README.md"
+keywords = ["money", "exchange-rates", "ecb", "currency", "fetch"]
+categories = ["finance", "web-programming::http-client"]
+# only what builds and documents the crate: no tests (they read the repository's spec/ and data/),
+# generators or proptest regressions
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/NOTICE"]
 
 [features]
 default = ["ureq"]
@@ -15,10 +22,10 @@ default = ["ureq"]
 ureq = ["dep:ureq"]
 
 [dependencies]
-ducat = { path = "../ducat", default-features = false, features = ["std", "ecb", "boc"] }
+ducat = { path = "../ducat", version = "0.1.0", default-features = false, features = ["std", "ecb", "boc"] }
 # `rustls` is ureq's rustls-no-provider + _ring (rustls/ring) + rustls-webpki-roots: no aws-lc-rs,
 # no gzip, no native-tls, no cookies or JSON.
 ureq = { version = "3.0", default-features = false, features = ["rustls"], optional = true }
 
 [dev-dependencies]
-ducat = { path = "../ducat", default-features = false, features = ["std", "ecb", "boc", "iso"] }
+ducat = { path = "../ducat", version = "0.1.0", default-features = false, features = ["std", "ecb", "boc", "iso"] }

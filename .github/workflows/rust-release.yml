@@ -1,0 +1,94 @@
+name: Rust release
+
+# Publishes the Rust crates in rust/ to crates.io when a tag rust-v<version> is pushed, from the
+# second release on (0.1.0 went out by hand). Every crate has the same version, and the tag must be
+# that version. The job runs in the crates-io environment, whose required reviewer approves each
+# release, and publishes with a short-lived token from crates.io's trusted publishing (no stored
+# token). See rust/docs/design.md, "Versioning and releases".
+on:
+  push:
+    tags: ['rust-v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  publish:
+    name: publish to crates.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: crates-io
+    permissions:
+      contents: read
+      # trusted publishing: the OIDC token crates.io exchanges for a short-lived publish token
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+
+      - name: Check the tag is the crates' version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          want="${TAG#rust-v}"
+          versions=$(cargo metadata --no-deps --format-version 1 --locked | jq -r '.packages[] | "\(.name) \(.version)"')
+          echo "$versions"
+          bad=$(echo "$versions" | awk -v want="$want" '$2 != want')
+          if [ -n "$bad" ]; then
+            echo "::error::tag $TAG wants version $want, but these crates have another:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "VERSION=$want" >> "$GITHUB_ENV"
+
+      - name: Record the spec commit
+        run: |
+          # the release notes name this commit: the spec/ the crates were verified against
+          echo "Rust crates $VERSION, verified against spec/ at $(git rev-parse HEAD)." >> "$GITHUB_STEP_SUMMARY"
+
+      # TODO: unverified, and not pinned by SHA yet. crates.io's trusted publishing
+      # (https://crates.io/docs/trusted-publishing) is understood to use
+      # rust-lang/crates-io-auth-action@v1 with the token in its `token` output, but neither the
+      # action's README nor its tags could be read when this was written. Before the first tag push:
+      # check the action and its inputs and outputs against that README, and replace @v1 with the
+      # commit SHA of the release tag (# v1.x.y), as the other actions are pinned.
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      - name: Publish, in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          # the sparse index path of a crate name of 4 or more characters: na/me/name
+          indexed() {
+            curl -fsS "https://index.crates.io/${1:0:2}/${1:2:2}/$1" 2>/dev/null \
+              | jq -e --arg v "$VERSION" 'select(.vers == $v)' > /dev/null
+          }
+          for crate in ducat ducat-words ducat-format ducat-sql-core ducat-sqlx ducat-diesel ducat-fetch; do
+            if indexed "$crate"; then
+              echo "$crate $VERSION is already on crates.io; skipping"
+              continue
+            fi
+            cargo publish -p "$crate" --locked
+            # the next crate resolves this one from the registry: wait for the index (10 minutes)
+            for _ in $(seq 60); do
+              indexed "$crate" && break
+              sleep 10
+            done
+            if ! indexed "$crate"; then
+              echo "::error::$crate $VERSION was published but is not in the index after 10 minutes"
+              exit 1
+            fi
+            echo "$crate $VERSION is in the index"
+          done

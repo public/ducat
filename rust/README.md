@@ -1,7 +1,7 @@
 # ducat for Rust
 
 A Rust port of ducat (`@ducatjs/money`): exact, typed money, verified against ducat's language-neutral conformance
-suite in [`spec/`](../spec). The core crate is `ducat`; none of the crates is published yet.
+suite in [`spec/`](../spec). The core crate is `ducat`.
 
 ```rust
 use ducat::{Money, Rounding};
@@ -29,3 +29,16 @@ rules), payment processors (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klar
 The runner reads the repository's `spec/` and `data/` directly, so the Rust port is always checked against the spec
 at the same commit. From `rust/`, `cargo test -p ducat --test it spec:: -- --nocapture` runs every vector and prints what passed, failed
 and was skipped, and why, per area and operation.
+
+## Releases
+
+Every crate (`ducat`, `ducat-words`, `ducat-format`, `ducat-sql-core`, `ducat-sqlx`, `ducat-diesel`, `ducat-fetch`) has
+the same version, starting at 0.1.0, and they release together. The version is independent of the TypeScript
+package's. Each release's notes record the commit of `spec/` the crates were verified against. `ducat-sql-core` is an
+internal detail of `ducat-sqlx` and `ducat-diesel`, published only because they depend on it, with no stability
+promise.
+
+They are published in this order: `ducat`, `ducat-words`, `ducat-format`, `ducat-sql-core`, `ducat-sqlx`,
+`ducat-diesel`, `ducat-fetch`. The first release goes out by hand; from the second on, a `rust-v<version>` tag runs
+`.github/workflows/rust-release.yml` (crates.io trusted publishing, behind the `crates-io` environment's approval).
+See [docs/design.md](docs/design.md#versioning-and-releases).

@@ -3,10 +3,13 @@ resolver = "3"
 members = ["crates/ducat", "crates/ducat-words", "crates/ducat-format", "crates/ducat-fetch", "crates/ducat-sql-core", "crates/ducat-sqlx", "crates/ducat-diesel"]
 
 [workspace.package]
+# Every crate has this version: they release together (README.md, "Releases").
+version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT"
 repository = "https://github.com/public/ducat"
+homepage = "https://github.com/public/ducat"
 
 # Tests build the workspace's own crates (each library and its `it` test binary) unoptimised, which
 # keeps an incremental `cargo test` quick: ducat's `it` crate is the biggest unit of that build, and

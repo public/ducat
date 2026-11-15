@@ -7,21 +7,29 @@
 //! It exists because their public types (`Decimal`, `DecimalColumnSize`, `Error`…) must be local
 //! to each crate (Rust's orphan rule: sqlx's and diesel's traits can only be implemented for a
 //! crate's own types), while the algorithms behind them are the same. Each crate wraps these
-//! types and converts [`Error`] into its own.
+//! types and converts `Error` into its own.
 //!
-//! [`ducat-sqlx`]: https://github.com/public/ducat/tree/main/rust/crates/ducat-sqlx
-//! [`ducat-diesel`]: https://github.com/public/ducat/tree/main/rust/crates/ducat-diesel
+//! It is published to crates.io only because they depend on it. Its items are `#[doc(hidden)]`,
+//! and any release may change them.
+//!
+//! [`ducat-sqlx`]: https://docs.rs/ducat-sqlx
+//! [`ducat-diesel`]: https://docs.rs/ducat-diesel
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 mod decimal;
 mod error;
+#[doc(hidden)]
 pub mod numeric;
+#[doc(hidden)]
 pub mod record;
 
+#[doc(hidden)]
 pub use decimal::{ColumnSize, Decimal};
+#[doc(hidden)]
 pub use error::Error;
 
+#[doc(hidden)]
 /// Checks that an amount at `scale` is at `currency`'s exponent, the one scale a column of minor
 /// units or a fixed-currency decimal stores (ducat's `checkIsoScale`).
 ///

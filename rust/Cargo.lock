@@ -517,7 +517,7 @@ dependencies = [
 
 [[package]]
 name = "ducat"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "num-bigint",
  "num-integer",
@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "ducat-diesel"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "diesel",
  "diesel-async",
@@ -542,7 +542,7 @@ dependencies = [
 
 [[package]]
 name = "ducat-fetch"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ducat",
  "ureq",
@@ -550,7 +550,7 @@ dependencies = [
 
 [[package]]
 name = "ducat-format"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ducat",
  "proptest",
@@ -559,14 +559,14 @@ dependencies = [
 
 [[package]]
 name = "ducat-sql-core"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ducat",
 ]
 
 [[package]]
 name = "ducat-sqlx"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ducat",
  "ducat-sql-core",
@@ -577,7 +577,7 @@ dependencies = [
 
 [[package]]
 name = "ducat-words"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ducat",
  "proptest",

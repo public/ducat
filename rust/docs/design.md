@@ -548,6 +548,26 @@ The research in `docs/research/rust-money-libs.md` (section 6.1) lists 24 bug cl
 becomes a regression test with the milestone it belongs to (T5, T7, T8, T10–T14, T16, T18–T21 and T23 with
 milestone 1).
 
+## Versioning and releases
+- **One version for every crate.** `ducat`, `ducat-words`, `ducat-format`, `ducat-sql-core`, `ducat-sqlx`,
+  `ducat-diesel` and `ducat-fetch` share `workspace.package.version` and release together, even a crate that did not
+  change; the first release is 0.1.0. The version is independent of the TypeScript package's semver: a TS release
+  does not imply a Rust one, and the numbers are not kept in step.
+- **Each release records its spec.** A release's notes (the GitHub release for its tag) name the commit of `spec/`
+  (the repository at that commit) that the crates were verified against, the commit the tag points at.
+- **ducat-sql-core is internal.** It is published only because `ducat-sqlx` and `ducat-diesel` depend on it; its items
+  are `#[doc(hidden)]` and it makes no stability promise, whatever its version says.
+- **Publish order:** `ducat`, `ducat-words`, `ducat-format`, `ducat-sql-core`, `ducat-sqlx`, `ducat-diesel`,
+  `ducat-fetch`; each crate after those it depends on. Path dependencies between the crates carry
+  `version = "<the version>"`, so a release bumps them with `workspace.package.version`.
+- **Publishing:** the first release (0.1.0) is published by hand, in that order. From the second on, pushing a tag
+  `rust-v<version>` runs `.github/workflows/rust-release.yml`: it checks that the tag is the crates' version, waits for
+  approval in the `crates-io` environment, gets a short-lived token through crates.io's trusted publishing, and runs
+  `cargo publish` for each crate in order, waiting for the index to show each version before the next.
+- **What a .crate holds:** each crate's `include` keeps the package to its sources, README, LICENSE and NOTICE
+  (ducat-format: and its example). Tests, generators, `spec/` and `data/` stay in the repository; the generated
+  tables are committed under each crate's `src/`, so nothing a build reads is outside the crate.
+
 ## Working rules
 - Conventional Commits, and no AI attribution in commits or PRs (ducat's rule).
 - Pull requests to ducat's repository, titled as Conventional Commits with the `rust` scope.
