@@ -803,7 +803,7 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | TS | Rust | status | note |
 |---|---|---|---|
 | `ExactMoney` | `ducat::exact::ExactMoney<C>`, `AnyExactMoney` | same | |
-| `ExactMoney#abs` | `ExactMoney::abs` | missing | add `AnyExactMoney::abs` |
+| `ExactMoney#abs` | `ExactMoney::abs`, `AnyExactMoney::abs` | same | |
 | `ExactMoney#add` | `Add` for `ExactMoney<C>`; `AnyExactMoney::checked_add` | same | `AnyExactMoney::checked_add` takes only `&AnyExactMoney`: call `.exact()` on an `AnyMoney` first |
 | `ExactMoney#clamp` | `ExactMoney::clamp`, `AnyExactMoney::clamp` | same | bounds exact or `Money` (owned or borrowed, `impl Into<ExactMoney<C>>`), as ducat's; `Err(LowAboveHigh)` where ducat throws `RangeError` (`clamp: lo > hi`), where `Ord::clamp` panics (`ExactMoney::clamp` takes `self` by value so that it, not `Ord::clamp`, is called). `AnyExactMoney`'s, in ducat's order: `Err(CurrencyMismatch)` for bounds in two currencies, `lo > hi`, then `Err(CurrencyMismatch)` for a value in another currency (`expected` `lo`'s, as ducat's `this.max(lo)`) |
 | `ExactMoney#compare` | `Ord`; `AnyExactMoney::compare` | same | |
@@ -815,39 +815,39 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | `ExactMoney#equals` | `==` | same | `==` within one type only; call `.exact()` on a `Money` first; `AnyExactMoney` in different currencies is `!=` |
 | `ExactMoney#greaterThan` | `>` | same | `>`; `compare(..)?.is_gt()`; call `.exact()` on a `Money` first |
 | `ExactMoney#greaterThanOrEqual` | `>=` | same | `>=`; `compare(..)?.is_ge()`; call `.exact()` on a `Money` first |
-| `ExactMoney#isExact` | `ExactMoney::is_exact` | missing | return `Result` with Err(InvalidScale) for scale > MAX_SCALE; add `AnyExactMoney::is_exact` |
+| `ExactMoney#isExact` | `ExactMoney::is_exact`, `AnyExactMoney::is_exact` | same | a `Result<bool>`: `Err(InvalidScale)` for a scale past `MAX_SCALE`, ducat's `RangeError` (`Invalid scale`); `None` is ducat's default, the currency's exponent |
 | `ExactMoney#isNegative` | — | missing | `signum() < 0` is the workaround |
 | `ExactMoney#isPositive` | — | missing | `signum() > 0` |
 | `ExactMoney#isZero` | — | missing | `signum() == 0` |
 | `ExactMoney#lessThan` | `<` | same | `<` (typed); `AnyExactMoney::compare(..)?.is_lt()`; call `.exact()` on a `Money` first |
 | `ExactMoney#lessThanOrEqual` | `<=` | same | `<=`; `compare(..)?.is_le()`; call `.exact()` on a `Money` first |
-| `ExactMoney#max` | `Ord::max` | missing | add `AnyExactMoney::max` (Err CurrencyMismatch) |
-| `ExactMoney#min` | `Ord::min` | missing | add `AnyExactMoney::min` (Err CurrencyMismatch), variadic via iterator |
+| `ExactMoney#max` | `ExactMoney::max`, `ExactMoney::max_of`; `AnyExactMoney::max`, `AnyExactMoney::max_of` | same | as `.` `Money#max`: the first of equal values wins (not `Ord::max`'s second; the inherent `ExactMoney::max` takes `self` by value so that `a.max(b)` resolves to it); `other` may be exact or `Money`, as ducat's; `max_of` is the variadic form over an iterator (`None` for none). `AnyExactMoney`'s return `Err(CurrencyMismatch)` where ducat throws, with ducat's `expected` (the candidate's currency) and `actual` (the largest so far's) |
+| `ExactMoney#min` | `ExactMoney::min`, `ExactMoney::min_of`; `AnyExactMoney::min`, `AnyExactMoney::min_of` | same | as `ExactMoney#max`: the first of equal values wins; `AnyExactMoney`'s `Err(CurrencyMismatch)` has ducat's `expected` (the candidate's currency) and `actual` (the smallest so far's) |
 | `ExactMoney#multiply` | `ExactMoney::multiply` | same | |
-| `ExactMoney#negate` | `Neg` | missing | add `Neg` for `AnyExactMoney` |
+| `ExactMoney#negate` | `Neg` for `ExactMoney<C>` and `AnyExactMoney` (owned and borrowed) | same | |
 | `ExactMoney#num` | `ExactMoney::value` → `Ratio::numer` | same | |
 | `ExactMoney#numerator` | `ExactMoney::value` → `Ratio::numer` | same | |
-| `ExactMoney#percentage` | `ExactMoney::percentage` | missing | add `AnyExactMoney::percentage` |
-| `ExactMoney#ratioOf` | `ExactMoney::ratio_of` | missing | add `AnyExactMoney::ratio_of` (Err CurrencyMismatch/DivisionByZero); accept a `Money` total |
+| `ExactMoney#percentage` | `ExactMoney::percentage`, `AnyExactMoney::percentage` | same | |
+| `ExactMoney#ratioOf` | `ExactMoney::ratio_of`, `AnyExactMoney::ratio_of` | same | the total may be exact or `Money` (owned or borrowed), as ducat's; `AnyExactMoney`'s, in ducat's order: `Err(CurrencyMismatch)` (`expected` the receiver's currency), then `Err(DivisionByZero)` for a zero total, ducat's `RangeError` |
 | `ExactMoney#round` | `ExactMoney::round`, `AnyExactMoney::round` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `ExactMoney#roundWithResidual` | `ExactMoney::round_with_residual` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the mode is required |
-| `ExactMoney#sign` | `ExactMoney::signum` | missing | add `AnyExactMoney::signum` |
+| `ExactMoney#sign` | `ExactMoney::signum`, `AnyExactMoney::signum` | same | |
 | `ExactMoney#subtract` | `Sub`; `AnyExactMoney::checked_sub` | same | as add: `checked_sub` takes only `&AnyExactMoney` |
 | `ExactMoney#toJSON` | — | missing | no `serde` impls for `ExactMoney` |
-| `ExactMoney#toMoney` | `ExactMoney::to_money`, `AnyExactMoney::to_money` | missing | Err(InvalidScale) for minimum_scale > MAX_SCALE and for a value needing > MAX_SCALE places |
+| `ExactMoney#toMoney` | `ExactMoney::to_money`, `AnyExactMoney::to_money` | same | in ducat's order: `Err(InvalidScale)` for a minimum past `MAX_SCALE`, `Err(Rounding)` for a value with no finite decimal form (ducat's `RoundingError`), then `Err(InvalidScale)` for one needing more than `MAX_SCALE` places (ducat's `RangeError`) |
 | `ExactMoney#toNumber` | `ExactMoney::to_f64`, `AnyExactMoney::to_f64` | same | [floats only go out](design.md#parity-decisions): for display or interop only, never round-trip, never called inside ducat. ducat's algorithm step for step (a 65- or 66-bit quotient with a sticky bit, rounded once, scaled by powers of two), so the bits match, subnormals included |
 | `ExactMoney#toString` | `Display` | same | |
 | `ExactTaxBreakdown` | `ducat::exact::ExactTaxBreakdown` | same | |
 | `Money#addTaxExact` | `ExactMoney::add_tax` (via `Money::exact`) | same | |
 | `Money#exact` | `Money::exact`, `AnyMoney::exact` | same | |
 | `Money#extractTaxExact` | `ExactMoney::extract_tax` | same | |
-| `Money#multiplyExact` | `Money::multiply_exact`, `AnyMoney::multiply_exact` | missing | Err(InvalidScale) (not Rounding) when the product needs > MAX_SCALE places |
+| `Money#multiplyExact` | `Money::multiply_exact`, `AnyMoney::multiply_exact` | same | as `ExactMoney#toMoney` at the amount's scale: the factor's error, then `Err(Rounding)` for a product with no finite decimal form, then `Err(InvalidScale)` (not `Rounding`) for one needing more than `MAX_SCALE` places, ducat's `RangeError` |
 | `Rounded` | `ducat::exact::Rounded` | same | `value`, `residual` |
 | `addTaxExact` | `ExactMoney::add_tax` | same | |
 | `exact` | `Money::exact` | same | |
 | `extractTaxExact` | `ExactMoney::extract_tax` | same | |
 | `isExactMoney` | — | not ported: by design (the type system) | |
-| `multiplyExact` | `Money::multiply_exact` | missing | as Money#multiplyExact |
+| `multiplyExact` | `Money::multiply_exact`, `AnyMoney::multiply_exact` | same | as `Money#multiplyExact` |
 | `sumExact` | `Sum` for `ExactMoney<C>` | same | `AnyExactMoney` folds with `checked_add` |
 
 ### `./policy`
@@ -961,14 +961,14 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | `Fixed#toScale` | `Fixed::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the mode is required |
 | `Fixed#toScaled` | `Fixed::units`, `Fixed::scale` | same | |
 | `Fixed#toString` | `Display` | same | |
-| `Fixed#trimScale` | `Fixed::trim_scale` | missing | Err(InvalidScale) for minimum > MAX_SCALE (return `Result`) |
+| `Fixed#trimScale` | `Fixed::trim_scale` | same | a `Result`: `Err(InvalidScale)` for a minimum past `MAX_SCALE`, ducat's `RangeError` (`Invalid scale`), checked before the value; the minimum is required (ducat's default is 0) |
 | `Fixed#value` | `Fixed::units` | same | |
-| `FixedInput` | `Fixed::new`, `FromStr`, `parse_at`, `from_f64`, `From<Int>` | same | |
+| `FixedInput` | `Fixed::new`, `FromStr`, `parse_at`, `from_f64`, `from_f64_at`, `From<Int>` | same | |
 | `FixedOptions` | arguments of `Fixed::parse_at` | same | |
-| `FixedOptions#rounding` | the `Rounding` argument of `parse_at` | missing | add `Fixed::from_f64_at(value, scale, rounding)` (as `Money::from_f64_at`) |
+| `FixedOptions#rounding` | the `Rounding` argument of `Fixed::parse_at`, `Fixed::from_f64_at`, `Fixed::to_scale` | same | where ducat applies it: a string (`parse_at`), a number (`from_f64_at`: the shortest round-trip form, without the 15-digit rule, as ducat once a rounding is given) and a `Fixed` (`to_scale`); `Rounding::Unnecessary` is ducat's default (`Err(Rounding)` where it throws `RoundingError`). ducat's `RangeError` for a rounding without a scale can't arise: each takes both. `from_f64_at` checks the scale before the value, as ducat (`Err(InvalidScale)`, then `Err(NotFinite)`) |
 | `FixedOptions#scale` | the `scale` argument of `parse_at` | same | |
 | `ScaledInteger` | `Fixed::units`, `Fixed::scale` | same | no named type |
-| `fixed` | `FromStr`, `Fixed::parse_at`, `Fixed::from_f64` | same | |
+| `fixed` | `FromStr`, `Fixed::parse_at`, `Fixed::from_f64`, `Fixed::from_f64_at` | same | |
 | `fromScaled` | `Fixed::new` | same | |
 | `isFixed` | — | not ported: by design (the type system) | |
 
@@ -1330,12 +1330,6 @@ Every `missing` row, grouped into pull requests in the order users would hit the
 6. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
    `./exact` `ExactMoney#isNegative`, `./exact` `ExactMoney#toJSON`. The predicates are one-liners over `signum`;
    `serde` for exact amounts lets a total be stored before it is rounded.
-7. **`ExactMoney` and `Fixed` gaps** (`ducat`, feature `exact`; from the re-audit): `./exact` `ExactMoney#abs`,
-   `./exact` `ExactMoney#negate`, `./exact` `ExactMoney#sign`, `./exact` `ExactMoney#percentage`,
-   `./exact` `ExactMoney#ratioOf`, `./exact` `ExactMoney#min`, `./exact` `ExactMoney#max` (on `AnyExactMoney`),
-   `./exact` `ExactMoney#isExact`, `./exact` `ExactMoney#toMoney`, `./exact` `Money#multiplyExact`,
-   `./exact` `multiplyExact`, `./fixed` `Fixed#trimScale` (`InvalidScale` past `MAX_SCALE`, where TS throws
-   `RangeError`), `./fixed` `FixedOptions#rounding` (`Fixed::from_f64_at`).
 8. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
    `./drizzle/pg` `moneyJson`, `./drizzle/mysql` `moneyJson`, `./drizzle/sqlite` `moneyJson`. Storing money is the
    first thing an application does, and a JSON column is the layout that needs no currency column.
