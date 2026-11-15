@@ -44,12 +44,13 @@ jobs:
       # ducat-fetch's sans-IO core without ureq (the README's doc examples need ureq); its live
       # smoke test is #[ignore]d: CI makes no requests
       - run: cargo test -p ducat-fetch --locked --no-fail-fast --no-default-features --lib --tests
-      # ducat-sqlx with every database: SQLite runs in memory; Postgres and MySQL skip here (the
-      # sqlx-databases job runs them against servers)
+      # ducat-sqlx and ducat-diesel with every database: SQLite runs in memory; Postgres and MySQL
+      # skip here (the sql-databases job runs them against servers)
       - run: cargo test -p ducat-sqlx --locked --no-fail-fast --all-features
+      - run: cargo test -p ducat-diesel --locked --no-fail-fast --all-features
 
-  sqlx-databases:
-    name: ducat-sqlx on Postgres and MySQL
+  sql-databases:
+    name: ducat-sqlx and ducat-diesel on Postgres and MySQL
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     # the same servers and settings as ci.yml's TypeScript database tests
@@ -81,6 +82,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
       - run: 'cargo test -p ducat-sqlx --locked --no-fail-fast --all-features --test it -- --nocapture postgres:: mysql::'
+      # through diesel-async's pure Rust connections (no libpq or libmysqlclient)
+      - run: 'cargo test -p ducat-diesel --locked --no-fail-fast --all-features --test it -- --nocapture postgres:: mysql::'
 
   format-features:
     name: ducat-format, one language and root only
@@ -131,6 +134,11 @@ jobs:
       - run: cargo +1.85 check -p ducat-sqlx --lib --locked
       - run: cargo +1.85 check -p ducat-sqlx --lib --locked --no-default-features
       - run: cargo +1.85 check -p ducat-sqlx --lib --locked --all-features
+      # diesel 2.2.12 needs 1.78 (2.3 needs 1.86, so the lockfile stays on 2.2), so ducat-diesel keeps
+      # the workspace's MSRV
+      - run: cargo +1.85 check -p ducat-diesel --lib --locked
+      - run: cargo +1.85 check -p ducat-diesel --lib --locked --no-default-features
+      - run: cargo +1.85 check -p ducat-diesel --lib --locked --all-features
 
   no-std:
     name: no_std
@@ -204,13 +212,31 @@ jobs:
       - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features mysql --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features sqlite --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --all-features --locked -- -D warnings
-      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-fetch -p ducat-sql-core -p ducat-sqlx --no-deps --locked
+      # ducat-diesel: no database, each database alone, and all of them
+      - run: cargo clippy -p ducat-diesel --lib --no-default-features --locked -- -D warnings
+      - run: cargo clippy -p ducat-diesel --all-targets --no-default-features --features postgres --locked -- -D warnings
+      - run: cargo clippy -p ducat-diesel --all-targets --no-default-features --features mysql --locked -- -D warnings
+      - run: cargo clippy -p ducat-diesel --all-targets --no-default-features --features sqlite --locked -- -D warnings
+      - run: cargo clippy -p ducat-diesel --all-targets --all-features --locked -- -D warnings
+      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-fetch -p ducat-sql-core -p ducat-sqlx -p ducat-diesel --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings
       - run: cargo doc -p ducat-sqlx --no-deps --locked --no-default-features
         env:
           RUSTDOCFLAGS: -D warnings
       - run: cargo doc -p ducat-sqlx --no-deps --locked --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc -p ducat-diesel --no-deps --locked --no-default-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc -p ducat-diesel --no-deps --locked --no-default-features --features mysql
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc -p ducat-diesel --no-deps --locked --no-default-features --features sqlite
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc -p ducat-diesel --no-deps --locked --all-features
         env:
           RUSTDOCFLAGS: -D warnings
       # intra-doc links to feature-gated items must resolve with every feature and with none
