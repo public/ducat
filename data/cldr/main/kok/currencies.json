@@ -1,0 +1,687 @@
+{
+ "main": {
+  "kok": {
+   "identity": {
+    "language": "kok"
+   },
+   "inherits": "und",
+   "numbers": {
+    "currencies": {
+     "AED": {
+      "displayName": "युनाइटेड अरब इमीरॅट्स दिरहम",
+      "displayName-count-other": "युनाइटेड अरब इमीरॅट्स दिरहम"
+     },
+     "AFN": {
+      "displayName": "अफगाण अफगाणी",
+      "displayName-count-other": "अफगाण अफगाणी"
+     },
+     "ALL": {
+      "displayName": "अल्बेनियन लेक",
+      "displayName-count-other": "अल्बेनियन लेक"
+     },
+     "AMD": {
+      "displayName": "अर्मेनियन ड्राम",
+      "displayName-count-one": "अर्मेनियन ड्राम",
+      "displayName-count-other": "अर्मेनियन ड्राम"
+     },
+     "ANG": {
+      "displayName": "नॅदरलँड अँटिलियन गिल्डर",
+      "displayName-count-other": "नॅदरलँड अँटिलियन गिल्डर"
+     },
+     "AOA": {
+      "displayName": "अंगोलन क्वॉन्ज",
+      "displayName-count-one": "अंगोलन क्वॉन्ज",
+      "displayName-count-other": "अंगोलन क्वॉन्ज"
+     },
+     "ARS": {
+      "displayName": "अर्जेंटिना पेसो",
+      "displayName-count-one": "अर्जेंटिना पेसोस",
+      "displayName-count-other": "अर्जेंटिना पेसोस"
+     },
+     "AUD": {
+      "displayName": "ऑस्ट्रेलियाई डॉलर",
+      "displayName-count-other": "ऑस्ट्रेलियाई डॉलर"
+     },
+     "AWG": {
+      "displayName": "अरुबान फ्लोरिन",
+      "displayName-count-other": "अरुबान फ्लोरिन"
+     },
+     "AZN": {
+      "displayName": "अज़रबैजानी मनात",
+      "displayName-count-other": "अज़रबैजानी मनात"
+     },
+     "BAM": {
+      "displayName": "बोस्निया-हेर्जेगोविना रुपांतरीत मार्क",
+      "displayName-count-other": "बोस्निया-हेर्जेगोविना रुपांतरीत मार्क"
+     },
+     "BBD": {
+      "displayName": "बार्बाडियान डॉलर",
+      "displayName-count-one": "बार्बाडियान डॉलर्स",
+      "displayName-count-other": "बार्बाडियान डॉलर्स"
+     },
+     "BDT": {
+      "displayName": "बांगलादेशी टाका",
+      "displayName-count-one": "बांगलादेशी टाका",
+      "displayName-count-other": "बांगलादेशी टाका"
+     },
+     "BGN": {
+      "displayName": "बल्गेरियन लेव",
+      "displayName-count-other": "बल्गेरियन लेव"
+     },
+     "BHD": {
+      "displayName": "बहरिनी डिनार",
+      "displayName-count-other": "बहरिनी डिनार"
+     },
+     "BIF": {
+      "displayName": "बुरुंडी फ्रँक",
+      "displayName-count-other": "बुरुंडी फ्रँक"
+     },
+     "BMD": {
+      "displayName": "बरमुदान डॉलर",
+      "displayName-count-other": "बरमुदान डॉलर"
+     },
+     "BND": {
+      "displayName": "ब्रूनेई डॉलर",
+      "displayName-count-other": "ब्रूनेई डॉलर"
+     },
+     "BOB": {
+      "displayName": "बोलिव्हियन बोलिवियानो",
+      "displayName-count-one": "बोलिव्हियन बोलिवियानोस",
+      "displayName-count-other": "बोलिव्हियन बोलिवियानोस"
+     },
+     "BRL": {
+      "displayName": "ब्राझिलियन रियाल",
+      "displayName-count-one": "ब्राझिलियन रियाल्स",
+      "displayName-count-other": "ब्राझिलियन रियाल्स"
+     },
+     "BSD": {
+      "displayName": "बहामियन डॉलर",
+      "displayName-count-other": "बहामियन डॉलर"
+     },
+     "BTN": {
+      "displayName": "भुतानीज नागल्ट्रम",
+      "displayName-count-one": "भुतानीज नागल्ट्रम",
+      "displayName-count-other": "भुतानीज नागल्ट्रम"
+     },
+     "BWP": {
+      "displayName": "बोत्सवाना पुला",
+      "displayName-count-other": "बोत्सवाना पुला"
+     },
+     "BYN": {
+      "displayName": "बैलोरुसियन् रूबल",
+      "displayName-count-other": "बैलोरुसियन् रूबल",
+      "symbol-alt-narrow": "р."
+     },
+     "BZD": {
+      "displayName": "बेलिझ डॉलर",
+      "displayName-count-other": "बेलिझ डॉलर"
+     },
+     "CAD": {
+      "displayName": "कॅनाडियन डॉलर",
+      "displayName-count-other": "कॅनाडियन डॉलर"
+     },
+     "CDF": {
+      "displayName": "काँगोलिसी फ्रँक",
+      "displayName-count-one": "काँगोलिसी फ्रँक",
+      "displayName-count-other": "काँगोलिसी फ्रँक"
+     },
+     "CHF": {
+      "displayName": "स्विस फ्रँक",
+      "displayName-count-other": "स्विस फ्रँक"
+     },
+     "CLP": {
+      "displayName": "चिली पेसो",
+      "displayName-count-other": "चिली पेसो"
+     },
+     "CNH": {
+      "displayName": "चिनी युआन (ऑफशोर)",
+      "displayName-count-other": "चिनी युआन (ऑफशोर)"
+     },
+     "CNY": {
+      "displayName": "चिनी युआन",
+      "displayName-count-other": "चिनी युआन"
+     },
+     "COP": {
+      "displayName": "कोलंबियन पेसो",
+      "displayName-count-other": "कोलंबियन पेसो"
+     },
+     "CRC": {
+      "displayName": "कोस्ता रिका कॉलॉन",
+      "displayName-count-other": "कोस्ता रिका कॉलॉन"
+     },
+     "CUC": {
+      "displayName": "क्युबान रुपांतरीत पेसो",
+      "displayName-count-other": "क्युबान रुपांतरीत पेसो"
+     },
+     "CUP": {
+      "displayName": "क्युबान पेसो",
+      "displayName-count-other": "क्युबान पेसो"
+     },
+     "CVE": {
+      "displayName": "केप वर्दे एस्कुडो",
+      "displayName-count-other": "केप वर्दे एस्कुडो"
+     },
+     "CZK": {
+      "displayName": "चेक कोरुना",
+      "displayName-count-other": "चेक कोरुना"
+     },
+     "DJF": {
+      "displayName": "जिबूती फ्रँक",
+      "displayName-count-other": "जिबूती फ्रँक"
+     },
+     "DKK": {
+      "displayName": "डॅनिश क्रोन",
+      "displayName-count-one": "डॅनिश क्रोनर",
+      "displayName-count-other": "डॅनिश क्रोनर"
+     },
+     "DOP": {
+      "displayName": "डोमिनिकन पेसो",
+      "displayName-count-other": "डोमिनिकन पेसो"
+     },
+     "DZD": {
+      "displayName": "अल्जेरियाई डिनार",
+      "displayName-count-other": "अल्जेरियाई डिनार"
+     },
+     "EGP": {
+      "displayName": "ईजिप्ती पावंड",
+      "displayName-count-one": "ईजिप्ती पावंड",
+      "displayName-count-other": "ईजिप्ती पावंड"
+     },
+     "ERN": {
+      "displayName": "इरिट्रियन नाक्फा",
+      "displayName-count-other": "इरिट्रियन नाक्फा"
+     },
+     "ETB": {
+      "displayName": "इथियोपियाई बिरर",
+      "displayName-count-other": "इथियोपियाई बिरर"
+     },
+     "EUR": {
+      "displayName": "युरो",
+      "displayName-count-one": "युरोस",
+      "displayName-count-other": "युरोस"
+     },
+     "FJD": {
+      "displayName": "फिजी डॉलर",
+      "displayName-count-other": "फिजी डॉलर"
+     },
+     "FKP": {
+      "displayName": "फ़ॉकलैंड आइलैंड्स पावंड",
+      "displayName-count-other": "फ़ॉकलैंड आइलैंड्स पावंड"
+     },
+     "GBP": {
+      "displayName": "ब्रिटिश पावंड",
+      "displayName-count-one": "ब्रिटिश पावंड्स",
+      "displayName-count-other": "ब्रिटिश पावंड्स"
+     },
+     "GEL": {
+      "displayName": "जॉर्जियन लारी",
+      "displayName-count-other": "जॉर्जियन लारी"
+     },
+     "GHS": {
+      "displayName": "घानाई सेडी",
+      "displayName-count-other": "घानाई सेडी"
+     },
+     "GIP": {
+      "displayName": "जिब्राल्टर पावंड",
+      "displayName-count-one": "जिब्राल्टर पावंड्स",
+      "displayName-count-other": "जिब्राल्टर पावंड्स"
+     },
+     "GMD": {
+      "displayName": "गॅम्बियन दलासी",
+      "displayName-count-other": "गॅम्बियन दलासी"
+     },
+     "GNF": {
+      "displayName": "गिनीन फ्रँक",
+      "displayName-count-other": "गिनीन फ्रँक"
+     },
+     "GTQ": {
+      "displayName": "ग्वाटेमाला कुएट्झल",
+      "displayName-count-other": "ग्वाटेमाला कुएट्झल"
+     },
+     "GYD": {
+      "displayName": "गयाना डॉलर",
+      "displayName-count-other": "गयाना डॉलर"
+     },
+     "HKD": {
+      "displayName": "हाँग काँग डॉलर",
+      "displayName-count-other": "हाँग काँग डॉलर"
+     },
+     "HNL": {
+      "displayName": "होंडुरान लेम्पिरा",
+      "displayName-count-other": "होंडुरान लेम्पिरा"
+     },
+     "HRK": {
+      "displayName": "क्रोयेषियन् कुना",
+      "displayName-count-other": "क्रोयेषियन् कुना"
+     },
+     "HTG": {
+      "displayName": "हैतीयन गौर्डे",
+      "displayName-count-other": "हैतीयन गौर्डे"
+     },
+     "HUF": {
+      "displayName": "हंगेरियन फोरिंट",
+      "displayName-count-other": "हंगेरियन फोरिंट"
+     },
+     "IDR": {
+      "displayName": "इंडोनेशियन रुपिया",
+      "displayName-count-other": "इंडोनेशियन रुपिया"
+     },
+     "ILS": {
+      "displayName": "इस्त्रायली न्यु शेकेल",
+      "displayName-count-other": "इस्त्रायली न्यु शेकेल"
+     },
+     "INR": {
+      "displayName": "भारतीय रुपया",
+      "displayName-count-other": "भारतीय रुपया"
+     },
+     "IQD": {
+      "displayName": "इराकी डिनार",
+      "displayName-count-one": "इराकी डिनार",
+      "displayName-count-other": "इराकी डिनार"
+     },
+     "IRR": {
+      "displayName": "ईरानी रियाल",
+      "displayName-count-other": "ईरानी रियाल"
+     },
+     "ISK": {
+      "displayName": "आईस्लान्डिक क्रोना",
+      "displayName-count-other": "आईस्लान्डिक क्रोना"
+     },
+     "JMD": {
+      "displayName": "जमैकन डॉलर",
+      "displayName-count-one": "जमैकन डॉलर",
+      "displayName-count-other": "जमैकन डॉलर"
+     },
+     "JOD": {
+      "displayName": "जॉर्डनियन डिनार",
+      "displayName-count-other": "जॉर्डनियन डिनार"
+     },
+     "JPY": {
+      "displayName": "जपानी येन",
+      "displayName-count-other": "जपानी येन"
+     },
+     "KES": {
+      "displayName": "केनयाई शिलिंग",
+      "displayName-count-other": "केनयाई शिलिंग"
+     },
+     "KGS": {
+      "displayName": "किरगिझस्तान सोम",
+      "displayName-count-other": "किरगिझस्तान सोम"
+     },
+     "KHR": {
+      "displayName": "कंबोडियन रियाल",
+      "displayName-count-other": "कंबोडियन रियाल"
+     },
+     "KMF": {
+      "displayName": "कोमोरियन फ्रँक",
+      "displayName-count-other": "कोमोरियन फ्रँक"
+     },
+     "KPW": {
+      "displayName": "उत्तर कोरियन वॉन",
+      "displayName-count-other": "उत्तर कोरियन वॉन"
+     },
+     "KRW": {
+      "displayName": "दक्षिण कोरियन वॉन",
+      "displayName-count-other": "दक्षिण कोरियन वॉन"
+     },
+     "KWD": {
+      "displayName": "कुवेती डिनार",
+      "displayName-count-other": "कुवेती डिनार"
+     },
+     "KYD": {
+      "displayName": "कैमेन आइलैंड्स डॉलर",
+      "displayName-count-one": "कैमेन आइलैंड्स डॉलर",
+      "displayName-count-other": "कैमेन आइलैंड्स डॉलर"
+     },
+     "KZT": {
+      "displayName": "कझाकस्तानी टेंग",
+      "displayName-count-other": "कझाकस्तानी टेंग"
+     },
+     "LAK": {
+      "displayName": "लाओ किप",
+      "displayName-count-other": "लाओ किप"
+     },
+     "LBP": {
+      "displayName": "लिबानेस पावंड",
+      "displayName-count-other": "लिबानेस पावंड"
+     },
+     "LKR": {
+      "displayName": "श्री लंका रुपया",
+      "displayName-count-other": "श्री लंका रुपया"
+     },
+     "LRD": {
+      "displayName": "लायबेरियन डॉलर",
+      "displayName-count-other": "लायबेरियन डॉलर"
+     },
+     "LSL": {
+      "displayName": "लिसोथो लोटि",
+      "displayName-count-other": "लिसोथो लोटि"
+     },
+     "LYD": {
+      "displayName": "लीबियान डिनार",
+      "displayName-count-other": "लीबियान डिनार"
+     },
+     "MAD": {
+      "displayName": "मोरक्कन दिरहम",
+      "displayName-count-other": "मोरक्कन दिरहम"
+     },
+     "MDL": {
+      "displayName": "मोल्दोवान लियू",
+      "displayName-count-other": "मोल्दोवान लियू"
+     },
+     "MGA": {
+      "displayName": "मलागासी एरियारी",
+      "displayName-count-other": "मलागासी एरियारी"
+     },
+     "MKD": {
+      "displayName": "मसीडोनियन् डिनर",
+      "displayName-count-other": "मसीडोनियन् डिनर"
+     },
+     "MMK": {
+      "displayName": "म्यानमार क्यात",
+      "displayName-count-one": "म्यानमार क्यात्स",
+      "displayName-count-other": "म्यानमार क्यात्स"
+     },
+     "MNT": {
+      "displayName": "मंगोलियन तुगरिक",
+      "displayName-count-other": "मंगोलियन तुगरिक"
+     },
+     "MOP": {
+      "displayName": "मकानेसे पटका",
+      "displayName-count-other": "मकानेसे पटका"
+     },
+     "MRU": {
+      "displayName": "मॉरिटानिया उगिया",
+      "displayName-count-other": "मॉरिटानिया उगिया"
+     },
+     "MUR": {
+      "displayName": "मॉरिशस रुपी",
+      "displayName-count-other": "मॉरिशस रुपी"
+     },
+     "MVR": {
+      "displayName": "मालदिवी रुफिया",
+      "displayName-count-other": "मालदिवी रुफिया"
+     },
+     "MWK": {
+      "displayName": "मलावियन क्वाचा",
+      "displayName-count-other": "मलावियन क्वाचा"
+     },
+     "MXN": {
+      "displayName": "मेक्सिकन पेसो",
+      "displayName-count-other": "मेक्सिकन पेसो"
+     },
+     "MYR": {
+      "displayName": "मलेशियाई रिंग्गित",
+      "displayName-count-other": "मलेशियाई रिंग्गित"
+     },
+     "MZN": {
+      "displayName": "मोझांबिकन मेटिकल",
+      "displayName-count-other": "मोझांबिकन मेटिकल"
+     },
+     "NAD": {
+      "displayName": "नामीबिया डॉलर",
+      "displayName-count-other": "नामीबिया डॉलर"
+     },
+     "NGN": {
+      "displayName": "नायजेरियन नायरा",
+      "displayName-count-other": "नायजेरियन नायरा"
+     },
+     "NIO": {
+      "displayName": "निकारागुआन कॉर्डोबा",
+      "displayName-count-one": "निकारागुआन कॉर्डोबास",
+      "displayName-count-other": "निकारागुआन कॉर्डोबास"
+     },
+     "NOK": {
+      "displayName": "नॉर्वेगन क्रोन",
+      "displayName-count-other": "नॉर्वेगन क्रोन"
+     },
+     "NPR": {
+      "displayName": "नेपाळी रुपया",
+      "displayName-count-other": "नेपाळी रुपया"
+     },
+     "NZD": {
+      "displayName": "न्युझीलॅन्ड डॉलर",
+      "displayName-count-other": "न्युझीलॅन्ड डॉलर"
+     },
+     "OMR": {
+      "displayName": "ओमानी रियाल",
+      "displayName-count-other": "ओमानी रियाल"
+     },
+     "PAB": {
+      "displayName": "पानामानियन बाल्बोआ",
+      "displayName-count-other": "पानामानियन बाल्बोआ"
+     },
+     "PEN": {
+      "displayName": "पेरिवियन सोल",
+      "displayName-count-other": "पेरिवियन सोल"
+     },
+     "PGK": {
+      "displayName": "पापुआ न्यु गिनी किना",
+      "displayName-count-other": "पापुआ न्यु गिनी किना"
+     },
+     "PHP": {
+      "displayName": "फिलिपिनी पेसो",
+      "displayName-count-other": "फिलिपिनी पेसो",
+      "symbol": "PHP"
+     },
+     "PKR": {
+      "displayName": "पाकिस्तानी रुपया",
+      "displayName-count-other": "पाकिस्तानी रुपया"
+     },
+     "PLN": {
+      "displayName": "पोलिष झ्लोटी",
+      "displayName-count-other": "पोलिष झ्लोटी"
+     },
+     "PYG": {
+      "displayName": "पराग्वेन गौरानी",
+      "displayName-count-other": "पराग्वेन गौरानी"
+     },
+     "QAR": {
+      "displayName": "कतारी रियाल",
+      "displayName-count-other": "कतारी रियाल"
+     },
+     "RON": {
+      "displayName": "रोमानियन् लियू",
+      "displayName-count-other": "रोमानियन् लियू",
+      "symbol": "रॉन",
+      "symbol-alt-narrow": "लेई"
+     },
+     "RSD": {
+      "displayName": "सर्बियन डिनार",
+      "displayName-count-other": "सर्बियन डिनार"
+     },
+     "RUB": {
+      "displayName": "रुसी रुबल",
+      "displayName-count-one": "रुसी रुबल्स",
+      "displayName-count-other": "रुसी रुबल्स"
+     },
+     "RWF": {
+      "displayName": "रवांडा फ्रँक",
+      "displayName-count-other": "रवांडा फ्रँक"
+     },
+     "SAR": {
+      "displayName": "सौदी रियाल",
+      "displayName-count-other": "सौदी रियाल"
+     },
+     "SBD": {
+      "displayName": "सोलोमन आयलँड्स डॉलर",
+      "displayName-count-one": "सोलोमन आयलँड्स डॉलर",
+      "displayName-count-other": "सोलोमन आयलँड्स डॉलर"
+     },
+     "SCR": {
+      "displayName": "सेशेल्लोइस रुपी",
+      "displayName-count-other": "सेशेल्लोइस रुपी"
+     },
+     "SDG": {
+      "displayName": "सुदानी पावंड",
+      "displayName-count-other": "सुदानी पावंड"
+     },
+     "SEK": {
+      "displayName": "स्वीदीष क्रोन",
+      "displayName-count-other": "स्वीदीष क्रोन"
+     },
+     "SGD": {
+      "displayName": "सिंगापूरी डॉलर",
+      "displayName-count-one": "सिंगापूरी डॉलर",
+      "displayName-count-other": "सिंगापूरी डॉलर"
+     },
+     "SHP": {
+      "displayName": "सेंट हेलिना पावंड",
+      "displayName-count-other": "सेंट हेलिना पावंड"
+     },
+     "SLE": {
+      "displayName": "सिएरा लियॉनी लियॉन",
+      "displayName-count-other": "सिएरा लियॉनी लियॉन"
+     },
+     "SLL": {
+      "displayName": "सिएरा लियॉनी लियॉन (1964—2022)",
+      "displayName-count-other": "सिएरा लियॉनी लियॉन (1964—2022)"
+     },
+     "SOS": {
+      "displayName": "सोमाली शिलिंग",
+      "displayName-count-other": "सोमाली शिलिंग"
+     },
+     "SRD": {
+      "displayName": "सुरीनामी डॉलर",
+      "displayName-count-other": "सुरीनामी डॉलर"
+     },
+     "SSP": {
+      "displayName": "दक्षिण सुडानी पावंड",
+      "displayName-count-other": "दक्षिण सुडानी पावंड"
+     },
+     "STN": {
+      "displayName": "साओ टोम आनी प्रिन्सिप डोब्रा",
+      "displayName-count-other": "साओ टोम आनी प्रिन्सिप डोब्रा"
+     },
+     "SYP": {
+      "displayName": "सिरियन पावंड",
+      "displayName-count-one": "सिरियन पावंड",
+      "displayName-count-other": "सिरियन पावंड"
+     },
+     "SZL": {
+      "displayName": "स्वाजी लिलांगेनी",
+      "displayName-count-other": "स्वाजी लिलांगेनी"
+     },
+     "THB": {
+      "displayName": "थाई बाट",
+      "displayName-count-other": "थाई बाट"
+     },
+     "TJS": {
+      "displayName": "ताजिकिस्तानी सोमोनी",
+      "displayName-count-one": "ताजिकिस्तानी सोमोनीस",
+      "displayName-count-other": "ताजिकिस्तानी सोमोनीस"
+     },
+     "TMT": {
+      "displayName": "तुर्कमेनिस्तानी मनत",
+      "displayName-count-other": "तुर्कमेनिस्तानी मनत"
+     },
+     "TND": {
+      "displayName": "ट्यूनीशियन डिनार",
+      "displayName-count-other": "ट्यूनीशियन डिनार"
+     },
+     "TOP": {
+      "displayName": "टोंगन पांगा",
+      "displayName-count-other": "टोंगन पांगा"
+     },
+     "TRY": {
+      "displayName": "तुर्किश लायरा",
+      "displayName-count-other": "तुर्किश लायरा"
+     },
+     "TTD": {
+      "displayName": "ट्रिनीडाड आनी टोबॅगो डॉलर",
+      "displayName-count-other": "ट्रिनीडाड आनी टोबॅगो डॉलर"
+     },
+     "TWD": {
+      "displayName": "न्यू तायवान डॉलर",
+      "displayName-count-other": "न्यू तायवान डॉलर"
+     },
+     "TZS": {
+      "displayName": "तंजानिया शिलिंग",
+      "displayName-count-other": "तंजानिया शिलिंग"
+     },
+     "UAH": {
+      "displayName": "युक्रेनियन् रिव्निया",
+      "displayName-count-other": "युक्रेनियन् रिव्निया"
+     },
+     "UGX": {
+      "displayName": "युगांडा शिलिंग",
+      "displayName-count-other": "युगांडा शिलिंग"
+     },
+     "USD": {
+      "displayName": "युएस डॉलर",
+      "displayName-count-one": "युएस डॉलर्स",
+      "displayName-count-other": "युएस डॉलर्स"
+     },
+     "UYU": {
+      "displayName": "उरुग्वेन पेसो",
+      "displayName-count-other": "उरुग्वेन पेसो"
+     },
+     "UZS": {
+      "displayName": "उज़्बेकिस्तानी सोम",
+      "displayName-count-other": "उज़्बेकिस्तानी सोम"
+     },
+     "VES": {
+      "displayName": "विनेझुएला बोलिव्हर",
+      "displayName-count-one": "विनेझुएला बोलिव्हर",
+      "displayName-count-other": "विनेझुएला बोलिव्हर"
+     },
+     "VND": {
+      "displayName": "वियतनामी डोंग",
+      "displayName-count-other": "वियतनामी डोंग"
+     },
+     "VUV": {
+      "displayName": "वानूआतू वातू",
+      "displayName-count-other": "वानूआतू वातू"
+     },
+     "WST": {
+      "displayName": "समोआई टाला",
+      "displayName-count-other": "समोआई टाला"
+     },
+     "XAF": {
+      "displayName": "मध्य अफ्रीकी सीएफए फ्रँक",
+      "displayName-count-other": "मध्य अफ्रीकी सीएफए फ्रँक"
+     },
+     "XCD": {
+      "displayName": "उदेंत कॅरिबियन डॉलर",
+      "displayName-count-other": "उदेंत कॅरिबियन डॉलर"
+     },
+     "XCG": {
+      "displayName": "कॅरिबियन गिल्डर",
+      "displayName-count-one": "कॅरिबियन गिल्डर",
+      "displayName-count-other": "कॅरिबियन गिल्डर"
+     },
+     "XOF": {
+      "displayName": "अस्तंत आफ्रिकी सीएफए फ्रँक",
+      "displayName-count-other": "अस्तंत आफ्रिकी सीएफए फ्रँक"
+     },
+     "XPF": {
+      "displayName": "सीएफपी फ्रँक",
+      "displayName-count-other": "सीएफपी फ्रँक"
+     },
+     "XXX": {
+      "displayName": "अज्ञात चलन",
+      "displayName-count-one": "(अज्ञात चलन)",
+      "displayName-count-other": "(अज्ञात चलन)"
+     },
+     "YER": {
+      "displayName": "येमेनी रियाल",
+      "displayName-count-other": "येमेनी रियाल"
+     },
+     "ZAR": {
+      "displayName": "दक्षिण आफ्रिकन रँड",
+      "displayName-count-other": "दक्षिण आफ्रिकन रँड"
+     },
+     "ZMW": {
+      "displayName": "झांबियन क्वाचा",
+      "displayName-count-other": "झांबियन क्वाचा"
+     },
+     "ZWG": {
+      "displayName": "झिंबाब्वेचें भांगर",
+      "displayName-count-one": "झिंबाब्वेचें भांगर",
+      "displayName-count-other": "झिंबाब्वेचें भांगर"
+     }
+    }
+   }
+  }
+ }
+}

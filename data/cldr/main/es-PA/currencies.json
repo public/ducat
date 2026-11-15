@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-PA": {
+   "identity": {
+    "language": "es",
+    "territory": "PA"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "PAB": {
+      "symbol": "B/."
+     }
+    }
+   }
+  }
+ }
+}

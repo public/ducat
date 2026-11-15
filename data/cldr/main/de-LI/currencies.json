@@ -1,0 +1,18 @@
+{
+ "main": {
+  "de-LI": {
+   "identity": {
+    "language": "de",
+    "territory": "LI"
+   },
+   "inherits": "de",
+   "numbers": {
+    "currencies": {
+     "EUR": {
+      "symbol": "EUR"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-PN": {
+   "identity": {
+    "language": "en",
+    "territory": "PN"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "NZD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

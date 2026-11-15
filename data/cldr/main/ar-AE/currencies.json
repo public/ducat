@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ar-AE": {
+   "identity": {
+    "language": "ar",
+    "territory": "AE"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {
+     "BND": {
+      "symbol-alt-narrow": "$"
+     }
+    }
+   }
+  }
+ }
+}

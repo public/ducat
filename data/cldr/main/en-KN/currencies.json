@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-KN": {
+   "identity": {
+    "language": "en",
+    "territory": "KN"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "XCD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

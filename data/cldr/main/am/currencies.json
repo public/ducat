@@ -1,0 +1,703 @@
+{
+ "main": {
+  "am": {
+   "identity": {
+    "language": "am"
+   },
+   "inherits": "und",
+   "numbers": {
+    "currencies": {
+     "AED": {
+      "displayName": "የተባበሩት የአረብ ኤምሬትስ ድርሀም",
+      "displayName-count-other": "የተባበሩት የአረብ ኤምሬትስ ድርሀም"
+     },
+     "AFN": {
+      "displayName": "የአፍጋን አፍጋኒ",
+      "displayName-count-other": "የአፍጋን አፍጋኒ"
+     },
+     "ALL": {
+      "displayName": "የአልባንያ ሌክ",
+      "displayName-count-other": "የአልባንያ ሌክ"
+     },
+     "AMD": {
+      "displayName": "የአርመን ድራም",
+      "displayName-count-other": "የአርመን ድራም"
+     },
+     "ANG": {
+      "displayName": "ኔዘርላንድስ አንቲሊአን ጊልደር",
+      "displayName-count-other": "ኔዘርላንድስ አንቲሊአን ጊልደር"
+     },
+     "AOA": {
+      "displayName": "የአንጎላ ኩዋንዛ",
+      "displayName-count-other": "የአንጎላ ኩዋንዛ"
+     },
+     "ARS": {
+      "displayName": "የአርጀንቲና ፔሶ",
+      "displayName-count-other": "የአርጀንቲና ፔሶ"
+     },
+     "AUD": {
+      "displayName": "የአውስትራሊያ ዶላር",
+      "displayName-count-other": "የአውስትራሊያ ዶላር",
+      "symbol": "AU$"
+     },
+     "AWG": {
+      "displayName": "አሩባን ፍሎሪን",
+      "displayName-count-other": "አሩባን ፍሎሪን"
+     },
+     "AZN": {
+      "displayName": "የአዛርባጃን ማናት",
+      "displayName-count-other": "የአዛርባጃን ማናት"
+     },
+     "BAM": {
+      "displayName": "የቦስኒያ ሄርዞጎቪና የሚመነዘር ማርክ",
+      "displayName-count-other": "የቦስኒያ ሄርዞጎቪና የሚመነዘር ማርክ"
+     },
+     "BBD": {
+      "displayName": "የባርቤዶስ ዶላር",
+      "displayName-count-other": "የባርቤዶስ ዶላር"
+     },
+     "BDT": {
+      "displayName": "የባንግላዲሽ ታካ",
+      "displayName-count-other": "የባንግላዲሽ ታካ"
+     },
+     "BGN": {
+      "displayName": "የቡልጋሪያ ሌቭ",
+      "displayName-count-other": "የቡልጋሪያ ሌቭ"
+     },
+     "BHD": {
+      "displayName": "የባኽሬን ዲናር",
+      "displayName-count-other": "የባኽሬን ዲናር"
+     },
+     "BIF": {
+      "displayName": "የብሩንዲ ፍራንክ",
+      "displayName-count-other": "የብሩንዲ ፍራንክ"
+     },
+     "BMD": {
+      "displayName": "የቤርሙዳ ዶላር",
+      "displayName-count-other": "የቤርሙዳ ዶላር"
+     },
+     "BND": {
+      "displayName": "የብሩኔ ዶላር",
+      "displayName-count-other": "የብሩኔ ዶላር"
+     },
+     "BOB": {
+      "displayName": "የቦሊቪያ ቦሊቪያኖ",
+      "displayName-count-other": "የቦሊቪያ ቦሊቪያኖ"
+     },
+     "BRL": {
+      "displayName": "የብራዚል ሪል",
+      "displayName-count-other": "የብራዚል ሪል"
+     },
+     "BSD": {
+      "displayName": "የባሃማስ ዶላር",
+      "displayName-count-other": "የባሃማስ ዶላር"
+     },
+     "BTN": {
+      "displayName": "ብሁታኒዝ ንጉልትረም",
+      "displayName-count-other": "ብሁታኒዝ ንጉልትረም"
+     },
+     "BWP": {
+      "displayName": "የቦትስዋና ፑላ",
+      "displayName-count-other": "የቦትስዋና ፑላ"
+     },
+     "BYN": {
+      "displayName": "የቤላሩስያ ሩብል",
+      "displayName-count-other": "የቤላሩስያ ሩብል",
+      "symbol-alt-narrow": "р."
+     },
+     "BYR": {
+      "displayName": "የቤላሩስያ ሩብል (2000–2016)",
+      "displayName-count-other": "የቤላሩስያ ሩብል (2000–2016)"
+     },
+     "BZD": {
+      "displayName": "የቤሊዝ ዶላር",
+      "displayName-count-other": "የቤሊዝ ዶላር"
+     },
+     "CAD": {
+      "displayName": "የካናዳ ዶላር",
+      "displayName-count-other": "የካናዳ ዶላር"
+     },
+     "CDF": {
+      "displayName": "የኮንጐ ፍራንክ ኮንጐሌዝ",
+      "displayName-count-other": "የኮንጐ ፍራንክ ኮንጐሌዝ"
+     },
+     "CHF": {
+      "displayName": "የስዊስ ፍራንክ",
+      "displayName-count-other": "የስዊስ ፍራንክ"
+     },
+     "CLP": {
+      "displayName": "የቺሊ ፔሶ",
+      "displayName-count-other": "የቺሊ ፔሶ"
+     },
+     "CNH": {
+      "displayName": "የቻይና ዩዋን (የውጭ ምንዛሪ)",
+      "displayName-count-other": "የቻይና ዩዋን (የውጭ ምንዛሪ)"
+     },
+     "CNY": {
+      "displayName": "የቻይና የን",
+      "displayName-count-other": "የቻይና የን"
+     },
+     "COP": {
+      "displayName": "የኮሎምቢያ ፔሶ",
+      "displayName-count-other": "የኮሎምቢያ ፔሶ"
+     },
+     "CRC": {
+      "displayName": "የኮስታሪካ ኮሎን",
+      "displayName-count-other": "የኮስታሪካ ኮሎን"
+     },
+     "CUC": {
+      "displayName": "የኩባ የሚመነዘር ፔሶ",
+      "displayName-count-other": "የኩባ የሚመነዘር ፔሶ"
+     },
+     "CUP": {
+      "displayName": "የኩባ ፔሶ",
+      "displayName-count-other": "የኩባ ፔሶ"
+     },
+     "CVE": {
+      "displayName": "የኬፕ ቫርዲ ኤስኩዶ",
+      "displayName-count-other": "የኬፕ ቫርዲ ኤስኩዶ"
+     },
+     "CZK": {
+      "displayName": "ቼክ ሪፐብሊክ ኮሩና",
+      "displayName-count-one": "ቼክ ሪፐብሊክ ኮሩና",
+      "displayName-count-other": "ቼክ ሪፐብሊክ ኮሮና"
+     },
+     "DJF": {
+      "displayName": "የጅቡቲ ፍራንክ",
+      "displayName-count-other": "የጅቡቲ ፍራንክ"
+     },
+     "DKK": {
+      "displayName": "የዴንማርክ ክሮን",
+      "displayName-count-other": "የዴንማርክ ክሮን"
+     },
+     "DOP": {
+      "displayName": "የዶሚኒክ ፔሶ",
+      "displayName-count-other": "የዶሚኒክ ፔሶ"
+     },
+     "DZD": {
+      "displayName": "የአልጄሪያ ዲናር",
+      "displayName-count-other": "የአልጄሪያ ዲናር"
+     },
+     "EGP": {
+      "displayName": "የግብጽ ፓውንድ",
+      "displayName-count-other": "የግብጽ ፓውንድ"
+     },
+     "ERN": {
+      "displayName": "የኤርትራ ናቅፋ",
+      "displayName-count-other": "የኤርትራ ናቅፋ"
+     },
+     "ETB": {
+      "displayName": "የኢትዮጵያ ብር",
+      "displayName-count-other": "የኢትዮጵያ ብር",
+      "symbol": "ብር"
+     },
+     "EUR": {
+      "displayName": "ዩሮ",
+      "displayName-count-other": "ዩሮ"
+     },
+     "FJD": {
+      "displayName": "የፊጂ ዶላር",
+      "displayName-count-other": "የፊጂ ዶላር"
+     },
+     "FKP": {
+      "displayName": "የፎክላንድ ደሴቶች ፓውንድ",
+      "displayName-count-other": "የፎክላንድ ደሴቶች ፓውንድ"
+     },
+     "GBP": {
+      "displayName": "የእንግሊዝ ፓውንድ ስተርሊንግ",
+      "displayName-count-other": "የእንግሊዝ ፓውንድ ስተርሊንግ"
+     },
+     "GEL": {
+      "displayName": "የጆርጅያ ላሪ",
+      "displayName-count-other": "የጆርጅያ ላሪ"
+     },
+     "GHC": {
+      "displayName": "የጋና ሴዲ",
+      "displayName-count-other": "የጋና ሴዲ"
+     },
+     "GHS": {
+      "displayName": "የጋና ሲዲ",
+      "displayName-count-other": "የጋና ሲዲ"
+     },
+     "GIP": {
+      "displayName": "ጂብራልተር ፓውንድ",
+      "displayName-count-other": "ጂብራልተር ፓውንድ"
+     },
+     "GMD": {
+      "displayName": "የጋምቢያ ዳላሲ",
+      "displayName-count-other": "የጋምቢያ ዳላሲ"
+     },
+     "GNF": {
+      "displayName": "የጊኒ ፍራንክ",
+      "displayName-count-other": "የጊኒ ፍራንክ"
+     },
+     "GTQ": {
+      "displayName": "ጓቲማላን ኩቲዛል",
+      "displayName-count-other": "ጓቲማላን ኩቲዛል"
+     },
+     "GYD": {
+      "displayName": "የጉየና ዶላር",
+      "displayName-count-other": "የጉየና ዶላር"
+     },
+     "HKD": {
+      "displayName": "የሆንግኮንግ ዶላር",
+      "displayName-count-other": "የሆንግኮንግ ዶላር"
+     },
+     "HNL": {
+      "displayName": "የሃንዱራ ሌምፓአይራ",
+      "displayName-count-other": "የሃንዱራ ሌምፓአይራ"
+     },
+     "HRK": {
+      "displayName": "የክሮሽያ ኩና",
+      "displayName-count-other": "የክሮሽያ ኩና"
+     },
+     "HTG": {
+      "displayName": "የሃያቲ ጓርዴ",
+      "displayName-count-other": "የሃያቲ ጓርዴ"
+     },
+     "HUF": {
+      "displayName": "የሃንጋሪያን ፎሪንት",
+      "displayName-count-other": "የሃንጋሪያን ፎሪንት"
+     },
+     "IDR": {
+      "displayName": "የኢንዶኔዥያ ሩፒሃ",
+      "displayName-count-other": "የኢንዶኔዥያ ሩፒሃ"
+     },
+     "ILS": {
+      "displayName": "የእስራኤል አዲስ ሽቅል",
+      "displayName-count-other": "የእስራኤል አዲስ ሽቅል"
+     },
+     "INR": {
+      "displayName": "የሕንድ ሩፒ",
+      "displayName-count-other": "የሕንድ ሩፒ"
+     },
+     "IQD": {
+      "displayName": "የኢራቅ ዲናር",
+      "displayName-count-other": "የኢራቅ ዲናር"
+     },
+     "IRR": {
+      "displayName": "የኢራን ሪአል",
+      "displayName-count-other": "የኢራን ሪአል"
+     },
+     "ISK": {
+      "displayName": "የአይስላንድ ክሮና",
+      "displayName-count-other": "የአይስላንድ ክሮና"
+     },
+     "JMD": {
+      "displayName": "የጃማይካ ዶላር",
+      "displayName-count-other": "የጃማይካ ዶላር"
+     },
+     "JOD": {
+      "displayName": "የጆርዳን ዲናር",
+      "displayName-count-other": "የጆርዳን ዲናር"
+     },
+     "JPY": {
+      "displayName": "የጃፓን የን",
+      "displayName-count-other": "የጃፓን የን"
+     },
+     "KES": {
+      "displayName": "የኬኒያ ሺሊንግ",
+      "displayName-count-other": "የኬኒያ ሺሊንግ"
+     },
+     "KGS": {
+      "displayName": "የኪርጊስታን ሶም",
+      "displayName-count-other": "የኪርጊስታን ሶም"
+     },
+     "KHR": {
+      "displayName": "የካምቦዲያ ሬል",
+      "displayName-count-other": "የካምቦዲያ ሬል"
+     },
+     "KMF": {
+      "displayName": "የኮሞሮ ፍራንክ",
+      "displayName-count-other": "የኮሞሮ ፍራንክ"
+     },
+     "KPW": {
+      "displayName": "የሰሜን ኮሪያ ዎን",
+      "displayName-count-other": "የሰሜን ኮሪያ ዎን"
+     },
+     "KRW": {
+      "displayName": "የደቡብ ኮሪያ ዎን",
+      "displayName-count-other": "የደቡብ ኮሪያ ዎን"
+     },
+     "KWD": {
+      "displayName": "የኩዌት ዲናር",
+      "displayName-count-other": "የኩዌት ዲናር"
+     },
+     "KYD": {
+      "displayName": "የካይማን ደሴቶች ዶላር",
+      "displayName-count-other": "የካይማን ደሴቶች ዶላር"
+     },
+     "KZT": {
+      "displayName": "የካዛኪስታን ተንጌ",
+      "displayName-count-other": "የካዛኪስታን ተንጌ"
+     },
+     "LAK": {
+      "displayName": "የላኦቲ ኪፕ",
+      "displayName-count-other": "የላኦቲ ኪፕ"
+     },
+     "LBP": {
+      "displayName": "የሊባኖስ ፓውንድ",
+      "displayName-count-other": "የሊባኖስ ፓውንድ"
+     },
+     "LKR": {
+      "displayName": "የሲሪላንካ ሩፒ",
+      "displayName-count-other": "የሲሪላንካ ሩፒ"
+     },
+     "LRD": {
+      "displayName": "የላይቤሪያ ዶላር",
+      "displayName-count-other": "የላይቤሪያ ዶላር"
+     },
+     "LSL": {
+      "displayName": "የሌሶቶ ሎቲ",
+      "displayName-count-other": "የሌሶቶ ሎቲ"
+     },
+     "LTL": {
+      "displayName": "ሊቱዌንያን ሊታስ",
+      "displayName-count-other": "ሊቱዌንያን ሊታስ"
+     },
+     "LVL": {
+      "displayName": "የላቲቫ ላትስ",
+      "displayName-count-other": "የላቲቫ ላትስ"
+     },
+     "LYD": {
+      "displayName": "የሊቢያ ዲናር",
+      "displayName-count-other": "የሊቢያ ዲናር"
+     },
+     "MAD": {
+      "displayName": "የሞሮኮ ዲርሀም",
+      "displayName-count-other": "የሞሮኮ ዲርሀም"
+     },
+     "MDL": {
+      "displayName": "ሞልዶቫን ሊኡ",
+      "displayName-count-other": "ሞልዶቫን ሊኡ"
+     },
+     "MGA": {
+      "displayName": "የማደጋስካር ማላጋስይ አሪያርይ",
+      "displayName-count-other": "የማደጋስካር ማላጋስይ አሪያርይ"
+     },
+     "MKD": {
+      "displayName": "የሜቆድንያ ዲናር",
+      "displayName-count-other": "የሜቆድንያ ዲናር"
+     },
+     "MMK": {
+      "displayName": "የማያናማር ክያት",
+      "displayName-count-other": "የማያናማር ክያት"
+     },
+     "MNT": {
+      "displayName": "የሞንጎሊያን ቱግሪክ",
+      "displayName-count-other": "የሞንጎሊያን ቱግሪክ"
+     },
+     "MOP": {
+      "displayName": "የማካኔዝ ፓታካ",
+      "displayName-count-other": "የማካኔዝ ፓታካ"
+     },
+     "MRO": {
+      "displayName": "የሞሪቴኒያ ኦውጉያ (1973–2017)",
+      "displayName-count-other": "የሞሪቴኒያ ኦውጉያ (1973–2017)"
+     },
+     "MRU": {
+      "displayName": "የሞሪቴኒያ ኦውጉያ",
+      "displayName-count-other": "የሞሪቴኒያ ኦውጉያ"
+     },
+     "MUR": {
+      "displayName": "የሞሪሸስ ሩፒ",
+      "displayName-count-other": "የሞሪሸስ ሩፒ"
+     },
+     "MVR": {
+      "displayName": "የማልዲቫ ሩፊያ",
+      "displayName-count-other": "የማልዲቫ ሩፊያ"
+     },
+     "MWK": {
+      "displayName": "የማላዊ ኩዋቻ",
+      "displayName-count-other": "የማላዊ ኩዋቻ"
+     },
+     "MXN": {
+      "displayName": "የሜክሲኮ ፔሶ",
+      "displayName-count-other": "የሜክሲኮ ፔሶ"
+     },
+     "MYR": {
+      "displayName": "የማሌዥያ ሪንጊት",
+      "displayName-count-other": "የማሌዥያ ሪንጊት"
+     },
+     "MZN": {
+      "displayName": "የሞዛምቢክ ሜቲካል",
+      "displayName-count-other": "የሞዛምቢክ ሜቲካል"
+     },
+     "NAD": {
+      "displayName": "የናሚቢያ ዶላር",
+      "displayName-count-other": "የናሚቢያ ዶላር"
+     },
+     "NGN": {
+      "displayName": "የናይጄሪያ ናይራ",
+      "displayName-count-other": "የናይጄሪያ ናይራ"
+     },
+     "NIO": {
+      "displayName": "የኒካራጓ ኮርዶባ",
+      "displayName-count-other": "የኒካራጓ ኮርዶባ"
+     },
+     "NOK": {
+      "displayName": "የኖርዌይ ክሮን",
+      "displayName-count-other": "የኖርዌይ ክሮን"
+     },
+     "NPR": {
+      "displayName": "የኔፓል ሩፒ",
+      "displayName-count-other": "የኔፓል ሩፒ"
+     },
+     "NZD": {
+      "displayName": "የኒውዚላንድ ዶላር",
+      "displayName-count-other": "የኒውዚላንድ ዶላር"
+     },
+     "OMR": {
+      "displayName": "የኦማን ሪአል",
+      "displayName-count-other": "የኦማን ሪአል"
+     },
+     "PAB": {
+      "displayName": "ፓናማኒአን ባልቦአ",
+      "displayName-count-other": "ፓናማኒአን ባልቦአ"
+     },
+     "PEN": {
+      "displayName": "የፔሩቪያ ሶል",
+      "displayName-count-other": "የፔሩቪያ ሶል"
+     },
+     "PGK": {
+      "displayName": "የፓፕዋ ኒው ጊኒ ኪና",
+      "displayName-count-other": "የፓፕዋ ኒው ጊኒ ኪና"
+     },
+     "PHP": {
+      "displayName": "የፊሊፒንስ ፔሶ",
+      "displayName-count-other": "የፊሊፒንስ ፔሶ",
+      "symbol": "PHP"
+     },
+     "PKR": {
+      "displayName": "የፓኪስታን ሩፒ",
+      "displayName-count-other": "የፓኪስታን ሩፒ"
+     },
+     "PLN": {
+      "displayName": "የፖላንድ ዝሎቲ",
+      "displayName-count-other": "የፖላንድ ዝሎቲ"
+     },
+     "PYG": {
+      "displayName": "የፓራጓይ ጉአራኒ",
+      "displayName-count-other": "የፓራጓይ ጉአራኒ"
+     },
+     "QAR": {
+      "displayName": "የኳታር ሪአል",
+      "displayName-count-other": "የኳታር ሪአል"
+     },
+     "RON": {
+      "displayName": "የሮማኒያ ለው",
+      "displayName-count-other": "የሮማኒያ ለው"
+     },
+     "RSD": {
+      "displayName": "የሰርቢያ ዲናር",
+      "displayName-count-other": "የሰርቢያ ዲናር"
+     },
+     "RUB": {
+      "displayName": "የሩስያ ሩብል",
+      "displayName-count-other": "የሩስያ ሩብል"
+     },
+     "RWF": {
+      "displayName": "የሩዋንዳ ፍራንክ",
+      "displayName-count-other": "የሩዋንዳ ፍራንክ"
+     },
+     "SAR": {
+      "displayName": "የሳውዲ ሪያል",
+      "displayName-count-other": "የሳውዲ ሪያል"
+     },
+     "SBD": {
+      "displayName": "የሰለሞን ደሴቶች ዶላር",
+      "displayName-count-other": "የሰለሞን ደሴቶች ዶላር"
+     },
+     "SCR": {
+      "displayName": "የሲሼል ሩፒ",
+      "displayName-count-other": "የሲሼል ሩፒ"
+     },
+     "SDG": {
+      "displayName": "የሱዳን ፓውንድ",
+      "displayName-count-other": "የሱዳን ፓውንድ"
+     },
+     "SDP": {
+      "displayName": "የሱዳን ፓውንድ (1957–1998)",
+      "displayName-count-other": "የሱዳን ፓውንድ (1957–1998)"
+     },
+     "SEK": {
+      "displayName": "የስዊድን ክሮና",
+      "displayName-count-other": "የስዊድን ክሮና"
+     },
+     "SGD": {
+      "displayName": "የሲንጋፖር ዶላር",
+      "displayName-count-other": "የሲንጋፖር ዶላር"
+     },
+     "SHP": {
+      "displayName": "የሴይንት ሔሌና ፓውንድ",
+      "displayName-count-other": "የሴይንት ሔሌና ፓውንድ"
+     },
+     "SLE": {
+      "displayName": "የሴራሊዎን ሊዎን",
+      "displayName-count-other": "የሴራሊዎን ሊዎን"
+     },
+     "SLL": {
+      "displayName": "የሴራሊዎን ሊዎን (1964—2022)",
+      "displayName-count-other": "የሴራሊዎን ሊዎን (1964—2022)"
+     },
+     "SOS": {
+      "displayName": "የሶማሌ ሺሊንግ",
+      "displayName-count-other": "የሶማሌ ሺሊንግ"
+     },
+     "SRD": {
+      "displayName": "የሰርናሜዝ ዶላር",
+      "displayName-count-other": "የሰርናሜዝ ዶላር"
+     },
+     "SSP": {
+      "displayName": "የደቡብ ሱዳን ፓውንድ",
+      "displayName-count-other": "የደቡብ ሱዳን ፓውንድ"
+     },
+     "STD": {
+      "displayName": "የሳኦ ቶሜ እና ፕሪንሲፔ ዶብራ (1977–2017)",
+      "displayName-count-other": "የሳኦ ቶሜ እና ፕሪንሲፔ ዶብራ (1977–2017)"
+     },
+     "STN": {
+      "displayName": "የሳኦ ቶሜ እና ፕሪንሲፔ ዶብራ",
+      "displayName-count-other": "የሳኦ ቶሜ እና ፕሪንሲፔ ዶብራ"
+     },
+     "SYP": {
+      "displayName": "የሲሪያ ፓውንድ",
+      "displayName-count-other": "የሲሪያ ፓውንድ"
+     },
+     "SZL": {
+      "displayName": "የስዋዚላንድ ሊላንገኒ",
+      "displayName-count-other": "የስዋዚላንድ ሊላንገኒ"
+     },
+     "THB": {
+      "displayName": "የታይላንድ ባህት",
+      "displayName-count-other": "የታይላንድ ባህት",
+      "symbol": "฿"
+     },
+     "TJS": {
+      "displayName": "የታጂክስታን ሶሞኒ",
+      "displayName-count-other": "የታጂክስታን ሶሞኒ"
+     },
+     "TMT": {
+      "displayName": "ቱርክሜኒስታኒ ማናት",
+      "displayName-count-other": "ቱርክሜኒስታኒ ማናት"
+     },
+     "TND": {
+      "displayName": "የቱኒዚያ ዲናር",
+      "displayName-count-other": "የቱኒዚያ ዲናር"
+     },
+     "TOP": {
+      "displayName": "ቶንጋን ፓ’አንጋ",
+      "displayName-count-other": "ቶንጋን ፓ’አንጋ"
+     },
+     "TRY": {
+      "displayName": "የቱርክ ሊራ",
+      "displayName-count-other": "የቱርክ ሊራ"
+     },
+     "TTD": {
+      "displayName": "የትሪንዳድ እና ቶቤጎዶላር",
+      "displayName-count-other": "የትሪንዳድ እና ቶቤጎዶላር"
+     },
+     "TWD": {
+      "displayName": "የአዲሷ ታይዋን ዶላር",
+      "displayName-count-other": "የአዲሷ ታይዋን ዶላር",
+      "symbol-alt-narrow": "NT$"
+     },
+     "TZS": {
+      "displayName": "የታንዛኒያ ሺሊንግ",
+      "displayName-count-other": "የታንዛኒያ ሺሊንግ"
+     },
+     "UAH": {
+      "displayName": "የዩክሬን ሀሪይቭኒአ",
+      "displayName-count-other": "የዩክሬን ሀሪይቭኒአ"
+     },
+     "UGX": {
+      "displayName": "የዩጋንዳ ሺሊንግ",
+      "displayName-count-other": "የዩጋንዳ ሺሊንግ"
+     },
+     "USD": {
+      "displayName": "የአሜሪካን ዶላር",
+      "displayName-count-other": "የአሜሪካን ዶላር"
+     },
+     "UYU": {
+      "displayName": "የኡራጓይ ፔሶ",
+      "displayName-count-other": "የኡራጓይ ፔሶ"
+     },
+     "UZS": {
+      "displayName": "የኡዝፔኪስታን ሶም",
+      "displayName-count-other": "የኡዝፔኪስታን ሶም"
+     },
+     "VEF": {
+      "displayName": "የቬንዝዌላ ቦሊቫር (2008–2018)",
+      "displayName-count-other": "የቬንዝዌላ ቦሊቫር (2008–2018)"
+     },
+     "VES": {
+      "displayName": "የቬንዝዌላ-ቦሊቫር",
+      "displayName-count-other": "የቬንዝዌላ-ቦሊቫር"
+     },
+     "VND": {
+      "displayName": "የቭየትናም ዶንግ",
+      "displayName-count-other": "የቭየትናም ዶንግ"
+     },
+     "VUV": {
+      "displayName": "የቫንዋንቱ ቫቱ",
+      "displayName-count-other": "የቫንዋንቱ ቫቱ"
+     },
+     "WST": {
+      "displayName": "ሳሞአን ታላ",
+      "displayName-count-other": "ሳሞአን ታላ"
+     },
+     "XAF": {
+      "displayName": "የመካከለኛው አፍሪካ ሴፋ ፍራንክ",
+      "displayName-count-other": "የመካከለኛው አፍሪካ ሴፋ ፍራንክ"
+     },
+     "XCD": {
+      "displayName": "የምዕራብ ካሪብያን ዶላር",
+      "displayName-count-other": "የምዕራብ ካሪብያን ዶላር"
+     },
+     "XCG": {
+      "displayName": "የካሪቢያን ጊልደር",
+      "displayName-count-one": "የካሪቢያን ጊልደር",
+      "displayName-count-other": "የካሪቢያን ጊልደር"
+     },
+     "XOF": {
+      "displayName": "የምዕራብ አፍሪካ ሴፋ ፍራንክ",
+      "displayName-count-other": "የምዕራብ አፍሪካ ሴፋ ፍራንክ"
+     },
+     "XPF": {
+      "displayName": "ሲ ኤፍ ፒ ፍራንክ",
+      "displayName-count-other": "ሲ ኤፍ ፒ ፍራንክ"
+     },
+     "XXX": {
+      "displayName": "ያልታወቀ ገንዘብ",
+      "displayName-count-other": "ያልታወቀ ገንዘብ"
+     },
+     "YER": {
+      "displayName": "የየመን ሪአል",
+      "displayName-count-other": "የየመን ሪአል"
+     },
+     "ZAR": {
+      "displayName": "የደቡብ አፍሪካ ራንድ",
+      "displayName-count-other": "የደቡብ አፍሪካ ራንድ"
+     },
+     "ZMK": {
+      "displayName": "የዛምቢያ ክዋቻ (1968–2012)",
+      "displayName-count-other": "የዛምቢያ ክዋቻ (1968–2012)"
+     },
+     "ZMW": {
+      "displayName": "የዛምቢያ ክዋቻ",
+      "displayName-count-other": "የዛምቢያ ክዋቻ"
+     },
+     "ZWD": {
+      "displayName": "የዚምቧቡዌ ዶላር",
+      "displayName-count-other": "የዚምቧቡዌ ዶላር"
+     },
+     "ZWG": {
+      "displayName": "የዚምባብዌ ወርቅ",
+      "displayName-count-one": "የዚምባብዌ ወርቅ",
+      "displayName-count-other": "የዚምባብዌ ወርቅ"
+     }
+    }
+   }
+  }
+ }
+}

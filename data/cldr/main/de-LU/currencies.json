@@ -1,0 +1,20 @@
+{
+ "main": {
+  "de-LU": {
+   "identity": {
+    "language": "de",
+    "territory": "LU"
+   },
+   "inherits": "de",
+   "numbers": {
+    "currencies": {
+     "LUF": {
+      "symbol": "F",
+      "decimal": ".",
+      "group": ","
+     }
+    }
+   }
+  }
+ }
+}

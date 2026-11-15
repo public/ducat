@@ -1,0 +1,14 @@
+{
+ "main": {
+  "nb-SJ": {
+   "identity": {
+    "language": "nb",
+    "territory": "SJ"
+   },
+   "inherits": "nb",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

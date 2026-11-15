@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ha-NE": {
+   "identity": {
+    "language": "ha",
+    "territory": "NE"
+   },
+   "inherits": "ha",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

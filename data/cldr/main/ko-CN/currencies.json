@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ko-CN": {
+   "identity": {
+    "language": "ko",
+    "territory": "CN"
+   },
+   "inherits": "ko",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

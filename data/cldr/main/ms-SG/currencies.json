@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ms-SG": {
+   "identity": {
+    "language": "ms",
+    "territory": "SG"
+   },
+   "inherits": "ms",
+   "numbers": {
+    "currencies": {
+     "SGD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

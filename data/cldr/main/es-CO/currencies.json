@@ -1,0 +1,21 @@
+{
+ "main": {
+  "es-CO": {
+   "identity": {
+    "language": "es",
+    "territory": "CO"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "COP": {
+      "symbol": "$"
+     },
+     "USD": {
+      "symbol": "US$"
+     }
+    }
+   }
+  }
+ }
+}

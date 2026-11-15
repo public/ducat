@@ -1,0 +1,14 @@
+{
+ "main": {
+  "fr-GP": {
+   "identity": {
+    "language": "fr",
+    "territory": "GP"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

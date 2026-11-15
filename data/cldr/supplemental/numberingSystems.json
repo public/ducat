@@ -13,8 +13,20 @@
     "_digits": "۰۱۲۳۴۵۶۷۸۹",
     "_type": "numeric"
    },
+   "beng": {
+    "_digits": "০১২৩৪৫৬৭৮৯",
+    "_type": "numeric"
+   },
+   "deva": {
+    "_digits": "०१२३४५६७८९",
+    "_type": "numeric"
+   },
    "latn": {
     "_digits": "0123456789",
+    "_type": "numeric"
+   },
+   "mymr": {
+    "_digits": "၀၁၂၃၄၅၆၇၈၉",
     "_type": "numeric"
    }
   }

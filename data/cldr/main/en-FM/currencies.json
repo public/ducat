@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-FM": {
+   "identity": {
+    "language": "en",
+    "territory": "FM"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

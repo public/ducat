@@ -1,0 +1,25 @@
+{
+ "main": {
+  "es-VE": {
+   "identity": {
+    "language": "es",
+    "territory": "VE"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "VEF": {
+      "symbol": "Bs.",
+      "symbol-alt-narrow": "Bs."
+     },
+     "VES": {
+      "displayName": "bolívar soberano",
+      "displayName-count-one": "bolívar soberano",
+      "displayName-count-other": "bolívares soberanos",
+      "symbol": "Bs.S"
+     }
+    }
+   }
+  }
+ }
+}

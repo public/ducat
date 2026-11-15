@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-HK": {
+   "identity": {
+    "language": "en",
+    "territory": "HK"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

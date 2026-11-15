@@ -1,0 +1,22 @@
+{
+ "main": {
+  "es-CL": {
+   "identity": {
+    "language": "es",
+    "territory": "CL"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "CLP": {
+      "displayName": "Peso chileno",
+      "symbol": "$"
+     },
+     "USD": {
+      "symbol": "US$"
+     }
+    }
+   }
+  }
+ }
+}

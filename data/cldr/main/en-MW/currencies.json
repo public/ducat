@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-MW": {
+   "identity": {
+    "language": "en",
+    "territory": "MW"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "MWK": {
+      "symbol": "MK"
+     }
+    }
+   }
+  }
+ }
+}

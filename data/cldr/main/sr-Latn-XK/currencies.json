@@ -1,0 +1,15 @@
+{
+ "main": {
+  "sr-Latn-XK": {
+   "identity": {
+    "language": "sr",
+    "script": "Latn",
+    "territory": "XK"
+   },
+   "inherits": "sr-Latn",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

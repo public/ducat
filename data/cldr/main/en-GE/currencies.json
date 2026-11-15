@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-GE": {
+   "identity": {
+    "language": "en",
+    "territory": "GE"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {
+     "GEL": {
+      "symbol": "₾"
+     }
+    }
+   }
+  }
+ }
+}

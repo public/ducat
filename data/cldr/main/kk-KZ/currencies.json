@@ -1,0 +1,14 @@
+{
+ "main": {
+  "kk-KZ": {
+   "identity": {
+    "language": "kk",
+    "territory": "KZ"
+   },
+   "inherits": "kk",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

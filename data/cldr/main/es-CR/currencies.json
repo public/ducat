@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-CR": {
+   "identity": {
+    "language": "es",
+    "territory": "CR"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "CRC": {
+      "symbol": "₡"
+     }
+    }
+   }
+  }
+ }
+}

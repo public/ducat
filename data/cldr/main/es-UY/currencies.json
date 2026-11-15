@@ -1,0 +1,24 @@
+{
+ "main": {
+  "es-UY": {
+   "identity": {
+    "language": "es",
+    "territory": "UY"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "USD": {
+      "symbol": "US$"
+     },
+     "UYU": {
+      "symbol": "$"
+     },
+     "UYW": {
+      "symbol": "UP"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ha-GH": {
+   "identity": {
+    "language": "ha",
+    "territory": "GH"
+   },
+   "inherits": "ha",
+   "numbers": {
+    "currencies": {
+     "GHS": {
+      "symbol": "GH₵"
+     }
+    }
+   }
+  }
+ }
+}

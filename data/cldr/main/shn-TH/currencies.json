@@ -1,0 +1,14 @@
+{
+ "main": {
+  "shn-TH": {
+   "identity": {
+    "language": "shn",
+    "territory": "TH"
+   },
+   "inherits": "shn",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

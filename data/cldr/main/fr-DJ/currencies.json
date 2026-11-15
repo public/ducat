@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-DJ": {
+   "identity": {
+    "language": "fr",
+    "territory": "DJ"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "DJF": {
+      "symbol": "Fdj"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "sd-Arab": {
+   "identity": {
+    "language": "sd",
+    "script": "Arab"
+   },
+   "inherits": "sd",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

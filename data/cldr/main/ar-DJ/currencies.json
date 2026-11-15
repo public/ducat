@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ar-DJ": {
+   "identity": {
+    "language": "ar",
+    "territory": "DJ"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {
+     "DJF": {
+      "symbol": "Fdj"
+     }
+    }
+   }
+  }
+ }
+}

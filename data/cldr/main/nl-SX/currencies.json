@@ -1,0 +1,18 @@
+{
+ "main": {
+  "nl-SX": {
+   "identity": {
+    "language": "nl",
+    "territory": "SX"
+   },
+   "inherits": "nl",
+   "numbers": {
+    "currencies": {
+     "ANG": {
+      "symbol": "NAf."
+     }
+    }
+   }
+  }
+ }
+}

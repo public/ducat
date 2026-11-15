@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ga-GB": {
+   "identity": {
+    "language": "ga",
+    "territory": "GB"
+   },
+   "inherits": "ga",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

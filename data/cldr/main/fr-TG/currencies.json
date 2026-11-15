@@ -1,0 +1,14 @@
+{
+ "main": {
+  "fr-TG": {
+   "identity": {
+    "language": "fr",
+    "territory": "TG"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

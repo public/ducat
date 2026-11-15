@@ -1,0 +1,18 @@
+{
+ "main": {
+  "so-ET": {
+   "identity": {
+    "language": "so",
+    "territory": "ET"
+   },
+   "inherits": "so",
+   "numbers": {
+    "currencies": {
+     "ETB": {
+      "symbol": "Br"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "fr-GQ": {
+   "identity": {
+    "language": "fr",
+    "territory": "GQ"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

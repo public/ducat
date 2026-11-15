@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-MS": {
+   "identity": {
+    "language": "en",
+    "territory": "MS"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "XCD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

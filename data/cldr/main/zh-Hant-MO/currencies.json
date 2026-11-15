@@ -1,0 +1,19 @@
+{
+ "main": {
+  "zh-Hant-MO": {
+   "identity": {
+    "language": "zh",
+    "script": "Hant",
+    "territory": "MO"
+   },
+   "inherits": "zh-Hant-HK",
+   "numbers": {
+    "currencies": {
+     "MOP": {
+      "symbol": "MOP$"
+     }
+    }
+   }
+  }
+ }
+}

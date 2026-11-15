@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-QA": {
+   "identity": {
+    "language": "ar",
+    "territory": "QA"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

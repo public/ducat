@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ca-IT": {
+   "identity": {
+    "language": "ca",
+    "territory": "IT"
+   },
+   "inherits": "ca",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "main": {
+  "es-AR": {
+   "identity": {
+    "language": "es",
+    "territory": "AR"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "ARS": {
+      "symbol": "$"
+     },
+     "USD": {
+      "symbol": "US$"
+     }
+    }
+   }
+  }
+ }
+}

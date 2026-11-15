@@ -1,0 +1,18 @@
+{
+ "main": {
+  "pt-ST": {
+   "identity": {
+    "language": "pt",
+    "territory": "ST"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {
+     "STN": {
+      "symbol": "Db"
+     }
+    }
+   }
+  }
+ }
+}

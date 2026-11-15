@@ -4,6 +4,7 @@
    "identity": {
     "language": "fa"
    },
+   "inherits": "und",
    "numbers": {
     "currencies": {
      "ADP": {
@@ -21,8 +22,7 @@
      "AFN": {
       "displayName": "افغانی افغانستان",
       "displayName-count-other": "افغانی افغانستان",
-      "symbol": "؋",
-      "symbol-alt-narrow": "؋"
+      "symbol": "؋"
      },
      "ALK": {
       "displayName": "لک آلبانی (۱۹۴۶ تا ۱۹۶۵)",
@@ -34,8 +34,7 @@
      },
      "AMD": {
       "displayName": "درام ارمنستان",
-      "displayName-count-other": "درام ارمنستان",
-      "symbol-alt-narrow": "֏"
+      "displayName-count-other": "درام ارمنستان"
      },
      "ANG": {
       "displayName": "گیلدر آنتیل هلند",
@@ -43,8 +42,7 @@
      },
      "AOA": {
       "displayName": "کوانزای آنگولا",
-      "displayName-count-other": "کوانزای آنگولا",
-      "symbol-alt-narrow": "Kz"
+      "displayName-count-other": "کوانزای آنگولا"
      },
      "ARM": {
       "displayName": "پزوی آرژانتین (۱۸۸۱ تا ۱۹۷۰)",
@@ -57,8 +55,7 @@
      },
      "ARS": {
       "displayName": "پزوی آرژانتین",
-      "displayName-count-other": "پزوی آرژانتین",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "پزوی آرژانتین"
      },
      "ATS": {
       "displayName": "شیلینگ اتریش",
@@ -66,9 +63,7 @@
      },
      "AUD": {
       "displayName": "دلار استرالیا",
-      "displayName-count-other": "دلار استرالیا",
-      "symbol": "A$",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار استرالیا"
      },
      "AWG": {
       "displayName": "فلورین آروبا",
@@ -80,8 +75,7 @@
      },
      "AZN": {
       "displayName": "منات جمهوری آذربایجان",
-      "displayName-count-other": "منات جمهوری آذربایجان",
-      "symbol-alt-narrow": "₼"
+      "displayName-count-other": "منات جمهوری آذربایجان"
      },
      "BAD": {
       "displayName": "دینار بوسنی و هرزگوین (۱۹۹۲ تا ۱۹۹۴)",
@@ -89,18 +83,15 @@
      },
      "BAM": {
       "displayName": "مارک تبدیل‌پذیر بوسنی و هرزگوین",
-      "displayName-count-other": "مارک تبدیل‌پذیر بوسنی و هرزگوین",
-      "symbol-alt-narrow": "KM"
+      "displayName-count-other": "مارک تبدیل‌پذیر بوسنی و هرزگوین"
      },
      "BBD": {
       "displayName": "دلار باربادوس",
-      "displayName-count-other": "دلار باربادوس",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار باربادوس"
      },
      "BDT": {
       "displayName": "تاکای بنگلادش",
-      "displayName-count-other": "تاکای بنگلادش",
-      "symbol-alt-narrow": "৳"
+      "displayName-count-other": "تاکای بنگلادش"
      },
      "BEF": {
       "displayName": "فرانک بلژیک",
@@ -124,18 +115,15 @@
      },
      "BMD": {
       "displayName": "دلار برمودا",
-      "displayName-count-other": "دلار برمودا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار برمودا"
      },
      "BND": {
       "displayName": "دلار برونئی",
-      "displayName-count-other": "دلار برونئی",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار برونئی"
      },
      "BOB": {
       "displayName": "بولیویانوی بولیوی",
-      "displayName-count-other": "بولیویانوی بولیوی",
-      "symbol-alt-narrow": "Bs"
+      "displayName-count-other": "بولیویانوی بولیوی"
      },
      "BOP": {
       "displayName": "پزوی بولیوی",
@@ -143,14 +131,11 @@
      },
      "BRL": {
       "displayName": "رئال برزیل",
-      "displayName-count-other": "رئال برزیل",
-      "symbol": "R$",
-      "symbol-alt-narrow": "R$"
+      "displayName-count-other": "رئال برزیل"
      },
      "BSD": {
       "displayName": "دلار باهاما",
-      "displayName-count-other": "دلار باهاما",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار باهاما"
      },
      "BTN": {
       "displayName": "انگولتروم بوتان",
@@ -158,8 +143,7 @@
      },
      "BWP": {
       "displayName": "پولای بوتسوانا",
-      "displayName-count-other": "پولای بوتسوانا",
-      "symbol-alt-narrow": "P"
+      "displayName-count-other": "پولای بوتسوانا"
      },
      "BYB": {
       "displayName": "روبل جدید بلاروس (۱۹۹۴ تا ۱۹۹۹)",
@@ -176,14 +160,12 @@
      },
      "BZD": {
       "displayName": "دلار بلیز",
-      "displayName-count-other": "دلار بلیز",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار بلیز"
      },
      "CAD": {
       "displayName": "دلار کانادا",
       "displayName-count-other": "دلار کانادا",
-      "symbol": "$CA",
-      "symbol-alt-narrow": "$"
+      "symbol": "$CA"
      },
      "CDF": {
       "displayName": "فرانک کنگو",
@@ -195,8 +177,7 @@
      },
      "CLP": {
       "displayName": "پزوی شیلی",
-      "displayName-count-other": "پزوی شیلی",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "پزوی شیلی"
      },
      "CNH": {
       "displayName": "یوآن چین (برون‌مرزی)",
@@ -205,18 +186,15 @@
      "CNY": {
       "displayName": "یوآن چین",
       "displayName-count-other": "یوآن چین",
-      "symbol": "¥CN",
-      "symbol-alt-narrow": "¥"
+      "symbol": "¥CN"
      },
      "COP": {
       "displayName": "پزوی کلمبیا",
-      "displayName-count-other": "پزوی کلمبیا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "پزوی کلمبیا"
      },
      "CRC": {
       "displayName": "کولون کاستاریکا",
-      "displayName-count-other": "کولون کاستاریکا",
-      "symbol-alt-narrow": "₡"
+      "displayName-count-other": "کولون کاستاریکا"
      },
      "CSD": {
       "displayName": "دینار صربستان (۲۰۰۲ تا ۲۰۰۶)",
@@ -224,13 +202,11 @@
      },
      "CUC": {
       "displayName": "پزوی تبدیل‌پذیر کوبا",
-      "displayName-count-other": "پزوی تبدیل‌پذیر کوبا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "پزوی تبدیل‌پذیر کوبا"
      },
      "CUP": {
       "displayName": "پزوی کوبا",
-      "displayName-count-other": "پزوی کوبا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "پزوی کوبا"
      },
      "CVE": {
       "displayName": "اسکودوی کیپ‌ورد",
@@ -242,8 +218,7 @@
      },
      "CZK": {
       "displayName": "کورونای جمهوری چک",
-      "displayName-count-other": "کورونای جمهوری چک",
-      "symbol-alt-narrow": "Kč"
+      "displayName-count-other": "کورونای جمهوری چک"
      },
      "DDM": {
       "displayName": "مارک آلمان شرقی",
@@ -259,13 +234,11 @@
      },
      "DKK": {
       "displayName": "کرون دانمارک",
-      "displayName-count-other": "کرون دانمارک",
-      "symbol-alt-narrow": "kr"
+      "displayName-count-other": "کرون دانمارک"
      },
      "DOP": {
       "displayName": "پزوی جمهوری دومینیکن",
-      "displayName-count-other": "پزوی جمهوری دومینیکن",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "پزوی جمهوری دومینیکن"
      },
      "DZD": {
       "displayName": "دینار الجزایر",
@@ -277,8 +250,7 @@
      },
      "EGP": {
       "displayName": "پوند مصر",
-      "displayName-count-other": "پوند مصر",
-      "symbol-alt-narrow": "E£"
+      "displayName-count-other": "پوند مصر"
      },
      "ERN": {
       "displayName": "ناکفای اریتره",
@@ -286,8 +258,7 @@
      },
      "ESP": {
       "displayName": "پزتای اسپانیا",
-      "displayName-count-other": "پزتای اسپانیا",
-      "symbol-alt-narrow": "₧"
+      "displayName-count-other": "پزتای اسپانیا"
      },
      "ETB": {
       "displayName": "بیر اتیوپی",
@@ -295,19 +266,15 @@
      },
      "EUR": {
       "displayName": "یورو",
-      "displayName-count-other": "یورو",
-      "symbol": "€",
-      "symbol-alt-narrow": "€"
+      "displayName-count-other": "یورو"
      },
      "FJD": {
       "displayName": "دلار فیجی",
-      "displayName-count-other": "دلار فیجی",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار فیجی"
      },
      "FKP": {
       "displayName": "پوند جزایر فالکلند",
-      "displayName-count-other": "پوند جزایر فالکلند",
-      "symbol-alt-narrow": "£"
+      "displayName-count-other": "پوند جزایر فالکلند"
      },
      "FRF": {
       "displayName": "فرانک فرانسه",
@@ -315,24 +282,19 @@
      },
      "GBP": {
       "displayName": "پوند بریتانیا",
-      "displayName-count-other": "پوند بریتانیا",
-      "symbol": "£",
-      "symbol-alt-narrow": "£"
+      "displayName-count-other": "پوند بریتانیا"
      },
      "GEL": {
       "displayName": "لاری گرجستان",
-      "displayName-count-other": "لاری گرجستان",
-      "symbol-alt-narrow": "₾"
+      "displayName-count-other": "لاری گرجستان"
      },
      "GHS": {
       "displayName": "سدی غنا",
-      "displayName-count-other": "سدی غنا",
-      "symbol-alt-narrow": "GH₵"
+      "displayName-count-other": "سدی غنا"
      },
      "GIP": {
       "displayName": "پوند جبل‌الطارق",
-      "displayName-count-other": "پوند جبل‌الطارق",
-      "symbol-alt-narrow": "£"
+      "displayName-count-other": "پوند جبل‌الطارق"
      },
      "GMD": {
       "displayName": "دالاسی گامبیا",
@@ -340,8 +302,7 @@
      },
      "GNF": {
       "displayName": "فرانک گینه",
-      "displayName-count-other": "فرانک گینه",
-      "symbol-alt-narrow": "FG"
+      "displayName-count-other": "فرانک گینه"
      },
      "GRD": {
       "displayName": "دراخمای یونان",
@@ -349,8 +310,7 @@
      },
      "GTQ": {
       "displayName": "کتزال گواتمالا",
-      "displayName-count-other": "کتزال گواتمالا",
-      "symbol-alt-narrow": "Q"
+      "displayName-count-other": "کتزال گواتمالا"
      },
      "GWP": {
       "displayName": "پزوی گینهٔ بیسائو",
@@ -358,19 +318,16 @@
      },
      "GYD": {
       "displayName": "دلار گویانا",
-      "displayName-count-other": "دلار گویانا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار گویانا"
      },
      "HKD": {
       "displayName": "دلار هنگ‌کنگ",
       "displayName-count-other": "دلار هنگ‌کنگ",
-      "symbol": "$HK",
-      "symbol-alt-narrow": "$"
+      "symbol": "$HK"
      },
      "HNL": {
       "displayName": "لمپیرای هندوراس",
-      "displayName-count-other": "لمپیرای هندوراس",
-      "symbol-alt-narrow": "L"
+      "displayName-count-other": "لمپیرای هندوراس"
      },
      "HRD": {
       "displayName": "دینار کرواسی",
@@ -378,8 +335,7 @@
      },
      "HRK": {
       "displayName": "کونای کرواسی",
-      "displayName-count-other": "کونای کرواسی",
-      "symbol-alt-narrow": "kn"
+      "displayName-count-other": "کونای کرواسی"
      },
      "HTG": {
       "displayName": "گورد هائیتی",
@@ -387,13 +343,11 @@
      },
      "HUF": {
       "displayName": "فورینت مجارستان",
-      "displayName-count-other": "فورینت مجارستان",
-      "symbol-alt-narrow": "Ft"
+      "displayName-count-other": "فورینت مجارستان"
      },
      "IDR": {
       "displayName": "روپیهٔ اندونزی",
-      "displayName-count-other": "روپیهٔ اندونزی",
-      "symbol-alt-narrow": "Rp"
+      "displayName-count-other": "روپیهٔ اندونزی"
      },
      "IEP": {
       "displayName": "پوند ایرلند",
@@ -409,15 +363,11 @@
      },
      "ILS": {
       "displayName": "شِکِل جدید اسرائیل",
-      "displayName-count-other": "شِکِل جدید اسرائیل",
-      "symbol": "₪",
-      "symbol-alt-narrow": "₪"
+      "displayName-count-other": "شِکِل جدید اسرائیل"
      },
      "INR": {
       "displayName": "روپیهٔ هند",
-      "displayName-count-other": "روپیهٔ هند",
-      "symbol": "₹",
-      "symbol-alt-narrow": "₹"
+      "displayName-count-other": "روپیهٔ هند"
      },
      "IQD": {
       "displayName": "دینار عراق",
@@ -434,8 +384,7 @@
      },
      "ISK": {
       "displayName": "کرونای ایسلند",
-      "displayName-count-other": "کرونای ایسلند",
-      "symbol-alt-narrow": "kr"
+      "displayName-count-other": "کرونای ایسلند"
      },
      "ITL": {
       "displayName": "لیرهٔ ایتالیا",
@@ -443,8 +392,7 @@
      },
      "JMD": {
       "displayName": "دلار جامائیکا",
-      "displayName-count-other": "دلار جامائیکا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار جامائیکا"
      },
      "JOD": {
       "displayName": "دینار اردن",
@@ -453,8 +401,7 @@
      "JPY": {
       "displayName": "ین ژاپن",
       "displayName-count-other": "ین ژاپن",
-      "symbol": "¥",
-      "symbol-alt-narrow": "¥"
+      "symbol": "¥"
      },
      "KES": {
       "displayName": "شیلینگ کنیا",
@@ -462,23 +409,19 @@
      },
      "KGS": {
       "displayName": "سوم قرقیزستان",
-      "displayName-count-other": "سوم قرقیزستان",
-      "symbol-alt-narrow": "⃀"
+      "displayName-count-other": "سوم قرقیزستان"
      },
      "KHR": {
       "displayName": "ری‌یل کامبوج",
-      "displayName-count-other": "ری‌یل کامبوج",
-      "symbol-alt-narrow": "៛"
+      "displayName-count-other": "ری‌یل کامبوج"
      },
      "KMF": {
       "displayName": "فرانک کومورو",
-      "displayName-count-other": "فرانک کومورو",
-      "symbol-alt-narrow": "CF"
+      "displayName-count-other": "فرانک کومورو"
      },
      "KPW": {
       "displayName": "وون کرهٔ شمالی",
-      "displayName-count-other": "وون کرهٔ شمالی",
-      "symbol-alt-narrow": "₩"
+      "displayName-count-other": "وون کرهٔ شمالی"
      },
      "KRO": {
       "displayName": "وون کرهٔ جنوبی (۱۹۴۵ تا ۱۹۵۳)",
@@ -486,9 +429,7 @@
      },
      "KRW": {
       "displayName": "وون کرهٔ جنوبی",
-      "displayName-count-other": "وون کرهٔ جنوبی",
-      "symbol": "₩",
-      "symbol-alt-narrow": "₩"
+      "displayName-count-other": "وون کرهٔ جنوبی"
      },
      "KWD": {
       "displayName": "دینار کویت",
@@ -496,33 +437,27 @@
      },
      "KYD": {
       "displayName": "دلار جزایر کِیمن",
-      "displayName-count-other": "دلار جزایر کِیمن",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار جزایر کِیمن"
      },
      "KZT": {
       "displayName": "تنگهٔ قزاقستان",
-      "displayName-count-other": "تنگهٔ قزاقستان",
-      "symbol-alt-narrow": "₸"
+      "displayName-count-other": "تنگهٔ قزاقستان"
      },
      "LAK": {
       "displayName": "کیپ لائوس",
-      "displayName-count-other": "کیپ لائوس",
-      "symbol-alt-narrow": "₭"
+      "displayName-count-other": "کیپ لائوس"
      },
      "LBP": {
       "displayName": "لیرهٔ لبنان",
-      "displayName-count-other": "لیرهٔ لبنان",
-      "symbol-alt-narrow": "L£"
+      "displayName-count-other": "لیرهٔ لبنان"
      },
      "LKR": {
       "displayName": "روپیهٔ سری‌لانکا",
-      "displayName-count-other": "روپیهٔ سری‌لانکا",
-      "symbol-alt-narrow": "Rs"
+      "displayName-count-other": "روپیهٔ سری‌لانکا"
      },
      "LRD": {
       "displayName": "دلار لیبریا",
-      "displayName-count-other": "دلار لیبریا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار لیبریا"
      },
      "LSL": {
       "displayName": "لوتی لسوتو",
@@ -530,8 +465,7 @@
      },
      "LTL": {
       "displayName": "لیتاس لیتوانی",
-      "displayName-count-other": "لیتاس لیتوانی",
-      "symbol-alt-narrow": "Lt"
+      "displayName-count-other": "لیتاس لیتوانی"
      },
      "LTT": {
       "displayName": "تالوناس لیتوانی",
@@ -547,8 +481,7 @@
      },
      "LVL": {
       "displayName": "لاتس لتونی",
-      "displayName-count-other": "لاتس لتونی",
-      "symbol-alt-narrow": "Ls"
+      "displayName-count-other": "لاتس لتونی"
      },
      "LVR": {
       "displayName": "روبل لتونی",
@@ -576,8 +509,7 @@
      },
      "MGA": {
       "displayName": "آریاری مالاگاسی",
-      "displayName-count-other": "آریاری مالاگاسی",
-      "symbol-alt-narrow": "Ar"
+      "displayName-count-other": "آریاری مالاگاسی"
      },
      "MGF": {
       "displayName": "فرانک ماداگاسکار",
@@ -597,13 +529,11 @@
      },
      "MMK": {
       "displayName": "کیات میانمار",
-      "displayName-count-other": "کیات میانمار",
-      "symbol-alt-narrow": "K"
+      "displayName-count-other": "کیات میانمار"
      },
      "MNT": {
       "displayName": "توگریک مغولستان",
-      "displayName-count-other": "توگریک مغولستان",
-      "symbol-alt-narrow": "₮"
+      "displayName-count-other": "توگریک مغولستان"
      },
      "MOP": {
       "displayName": "پاتاکای ماکائو",
@@ -627,8 +557,7 @@
      },
      "MUR": {
       "displayName": "روپیهٔ موریس",
-      "displayName-count-other": "روپیهٔ موریس",
-      "symbol-alt-narrow": "Rs"
+      "displayName-count-other": "روپیهٔ موریس"
      },
      "MVP": {
       "displayName": "روپیهٔ مالدیو (۱۹۴۷ تا ۱۹۸۱)",
@@ -645,8 +574,7 @@
      "MXN": {
       "displayName": "پزوی مکزیک",
       "displayName-count-other": "پزوی مکزیک",
-      "symbol": "$MX",
-      "symbol-alt-narrow": "$"
+      "symbol": "$MX"
      },
      "MXP": {
       "displayName": "پزوی نقرهٔ مکزیک (۱۸۶۱ تا ۱۹۹۲)",
@@ -654,8 +582,7 @@
      },
      "MYR": {
       "displayName": "رینگیت مالزی",
-      "displayName-count-other": "رینگیت مالزی",
-      "symbol-alt-narrow": "RM"
+      "displayName-count-other": "رینگیت مالزی"
      },
      "MZE": {
       "displayName": "اسکودوی موزامبیک",
@@ -667,18 +594,15 @@
      },
      "NAD": {
       "displayName": "دلار نامیبیا",
-      "displayName-count-other": "دلار نامیبیا",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار نامیبیا"
      },
      "NGN": {
       "displayName": "نایرای نیجریه",
-      "displayName-count-other": "نایرای نیجریه",
-      "symbol-alt-narrow": "₦"
+      "displayName-count-other": "نایرای نیجریه"
      },
      "NIO": {
       "displayName": "کوردوبای نیکاراگوئه",
-      "displayName-count-other": "کوردوبای نیکاراگوئه",
-      "symbol-alt-narrow": "C$"
+      "displayName-count-other": "کوردوبای نیکاراگوئه"
      },
      "NLG": {
       "displayName": "گیلدر هلند",
@@ -686,19 +610,16 @@
      },
      "NOK": {
       "displayName": "کرون نروژ",
-      "displayName-count-other": "کرون نروژ",
-      "symbol-alt-narrow": "kr"
+      "displayName-count-other": "کرون نروژ"
      },
      "NPR": {
       "displayName": "روپیهٔ نپال",
-      "displayName-count-other": "روپیهٔ نپال",
-      "symbol-alt-narrow": "Rs"
+      "displayName-count-other": "روپیهٔ نپال"
      },
      "NZD": {
       "displayName": "دلار زلاند نو",
       "displayName-count-other": "دلار زلاند نو",
-      "symbol": "$NZ",
-      "symbol-alt-narrow": "$"
+      "symbol": "$NZ"
      },
      "OMR": {
       "displayName": "ریال عمان",
@@ -727,18 +648,15 @@
      "PHP": {
       "displayName": "پزوی فیلیپین",
       "displayName-count-other": "پزوی فیلیپین",
-      "symbol": "PHP",
-      "symbol-alt-narrow": "₱"
+      "symbol": "PHP"
      },
      "PKR": {
       "displayName": "روپیهٔ پاکستان",
-      "displayName-count-other": "روپیهٔ پاکستان",
-      "symbol-alt-narrow": "Rs"
+      "displayName-count-other": "روپیهٔ پاکستان"
      },
      "PLN": {
       "displayName": "زلوتی لهستان",
-      "displayName-count-other": "زلوتی لهستان",
-      "symbol-alt-narrow": "zł"
+      "displayName-count-other": "زلوتی لهستان"
      },
      "PTE": {
       "displayName": "اسکودوی پرتغال",
@@ -746,8 +664,7 @@
      },
      "PYG": {
       "displayName": "گوارانی پاراگوئه",
-      "displayName-count-other": "گوارانی پاراگوئه",
-      "symbol-alt-narrow": "₲"
+      "displayName-count-other": "گوارانی پاراگوئه"
      },
      "QAR": {
       "displayName": "ریال قطر",
@@ -759,8 +676,7 @@
      },
      "RON": {
       "displayName": "لئوی رومانی",
-      "displayName-count-other": "لئوی رومانی",
-      "symbol-alt-narrow": "lei"
+      "displayName-count-other": "لئوی رومانی"
      },
      "RSD": {
       "displayName": "دینار صربستان",
@@ -768,8 +684,7 @@
      },
      "RUB": {
       "displayName": "روبل روسیه",
-      "displayName-count-other": "روبل روسیه",
-      "symbol-alt-narrow": "₽"
+      "displayName-count-other": "روبل روسیه"
      },
      "RUR": {
       "displayName": "روبل روسیه (۱۹۹۱ تا ۱۹۹۸)",
@@ -777,8 +692,7 @@
      },
      "RWF": {
       "displayName": "فرانک رواندا",
-      "displayName-count-other": "فرانک رواندا",
-      "symbol-alt-narrow": "RF"
+      "displayName-count-other": "فرانک رواندا"
      },
      "SAR": {
       "displayName": "ریال سعودی",
@@ -786,8 +700,7 @@
      },
      "SBD": {
       "displayName": "دلار جزایر سلیمان",
-      "displayName-count-other": "دلار جزایر سلیمان",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار جزایر سلیمان"
      },
      "SCR": {
       "displayName": "روپیهٔ سیشل",
@@ -803,18 +716,15 @@
      },
      "SEK": {
       "displayName": "کرون سوئد",
-      "displayName-count-other": "کرون سوئد",
-      "symbol-alt-narrow": "kr"
+      "displayName-count-other": "کرون سوئد"
      },
      "SGD": {
       "displayName": "دلار سنگاپور",
-      "displayName-count-other": "دلار سنگاپور",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار سنگاپور"
      },
      "SHP": {
       "displayName": "پوند سنت هلن",
-      "displayName-count-other": "پوند سنت هلن",
-      "symbol-alt-narrow": "£"
+      "displayName-count-other": "پوند سنت هلن"
      },
      "SLE": {
       "displayName": "لئون سیرالئون",
@@ -830,8 +740,7 @@
      },
      "SRD": {
       "displayName": "دلار سورینام",
-      "displayName-count-other": "دلار سورینام",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار سورینام"
      },
      "SRG": {
       "displayName": "گیلدر سورینام",
@@ -839,8 +748,7 @@
      },
      "SSP": {
       "displayName": "پوند سودان جنوبی",
-      "displayName-count-other": "پوند سودان جنوبی",
-      "symbol-alt-narrow": "£"
+      "displayName-count-other": "پوند سودان جنوبی"
      },
      "STD": {
       "displayName": "دوبرای سائوتومه و پرنسیپ (۱۹۷۷ تا ۲۰۱۷)",
@@ -848,8 +756,7 @@
      },
      "STN": {
       "displayName": "دوبرای سائوتومه و پرنسیپ",
-      "displayName-count-other": "دوبرای سائوتومه و پرنسیپ",
-      "symbol-alt-narrow": "Db"
+      "displayName-count-other": "دوبرای سائوتومه و پرنسیپ"
      },
      "SUR": {
       "displayName": "روبل شوروی",
@@ -857,8 +764,7 @@
      },
      "SYP": {
       "displayName": "لیرهٔ سوریه",
-      "displayName-count-other": "لیرهٔ سوریه",
-      "symbol-alt-narrow": "£"
+      "displayName-count-other": "لیرهٔ سوریه"
      },
      "SZL": {
       "displayName": "لیلانگنی سوازیلند",
@@ -867,8 +773,7 @@
      "THB": {
       "displayName": "بات تایلند",
       "displayName-count-other": "بات تایلند",
-      "symbol": "฿",
-      "symbol-alt-narrow": "฿"
+      "symbol": "฿"
      },
      "TJR": {
       "displayName": "روبل تاجیکستان",
@@ -892,8 +797,7 @@
      },
      "TOP": {
       "displayName": "پاآنگای تونگا",
-      "displayName-count-other": "پاآنگای تونگا",
-      "symbol-alt-narrow": "T$"
+      "displayName-count-other": "پاآنگای تونگا"
      },
      "TPE": {
       "displayName": "اسکودوی تیمور",
@@ -905,19 +809,15 @@
      },
      "TRY": {
       "displayName": "لیرهٔ ترکیه",
-      "displayName-count-other": "لیرهٔ ترکیه",
-      "symbol-alt-narrow": "₺"
+      "displayName-count-other": "لیرهٔ ترکیه"
      },
      "TTD": {
       "displayName": "دلار ترینیداد و توباگو",
-      "displayName-count-other": "دلار ترینیداد و توباگو",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار ترینیداد و توباگو"
      },
      "TWD": {
       "displayName": "دلار جدید تایوان",
-      "displayName-count-other": "دلار جدید تایوان",
-      "symbol": "NT$",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "دلار جدید تایوان"
      },
      "TZS": {
       "displayName": "شیلینگ تانزانیا",
@@ -925,8 +825,7 @@
      },
      "UAH": {
       "displayName": "هریونیای اوکراین",
-      "displayName-count-other": "هریونیای اوکراین",
-      "symbol-alt-narrow": "₴"
+      "displayName-count-other": "هریونیای اوکراین"
      },
      "UGS": {
       "displayName": "شیلینگ اوگاندا (۱۹۶۶ تا ۱۹۸۷)",
@@ -939,8 +838,7 @@
      "USD": {
       "displayName": "دلار آمریکا",
       "displayName-count-other": "دلار آمریکا",
-      "symbol": "$",
-      "symbol-alt-narrow": "$"
+      "symbol": "$"
      },
      "USN": {
       "displayName": "دلار امریکا (روز بعد)",
@@ -956,8 +854,7 @@
      },
      "UYU": {
       "displayName": "پزوی اوروگوئه",
-      "displayName-count-other": "پزوی اوروگوئه",
-      "symbol-alt-narrow": "$"
+      "displayName-count-other": "پزوی اوروگوئه"
      },
      "UZS": {
       "displayName": "سوم ازبکستان",
@@ -969,8 +866,7 @@
      },
      "VEF": {
       "displayName": "بولیوار ونزوئلا (۲۰۰۸ تا ۲۰۱۸)",
-      "displayName-count-other": "بولیوار ونزوئلا (۲۰۰۸ تا ۲۰۱۸)",
-      "symbol-alt-narrow": "Bs"
+      "displayName-count-other": "بولیوار ونزوئلا (۲۰۰۸ تا ۲۰۱۸)"
      },
      "VES": {
       "displayName": "بولیوار ونزوئلا",
@@ -978,9 +874,7 @@
      },
      "VND": {
       "displayName": "دانگ ویتنام",
-      "displayName-count-other": "دانگ ویتنام",
-      "symbol": "₫",
-      "symbol-alt-narrow": "₫"
+      "displayName-count-other": "دانگ ویتنام"
      },
      "VUV": {
       "displayName": "واتوی وانوواتو",
@@ -992,8 +886,7 @@
      },
      "XAF": {
       "displayName": "فرانک CFA مرکز افریقا",
-      "displayName-count-other": "فرانک CFA مرکز افریقا",
-      "symbol": "FCFA"
+      "displayName-count-other": "فرانک CFA مرکز افریقا"
      },
      "XAG": {
       "displayName": "نقره",
@@ -1008,14 +901,12 @@
      "XCD": {
       "displayName": "دلار شرق کارائیب",
       "displayName-count-other": "دلار شرق کارائیب",
-      "symbol": "$EC",
-      "symbol-alt-narrow": "$"
+      "symbol": "$EC"
      },
      "XCG": {
       "displayName": "گیلدر کارائیب",
       "displayName-count-one": "گیلدر کارائیب",
-      "displayName-count-other": "گیلدر کارائیب",
-      "symbol": "Cg."
+      "displayName-count-other": "گیلدر کارائیب"
      },
      "XFO": {
       "displayName": "فرانک طلای فرانسه",
@@ -1032,8 +923,7 @@
      },
      "XPF": {
       "displayName": "فرانک اقیانوسیه",
-      "displayName-count-other": "فرانک اقیانوسیه",
-      "symbol": "CFPF"
+      "displayName-count-other": "فرانک اقیانوسیه"
      },
      "XPT": {
       "displayName": "پلاتین",
@@ -1048,8 +938,7 @@
      "XXX": {
       "displayName": "ارز نامشخص",
       "displayName-count-one": "(ارز نامشخص)",
-      "displayName-count-other": "(ارز نامشخص)",
-      "symbol": "¤"
+      "displayName-count-other": "(ارز نامشخص)"
      },
      "YDD": {
       "displayName": "دینار یمن",
@@ -1061,8 +950,7 @@
      },
      "ZAR": {
       "displayName": "راند افریقای جنوبی",
-      "displayName-count-other": "راند افریقای جنوبی",
-      "symbol-alt-narrow": "R"
+      "displayName-count-other": "راند افریقای جنوبی"
      },
      "ZMK": {
       "displayName": "کواچای زامبیا (۱۹۶۸ تا ۲۰۱۲)",
@@ -1070,8 +958,7 @@
      },
      "ZMW": {
       "displayName": "کواچای زامبیا",
-      "displayName-count-other": "کواچای زامبیا",
-      "symbol-alt-narrow": "ZK"
+      "displayName-count-other": "کواچای زامبیا"
      },
      "ZWD": {
       "displayName": "دلار زیمبابوه (۱۹۸۰ تا ۲۰۰۸)",

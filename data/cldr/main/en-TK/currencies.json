@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-TK": {
+   "identity": {
+    "language": "en",
+    "territory": "TK"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "NZD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

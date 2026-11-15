@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ar-ER": {
+   "identity": {
+    "language": "ar",
+    "territory": "ER"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {
+     "ERN": {
+      "symbol": "Nfk"
+     }
+    }
+   }
+  }
+ }
+}

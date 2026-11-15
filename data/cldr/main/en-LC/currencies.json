@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-LC": {
+   "identity": {
+    "language": "en",
+    "territory": "LC"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "XCD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

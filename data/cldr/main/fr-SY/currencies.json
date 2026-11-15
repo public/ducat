@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-SY": {
+   "identity": {
+    "language": "fr",
+    "territory": "SY"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "SYP": {
+      "symbol": "LS"
+     }
+    }
+   }
+  }
+ }
+}

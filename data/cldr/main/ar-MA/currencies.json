@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-MA": {
+   "identity": {
+    "language": "ar",
+    "territory": "MA"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

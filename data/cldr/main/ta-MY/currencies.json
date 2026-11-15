@@ -1,0 +1,21 @@
+{
+ "main": {
+  "ta-MY": {
+   "identity": {
+    "language": "ta",
+    "territory": "MY"
+   },
+   "inherits": "ta",
+   "numbers": {
+    "currencies": {
+     "MYR": {
+      "symbol": "RM"
+     },
+     "SGD": {
+      "symbol": "S$"
+     }
+    }
+   }
+  }
+ }
+}

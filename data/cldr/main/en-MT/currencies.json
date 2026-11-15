@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-MT": {
+   "identity": {
+    "language": "en",
+    "territory": "MT"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GBP": {
+      "symbol": "GB£"
+     }
+    }
+   }
+  }
+ }
+}

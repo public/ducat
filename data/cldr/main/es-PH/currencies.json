@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-PH": {
+   "identity": {
+    "language": "es",
+    "territory": "PH"
+   },
+   "inherits": "es",
+   "numbers": {
+    "currencies": {
+     "PHP": {
+      "symbol": "₱"
+     }
+    }
+   }
+  }
+ }
+}

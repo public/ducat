@@ -1,0 +1,69 @@
+{
+ "main": {
+  "es-US": {
+   "identity": {
+    "language": "es",
+    "territory": "US"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "BTN": {
+      "displayName": "ngultrum butanés",
+      "displayName-count-one": "ngultrum butanés",
+      "displayName-count-other": "gultrums bultaneses"
+     },
+     "ETB": {
+      "displayName": "birr",
+      "displayName-count-one": "birr",
+      "displayName-count-other": "birres"
+     },
+     "FKP": {
+      "symbol-alt-narrow": "£"
+     },
+     "JPY": {
+      "symbol": "¥"
+     },
+     "RON": {
+      "symbol-alt-narrow": "lei"
+     },
+     "SSP": {
+      "symbol-alt-narrow": "£"
+     },
+     "SYP": {
+      "symbol-alt-narrow": "£"
+     },
+     "THB": {
+      "displayName": "bat",
+      "displayName-count-one": "bat",
+      "displayName-count-other": "bats"
+     },
+     "USD": {
+      "symbol": "$"
+     },
+     "UZS": {
+      "displayName": "sum",
+      "displayName-count-one": "sum",
+      "displayName-count-other": "sums"
+     },
+     "VEF": {
+      "symbol-alt-narrow": "Bs"
+     },
+     "XAF": {
+      "displayName": "franco CFA de África central",
+      "displayName-count-one": "franco CFA de África central",
+      "displayName-count-other": "francos CFA de África central"
+     },
+     "ZMW": {
+      "displayName": "kwacha zambiano",
+      "displayName-count-one": "kwacha zambiano",
+      "displayName-count-other": "kwachas zambianos"
+     },
+     "ZWG": {
+      "displayName": "oro de Zimbabue"
+     }
+    }
+   }
+  }
+ }
+}

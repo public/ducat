@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ru-KG": {
+   "identity": {
+    "language": "ru",
+    "territory": "KG"
+   },
+   "inherits": "ru",
+   "numbers": {
+    "currencies": {
+     "KGS": {
+      "symbol": "сом"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-BW": {
+   "identity": {
+    "language": "en",
+    "territory": "BW"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "BWP": {
+      "symbol": "P"
+     }
+    }
+   }
+  }
+ }
+}

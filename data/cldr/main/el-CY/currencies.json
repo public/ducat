@@ -1,0 +1,14 @@
+{
+ "main": {
+  "el-CY": {
+   "identity": {
+    "language": "el",
+    "territory": "CY"
+   },
+   "inherits": "el",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

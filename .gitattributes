@@ -1,0 +1,5 @@
+# Generated from data/ by the crates' generator tests (with drift checks): collapsed in diffs
+rust/crates/ducat-format/src/data.rs linguist-generated=true
+rust/crates/ducat-format/src/icu.rs linguist-generated=true
+rust/crates/ducat-words/src/cldr.rs linguist-generated=true
+rust/crates/ducat-words/src/rules.rs linguist-generated=true

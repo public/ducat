@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-PK": {
+   "identity": {
+    "language": "en",
+    "territory": "PK"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "PKR": {
+      "symbol": "Rs"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-SX": {
+   "identity": {
+    "language": "en",
+    "territory": "SX"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "ANG": {
+      "symbol": "NAf."
+     }
+    }
+   }
+  }
+ }
+}

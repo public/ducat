@@ -1,0 +1,21 @@
+{
+ "main": {
+  "fr-LU": {
+   "identity": {
+    "language": "fr",
+    "territory": "LU"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "FRF": {
+      "symbol": "FRF"
+     },
+     "LUF": {
+      "symbol": "F"
+     }
+    }
+   }
+  }
+ }
+}

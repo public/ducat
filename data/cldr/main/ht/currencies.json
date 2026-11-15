@@ -1,0 +1,13 @@
+{
+ "main": {
+  "ht": {
+   "identity": {
+    "language": "ht"
+   },
+   "inherits": "fr-HT",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

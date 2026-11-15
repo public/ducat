@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-PR": {
+   "identity": {
+    "language": "en",
+    "territory": "PR"
+   },
+   "inherits": "en",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

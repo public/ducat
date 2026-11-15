@@ -1,0 +1,92 @@
+{
+ "main": {
+  "es-419": {
+   "identity": {
+    "language": "es",
+    "territory": "419"
+   },
+   "inherits": "es",
+   "numbers": {
+    "currencies": {
+     "ANG": {
+      "displayName": "florín de las Antillas Neerlandesas",
+      "displayName-count-one": "florín de las Antillas Neerlandesas",
+      "displayName-count-other": "florines de las Antillas Neerlandesas"
+     },
+     "BMD": {
+      "displayName": "dólar de Bermudas",
+      "displayName-count-one": "dólar de Bermudas",
+      "displayName-count-other": "dólares de Bermudas"
+     },
+     "EGP": {
+      "symbol-alt-narrow": "E£"
+     },
+     "EUR": {
+      "symbol": "EUR"
+     },
+     "FKP": {
+      "symbol-alt-narrow": "FK£"
+     },
+     "HTG": {
+      "displayName": "gourde haitiano",
+      "displayName-count-one": "gourde haitiano",
+      "displayName-count-other": "gourdes haitianos"
+     },
+     "KZT": {
+      "displayName": "tenge kazajo",
+      "displayName-count-one": "tenge kazajo"
+     },
+     "MWK": {
+      "displayName": "kwacha malauí",
+      "displayName-count-one": "kwacha malauí",
+      "displayName-count-other": "kwachas malauíes"
+     },
+     "NIO": {
+      "displayName": "córdoba nicaragüense",
+      "displayName-count-one": "córdoba nicaragüense",
+      "displayName-count-other": "córdobas nicaragüenses"
+     },
+     "SLE": {
+      "displayName": "leone",
+      "displayName-count-one": "leone",
+      "displayName-count-other": "leones"
+     },
+     "SLL": {
+      "displayName": "leones (1964—2022)",
+      "displayName-count-one": "leone (1964—2022)",
+      "displayName-count-other": "leones (1964—2022)"
+     },
+     "SSP": {
+      "symbol-alt-narrow": "SD£"
+     },
+     "SYP": {
+      "symbol-alt-narrow": "S£"
+     },
+     "THB": {
+      "displayName": "baht tailandes",
+      "displayName-count-one": "baht tailandes",
+      "displayName-count-other": "bahts tailandeses",
+      "symbol": "THB"
+     },
+     "USD": {
+      "symbol": "USD"
+     },
+     "UZS": {
+      "displayName": "som uzbeko",
+      "displayName-count-one": "som uzbeko",
+      "displayName-count-other": "soms uzbekos"
+     },
+     "VEF": {
+      "symbol-alt-narrow": "BsF"
+     },
+     "VND": {
+      "symbol": "VND"
+     },
+     "XXX": {
+      "displayName-count-one": "(unidad de moneda desconocida)"
+     }
+    }
+   }
+  }
+ }
+}

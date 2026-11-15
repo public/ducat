@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-150": {
+   "identity": {
+    "language": "en",
+    "territory": "150"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "EUR": {
+      "pattern": "¤#,##0.00"
+     }
+    }
+   }
+  }
+ }
+}

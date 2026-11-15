@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-HN": {
+   "identity": {
+    "language": "es",
+    "territory": "HN"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "HNL": {
+      "symbol": "L"
+     }
+    }
+   }
+  }
+ }
+}

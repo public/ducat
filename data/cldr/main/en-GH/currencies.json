@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-GH": {
+   "identity": {
+    "language": "en",
+    "territory": "GH"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "GHS": {
+      "symbol": "GH₵"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "kk-Cyrl": {
+   "identity": {
+    "language": "kk",
+    "script": "Cyrl"
+   },
+   "inherits": "kk",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

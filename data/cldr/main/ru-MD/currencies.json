@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ru-MD": {
+   "identity": {
+    "language": "ru",
+    "territory": "MD"
+   },
+   "inherits": "ru",
+   "numbers": {
+    "currencies": {
+     "MDL": {
+      "symbol": "L"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-DZ": {
+   "identity": {
+    "language": "fr",
+    "territory": "DZ"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "DZD": {
+      "symbol": "DA"
+     }
+    }
+   }
+  }
+ }
+}

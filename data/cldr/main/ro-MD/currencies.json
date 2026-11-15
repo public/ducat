@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ro-MD": {
+   "identity": {
+    "language": "ro",
+    "territory": "MD"
+   },
+   "inherits": "ro",
+   "numbers": {
+    "currencies": {
+     "MDL": {
+      "symbol": "L"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-CZ": {
+   "identity": {
+    "language": "en",
+    "territory": "CZ"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

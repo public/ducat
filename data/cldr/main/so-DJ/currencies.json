@@ -1,0 +1,18 @@
+{
+ "main": {
+  "so-DJ": {
+   "identity": {
+    "language": "so",
+    "territory": "DJ"
+   },
+   "inherits": "so",
+   "numbers": {
+    "currencies": {
+     "DJF": {
+      "symbol": "Fdj"
+     }
+    }
+   }
+  }
+ }
+}

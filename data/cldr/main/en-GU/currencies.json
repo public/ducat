@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-GU": {
+   "identity": {
+    "language": "en",
+    "territory": "GU"
+   },
+   "inherits": "en",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

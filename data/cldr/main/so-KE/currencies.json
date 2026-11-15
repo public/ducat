@@ -1,0 +1,18 @@
+{
+ "main": {
+  "so-KE": {
+   "identity": {
+    "language": "so",
+    "territory": "KE"
+   },
+   "inherits": "so",
+   "numbers": {
+    "currencies": {
+     "KES": {
+      "symbol": "Ksh"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,324 @@
+{
+ "main": {
+  "el-polyton": {
+   "identity": {
+    "language": "el",
+    "variant": "POLYTON"
+   },
+   "inherits": "el",
+   "numbers": {
+    "currencies": {
+     "ADP": {
+      "displayName": "Πεσέτα Ἀνδόρας"
+     },
+     "AED": {
+      "displayName": "Ντιρὰμ Ἡνωμένων Ἀραβικῶν Ἐμιράτων"
+     },
+     "ALL": {
+      "displayName": "Λὲκ Ἀλβανίας"
+     },
+     "AMD": {
+      "displayName": "Dram Ἀρμενίας"
+     },
+     "ANG": {
+      "displayName": "Γκίλντα Ὁλλανδικῶν Ἀντιλλῶν"
+     },
+     "AOA": {
+      "displayName": "Kwanza Ἀνγκόλας"
+     },
+     "AOK": {
+      "displayName": "Kwanza Ἀνγκόλας (1977–1990)"
+     },
+     "AON": {
+      "displayName": "Νέα Kwanza Ἀνγκόλας (1990–2000)"
+     },
+     "AOR": {
+      "displayName": "Kwanza Reajustado Ἀνγκόλας (1995–1999)",
+      "displayName-count-other": "Kwanza Reajustado Ἀνγκόλας (1995–1999)"
+     },
+     "ARA": {
+      "displayName": "Austral Ἀργεντινῆς"
+     },
+     "ARP": {
+      "displayName": "Πέσο Ἀργεντινῆς (1983–1985)"
+     },
+     "ARS": {
+      "displayName": "Πέσο Ἀργεντινῆς"
+     },
+     "ATS": {
+      "displayName": "Σελίνι Αὐστρίας"
+     },
+     "AUD": {
+      "displayName": "Δολάριο Αὐστραλίας"
+     },
+     "AWG": {
+      "displayName": "Γκίλντα Ἀρούμπα"
+     },
+     "AZM": {
+      "displayName": "Μανὰτ Ἀζερμπαϊτζάν"
+     },
+     "BAD": {
+      "displayName": "Δηνάριο Βοσνίας-Ἑρζεγοβίνης"
+     },
+     "BAM": {
+      "displayName": "Μάρκο Βοσνίας-Ἑρζεγοβίνης"
+     },
+     "BEL": {
+      "displayName": "Φράγκο Βελγίου (οἰκονομικό)"
+     },
+     "BGL": {
+      "displayName": "Μεταλλικὸ Λὲβ Βουλγαρίας"
+     },
+     "BGN": {
+      "displayName": "Νέο Λὲβ Βουλγαρίας"
+     },
+     "CAD": {
+      "displayName": "Δολάριο Καναδᾶ"
+     },
+     "CHF": {
+      "displayName": "Φράγκο Ἑλβετίας"
+     },
+     "CLF": {
+      "displayName": "Unidades de Fomento Χιλῆς"
+     },
+     "CLP": {
+      "displayName": "Πέσο Χιλῆς"
+     },
+     "CSK": {
+      "displayName": "Σκληρὴ Κορόνα Τσεχοσλοβακίας"
+     },
+     "CVE": {
+      "displayName": "Ἐσκούδο Πράσινου Ἀκρωτηρίου"
+     },
+     "DDM": {
+      "displayName": "Ostmark Ἀνατολικῆς Γερμανίας"
+     },
+     "DZD": {
+      "displayName": "Δηνάριο Ἀλγερίας"
+     },
+     "ECS": {
+      "displayName": "Sucre Ἰσημερινοῦ"
+     },
+     "ECV": {
+      "displayName": "Unidad de Valor Constante (UVC) Ἰσημερινοῦ",
+      "displayName-count-other": "Unidad de Valor Constante (UVC) Ἰσημερινοῦ"
+     },
+     "EEK": {
+      "displayName": "Κορόνα Ἐστονίας"
+     },
+     "EGP": {
+      "displayName": "Λίρα Αἰγύπτου"
+     },
+     "ERN": {
+      "displayName": "Nakfa Ἐρυθραίας"
+     },
+     "ESP": {
+      "displayName": "Πεσέτα Ἱσπανίας"
+     },
+     "ETB": {
+      "displayName": "Birr Αἰθιοπίας"
+     },
+     "EUR": {
+      "displayName": "Εὐρώ"
+     },
+     "FKP": {
+      "displayName": "Λίρα Νήσων Φώλκλαντ"
+     },
+     "GMD": {
+      "displayName": "Dalasi Γκάμπιας"
+     },
+     "GQE": {
+      "displayName": "Ekwele Guineana Ἰσημερινῆς Γουινέας"
+     },
+     "GTQ": {
+      "displayName": "Quetzal Γουατεμάλας"
+     },
+     "GWE": {
+      "displayName": "Γκινέα Ἐσκούδο Πορτογαλίας"
+     },
+     "HKD": {
+      "displayName": "Δολάριο Χὸνγκ Κόνγκ"
+     },
+     "HTG": {
+      "displayName": "Gourde Ἁϊτῆς"
+     },
+     "HUF": {
+      "displayName": "Φιορίνι Οὑγγαρίας"
+     },
+     "IDR": {
+      "displayName": "Ρούπια Ἰνδονησίας"
+     },
+     "IEP": {
+      "displayName": "Λίρα Ἰρλανδίας"
+     },
+     "ILP": {
+      "displayName": "Λίρα Ἰσραήλ"
+     },
+     "ILS": {
+      "displayName": "Νέο Sheqel Ἰσραήλ"
+     },
+     "INR": {
+      "displayName": "Ρούπια Ἰνδίας"
+     },
+     "IQD": {
+      "displayName": "Δηνάριο Ἰράκ"
+     },
+     "IRR": {
+      "displayName": "Rial Ἰράκ"
+     },
+     "ISK": {
+      "displayName": "Κορόνα Ἰσλανδίας"
+     },
+     "ITL": {
+      "displayName": "Λιρέτα Ἰταλίας"
+     },
+     "JOD": {
+      "displayName": "Δηνάριο Ἰορδανίας"
+     },
+     "JPY": {
+      "displayName": "Γιὲν Ἰαπωνίας"
+     },
+     "LKR": {
+      "displayName": "Ρούπια Σρὶ Λάνκας"
+     },
+     "MOP": {
+      "displayName": "Pataca Μακάου"
+     },
+     "MXN": {
+      "displayName": "Πέσο Μεξικοῦ"
+     },
+     "MXP": {
+      "displayName": "Ἀσημένιο Πέσο Μεξικοῦ (1861–1992)"
+     },
+     "MXV": {
+      "displayName": "Unidad de Inversion (UDI) Μεξικοῦ",
+      "displayName-count-other": "Unidad de Inversion (UDI) Μεξικοῦ"
+     },
+     "MZE": {
+      "displayName": "Ἐσκούδο Μοζαμβίκης"
+     },
+     "NIO": {
+      "displayName": "Χρυσὴ Κόρδοβα Νικαράγουας"
+     },
+     "NLG": {
+      "displayName": "Γκίλντα Ὁλλανδίας"
+     },
+     "PAB": {
+      "displayName": "Μπαλμπόα Παναμᾶ"
+     },
+     "PGK": {
+      "displayName": "Kina Παπούα Νέα Γουινέας"
+     },
+     "PTE": {
+      "displayName": "Ἐσκούδο Πορτογαλίας"
+     },
+     "PYG": {
+      "displayName": "Γκουαρανὶ Παραγουάης"
+     },
+     "SBD": {
+      "displayName": "Δολάριο Νήσων Σολομῶντος"
+     },
+     "SCR": {
+      "displayName": "Ρούπια Σεϋχελῶν"
+     },
+     "SHP": {
+      "displayName": "Λίρα Ἀγίας Ἑλένης"
+     },
+     "SUR": {
+      "displayName": "Σοβιετικὸ Ρούβλι"
+     },
+     "SVC": {
+      "displayName": "Colon Ἒλ Σαλβαδόρ"
+     },
+     "SZL": {
+      "displayName": "Lilangeni Ζουαζιλάνδης"
+     },
+     "THB": {
+      "displayName": "Μπὰτ Ταϊλάνδης"
+     },
+     "TMM": {
+      "displayName": "Μανὰτ Τουρκμενιστάν"
+     },
+     "TPE": {
+      "displayName": "Ἐσκούδο Τιμόρ"
+     },
+     "TTD": {
+      "displayName": "Δολάριο Τρινιδὰδ καὶ Τομπάγκο"
+     },
+     "UAH": {
+      "displayName": "Hryvnia Οὐκρανίας"
+     },
+     "UAK": {
+      "displayName": "Karbovanetz Οὐκρανίας"
+     },
+     "UGS": {
+      "displayName": "Σελίνι Οὐγκάντας (1966–1987)"
+     },
+     "UGX": {
+      "displayName": "Σελίνι Οὐγκάντας"
+     },
+     "USN": {
+      "displayName": "Δολάριο ΗΠΑ (Ἑπόμενη ἡμέρα)"
+     },
+     "USS": {
+      "displayName": "Δολάριο ΗΠΑ (Ἴδια ἡμέρα)"
+     },
+     "UYP": {
+      "displayName": "Πέσο Οὐρουγουάης (1975–1993)"
+     },
+     "UYU": {
+      "displayName": "Πέσο Uruguayo Οὐρουγουάης"
+     },
+     "UZS": {
+      "displayName": "Sum Οὐζμπεκιστάν"
+     },
+     "VEB": {
+      "displayName": "Μπολιβὰλ Βενεζουέλας"
+     },
+     "WST": {
+      "displayName": "Tala Δυτικῆς Σαμόας"
+     },
+     "XBA": {
+      "displayName": "Εὐρωπαϊκὴ Σύνθετη Μονάδα"
+     },
+     "XBB": {
+      "displayName": "Εὐρωπαϊκὴ Νομισματικὴ Μονάδα"
+     },
+     "XBC": {
+      "displayName": "Εὐρωπαϊκὴ Μονάδα Λογαριασμοῦ (XBC)"
+     },
+     "XBD": {
+      "displayName": "Εὐρωπαϊκὴ Μονάδα Λογαριασμοῦ (XBD)"
+     },
+     "XCD": {
+      "displayName": "Δολάριο Ἀνατολικῆς Καραϊβικῆς"
+     },
+     "XDR": {
+      "displayName": "Εἰδικὰ Δικαιώματα Ἀνάληψης"
+     },
+     "XEU": {
+      "displayName": "Εὐρωπαϊκὴ Συναλλαγματικὴ Μονάδα"
+     },
+     "XFO": {
+      "displayName": "Χρυσὸ Φράγκο Γαλλίας"
+     },
+     "YDD": {
+      "displayName": "Δηνάριο Ὑεμένης"
+     },
+     "YER": {
+      "displayName": "Rial Ὑεμένης"
+     },
+     "YUD": {
+      "displayName": "Μεταλλικὸ Δηνάριο Γιουγκοσλαβίας"
+     },
+     "ZAL": {
+      "displayName": "Ραντ Νότιας Ἀφρικῆς (οἰκονομικό)"
+     },
+     "ZAR": {
+      "displayName": "Ρὰντ Νότιας Ἀφρικῆς"
+     }
+    }
+   }
+  }
+ }
+}

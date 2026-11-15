@@ -1,0 +1,687 @@
+{
+ "main": {
+  "uz": {
+   "identity": {
+    "language": "uz"
+   },
+   "inherits": "und",
+   "numbers": {
+    "currencies": {
+     "AED": {
+      "displayName": "Birlashgan Arab Amirliklari dirhami",
+      "displayName-count-one": "BAA dirhami",
+      "displayName-count-other": "BAA dirhami"
+     },
+     "AFN": {
+      "displayName": "Afg‘oniston afg‘oniysi",
+      "displayName-count-other": "Afg‘oniston afg‘oniysi"
+     },
+     "ALL": {
+      "displayName": "Albaniya leki",
+      "displayName-count-other": "Albaniya leki"
+     },
+     "AMD": {
+      "displayName": "Armaniston drami",
+      "displayName-count-other": "Armaniston drami"
+     },
+     "ANG": {
+      "displayName": "Niderlandiya antil guldeni",
+      "displayName-count-other": "Niderlandiya antil guldeni"
+     },
+     "AOA": {
+      "displayName": "Angola kvanzasi",
+      "displayName-count-other": "Angola kvanzasi"
+     },
+     "ARS": {
+      "displayName": "Argentina pesosi",
+      "displayName-count-other": "Argentina pesosi"
+     },
+     "AUD": {
+      "displayName": "Avstraliya dollari",
+      "displayName-count-other": "Avstraliya dollari"
+     },
+     "AWG": {
+      "displayName": "Aruba florini",
+      "displayName-count-other": "Aruba florini"
+     },
+     "AZN": {
+      "displayName": "Ozarbayjon manati",
+      "displayName-count-other": "Ozarbayjon manati"
+     },
+     "BAM": {
+      "displayName": "Bosniya va Gertsegovina ayirboshlash markasi",
+      "displayName-count-other": "Bosniya va Gertsegovina ayirboshlash markasi"
+     },
+     "BBD": {
+      "displayName": "Barbados dollari",
+      "displayName-count-other": "Barbados dollari"
+     },
+     "BDT": {
+      "displayName": "Bangladesh takasi",
+      "displayName-count-other": "Bangladesh takasi"
+     },
+     "BGN": {
+      "displayName": "Bolgariya levi",
+      "displayName-count-other": "Bolgariya levi"
+     },
+     "BHD": {
+      "displayName": "Bahrayn dinori",
+      "displayName-count-other": "Bahrayn dinori"
+     },
+     "BIF": {
+      "displayName": "Burundi franki",
+      "displayName-count-other": "Burundi franki"
+     },
+     "BMD": {
+      "displayName": "Bermuda dollari",
+      "displayName-count-other": "Bermuda dollari"
+     },
+     "BND": {
+      "displayName": "Bruney dollari",
+      "displayName-count-other": "Bruney dollari"
+     },
+     "BOB": {
+      "displayName": "Boliviya bolivianosi",
+      "displayName-count-other": "Boliviya bolivianosi"
+     },
+     "BRL": {
+      "displayName": "Braziliya reali",
+      "displayName-count-other": "Braziliya reali"
+     },
+     "BSD": {
+      "displayName": "Bagama dollari",
+      "displayName-count-other": "Bagama dollari"
+     },
+     "BTN": {
+      "displayName": "Butan ngultrumi",
+      "displayName-count-other": "Butan ngultrumi"
+     },
+     "BWP": {
+      "displayName": "Botsvana pulasi",
+      "displayName-count-other": "Botsvana pulasi"
+     },
+     "BYN": {
+      "displayName": "Belarus rubli",
+      "displayName-count-other": "Belarus rubli",
+      "symbol-alt-narrow": "р."
+     },
+     "BYR": {
+      "displayName": "Belarus rubli (2000–2016)",
+      "displayName-count-other": "Belarus rubli (2000–2016)"
+     },
+     "BZD": {
+      "displayName": "Beliz dollari",
+      "displayName-count-other": "Beliz dollari"
+     },
+     "CAD": {
+      "displayName": "Kanada dollari",
+      "displayName-count-other": "Kanada dollari"
+     },
+     "CDF": {
+      "displayName": "Kongo franki",
+      "displayName-count-other": "Kongo franki"
+     },
+     "CHF": {
+      "displayName": "Shveytsariya franki",
+      "displayName-count-other": "Shveytsariya franki"
+     },
+     "CLP": {
+      "displayName": "Chili pesosi",
+      "displayName-count-other": "Chili pesosi"
+     },
+     "CNH": {
+      "displayName": "Xitoy yuani (ofshor)",
+      "displayName-count-other": "Xitoy yuani (ofshor)"
+     },
+     "CNY": {
+      "displayName": "Xitoy yuani",
+      "displayName-count-other": "Xitoy yuani"
+     },
+     "COP": {
+      "displayName": "Kolumbiya pesosi",
+      "displayName-count-other": "Kolumbiya pesosi"
+     },
+     "CRC": {
+      "displayName": "Kosta-Rika koloni",
+      "displayName-count-other": "Kosta-Rika koloni"
+     },
+     "CUC": {
+      "displayName": "Kuba ayirboshlash pesosi",
+      "displayName-count-other": "Kuba ayirboshlash pesosi"
+     },
+     "CUP": {
+      "displayName": "Kuba pesosi",
+      "displayName-count-other": "Kuba pesosi"
+     },
+     "CVE": {
+      "displayName": "Kabo-Verde eskudosi",
+      "displayName-count-other": "Kabo-Verde eskudosi"
+     },
+     "CZK": {
+      "displayName": "Chexiya kronasi",
+      "displayName-count-other": "Chexiya kronasi"
+     },
+     "DJF": {
+      "displayName": "Jibuti franki",
+      "displayName-count-other": "Jibuti franki"
+     },
+     "DKK": {
+      "displayName": "Daniya kronasi",
+      "displayName-count-other": "Daniya kronasi"
+     },
+     "DOP": {
+      "displayName": "Dominikana pesosi",
+      "displayName-count-other": "Dominikana pesosi"
+     },
+     "DZD": {
+      "displayName": "Jazoir dinori",
+      "displayName-count-other": "Jazoir dinori"
+     },
+     "EGP": {
+      "displayName": "Misr funti",
+      "displayName-count-other": "Misr funti"
+     },
+     "ERN": {
+      "displayName": "Eritreya nakfasi",
+      "displayName-count-other": "Eritreya nakfasi"
+     },
+     "ETB": {
+      "displayName": "Efiopiya biri",
+      "displayName-count-other": "Efiopiya biri"
+     },
+     "EUR": {
+      "displayName": "Yevro",
+      "displayName-count-one": "yevro",
+      "displayName-count-other": "yevro"
+     },
+     "FJD": {
+      "displayName": "Fiji dollari",
+      "displayName-count-other": "Fiji dollari"
+     },
+     "FKP": {
+      "displayName": "Folklend orollari funti",
+      "displayName-count-other": "Folklend orollari funti"
+     },
+     "GBP": {
+      "displayName": "Angliya funt sterlingi",
+      "displayName-count-other": "Angliya funt sterlingi"
+     },
+     "GEL": {
+      "displayName": "Gruziya larisi",
+      "displayName-count-other": "Gruziya larisi"
+     },
+     "GHS": {
+      "displayName": "Gana sedisi",
+      "displayName-count-other": "Gana sedisi"
+     },
+     "GIP": {
+      "displayName": "Gibraltar funti",
+      "displayName-count-other": "Gibraltar funti"
+     },
+     "GMD": {
+      "displayName": "Gambiya dalasisi",
+      "displayName-count-other": "Gambiya dalasisi"
+     },
+     "GNF": {
+      "displayName": "Gvineya franki",
+      "displayName-count-other": "Gvineya franki"
+     },
+     "GTQ": {
+      "displayName": "Gvatemala ketsali",
+      "displayName-count-other": "Gvatemala ketsali"
+     },
+     "GYD": {
+      "displayName": "Gayana dollari",
+      "displayName-count-other": "Gayana dollari"
+     },
+     "HKD": {
+      "displayName": "Gonkong dollari",
+      "displayName-count-other": "Gonkong dollari"
+     },
+     "HNL": {
+      "displayName": "Gonduras lempirasi",
+      "displayName-count-other": "Gonduras lempirasi"
+     },
+     "HRK": {
+      "displayName": "Xorvatiya kunasi",
+      "displayName-count-other": "Xorvatiya kunasi"
+     },
+     "HTG": {
+      "displayName": "Gaiti gurdi",
+      "displayName-count-other": "Gaiti gurdi"
+     },
+     "HUF": {
+      "displayName": "Vengriya forinti",
+      "displayName-count-other": "Vengriya forinti"
+     },
+     "IDR": {
+      "displayName": "Indoneziya rupiyasi",
+      "displayName-count-other": "Indoneziya rupiyasi"
+     },
+     "ILS": {
+      "displayName": "Isroil yangi shekeli",
+      "displayName-count-other": "Isroil yangi shekeli"
+     },
+     "INR": {
+      "displayName": "Hindiston rupiyasi",
+      "displayName-count-other": "Hindiston rupiyasi"
+     },
+     "IQD": {
+      "displayName": "Iroq dinori",
+      "displayName-count-other": "Iroq dinori"
+     },
+     "IRR": {
+      "displayName": "Eron riyoli",
+      "displayName-count-other": "Eron riyoli"
+     },
+     "ISK": {
+      "displayName": "Islandiya kronasi",
+      "displayName-count-other": "Islandiya kronasi"
+     },
+     "JMD": {
+      "displayName": "Yamayka dollari",
+      "displayName-count-other": "Yamayka dollari"
+     },
+     "JOD": {
+      "displayName": "Iordaniya dinori",
+      "displayName-count-one": "Yordaniya dinori",
+      "displayName-count-other": "Iordaniya dinori"
+     },
+     "JPY": {
+      "displayName": "Yaponiya iyenasi",
+      "displayName-count-other": "Yaponiya iyenasi"
+     },
+     "KES": {
+      "displayName": "Keniya shillingi",
+      "displayName-count-other": "Keniya shillingi"
+     },
+     "KGS": {
+      "displayName": "Qirg‘iziston somi",
+      "displayName-count-other": "Qirg‘iziston somi"
+     },
+     "KHR": {
+      "displayName": "Kambodja rieli",
+      "displayName-count-other": "Kambodja rieli"
+     },
+     "KMF": {
+      "displayName": "Komor orollari franki",
+      "displayName-count-other": "Komor orollari franki"
+     },
+     "KPW": {
+      "displayName": "Shimoliy Koreya voni",
+      "displayName-count-other": "Shimoliy Koreya voni"
+     },
+     "KRW": {
+      "displayName": "Janubiy Koreya voni",
+      "displayName-count-other": "Janubiy Koreya voni"
+     },
+     "KWD": {
+      "displayName": "Kuvayt dinori",
+      "displayName-count-other": "Kuvayt dinori"
+     },
+     "KYD": {
+      "displayName": "Kayman orollari dollari",
+      "displayName-count-other": "Kayman orollari dollari"
+     },
+     "KZT": {
+      "displayName": "Qozog‘iston tengesi",
+      "displayName-count-other": "Qozog‘iston tengesi"
+     },
+     "LAK": {
+      "displayName": "Laos kipi",
+      "displayName-count-other": "Laos kipi"
+     },
+     "LBP": {
+      "displayName": "Livan funti",
+      "displayName-count-other": "Livan funti"
+     },
+     "LKR": {
+      "displayName": "Shri-Lanka rupiyasi",
+      "displayName-count-other": "Shri-Lanka rupiyasi"
+     },
+     "LRD": {
+      "displayName": "Liberiya dollari",
+      "displayName-count-other": "Liberiya dollari"
+     },
+     "LSL": {
+      "displayName": "Lesoto lotisi",
+      "displayName-count-other": "Lesoto lotisi"
+     },
+     "LTL": {
+      "displayName": "Litva liti",
+      "displayName-count-other": "Litva liti"
+     },
+     "LVL": {
+      "displayName": "Latviya lati",
+      "displayName-count-other": "Latviya lati"
+     },
+     "LYD": {
+      "displayName": "Liviya dinori",
+      "displayName-count-other": "Liviya dinori"
+     },
+     "MAD": {
+      "displayName": "Marokash dirhami",
+      "displayName-count-other": "Marokash dirhami"
+     },
+     "MDL": {
+      "displayName": "Moldova leyi",
+      "displayName-count-other": "Moldova leyi"
+     },
+     "MGA": {
+      "displayName": "Malagasi ariarisi",
+      "displayName-count-other": "Malagasi ariarisi"
+     },
+     "MKD": {
+      "displayName": "Makedoniya dinori",
+      "displayName-count-other": "Makedoniya dinori"
+     },
+     "MMK": {
+      "displayName": "Myanma kyati",
+      "displayName-count-other": "Myanma kyati"
+     },
+     "MNT": {
+      "displayName": "Mongoliya tugriki",
+      "displayName-count-other": "Mongoliya tugriki"
+     },
+     "MOP": {
+      "displayName": "Makao patakasi",
+      "displayName-count-other": "Makao patakasi"
+     },
+     "MRO": {
+      "displayName": "Mavritaniya uqiyasi (1973–2017)",
+      "displayName-count-other": "Mavritaniya uqiyasi (1973–2017)"
+     },
+     "MRU": {
+      "displayName": "Mavritaniya uqiyasi",
+      "displayName-count-other": "Mavritaniya uqiyasi"
+     },
+     "MUR": {
+      "displayName": "Mavritaniya rupiyasi",
+      "displayName-count-other": "Mavritaniya rupiyasi"
+     },
+     "MVR": {
+      "displayName": "Maldiv rupiyasi",
+      "displayName-count-other": "Maldiv rupiyasi"
+     },
+     "MWK": {
+      "displayName": "Malavi kvachasi",
+      "displayName-count-other": "Malavi kvachasi"
+     },
+     "MXN": {
+      "displayName": "Meksika pesosi",
+      "displayName-count-other": "Meksika pesosi"
+     },
+     "MYR": {
+      "displayName": "Malayziya ringgiti",
+      "displayName-count-other": "Malayziya ringgiti"
+     },
+     "MZN": {
+      "displayName": "Mozambik metikali",
+      "displayName-count-other": "Mozambik metikali"
+     },
+     "NAD": {
+      "displayName": "Namibiya dollari",
+      "displayName-count-other": "Namibiya dollari"
+     },
+     "NGN": {
+      "displayName": "Nigeriya nayrasi",
+      "displayName-count-other": "Nigeriya nayrasi"
+     },
+     "NIO": {
+      "displayName": "Nikaragua kordobasi",
+      "displayName-count-other": "Nikaragua kordobasi"
+     },
+     "NOK": {
+      "displayName": "Norvegiya kronasi",
+      "displayName-count-other": "Norvegiya kronasi"
+     },
+     "NPR": {
+      "displayName": "Nepal rupiyasi",
+      "displayName-count-other": "Nepal rupiyasi"
+     },
+     "NZD": {
+      "displayName": "Yangi Zelandiya dollari",
+      "displayName-count-other": "Yangi Zelandiya dollari"
+     },
+     "OMR": {
+      "displayName": "Ummon riyoli",
+      "displayName-count-other": "Ummon riyoli"
+     },
+     "PAB": {
+      "displayName": "Panama balboasi",
+      "displayName-count-other": "Panama balboasi"
+     },
+     "PEN": {
+      "displayName": "Peru soli",
+      "displayName-count-other": "Peru soli"
+     },
+     "PGK": {
+      "displayName": "Papua – Yangi Gvineya kinasi",
+      "displayName-count-other": "Papua – Yangi Gvineya kinasi"
+     },
+     "PHP": {
+      "displayName": "Filippin pesosi",
+      "displayName-count-other": "Filippin pesosi",
+      "symbol": "PHP"
+     },
+     "PKR": {
+      "displayName": "Pokiston rupiyasi",
+      "displayName-count-other": "Pokiston rupiyasi"
+     },
+     "PLN": {
+      "displayName": "Polsha zlotiyi",
+      "displayName-count-other": "Polsha zlotiyi"
+     },
+     "PYG": {
+      "displayName": "Paragvay guaranisi",
+      "displayName-count-other": "Paragvay guaranisi"
+     },
+     "QAR": {
+      "displayName": "Qatar riyoli",
+      "displayName-count-other": "Qatar riyoli"
+     },
+     "RON": {
+      "displayName": "Ruminiya leyi",
+      "displayName-count-other": "Ruminiya leyi"
+     },
+     "RSD": {
+      "displayName": "Serbiya dinori",
+      "displayName-count-other": "Serbiya dinori"
+     },
+     "RUB": {
+      "displayName": "Rossiya rubli",
+      "displayName-count-other": "Rossiya rubli"
+     },
+     "RWF": {
+      "displayName": "Ruanda franki",
+      "displayName-count-other": "Ruanda franki"
+     },
+     "SAR": {
+      "displayName": "Saudiya Arabistoni riyoli",
+      "displayName-count-other": "Saudiya Arabistoni riyoli"
+     },
+     "SBD": {
+      "displayName": "Solomon orollari dollari",
+      "displayName-count-other": "Solomon orollari dollari"
+     },
+     "SCR": {
+      "displayName": "Seyshel rupiyasi",
+      "displayName-count-other": "Seyshel rupiyasi"
+     },
+     "SDG": {
+      "displayName": "Sudan funti",
+      "displayName-count-other": "Sudan funti"
+     },
+     "SEK": {
+      "displayName": "Shvetsiya kronasi",
+      "displayName-count-other": "Shvetsiya kronasi"
+     },
+     "SGD": {
+      "displayName": "Singapur dollari",
+      "displayName-count-other": "Singapur dollari"
+     },
+     "SHP": {
+      "displayName": "Muqaddas Yelena oroli funti",
+      "displayName-count-other": "Muqaddas Yelena oroli funti"
+     },
+     "SLE": {
+      "displayName": "Syerra-Leone leonesi",
+      "displayName-count-other": "Syerra-Leone leonesi"
+     },
+     "SLL": {
+      "displayName": "Syerra-Leone leonesi (1964—2022)",
+      "displayName-count-other": "Syerra-Leone leonesi (1964—2022)"
+     },
+     "SOS": {
+      "displayName": "Somali shillingi",
+      "displayName-count-other": "Somali shillingi"
+     },
+     "SRD": {
+      "displayName": "Surinam dollari",
+      "displayName-count-other": "Surinam dollari"
+     },
+     "SSP": {
+      "displayName": "Janubiy Sudan funti",
+      "displayName-count-other": "Janubiy Sudan funti"
+     },
+     "STD": {
+      "displayName": "San-Tome va Prinsipi dobrasi (1977–2017)",
+      "displayName-count-other": "San-Tome va Prinsipi dobrasi (1977–2017)"
+     },
+     "STN": {
+      "displayName": "San-Tome va Prinsipi dobrasi",
+      "displayName-count-other": "San-Tome va Prinsipi dobrasi"
+     },
+     "SYP": {
+      "displayName": "Suriya funti",
+      "displayName-count-other": "Suriya funti"
+     },
+     "SZL": {
+      "displayName": "Svazilend lilangenisi",
+      "displayName-count-other": "Svazilend lilangenisi"
+     },
+     "THB": {
+      "displayName": "Tailand bati",
+      "displayName-count-other": "Tailand bati"
+     },
+     "TJS": {
+      "displayName": "Tojikiston somoniysi",
+      "displayName-count-other": "Tojikiston somoniysi"
+     },
+     "TMT": {
+      "displayName": "Turkmaniston manati",
+      "displayName-count-other": "Turkmaniston manati"
+     },
+     "TND": {
+      "displayName": "Tunis dinori",
+      "displayName-count-other": "Tunis dinori"
+     },
+     "TOP": {
+      "displayName": "Tonga paangasi",
+      "displayName-count-other": "Tonga paangasi"
+     },
+     "TRY": {
+      "displayName": "Turk lirasi",
+      "displayName-count-other": "Turk lirasi"
+     },
+     "TTD": {
+      "displayName": "Trinidad va Tobago dollari",
+      "displayName-count-other": "Trinidad va Tobago dollari"
+     },
+     "TWD": {
+      "displayName": "Yangi Tayvan dollari",
+      "displayName-count-other": "Yangi Tayvan dollari"
+     },
+     "TZS": {
+      "displayName": "Tanzaniya shillingi",
+      "displayName-count-other": "Tanzaniya shillingi"
+     },
+     "UAH": {
+      "displayName": "Ukraina grivnasi",
+      "displayName-count-other": "Ukraina grivnasi"
+     },
+     "UGX": {
+      "displayName": "Uganda shillingi",
+      "displayName-count-other": "Uganda shillingi"
+     },
+     "USD": {
+      "displayName": "AQSH dollari",
+      "displayName-count-other": "AQSH dollari"
+     },
+     "UYU": {
+      "displayName": "Urugvay pesosi",
+      "displayName-count-other": "Urugvay pesosi"
+     },
+     "UZS": {
+      "displayName": "O‘zbekiston so‘mi",
+      "displayName-count-other": "O‘zbekiston so‘mi",
+      "symbol": "soʻm"
+     },
+     "VEF": {
+      "displayName": "Venesuela bolivari (2008–2018)",
+      "displayName-count-other": "Venesuela bolivari (2008–2018)"
+     },
+     "VES": {
+      "displayName": "Venesuela bolivari",
+      "displayName-count-other": "Venesuela bolivari"
+     },
+     "VND": {
+      "displayName": "Vyetnam dongi",
+      "displayName-count-other": "Vyetnam dongi"
+     },
+     "VUV": {
+      "displayName": "Vanuatu vatusi",
+      "displayName-count-other": "Vanuatu vatusi"
+     },
+     "WST": {
+      "displayName": "Samoa talasi",
+      "displayName-count-other": "Samoa talasi"
+     },
+     "XAF": {
+      "displayName": "Markaziy Afrika CFA franki",
+      "displayName-count-other": "Markaziy Afrika CFA franki"
+     },
+     "XCD": {
+      "displayName": "Sharqiy Karib dollari",
+      "displayName-count-other": "Sharqiy Karib dollari"
+     },
+     "XCG": {
+      "displayName": "Karib guldeni",
+      "displayName-count-one": "Karib guldeni",
+      "displayName-count-other": "Karib guldeni"
+     },
+     "XOF": {
+      "displayName": "G‘arbiy Afrika CFA franki",
+      "displayName-count-other": "G‘arbiy Afrika CFA franki"
+     },
+     "XPF": {
+      "displayName": "Fransuz Polineziyasi franki",
+      "displayName-count-other": "Fransuz Polineziyasi franki"
+     },
+     "XXX": {
+      "displayName": "Noma’lum valyuta",
+      "displayName-count-one": "(noma’lum valyuta)",
+      "displayName-count-other": "(noma’lum valyuta)"
+     },
+     "YER": {
+      "displayName": "Yaman riyoli",
+      "displayName-count-other": "Yaman riyoli"
+     },
+     "ZAR": {
+      "displayName": "Janubiy Afrika rendi",
+      "displayName-count-other": "Janubiy Afrika rendi"
+     },
+     "ZMW": {
+      "displayName": "Zambiya kvachasi",
+      "displayName-count-other": "Zambiya kvachasi"
+     },
+     "ZWG": {
+      "displayName": "Zimbabve oltini",
+      "displayName-count-one": "Zimbabve oltini",
+      "displayName-count-other": "Zimbabve oltini"
+     }
+    }
+   }
+  }
+ }
+}

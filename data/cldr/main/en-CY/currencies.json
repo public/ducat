@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-CY": {
+   "identity": {
+    "language": "en",
+    "territory": "CY"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

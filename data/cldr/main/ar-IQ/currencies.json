@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-IQ": {
+   "identity": {
+    "language": "ar",
+    "territory": "IQ"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

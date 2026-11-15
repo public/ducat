@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-VI": {
+   "identity": {
+    "language": "en",
+    "territory": "VI"
+   },
+   "inherits": "en",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

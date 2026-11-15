@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-JP": {
+   "identity": {
+    "language": "en",
+    "territory": "JP"
+   },
+   "inherits": "en",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

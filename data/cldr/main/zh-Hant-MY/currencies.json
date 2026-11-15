@@ -1,0 +1,15 @@
+{
+ "main": {
+  "zh-Hant-MY": {
+   "identity": {
+    "language": "zh",
+    "script": "Hant",
+    "territory": "MY"
+   },
+   "inherits": "zh-Hant",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

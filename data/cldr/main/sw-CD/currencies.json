@@ -1,0 +1,45 @@
+{
+ "main": {
+  "sw-CD": {
+   "identity": {
+    "language": "sw",
+    "territory": "CD"
+   },
+   "inherits": "sw",
+   "numbers": {
+    "currencies": {
+     "CDF": {
+      "symbol": "FC"
+     },
+     "CNY": {
+      "displayName": "Yuan Renminbi ya China"
+     },
+     "ETB": {
+      "displayName": "Bir ya Uhabeshi"
+     },
+     "JPY": {
+      "displayName": "Sarafu ya Kijapani"
+     },
+     "MGA": {
+      "displayName": "Ariary ya Bukini"
+     },
+     "MRO": {
+      "displayName": "Ugwiya ya Moritania (1973–2017)"
+     },
+     "MRU": {
+      "displayName": "Ugwiya ya Moritania"
+     },
+     "SCR": {
+      "displayName": "Rupia ya Shelisheli"
+     },
+     "XAF": {
+      "displayName": "Faranga CFA BEAC"
+     },
+     "XOF": {
+      "displayName": "Faranga CFA BCEAO"
+     }
+    }
+   }
+  }
+ }
+}

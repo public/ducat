@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ti-ER": {
+   "identity": {
+    "language": "ti",
+    "territory": "ER"
+   },
+   "inherits": "ti",
+   "numbers": {
+    "currencies": {
+     "ERN": {
+      "symbol": "Nfk"
+     }
+    }
+   }
+  }
+ }
+}

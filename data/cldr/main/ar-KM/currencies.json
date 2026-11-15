@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ar-KM": {
+   "identity": {
+    "language": "ar",
+    "territory": "KM"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {
+     "KMF": {
+      "symbol": "CF"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "main": {
+  "pt-CV": {
+   "identity": {
+    "language": "pt",
+    "territory": "CV"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {
+     "CVE": {
+      "symbol": "​",
+      "decimal": "$"
+     },
+     "PTE": {
+      "symbol": "PTE"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "pt-GQ": {
+   "identity": {
+    "language": "pt",
+    "territory": "GQ"
+   },
+   "inherits": "pt-PT",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

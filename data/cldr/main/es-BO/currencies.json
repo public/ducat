@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-BO": {
+   "identity": {
+    "language": "es",
+    "territory": "BO"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "BOB": {
+      "symbol": "Bs"
+     }
+    }
+   }
+  }
+ }
+}

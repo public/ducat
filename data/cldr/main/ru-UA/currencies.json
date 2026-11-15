@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ru-UA": {
+   "identity": {
+    "language": "ru",
+    "territory": "UA"
+   },
+   "inherits": "ru",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

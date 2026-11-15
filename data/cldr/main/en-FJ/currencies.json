@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-FJ": {
+   "identity": {
+    "language": "en",
+    "territory": "FJ"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "FJD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-HU": {
+   "identity": {
+    "language": "en",
+    "territory": "HU"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

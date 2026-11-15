@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-NI": {
+   "identity": {
+    "language": "es",
+    "territory": "NI"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "NIO": {
+      "symbol": "C$"
+     }
+    }
+   }
+  }
+ }
+}

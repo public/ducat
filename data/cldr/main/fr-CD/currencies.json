@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-CD": {
+   "identity": {
+    "language": "fr",
+    "territory": "CD"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "CDF": {
+      "symbol": "FC"
+     }
+    }
+   }
+  }
+ }
+}

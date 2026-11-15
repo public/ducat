@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-KI": {
+   "identity": {
+    "language": "en",
+    "territory": "KI"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "AUD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

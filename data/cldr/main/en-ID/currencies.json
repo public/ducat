@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-ID": {
+   "identity": {
+    "language": "en",
+    "territory": "ID"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "IDR": {
+      "symbol": "Rp"
+     }
+    }
+   }
+  }
+ }
+}

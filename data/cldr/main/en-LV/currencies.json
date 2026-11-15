@@ -1,0 +1,14 @@
+{
+ "main": {
+  "en-LV": {
+   "identity": {
+    "language": "en",
+    "territory": "LV"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

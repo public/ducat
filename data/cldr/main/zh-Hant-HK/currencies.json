@@ -1,0 +1,283 @@
+{
+ "main": {
+  "zh-Hant-HK": {
+   "identity": {
+    "language": "zh",
+    "script": "Hant",
+    "territory": "HK"
+   },
+   "inherits": "zh-Hant",
+   "numbers": {
+    "currencies": {
+     "AED": {
+      "displayName": "阿拉伯聯合酋長國迪爾汗",
+      "displayName-count-other": "阿拉伯聯合酋長國迪爾汗"
+     },
+     "AUD": {
+      "displayName": "澳元",
+      "displayName-count-other": "澳元"
+     },
+     "AWG": {
+      "displayName": "阿魯巴盾",
+      "displayName-count-other": "阿魯巴盾"
+     },
+     "AZN": {
+      "displayName": "亞塞拜疆馬納特",
+      "displayName-count-other": "亞塞拜疆馬納特"
+     },
+     "BAD": {
+      "displayName": "波斯尼亞-赫塞哥維納第納爾",
+      "displayName-count-other": "波斯尼亞-赫塞哥維納第納爾"
+     },
+     "BAM": {
+      "displayName": "波斯尼亞-赫塞哥維納可轉換馬克",
+      "displayName-count-other": "波斯尼亞-赫塞哥維納可轉換馬克"
+     },
+     "BBD": {
+      "displayName": "巴巴多斯元",
+      "displayName-count-other": "巴巴多斯元"
+     },
+     "BEC": {
+      "displayName": "比利時法郎（可兌換）",
+      "displayName-count-other": "比利時法郎（可兌換）"
+     },
+     "BIF": {
+      "displayName": "布隆迪法郎",
+      "displayName-count-other": "布隆迪法郎"
+     },
+     "BMD": {
+      "displayName": "百慕達元",
+      "displayName-count-other": "百慕達元"
+     },
+     "BWP": {
+      "displayName": "博茨瓦納普拉",
+      "displayName-count-other": "博茨瓦納普拉"
+     },
+     "BZD": {
+      "displayName": "伯利茲元",
+      "displayName-count-other": "伯利茲元"
+     },
+     "CAD": {
+      "displayName": "加拿大元",
+      "displayName-count-other": "加拿大元"
+     },
+     "CRC": {
+      "displayName": "哥斯達黎加科郎",
+      "displayName-count-other": "哥斯達黎加科郎"
+     },
+     "CVE": {
+      "displayName": "佛得角埃斯庫多",
+      "displayName-count-other": "佛得角埃斯庫多"
+     },
+     "DJF": {
+      "displayName": "吉布提法郎",
+      "displayName-count-other": "吉布提法郎"
+     },
+     "DOP": {
+      "displayName": "多米尼加披索",
+      "displayName-count-other": "多米尼加披索"
+     },
+     "ETB": {
+      "displayName": "埃塞俄比亞比爾",
+      "displayName-count-other": "埃塞俄比亞比爾"
+     },
+     "GEL": {
+      "displayName": "格魯吉亞拉里",
+      "displayName-count-other": "格魯吉亞拉里"
+     },
+     "GHS": {
+      "displayName": "加納塞地",
+      "displayName-count-other": "加納塞地"
+     },
+     "GMD": {
+      "displayName": "岡比亞達拉西",
+      "displayName-count-other": "岡比亞達拉西"
+     },
+     "GTQ": {
+      "displayName": "危地馬拉格查爾",
+      "displayName-count-other": "危地馬拉格查爾"
+     },
+     "HKD": {
+      "displayName": "港元",
+      "displayName-count-other": "港元"
+     },
+     "HRK": {
+      "displayName": "克羅地亞庫納",
+      "displayName-count-other": "克羅地亞庫納"
+     },
+     "ITL": {
+      "displayName": "意大利里拉",
+      "displayName-count-other": "意大利里拉"
+     },
+     "KES": {
+      "displayName": "肯雅先令",
+      "displayName-count-other": "肯雅先令"
+     },
+     "KHR": {
+      "displayName": "柬埔寨里爾",
+      "displayName-count-other": "柬埔寨里爾"
+     },
+     "KPW": {
+      "displayName": "北韓圜",
+      "displayName-count-other": "北韓圜"
+     },
+     "KRW": {
+      "symbol": "₩"
+     },
+     "KYD": {
+      "displayName-count-other": "開曼群島美元"
+     },
+     "KZT": {
+      "displayName": "哈薩克坦吉",
+      "displayName-count-other": "哈薩克坦吉"
+     },
+     "LAK": {
+      "displayName": "老撾基普",
+      "displayName-count-other": "老撾基普"
+     },
+     "LRD": {
+      "displayName": "利比利亞元",
+      "displayName-count-other": "利比利亞元"
+     },
+     "LTL": {
+      "displayName-count-other": "立陶宛里塔"
+     },
+     "MRO": {
+      "displayName": "毛里塔尼亞烏吉亞 (1973–2017)",
+      "displayName-count-other": "毛里塔尼亞烏吉亞 (1973–2017)"
+     },
+     "MRU": {
+      "displayName": "毛里塔尼亞烏吉亞",
+      "displayName-count-other": "毛里塔尼亞烏吉亞"
+     },
+     "MUR": {
+      "displayName": "毛里裘斯盧布",
+      "displayName-count-other": "毛里裘斯盧布"
+     },
+     "MVR": {
+      "displayName": "馬爾代夫盧非亞",
+      "displayName-count-other": "馬爾代夫盧非亞"
+     },
+     "MZN": {
+      "displayName": "莫桑比克梅蒂卡爾",
+      "displayName-count-other": "莫桑比克梅蒂卡爾"
+     },
+     "NGN": {
+      "displayName": "尼日利亞奈拉",
+      "displayName-count-other": "尼日利亞奈拉"
+     },
+     "NZD": {
+      "displayName": "紐西蘭元",
+      "displayName-count-other": "紐西蘭元"
+     },
+     "OMR": {
+      "displayName": "阿曼里奧",
+      "displayName-count-other": "阿曼里奧"
+     },
+     "PGK": {
+      "displayName": "巴布亞新幾內亞基那",
+      "displayName-count-other": "巴布亞新幾內亞基那"
+     },
+     "QAR": {
+      "displayName": "卡塔爾里亞爾",
+      "displayName-count-other": "卡塔爾里亞爾"
+     },
+     "RSD": {
+      "displayName": "塞爾維亞第納爾",
+      "displayName-count-other": "塞爾維亞第納爾"
+     },
+     "RWF": {
+      "displayName": "盧旺達法郎",
+      "displayName-count-other": "盧旺達法郎"
+     },
+     "SAR": {
+      "displayName": "沙特阿拉伯里亞爾",
+      "displayName-count-other": "沙特阿拉伯里亞爾"
+     },
+     "SBD": {
+      "displayName": "所羅門群島元",
+      "displayName-count-other": "所羅門群島元"
+     },
+     "SCR": {
+      "displayName": "塞舌爾盧比",
+      "displayName-count-other": "塞舌爾盧比"
+     },
+     "SGD": {
+      "displayName": "新加坡元",
+      "displayName-count-other": "新加坡元"
+     },
+     "SLE": {
+      "displayName": "塞拉利昂利昂",
+      "displayName-count-other": "塞拉利昂利昂"
+     },
+     "SLL": {
+      "displayName": "塞拉利昂利昂 (1964—2022)",
+      "displayName-count-other": "塞拉利昂利昂 (1964—2022)"
+     },
+     "SOS": {
+      "displayName": "索馬里先令",
+      "displayName-count-other": "索馬里先令"
+     },
+     "SRD": {
+      "displayName": "蘇里南元",
+      "displayName-count-other": "蘇里南元"
+     },
+     "STD": {
+      "displayName": "聖多美和普林西比多布拉 (1977–2017)",
+      "displayName-count-other": "聖多美和普林西比多布拉 (1977–2017)"
+     },
+     "STN": {
+      "displayName": "聖多美和普林西比多布拉",
+      "displayName-count-other": "聖多美和普林西比多布拉"
+     },
+     "SYP": {
+      "displayName": "敍利亞鎊",
+      "displayName-count-other": "敍利亞鎊"
+     },
+     "SZL": {
+      "displayName": "斯威士蘭里朗吉尼",
+      "displayName-count-other": "斯威士蘭里朗吉尼"
+     },
+     "TOP": {
+      "displayName": "湯加潘加",
+      "displayName-count-other": "湯加潘加"
+     },
+     "TTD": {
+      "displayName": "千里達和多巴哥元",
+      "displayName-count-other": "千里達和多巴哥元"
+     },
+     "TWD": {
+      "symbol": "NT$"
+     },
+     "TZS": {
+      "displayName": "坦桑尼亞先令",
+      "displayName-count-other": "坦桑尼亞先令"
+     },
+     "VUV": {
+      "displayName": "瓦努阿圖瓦圖",
+      "displayName-count-other": "瓦努阿圖瓦圖"
+     },
+     "XCD": {
+      "displayName": "東加勒比元",
+      "displayName-count-other": "東加勒比元"
+     },
+     "XOF": {
+      "displayName": "多哥非洲共同體法郎"
+     },
+     "YER": {
+      "displayName": "也門里雅",
+      "displayName-count-other": "也門里雅"
+     },
+     "ZMW": {
+      "displayName": "贊比亞克瓦查",
+      "displayName-count-other": "贊比亞克瓦查"
+     },
+     "ZWG": {
+      "displayName": "津布巴韋金",
+      "displayName-count-other": "津布巴韋金"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,20 @@
+{
+ "main": {
+  "zh-Hans-MY": {
+   "identity": {
+    "language": "zh",
+    "script": "Hans",
+    "territory": "MY"
+   },
+   "inherits": "zh-Hans",
+   "numbers": {
+    "currencies": {
+     "MYR": {
+      "displayName": "马来西亚令吉",
+      "displayName-count-other": "马来西亚令吉"
+     }
+    }
+   }
+  }
+ }
+}

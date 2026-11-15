@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-MV": {
+   "identity": {
+    "language": "en",
+    "territory": "MV"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "MVR": {
+      "symbol": "Rf"
+     }
+    }
+   }
+  }
+ }
+}

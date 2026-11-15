@@ -1,0 +1,18 @@
+{
+ "main": {
+  "ru-KZ": {
+   "identity": {
+    "language": "ru",
+    "territory": "KZ"
+   },
+   "inherits": "ru",
+   "numbers": {
+    "currencies": {
+     "KZT": {
+      "symbol": "₸"
+     }
+    }
+   }
+  }
+ }
+}

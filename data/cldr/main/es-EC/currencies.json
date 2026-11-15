@@ -1,0 +1,18 @@
+{
+ "main": {
+  "es-EC": {
+   "identity": {
+    "language": "es",
+    "territory": "EC"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "USD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

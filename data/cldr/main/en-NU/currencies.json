@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-NU": {
+   "identity": {
+    "language": "en",
+    "territory": "NU"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "NZD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

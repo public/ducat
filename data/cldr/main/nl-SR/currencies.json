@@ -1,0 +1,18 @@
+{
+ "main": {
+  "nl-SR": {
+   "identity": {
+    "language": "nl",
+    "territory": "SR"
+   },
+   "inherits": "nl",
+   "numbers": {
+    "currencies": {
+     "SRD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

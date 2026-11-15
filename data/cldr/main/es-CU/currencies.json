@@ -1,0 +1,21 @@
+{
+ "main": {
+  "es-CU": {
+   "identity": {
+    "language": "es",
+    "territory": "CU"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "CUP": {
+      "symbol": "$"
+     },
+     "USD": {
+      "symbol": "US$"
+     }
+    }
+   }
+  }
+ }
+}

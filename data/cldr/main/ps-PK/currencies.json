@@ -1,0 +1,23 @@
+{
+ "main": {
+  "ps-PK": {
+   "identity": {
+    "language": "ps",
+    "territory": "PK"
+   },
+   "inherits": "ps",
+   "numbers": {
+    "currencies": {
+     "PKR": {
+      "displayName-count-other": "پاکستانۍ کلدارے",
+      "symbol": "Rs"
+     },
+     "XXX": {
+      "displayName": "نامعلومه مروجه پېسے",
+      "displayName-count-other": "(نامعلومه مروجه پېسے)"
+     }
+    }
+   }
+  }
+ }
+}

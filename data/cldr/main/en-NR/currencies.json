@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-NR": {
+   "identity": {
+    "language": "en",
+    "territory": "NR"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "AUD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

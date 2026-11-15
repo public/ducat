@@ -1,0 +1,96 @@
+{
+ "main": {
+  "my": {
+   "identity": {
+    "language": "my"
+   },
+   "numbers": {
+    "defaultNumberingSystem": "mymr",
+    "otherNumberingSystems": {
+     "native": "mymr"
+    },
+    "minimumGroupingDigits": "1",
+    "symbols-numberSystem-latn": {
+     "decimal": ".",
+     "group": ",",
+     "list": ";",
+     "percentSign": "%",
+     "plusSign": "+",
+     "minusSign": "-",
+     "approximatelySign": "~",
+     "exponential": "E",
+     "superscriptingExponent": "×",
+     "perMille": "‰",
+     "infinity": "∞",
+     "nan": "ဂဏန်းမဟုတ်သော",
+     "timeSeparator": ":"
+    },
+    "symbols-numberSystem-mymr": {
+     "decimal": ".",
+     "group": ",",
+     "list": "၊",
+     "percentSign": "%",
+     "plusSign": "+",
+     "minusSign": "-",
+     "approximatelySign": "~",
+     "exponential": "E",
+     "superscriptingExponent": "×",
+     "perMille": "‰",
+     "infinity": "∞",
+     "nan": "ဂဏန်းမဟုတ်သော",
+     "timeSeparator": ":"
+    },
+    "decimalFormats-numberSystem-latn": {
+     "standard": "#,##0.###"
+    },
+    "decimalFormats-numberSystem-mymr": {
+     "standard": "#,##0.###"
+    },
+    "currencyFormats-numberSystem-latn": {
+     "currencySpacing": {
+      "beforeCurrency": {
+       "currencyMatch": "[[:^S:]&[:^Z:]]",
+       "surroundingMatch": "[:digit:]",
+       "insertBetween": " "
+      },
+      "afterCurrency": {
+       "currencyMatch": "[[:^S:]&[:^Z:]]",
+       "surroundingMatch": "[:digit:]",
+       "insertBetween": " "
+      }
+     },
+     "standard": "#,##0.00 ¤",
+     "standard-alphaNextToNumber": "#,##0.00 ¤",
+     "standard-noCurrency": "#,##0.00",
+     "accounting": "¤ #,##0.00",
+     "accounting-alphaNextToNumber": "¤ #,##0.00",
+     "accounting-noCurrency": "#,##0.00",
+     "currencyPatternAppendISO": "{0} ¤¤",
+     "unitPattern-count-other": "{1} {0}"
+    },
+    "currencyFormats-numberSystem-mymr": {
+     "currencySpacing": {
+      "beforeCurrency": {
+       "currencyMatch": "[[:^S:]&[:^Z:]]",
+       "surroundingMatch": "[:digit:]",
+       "insertBetween": " "
+      },
+      "afterCurrency": {
+       "currencyMatch": "[[:^S:]&[:^Z:]]",
+       "surroundingMatch": "[:digit:]",
+       "insertBetween": " "
+      }
+     },
+     "standard": "#,##0.00 ¤",
+     "standard-alphaNextToNumber": "#,##0.00 ¤",
+     "standard-noCurrency": "#,##0.00",
+     "accounting": "¤ #,##0.00",
+     "accounting-alphaNextToNumber": "¤ #,##0.00",
+     "accounting-noCurrency": "#,##0.00",
+     "currencyPatternAppendISO": "{0} ¤¤",
+     "unitPattern-count-other": "{1} {0}"
+    }
+   }
+  }
+ }
+}

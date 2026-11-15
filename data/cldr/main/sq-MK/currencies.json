@@ -1,0 +1,18 @@
+{
+ "main": {
+  "sq-MK": {
+   "identity": {
+    "language": "sq",
+    "territory": "MK"
+   },
+   "inherits": "sq",
+   "numbers": {
+    "currencies": {
+     "MKD": {
+      "symbol": "den"
+     }
+    }
+   }
+  }
+ }
+}

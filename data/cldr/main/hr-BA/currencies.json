@@ -1,0 +1,18 @@
+{
+ "main": {
+  "hr-BA": {
+   "identity": {
+    "language": "hr",
+    "territory": "BA"
+   },
+   "inherits": "hr",
+   "numbers": {
+    "currencies": {
+     "BAM": {
+      "symbol": "KM"
+     }
+    }
+   }
+  }
+ }
+}

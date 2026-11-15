@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-SG": {
+   "identity": {
+    "language": "en",
+    "territory": "SG"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "SGD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

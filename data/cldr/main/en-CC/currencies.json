@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-CC": {
+   "identity": {
+    "language": "en",
+    "territory": "CC"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "AUD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

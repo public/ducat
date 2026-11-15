@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-CX": {
+   "identity": {
+    "language": "en",
+    "territory": "CX"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "AUD": {
+      "symbol": "$"
+     }
+    }
+   }
+  }
+ }
+}

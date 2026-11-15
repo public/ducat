@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-NO": {
+   "identity": {
+    "language": "en",
+    "territory": "NO"
+   },
+   "inherits": "en-150",
+   "numbers": {
+    "currencies": {
+     "NOK": {
+      "symbol": "kr"
+     }
+    }
+   }
+  }
+ }
+}

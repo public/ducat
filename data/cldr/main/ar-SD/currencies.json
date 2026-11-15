@@ -1,0 +1,14 @@
+{
+ "main": {
+  "ar-SD": {
+   "identity": {
+    "language": "ar",
+    "territory": "SD"
+   },
+   "inherits": "ar",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

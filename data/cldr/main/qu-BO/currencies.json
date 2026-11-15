@@ -1,0 +1,21 @@
+{
+ "main": {
+  "qu-BO": {
+   "identity": {
+    "language": "qu",
+    "territory": "BO"
+   },
+   "inherits": "qu",
+   "numbers": {
+    "currencies": {
+     "BOB": {
+      "symbol": "Bs"
+     },
+     "PEN": {
+      "symbol": "PEN"
+     }
+    }
+   }
+  }
+ }
+}

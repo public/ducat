@@ -1,0 +1,18 @@
+{
+ "main": {
+  "fr-KM": {
+   "identity": {
+    "language": "fr",
+    "territory": "KM"
+   },
+   "inherits": "fr",
+   "numbers": {
+    "currencies": {
+     "KMF": {
+      "symbol": "CF"
+     }
+    }
+   }
+  }
+ }
+}

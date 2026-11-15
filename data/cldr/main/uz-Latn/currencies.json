@@ -1,0 +1,14 @@
+{
+ "main": {
+  "uz-Latn": {
+   "identity": {
+    "language": "uz",
+    "script": "Latn"
+   },
+   "inherits": "uz",
+   "numbers": {
+    "currencies": {}
+   }
+  }
+ }
+}

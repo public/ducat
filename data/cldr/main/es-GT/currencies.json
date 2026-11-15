@@ -1,0 +1,21 @@
+{
+ "main": {
+  "es-GT": {
+   "identity": {
+    "language": "es",
+    "territory": "GT"
+   },
+   "inherits": "es-419",
+   "numbers": {
+    "currencies": {
+     "GTQ": {
+      "displayName": "quetzal",
+      "displayName-count-one": "quetzal",
+      "displayName-count-other": "quetzales",
+      "symbol": "Q"
+     }
+    }
+   }
+  }
+ }
+}

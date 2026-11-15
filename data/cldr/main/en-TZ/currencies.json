@@ -1,0 +1,18 @@
+{
+ "main": {
+  "en-TZ": {
+   "identity": {
+    "language": "en",
+    "territory": "TZ"
+   },
+   "inherits": "en-001",
+   "numbers": {
+    "currencies": {
+     "TZS": {
+      "symbol": "TSh"
+     }
+    }
+   }
+  }
+ }
+}
