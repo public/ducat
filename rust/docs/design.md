@@ -437,6 +437,11 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
   currency's exponent, so the result's scale is the largest of the items' and the exponent; ducat starts from the first
   item, so items all below the exponent (EUR at scale 0) keep their scale. The values are equal; `identical` tells
   them apart. The currency is always known, so ducat's `RangeError` for an empty list without one has no counterpart.
+- **A fixed set of languages for words.** `ducat_words::SpelloutRules` names its language with the `Locale` enum (the
+  seven shipped ones), because the plural rules, digit grouping and word for "and" the interpreter needs come from the
+  crate's CLDR 48 snapshot, not from `Intl`. ducat's `SpelloutRules` takes any locale tag with any rule text, and
+  `Intl` supplies the rest, so it can spell out a language the port doesn't ship. Adding a language is adding its
+  CLDR data (and a feature), as for `ducat-format`'s locales.
 - **No float weights.** `IntoWeight` takes integers, `Int` and decimal strings. ducat's `allocate` and `schedule`
   also take a float weight (`0.7`) at its shortest form under the 15-digit rule; here, as for factors, a float comes
   in only through an explicit conversion, and a weight is written as a string (`"0.7"`).

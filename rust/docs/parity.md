@@ -399,15 +399,15 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `AmountInWordsOptions` | `ducat_words::AmountInWordsOptions` | same |  |
-| `AmountInWordsOptions#gender` | `AmountInWordsOptions::gender` (`Gender`) | same |  |
-| `AmountInWordsOptions#minor` | `AmountInWordsOptions::minor` | same |  |
-| `AmountInWordsOptions#ruleSet` | `AmountInWordsOptions::rule_set` | same |  |
-| `SpelloutRules` | `ducat_words::SpelloutRules`, `CompiledRules` | same |  |
-| `UnitNames` | `ducat_words::UnitNames` | same | `other`, with `one` and `many` |
+| `AmountInWordsOptions` | `ducat_words::AmountInWordsOptions` | same | plus the required `currency: UnitNames` (see `amountInWords`) |
+| `AmountInWordsOptions#gender` | `AmountInWordsOptions::gender` (`Gender`) | same | `Option<Gender>`: `Masculine`, `Feminine`, `Neuter`; `None` is ducat's default |
+| `AmountInWordsOptions#minor` | `AmountInWordsOptions::minor` | same | `Option<UnitNames>`; `None` writes the minor part cheque-style (`45/100`), as ducat |
+| `AmountInWordsOptions#ruleSet` | `AmountInWordsOptions::rule_set` | same | `Option<&str>`: `Err(NoRuleSet)`, `Err(PrivateRuleSet)` where ducat throws `RangeError` |
+| `SpelloutRules` | `ducat_words::SpelloutRules`, `CompiledRules` | divergent: [a fixed set of languages for words](design.md#parity-decisions) | `locale` is a `Locale` (the seven shipped languages), not any BCP 47 tag: the plural rules, digit grouping and word for "and" come from the crate's CLDR 48 data, where ducat's come from `Intl` for any locale, so rule text for another language (Polish, say) can't be used. Malformed rule text is `Err(MalformedRules)` where ducat throws `SyntaxError` |
+| `UnitNames` | `ducat_words::UnitNames` | same | `other`, with `one`, `two`, `few` and `many`; ducat's type also allows `zero`, a category none of the seven languages has |
 | `amountInWords` | `ducat_words::amount_in_words` | divergent: [currency names are the caller's](design.md#currency-names-in-words) | `AmountInWordsOptions::currency` is required: no CLDR names as defaults yet (decided: feature `cldr-names`) |
-| `ruleSets` | `CompiledRules::rule_sets` | same |  |
-| `spellOut` | `ducat_words::spell_out`, `spell_out_int` | same | values within ±(2^63 − 1), ICU's range |
+| `ruleSets` | `CompiledRules::rule_sets` | same | the public rule sets, in the rules' order, as ducat |
+| `spellOut` | `ducat_words::spell_out`, `spell_out_int` | same | values within ±(2^63 − 1), ICU's range: `Err(OutOfRange)` outside, `Err(PrivateRuleSet)`, `Err(NoRuleSet)`, `Err(NoRule)`, `Err(PluralTruncation)`, `Err(TooDeep)`, `Err(TooManySteps)` for ducat's `RangeError`s; `i128` or `&Int` input, so ducat's `RangeError` for an unsafe number can't arise |
 
 ### `./words/de`
 
@@ -415,7 +415,7 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `german` | `ducat_words::GERMAN` | same |  |
+| `german` | `ducat_words::GERMAN` | same | CLDR 49's rule text for `de`, with the `Locale::De` data |
 
 ### `./words/en`
 
@@ -423,7 +423,7 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `english` | `ducat_words::ENGLISH` | same |  |
+| `english` | `ducat_words::ENGLISH` | same | CLDR 49's rule text for `en`, with the `Locale::En` data |
 
 ### `./words/es`
 
@@ -431,7 +431,7 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `spanish` | `ducat_words::SPANISH` | same |  |
+| `spanish` | `ducat_words::SPANISH` | same | CLDR 49's rule text for `es`, with the `Locale::Es` data |
 
 ### `./words/fr`
 
@@ -439,7 +439,7 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `french` | `ducat_words::FRENCH` | same |  |
+| `french` | `ducat_words::FRENCH` | same | CLDR 49's rule text for `fr`, with the `Locale::Fr` data |
 
 ### `./words/it`
 
@@ -447,7 +447,7 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `italian` | `ducat_words::ITALIAN` | same |  |
+| `italian` | `ducat_words::ITALIAN` | same | CLDR 49's rule text for `it`, with the `Locale::It` data |
 
 ### `./words/nl`
 
@@ -455,7 +455,7 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `dutch` | `ducat_words::DUTCH` | same |  |
+| `dutch` | `ducat_words::DUTCH` | same | CLDR 49's rule text for `nl`, with the `Locale::Nl` data |
 
 ### `./words/pt`
 
@@ -463,7 +463,7 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `portuguese` | `ducat_words::PORTUGUESE` | same |  |
+| `portuguese` | `ducat_words::PORTUGUESE` | same | CLDR 49's rule text for `pt`, with the `Locale::Pt` data |
 
 ### `./wire`
 
