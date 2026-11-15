@@ -15,6 +15,7 @@ mod finance;
 mod floats;
 mod iso_table;
 mod order;
+mod parts;
 mod policy;
 mod pricing_math;
 mod processor_tables;
