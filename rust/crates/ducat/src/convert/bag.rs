@@ -25,8 +25,8 @@ pub struct TotalOptions {
 ///
 /// # Errors
 ///
-/// None in practice: adding amounts in one currency can't mismatch. The `Result` is
-/// [`AnyMoney::checked_add`]'s.
+/// None: each amount is only added to its own currency's total, so nothing can mismatch. The
+/// `Result` is kept from when the totals were folded with [`AnyMoney::checked_add`].
 pub fn sum_by_currency(items: impl IntoIterator<Item = AnyMoney>) -> Result<Vec<AnyMoney>, Error> {
     // a running sum per currency, each starting at that currency's first item, as folding them
     // with `checked_add` does
