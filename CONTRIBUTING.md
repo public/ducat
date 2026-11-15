@@ -53,7 +53,7 @@ keeps it green:
 - a new operation goes in the runner's `NOT_YET` list (or gets a Rust implementation), and new cases
   raise its `CASES_PER_AREA` count;
 - a change to `data/iso4217-list-one.xml` needs `DUCAT_REGENERATE=1 cargo test -p ducat --test
-  iso_table` in `rust/`, which rewrites `rust/crates/ducat/src/iso_table.rs`.
+  it iso_table::` in `rust/`, which rewrites `rust/crates/ducat/src/iso_table.rs`.
 
 ## Code style
 

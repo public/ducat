@@ -3,8 +3,9 @@
 A Rust port of [@ducatjs/money](https://github.com/public/ducat). It's idiomatic Rust with ducat's feature set,
 verified against ducat's language-neutral conformance suite (`@ducatjs/money-spec`, in ducat's `spec/`).
 
-Status: milestones 1 to 3 (the core, allocation and cash, tax, `Fixed`, `ExactMoney` and `Rate`) and milestone 4
-(`finance`, and `excel` for the functions named after Excel's, as in ducat).
+Status: milestones 1 to 7 are done: milestones 1 to 3 (the core, allocation and cash, tax, `Fixed`, `ExactMoney` and
+`Rate`), milestone 4 (`finance`, and `excel` for the functions named after Excel's, as in ducat), and milestones 5 to 7
+below. Milestone 8 (fuzzing) hasn't started.
 
 Milestone 5a added rounding policies (`RoundingPolicy`, accepted wherever a mode is, as `impl Into<RoundingInput>`),
 pricing, tiers and math, with their vectors in `spec/`.
@@ -360,6 +361,9 @@ with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
 
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
+- The JSON column shapes (`moneyJson`, `jsonToDriver`) in `ducat-sqlx` and `ducat-diesel`.
+- CLDR's currency names as defaults for `ducat-words`' `amount_in_words` (the caller passes them).
+- Fuzzing (milestone 8).
 
 The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.
 
@@ -412,15 +416,16 @@ The decisions in "Choices that are expensive to reverse" are the coordinator's, 
 5. **Factors are exact rationals** (`Ratio`: a reduced numerator and denominator of any size), built
    from integers, decimal strings and ducat's binary64 rule for floats (`Ratio::try_from(f64)` uses the shortest
    round-trip form, and refuses more than 15 significant digits).
-6. **MSRV and edition:** Rust 1.85, edition 2024.
+6. **MSRV and edition:** Rust 1.85, edition 2024 (`ducat`'s `proptest` feature needs 1.88).
    - The core is `no_std + alloc` (formatting and I/O behind `std`).
-   - The default features are `std`, `iso` and `serde`.
+   - The default features are all of `ducat`'s but `proptest`.
 7. **Layout:** a cargo workspace.
    - `ducat` holds core, allocate, tax, math, convert (rates and providers, without fetchers), cash, policy, pricing,
-     exact, fixed, finance, excel and the processors, each behind a feature.
+     exact, fixed, finance, excel, the currency data, the processors, wire and testing, each behind a feature.
    - Separate crates hold heavy or optional data and dependencies: `ducat-words` (amounts in words), `ducat-format`
-     (format and parse, on CLDR's data), `ducat-sqlx`, `ducat-diesel` and `ducat-fetch` (rate fetchers: sans-IO, with a blocking ureq transport;
-     reqwest was the plan, M7b chose otherwise to need no async runtime).
+     (format and parse, on CLDR's data), `ducat-sqlx`, `ducat-diesel` (on the internal `ducat-sql-core`) and
+     `ducat-fetch` (rate fetchers: sans-IO, with a blocking ureq transport; reqwest was the plan, M7b chose otherwise
+     to need no async runtime).
 8. **The licence is MIT,** as ducat's is.
 
 ## Decisions made while building milestone 1
@@ -461,7 +466,7 @@ lives").
 6. **Typed `+`, `-` and unary `-` never overflow** (they panicked on `i128` overflow before amounts became
    unbounded). `Error::Overflow` is left only for narrowing: an `Int` into a machine integer, or a count of parts
    beyond what can be held.
-7. **Boundaries are strict and never panic.** Parsing, serde and (later) the database decoders return errors for
+7. **Boundaries are strict and never panic.** Parsing, serde and the database decoders return errors for
    excess precision, NaN and the infinities, and out-of-range values. No `f64` is used in arithmetic, and a float is
    never a `Factor`. Floats come in only through explicit conversions, under ducat's binary64 rule (the shortest
    round-trip form; more than 15 significant digits is refused unless the value is a safe integer or a rounding is
@@ -488,22 +493,22 @@ lives").
 | ducat entry | ducat-rs | notes |
 |---|---|---|
 | `.` (core), `/fn` | `ducat` core: `Money`, `AnyMoney`, methods plus free functions where natural | Rust doesn't need ducat's /fn split: unused methods cost nothing |
-| `/iso`, `/iso/*`, `/currencies`, `/territories`, `/historic` | `ducat::iso` (markers plus the table), `currencies`, `territories`, `historic` features | static tables, no registration step |
+| `/iso`, `/iso/*`, `/currencies`, `/territories`, `/historic`, `/crypto` | `ducat::iso` (markers plus the table), `currencies`, `territories`, `historic`, `crypto` features | static tables, no registration step |
 | `/allocate` | `allocate` (allocate, split, instalments, schedule, chunk) | the Lean vectors apply |
 | `/tax`, `/math`, `/exact`, `/policy`, `/pricing`, `/cash` | features of the same names | `cash::cldr_cash` is Rust-only (no ducat equivalent; the spec checks it against `data/` only) |
 | `/fixed`, `/fixed/money` | `ducat::fixed::Fixed` | |
 | `/finance`, `/excel` | `finance`, `excel` | the Excel rule applies to `excel` |
 | `/convert`, `/convert/{ecb,boc,fed,boe,hmrc,history}`, `/stripe-fx`, `/adyen-fx` | `convert` plus parsers | rates with metadata, providers and `MoneyBag` in `convert` (5d1); the parsers, a feature each, take text and never fetch (5d2) |
 | `/convert/fetch` | `ducat-fetch` (M7b): `fetch_ecb`, `fetch_ecb_range`, `fetch_bank_of_canada` over a `Transport`, the sans-IO request and table functions, `ECB_URLS`, `ECB_DATA_API`, `BANK_OF_CANADA_URL`, `FetchError`; `UreqTransport` behind the default `ureq` feature | network code only here; timeouts and cancellation are the transport's |
-| `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are M5d |
+| `/stripe`, `/adyen`, `/checkout`, `/paypal`, `/braintree`, `/klarna` | `processors::{stripe,…}`, a feature each | conversions are methods on `Money` and `AnyMoney`; the FX files are `stripe-fx` and `adyen-fx` (5d2) |
 | `/wire` | `wire` (google.type.Money, ISO 20022, minor units, dinero objects) | ported in 5e |
-| `/words/*` | `ducat-words` (6a) | its own interpreter, no ICU |
+| `/words`, `/words/*` | `ducat-words` (6a) | its own interpreter, no ICU |
 | `/format`, `/parse` | `ducat-format` (6c) | CLDR 48's data with ICU 78.3's overrides, no ICU; a feature per language |
 | `currencyName`, `currencySymbol` | `ducat-format` (6c) | from CLDR, as `currency_name` and `currency_symbol` |
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
 | `/zod`, `/valibot` | not ported | TypeScript schema libraries; `serde` covers validation |
 | `/pg` | `ducat-sqlx` (`pg`, M7c part 1) and `ducat-diesel` (`pg`, M7c part 2) | exact NUMERIC and BIGINT, the composite type and its DDL (diesel: NUMERIC through `PgNumeric`, the composite as `pg::sql_types::DucatMoney`); `exactTypes`, `parseArray` and `moneyTypeOids` configure node-postgres's parsers and have no sqlx or diesel counterpart |
-| `/drizzle/pg`, `/drizzle/mysql`, `/drizzle/sqlite` (and `src/sql.ts` under them) | `ducat-sqlx` and `ducat-diesel` (M7c): `DecimalColumn<C>`, `MinorColumn<C>`, `Decimal`, `minor_units`, `DecimalColumnSize::fit`, in each | the column shapes, not Drizzle (a TypeScript ORM); the JSON shapes are left for a later part |
+| `/drizzle/pg`, `/drizzle/mysql`, `/drizzle/sqlite` (and `src/sql.ts` under them) | `ducat-sqlx` and `ducat-diesel` (M7c): `DecimalColumn<C>`, `MinorColumn<C>`, `Decimal`, `minor_units`, `DecimalColumnSize::fit`, in each | the column shapes, not Drizzle (a TypeScript ORM); the JSON shapes (`moneyJson`) aren't ported yet |
 | `/prisma`, `/kysely`, `/typeorm` | not ported | adapters for TypeScript ORMs and query builders (Prisma's `Decimal`, Kysely's dialects, TypeORM's transformers) with no Rust counterpart; the storage layouts they support (minor units or a decimal beside a currency column) are `minor_units` and `Decimal` with plain sqlx or diesel (`ducat-diesel`) |
 | `/testing`, `/testing/arbitraries` | `ducat::testing`, behind the `proptest` feature (M7a): strategies and `Arbitrary` impls for `Int`, `Money<C>`, `AnyMoney`, `CurrencyCode`, `Rounding`, `RoundingPolicy` and `Ratio`, with `CurrencyOptions` and `MoneyOptions` for ducat's arbitrary options; `assert_money_eq!` and `assert_identical!` | `==` is already by value, so `moneyEquality` needs no counterpart; `Display` and `Debug` already print `12.34 EUR` |
 | `/testing/vitest`, `/testing/jest` | not ported | they install matchers, an equality tester and a snapshot serializer on a JavaScript runner's `expect`; Rust's test harness has no `expect` to extend, and the macros, `==`, `Debug` and `Display` cover what they add |
@@ -527,8 +532,8 @@ lives").
 2. **Arithmetic:** allocate, schedule, instalments and chunk (the Lean vectors), and cash increments.
 3. **Tax and convert** (the pydecimal vectors), exact and fixed (the fixed battery).
 4. **Excel and finance:** the fractions, Calc, Microsoft and Lean xnpv/xirr vectors.
-5. **Currency data:** ISO, historic, territories, cash rules and processors. Vectors mostly don't exist yet, so add
-   them to ducat's spec first, from an independent source.
+5. **Currency data:** ISO, historic, territories, cash rules and processors, with vectors added to ducat's spec first,
+   from an independent source.
 6. **Words, format and parse:** `ducat-words` (6a, RBNF) and `ducat-format` (6c, format and parse), both ducat-rs's own
    code over CLDR's data, with no ICU. ICU4X was the plan, but no release carries CLDR 48.0 throughout and its currency
    formatter is experimental and re-rounds to CLDR digits (wrong for HUF, IDR, IQD and MGA at ISO scale); the format

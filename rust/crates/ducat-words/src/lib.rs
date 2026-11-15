@@ -25,8 +25,8 @@
 //! # Ok::<(), ducat_words::Error>(())
 //! ```
 //!
-//! ducat takes the currency's name from the runtime's `Intl`; there is no `Intl` here, and CLDR's
-//! currency names aren't in ducat's data, so the caller gives the name, in the plural forms the
+//! ducat takes the currency's name from the runtime's `Intl`; there is no `Intl` here, and this crate
+//! has no CLDR currency names, so the caller gives the name, in the plural forms the
 //! language uses, as ducat already has the caller give the minor unit's name.
 
 #![cfg_attr(not(feature = "std"), no_std)]

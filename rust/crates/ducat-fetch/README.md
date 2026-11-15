@@ -1,7 +1,7 @@
 # ducat-fetch
 
 Fetchers for published reference rates, for [ducat](../ducat): the port of ducat's
-`@ducatjs/money/fetch` (`fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada`). It is the only crate of
+`@ducatjs/money/convert/fetch` (`fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada`). It is the only crate of
 the port that touches the network, and only when you call it; `ducat::convert`'s parsers, which it
 uses, take text and never fetch.
 
