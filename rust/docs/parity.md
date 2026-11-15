@@ -28,8 +28,6 @@ Status:
 - `divergent: <link>`: there, but deliberately different, as the linked section of `design.md` says.
 - `not ported: by design (<reason>)`: left out on purpose, for the reason `design.md` gives.
 - `missing`: not there yet. A TS option with no Rust counterpart is `missing` even when the function exists.
-- `pending: #<PR>`: an item an open ducat pull request adds, not exported on `main` yet; the check accepts it only
-  while the item is absent, and asks for a real status once it exists.
 
 Paths are the shortest a user writes (`ducat::Money`, re-exported at the crate root); links go to the source, from
 `rust/docs/`.
@@ -1131,8 +1129,8 @@ Not ported: Prisma result-extension fields and `Decimal` helpers are an adapter 
 | `DecimalLike` | — | not ported: by design (adapter for a TypeScript ORM) | structural type of `Prisma.Decimal`/decimal.js; the exact column value is `ducat_sqlx::Decimal` / `ducat_diesel::Decimal` |
 | `DecimalLike#toFixed` | — | not ported: by design (adapter for a TypeScript ORM) | `Decimal`'s `Display` gives the exact text |
 | `Money#toDecimalValue` | — | not ported: by design (adapter for a TypeScript ORM) | prototype method; `ducat_sqlx::Decimal::from_money` covers the need |
-| `ScaleColumnOption` | — | not ported: by design (adapter for a TypeScript ORM) | |
-| `ScaleColumnOption#scale` | — | not ported: by design (adapter for a TypeScript ORM) | ducat#380 also exports it from `./kysely` and the Drizzle entries (the row stays here); a stored scale beside the units is `Decimal::new(units, scale)` / `Decimal::units` and `Decimal::scale` |
+| `ScaleColumnOption` | — | missing | also the `{ scale }` option of the Drizzle entries' `moneyMinor` and Kysely's `setMoney`/`selectMoney` (ducat#380); a scale column beside minor units has no counterpart in `ducat-sqlx` or `ducat-diesel` |
+| `ScaleColumnOption#scale` | — | missing | the scale column's name; for Prisma alone a stored scale is `Decimal::new(units, scale)`, but the Drizzle column shape needs a Rust scale column |
 | `decimalMoneyField` | — | not ported: by design (adapter for a TypeScript ORM) | `Decimal::to_money_at_exponent`, or `DecimalColumn<C>` for a fixed currency |
 | `fromDecimal` | — | not ported: by design (adapter for a TypeScript ORM) | `Decimal::to_money_at_exponent` (or `"…".parse::<Money<C>>()`) |
 | `minorMoneyField` | — | not ported: by design (adapter for a TypeScript ORM) | `MinorColumn<C>`, or `AnyMoney::from_minor` with the currency column |
@@ -1149,8 +1147,8 @@ The column shapes (not Drizzle, a TypeScript ORM) are in `ducat-sqlx` and `ducat
 | `DecimalColumnSize` | [`ducat_sqlx::DecimalColumnSize`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DecimalColumnSize`](../crates/ducat-diesel/src/decimal.rs) | same | a validated struct (`new(precision, scale)`, `Error::InvalidColumnSize`) with `precision()`/`scale()` getters, `check_currency` and `fit` |
 | `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | same | the `size` argument is `DecimalColumnSize::check_currency` and `fit` (bind its `Decimal`), not part of the column type; errors `ScaleMismatch`, `NotANumber`, `Infinite`, `Malformed`, `ColumnScaleBelowExponent`, `WouldRound`, `TooManyIntegerDigits` |
 | `moneyJson` | — | missing | design.md Known gaps: the JSON column shapes (`moneyJson`, `jsonToDriver`) in both crates; workaround: a JSON/TEXT column with `ducat`'s `serde` impls |
-| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | BIGINT; `ScaleMismatch`, `OutOfRange` beyond ±(2^63 − 1); `minor_units` for money whose currency is in another column; #380 adds a `{ scale }` option (a scale column): missing in Rust |
-| `scaledMoney` | — | pending: #380 | not on main yet (ducat#380): a minor-units column with a scale column beside it; Rust: missing, a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
+| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | BIGINT; `ScaleMismatch`, `OutOfRange` beyond ±(2^63 − 1); `minor_units` for money whose currency is in another column; its `{ scale }` option (`ScaleColumnOption`, a scale column) is missing in Rust |
+| `scaledMoney` | — | missing | reads a minor-units column with its scale column (ducat#380); Rust needs a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
 
 ### `./drizzle/mysql`
 
@@ -1160,8 +1158,8 @@ The MySQL column shapes are `ducat-sqlx`'s and `ducat-diesel`'s root types with 
 |---|---|---|---|
 | `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | same | DECIMAL; size via `DecimalColumnSize::fit`; a FLOAT/DOUBLE value is `Error::UnexpectedType` |
 | `moneyJson` | — | missing | design.md Known gaps (JSON column shapes); workaround: a JSON column with `ducat`'s `serde` impls |
-| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | BIGINT; unsigned and float types refused (`Error::UnexpectedType`); #380 adds a `{ scale }` option (a scale column): missing in Rust |
-| `scaledMoney` | — | pending: #380 | not on main yet (ducat#380): a minor-units column with a scale column beside it; Rust: missing, a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
+| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | BIGINT; unsigned and float types refused (`Error::UnexpectedType`); its `{ scale }` option (`ScaleColumnOption`, a scale column) is missing in Rust |
+| `scaledMoney` | — | missing | reads a minor-units column with its scale column (ducat#380); Rust needs a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
 
 ### `./drizzle/sqlite`
 
@@ -1171,8 +1169,8 @@ The SQLite column shapes are `ducat-sqlx`'s and `ducat-diesel`'s root types with
 |---|---|---|---|
 | `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | same | TEXT holding the exact decimal; a REAL value is `Error::UnexpectedType` |
 | `moneyJson` | — | missing | design.md Known gaps (JSON column shapes); workaround: a TEXT column with `ducat`'s `serde` impls |
-| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | INTEGER; storage class checked per value; #380 adds a `{ scale }` option (a scale column): missing in Rust |
-| `scaledMoney` | — | pending: #380 | not on main yet (ducat#380): a minor-units column with a scale column beside it; Rust: missing, a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
+| `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs) | same | INTEGER; storage class checked per value; its `{ scale }` option (`ScaleColumnOption`, a scale column) is missing in Rust |
+| `scaledMoney` | — | missing | reads a minor-units column with its scale column (ducat#380); Rust needs a scale column for `MinorColumn<C>` in `ducat-sqlx` and `ducat-diesel` |
 
 ### `./zod`
 
@@ -1344,10 +1342,10 @@ Every `missing` row, grouped into pull requests in the order users would hit the
    `./drizzle/pg` `moneyJson`, `./drizzle/mysql` `moneyJson`, `./drizzle/sqlite` `moneyJson`. Storing money is the
    first thing an application does, and a JSON column is the layout that needs no currency column.
 5. **A scale column for minor-unit columns** (`ducat-sqlx`, `ducat-diesel`): `./drizzle/pg` `scaledMoney`,
-   `./drizzle/mysql` `scaledMoney`, `./drizzle/sqlite` `scaledMoney` (`pending: #380`: ducat#380 adds them, with a
-   `{ scale }` option on `moneyMinor`, Kysely's `setMoney` and `selectMoney`, and `ScaleColumnOption` from `./kysely`
-   and the Drizzle entries). A `MinorColumn<C>` with the scale stored beside the units, for money kept at more decimals
-   than its currency's exponent; the counterpart of the TS column once #380 lands.
+   `./drizzle/mysql` `scaledMoney`, `./drizzle/sqlite` `scaledMoney`, `./prisma` `ScaleColumnOption`,
+   `./prisma` `ScaleColumnOption#scale` (the `{ scale }` option of `moneyMinor`, Kysely's `setMoney` and
+   `selectMoney`, from ducat#380). A `MinorColumn<C>` with the scale stored beside the units, for money kept at more
+   decimals than its currency's exponent.
 6. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
    `./format` `FormatOptions#useGrouping`, `./format` `FormatOptions#minimumIntegerDigits`,
    `./format` `FormatOptions#minimumSignificantDigits`, `./format` `FormatOptions#roundingMode`,
