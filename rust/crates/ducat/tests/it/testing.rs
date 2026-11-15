@@ -1,6 +1,5 @@
 //! `ducat::testing`: what the strategies reach, the bounds they keep, and the assertion macros'
 //! failure messages. Samples come from a deterministic runner, so the coverage checks can't flake.
-#![cfg(feature = "proptest")]
 
 use std::collections::BTreeSet;
 
