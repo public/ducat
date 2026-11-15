@@ -89,6 +89,33 @@ impl From<ducat::Error> for Error {
     }
 }
 
+impl From<ducat_sql_core::Error> for Error {
+    fn from(error: ducat_sql_core::Error) -> Self {
+        use ducat_sql_core::Error as Core;
+        match error {
+            Core::NotANumber => Self::NotANumber,
+            Core::Infinite { negative } => Self::Infinite { negative },
+            Core::Malformed(reason) => Self::Malformed(reason),
+            Core::ScaleMismatch { scale, expected } => Self::ScaleMismatch { scale, expected },
+            Core::NullField(field) => Self::NullField(field),
+            Core::InvalidColumnSize(size) => Self::InvalidColumnSize(DecimalColumnSize(size)),
+            Core::ColumnScaleBelowExponent { size, exponent } => Self::ColumnScaleBelowExponent {
+                size: DecimalColumnSize(size),
+                exponent,
+            },
+            Core::WouldRound { size, decimals } => Self::WouldRound {
+                size: DecimalColumnSize(size),
+                decimals,
+            },
+            Core::TooManyIntegerDigits { size } => Self::TooManyIntegerDigits {
+                size: DecimalColumnSize(size),
+            },
+            Core::OutOfRange => Self::OutOfRange,
+            Core::Ducat(error) => Self::Ducat(error),
+        }
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

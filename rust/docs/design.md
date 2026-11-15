@@ -286,6 +286,78 @@ column shapes `./drizzle/mysql` and `./drizzle/sqlite` (through `src/sql.ts`) st
   `macros`). sqlx 0.8.6 and every dependency it resolves to need Rust 1.85 at most, so the crate keeps the
   workspace's MSRV (CI checks it); sqlx 0.9 needs 1.94 and isn't used.
 
+Milestone 7c, part 2, first moved the database-library independent half of `ducat-sqlx` into an internal crate,
+`crates/ducat-sql-core` (`publish = false`, depending on `ducat` alone, no sqlx or diesel), so that `ducat-diesel` shares
+it instead of copying it:
+
+- **What moved:** the exact decimal (units and scale) with its text grammar and `Display`, `to_money` and
+  `to_money_at_exponent`; NUMERIC(p, s) sizes with `check_currency` and `fit` (`toNumeric`); `check_exponent_scale`
+  (`checkIsoScale`); Postgres NUMERIC's base-10000 digits (`numeric::Numeric`, with `to_decimal` and `from_decimal`) and
+  its binary format; the composite's binary record and text forms and `money_type_sql`. Those are the parts that have
+  to be exactly right, and now have one implementation, tested through both crates' suites.
+- **What can't move:** the public types. sqlx's `Type`/`Encode`/`Decode` and diesel's `ToSql`/`FromSql`/`AsExpression`
+  can only be implemented for a crate's own types (the orphan rule), so `Decimal`, `DecimalColumnSize`,
+  `DecimalColumn<C>`, `MinorColumn<C>`, `MoneyValue`, `MoneyRecord`, `PgMoney<M>` and `Error` stay in each crate.
+  `Decimal` and `DecimalColumnSize` are newtypes over the core's (private fields, `Debug` unchanged), each crate's
+  `Error` converts from the core's `Error`, and their docs and examples stay where users read them. `ducat-sqlx`'s
+  public API is unchanged.
+- **Why not duplicate:** the shells left in each crate are mostly documentation; the copied logic would have been the
+  NUMERIC conversion, the decimal grammar, the size checks and the record parser, where a fix in one crate and not the
+  other would make the two disagree on what a column holds.
+
+Milestone 7c, part 2, then added `ducat-diesel`, money columns for diesel 2: the diesel counterpart of `ducat-sqlx`,
+with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
+
+- **Layout:** `crates/ducat-diesel`, with `postgres` (the default), `mysql` and `sqlite`, each enabling the matching
+  diesel backend. Modules `pg` (with `pg::sql_types::DucatMoney`), `mysql`, `sqlite`; the types are at the root and
+  carry diesel's `AsExpression` and `FromSqlRow` derives: `Decimal` and `DecimalColumn<C>` as `Numeric` (and `Text`
+  with `sqlite`), `MinorColumn<C>` as `BigInt`, `PgMoney<M>` and `MoneyRecord` as `DucatMoney`.
+- **Backends without client libraries:** `postgres` is diesel's `postgres_backend` and `mysql` its `mysql_backend`,
+  both pure Rust: the types and their `ToSql`/`FromSql`, no connection. diesel's `postgres` and `mysql` features would
+  add `PgConnection` and `MysqlConnection`, which link libpq and libmysqlclient (or build them from source through
+  pq-sys's and mysqlclient-sys's `bundled` options, not tried here); the application chooses those, or diesel-async's pure-Rust
+  connections, and the crate works with either. `sqlite` is diesel's `sqlite` with `libsqlite3-sys/bundled`: SQLite
+  built from source with a C compiler and no system library, as ducat-sqlx's `sqlite` (sqlx bundles too). The box
+  this was built in has no libpq, no libmysqlclient and no SQLite development files, and every feature builds and
+  tests there, so CI enables them all.
+- **Postgres NUMERIC** goes through diesel's own `PgNumeric` (`diesel::pg::data_types`, public), converted exactly
+  by `TryFrom` both ways through the core's base-10000 digits: never diesel's `numeric` feature (bigdecimal) nor
+  `rust_decimal`. diesel 2.2's `PgNumeric` has no infinities (its reader refuses their signs with an error of its own)
+  and ignores bytes after the digits, so `FromSql` checks the header first: `NaN`, `±Infinity`, a wrong length and a
+  negative digit count are the crate's errors. `PgNumeric`'s digits are `i16`; a negative one is malformed. diesel
+  reads Postgres in the binary format only, so there is no text path.
+- **The composite:** `pg::sql_types::DucatMoney` is `#[diesel(postgres_type(name = "ducat_money"))]`, looked up by
+  name on the `search_path`; `diesel print-schema` is pointed at it with `import_types` and
+  `generate_missing_sql_type_definitions = false`. Writes use diesel's record support (`WriteTuple<(Numeric, Text)>`)
+  cleanly. Reads don't: diesel 2.2's `FromSql` for `Record<...>` slices by the length a field claims and panics on a
+  truncated record (a test shows it), and reports a NULL field as its generic unexpected-null error, so reads use the
+  core's binary record reader, the one ducat-sqlx uses. Composites of another name read as `Record<(Numeric, Text)>`
+  (where sqlx decodes them by their fields); arrays are diesel's.
+- **Strict readers:** MySQL values are checked by their own type, whatever the schema claims: DECIMAL or a string for
+  decimals; TINYINT to BIGINT, signed, for minor units, read in native order as diesel does, refusing FLOAT, DOUBLE,
+  DECIMAL and the unsigned types (diesel's own integer reading truncates floats and indexes short buffers out of
+  bounds). SQLite checks each value's storage class, as ducat-sqlx.
+- **Errors:** `Error` has ducat-sqlx's variants. A read error reaches the caller as diesel's `DeserializationError`,
+  whose box holds a `DeserializeFieldError` naming the field, whose `error` downcasts to `Error`; a write error as
+  `SerializationError`, whose box downcasts to it.
+- **Tests** (`tests/it/`, one binary): ducat-sqlx's cases, ported. NUMERIC against hand-built wire bytes through
+  diesel's `FromSql` (`PgValue::new`) and its `RawBytesBindCollector`, so the bytes are the ones a connection sends,
+  plus `PgNumeric` both ways; the composite's text, binary record, `ToSql` through `WriteTuple` with a stub metadata
+  lookup, arrays, and diesel's own reader panicking; MySQL values built by hand (`MysqlValue::new`); proptests;
+  SQLite in memory through diesel's `SqliteConnection`; Postgres and MySQL through diesel-async's
+  `AsyncPgConnection` and `AsyncMysqlConnection` behind `DUCAT_PG_URL` and `DUCAT_MYSQL_URL`, run in CI's
+  `sql-databases` job (formerly `sqlx-databases`) against the same services.
+- **Dependencies (normal):** `ducat` (without default features, with `std`), `ducat-sql-core`, `diesel` 2.2
+  (`default-features = false`; `postgres_backend`, `mysql_backend` or `sqlite` as chosen) and, with `sqlite`,
+  `libsqlite3-sys` with `bundled` (`>=0.30, <0.41`: a `links` crate exists once in a build, so the range spans what
+  diesel 2.2 to 2.4 accept and unifies with theirs). Dev-dependencies: `ducat` with `iso` and `proptest`, `proptest`,
+  `diesel` with `i-implement-a-third-party-backend-and-opt-into-breaking-changes` (only for `PgValue::new`,
+  `MysqlValue::new` and the bind collector's fields in the tests; diesel-async enables it anyway), `diesel-async`
+  0.5 with `postgres` and `mysql` (tokio-postgres and mysql_async, pure Rust), and `tokio` (`rt`, `macros`).
+- **MSRV:** diesel 2.2.12 and its dependencies need Rust 1.78 at most, so the crate keeps the workspace's 1.85 and the
+  lockfile stays on diesel 2.2 (2.3 needs 1.86, 2.4 1.88). The requirement `2.2` admits them; the library was checked
+  against diesel 2.4.0 outside the workspace and compiles unchanged.
+
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
 
@@ -430,9 +502,9 @@ lives").
 | `currencyName`, `currencySymbol` | `ducat-format` (6c) | from CLDR, as `currency_name` and `currency_symbol` |
 | `/context` | not ported | `Money<Eur>` already binds a currency; a locale goes to the formatter |
 | `/zod`, `/valibot` | not ported | TypeScript schema libraries; `serde` covers validation |
-| `/pg` | `ducat-sqlx` (`pg`, M7c) | exact NUMERIC (binary and text) and BIGINT, the composite type and its DDL; `exactTypes`, `parseArray` and `moneyTypeOids` configure node-postgres's parsers and have no sqlx counterpart |
-| `/drizzle/pg`, `/drizzle/mysql`, `/drizzle/sqlite` (and `src/sql.ts` under them) | `ducat-sqlx` (M7c): `DecimalColumn<C>`, `MinorColumn<C>`, `Decimal`, `minor_units`, `DecimalColumnSize::fit` | the column shapes, not Drizzle (a TypeScript ORM); the JSON shapes are left for a later part |
-| `/prisma`, `/kysely`, `/typeorm` | not ported | adapters for TypeScript ORMs and query builders (Prisma's `Decimal`, Kysely's dialects, TypeORM's transformers) with no Rust counterpart; the storage layouts they support (minor units or a decimal beside a currency column) are `minor_units` and `Decimal` with plain sqlx, and Diesel gets `ducat-diesel` |
+| `/pg` | `ducat-sqlx` (`pg`, M7c part 1) and `ducat-diesel` (`pg`, M7c part 2) | exact NUMERIC and BIGINT, the composite type and its DDL (diesel: NUMERIC through `PgNumeric`, the composite as `pg::sql_types::DucatMoney`); `exactTypes`, `parseArray` and `moneyTypeOids` configure node-postgres's parsers and have no sqlx or diesel counterpart |
+| `/drizzle/pg`, `/drizzle/mysql`, `/drizzle/sqlite` (and `src/sql.ts` under them) | `ducat-sqlx` and `ducat-diesel` (M7c): `DecimalColumn<C>`, `MinorColumn<C>`, `Decimal`, `minor_units`, `DecimalColumnSize::fit`, in each | the column shapes, not Drizzle (a TypeScript ORM); the JSON shapes are left for a later part |
+| `/prisma`, `/kysely`, `/typeorm` | not ported | adapters for TypeScript ORMs and query builders (Prisma's `Decimal`, Kysely's dialects, TypeORM's transformers) with no Rust counterpart; the storage layouts they support (minor units or a decimal beside a currency column) are `minor_units` and `Decimal` with plain sqlx or diesel (`ducat-diesel`) |
 | `/testing`, `/testing/arbitraries` | `ducat::testing`, behind the `proptest` feature (M7a): strategies and `Arbitrary` impls for `Int`, `Money<C>`, `AnyMoney`, `CurrencyCode`, `Rounding`, `RoundingPolicy` and `Ratio`, with `CurrencyOptions` and `MoneyOptions` for ducat's arbitrary options; `assert_money_eq!` and `assert_identical!` | `==` is already by value, so `moneyEquality` needs no counterpart; `Display` and `Debug` already print `12.34 EUR` |
 | `/testing/vitest`, `/testing/jest` | not ported | they install matchers, an equality tester and a snapshot serializer on a JavaScript runner's `expect`; Rust's test harness has no `expect` to extend, and the macros, `==`, `Debug` and `Display` cover what they add |
 | `/all`, plugins, `extendMoney` | not ported | Rust uses extension traits; there's no prototype to install on |

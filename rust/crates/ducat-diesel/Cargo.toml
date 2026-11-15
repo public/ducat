@@ -1,0 +1,39 @@
+[package]
+name = "ducat-diesel"
+version = "0.0.0"
+description = "Money columns for diesel: exact Postgres NUMERIC and BIGINT amounts, ducat's money composite type, and MySQL and SQLite column shapes"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+default = ["postgres"]
+## Postgres: exact NUMERIC (through diesel's `PgNumeric`) and BIGINT amounts, and the
+## `ducat_money` composite type. diesel's `postgres_backend`, pure Rust: no libpq.
+postgres = ["diesel/postgres_backend"]
+## MySQL and MariaDB: DECIMAL and BIGINT amounts. diesel's `mysql_backend`, pure Rust: no
+## libmysqlclient.
+mysql = ["diesel/mysql_backend"]
+## SQLite: TEXT decimal and INTEGER minor-unit amounts. diesel's `sqlite`, with SQLite built from
+## source (`libsqlite3-sys/bundled`, a C compiler), as ducat-sqlx's `sqlite` does.
+sqlite = ["diesel/sqlite", "dep:libsqlite3-sys"]
+
+[dependencies]
+ducat = { path = "../ducat", default-features = false, features = ["std"] }
+ducat-sql-core = { path = "../ducat-sql-core" }
+diesel = { version = "2.2", default-features = false }
+# only to bundle SQLite under the `sqlite` feature. A `links` crate exists once in a build, so the
+# range spans what diesel's own requirement allows (2.2: <0.36, 2.4: <0.41) and unifies with it
+libsqlite3-sys = { version = ">=0.30, <0.41", optional = true, default-features = false, features = ["bundled"] }
+
+[dev-dependencies]
+ducat = { path = "../ducat", default-features = false, features = ["std", "iso", "proptest"] }
+proptest = { version = "1.6", default-features = false, features = ["std"] }
+# `PgValue::new` and `MysqlValue::new`, for reading hand-built values in the tests (diesel-async
+# enables this anyway)
+diesel = { version = "2.2", default-features = false, features = ["i-implement-a-third-party-backend-and-opt-into-breaking-changes"] }
+# pure Rust Postgres (tokio-postgres) and MySQL (mysql_async) connections for the database tests
+diesel-async = { version = "0.5", default-features = false, features = ["postgres", "mysql"] }
+tokio = { version = "1", default-features = false, features = ["rt", "macros"] }

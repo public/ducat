@@ -22,7 +22,7 @@ Status: the core (parsing, rounding, add, subtract, multiply, divide, convert at
 (allocate, split, instalments, schedule, chunk), cash rounding, tax (percentages, discounts, adding and extracting
 tax), `Fixed` decimals, `ExactMoney`, exchange rates (`Rate`, with their metadata, rate providers, `MoneyBag` and the rate-source parsers), rate fetchers for the ECB and the Bank of Canada (the `ducat-fetch` crate, sans-IO with a blocking ureq transport), amounts and numbers in words (the `ducat-words` crate), finance (day counts, interest, loans, savings,
 proration), Excel's functions, rounding policies, pricing and tiers, math, wire formats (google.type.Money, ISO 20022, dinero.js), currency data (historic codes, territories, crypto units, cash
-rules), payment processors (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna), exact money columns for sqlx (the `ducat-sqlx` crate: Postgres NUMERIC, BIGINT and the money composite, MySQL DECIMAL, SQLite TEXT and INTEGER), and the conformance runner. See [docs/design.md](docs/design.md).
+rules), payment processors (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klarna), exact money columns for sqlx and diesel (the `ducat-sqlx` and `ducat-diesel` crates: Postgres NUMERIC, BIGINT and the money composite, MySQL DECIMAL, SQLite TEXT and INTEGER), and the conformance runner. See [docs/design.md](docs/design.md).
 
 ## Conformance
 

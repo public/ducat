@@ -94,14 +94,10 @@ impl<C: Currency> MoneyValue for Money<C> {
 /// Checks that money is at its currency's exponent, the one scale a column of minor units or a
 /// fixed-currency decimal stores (ducat's `checkIsoScale`).
 fn check_exponent_scale<M: MoneyValue>(money: &M) -> Result<(), Error> {
-    let expected = u16::from(money.currency().exponent());
-    if money.scale() != expected {
-        return Err(Error::ScaleMismatch {
-            scale: money.scale(),
-            expected,
-        });
-    }
-    Ok(())
+    Ok(ducat_sql_core::check_exponent_scale(
+        money.currency(),
+        money.scale(),
+    )?)
 }
 
 /// The minor units to store in a BIGINT (Postgres, MySQL) or INTEGER (SQLite) column: `1234` for

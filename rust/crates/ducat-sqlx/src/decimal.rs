@@ -3,7 +3,8 @@
 use core::fmt;
 use core::str::FromStr;
 
-use ducat::{AnyMoney, CurrencyCode, Int, MAX_SCALE, Rounding};
+use ducat::{AnyMoney, CurrencyCode, Int};
+use ducat_sql_core::ColumnSize;
 
 use crate::{Error, MoneyValue};
 
@@ -27,11 +28,8 @@ use crate::{Error, MoneyValue};
 /// assert_eq!(price.to_string(), "-12.3400");
 /// # Ok::<(), ducat_sqlx::Error>(())
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
-pub struct Decimal {
-    units: Int,
-    scale: u16,
-}
+#[derive(Clone, PartialEq, Eq, Hash, Default)]
+pub struct Decimal(pub(crate) ducat_sql_core::Decimal);
 
 impl Decimal {
     /// The decimal `units × 10^−scale`.
@@ -41,34 +39,28 @@ impl Decimal {
     /// [`Error::Ducat`] with [`ducat::Error::InvalidScale`] for a scale beyond
     /// [`ducat::MAX_SCALE`].
     pub fn new(units: impl Into<Int>, scale: u16) -> Result<Self, Error> {
-        if scale > MAX_SCALE {
-            return Err(ducat::Error::InvalidScale.into());
-        }
-        Ok(Self {
-            units: units.into(),
-            scale,
-        })
+        Ok(Self(ducat_sql_core::Decimal::new(units.into(), scale)?))
     }
 
     /// The value in units of 10^−scale: `1234` for `12.34`.
     #[must_use]
     pub const fn units(&self) -> &Int {
-        &self.units
+        self.0.units()
     }
 
     /// The number of digits after the point.
     #[must_use]
     pub const fn scale(&self) -> u16 {
-        self.scale
+        self.0.scale()
     }
 
     /// The money's amount at its own scale.
     #[must_use]
     pub fn from_money<M: MoneyValue>(money: &M) -> Self {
-        Self {
-            units: money.units().clone(),
-            scale: money.scale(),
-        }
+        Self(ducat_sql_core::Decimal::from_money_parts(
+            money.units(),
+            money.scale(),
+        ))
     }
 
     /// Money in `currency`, keeping every digit and the stored scale, but never less than the
@@ -79,12 +71,7 @@ impl Decimal {
     ///
     /// None in practice: the scale only grows, up to [`ducat::MAX_SCALE`].
     pub fn to_money(&self, currency: CurrencyCode) -> Result<AnyMoney, Error> {
-        let money = AnyMoney::from_units(self.units.clone(), self.scale, currency)?;
-        let exponent = u16::from(currency.exponent());
-        if self.scale >= exponent {
-            return Ok(money);
-        }
-        Ok(money.to_scale(exponent, Rounding::Unnecessary)?)
+        Ok(self.0.to_money(currency)?)
     }
 
     /// Money in `currency` at the currency's exponent, without rounding: `12.3400` from a
@@ -96,54 +83,23 @@ impl Decimal {
     /// [`Error::Ducat`] with [`ducat::Error::Rounding`] when the value has more significant
     /// decimals than the currency's exponent.
     pub fn to_money_at_exponent(&self, currency: CurrencyCode) -> Result<AnyMoney, Error> {
-        let money = AnyMoney::from_units(self.units.clone(), self.scale, currency)?;
-        Ok(money.to_scale(u16::from(currency.exponent()), Rounding::Unnecessary)?)
+        Ok(self.0.to_money_at_exponent(currency)?)
     }
+}
 
-    /// The digits of the magnitude, the integer part's (without leading zeros, possibly empty)
-    /// and the fraction's (exactly `scale` digits).
-    pub(crate) fn split_digits(&self) -> (String, String) {
-        let digits = self.units.abs().to_string();
-        let scale = usize::from(self.scale);
-        if digits.len() > scale {
-            let (integer, fraction) = digits.split_at(digits.len() - scale);
-            let integer = if integer == "0" { "" } else { integer };
-            (integer.into(), fraction.into())
-        } else {
-            let mut fraction = "0".repeat(scale - digits.len());
-            fraction.push_str(&digits);
-            (String::new(), fraction)
-        }
-    }
-
-    /// The value from a sign and the digit string of `units` (ASCII digits, maybe empty for 0).
-    pub(crate) fn from_digits(negative: bool, digits: &str, scale: u16) -> Result<Self, Error> {
-        let trimmed = digits.trim_start_matches('0');
-        let units = if trimmed.is_empty() {
-            Int::ZERO
-        } else {
-            let magnitude: Int = trimmed
-                .parse()
-                .map_err(|_| Error::Malformed("not a decimal digit"))?;
-            if negative { -magnitude } else { magnitude }
-        };
-        Self::new(units, scale)
+impl fmt::Debug for Decimal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Decimal")
+            .field("units", self.units())
+            .field("scale", &self.scale())
+            .finish()
     }
 }
 
 impl fmt::Display for Decimal {
     /// The exact decimal at its scale: `12.34`, `-0.50`, `0.00`, `100`. Never an exponent.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (integer, fraction) = self.split_digits();
-        if self.units.is_negative() {
-            f.write_str("-")?;
-        }
-        f.write_str(if integer.is_empty() { "0" } else { &integer })?;
-        if !fraction.is_empty() {
-            f.write_str(".")?;
-            f.write_str(&fraction)?;
-        }
-        Ok(())
+        fmt::Display::fmt(&self.0, f)
     }
 }
 
@@ -161,41 +117,7 @@ impl FromStr for Decimal {
     /// [`Error::NotANumber`], [`Error::Infinite`], [`Error::Malformed`], or [`Error::Ducat`] with
     /// [`ducat::Error::InvalidScale`] for more than [`ducat::MAX_SCALE`] decimals.
     fn from_str(text: &str) -> Result<Self, Error> {
-        if text.eq_ignore_ascii_case("nan") {
-            return Err(Error::NotANumber);
-        }
-        if text.eq_ignore_ascii_case("infinity") || text.eq_ignore_ascii_case("inf") {
-            return Err(Error::Infinite { negative: false });
-        }
-        if text.eq_ignore_ascii_case("-infinity") || text.eq_ignore_ascii_case("-inf") {
-            return Err(Error::Infinite { negative: true });
-        }
-        let (negative, rest) = match text.strip_prefix('-') {
-            Some(rest) => (true, rest),
-            None => (false, text),
-        };
-        let (integer, fraction) = match rest.split_once('.') {
-            Some((integer, fraction)) => (integer, fraction),
-            None => (rest, ""),
-        };
-        let is_digits = |part: &str| part.bytes().all(|byte| byte.is_ascii_digit());
-        if integer.is_empty()
-            || !is_digits(integer)
-            || !is_digits(fraction)
-            || (fraction.is_empty() && rest.contains('.'))
-        {
-            return Err(Error::Malformed(
-                "expected decimal text, -?[0-9]+(.[0-9]+)?",
-            ));
-        }
-        let scale = u16::try_from(fraction.len()).map_err(|_| ducat::Error::InvalidScale)?;
-        if scale > MAX_SCALE {
-            return Err(ducat::Error::InvalidScale.into());
-        }
-        let mut digits = String::with_capacity(integer.len() + fraction.len());
-        digits.push_str(integer);
-        digits.push_str(fraction);
-        Self::from_digits(negative, &digits, scale)
+        Ok(Self(text.parse()?))
     }
 }
 
@@ -211,18 +133,12 @@ impl FromStr for Decimal {
 /// assert!(DecimalColumnSize::new(5, 4)?.fit(&price).is_err()); // two integer digits, room for one
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct DecimalColumnSize {
-    precision: u16,
-    scale: u16,
-}
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct DecimalColumnSize(pub(crate) ColumnSize);
 
 /// NUMERIC(19,4): 15 integer digits and 4 decimals, enough for every ISO 4217 exponent. ducat's
 /// default for its MySQL decimal column.
-pub const DEFAULT_DECIMAL_SIZE: DecimalColumnSize = DecimalColumnSize {
-    precision: 19,
-    scale: 4,
-};
+pub const DEFAULT_DECIMAL_SIZE: DecimalColumnSize = DecimalColumnSize(ColumnSize::DEFAULT);
 
 impl DecimalColumnSize {
     /// NUMERIC(`precision`, `scale`).
@@ -232,8 +148,8 @@ impl DecimalColumnSize {
     /// [`Error::InvalidColumnSize`] unless `precision` is at least 1 and `scale` at most
     /// `precision`.
     pub const fn new(precision: u16, scale: u16) -> Result<Self, Error> {
-        let size = Self { precision, scale };
-        if precision == 0 || scale > precision {
+        let size = Self(ColumnSize::new_unchecked(precision, scale));
+        if !size.0.is_valid() {
             return Err(Error::InvalidColumnSize(size));
         }
         Ok(size)
@@ -242,13 +158,13 @@ impl DecimalColumnSize {
     /// The total number of significant digits.
     #[must_use]
     pub const fn precision(&self) -> u16 {
-        self.precision
+        self.0.precision()
     }
 
     /// The digits after the point.
     #[must_use]
     pub const fn scale(&self) -> u16 {
-        self.scale
+        self.0.scale()
     }
 
     /// Checks that the column holds `currency`'s amounts without rounding: its scale is at
@@ -258,13 +174,7 @@ impl DecimalColumnSize {
     ///
     /// [`Error::ColumnScaleBelowExponent`].
     pub fn check_currency(&self, currency: CurrencyCode) -> Result<(), Error> {
-        if self.scale < u16::from(currency.exponent()) {
-            return Err(Error::ColumnScaleBelowExponent {
-                size: *self,
-                exponent: currency.exponent(),
-            });
-        }
-        Ok(())
+        Ok(self.0.check_currency(currency)?)
     }
 
     /// The exact decimal to bind for this column, or an error if the database would change the
@@ -279,31 +189,23 @@ impl DecimalColumnSize {
     /// [`Error::WouldRound`] for significant decimals beyond the column's scale;
     /// [`Error::TooManyIntegerDigits`].
     pub fn fit<M: MoneyValue>(&self, money: &M) -> Result<Decimal, Error> {
-        self.check_currency(money.currency())?;
-        let decimal = Decimal::from_money(money);
-        let (integer, fraction) = decimal.split_digits();
-        let significant = fraction.trim_end_matches('0').len();
-        if significant > usize::from(self.scale) {
-            return Err(Error::WouldRound {
-                size: *self,
-                decimals: u16::try_from(significant).unwrap_or(u16::MAX),
-            });
-        }
-        if integer.len() > usize::from(self.precision - self.scale) {
-            return Err(Error::TooManyIntegerDigits { size: *self });
-        }
-        if decimal.scale <= self.scale {
-            return Ok(decimal);
-        }
-        let mut digits = integer;
-        digits.push_str(&fraction[..usize::from(self.scale)]);
-        Decimal::from_digits(decimal.units.is_negative(), &digits, self.scale)
+        let decimal = self.0.fit(money.units(), money.scale(), money.currency())?;
+        Ok(Decimal(decimal))
+    }
+}
+
+impl fmt::Debug for DecimalColumnSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DecimalColumnSize")
+            .field("precision", &self.precision())
+            .field("scale", &self.scale())
+            .finish()
     }
 }
 
 impl fmt::Display for DecimalColumnSize {
     /// `NUMERIC(19,4)`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "NUMERIC({},{})", self.precision, self.scale)
+        fmt::Display::fmt(&self.0, f)
     }
 }
