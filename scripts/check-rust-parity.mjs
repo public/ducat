@@ -24,15 +24,9 @@
  * entry; any other member, and every options field, lives with its type.
  *
  * Also checked: every row's status is `same`, `divergent: [..](design.md#..)`, `not ported: by
- * design` with a reason, `missing`, or `pending: #<PR>`; no row appears twice; every `missing` and
- * `pending` row is named in the
+ * design` with a reason, or `missing`; no row appears twice; every `missing` row is named in the
  * "Missing, in proposed order" section as `entry` `name`; every link to a design.md section
  * resolves.
- *
- * `pending: #<PR>` is for an item an open ducat pull request adds, so whichever of the two lands
- * second is complete: it is accepted only while the item is absent from dist/, and fails once the
- * item exists, until the row gets a real status. (A pending row whose PR was closed unmerged has
- * to be deleted by hand.)
  *
  * Usage: node scripts/check-rust-parity.mjs [--list]   (--list prints the tracked rows and exits)
  */
@@ -271,7 +265,7 @@ function documentedRows() {
     }
     const status = cells[2] ?? '';
     if (
-      !/^(same|missing|pending: #\d+\b|divergent: \[[^\]]+\]\(design\.md#[a-z0-9-]+\)|not ported: by design\b.+)/.test(
+      !/^(same|missing|divergent: \[[^\]]+\]\(design\.md#[a-z0-9-]+\)|not ported: by design\b.+)/.test(
         status,
       )
     ) {
@@ -319,11 +313,8 @@ for (const [entry, sec] of documented) {
     stale.push(`${entry}: section for an entry package.json doesn't export`);
     continue;
   }
-  for (const [rowName, { status, line }] of sec) {
-    const pending = status.startsWith('pending:');
-    if (pending && names.has(rowName)) {
-      stale.push(`${PARITY}:${line}: ${entry} ${rowName}: exported now, so give it a real status`);
-    } else if (!pending && !names.has(rowName)) {
+  for (const [rowName, { line }] of sec) {
+    if (!names.has(rowName)) {
       stale.push(`${PARITY}:${line}: ${entry} ${rowName}: no such export or member`);
     }
   }
@@ -331,10 +322,9 @@ for (const [entry, sec] of documented) {
 const unordered = [];
 for (const [entry, sec] of documented) {
   for (const [rowName, { status, line }] of sec) {
-    const needsOrder = status.startsWith('missing') || status.startsWith('pending:');
-    if (needsOrder && !order.includes(`\`${entry}\` \`${rowName}\``)) {
+    if (status.startsWith('missing') && !order.includes(`\`${entry}\` \`${rowName}\``)) {
       unordered.push(
-        `${PARITY}:${line}: ${entry} ${rowName} is ${status.split(' ')[0].replace(':', '')} but not in "Missing, in proposed order"`,
+        `${PARITY}:${line}: ${entry} ${rowName} is missing but not in "Missing, in proposed order"`,
       );
     }
   }
