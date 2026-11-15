@@ -429,6 +429,17 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
   (`arb_currency`, `arb_money`) panic, with ducat's message, where ducat's arbitraries throw a `RangeError`: a strategy
   is built in test code, where a panic is the failure.
 
+- **Rounding modes have one name each.** `Rounding` is an enum of ECMA-402's ten modes plus `Unnecessary`, with
+  ECMA-402's names (`HalfExpand`, `HalfEven`, `Trunc`, `Expand`). ducat's `Rounding` object also spells them
+  `HalfUp`, `HalfDown`, `Bankers`, `Up` and `Down`; Rust has no variant aliases, and a second name for a mode is a
+  second thing to read in a match.
+- **Sums start at the currency's exponent.** `Sum` for `Money<C>` and `AnyMoney::try_sum` fold from zero at the
+  currency's exponent, so the result's scale is the largest of the items' and the exponent; ducat starts from the first
+  item, so items all below the exponent (EUR at scale 0) keep their scale. The values are equal; `identical` tells
+  them apart. The currency is always known, so ducat's `RangeError` for an empty list without one has no counterpart.
+- **A ratio string has one slash.** `Ratio`'s `FromStr` reads `"a/b"` with a decimal on each side; ducat's `ratio()`
+  splits at the first slash and reads the rest as a ratio again, so `"1/2/3"` is 3/2 there and `Error::Syntax` here.
+
 ## Goals
 - **The same answers as ducat,** checked by running ducat's conformance vectors, pinned to a ducat commit. The suite's
   implemented/skipped counts per operation are the measurable definition of "the feature set".

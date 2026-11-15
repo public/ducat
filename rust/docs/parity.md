@@ -42,7 +42,7 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 |---|---|---|---|
 | `CurrencyCode` | [`ducat::CurrencyCode`](../crates/ducat/src/currency.rs) | same | holds the code and its exponent |
 | `CurrencyInput` | `ducat::CurrencyCode`, `impl Currency` markers | same | a TS type for "a code or a currency" |
-| `CurrencyMismatchError` | `ducat::Error::CurrencyMismatch` | same | typed `Money<C>` makes the mismatch a compile error |
+| `CurrencyMismatchError` | `ducat::Error::CurrencyMismatch` | same | typed `Money<C>` makes the mismatch a compile error; `AnyMoney` operations return `Err(CurrencyMismatch)` where ducat throws, with `expected` the receiver's currency and `actual` the operand's, as ducat |
 | `CurrencyMismatchError#actual` | `Error::CurrencyMismatch { actual }` | same | |
 | `CurrencyMismatchError#expected` | `Error::CurrencyMismatch { expected }` | same | |
 | `CurrencyMismatchError#name` | `ducat::Error::kind` | same | |
@@ -50,31 +50,31 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `DEFAULT_ROUNDING` | — | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | every rounding operation takes a `Rounding` |
 | `ExtendMoneyOptions` | — | not ported: by design (Rust uses extension traits; there's no prototype to install on) | |
 | `ExtendMoneyOptions#owner` | — | not ported: by design (as `extendMoney`) | |
-| `Factor` | [`ducat::Factor`](../crates/ducat/src/ratio.rs) | same | integers, decimal strings, `Ratio`, `f64` by `TryFrom` |
+| `Factor` | [`ducat::Factor`](../crates/ducat/src/ratio.rs) | same | integers, decimal strings and `"a/b"` (`&str`), `Ratio`, `Fixed`; a float through `Ratio::try_from(f64)`, under ducat's binary64 rule. Failures as ducat's `ratio()`: `Syntax` (`SyntaxError`), `DivisionByZero`, `NotFinite`, `TooManyDigits`, `ExponentOutOfRange` (`RangeError`); but see `ratio` for `"1/2/3"` |
 | `ISO_4217_PUBLISHED` | `ducat::ISO_4217_PUBLISHED` | same | |
 | `ISO_EXPONENTS` | `ducat::CurrencyCode::iso_codes`, `CurrencyCode::exponent` | same | an iterator, not a record |
 | `ISO_NON_MONETARY` | `ducat::CurrencyCode::iso_non_monetary` | same | |
 | `IsoCurrencyCode` | `ducat::iso` markers (`ducat::iso::Eur`) | same | |
 | `Money` | `ducat::Money<C>`, `ducat::AnyMoney` | same | |
 | `Money#abs` | `Money::abs`, `AnyMoney::abs` | same | |
-| `Money#add` | `Add` for `Money<C>`; `AnyMoney::checked_add` | same | |
+| `Money#add` | `Add` for `Money<C>`; `AnyMoney::checked_add` | same | `AnyMoney::checked_add` returns `Err(CurrencyMismatch)` where ducat throws `CurrencyMismatchError`; a `Money<C>` and an `AnyMoney` mix after `.to_any()` or `try_into()` |
 | `Money#clamp` | — | missing | `Ord::clamp` panics for `lo > hi` where TS throws `RangeError`; `AnyMoney` has none. The fix adds `clamp(&self, lo, hi) -> Result` on `Money<C>` and `AnyMoney` (an `Err` for `lo > hi`, `CurrencyMismatch` across currencies) |
-| `Money#compare` | `Ord::cmp` for `Money<C>`; `AnyMoney::compare` | same | |
+| `Money#compare` | `Ord::cmp` for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare` returns `Result<Ordering, _>`: `Err(CurrencyMismatch)` where ducat throws |
 | `Money#currency` | `Money::currency`, `AnyMoney::currency` | same | |
 | `Money#divide` | `Money::divide`, `AnyMoney::divide` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the `Rounding` is required |
-| `Money#equals` | `==` (`PartialEq` by value), `eq_value` | same | |
-| `Money#greaterThan` | `>` (`PartialOrd`) for `Money<C>`; `AnyMoney::compare` | same | |
-| `Money#greaterThanOrEqual` | `>=` for `Money<C>`; `AnyMoney::compare` | same | |
+| `Money#equals` | `==` (`PartialEq` by value), `eq_value` | same | another currency is `false`, never an error, as ducat's (`AnyMoney`'s `==` and `eq_value`) |
+| `Money#greaterThan` | `>` (`PartialOrd`) for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_gt()`: `Err(CurrencyMismatch)` where ducat throws |
+| `Money#greaterThanOrEqual` | `>=` for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_ge()`: `Err(CurrencyMismatch)` where ducat throws |
 | `Money#hasFraction` | — | missing | whether the amount has a sub-unit part; `units() % 10^scale` by hand |
-| `Money#identical` | `Money::identical`, `AnyMoney::identical` | same | |
+| `Money#identical` | `Money::identical`, `AnyMoney::identical` | same | another currency is `false`, as ducat's |
 | `Money#isNegative` | `Money::is_negative`, `AnyMoney::is_negative` | same | |
 | `Money#isPositive` | `Money::is_positive`, `AnyMoney::is_positive` | same | |
 | `Money#isZero` | `Money::is_zero`, `AnyMoney::is_zero` | same | |
-| `Money#lessThan` | `<` for `Money<C>`; `AnyMoney::compare` | same | |
-| `Money#lessThanOrEqual` | `<=` for `Money<C>`; `AnyMoney::compare` | same | |
+| `Money#lessThan` | `<` for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_lt()`: `Err(CurrencyMismatch)` where ducat throws |
+| `Money#lessThanOrEqual` | `<=` for `Money<C>`; `AnyMoney::compare` | same | `AnyMoney::compare(..)?.is_le()`: `Err(CurrencyMismatch)` where ducat throws |
 | `Money#majorPart` | — | missing | the whole units; with `minorPart`, for receipts and cheque printing |
-| `Money#max` | `Ord::max` for `Money<C>` | same | `AnyMoney` has none |
-| `Money#min` | `Ord::min` for `Money<C>` | same | `AnyMoney` has none |
+| `Money#max` | `Ord::max` for `Money<C>` | missing | `AnyMoney` has none (ducat throws `CurrencyMismatchError` across currencies), and `Ord::max` returns the *second* of two equal values, where ducat's first wins ties (1.0 EUR at scale 1 against 1.00 EUR keeps scale 1); it isn't variadic. The fix adds `max` on `Money<C>` and `AnyMoney` (`Err(CurrencyMismatch)`), first wins ties |
+| `Money#min` | `Ord::min` for `Money<C>` | missing | `AnyMoney` has none (ducat throws `CurrencyMismatchError` across currencies); `Ord::min` keeps the first on ties, as ducat, but isn't variadic. The fix adds `min` on `AnyMoney` (`Err(CurrencyMismatch)`) |
 | `Money#minor` | `Money::units`, `AnyMoney::units` | same | the integer at the value's scale |
 | `Money#minorPart` | — | missing | the sub-unit digits |
 | `Money#multiply` | `Money::multiply`, `AnyMoney::multiply` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
@@ -82,43 +82,43 @@ The core: [`ducat`](../crates/ducat/src/lib.rs)'s [`Money<C>`](../crates/ducat/s
 | `Money#round` | `Money::round`, `AnyMoney::round` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#scale` | `Money::scale`, `AnyMoney::scale` | same | |
 | `Money#sign` | `Money::signum`, `AnyMoney::signum` | same | |
-| `Money#subtract` | `Sub` for `Money<C>`; `AnyMoney::checked_sub` | same | |
+| `Money#subtract` | `Sub` for `Money<C>`; `AnyMoney::checked_sub` | same | `AnyMoney::checked_sub` returns `Err(CurrencyMismatch)` where ducat throws |
 | `Money#toDecimal` | `Money::to_decimal`, `AnyMoney::to_decimal` | same | |
 | `Money#toJSON` | `serde::Serialize` (feature `serde`) | divergent: [serde writes the value's scale, reads at the exponent](design.md#decisions-made-while-building-milestone-1) | |
-| `Money#toMinor` | `Money::to_minor`, `AnyMoney::to_minor` | same | |
+| `Money#toMinor` | `Money::to_minor`, `AnyMoney::to_minor` | same | `Int`, not a `bigint`; `Err(Rounding)` for digits below the minor unit, where ducat throws `RoundingError` |
 | `Money#toMinorNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `Money#toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
-| `Money#toScale` | `Money::to_scale`, `AnyMoney::to_scale` | same | the `Rounding` is required |
-| `Money#toScaledUnits` | `Money::units`, `AnyMoney::units` | same | |
+| `Money#toScale` | `Money::to_scale`, `AnyMoney::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the `Rounding` is required (ducat defaults to halfExpand); a scale past `MAX_SCALE` is `Err(InvalidScale)` where ducat throws `RangeError`, and the `u16` rules out negative and fractional scales |
+| `Money#toScaledUnits` | `Money::units`, `AnyMoney::units` | same | an `&Int`, ducat's `bigint` |
 | `Money#toString` | `Display` (`12.34 EUR`) | divergent: [display is exact](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#with` | — | not ported: by design (idiomatic Rust, not transliterated TypeScript: a closure or a plain call does it) | a pipeline helper |
 | `MoneyJSON` | the `serde` shape `{"amount":"12.34","currency":"EUR"}` | same | no named Rust type |
 | `MoneyOperand` | — | not ported: by design (TS typing device; `Money<C>` operators take values and references) | |
-| `MoneyOptions` | arguments of `Money::parse_at` / `AnyMoney::parse_at` | same | |
-| `MoneyOptions#rounding` | the `Rounding` argument of `parse_at` | same | |
-| `MoneyOptions#scale` | the `scale` argument of `parse_at`, `from_units` | same | |
+| `MoneyOptions` | arguments of `Money::parse_at` / `AnyMoney::parse_at` | same | the arguments of `parse_at` (strings) and `from_f64_at` (floats); `FromStr` and `from_f64` are the no-options call |
+| `MoneyOptions#rounding` | the `Rounding` argument of `parse_at` | same | the `Rounding` argument of `parse_at`, `from_f64_at`; `Rounding::Unnecessary` is ducat's default (`Err(Rounding)` where it throws `RoundingError`) |
+| `MoneyOptions#scale` | the `scale` argument of `parse_at`, `from_units` | same | the `scale` argument of `parse_at`, `from_f64_at`, `from_units`: `Err(InvalidScale)` past `MAX_SCALE`, where ducat throws `RangeError` |
 | `Ratio` | [`ducat::Ratio`](../crates/ducat/src/ratio.rs) | same | |
-| `Rounding` | [`ducat::Rounding`](../crates/ducat/src/rounding.rs) | same | plus `Unnecessary` |
+| `Rounding` | [`ducat::Rounding`](../crates/ducat/src/rounding.rs) | divergent: [rounding modes have one name each](design.md#parity-decisions) | the enum has ECMA-402's names only (`HalfExpand`, `HalfEven`, `Trunc`...); ducat's `Rounding` object adds `HalfUp`, `HalfDown`, `Bankers`, `Up` and `Down` aliases; plus `Unnecessary` |
 | `RoundingError` | `ducat::Error::Rounding` | same | |
 | `RoundingError#name` | `ducat::Error::kind` | same | |
 | `RoundingInput` | `ducat::RoundingInput` | same | `Mode` or `Policy` |
-| `RoundingMode` | `ducat::Rounding` | same | |
+| `RoundingMode` | `ducat::Rounding` | same | an enum, so no invalid mode (ducat throws `RangeError` for one, when rounding is needed); `FromStr` reads ducat's strings (`"halfEven"`) |
 | `RoundingPolicy` | [`ducat::policy::RoundingPolicy`](../crates/ducat/src/policy.rs) | same | |
 | `ToMinorNumberOptions` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `ToMinorNumberOptions#lossy` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
-| `assertCurrency` | `TryFrom<AnyMoney> for Money<C>` | same | |
-| `currencyExponent` | `ducat::CurrencyCode::exponent` | same | |
+| `assertCurrency` | `TryFrom<AnyMoney> for Money<C>` | same | `Err(CurrencyMismatch)` where ducat throws `CurrencyMismatchError`; ducat's `TypeError` for a non-`Money` has no Rust counterpart |
+| `currencyExponent` | `ducat::CurrencyCode::exponent` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) | on a `CurrencyCode` value; a string goes through `parse::<CurrencyCode>()?` first (`Err(UnknownCurrency)` where ducat throws `RangeError`). A custom currency carries its exponent: there is no `defineCurrency`'d code to look up by string |
 | `defineCurrency` | `ducat::CurrencyCode::custom`, `ducat::define_currency!` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) | |
 | `extendMoney` | — | not ported: by design (Rust uses extension traits; there's no prototype to install on) | |
 | `fromJSON` | `serde::Deserialize` | divergent: [reads at the currency's exponent](design.md#decisions-made-while-building-milestone-1) | |
-| `fromMinor` | `Money::from_minor`, `AnyMoney::from_minor` | same | |
-| `isCurrency` | `str::parse::<CurrencyCode>().is_ok()` | same | |
+| `fromMinor` | `Money::from_minor`, `AnyMoney::from_minor`; `from_units` with a scale | same | `from_minor` at the exponent, `from_units(units, scale)` at another scale (`Err(InvalidScale)` past `MAX_SCALE`, ducat's `RangeError`); `Int` takes any integer, so ducat's `RangeError` for an unsafe or fractional number has no counterpart |
+| `isCurrency` | `str::parse::<CurrencyCode>().is_ok()` | divergent: [no registry](design.md#decisions-made-while-building-milestone-1) | true for ISO 4217 codes with a minor unit, as ducat; a code `defineCurrency` registered is true in ducat, but Rust has no registry (`CurrencyCode::custom` makes one without registering it) |
 | `isMoney` | — | not ported: by design (the type system: a value is a `Money<C>` or not) | |
 | `isMoneyIn` | `TryFrom<AnyMoney> for Money<C>` | not ported: by design (the type system) | |
-| `money` | `Money::parse_at`, `FromStr`, `from_f64`, `from_f64_at` (and `AnyMoney`'s) | same | |
-| `ratio` | `ducat::Ratio::new` | same | |
-| `sum` | `Sum` for `Money<C>`; `AnyMoney::try_sum` | same | |
-| `zero` | `Money::zero`, `AnyMoney::zero` | same | |
+| `money` | `Money::parse_at`, `FromStr`, `from_f64`, `from_f64_at` (and `AnyMoney`'s) | same | strings at the exponent (`FromStr`) or a scale (`parse_at`), floats (`from_f64`, `from_f64_at`); a `bigint` of major units is `from_units(n, 0)?.to_scale(e, Rounding::Unnecessary)`. The same failures in ducat's order: `Syntax` (`SyntaxError`), `ExponentOutOfRange`, `InvalidScale`, `NotFinite` (`RangeError`), then `Rounding` before `TooManyDigits` for a float; an unknown code fails when the `CurrencyCode` is parsed (`UnknownCurrency`) |
+| `ratio` | `ducat::Ratio::new`, `Ratio`'s `FromStr`, `Ratio::div` | divergent: [a ratio string has one slash](design.md#parity-decisions) | `Ratio::new` takes two integers; two decimals are `"1.5/2"` or `Ratio::div`. `DivisionByZero` where ducat throws `RangeError`. ducat reads `"1/2/3"` as 1/(2/3) = 3/2 (it splits at the first slash and recurses), where Rust's `FromStr` refuses it with `Syntax` |
+| `sum` | `Sum` for `Money<C>`; `AnyMoney::try_sum` | divergent: [sums start at the currency's exponent](design.md#parity-decisions) | `Sum` for `Money<C>` and `AnyMoney::try_sum(items, currency)` (`Err(CurrencyMismatch)` where ducat throws); the currency is always known, so ducat's `RangeError` for an empty list without one can't happen. The result's scale is the largest of the items' *and the exponent*: one EUR item at scale 0 sums to scale 2 in Rust, scale 0 in ducat |
+| `zero` | `Money::zero`, `AnyMoney::zero` | same | at the exponent; ducat's `scale` argument is `from_units(0, scale)` (`Err(InvalidScale)` past `MAX_SCALE`) |
 
 ### `./fn`
 
@@ -1327,8 +1327,10 @@ Re-exports every plugin entry and `./fn`'s functions, and installs every plugin'
 Every `missing` row, grouped into pull requests in the order users would hit them. Five pieces are decided (marked
 **decided**); the rest are proposals.
 
-1. **Checked clamp and rate validity** (`ducat`, one small PR): `.` `Money#clamp`, `./fn` `clamp`,
-   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`. `clamp(&self, lo, hi) -> Result` on `Money`,
+1. **Checked clamp, min and max, and rate validity** (`ducat`, one small PR): `.` `Money#clamp`, `./fn` `clamp`,
+   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`, `.` `Money#min`, `.` `Money#max`. `min` and `max`
+   on `AnyMoney` (`Err(CurrencyMismatch)`), and a `max` on `Money<C>` that keeps the first of equal values, as ducat
+   (`Ord::max` keeps the second). `clamp(&self, lo, hi) -> Result` on `Money`,
    `AnyMoney` and `ExactMoney` (an `Err` for `lo > hi` and across currencies, where `Ord::clamp` panics; `Money`
    bounds for `ExactMoney`), and a public `Rate::check_validity(&self, at) -> Result<(), Error>`. `multiply_at` is
    not needed: `multiply` with a scaled `RoundingPolicy` already rounds once into another scale.
