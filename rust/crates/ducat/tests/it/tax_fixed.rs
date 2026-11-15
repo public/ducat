@@ -8,9 +8,7 @@ use ducat::iso::{Eur, Gbp};
 use ducat::{Error, Int, Money, Rounding};
 use proptest::prelude::*;
 
-fn eur(text: &str) -> Money<Eur> {
-    text.parse().unwrap()
-}
+use crate::common::eur;
 
 fn fixed(text: &str) -> Fixed {
     text.parse().unwrap()

@@ -46,7 +46,7 @@ subject.
 
 ## The Rust port
 
-`rust/` is a Rust port of ducat, checked against `spec/` by `rust/crates/ducat/tests/spec.rs` (the
+`rust/` is a Rust port of ducat, checked against `spec/` by `rust/crates/ducat/tests/it/spec.rs` (the
 `Rust` workflow; locally, `cargo test` in `rust/`). A pull request that changes `spec/` or `data/`
 keeps it green:
 

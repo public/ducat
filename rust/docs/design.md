@@ -10,11 +10,11 @@ Milestone 5a added rounding policies (`RoundingPolicy`, accepted wherever a mode
 pricing, tiers and math, with their vectors in `spec/`.
 
 Milestone 5b added the currency data (numeric codes, historic codes, territories, crypto units, CLDR's cash
-rules and `cash_policy`), generated from `data/` by `tests/currency_data.rs` with a drift check, as for ISO. The
+rules and `cash_policy`), generated from `data/` by `tests/it/currency_data.rs` with a drift check, as for ISO. The
 ISO exponent, CLDR's display digits and the cash rules stay separate figures.
 
 Milestone 5c added the payment processors, one feature and module each under `ducat::processors`, with their
-tables generated from `data/` by `tests/processor_tables.rs` with a drift check. Integer amounts are `i64`, refused
+tables generated from `data/` by `tests/it/processor_tables.rs` with a drift check. Integer amounts are `i64`, refused
 beyond 2^53 − 1 on the way to the processor as in ducat, and read back whatever their size (ducat refuses only
 unsafe JavaScript numbers there, and reads any `bigint`); the `from_*` constructors take a `CurrencyCode`, so only the `&str` lookups are
 case-insensitive (Adyen's excepted).
@@ -284,7 +284,7 @@ lives").
    result doesn't fit, it computes the same quotient in arbitrary precision. Differential proptests check the two
    paths against each other and against num-bigint around the boundaries (±`i128::MAX`, `i128::MIN`, and products
    just past them).
-9. **The ISO table is committed generated code.** `tests/iso_table.rs` is the generator (it reads the repository's
+9. **The ISO table is committed generated code.** `tests/it/iso_table.rs` is the generator (it reads the repository's
    `data/iso4217-list-one.xml`) and fails when `src/iso_table.rs` is stale; `DUCAT_REGENERATE=1` rewrites it.
 10. **Features:** `std`, `iso` (the marker types; the ISO table itself is always present, since `CurrencyCode`
     parsing needs it) and `serde`, all default.
@@ -321,7 +321,7 @@ lives").
   and `data/` from the same checkout, so the Rust port always runs the spec at its own commit: a spec change and the
   Rust change it needs land in one pull request, and there is no vendored copy to drift. `rust/` is not part of the
   npm package.
-- **The runner:** `rust/crates/ducat/tests/spec.rs` maps each neutral operation to the Rust API. It runs every vector
+- **The runner:** `rust/crates/ducat/tests/it/spec.rs` maps each neutral operation to the Rust API. It runs every vector
   it knows, and fails on an unknown operation unless that operation is listed as "not yet". It prints implemented,
   skipped (with the reason) and failed counts per operation and area, checks each file's structure, checks the
   number of cases per area (so a lost file fails), and changes one expectation per implemented operation to show

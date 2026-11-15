@@ -7,21 +7,13 @@
 
 use ducat::convert::{
     AnyRate, BoxedProvider, ConvertOptions, MoneyBag, ProviderConvertOptions, Rate, RateInfo,
-    RateProvider, RateQuery, RateQuote, RateTable, RateType, Time, TotalOptions, UtcInstant, chain,
+    RateProvider, RateQuery, RateQuote, RateTable, RateType, TotalOptions, UtcInstant, chain,
     comparator, from_fn, identity, rate_of, reversed, sort_by_value, sum_by_currency, via,
 };
 use ducat::iso::{Eur, Jpy, Usd};
-use ducat::{AnyMoney, CurrencyCode, Error, Money, Rounding};
+use ducat::{AnyMoney, Error, Money, Rounding};
 
-type Result = core::result::Result<(), Error>;
-
-fn code(text: &str) -> CurrencyCode {
-    text.parse().unwrap()
-}
-
-fn time(text: &str) -> Time {
-    text.parse().unwrap()
-}
+use crate::common::{Result, code, time};
 
 fn at(text: &str) -> RateQuery {
     RateQuery::at(time(text))

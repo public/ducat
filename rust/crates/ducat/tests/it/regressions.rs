@@ -12,13 +12,7 @@ use num_bigint::BigInt;
 use num_integer::Integer;
 use proptest::prelude::*;
 
-fn eur(text: &str) -> Money<Eur> {
-    text.parse().unwrap()
-}
-
-fn code(text: &str) -> CurrencyCode {
-    text.parse().unwrap()
-}
+use crate::common::{code, eur};
 
 fn big(value: &Int) -> BigInt {
     value.to_string().parse().unwrap()

@@ -27,5 +27,5 @@ rules), payment processors (Stripe, Adyen, Checkout.com, PayPal, Braintree, Klar
 ## Conformance
 
 The runner reads the repository's `spec/` and `data/` directly, so the Rust port is always checked against the spec
-at the same commit. From `rust/`, `cargo test -p ducat --test spec` runs every vector and prints what passed, failed
+at the same commit. From `rust/`, `cargo test -p ducat --test it spec:: -- --nocapture` runs every vector and prints what passed, failed
 and was skipped, and why, per area and operation.

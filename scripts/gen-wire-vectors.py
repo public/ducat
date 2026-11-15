@@ -15,7 +15,7 @@ fractions from the formats' published definitions, independently of ducat's Type
 
     spec/vectors/wire/formats.json
 
-checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/spec.rs.
+checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/it/spec.rs.
 
 Deterministic: regenerate with
     python3 scripts/gen-wire-vectors.py
