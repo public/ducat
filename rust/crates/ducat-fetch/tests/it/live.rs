@@ -1,6 +1,5 @@
 //! A smoke test against the real endpoints, through ureq. Ignored by default (CI has no
-//! network): `cargo test -p ducat-fetch --test live -- --ignored`.
-#![cfg(feature = "ureq")]
+//! network): `cargo test -p ducat-fetch --test it live:: -- --ignored`.
 
 use ducat::convert::Date;
 use ducat_fetch::{

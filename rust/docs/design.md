@@ -179,11 +179,11 @@ of the port that touches the network. It reuses `ducat::convert`'s `ecb` and `bo
   - The body is read as UTF-8 with replacement characters, as `Response.text()` does. `UreqTransport` limits it to
     64 MiB by default (`body_limit`; the full SDMX history is about 15 MB): ureq's own default is 10 MB.
   - No global fetch, so ducat's `No fetch available` error has no counterpart.
-- **Tests:** `tests/fetch.rs` reads the fixtures ducat's fetch tests read (`spec/fixtures/ecb/eurofxref-daily.xml`,
+- **Tests:** `tests/it/fetch.rs` reads the fixtures ducat's fetch tests read (`spec/fixtures/ecb/eurofxref-daily.xml`,
   `ecb/eurofxref-hist-2d.xml`, `ecb-sdmx/exr-d-nodata.csv`, `ecb-sdmx/exr-d-dataonly.csv`,
   `boc/fx-rates-daily.json`) in place, through a fake transport that records each request; the URLs and headers are
   asserted as literals, byte for byte, and were checked against `fetch.ts` run under vitest with a recording fetch.
-  `spec/vectors/` has no fetch area, so there is no spec test; a test fails if one appears. `tests/live.rs` calls the
+  `spec/vectors/` has no fetch area, so there is no spec test; a test fails if one appears. `tests/it/live.rs` calls the
   real endpoints through `UreqTransport` and is `#[ignore]`d: CI makes no requests.
 
 ### Coverage
