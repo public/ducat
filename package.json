@@ -491,6 +491,7 @@
     "gen:fetch": "node scripts/gen-currencies.mjs --check --fetch",
     "bench": "node scripts/bench-all.mjs",
     "size": "node scripts/size.mjs",
+    "parity:check": "pnpm build && node scripts/check-rust-parity.mjs",
     "lint": "oxlint --deny-warnings",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "fmt": "oxfmt",
