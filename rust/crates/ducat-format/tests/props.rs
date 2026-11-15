@@ -7,21 +7,9 @@ use std::time::{Duration, Instant};
 use ducat::{AnyMoney, CurrencyCode, Int, MAX_SCALE, Rounding};
 use ducat_format::{
     CurrencyDisplay, CurrencySign, Error, FormatOptions, Locale, ParseMoneyOptions, ParseOptions,
-    SyntaxError, format, format_to_parts, locales, parse, parse_money,
+    format, format_to_parts, locales, parse, parse_money,
 };
 use proptest::prelude::*;
-
-/// The text around the number: before its first digit and after its last.
-fn affix(text: &str) -> impl Iterator<Item = char> + '_ {
-    let first = text.find(|ch: char| ch.is_numeric()).unwrap_or(text.len());
-    let last = text.rfind(|ch: char| ch.is_numeric()).map_or(0, |at| {
-        at + text[at..].chars().next().map_or(0, char::len_utf8)
-    });
-    text[..first].chars().chain(text[last.max(first)..].chars())
-}
-
-/// Characters in CLDR's currency symbols that ducat's parse refuses around a number.
-const REFUSED: [char; 2] = ['/', '\u{dca}'];
 
 /// The most one call may take, a generous bound for the work the limits allow.
 const SLOW: Duration = Duration::from_secs(2);
@@ -180,26 +168,14 @@ proptest! {
         let mut read = ParseOptions::default();
         read.scale = Some(amount.scale());
         let back = parse(&text, amount.currency(), &locale, &read);
-        // ducat's parse takes letters, currency symbols, spaces, bidi marks, `.`, parentheses and
-        // signs around the number, so it refuses symbols with other characters as ducat's
-        // TypeScript does (PEN's `S/` in es-PE, PAB's `B/.`, XOF's Sinhala symbol with a virama):
-        // see `refuses_symbols_outside_its_affix_characters`
-        // a name is letters, and some scripts' names carry combining marks ducat's affix set
-        // doesn't take (Malayalam's virama), so those are refused as the symbols above are
-        let name_refused = display == CurrencyDisplay::Name && affix(&text).any(|ch| {
-            !(ch.is_alphabetic()
-                || ch.is_whitespace()
-                || "().+-−\u{a0}\u{202f}\u{200b}\u{200e}\u{200f}\u{61c}".contains(ch))
-        });
-        // a name with a parenthesis or hyphen reads as negative, as ducat's TypeScript reads it:
-        // see `reads_signs_in_names_as_ducat_does`
-        let name_signed = display == CurrencyDisplay::Name
-            && text.trim_start_matches(|ch: char| !ch.is_alphabetic()).contains(['(', ')', '-', '−']);
-        prop_assume!(!name_signed);
-        if name_refused || REFUSED.iter().any(|ch| text.contains(*ch)) {
-            prop_assert_eq!(back, Err(Error::Syntax(SyntaxError::UnexpectedCharacters)));
-            return Ok(());
-        }
+        // the sign first, on its own: a parse that turns a positive amount negative is the worst
+        // failure (a name with a parenthesis or hyphen, CLF's "(UF)", once did in ducat)
+        let sign_of = |money: &AnyMoney| money.signum();
+        prop_assert_eq!(
+            back.as_ref().map(sign_of),
+            Ok(sign_of(&amount)),
+            "sign of {} in {}: {:?}", amount.to_decimal(), name, text
+        );
         prop_assert_eq!(back.as_ref(), Ok(&amount), "{} in {}: {:?}", amount.to_decimal(), name, text);
         // the code is unambiguous, so parse_money detects it
         if display == CurrencyDisplay::Code {
@@ -305,44 +281,109 @@ fn refuses_text_past_the_limit() {
     );
 }
 
-/// ducat's TypeScript refuses these too (Node 24): `parse(format(money('1234.50', 'PEN'), 'es-PE'),
-/// 'PEN', 'es-PE')` throws "unexpected characters"; ducat-format keeps to ducat's rule.
-#[cfg(all(feature = "es", feature = "si"))]
+/// The currency's own symbol and name count as a whole, whatever their characters, and add no
+/// sign, as in ducat since ducat#364: PEN's `S/` in es-PE, PAB's `B/.`, XOF's Sinhala symbol (a
+/// virama), Malayalam and French names, CLF's `(UF)` and BAM's hyphen.
+#[cfg(all(
+    feature = "es",
+    feature = "si",
+    feature = "en",
+    feature = "fr",
+    feature = "ml"
+))]
 #[test]
-fn refuses_symbols_outside_its_affix_characters() {
-    for (amount, code, tag, written) in [
-        ("1234.50", "PEN", "es-PE", "S/\u{a0}1,234.50"),
-        ("1234.50", "PAB", "es-PA", "B/.\u{a0}1,234.50"),
-        ("1234", "XOF", "si", "සිෆ්එ\u{a0}1,234"),
+fn reads_its_own_symbols_and_names() {
+    let name = FormatOptions::new().display(CurrencyDisplay::Name);
+    let plain = FormatOptions::default();
+    for (amount, code, tag, options, written) in [
+        ("1234.50", "PEN", "es-PE", &plain, Some("S/\u{a0}1,234.50")),
+        ("-1234.50", "PEN", "es-PE", &plain, None),
+        ("1234.50", "PAB", "es-PA", &plain, Some("B/.\u{a0}1,234.50")),
+        ("1234", "XOF", "si", &plain, Some("සිෆ්එ\u{a0}1,234")),
+        ("5.00", "USD", "ml", &name, None),
+        ("1.0000", "CLF", "fr", &name, None),
+        (
+            "1.0000",
+            "CLF",
+            "en",
+            &name,
+            Some("1.0000 Chilean units of account (UF)"),
+        ),
+        ("-1.0000", "CLF", "en", &name, None),
+        (
+            "5.00",
+            "BAM",
+            "en",
+            &name,
+            Some("5.00 Bosnia-Herzegovina convertible marks"),
+        ),
+        ("-5.00", "BAM", "en", &name, None),
     ] {
         let locale = Locale::new(tag).unwrap();
         let amount = AnyMoney::parse(amount, CurrencyCode::iso(code).unwrap()).unwrap();
-        let text = format(&amount, &locale, &FormatOptions::default()).unwrap();
-        assert_eq!(text, written);
-        assert_eq!(
-            parse(&text, amount.currency(), &locale, &ParseOptions::default()),
-            Err(Error::Syntax(SyntaxError::UnexpectedCharacters))
-        );
+        let text = format(&amount, &locale, options).unwrap();
+        if let Some(written) = written {
+            assert_eq!(text, written);
+        }
+        let back = parse(&text, amount.currency(), &locale, &ParseOptions::default()).unwrap();
+        assert_eq!(back.signum(), amount.signum(), "{text:?}");
+        assert_eq!(back, amount, "{text:?}");
     }
+    assert_eq!(
+        parse_money(
+            "S/ 1,234.50",
+            &Locale::new("es-PE").unwrap(),
+            &ParseMoneyOptions::default()
+        )
+        .unwrap()
+        .to_decimal(),
+        "1234.50"
+    );
 }
 
-/// ducat's parse takes a parenthesis or minus anywhere around the number as negative, so a name
-/// with one reads as negative, as in ducat's TypeScript on Node 24:
-/// `parse(format(money('1.0000', 'CLF'), 'en', { currencyDisplay: 'name' }), 'CLF', 'en')` is
-/// -1.0000. ducat-format keeps to ducat's rule.
-#[cfg(feature = "en")]
+/// Still strict: the currency's text counts only as a whole and only the expected currency's,
+/// and a sign outside it still counts.
+#[cfg(all(feature = "es", feature = "en"))]
 #[test]
-fn reads_signs_in_names_as_ducat_does() {
-    let english = Locale::new("en").unwrap();
-    let name = FormatOptions::new().display(CurrencyDisplay::Name);
-    for (amount, code, written) in [
-        ("1.0000", "CLF", "1.0000 Chilean units of account (UF)"),
-        ("5.00", "BAM", "5.00 Bosnia-Herzegovina convertible marks"),
+fn takes_its_own_text_only_as_a_whole() {
+    use ducat_format::SyntaxError;
+
+    let pen = CurrencyCode::iso("PEN").unwrap();
+    let peru = Locale::new("es-PE").unwrap();
+    let read = |text: &str, code: CurrencyCode, locale: &Locale| {
+        parse(text, code, locale, &ParseOptions::default())
+    };
+    for text in [
+        "S/x 1,234.50",
+        "xS/ 1,234.50",
+        "S/# 1,234.50",
+        "S/ 1,234.50 /",
     ] {
-        let amount = AnyMoney::parse(amount, CurrencyCode::iso(code).unwrap()).unwrap();
-        let text = format(&amount, &english, &name).unwrap();
-        assert_eq!(text, written);
-        let back = parse(&text, amount.currency(), &english, &ParseOptions::default()).unwrap();
-        assert_eq!(back.to_decimal(), format!("-{}", amount.to_decimal()));
+        assert_eq!(
+            read(text, pen, &peru),
+            Err(Error::Syntax(SyntaxError::UnexpectedCharacters)),
+            "{text:?}"
+        );
     }
+    let usd = CurrencyCode::iso("USD").unwrap();
+    assert_eq!(
+        read("S/ 1,234.50", usd, &peru),
+        Err(Error::Syntax(SyntaxError::UnexpectedCharacters))
+    );
+    assert_eq!(
+        read("-S/ 1,234.50", pen, &peru).unwrap().to_decimal(),
+        "-1234.50"
+    );
+    assert_eq!(
+        read("(S/ 1,234.50)", pen, &peru).unwrap().to_decimal(),
+        "-1234.50"
+    );
+    let clf = CurrencyCode::iso("CLF").unwrap();
+    let english = Locale::new("en").unwrap();
+    assert_eq!(
+        read("(1.0000 Chilean units of account)", clf, &english)
+            .unwrap()
+            .to_decimal(),
+        "-1.0000"
+    );
 }

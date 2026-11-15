@@ -72,6 +72,8 @@ fn is_affix(ch: char) -> bool {
 /// CLDR gives the currency one (en-150's EUR), else the locale's.
 struct CurrencyFormat {
     patterns: [&'static str; 2],
+    /// The decimal pattern, in which `Intl` writes a long name's number (ml, mr group it in lakhs).
+    decimal_pattern: &'static str,
     decimal: &'static str,
     group: &'static str,
 }
@@ -82,11 +84,13 @@ impl CurrencyFormat {
         match locale.currency_format(code) {
             Some((pattern, decimal, group)) => Self {
                 patterns: [pattern, pattern],
+                decimal_pattern: numbers.decimal_pattern,
                 decimal,
                 group,
             },
             None => Self {
                 patterns: [numbers.currency_pattern, numbers.accounting_pattern],
+                decimal_pattern: numbers.decimal_pattern,
                 decimal: numbers.decimal,
                 group: numbers.group,
             },
@@ -101,11 +105,11 @@ impl CurrencyFormat {
         (self.decimal, if grouped { self.group } else { "," })
     }
 
-    /// The group sizes (primary, secondary) of the standard and accounting patterns, as ducat
-    /// reads them from formatting 1,234,567.5: (7, 7) without grouping.
+    /// The group sizes (primary, secondary) of the standard and accounting patterns and the
+    /// long name's, as ducat reads them from formatting 1,234,567.5: (7, 7) without grouping.
     fn group_sizes(&self) -> Result<Vec<(usize, usize)>, Error> {
-        let mut sizes = Vec::with_capacity(2);
-        for source in self.patterns {
+        let mut sizes = Vec::with_capacity(3);
+        for source in self.patterns.into_iter().chain([self.decimal_pattern]) {
             let pattern = pattern::parse(source).map_err(|_| Error::MalformedData)?;
             let found = match pattern.grouping {
                 Some((primary, secondary)) => (primary.min(7), secondary),
@@ -158,13 +162,77 @@ fn digit_span(chars: &[char]) -> Result<(usize, usize), Error> {
     }
 }
 
+/// The text the locale writes for `code` besides the number: the code, the symbol, the narrow
+/// symbol and the long name in each plural form, longest first.
+fn own_texts(locale: &Locale, code: &str) -> Vec<String> {
+    let mut texts: Vec<String> = Vec::with_capacity(8);
+    let mut add = |text: &str| {
+        let text =
+            text.trim_matches(|ch: char| ch.is_whitespace() || ch == '\u{a0}' || ch == '\u{202f}');
+        if !text.is_empty() && !texts.iter().any(|known| known == text) {
+            texts.push(String::from(text));
+        }
+    };
+    add(code);
+    add(crate::currency_symbol(code, locale, false));
+    add(crate::currency_symbol(code, locale, true));
+    // the plural forms ('0' to '5'), and the display name where there is no "other" form
+    for tag in ['0', '1', '2', '3', '4', '5'] {
+        if let Some(name) = locale.currency_field(code, |entry| entry.field(tag)) {
+            add(name);
+        }
+    }
+    if locale
+        .currency_field(code, |entry| entry.field('5'))
+        .is_none()
+    {
+        if let Some(name) = locale.currency_field(code, |entry| entry.field('d')) {
+            add(name);
+        }
+    }
+    texts.sort_by_key(|text| core::cmp::Reverse(text.len()));
+    texts
+}
+
+/// What may stand beside a currency's own text: the affix's edge, a space, a bidi mark or a sign.
+fn bounds(ch: Option<char>) -> bool {
+    ch.is_none_or(|ch| {
+        unicode::is_space(ch) || unicode::is_format(ch) || matches!(ch, '(' | ')' | '+' | '-' | '−')
+    })
+}
+
+/// `side` with each of the currency's own texts that stands there as a whole replaced by a space:
+/// it adds no sign and no digits.
+fn without_own_texts(side: &str, texts: &[String]) -> String {
+    let mut out = String::from(side);
+    for text in texts {
+        let mut from = 0;
+        while let Some(found) = out[from..].find(text.as_str()) {
+            let at = from + found;
+            let end = at + text.len();
+            if bounds(out[..at].chars().next_back()) && bounds(out[end..].chars().next()) {
+                out.replace_range(at..end, " ");
+                from = at + 1;
+            } else {
+                from = at + out[at..].chars().next().map_or(1, char::len_utf8);
+            }
+            if from > out.len() {
+                break;
+            }
+        }
+    }
+    out
+}
+
 /// Reads a locale-formatted amount in `currency`: ducat's `parse`. Currency symbols and codes,
 /// spaces and bidi marks around the number are ignored (the currency is the argument, never
 /// guessed from the text); a minus sign (ASCII or U+2212) or parentheses in them make it
-/// negative. Inside the number only digits (ASCII, Arabic-Indic, Persian, Devanagari, Thai and
-/// the other decimal digit blocks ducat reads), the group separator before the decimal separator,
-/// and one decimal separator are allowed. Group separators must be where the locale puts them,
-/// unless `lenient`.
+/// negative; the currency's own code, symbol, narrow symbol or long name, as the locale writes
+/// it, counts as a whole and adds no sign, whatever its characters (`S/` in es-PE, CLF's
+/// `Chilean units of account (UF)` in en). Inside the number only digits (ASCII, Arabic-Indic,
+/// Persian, Devanagari, Thai and the other decimal digit blocks ducat reads), the group separator
+/// before the decimal separator, and one decimal separator are allowed. Group separators must be
+/// where the locale puts them, unless `lenient`.
 ///
 /// # Errors
 ///
@@ -182,15 +250,25 @@ pub fn parse(
     let (decimal, group) = currency_format.separators();
     let chars: Vec<char> = input.chars().collect();
     let (first, last) = digit_span(&chars)?;
-    let prefix: String = chars[..first].iter().collect();
-    let suffix: String = chars[last + 1..].iter().collect();
+    let mut prefix: String = chars[..first].iter().collect();
+    let mut suffix: String = chars[last + 1..].iter().collect();
+    // The currency's own code, symbol or name, as the locale writes it, stands for itself as a
+    // whole and adds no sign: PEN's "S/" in es-PE, "(UF)" in CLF's English name. Looked up only
+    // for affixes with a sign or a character the class doesn't take, as ducat does since ducat#364.
+    let is_sign = |ch: char| matches!(ch, '-' | '−' | '(');
+    if !prefix
+        .chars()
+        .chain(suffix.chars())
+        .all(|ch| is_affix(ch) && !is_sign(ch))
+    {
+        let texts = own_texts(locale, currency.as_str());
+        prefix = without_own_texts(&prefix, &texts);
+        suffix = without_own_texts(&suffix, &texts);
+    }
     if !prefix.chars().chain(suffix.chars()).all(is_affix) {
         return Err(Error::Syntax(SyntaxError::UnexpectedCharacters));
     }
-    let negative = prefix
-        .chars()
-        .chain(suffix.chars())
-        .any(|ch| matches!(ch, '-' | '−' | '('));
+    let negative = prefix.chars().chain(suffix.chars()).any(is_sign);
     let group_char = {
         let mut group_chars = group.chars();
         match (group_chars.next(), group_chars.next()) {

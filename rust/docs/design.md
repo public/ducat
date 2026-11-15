@@ -161,8 +161,11 @@ kernel. Other known differences from ducat's TypeScript on Node, none of them in
 Rust's `Alphabetic`, which takes some
 combining vowel signs `\p{L}` doesn't; the four modern locales ICU doesn't ship (be-tarask, ca-ES-valencia, el-polyton,
 ht) and nb-SJ have CLDR's data here, where `Intl` falls back; and sr-Cyrl-ME's currency names are CLDR's Cyrillic
-ones, not ICU's Latin. Like ducat's TypeScript, `parse` refuses its
-own text where a symbol has a character outside its affix set (PEN's `S/` in es-PE, PAB's `B/.`, XOF's Sinhala symbol).
+ones, not ICU's Latin. As in ducat since ducat#364, `parse` takes the expected currency's own code, symbol, narrow
+symbol and long names (from the CLDR tables) as a whole beside the number, whatever their characters, and they add no
+sign: PEN's `S/` in es-PE and CLF's `Chilean units of account (UF)` read back exactly, and anything else around the number
+is still refused. It also takes a long name's number grouped in the decimal pattern, as `Intl` writes it (lakhs in ml, mr
+and or).
 
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
