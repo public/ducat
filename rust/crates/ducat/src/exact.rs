@@ -251,9 +251,12 @@ impl<C: Currency> ExactMoney<C> {
     /// amounts or [`Money`] (owned or borrowed), as ducat's take either.
     ///
     /// **Unlike [`Ord::clamp`]**, which panics when `lo > hi`, this returns an error. It takes
-    /// `self` by value so that `x.clamp(lo, hi)` calls it rather than `Ord::clamp`; on a
-    /// `&ExactMoney` receiver, `r.clamp(..)` is `Ord::clamp` for references: call
-    /// `r.clone().clamp(..)` instead.
+    /// `self` by value so that `x.clamp(lo, hi)` calls it rather than `Ord::clamp`.
+    ///
+    /// On a `&ExactMoney` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods:
+    /// the second of equal values wins, and `clamp` panics when lo > hi. Call
+    /// `(*r).clone().clamp(..)` instead (`ExactMoney<C>` has no inherent `max` or `min`, so those
+    /// are [`Ord`]'s on an owned value too).
     ///
     /// # Errors
     ///

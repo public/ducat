@@ -212,14 +212,15 @@ pub struct RateHistory {
 ///
 /// # Errors
 ///
-/// [`Error::MalformedRates`] for a table without an `as_of`.
+/// [`Error::UndatedTable`] for a table without an `as_of` (ducat's `RangeError`). `lookback` is
+/// a `u32`, so ducat's other check, a non-negative integer lookback, can't fail here.
 pub fn rate_history(
     tables: impl IntoIterator<Item = RateTable>,
     lookback: u32,
 ) -> Result<RateHistory, Error> {
     let mut dated = tables
         .into_iter()
-        .map(|table| Ok((table.as_of().ok_or(Error::MalformedRates)?.day(), table)))
+        .map(|table| Ok((table.as_of().ok_or(Error::UndatedTable)?.day(), table)))
         .collect::<Result<Vec<_>, Error>>()?;
     // newest first; a stable sort keeps the caller's order within a day
     dated.sort_by_key(|entry| core::cmp::Reverse(entry.0));

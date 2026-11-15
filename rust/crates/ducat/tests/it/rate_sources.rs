@@ -13,8 +13,8 @@ use ducat::convert::fed::parse_fed_h10_csv;
 use ducat::convert::history::rate_history;
 use ducat::convert::hmrc::{HmrcOptions, parse_hmrc_monthly_csv};
 use ducat::convert::stripe_fx::{StripeBalanceTransaction, stripe_rate};
-use ducat::convert::{Date, Publication, RateProvider, RateQuery, Time};
-use ducat::{CurrencyCode, Error};
+use ducat::convert::{Date, Publication, RateInfo, RateProvider, RateQuery, RateTable, Time};
+use ducat::{CurrencyCode, Error, ErrorKind};
 use proptest::prelude::*;
 
 use crate::common::time;
@@ -328,4 +328,28 @@ proptest! {
         spec.rates.push((usd, Some(QuotedRate { rate, per, inverted: None, decimals })));
         let _ = quoted_table(&spec);
     }
+}
+
+#[test]
+fn a_history_of_an_undated_table_is_a_range_error() {
+    // ducat: `rateHistory([table])` with no `asOf` throws
+    // `RangeError: rateHistory needs tables with an asOf`, after any dated tables before it
+    let eur = CurrencyCode::iso("EUR").unwrap();
+    let undated = || RateTable::with_base(eur, RateInfo::default()).build();
+    let dated = RateTable::with_base(
+        eur,
+        RateInfo {
+            as_of: Some(time("2026-11-06")),
+            ..RateInfo::default()
+        },
+    )
+    .build();
+    for tables in [vec![undated()], vec![dated, undated()]] {
+        let error = rate_history(tables, 4).err().unwrap();
+        assert_eq!(error, Error::UndatedTable);
+        assert_eq!(error.kind(), ErrorKind::Range);
+        assert_eq!(error.to_string(), "rateHistory needs tables with an asOf");
+    }
+    // no tables at all is a history that answers nothing, as in ducat
+    assert!(rate_history(Vec::new(), 4).is_ok());
 }
