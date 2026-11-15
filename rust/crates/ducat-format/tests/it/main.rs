@@ -5,6 +5,8 @@
 //! Run one module with `cargo test -p ducat-format --test it <module>::`, e.g. `--test it spec::`
 //! (add `-- --nocapture` for the conformance runner's counts).
 
+mod common;
+
 mod data;
 #[cfg(all(
     feature = "en",

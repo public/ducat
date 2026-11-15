@@ -38,3 +38,42 @@ pub fn code(text: &str) -> CurrencyCode {
 pub fn time(text: &str) -> Time {
     text.parse().unwrap()
 }
+
+/// Wall-clock budgets. A timed test keeps its assertion; with `DUCAT_REPORT_BUDGETS` set it also
+/// prints `budget <test path> <case or ""> used <ms> of <budget ms> (<pct>%)`, one line per
+/// test, so CI can see how close the tests run to their budgets.
+pub mod budget {
+    use std::time::Duration;
+
+    /// The test's path, `<package>/<module path>::<name>`.
+    macro_rules! test_path {
+        ($name:ident) => {
+            concat!(
+                env!("CARGO_PKG_NAME"),
+                "/",
+                module_path!(),
+                "::",
+                stringify!($name)
+            )
+        };
+    }
+    pub(crate) use test_path;
+
+    fn reporting() -> bool {
+        std::env::var_os("DUCAT_REPORT_BUDGETS").is_some()
+    }
+
+    /// Prints one budget line, if `DUCAT_REPORT_BUDGETS` is set; an empty case prints as `""`.
+    pub fn report(test: &str, case: &str, used: Duration, budget: Duration) {
+        if !reporting() {
+            return;
+        }
+        let case = if case.is_empty() { "\"\"" } else { case };
+        println!(
+            "budget {test} {case} used {:.1} of {} ({:.2}%)",
+            used.as_secs_f64() * 1000.0,
+            budget.as_millis(),
+            100.0 * used.as_secs_f64() / budget.as_secs_f64()
+        );
+    }
+}
