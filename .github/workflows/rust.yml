@@ -41,6 +41,9 @@ jobs:
       - run: cargo test -p ducat-format --locked --no-fail-fast --features full -- --nocapture
       # ducat::testing: the strategies' coverage, the assertion macros and their doc examples
       - run: cargo test -p ducat --locked --no-fail-fast --features proptest
+      # ducat-fetch's sans-IO core without ureq (the README's doc examples need ureq); its live
+      # smoke test is #[ignore]d: CI makes no requests
+      - run: cargo test -p ducat-fetch --locked --no-fail-fast --no-default-features --lib --tests
       # ducat-sqlx with every database: SQLite runs in memory; Postgres and MySQL skip here (the
       # sqlx-databases job runs them against servers)
       - run: cargo test -p ducat-sqlx --locked --no-fail-fast --all-features
@@ -119,6 +122,9 @@ jobs:
       - run: cargo +1.85 check -p ducat-words --lib --locked --no-default-features
       - run: cargo +1.85 check -p ducat-format --lib --locked
       - run: cargo +1.85 check -p ducat-format --lib --locked --no-default-features
+      # ureq 3, ureq-proto and zeroize declare 1.85; rustls, ring and webpki-roots less
+      - run: cargo +1.85 check -p ducat-fetch --lib --locked
+      - run: cargo +1.85 check -p ducat-fetch --lib --locked --no-default-features
       # sqlx 0.8.6 and its dependencies need 1.85 at most, so ducat-sqlx keeps the workspace's MSRV
       - run: cargo +1.85 check -p ducat-sqlx --lib --locked
       - run: cargo +1.85 check -p ducat-sqlx --lib --locked --no-default-features
@@ -188,13 +194,15 @@ jobs:
       - run: cargo clippy -p ducat-format --lib --no-default-features --locked -- -D warnings
       - run: cargo clippy -p ducat-format --lib --no-default-features --features en --locked -- -D warnings
       - run: cargo clippy -p ducat-format --all-targets --locked -- -D warnings
+      - run: cargo clippy -p ducat-fetch --all-targets --locked -- -D warnings
+      - run: cargo clippy -p ducat-fetch --all-targets --no-default-features --locked -- -D warnings
       # ducat-sqlx: no database, each database alone, and all of them
       - run: cargo clippy -p ducat-sqlx --lib --no-default-features --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features postgres --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features mysql --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features sqlite --locked -- -D warnings
       - run: cargo clippy -p ducat-sqlx --all-targets --all-features --locked -- -D warnings
-      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-sqlx --no-deps --locked
+      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-fetch -p ducat-sqlx --no-deps --locked
         env:
           RUSTDOCFLAGS: -D warnings
       - run: cargo doc -p ducat-sqlx --no-deps --locked --no-default-features
