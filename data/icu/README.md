@@ -46,8 +46,8 @@ separators), and the unit patterns. What differs:
   currencies without one keep: en-NL writes USD as `US$1,234.50` too. ducat-format does the same
   for a symbol, narrow symbol or code (`Locale::currency_format`), from CLDR's data, so nothing
   here is copied for it. A name it writes as TR35 has it, by ducat's decision: the number, with
-  the separators and grouping the symbol form uses for the currency (so parse reads it back) and
-  no symbol, in the unit pattern with the plural name (`1,234.567 Kuwaiti dinars` and
+  the separators the symbol form uses for the currency (so parse reads it back), the decimal
+  pattern's grouping and no symbol, in the unit pattern with the plural name (`1,234.567 Kuwaiti dinars` and
   `1,234.50 euros` in en-NL, `1.234,50 euros` in en-AT), never the currency's own pattern or
   symbol; it follows ICU's data, not its code.
 - **Locales ICU doesn't ship**: `be-tarask`, `ca-ES-valencia`, `el-polyton` and `ht` have no
@@ -65,6 +65,9 @@ every locale through both:
   `KWD 1,234.56 Kuwaiti dinars7` on Node 24 (ICU 78.3); ducat-format writes TR35's
   `1,234.567 Kuwaiti dinars`, with the separators of en-NL's currency format, and ducat's
   TypeScript is to match (ducat#363);
-- sr-Cyrl-ME's currency names are Latin in ICU (`američkih dolara`), Cyrillic in CLDR.
+- sr-Cyrl-ME's currency names are Latin in ICU (`američkih dolara`), Cyrillic in CLDR;
+- pt-CV's long names carry the region currency's pattern and a symbol in ICU
+  (`1 234 567$88 US$ dólares dos Estados Unidos`); ducat-format writes TR35's
+  `1 234 567$88 dólares dos Estados Unidos`, and ducat's TypeScript is to follow.
 
 The files are under the Unicode License v3 (`../cldr/LICENSE`; see also `NOTICE`).

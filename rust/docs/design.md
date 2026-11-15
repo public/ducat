@@ -120,7 +120,8 @@ ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped di
   sign with a symbol, narrow symbol or code, with the separators of the locale that defines it, and the format of a
   locale's region's currency for currencies without one (en-NL writes USD as `US$1,234.50`), as ICU's data and symbols
   have it (`data/icu/README.md`). A name follows TR35 everywhere, by ducat's decision: the number, with the separators
-  and grouping the symbol form uses for that currency in that locale, so `parse` reads it back, and no symbol, in the
+  the symbol form uses for that currency in that locale, so `parse` reads it back, the decimal pattern's grouping (lakhs
+  in ml, mr and or, as `Intl` writes them), and no symbol, in the
   unit pattern with the plural name (`1,234.50 euros` in en-150, `1,234.567 Kuwaiti dinars` and `1,234.50 euros` in
   en-NL, `1.234,50 euros` in en-AT); never the currency's own pattern or symbol, which ICU's code puts there and
   garbles at other scales (`KWD 1,234.56 Kuwaiti dinars7` on Node 24); ducat's TypeScript is to match (ducat#363).
@@ -160,8 +161,10 @@ locale. What Node 24 (ICU 78.3) and `ducat-format` resolve, checked in `tests/lo
 kernel. Other known differences from ducat's TypeScript on Node, none of them in a vector: letters around a number are
 Rust's `Alphabetic`, which takes some
 combining vowel signs `\p{L}` doesn't; the four modern locales ICU doesn't ship (be-tarask, ca-ES-valencia, el-polyton,
-ht) and nb-SJ have CLDR's data here, where `Intl` falls back; and sr-Cyrl-ME's currency names are CLDR's Cyrillic
-ones, not ICU's Latin. As in ducat since ducat#364, `parse` takes the expected currency's own code, symbol, narrow
+ht) and nb-SJ have CLDR's data here, where `Intl` falls back; sr-Cyrl-ME's currency names are CLDR's Cyrillic ones,
+not ICU's Latin; and pt-CV's names are written as TR35 has them (`1 234 567$88 dólares dos Estados Unidos`), where ICU
+puts the region currency's own pattern and a symbol inside them (`1 234 567$88 US$ dólares dos Estados Unidos`), as it
+did in the euro-country English locales before ducat#363. As in ducat since ducat#364, `parse` takes the expected currency's own code, symbol, narrow
 symbol and long names (from the CLDR tables) as a whole beside the number, whatever their characters, and they add no
 sign: PEN's `S/` in es-PE and CLF's `Chilean units of account (UF)` read back exactly, and anything else around the number
 is still refused. It also takes a long name's number grouped in the decimal pattern, as `Intl` writes it (lakhs in ml, mr

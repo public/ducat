@@ -31,9 +31,8 @@
 //! ICU's data where ICU ships other values than CLDR (fr-CH's group separator, my's unit pattern,
 //! the separators of a currency's own pattern), not its code's bugs: a currency's name is always
 //! written as TR35 has it, the number in the unit pattern with the plural name, with the
-//! separators and grouping of the currency's symbol form (so [`parse()`] reads it back) and no
-//! symbol. Rounding is ducat's exact
-//! kernel on the decimal; there are no floats.
+//! separators of the currency's symbol form (so [`parse()`] reads it back), the decimal pattern's
+//! grouping and no symbol. Rounding is ducat's exact kernel on the decimal; there are no floats.
 //!
 //! # Locales and what they cost
 //!
