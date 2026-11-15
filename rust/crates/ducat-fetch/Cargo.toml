@@ -1,0 +1,24 @@
+[package]
+name = "ducat-fetch"
+version = "0.0.0"
+description = "Fetchers for published reference rates (ECB, Bank of Canada) for ducat: ducat's /fetch, sans-IO with an optional blocking ureq transport"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+default = ["ureq"]
+## `UreqTransport`: a blocking HTTPS transport on ureq 3 with rustls on ring (no C toolchain beyond
+## `cc`, no async runtime). Without it the crate is the sans-IO core and the `Transport` trait.
+ureq = ["dep:ureq"]
+
+[dependencies]
+ducat = { path = "../ducat", default-features = false, features = ["std", "ecb", "boc"] }
+# `rustls` is ureq's rustls-no-provider + _ring (rustls/ring) + rustls-webpki-roots: no aws-lc-rs,
+# no gzip, no native-tls, no cookies or JSON.
+ureq = { version = "3.0", default-features = false, features = ["rustls"], optional = true }
+
+[dev-dependencies]
+ducat = { path = "../ducat", default-features = false, features = ["std", "ecb", "boc", "iso"] }
