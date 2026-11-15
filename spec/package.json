@@ -1,6 +1,6 @@
 {
   "name": "@ducatjs/money-spec",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Language-neutral conformance vectors for @ducatjs/money: JSON test cases with their provenance, a JSON Schema, and the rules for running them.",
   "license": "MIT",

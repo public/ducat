@@ -7,7 +7,67 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ## [Unreleased]
 
-### Added
+## [0.4.1] - 2026-11-15
+
+A patch release of fixes. Nothing in the package's API is added or removed.
+
+### Fixed
+
+- `parse` no longer turns a positive amount negative when the currency's long name has a
+  parenthesis or a hyphen: `parse(format(money('1.0000', 'CLF'), 'en', { currencyDisplay: 'name' }),
+  'CLF', 'en')` read `1.0000 Chilean units of account (UF)` as -1.0000, and BAM's
+  `Bosnia-Herzegovina convertible marks` did the same. The currency's own symbol, narrow symbol,
+  code and long names, as Intl writes them for the locale, now count as a whole and add no sign.
+- `parse` reads its own `format` output where the currency's symbol or name holds a character the
+  affixes otherwise refuse: PEN's `S/` in es-PE, PAB's `B/.` in es-PA, XOF's symbol in si (a
+  virama), Malayalam names (a virama) and French's `unité d’investissement chilienne`; so does
+  `parseMoney` for `S/ 1,234.50` in es-PE. Any other character around the number is still a
+  `SyntaxError`, and garbage beside a real symbol still fails.
+- `parse` accepts a long name's number grouped as the long name groups it, where that differs from
+  the symbol form (ml and mr write a name's number in lakhs).
+- `format` and `formatToParts` with `currencyDisplay: 'name'` no longer show a wrong amount in the
+  English locales of euro countries (en-NL, en-DE, en-BE, en-FI, en-FR, en-IT, en-ES, en-PT, en-EE,
+  en-LT, en-LV, en-SI, en-SK, en-AT). ICU 78.3 (Node 24) puts en-150's euro pattern inside the
+  long-name pattern there, so every currency showed its symbol beside its name and fraction digits
+  past two landed after the name: `KWD 1,234.56 Kuwaiti dinars7`. ducat probes each locale once;
+  where the runtime's long names are unsound it writes the amount as the currency format does
+  (the separators `parse` reads) followed by the name: `1,234.567 Kuwaiti dinars`. On a runtime
+  without the bug, nothing changes.
+- Malformed or explosive custom rule text in `spellOut` and `amountInWords` now throws instead of
+  hanging or overflowing the stack: an unclosed `[`, `$(` or substitution, a radix below 2, or a
+  `>>>` with no rule before it is a `SyntaxError`, and rules nested more than 64 deep or needing more
+  than 10,000 rule applications for one number are a `RangeError`.
+- The wire readers accept what their specs allow, which widens the input they take:
+  `fromIso20022Amount` reads a leading `+` and `-0` (XML Schema's `xs:decimal`), and
+  `fromGoogleMoney` reads `units` and `nanos` as numbers or strings, exponent form included, when
+  the value is an exact integer (ProtoJSON). A `units` number past 2^53 − 1 is refused (send it as a
+  string), and a negative ISO 20022 amount is now a `RangeError` rather than a `SyntaxError`.
+- `parseEcbXml` ends each day at its own closing tag, so a day whose rates are written
+  `<Cube …></Cube>` keeps all of them, where it used to keep only the first and drop the rest
+  without an error; cubes that don't nest (an unclosed day, a stray `</Cube>`) now throw
+  `SyntaxError`.
+- A chained rate's `validUntil` is the one that ends first, with a date compared as its whole UTC
+  day: `andThen` of a rate valid until `'2026-11-06'` and one valid until `'2026-11-06T15:00:00Z'`
+  now ends at 15:00, where it used to keep the date and stay valid after one leg had expired.
+  `isExpired` and the chain now share one definition of when a `validUntil` ends.
+- `exchangeRate` and `rateFromJSON` now refuse an inverted or scaled quote that isn't exactly the
+  rate (rate = quote ÷ `per`, or `per` ÷ quote when inverted), throwing the `RangeError` convert.md
+  always documented, where 0.4 accepted it and the rate's `inverse()` then threw.
+- `exchangeRate` and `rateFromJSON` now refuse a quote whose rate isn't positive or whose `per`
+  isn't a positive integer, throwing `RangeError`, where 0.4 accepted them (a negative rate over a
+  negative `per`, for instance).
+
+### Documentation
+
+- The convert reference matches the code: `convertDetailed` checks `strictValidity` first with a
+  rounding mode too, `RateExpiredError` extends `RangeError`, and the Rate section says which
+  metadata each derived rate keeps (none keeps `source`; `withMargin` drops `type`). The rate
+  sources reference gains a Providers section.
+- A new explanation page, [Where money arithmetic goes wrong](docs/explanation/footguns.md), shows each class of money bug in other JavaScript libraries (floats, rounding at every step, negative halves, lost cents, overflow past 2⁵³, lenient parsing and more) with the result the library returns and what ducat does instead, linked from the README, the comparison and the how-to guides where each one bites.
+
+### Repository
+
+In the repository, outside the npm package: the conformance suite `@ducatjs/money-spec` (private, now 0.4.1) and the Rust port in `rust/`.
 
 - `@ducatjs/money-spec`, a private workspace package in `spec/`: ducat's test vectors as
   language-neutral JSON, with a JSON Schema, provenance on every file, and the rules for running
@@ -91,60 +151,6 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - The Rust port gains `ducat-words`, a crate of its own with ducat's RBNF interpreter over CLDR's
   rule text (no ICU), a feature per language, and `spell_out` and `amount_in_words`; it passes all
   6,904 `words.spellOut` vectors, which the core runner now delegates to it.
-
-### Fixed
-
-- `parse` no longer turns a positive amount negative when the currency's long name has a
-  parenthesis or a hyphen: `parse(format(money('1.0000', 'CLF'), 'en', { currencyDisplay: 'name' }),
-  'CLF', 'en')` read `1.0000 Chilean units of account (UF)` as -1.0000, and BAM's
-  `Bosnia-Herzegovina convertible marks` did the same. The currency's own symbol, narrow symbol,
-  code and long names, as Intl writes them for the locale, now count as a whole and add no sign.
-- `parse` reads its own `format` output where the currency's symbol or name holds a character the
-  affixes otherwise refuse: PEN's `S/` in es-PE, PAB's `B/.` in es-PA, XOF's symbol in si (a
-  virama), Malayalam names (a virama) and French's `unité d’investissement chilienne`; so does
-  `parseMoney` for `S/ 1,234.50` in es-PE. Any other character around the number is still a
-  `SyntaxError`, and garbage beside a real symbol still fails.
-- `parse` accepts a long name's number grouped as the long name groups it, where that differs from
-  the symbol form (ml and mr write a name's number in lakhs).
-- `format` and `formatToParts` with `currencyDisplay: 'name'` no longer show a wrong amount in the
-  English locales of euro countries (en-NL, en-DE, en-BE, en-FI, en-FR, en-IT, en-ES, en-PT, en-EE,
-  en-LT, en-LV, en-SI, en-SK, en-AT). ICU 78.3 (Node 24) puts en-150's euro pattern inside the
-  long-name pattern there, so every currency showed its symbol beside its name and fraction digits
-  past two landed after the name: `KWD 1,234.56 Kuwaiti dinars7`. ducat probes each locale once;
-  where the runtime's long names are unsound it writes the amount as the currency format does
-  (the separators `parse` reads) followed by the name: `1,234.567 Kuwaiti dinars`. On a runtime
-  without the bug, nothing changes.
-- Malformed or explosive custom rule text in `spellOut` and `amountInWords` now throws instead of
-  hanging or overflowing the stack: an unclosed `[`, `$(` or substitution, a radix below 2, or a
-  `>>>` with no rule before it is a `SyntaxError`, and rules nested more than 64 deep or needing more
-  than 10,000 rule applications for one number are a `RangeError`.
-- The wire readers accept what their specs allow, which widens the input they take:
-  `fromIso20022Amount` reads a leading `+` and `-0` (XML Schema's `xs:decimal`), and
-  `fromGoogleMoney` reads `units` and `nanos` as numbers or strings, exponent form included, when
-  the value is an exact integer (ProtoJSON). A `units` number past 2^53 − 1 is refused (send it as a
-  string), and a negative ISO 20022 amount is now a `RangeError` rather than a `SyntaxError`.
-- `parseEcbXml` ends each day at its own closing tag, so a day whose rates are written
-  `<Cube …></Cube>` keeps all of them, where it used to keep only the first and drop the rest
-  without an error; cubes that don't nest (an unclosed day, a stray `</Cube>`) now throw
-  `SyntaxError`.
-- A chained rate's `validUntil` is the one that ends first, with a date compared as its whole UTC
-  day: `andThen` of a rate valid until `'2026-11-06'` and one valid until `'2026-11-06T15:00:00Z'`
-  now ends at 15:00, where it used to keep the date and stay valid after one leg had expired.
-  `isExpired` and the chain now share one definition of when a `validUntil` ends.
-- `exchangeRate` and `rateFromJSON` now refuse an inverted or scaled quote that isn't exactly the
-  rate (rate = quote ÷ `per`, or `per` ÷ quote when inverted), throwing the `RangeError` convert.md
-  always documented, where 0.4 accepted it and the rate's `inverse()` then threw.
-- `exchangeRate` and `rateFromJSON` now refuse a quote whose rate isn't positive or whose `per`
-  isn't a positive integer, throwing `RangeError`, where 0.4 accepted them (a negative rate over a
-  negative `per`, for instance).
-
-### Documentation
-
-- The convert reference matches the code: `convertDetailed` checks `strictValidity` first with a
-  rounding mode too, `RateExpiredError` extends `RangeError`, and the Rate section says which
-  metadata each derived rate keeps (none keeps `source`; `withMargin` drops `type`). The rate
-  sources reference gains a Providers section.
-- A new explanation page, [Where money arithmetic goes wrong](docs/explanation/footguns.md), shows each class of money bug in other JavaScript libraries (floats, rounding at every step, negative halves, lost cents, overflow past 2⁵³, lenient parsing and more) with the result the library returns and what ducat does instead, linked from the README, the comparison and the how-to guides where each one bites.
 
 ## [0.4.0] - 2026-11-12
 
@@ -703,7 +709,8 @@ dependencies, for Node 24 and later, Bun, Deno and browsers. It is published as 
 - **A comparison with other money libraries**, covering correctness, speed and bundle size:
   [docs/COMPARISON.md](docs/COMPARISON.md).
 
-[Unreleased]: https://github.com/public/ducat/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/public/ducat/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/public/ducat/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/public/ducat/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/public/ducat/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/public/ducat/compare/v0.2.1...v0.2.2
