@@ -12,6 +12,8 @@ This guide shows you how to declare Drizzle columns that select as Money and ins
 
 If each row can have its own currency, use `moneyJson()`, which stores the currency in each value: a Drizzle column can't read a sibling column, so there is no "minor units plus a currency column" type. Or select both columns and build the Money with `fromMinor(row.amountMinor, row.currency)`.
 
+If amounts can be finer (or coarser) than the currency, as unit prices and FX rates are, give `moneyMinor` a scale column: `moneyMinor('EUR', { scale: 'amountScale' })`, read with `scaledMoney(table.amount)`. See [Store a scale column](store-money-in-a-database.md#store-a-scale-column-if-amounts-can-be-finer-than-the-currency).
+
 If you sort, compare or add up amounts in SQL on SQLite, use `moneyMinor`. SQLite decimals are TEXT, so they compare and sort as text (`'10.00' < '9.00'`), and `sum()` over them is a REAL. For the same reason `/drizzle/sqlite`'s `moneyDecimal` takes no column size.
 
 ## Declare the table and configure the driver

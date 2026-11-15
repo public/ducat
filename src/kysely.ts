@@ -43,9 +43,11 @@ import {
   decimalToDriver,
   minorFromDriver,
   minorToDriver,
+  readScale,
+  type ScaleColumnOption,
 } from './sql.js';
 
-export { DEFAULT_DECIMAL_SIZE, type DecimalColumnSize } from './sql.js';
+export { DEFAULT_DECIMAL_SIZE, type DecimalColumnSize, type ScaleColumnOption } from './sql.js';
 
 /** The SQL dialects the helpers can build JSON objects and exact casts for. */
 export type MoneyDialect = 'postgres' | 'mysql' | 'sqlite';
@@ -103,6 +105,9 @@ function markerFor(storage: Storage): string {
   return storage === 'minor' ? MINOR_MARKER : DECIMAL_MARKER;
 }
 
+/** The column names a scale column option can refer to, such as `'amount_scale'` or `'p.amount_scale'`. */
+type StringReferenceOf<DB, TB extends keyof DB> = Extract<ReferenceExpression<DB, TB>, string>;
+
 /** `Money<C>`, or `Money<C> | null` when the amount column is nullable. */
 type MoneyFor<Amount, C extends string> = null extends Amount ? Money<C> | null : Money<C>;
 
@@ -112,10 +117,13 @@ type MoneyFor<Amount, C extends string> = null extends Amount ? Money<C> | null 
 
 /**
  * Column values for an insert or update: the minor units as an integer string, and the currency
- * (unless it is fixed for the column, in which case the Money must be in it).
+ * (unless it is fixed for the column, in which case the Money must be in it). Without a scale
+ * column, Money at a scale other than its currency's throws, because the columns can't record it;
+ * with `{ scale: 'amount_scale' }`, any scale is stored, next to the minor units it counts.
  *
  *     .values({ id: 1, ...setMoney(fee, 'amount_minor', 'currency') })
  *     .set(setMoney(total, 'total_minor', fixed('EUR')))
+ *     .values({ id: 2, ...setMoney(rate, 'amount_minor', 'currency', { scale: 'amount_scale' }) })
  */
 export function setMoney<const A extends string, const K extends string>(
   money: Money,
@@ -127,15 +135,38 @@ export function setMoney<const A extends string, const C extends string>(
   amount: A,
   currency: FixedCurrency<C>,
 ): { [P in A]: string };
+export function setMoney<const A extends string, const K extends string, const S extends string>(
+  money: Money,
+  amount: A,
+  currency: K,
+  options: ScaleColumnOption<S>,
+): { [P in A | K]: string } & { [P in S]: number };
+export function setMoney<const A extends string, const C extends string, const S extends string>(
+  money: Money<NoInfer<C>>,
+  amount: A,
+  currency: FixedCurrency<C>,
+  options: ScaleColumnOption<S>,
+): { [P in A]: string } & { [P in S]: number };
 export function setMoney(
   money: Money,
   amount: string,
   currency: string | FixedCurrency<string>,
-): Record<string, string> {
-  if (isFixed(currency)) {
-    return { [amount]: minorToDriver(money, currency.fixed).toString() };
+  options?: ScaleColumnOption<string>,
+): Record<string, string | number> {
+  const fixedCurrency = isFixed(currency) ? currency.fixed : undefined;
+  // with a scale column the units are counted at the money's own scale, which is stored beside them
+  const scale = options === undefined ? undefined : money.scale;
+  const columns: Record<string, string | number> = {
+    [amount]: minorToDriver(money, fixedCurrency, scale).toString(),
+  };
+
+  if (!isFixed(currency)) {
+    columns[currency] = money.currency;
   }
-  return { [amount]: minorToDriver(money, undefined).toString(), [currency]: money.currency };
+  if (options !== undefined) {
+    columns[options.scale] = money.scale;
+  }
+  return columns;
 }
 
 /**
@@ -249,6 +280,8 @@ export interface MoneyHelpers {
   /**
    * The Money in an amount column of minor units, with the currency from a column or `fixed()`.
    * Typed `Money<C>`, or `Money<C> | null` for a nullable amount column; needs `MoneyResultPlugin`.
+   * Without a scale column the minor units are read at the currency's exponent; with
+   * `{ scale: 'amount_scale' }`, at the scale stored in that column (a NULL scale throws on read).
    *
    *     .select((eb) => money.selectMoney(eb, 'p.amount_minor', 'p.currency').as('paid'))
    */
@@ -256,11 +289,13 @@ export interface MoneyHelpers {
     eb: ExpressionBuilder<DB, TB>,
     amount: RA,
     currency: ReferenceExpression<DB, TB>,
+    options?: ScaleColumnOption<StringReferenceOf<DB, TB>>,
   ): RawBuilder<MoneyFor<ExtractTypeFromReferenceExpression<DB, TB, RA>, CurrencyInput>>;
   selectMoney<DB, TB extends keyof DB, RA extends ReferenceExpression<DB, TB>, C extends string>(
     eb: ExpressionBuilder<DB, TB>,
     amount: RA,
     currency: FixedCurrency<C>,
+    options?: ScaleColumnOption<StringReferenceOf<DB, TB>>,
   ): RawBuilder<MoneyFor<ExtractTypeFromReferenceExpression<DB, TB, RA>, C>>;
 
   /** Like `selectMoney`, for a NUMERIC/DECIMAL (SQLite TEXT) amount column. */
@@ -366,13 +401,19 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
     eb: AnyBuilder,
     amount: AnyReference,
     currency: AnyCurrency,
+    options?: ScaleColumnOption<string>,
   ): RawBuilder<unknown> {
     const amountRef = eb.ref(amount as string);
-    const object = dialectSql.jsonObject([
+    const fields: [string, Expression<unknown>][] = [
       [MARKER, sql.lit(markerFor(storage))],
       ['amount', dialectSql.asText(amountRef)],
       ['currency', currencyExpression(eb, currency)],
-    ]);
+    ];
+    if (options !== undefined) {
+      // an integer in the JSON; a NULL scale becomes JSON null, which throws when read
+      fields.push(['scale', eb.ref(options.scale)]);
+    }
+    const object = dialectSql.jsonObject(fields);
     // a NULL amount stays NULL rather than becoming a marker without an amount
     return sql`case when ${amountRef} is null then null else ${object} end`;
   }
@@ -449,8 +490,12 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
   }
 
   return {
-    selectMoney: ((eb: AnyBuilder, amount: AnyReference, currency: AnyCurrency) =>
-      select('minor', eb, amount, currency)) as MoneyHelpers['selectMoney'],
+    selectMoney: ((
+      eb: AnyBuilder,
+      amount: AnyReference,
+      currency: AnyCurrency,
+      options?: ScaleColumnOption<string>,
+    ) => select('minor', eb, amount, currency, options)) as MoneyHelpers['selectMoney'],
     selectDecimalMoney: ((eb: AnyBuilder, amount: AnyReference, currency: AnyCurrency) =>
       select('decimal', eb, amount, currency)) as MoneyHelpers['selectDecimalMoney'],
     compareMoney: (eb, amount, currency, operator, money) =>
@@ -469,6 +514,7 @@ export function moneyHelpers(dialect: MoneyDialect): MoneyHelpers {
 // ---------------------------------------------------------------------------------------------
 
 const SELECT_KEYS = ['$ducat', 'amount', 'currency'];
+const SCALED_KEYS = ['$ducat', 'amount', 'currency', 'scale'];
 const SUM_KEYS = ['$ducat', 'amount', 'currency', 'mixed'];
 
 function hasExactly(value: Record<string, unknown>, keys: readonly string[]): boolean {
@@ -485,6 +531,9 @@ function isMarker(value: Record<string, unknown>): boolean {
   if (marker !== MINOR_MARKER && marker !== DECIMAL_MARKER) {
     return false;
   }
+  if (marker === MINOR_MARKER && hasExactly(value, SCALED_KEYS)) {
+    return true;
+  }
   return hasExactly(value, SELECT_KEYS) || hasExactly(value, SUM_KEYS);
 }
 
@@ -499,7 +548,9 @@ function moneyFromMarker(marker: Record<string, unknown>): Money {
     throw new TypeError(`A money value needs a currency, got ${String(currency)}`);
   }
   if (marker[MARKER] === MINOR_MARKER) {
-    return minorFromDriver(amount, currency);
+    // only selectMoney with a scale column puts a scale in the marker
+    const scale = Object.hasOwn(marker, 'scale') ? readScale(marker.scale, 'scale') : undefined;
+    return minorFromDriver(amount, currency, scale);
   }
   const parsed = decimalFromDriver(amount, currency);
   checkIsoScale(parsed);

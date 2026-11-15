@@ -3,6 +3,7 @@
 // may already have lost digits (an unsafe number, a float for a DECIMAL) is rejected rather than
 // trusted, and every writer refuses a value the column would change.
 import { currencyExponent } from './currency.js';
+import { MAX_DECIMAL_SCALE } from './decimal.js';
 import {
   CurrencyMismatchError,
   fromJSON,
@@ -29,6 +30,39 @@ export interface DecimalColumnSize {
 
 /** NUMERIC(19,4): 15 integer digits and 4 decimals, enough for every ISO 4217 exponent. */
 export const DEFAULT_DECIMAL_SIZE: DecimalColumnSize = { precision: 19, scale: 4 };
+
+/**
+ * Options for the minor-unit helpers (`toMinorColumns`, `minorMoneyField`, Kysely's `setMoney` and
+ * `selectMoney`, Drizzle's `moneyMinor`): a column that records each amount's scale.
+ */
+export interface ScaleColumnOption<S extends string> {
+  /**
+   * The integer column holding the number of decimals the minor units are counted in (2 for
+   * cents). With it, any scale round-trips, and stored amounts keep their meaning even if a
+   * currency's exponent changes.
+   */
+  readonly scale: S;
+}
+
+/**
+ * A scale read from a row: a safe, non-negative integer (a SMALLINT or INT column), as a number or
+ * a bigint. NULL, and anything else, throws.
+ */
+export function readScale(value: unknown, column: string): number {
+  const scale = typeof value === 'bigint' ? Number(value) : value;
+  // capped like parsed decimals: a corrupt row must not make toDecimal build a huge power of ten
+  const isValid =
+    typeof scale === 'number' &&
+    Number.isInteger(scale) &&
+    scale >= 0 &&
+    scale <= MAX_DECIMAL_SCALE;
+  if (!isValid) {
+    throw new RangeError(
+      `Expected an integer scale from 0 to ${MAX_DECIMAL_SCALE} in "${column}", got ${String(value)}`,
+    );
+  }
+  return scale;
+}
 
 /** Throws unless the money is in the column's currency (when the column has a fixed currency). */
 export function checkCurrency(money: Money, currency: string | undefined): void {

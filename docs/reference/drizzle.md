@@ -4,7 +4,7 @@ Drizzle ORM column types, so selects return `Money` and inserts take it, with th
 
 Related: [How to store money with Drizzle](../how-to/drizzle.md) · [How to store money in a database](../how-to/store-money-in-a-database.md)
 
-Each entry exports `moneyMinor`, `moneyDecimal` and `moneyJson` for its dialect. Each returns a Drizzle custom-column builder: call it with the column's name, as in `moneyMinor('EUR')('total_minor')`.
+Each entry exports `moneyMinor`, `moneyDecimal` and `moneyJson` for its dialect, and `scaledMoney` to read a `moneyMinor` column that has a scale column. Each column function returns a Drizzle custom-column builder: call it with the column's name, as in `moneyMinor('EUR')('total_minor')`.
 
 | column                | Postgres         | MySQL            | SQLite    | value                                          |
 | --------------------- | ---------------- | ---------------- | --------- | ---------------------------------------------- |
@@ -18,9 +18,21 @@ Each entry exports `moneyMinor`, `moneyDecimal` and `moneyJson` for its dialect.
 
 `moneyMinor<C extends CurrencyInput>(currency: C): (name?: string) => CustomColumnBuilder<Money<C>>`
 
+`moneyMinor<C extends CurrencyInput>(currency: C, options: ScaleColumnOption<string>): (name?: string) => CustomColumnBuilder<Money<C>>`
+
 A BIGINT (SQLite INTEGER) column of minor units in a fixed currency (`1234` is 12.34 EUR), read back as `Money<C>`, exact up to ±9.2·10^18 minor units. mysql2 returns BIGINT as a number by default and better-sqlite3 returns integers as numbers, both exact only below 2^53; use bigint or string mode (`supportBigNumbers` with `bigNumberStrings` in mysql2, `defaultSafeIntegers(true)` in better-sqlite3) for larger amounts. node-postgres returns strings already.
 
-- **Throws** on write: `CurrencyMismatchError` for another currency (also a compile error); `RangeError` for a value at a scale other than the currency's, or beyond the BIGINT range. On read: `RangeError` for a number beyond 2^53 (it may have lost digits), `SyntaxError` for a string that isn't an integer.
+With `{ scale: 'totalScale' }`, the column has a scale column, as with the Prisma helpers' option of the same name: `totalScale` is the key, in the same table, of an integer column (`smallint('total_scale')`) holding the number of decimals the units are counted in. Any scale then round-trips, above or below the currency's: the column writes the units at each value's own scale (`toScaledUnits()`), you write the scale beside them (`{ total, totalScale: total.scale }`), and `scaledMoney(table.total)` reads the two back as one Money. A Drizzle column can't read a sibling column, so such a column can't be selected by itself: select it with `scaledMoney`, and list the columns of `select()`, `returning()` and relational queries rather than take them all. Comparisons such as `eq(table.total, m)` compare the stored integers only, so add `eq(table.totalScale, m.scale)`.
+
+- **Throws** on write: `CurrencyMismatchError` for another currency (also a compile error); `RangeError` beyond the BIGINT range, and, without a scale column, for a value at a scale other than the currency's. On read: `RangeError` for a number beyond 2^53 (it may have lost digits), `SyntaxError` for a string that isn't an integer. With a scale column: `TypeError` when the column is selected by itself, and `RangeError` for a scale that isn't an integer from 0 to 1000 (a NULL scale included). Where the column is declared: `RangeError` for an unknown currency.
+
+### scaledMoney
+
+`scaledMoney<T extends Column>(column: T): SQL<Money<C>>` (`SQL<Money<C> | null>` for a nullable column)
+
+Reads a `moneyMinor` column that has a scale column, with the scale stored beside it, as the column's Money: `db.select({ total: scaledMoney(orders.total) }).from(orders)`. A NULL amount reads as null.
+
+- **Throws** when the query is built: `TypeError` for a column that isn't a `moneyMinor` column with a scale column; `RangeError` when its table has no column under the scale option's key. On read: `RangeError` for a NULL scale, or one that isn't an integer from 0 to 1000.
 
 ### moneyDecimal
 
@@ -44,9 +56,11 @@ A JSONB (MySQL JSON, SQLite TEXT) column holding `{"amount":"12.34","currency":"
 
 - `DEFAULT_DECIMAL_SIZE` (`/drizzle/pg`, `/drizzle/mysql`): `{ precision: 19, scale: 4 }`, NUMERIC(19,4): 15 integer digits and 4 decimals, enough for every ISO 4217 exponent.
 - `DecimalColumnSize`: `{ precision: number; scale: number }`: the total significant digits and the digits after the point.
+- `ScaleColumnOption<S>`: `{ scale: S }`: the key of the integer column holding the number of decimals the minor units are counted in (2 for cents), for `moneyMinor`.
 
 ## Limits
 
 - **Currency per row:** a Drizzle column can't read a sibling column, so there is no "minor units plus a currency column" type. Use `moneyJson()`, which stores the currency in each value, or select both columns and build the Money with `fromMinor(row.amountMinor, row.currency)`.
+- **Scale columns** are read only through `scaledMoney`: a `moneyMinor` column with a scale column throws when selected by itself, including by `select()` without fields, `returning()` and relational queries, rather than read its units at a guessed scale.
 - **Relational queries** (`db.query...findMany({ with: ... })`) return nested rows through JSON, where Postgres and MySQL turn NUMERIC and BIGINT values into JSON numbers. A nested `moneyDecimal` column then throws, and so does a nested `moneyMinor` beyond 2^53 minor units, rather than return a rounded amount. Top-level columns are not affected. For nested money, use `moneyJson`, or a join with `select`.
 - **SQLite decimals are TEXT**, so in SQL they compare and sort as text (`'10.00' < '9.00'`), and `sum()` over them is a REAL. Use `moneyMinor` for columns you sort, compare or add up in SQL.
