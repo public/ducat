@@ -247,6 +247,32 @@ impl<C: Currency> ExactMoney<C> {
         self.value.numer().signum()
     }
 
+    /// `self` limited to `[lo, hi]`, as ducat's `ExactMoney#clamp`. The bounds may be exact
+    /// amounts or [`Money`] (owned or borrowed), as ducat's take either.
+    ///
+    /// **Unlike [`Ord::clamp`]**, which panics when `lo > hi`, this returns an error. It takes
+    /// `self` by value so that `x.clamp(lo, hi)` calls it rather than `Ord::clamp`; on a
+    /// `&ExactMoney` receiver, `r.clamp(..)` is `Ord::clamp` for references: call
+    /// `r.clone().clamp(..)` instead.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::LowAboveHigh`] when `lo > hi`, as ducat's `RangeError` (`clamp: lo > hi`).
+    pub fn clamp(self, lo: impl Into<Self>, hi: impl Into<Self>) -> Result<Self, Error> {
+        let (lo, hi) = (lo.into(), hi.into());
+        if lo.value > hi.value {
+            return Err(Error::LowAboveHigh);
+        }
+        // ducat's this.max(lo).min(hi): a bound replaces the value only when strictly beyond it
+        Ok(if lo.value > self.value {
+            lo
+        } else if hi.value < self.value {
+            hi
+        } else {
+            self
+        })
+    }
+
     /// Whether the amount is exact at `scale` (default: the currency's exponent).
     #[must_use]
     pub fn is_exact(&self, scale: Option<u16>) -> bool {
@@ -423,6 +449,31 @@ impl AnyExactMoney {
     pub fn compare(&self, other: &Self) -> Result<Ordering, Error> {
         self.same(other)?;
         Ok(self.value.cmp(&other.value))
+    }
+
+    /// `self` limited to `[lo, hi]`, as ducat's `ExactMoney#clamp`. The bounds may be exact
+    /// amounts or [`AnyMoney`] (owned or borrowed), as ducat's take either. An error where
+    /// `Ord::clamp` would panic.
+    ///
+    /// # Errors
+    ///
+    /// In ducat's order: [`Error::CurrencyMismatch`] when `lo` and `hi` differ (`expected`
+    /// `lo`'s currency, `actual` `hi`'s); [`Error::LowAboveHigh`] when `lo > hi`;
+    /// [`Error::CurrencyMismatch`] when `self` is in another currency than the bounds
+    /// (`expected` `lo`'s currency, `actual` `self`'s: ducat's `this.max(lo)` compares `lo` with
+    /// `this`).
+    pub fn clamp(&self, lo: impl Into<Self>, hi: impl Into<Self>) -> Result<Self, Error> {
+        let (lo, hi) = (lo.into(), hi.into());
+        if lo.compare(&hi)? == Ordering::Greater {
+            return Err(Error::LowAboveHigh);
+        }
+        Ok(if lo.compare(self)? == Ordering::Greater {
+            lo
+        } else if hi.value < self.value {
+            hi
+        } else {
+            self.clone()
+        })
     }
 
     /// Rounds once to `scale` (default: the currency's exponent).
@@ -630,6 +681,48 @@ impl<C: Currency> From<ExactMoney<C>> for AnyExactMoney {
             value: exact.value,
             currency: C::CODE,
         }
+    }
+}
+
+impl<C: Currency> From<&ExactMoney<C>> for ExactMoney<C> {
+    /// A copy, so that operations taking `impl Into<ExactMoney<C>>` take references too.
+    fn from(exact: &ExactMoney<C>) -> Self {
+        exact.clone()
+    }
+}
+
+impl<C: Currency> From<&Money<C>> for ExactMoney<C> {
+    /// As [`Money::exact`].
+    fn from(money: &Money<C>) -> Self {
+        money.exact()
+    }
+}
+
+impl<C: Currency> From<Money<C>> for ExactMoney<C> {
+    /// As [`Money::exact`].
+    fn from(money: Money<C>) -> Self {
+        money.exact()
+    }
+}
+
+impl From<&AnyExactMoney> for AnyExactMoney {
+    /// A copy, so that operations taking `impl Into<AnyExactMoney>` take references too.
+    fn from(exact: &AnyExactMoney) -> Self {
+        exact.clone()
+    }
+}
+
+impl From<&AnyMoney> for AnyExactMoney {
+    /// As [`AnyMoney::exact`].
+    fn from(money: &AnyMoney) -> Self {
+        money.exact()
+    }
+}
+
+impl From<AnyMoney> for AnyExactMoney {
+    /// As [`AnyMoney::exact`].
+    fn from(money: AnyMoney) -> Self {
+        money.exact()
     }
 }
 

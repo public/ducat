@@ -387,6 +387,91 @@ impl AnyMoney {
     pub fn signum(&self) -> i8 {
         self.amount.units.signum()
     }
+
+    /// The smaller of `self` and `other`; `self` on a tie of values, as ducat's `min`.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::CurrencyMismatch`] for different currencies. As in ducat, which compares the
+    /// candidate with the smallest so far, `expected` is `other`'s currency and `actual`
+    /// `self`'s.
+    pub fn min(&self, other: &Self) -> Result<Self, Error> {
+        Ok(if other.compare(self)? == Ordering::Less {
+            other.clone()
+        } else {
+            self.clone()
+        })
+    }
+
+    /// The larger of `self` and `other`; `self` on a tie of values, as ducat's `max` (where
+    /// [`Ord::max`], on types that have it, keeps the second).
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::min`].
+    pub fn max(&self, other: &Self) -> Result<Self, Error> {
+        Ok(if other.compare(self)? == Ordering::Greater {
+            other.clone()
+        } else {
+            self.clone()
+        })
+    }
+
+    /// The smallest of `items`, the first of equal values winning, as ducat's variadic `min`;
+    /// `None` for none.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::CurrencyMismatch`] at the first item in another currency than the first item's,
+    /// with `expected` that item's currency and `actual` the first's, as ducat.
+    pub fn min_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Result<Option<Self>, Error> {
+        let mut items = items.into_iter();
+        let Some(first) = items.next() else {
+            return Ok(None);
+        };
+        items
+            .try_fold(first.clone(), |smallest, item| smallest.min(item))
+            .map(Some)
+    }
+
+    /// The largest of `items`, the first of equal values winning, as ducat's variadic `max`;
+    /// `None` for none.
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::min_of`].
+    pub fn max_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Result<Option<Self>, Error> {
+        let mut items = items.into_iter();
+        let Some(first) = items.next() else {
+            return Ok(None);
+        };
+        items
+            .try_fold(first.clone(), |largest, item| largest.max(item))
+            .map(Some)
+    }
+
+    /// `self` limited to `[lo, hi]`, as ducat's `clamp`: `lo` when below it, `hi` when above it,
+    /// otherwise `self` as it is (a value equal to a bound keeps its own scale). An error where
+    /// `Ord::clamp` would panic.
+    ///
+    /// # Errors
+    ///
+    /// In ducat's order: [`Error::CurrencyMismatch`] when `lo` and `hi` differ (`expected`
+    /// `lo`'s currency, `actual` `hi`'s); [`Error::LowAboveHigh`] when `lo > hi`;
+    /// [`Error::CurrencyMismatch`] when `self` is in another currency than the bounds
+    /// (`expected` `self`'s, `actual` `lo`'s).
+    pub fn clamp(&self, lo: &Self, hi: &Self) -> Result<Self, Error> {
+        if lo.compare(hi)? == Ordering::Greater {
+            return Err(Error::LowAboveHigh);
+        }
+        Ok(if self.compare(lo)? == Ordering::Less {
+            lo.clone()
+        } else if self.compare(hi)? == Ordering::Greater {
+            hi.clone()
+        } else {
+            self.clone()
+        })
+    }
 }
 
 impl PartialEq for AnyMoney {

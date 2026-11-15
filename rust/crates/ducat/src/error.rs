@@ -26,6 +26,9 @@ pub enum Error {
     Overflow,
     /// A division by zero, or a ratio with a zero denominator.
     DivisionByZero,
+    /// A `clamp` whose lower bound is above its upper bound: ducat's `RangeError` `clamp(): lo >
+    /// hi` (`clamp: lo > hi` from `ExactMoney#clamp`).
+    LowAboveHigh,
     /// A scale that isn't an integer from 0 to [`MAX_SCALE`](crate::MAX_SCALE).
     InvalidScale,
     /// A currency code that isn't in ISO 4217 List One with a minor unit, and wasn't made with
@@ -239,6 +242,7 @@ impl Error {
             }
             Self::Overflow
             | Self::DivisionByZero
+            | Self::LowAboveHigh
             | Self::InvalidScale
             | Self::UnknownCurrency
             | Self::ExponentOutOfRange
@@ -321,6 +325,7 @@ impl fmt::Display for Error {
             }
             Self::Overflow => f.write_str("the value doesn't fit the type it is narrowed to"),
             Self::DivisionByZero => f.write_str("division by zero"),
+            Self::LowAboveHigh => f.write_str("clamp(): lo > hi"),
             Self::InvalidScale => {
                 write!(f, "invalid scale: use an integer from 0 to {}", crate::MAX_SCALE)
             }

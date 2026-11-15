@@ -1,6 +1,7 @@
 //! `Money<C>`: an amount in a currency known at compile time.
 
 use alloc::string::String;
+use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -375,6 +376,90 @@ impl<C: Currency> Money<C> {
     #[must_use]
     pub fn signum(&self) -> i8 {
         self.amount.units.signum()
+    }
+
+    /// The smaller of `self` and `other`; `self` on a tie of values, as ducat's `min`: 1.0 EUR
+    /// at scale 1 against 1.00 EUR keeps scale 1.
+    ///
+    /// This inherent method takes `self` by value so that `a.min(b)` and `a.min(&b)` call it
+    /// rather than [`Ord::min`] (which agrees on ties, keeping the first, but takes only an owned
+    /// `other`). On a `&Money` receiver, `r.min(..)` is `Ord::min` for references: call
+    /// `r.clone().min(..)` or `Money::min(r.clone(), ..)` instead.
+    #[must_use]
+    pub fn min(self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        if other.compare(&self) == Ordering::Less {
+            other.clone()
+        } else {
+            self
+        }
+    }
+
+    /// The larger of `self` and `other`; `self` on a tie of values, as ducat's `max`: 1.0 EUR
+    /// at scale 1 against 1.00 EUR keeps scale 1.
+    ///
+    /// **Unlike [`Ord::max`]**, which returns the *second* of two equal values. This inherent
+    /// method takes `self` by value so that `a.max(b)` and `a.max(&b)` call it rather than
+    /// `Ord::max`; `core::cmp::max(a, b)`, `Iterator::max`, generic `T: Ord` code and
+    /// `r.max(..)` on a `&Money` receiver still use `Ord`'s rule. For a list, see
+    /// [`Money::max_of`].
+    #[must_use]
+    pub fn max(self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        if other.compare(&self) == Ordering::Greater {
+            other.clone()
+        } else {
+            self
+        }
+    }
+
+    /// The smallest of `items`, the first of equal values winning, as ducat's variadic `min`;
+    /// `None` for none.
+    #[must_use]
+    pub fn min_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Option<Self>
+    where
+        C: 'a,
+    {
+        let mut items = items.into_iter();
+        let first = items.next()?.clone();
+        Some(items.fold(first, Self::min))
+    }
+
+    /// The largest of `items`, the first of equal values winning, as ducat's variadic `max`
+    /// (where `Iterator::max` keeps the last); `None` for none.
+    #[must_use]
+    pub fn max_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Option<Self>
+    where
+        C: 'a,
+    {
+        let mut items = items.into_iter();
+        let first = items.next()?.clone();
+        Some(items.fold(first, Self::max))
+    }
+
+    /// `self` limited to `[lo, hi]`, as ducat's `clamp`: `lo` when below it, `hi` when above it,
+    /// otherwise `self` as it is (a value equal to a bound keeps its own scale).
+    ///
+    /// **Unlike [`Ord::clamp`]**, which panics when `lo > hi`, this returns an error. It takes
+    /// `self` by value so that `a.clamp(lo, hi)` and `a.clamp(&lo, &hi)` call it rather than
+    /// `Ord::clamp`; on a `&Money` receiver, `r.clamp(..)` is `Ord::clamp` for references (it
+    /// panics and returns a reference): call `r.clone().clamp(..)` instead.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::LowAboveHigh`] when `lo > hi`, as ducat's `RangeError`.
+    pub fn clamp(self, lo: impl Borrow<Self>, hi: impl Borrow<Self>) -> Result<Self, Error> {
+        let (lo, hi) = (lo.borrow(), hi.borrow());
+        if lo.compare(hi) == Ordering::Greater {
+            return Err(Error::LowAboveHigh);
+        }
+        Ok(if self.compare(lo) == Ordering::Less {
+            lo.clone()
+        } else if self.compare(hi) == Ordering::Greater {
+            hi.clone()
+        } else {
+            self
+        })
     }
 }
 
