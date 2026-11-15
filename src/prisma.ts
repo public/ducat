@@ -8,7 +8,6 @@
  *  2. a DECIMAL/NUMERIC column (+ a currency column or constant)
  *     -> decimalMoneyField / toDecimalValue
  */
-import { MAX_DECIMAL_SCALE } from './decimal.js';
 import {
   fromMinor,
   money,
@@ -19,6 +18,9 @@ import {
   type Money,
   type MoneyOptions,
 } from './money.js';
+import { readScale, type ScaleColumnOption } from './sql.js';
+
+export type { ScaleColumnOption } from './sql.js';
 
 /** Structural type of Prisma.Decimal / decimal.js / big.js values. */
 export interface DecimalLike {
@@ -43,33 +45,6 @@ export function toDecimalValue<D>(money: Money, Decimal: new (value: string) => 
 }
 
 type Row<A extends string, V> = { [P in A]: V };
-
-/** Options for `minorMoneyField` and `toMinorColumns`: a column that records each amount's scale. */
-export interface ScaleColumnOption<S extends string> {
-  /**
-   * The integer column holding the number of decimals the minor units are counted in (2 for
-   * cents). With it, any scale round-trips, and stored amounts keep their meaning even if a
-   * currency's exponent changes.
-   */
-  readonly scale: S;
-}
-
-/** A scale read from a row: a safe, non-negative integer (a SMALLINT or INT column). */
-function readScale(value: unknown, column: string): number {
-  const scale = typeof value === 'bigint' ? Number(value) : value;
-  // capped like parsed decimals: a corrupt row must not make toDecimal build a huge power of ten
-  const isValid =
-    typeof scale === 'number' &&
-    Number.isInteger(scale) &&
-    scale >= 0 &&
-    scale <= MAX_DECIMAL_SCALE;
-  if (!isValid) {
-    throw new RangeError(
-      `Expected an integer scale from 0 to ${MAX_DECIMAL_SCALE} in "${column}", got ${String(value)}`,
-    );
-  }
-  return scale;
-}
 
 /**
  * A Prisma result-extension field that exposes a Money built from `amount_minor` + `currency`

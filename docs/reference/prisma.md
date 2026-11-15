@@ -68,4 +68,4 @@ Money from a Decimal (or decimal string) column, exactly. Trailing zeros are fin
 ## Types
 
 - `DecimalLike`: `{ toFixed(): string }`, the structural type of `Prisma.Decimal`, decimal.js and big.js values.
-- `ScaleColumnOption<S>`: `{ scale: S }`: the integer column holding the number of decimals the minor units are counted in (2 for cents).
+- `ScaleColumnOption<S>`: `{ scale: S }`: the integer column holding the number of decimals the minor units are counted in (2 for cents). Kysely's `setMoney` and `selectMoney` and Drizzle's `moneyMinor` take the same option (see [Kysely](kysely.md) and [Drizzle](drizzle.md)).

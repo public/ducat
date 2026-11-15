@@ -154,7 +154,10 @@ describe('package entries', () => {
     const expected: Record<string, string[]> = {};
     for (const { key, source } of ENTRIES) {
       actual[key] = [...packageImportsOf(join(ROOT, source))];
-      expected[key] = key.startsWith('./drizzle/') ? [`drizzle-orm/${key.slice(10)}-core`] : [];
+      // the dialect's column types, and drizzle-orm's sql for scaledMoney
+      expected[key] = key.startsWith('./drizzle/')
+        ? ['drizzle-orm', `drizzle-orm/${key.slice(10)}-core`]
+        : [];
       if (key === './zod' || key === './valibot' || key === './kysely') {
         expected[key] = [key.slice(2)];
       }
@@ -169,9 +172,21 @@ describe('package entries', () => {
     const internal = new Set(Object.keys(await import('../src/sql.js')));
     const expectedNames: Record<string, string[]> = {
       // SQLite stores decimals as TEXT, so its entry has no column size to export
-      './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor'],
-      './drizzle/pg': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
-      './drizzle/mysql': ['DEFAULT_DECIMAL_SIZE', 'moneyDecimal', 'moneyJson', 'moneyMinor'],
+      './drizzle/sqlite': ['moneyDecimal', 'moneyJson', 'moneyMinor', 'scaledMoney'],
+      './drizzle/pg': [
+        'DEFAULT_DECIMAL_SIZE',
+        'moneyDecimal',
+        'moneyJson',
+        'moneyMinor',
+        'scaledMoney',
+      ],
+      './drizzle/mysql': [
+        'DEFAULT_DECIMAL_SIZE',
+        'moneyDecimal',
+        'moneyJson',
+        'moneyMinor',
+        'scaledMoney',
+      ],
       './kysely': [
         'DEFAULT_DECIMAL_SIZE',
         'MoneyResultPlugin',

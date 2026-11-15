@@ -49,6 +49,7 @@ row.fee; // → 1.234 KWD
 
 - **Read** minor units with `selectMoney(eb, amount, currency)`, and a NUMERIC/DECIMAL (SQLite TEXT) column with `selectDecimalMoney`. Take the currency from a column, or fix it with `fixed('EUR')`, which types the result `Money<'EUR'>`.
 - **Write** with `setMoney(m, 'amount_minor', 'currency')` or `setDecimalMoney`, in `values()`, `set()` and upserts. Give `setDecimalMoney` and `compareDecimalMoney` the column's size (`{ precision, scale }`) so they throw where the column would round or clamp the value.
+- **Keep a scale column** for amounts finer (or coarser) than the currency: pass `{ scale: 'amount_scale' }` to `setMoney` and `selectMoney`. See [Store a scale column](store-money-in-a-database.md#store-a-scale-column-if-amounts-can-be-finer-than-the-currency).
 - **Filter** with `compareMoney(eb, amount, currency, op, m)`, which compares currency and amount together, so 5 USD never matches 500 JPY. There is no `in`-list form; combine comparisons with `eb.or`.
 - **Sum** with `sumMoney` or `sumDecimalMoney`. If rows can be in more than one currency, group by the currency column: mixed currencies make the result throw.
 

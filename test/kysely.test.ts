@@ -3,7 +3,7 @@ import { Kysely, SqliteDialect } from 'kysely';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { CurrencyMismatchError, money } from '../src/index.js';
 import {
   moneyHelpers,
@@ -30,6 +30,8 @@ kyselyScenario('SQLite (better-sqlite3)', true, {
       'amount_minor INTEGER NOT NULL, currency TEXT)',
     'CREATE TABLE ducat_kysely_orders (id INTEGER PRIMARY KEY, total_minor INTEGER NOT NULL, price TEXT)',
     'CREATE TABLE ducat_kysely_ledger (id INTEGER PRIMARY KEY, amount_minor INTEGER, currency TEXT)',
+    'CREATE TABLE ducat_kysely_scaled (id INTEGER PRIMARY KEY, amount_minor INTEGER, ' +
+      'currency TEXT NOT NULL, amount_scale SMALLINT)',
   ],
   canStream: true,
 });
@@ -156,6 +158,31 @@ describe('helpers outside a query', () => {
     expect(() =>
       // @ts-expect-error a fixed column needs Money in its currency
       setMoney(money('1', 'USD'), 'total_minor', fixed('EUR')),
+    ).toThrow(CurrencyMismatchError);
+  });
+
+  it("setMoney with a scale column writes the units at the money's own scale, and the scale", () => {
+    const scale = { scale: 'amount_scale' } as const;
+    expect(
+      setMoney(money('1.005', 'EUR', { scale: 3 }), 'amount_minor', 'currency', scale),
+    ).toEqual({ amount_minor: '1005', currency: 'EUR', amount_scale: 3 });
+    expect(setMoney(money('12', 'EUR', { scale: 0 }), 'amount_minor', 'currency', scale)).toEqual({
+      amount_minor: '12',
+      currency: 'EUR',
+      amount_scale: 0,
+    });
+    expect(setMoney(money('12.34', 'EUR'), 'total_minor', fixed('EUR'), scale)).toEqual({
+      total_minor: '1234',
+      amount_scale: 2,
+    });
+    const written = setMoney(money('1.5', 'JPY', { scale: 1 }), 'a', 'c', { scale: 's' });
+    expectTypeOf(written).toEqualTypeOf<{ a: string; c: string } & { s: number }>();
+    expect(() =>
+      setMoney(money('9223372036.854775808', 'EUR', { scale: 9 }), 'a', 'c', scale),
+    ).toThrow(/range of a BIGINT/);
+    expect(() =>
+      // @ts-expect-error a fixed column needs Money in its currency
+      setMoney(money('1', 'USD'), 'total_minor', fixed('EUR'), scale),
     ).toThrow(CurrencyMismatchError);
   });
 

@@ -27,17 +27,100 @@ money('12.345', 'EUR', { scale: 3 }).toMinor(); // throws RoundingError: round()
 money('12.345', 'EUR', { scale: 3 }).toScaledUnits(); // → 12345n (pair it with scale 3)
 ```
 
-If you keep a scale column, write `m.toScaledUnits()` and `m.scale` instead, as in the last line.
+If you keep a scale column, write `m.toScaledUnits()` and `m.scale` instead, as in the last line, or let the helpers do it (see the next section).
 
 If your driver returns BIGINT as a JS `bigint` (Prisma maps `BigInt` to `bigint`), pass it straight in: the helpers accept it, and `fromMinor` normalises it back to a number when it is safe.
 
 ## Store a scale column if amounts can be finer than the currency
 
-A scale column (the Prisma helpers) makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`. Write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`. Any scale then round-trips, sub-minor amounts included, which `toMinorColumns` alone refuses. Stored rows also keep their meaning if a currency's exponent changes (see below).
+A scale column makes minor units self-describing: `amount_scale SMALLINT NOT NULL` next to `amount_minor` and `currency`, holding the number of decimals the units are counted in. Any scale then round-trips, above or below the currency's, which minor units alone refuse. Stored rows also keep their meaning if a currency's exponent changes (see below). Every minor-units helper takes it as the same option, `{ scale }`, naming the column:
+
+- **Prisma**, or plain SQL: write with `toMinorColumns(m, 'amountMinor', 'currency', { scale: 'amountScale' })` and read with `minorMoneyField('amountMinor', 'currency', { scale: 'amountScale' })`.
+- **Kysely**: write with `setMoney(m, 'amount_minor', 'currency', { scale: 'amount_scale' })` and read with `selectMoney(eb, 'amount_minor', 'currency', { scale: 'amount_scale' })`.
+- **Drizzle**: declare `moneyMinor('EUR', { scale: 'amountScale' })` beside an integer `amountScale` column, write `{ amount: m, amountScale: m.scale }`, and read with `scaledMoney(table.amount)`.
+
+With Kysely:
+
+```ts
+import Database from 'better-sqlite3';
+import { Kysely, SqliteDialect } from 'kysely';
+import { money } from '@ducatjs/money';
+import {
+  moneyHelpers,
+  MoneyResultPlugin,
+  setMoney,
+  type MinorUnitsColumn,
+} from '@ducatjs/money/kysely';
+
+interface Schema {
+  rates: { id: number; amount_minor: MinorUnitsColumn; currency: string; amount_scale: number };
+}
+
+const client = new Database(':memory:');
+client.defaultSafeIntegers(true);
+client.exec(
+  'CREATE TABLE rates (id INTEGER, amount_minor INTEGER NOT NULL, currency TEXT NOT NULL, ' +
+    'amount_scale SMALLINT NOT NULL)',
+);
+const db = new Kysely<Schema>({
+  dialect: new SqliteDialect({ database: client }),
+  plugins: [new MoneyResultPlugin()],
+});
+const { selectMoney } = moneyHelpers('sqlite');
+const scale = { scale: 'amount_scale' } as const;
+
+const perLitre = money('1.849', 'EUR', { scale: 3 });
+setMoney(perLitre, 'amount_minor', 'currency', scale); // → { amount_minor: '1849', currency: 'EUR', amount_scale: 3 }
+setMoney(perLitre, 'amount_minor', 'currency'); // throws RangeError: round() it first
+await db
+  .insertInto('rates')
+  .values({ id: 1, ...setMoney(perLitre, 'amount_minor', 'currency', scale) })
+  .execute();
+const row = await db
+  .selectFrom('rates')
+  .select((eb) => selectMoney(eb, 'amount_minor', 'currency', scale).as('rate'))
+  .executeTakeFirstOrThrow();
+row.rate; // → 1.849 EUR
+row.rate?.scale; // → 3
+```
+
+With Drizzle, where a column can't read a sibling column, so the scaled column is read with `scaledMoney` rather than by itself:
+
+```ts
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { integer, sqliteTable } from 'drizzle-orm/sqlite-core';
+import { money } from '@ducatjs/money';
+import { moneyMinor, scaledMoney } from '@ducatjs/money/drizzle/sqlite';
+
+const rates = sqliteTable('rates', {
+  id: integer('id').primaryKey(),
+  amount: moneyMinor('EUR', { scale: 'amountScale' })('amount_minor').notNull(),
+  amountScale: integer('amount_scale').notNull(),
+});
+
+const client = new Database(':memory:');
+client.defaultSafeIntegers(true);
+client.exec(
+  'CREATE TABLE rates (id INTEGER PRIMARY KEY, amount_minor INTEGER NOT NULL, ' +
+    'amount_scale SMALLINT NOT NULL)',
+);
+const db = drizzle({ client });
+
+const wholeEuros = money('12', 'EUR', { scale: 0 });
+db.insert(rates).values({ id: 1, amount: wholeEuros, amountScale: wholeEuros.scale }).run();
+const row = db
+  .select({ amount: scaledMoney(rates.amount) })
+  .from(rates)
+  .get();
+row?.amount; // → 12 EUR
+row?.amount.scale; // → 0
+db.select().from(rates).all(); // throws TypeError: select it with scaledMoney
+```
 
 To add the column to existing rows, backfill each currency's current exponent in the migration; a missing (NULL) scale throws on read.
 
-Only the Prisma helpers have a scale column. Elsewhere, store `m.toScaledUnits()` and `m.scale` yourself, or use a decimal, JSON or the node-postgres composite column, which keep the scale.
+Comparisons and sums in SQL (Kysely's `compareMoney` and `sumMoney`, Drizzle's `eq` and `sum`) see the stored integers only, so restrict them to one scale with a condition on the scale column, or read the rows and compare the Money.
 
 ## Read a decimal column
 
@@ -49,5 +132,5 @@ Minor units stored without a scale are read at the currency's exponent in the in
 
 ## Related
 
-- Reference: [Prisma helpers](../reference/prisma.md), [`@ducatjs/money`](../reference/money.md) (`toMinor`, `toScaledUnits`, `fromMinor`)
+- Reference: [Prisma helpers](../reference/prisma.md), [Kysely](../reference/kysely.md), [Drizzle](../reference/drizzle.md), [`@ducatjs/money`](../reference/money.md) (`toMinor`, `toScaledUnits`, `fromMinor`)
 - Explanation: [About storing amounts](../explanation/storage.md), [Decisions](../explanation/decisions.md)
