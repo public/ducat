@@ -38,4 +38,6 @@ Companion crates: [ducat-words](https://crates.io/crates/ducat-words) (amounts i
 [ducat-sqlx](https://crates.io/crates/ducat-sqlx) and [ducat-diesel](https://crates.io/crates/ducat-diesel)
 (money columns), [ducat-fetch](https://crates.io/crates/ducat-fetch) (reference-rate fetchers).
 
-MSRV: Rust 1.85 (the `proptest` feature needs 1.88). License: MIT.
+MSRV: Rust 1.85 (the `proptest` feature needs 1.88). License: MIT AND Unicode-3.0: the
+code is MIT (LICENSE); the CLDR territory and cash data is © Unicode, Inc., under the Unicode License v3
+(LICENSE-UNICODE). NOTICE lists the embedded data and its sources.

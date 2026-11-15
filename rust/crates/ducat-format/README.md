@@ -41,5 +41,5 @@ ducat-format = { version = "0.1", default-features = false, features = ["std", "
 
 The crate needs only `alloc` (`default-features = false` without `std`).
 
-License: MIT. The embedded CLDR and ICU data is © Unicode, Inc., under the Unicode License v3 (see
-NOTICE).
+License: MIT AND Unicode-3.0. The crate's code is MIT (LICENSE); the embedded CLDR and ICU data is © Unicode,
+Inc., under the Unicode License v3 (LICENSE-UNICODE). NOTICE lists the data and its sources.

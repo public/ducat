@@ -27,4 +27,5 @@ assert_eq!(
 The crate has no CLDR currency names, so the caller gives the currency's name, in the plural forms
 the language uses. It needs only `alloc` (`default-features = false` without `std`).
 
-License: MIT. The embedded CLDR data is © Unicode, Inc., under the Unicode License v3 (see NOTICE).
+License: MIT AND Unicode-3.0. The crate's code is MIT (LICENSE); the embedded CLDR data is © Unicode, Inc., under
+the Unicode License v3 (LICENSE-UNICODE). NOTICE lists the data and its sources.

@@ -426,7 +426,8 @@ The decisions in "Choices that are expensive to reverse" are the coordinator's, 
      (format and parse, on CLDR's data), `ducat-sqlx`, `ducat-diesel` (on the internal `ducat-sql-core`) and
      `ducat-fetch` (rate fetchers: sans-IO, with a blocking ureq transport; reqwest was the plan, M7b chose otherwise
      to need no async runtime).
-8. **The licence is MIT,** as ducat's is.
+8. **The licence is MIT,** as ducat's is. The crates that embed Unicode data (`ducat`: CLDR's territories and cash
+   rounding; `ducat-words`, `ducat-format`) are `MIT AND Unicode-3.0` and ship the Unicode licence as LICENSE-UNICODE.
 
 ## Decisions made while building milestone 1
 Agreed with the coordinator on 2026-11-14. The port moved into ducat's repository the same day (see "Where it
@@ -565,7 +566,7 @@ milestone 1).
   approval in the `crates-io` environment, gets a short-lived token through crates.io's trusted publishing, and runs
   `cargo publish` for each crate in order, waiting for the index to show each version before the next.
 - **What a .crate holds:** each crate's `include` keeps the package to its sources, README, LICENSE and NOTICE
-  (ducat-format: and its example). Tests, generators, `spec/` and `data/` stay in the repository; the generated
+  (ducat, ducat-words and ducat-format: and LICENSE-UNICODE; ducat-format: and its example). Tests, generators, `spec/` and `data/` stay in the repository; the generated
   tables are committed under each crate's `src/`, so nothing a build reads is outside the crate.
 
 ## Working rules
