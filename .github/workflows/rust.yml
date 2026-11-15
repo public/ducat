@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
-      - run: cargo test -p ducat-sqlx --locked --no-fail-fast --all-features --test it -- --nocapture postgres:: mysql::
+      - run: 'cargo test -p ducat-sqlx --locked --no-fail-fast --all-features --test it -- --nocapture postgres:: mysql::'
 
   format-features:
     name: ducat-format, one language and root only
