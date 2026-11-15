@@ -110,6 +110,8 @@ mod serde_impl;
 pub mod tax;
 #[cfg(feature = "territories")]
 pub mod territories;
+#[cfg(feature = "proptest")]
+pub mod testing;
 mod wide;
 #[cfg(feature = "wire")]
 pub mod wire;

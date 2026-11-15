@@ -50,6 +50,47 @@ describe('parse: a name with a parenthesis or hyphen is not a sign', () => {
       );
     }
   });
+
+  it('reads a hyphen inside a long name as part of the name (fr NZD, pt-CV CVE)', () => {
+    const name = { currencyDisplay: 'name' } as const;
+    if (writes('dollars néo-zélandais', '1234.50', 'NZD', 'fr', name)) {
+      expect(toDecimal(parse('1 234,50 dollars néo-zélandais', 'NZD', 'fr'))).toBe('1234.50');
+      expect(toDecimal(parse('-1 234,50 dollars néo-zélandais', 'NZD', 'fr'))).toBe('-1234.50');
+      expect(roundTrip('1234.50', 'NZD', 'fr', name)).toBe('1234.50');
+      expect(roundTrip('-1234.50', 'NZD', 'fr', name)).toBe('-1234.50');
+    }
+    if (writes('escudos cabo-verdianos', '1234.50', 'CVE', 'pt-CV', name)) {
+      expect(toDecimal(parse('1234$50 escudos cabo-verdianos', 'CVE', 'pt-CV'))).toBe('1234.50');
+      expect(toDecimal(parse('-1234$50 escudos cabo-verdianos', 'CVE', 'pt-CV'))).toBe('-1234.50');
+      expect(toDecimal(parse('1234$50- CVE', 'CVE', 'pt-CV'))).toBe('-1234.50');
+    }
+    expect(toDecimal(parse('USD -5.00', 'USD', 'en-US'))).toBe('-5.00');
+  });
+
+  it('reads a long name without the symbol ICU 78.3 glues to it in pt-CV and kea-CV', () => {
+    // ICU 78.3 writes "BAM marcos bósnio-herzegóvinos conversíveis"; format writes the name
+    // without the symbol, and parse reads both, positive
+    const name = { currencyDisplay: 'name' } as const;
+    const read: Record<string, string> = {};
+    const want: Record<string, string> = {};
+    for (const locale of ['pt-CV', 'kea-CV']) {
+      if (new Intl.NumberFormat(locale).resolvedOptions().locale !== locale) {
+        console.warn(`no Intl data for ${locale} in this runtime: skipped`);
+        continue;
+      }
+      for (const currency of ['BAM', 'CRC', 'CVE', 'KRW', 'SSP', 'XAF', 'XOF', 'ZAR']) {
+        for (const amount of ['1234', '-1234']) {
+          read[`${locale} ${currency} ${amount}`] = roundTrip(amount, currency, locale, name);
+          want[`${locale} ${currency} ${amount}`] = toDecimal(money(amount, currency));
+        }
+        // Intl's own text, with the symbol glued where the runtime glues it
+        const intl = new Intl.NumberFormat(locale, { style: 'currency', currency, ...name });
+        read[intl.format(1234)] = toDecimal(parse(intl.format(1234), currency, locale));
+        want[intl.format(1234)] = toDecimal(money('1234', currency));
+      }
+    }
+    expect(read).toEqual(want);
+  });
 });
 
 describe('parse: the currency’s own text outside the affix class', () => {
