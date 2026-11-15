@@ -1,1 +1,5 @@
-../../../NOTICE
+ducat-fetch
+Copyright (c) Alex Stapleton
+Licensed under the MIT License (see LICENSE).
+
+This crate embeds no third-party data.
