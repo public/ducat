@@ -102,12 +102,13 @@ impl Response {
 ///
 /// let mut seen = Vec::new();
 /// let mut transport = |url: &str, headers: &[(&str, &str)]| {
-///     seen.push((url.to_owned(), headers.to_vec()));
+///     let headers: Vec<String> = headers.iter().map(|(name, value)| format!("{name}: {value}")).collect();
+///     seen.push((url.to_owned(), headers));
 ///     Ok::<_, TransportError>(Response::new(503, ""))
 /// };
 /// let error = fetch_ecb(&mut transport, &FetchEcbOptions::default()).unwrap_err();
 /// assert_eq!(error.status(), Some(503));
-/// assert_eq!(seen[0].1, [("accept", "application/xml")]);
+/// assert_eq!(seen[0].1, ["accept: application/xml"]);
 /// ```
 pub trait Transport {
     /// GETs `url` with `headers`, following redirects as a browser would, and returns the final
@@ -149,7 +150,10 @@ pub struct TransportError {
 
 impl TransportError {
     /// A transport error of `kind`, caused by `source` (an error, or a message).
-    pub fn new(kind: TransportErrorKind, source: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+    pub fn new(
+        kind: TransportErrorKind,
+        source: impl Into<Box<dyn StdError + Send + Sync>>,
+    ) -> Self {
         Self {
             kind,
             source: source.into(),

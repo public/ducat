@@ -17,8 +17,8 @@ pub use boc::{
 };
 pub use ecb::{
     ECB_DATA_API, ECB_URLS, EcbHistory, EcbRangeRequests, EcbUrls, FetchEcbOptions,
-    FetchEcbRangeOptions, ecb_range_requests, ecb_range_tables, ecb_request, ecb_tables,
-    fetch_ecb, fetch_ecb_range,
+    FetchEcbRangeOptions, ecb_range_requests, ecb_range_tables, ecb_request, ecb_tables, fetch_ecb,
+    fetch_ecb_range,
 };
 pub use error::{Feed, FetchError};
 pub use transport::{Request, Response, Transport, TransportError, TransportErrorKind};

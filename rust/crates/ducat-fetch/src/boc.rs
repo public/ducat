@@ -51,7 +51,10 @@ pub fn bank_of_canada_request(options: &FetchBankOfCanadaOptions) -> Result<Requ
         }
         (Some(start), Some(end)) => format!("?start_date={start}&end_date={end}"),
     };
-    Ok(Request::get(format!("{BANK_OF_CANADA_URL}{query}"), Accept::Json))
+    Ok(Request::get(
+        format!("{BANK_OF_CANADA_URL}{query}"),
+        Accept::Json,
+    ))
 }
 
 /// The tables in the response to [`bank_of_canada_request`], parsed by

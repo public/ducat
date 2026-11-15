@@ -184,7 +184,10 @@ pub fn ecb_range_requests(
         }
         query = format!("{query}&endPeriod={end}");
     }
-    let url = format!("{ECB_DATA_API}/D.{}.EUR.SP00.A", options.currencies.join("+"));
+    let url = format!(
+        "{ECB_DATA_API}/D.{}.EUR.SP00.A",
+        options.currencies.join("+")
+    );
     Ok(EcbRangeRequests {
         series: Request::get(format!("{url}?format=csvdata&detail=nodata"), Accept::Csv),
         data: Request::get(format!("{url}{query}&detail=dataonly"), Accept::Csv),
@@ -215,7 +218,10 @@ pub fn ecb_range_tables(
         available_at: options.available_at,
         decimals: &decimals,
     };
-    parsed(&requests.data, parse_ecb_sdmx_csv(&data_body, &parse_options))
+    parsed(
+        &requests.data,
+        parse_ecb_sdmx_csv(&data_body, &parse_options),
+    )
 }
 
 /// Fetches a date range of ECB euro reference rates from the ECB Data Portal and parses them with
