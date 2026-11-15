@@ -179,6 +179,9 @@ pub enum Error {
     /// A rate-source file that can't be read: not the source's format, a bad date, an unreadable
     /// cell, or two different values for one rate (ducat's `SyntaxError`).
     MalformedRates,
+    /// A dated history given a table without an `as_of`: ducat's `RangeError` `rateHistory needs
+    /// tables with an asOf`.
+    UndatedTable,
     /// A wire value that is malformed, or that its format can't hold: `google.type.Money` with
     /// `nanos` out of range or of the wrong sign, a negative ISO 20022 amount, more than 5 decimals
     /// for one.
@@ -309,7 +312,8 @@ impl Error {
             | Self::QuoteMismatch
             | Self::InvalidQuote
             | Self::InvalidDecimals
-            | Self::InvalidWire => ErrorKind::Range,
+            | Self::InvalidWire
+            | Self::UndatedTable => ErrorKind::Range,
             #[cfg(feature = "convert")]
             Self::RateUnavailable { .. } | Self::RateExpired { .. } => ErrorKind::Range,
         }
@@ -403,6 +407,7 @@ impl fmt::Display for Error {
             Self::InvalidTime => f.write_str("an invalid date or time: expected YYYY-MM-DD, or YYYY-MM-DDTHH:MM[:SS[.sss]] with Z or an offset ±HH:MM"),
             Self::QuoteMismatch => f.write_str("the quote isn't the rate"),
             Self::MalformedRates => f.write_str("the rate file can't be read"),
+            Self::UndatedTable => f.write_str("rateHistory needs tables with an asOf"),
             Self::InvalidDecimals => f.write_str("a source's decimals are 0 to 30"),
             Self::InvalidWire => f.write_str("the wire value is malformed, or out of its format's range"),
             Self::InvalidQuote => f.write_str("a quote's number must be positive, and its per a positive integer"),

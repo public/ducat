@@ -406,8 +406,11 @@ impl<C: Currency> Money<C> {
     ///
     /// This inherent method takes `self` by value so that `a.min(b)` and `a.min(&b)` call it
     /// rather than [`Ord::min`] (which agrees on ties, keeping the first, but takes only an owned
-    /// `other`). On a `&Money` receiver, `r.min(..)` is `Ord::min` for references: call
-    /// `r.clone().min(..)` or `Money::min(r.clone(), ..)` instead.
+    /// `other`).
+    ///
+    /// On a `&Money` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods: the
+    /// second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().min(..)` or
+    /// the free [`Money::min_of`] instead.
     #[must_use]
     pub fn min(self, other: impl Borrow<Self>) -> Self {
         let other = other.borrow();
@@ -423,9 +426,12 @@ impl<C: Currency> Money<C> {
     ///
     /// **Unlike [`Ord::max`]**, which returns the *second* of two equal values. This inherent
     /// method takes `self` by value so that `a.max(b)` and `a.max(&b)` call it rather than
-    /// `Ord::max`; `core::cmp::max(a, b)`, `Iterator::max`, generic `T: Ord` code and
-    /// `r.max(..)` on a `&Money` receiver still use `Ord`'s rule. For a list, see
-    /// [`Money::max_of`].
+    /// `Ord::max`; `core::cmp::max(a, b)`, `Iterator::max` and generic `T: Ord` code still use
+    /// `Ord`'s rule.
+    ///
+    /// On a `&Money` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods: the
+    /// second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().max(..)` or
+    /// the free [`Money::max_of`] instead.
     #[must_use]
     pub fn max(self, other: impl Borrow<Self>) -> Self {
         let other = other.borrow();
@@ -465,8 +471,11 @@ impl<C: Currency> Money<C> {
     ///
     /// **Unlike [`Ord::clamp`]**, which panics when `lo > hi`, this returns an error. It takes
     /// `self` by value so that `a.clamp(lo, hi)` and `a.clamp(&lo, &hi)` call it rather than
-    /// `Ord::clamp`; on a `&Money` receiver, `r.clamp(..)` is `Ord::clamp` for references (it
-    /// panics and returns a reference): call `r.clone().clamp(..)` instead.
+    /// `Ord::clamp`.
+    ///
+    /// On a `&Money` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods: the
+    /// second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().clamp(..)`
+    /// or the free [`Money::max_of`] and [`Money::min_of`] instead.
     ///
     /// # Errors
     ///
