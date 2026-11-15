@@ -24,8 +24,9 @@ sqlite = ["diesel/sqlite", "dep:libsqlite3-sys"]
 ducat = { path = "../ducat", default-features = false, features = ["std"] }
 ducat-sql-core = { path = "../ducat-sql-core" }
 diesel = { version = "2.2", default-features = false }
-# only to bundle SQLite under the `sqlite` feature; diesel 2.2 accepts libsqlite3-sys up to 0.30
-libsqlite3-sys = { version = "0.30", optional = true, default-features = false, features = ["bundled"] }
+# only to bundle SQLite under the `sqlite` feature. A `links` crate exists once in a build, so the
+# range spans what diesel's own requirement allows (2.2: <0.36, 2.4: <0.41) and unifies with it
+libsqlite3-sys = { version = ">=0.30, <0.41", optional = true, default-features = false, features = ["bundled"] }
 
 [dev-dependencies]
 ducat = { path = "../ducat", default-features = false, features = ["std", "iso", "proptest"] }
