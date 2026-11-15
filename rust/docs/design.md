@@ -568,6 +568,11 @@ milestone 1).
 - **What a .crate holds:** each crate's `include` keeps the package to its sources, README, LICENSE and NOTICE
   (ducat, ducat-words and ducat-format: and LICENSE-UNICODE; ducat-format: and its example). Tests, generators, `spec/` and `data/` stay in the repository; the generated
   tables are committed under each crate's `src/`, so nothing a build reads is outside the crate.
+- **NOTICE:** each crate has its own, with a `[Section]` per third-party source it embeds (its version, URL and
+  retrieval date). `scripts/check-rust-notices.py` (CI, `rust.yml`) maps each generated file's `GENERATED ... from
+  <inputs>` header, and each hand-copied table's `// DATA from <source>` line, to the sections they need, and fails
+  on a missing or extra section, an unknown input, or a licence that doesn't follow. A new data input means a new
+  entry in its `INPUTS` and a section in the NOTICE of each crate that embeds it.
 
 ## Working rules
 - Conventional Commits, and no AI attribution in commits or PRs (ducat's rule).
