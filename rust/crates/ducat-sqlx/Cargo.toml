@@ -1,0 +1,28 @@
+[package]
+name = "ducat-sqlx"
+version = "0.0.0"
+description = "Money columns for sqlx: exact Postgres NUMERIC and BIGINT amounts, ducat's money composite type, and MySQL and SQLite column shapes"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+default = ["postgres"]
+## Postgres: exact NUMERIC (binary and text) and BIGINT amounts, and the `ducat_money` composite type.
+postgres = ["sqlx/postgres"]
+## MySQL and MariaDB: DECIMAL and BIGINT amounts.
+mysql = ["sqlx/mysql"]
+## SQLite: TEXT decimal and INTEGER minor-unit amounts.
+sqlite = ["sqlx/sqlite"]
+
+[dependencies]
+ducat = { path = "../ducat", default-features = false, features = ["std"] }
+sqlx = { version = "0.8", default-features = false }
+
+[dev-dependencies]
+ducat = { path = "../ducat", default-features = false, features = ["std", "iso", "proptest"] }
+proptest = { version = "1.6", default-features = false, features = ["std"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio"] }
+tokio = { version = "1", default-features = false, features = ["rt", "macros"] }

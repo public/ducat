@@ -44,6 +44,43 @@ jobs:
       # ducat-fetch's sans-IO core without ureq (the README's doc examples need ureq); its live
       # smoke test is #[ignore]d: CI makes no requests
       - run: cargo test -p ducat-fetch --locked --no-fail-fast --no-default-features --lib --tests
+      # ducat-sqlx with every database: SQLite runs in memory; Postgres and MySQL skip here (the
+      # sqlx-databases job runs them against servers)
+      - run: cargo test -p ducat-sqlx --locked --no-fail-fast --all-features
+
+  sqlx-databases:
+    name: ducat-sqlx on Postgres and MySQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # the same servers and settings as ci.yml's TypeScript database tests
+    services:
+      postgres:
+        # pinned by digest (postgres 18.6); update the tag and digest together, and in ci.yml
+        image: postgres:18@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42
+        env:
+          POSTGRES_PASSWORD: ducat
+          POSTGRES_DB: ducat
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+      mysql:
+        # pinned by digest (mysql 8.4.13); update the tag and digest together, and in ci.yml
+        image: mysql:8.4@sha256:a81d043930e51745522bd5c430961cf8286f0a23f0a9a2a6e0108f7ea71b0902
+        env:
+          MYSQL_ROOT_PASSWORD: ducat
+          MYSQL_DATABASE: ducat
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -pducat" --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      DUCAT_PG_URL: postgres://postgres:ducat@127.0.0.1:5432/ducat
+      DUCAT_MYSQL_URL: mysql://root:ducat@127.0.0.1:3306/ducat
+      # a lost URL fails the job instead of skipping the tests
+      DUCAT_REQUIRE_DB: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - run: 'cargo test -p ducat-sqlx --locked --no-fail-fast --all-features --test it -- --nocapture postgres:: mysql::'
 
   format-features:
     name: ducat-format, one language and root only
@@ -88,6 +125,10 @@ jobs:
       # ureq 3, ureq-proto and zeroize declare 1.85; rustls, ring and webpki-roots less
       - run: cargo +1.85 check -p ducat-fetch --lib --locked
       - run: cargo +1.85 check -p ducat-fetch --lib --locked --no-default-features
+      # sqlx 0.8.6 and its dependencies need 1.85 at most, so ducat-sqlx keeps the workspace's MSRV
+      - run: cargo +1.85 check -p ducat-sqlx --lib --locked
+      - run: cargo +1.85 check -p ducat-sqlx --lib --locked --no-default-features
+      - run: cargo +1.85 check -p ducat-sqlx --lib --locked --all-features
 
   no-std:
     name: no_std
@@ -155,7 +196,19 @@ jobs:
       - run: cargo clippy -p ducat-format --all-targets --locked -- -D warnings
       - run: cargo clippy -p ducat-fetch --all-targets --locked -- -D warnings
       - run: cargo clippy -p ducat-fetch --all-targets --no-default-features --locked -- -D warnings
-      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-fetch --no-deps --locked
+      # ducat-sqlx: no database, each database alone, and all of them
+      - run: cargo clippy -p ducat-sqlx --lib --no-default-features --locked -- -D warnings
+      - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features postgres --locked -- -D warnings
+      - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features mysql --locked -- -D warnings
+      - run: cargo clippy -p ducat-sqlx --all-targets --no-default-features --features sqlite --locked -- -D warnings
+      - run: cargo clippy -p ducat-sqlx --all-targets --all-features --locked -- -D warnings
+      - run: cargo doc -p ducat -p ducat-words -p ducat-format -p ducat-fetch -p ducat-sqlx --no-deps --locked
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc -p ducat-sqlx --no-deps --locked --no-default-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc -p ducat-sqlx --no-deps --locked --all-features
         env:
           RUSTDOCFLAGS: -D warnings
       # intra-doc links to feature-gated items must resolve with every feature and with none
