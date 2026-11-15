@@ -42,7 +42,7 @@ pub mod klarna;
 pub mod paypal;
 #[cfg(feature = "stripe")]
 pub mod stripe;
-#[rustfmt::skip] // generated: tests/processor_tables.rs checks it byte for byte
+#[rustfmt::skip] // generated: tests/it/processor_tables.rs checks it byte for byte
 mod tables;
 
 use crate::amount::Amount;

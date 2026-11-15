@@ -10,11 +10,7 @@ use ducat::finance::{Date, DayCount};
 use ducat::iso::Usd;
 use ducat::{AnyMoney, Error, Money, Ratio, Rounding};
 
-type Result = core::result::Result<(), Error>;
-
-fn usd(text: &str) -> Money<Usd> {
-    text.parse().unwrap()
-}
+use crate::common::{Result, usd};
 
 fn days(texts: &[&str]) -> Vec<Date> {
     texts.iter().map(|text| text.parse().unwrap()).collect()

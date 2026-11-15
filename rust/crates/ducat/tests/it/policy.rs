@@ -12,7 +12,7 @@ use ducat::policy::RoundingPolicy;
 use ducat::pricing::{PriceTier, TieredPricing, TiersMode};
 use ducat::{Error, Money, Rounding};
 
-type Result = core::result::Result<(), Error>;
+use crate::common::Result;
 
 fn chf(text: &str) -> Money<Chf> {
     text.parse().unwrap()

@@ -7,7 +7,7 @@ use ducat::iso::{Chf, Eur};
 use ducat::policy::RoundingPolicy;
 use ducat::{AnyMoney, CurrencyCode, Error, Money, Rounding, crypto, historic};
 
-type Result = core::result::Result<(), Error>;
+use crate::common::Result;
 
 /// ducat's `cr`: an amount cash-rounded, as a decimal.
 fn cr(amount: &str, currency: &str, country: Option<&str>) -> String {

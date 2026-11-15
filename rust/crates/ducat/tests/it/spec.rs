@@ -27,19 +27,12 @@ use ducat::iso::Eur;
 use ducat::{AnyMoney, CurrencyCode, Error, ErrorKind, Int, Money, Ratio, Rounding};
 use serde_json::Value;
 
-#[path = "spec/currency.rs"]
 mod currency;
-#[path = "spec/excel.rs"]
 mod excel;
-#[path = "spec/policy_math.rs"]
 mod policy_math;
-#[path = "spec/processors.rs"]
 mod processors;
-#[path = "spec/rates.rs"]
 mod rates;
-#[path = "spec/sources.rs"]
 mod sources;
-#[path = "spec/wire.rs"]
 mod wire;
 
 /// Cases (and table rows) per area, from the spec's README. A vector may be added (raise the
@@ -1361,7 +1354,9 @@ fn mutated(expect: &Value) -> Value {
     serde_json::json!({ key: changed })
 }
 
-fn main() -> ExitCode {
+/// The whole suite as one test: its per-area counts print with `--nocapture`.
+#[test]
+fn conformance() -> ExitCode {
     let mut tallies: BTreeMap<(String, String), Tally> = BTreeMap::new();
     let mut per_area: BTreeMap<String, usize> = BTreeMap::new();
     let mut errors: Vec<String> = Vec::new();

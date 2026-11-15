@@ -6,7 +6,7 @@ Python's fractions and standard library from the rules in ducat's docs (docs/ref
 
     spec/vectors/convert/providers.json
 
-checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/spec.rs.
+checked by test/spec.test.ts and the Rust port's rust/crates/ducat/tests/it/spec.rs.
 
 Times are modelled as the documents describe them, not as strings: an instant is a point at
 millisecond precision; a date is a whole UTC day, which starts at 00:00:00.000Z (for asOf,

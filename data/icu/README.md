@@ -5,7 +5,7 @@ ICU's shipped data where it deliberately differs from CLDR's. Two things read it
 - `scripts/gen-format-vectors.py`, for the ICU-overrides vectors
   (`spec/vectors/format/icu-overrides.json`, `spec/vectors/parse/icu-overrides.json`), which it
   computes from the CLDR 48 snapshot in `data/cldr/` with these values applied;
-- ducat-format's generator (`rust/crates/ducat-format/tests/data.rs`), for its `src/icu.rs`.
+- ducat-format's generator (`rust/crates/ducat-format/tests/it/data.rs`), for its `src/icu.rs`.
 
 ducat's TypeScript doesn't read it, and the npm package leaves it out. The files are ICU's own, at
 tag `release-78.3` of https://github.com/unicode-org/icu, unchanged:
@@ -22,7 +22,7 @@ the `curr/` files on 2026-11-14 (21:04 UTC) from the same tag's `curr/` director
 generator reads only the files' `NumberElements` symbols and `CurrencyUnitPatterns`.
 
 Neither override is in a locale the format and parse vectors use other than fr-CH, which has its
-own vector files. `rust/crates/ducat-format/tests/runtime.rs` checks each override against what
+own vector files. `rust/crates/ducat-format/tests/it/runtime.rs` checks each override against what
 ducat's TypeScript writes on Node 24 (ICU 78.3), and parses its text back.
 
 ## The survey
