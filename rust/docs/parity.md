@@ -193,7 +193,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `Money#split` | `Money::split`, `AnyMoney::split` | same | a count of 0 is `Err(NoWeights)` (ducat's `RangeError`); `Err(Overflow)` for more parts than can be held |
 | `Remainder` | `ducat::allocate::Remainder` | same | `Largest`, `First`, `Last`, `ToFirst`, `ToLast` |
 | `Tranche` | `ducat::allocate::Tranche` | same | `Tranche::amount`, `percent`, `percent_capped`, `rest`; the percentage is read when the tranche is built |
-| `Weight` | `ducat::allocate::Weight`, `IntoWeight` | divergent: [floats come in only through explicit conversions](design.md#decisions-made-while-building-milestone-1) | integers, `Int` and decimal strings (`Err(NegativeWeight)` for a negative one, as ducat's `RangeError`); ducat also takes a float (`allocate(m, [0.7, 0.3])`, read at its shortest form under the 15-digit rule), which has no `IntoWeight` impl: pass `"0.7"` |
+| `Weight` | `ducat::allocate::Weight`, `IntoWeight` | divergent: [no float weights](design.md#parity-decisions) | integers, `Int` and decimal strings (`Err(NegativeWeight)` for a negative one, as ducat's `RangeError`); ducat also takes a float (`allocate(m, [0.7, 0.3])`, read at its shortest form under the 15-digit rule), which has no `IntoWeight` impl: pass `"0.7"` |
 | `allocate` | `Money::allocate`, `AnyMoney::allocate` | same | as `Money#allocate` |
 | `chunk` | `Money::chunk`, `AnyMoney::chunk` | same | as `Money#chunk` |
 | `instalments` | `Money::instalments`, `AnyMoney::instalments` | same | as `Money#instalments` |
@@ -210,7 +210,7 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `Money#discount` | `Money::discount`, `AnyMoney::discount` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#extractTax` | `Money::extract_tax`, `AnyMoney::extract_tax` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#percentage` | `Money::percentage`, `AnyMoney::percentage` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
-| `TaxBreakdown` | `ducat::tax::TaxBreakdown` | same | `net`, `tax`, `gross` |
+| `TaxBreakdown` | `ducat::tax::TaxBreakdown<M>` | same | `net`, `tax`, `gross`, public fields; `M` is `Money<C>` or `AnyMoney` |
 | `addTax` | `Money::add_tax` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `discount` | `Money::discount` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
 | `extractTax` | `Money::extract_tax` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
@@ -222,22 +222,22 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `Money#divideToIntegral` | `Money::divide_to_integral`, `AnyMoney::divide_to_integral` | same | |
-| `Money#ratioOf` | `Money::ratio_of`, `AnyMoney::ratio_of` | same | |
-| `Money#remainder` | `Money::remainder`, `AnyMoney::remainder` | same | |
-| `Money#trimScale` | `Money::trim_scale`, `AnyMoney::trim_scale` | same | |
+| `Money#divideToIntegral` | `Money::divide_to_integral`, `AnyMoney::divide_to_integral` | same | an `Int`, truncated toward zero; `Err(DivisionByZero)` for a zero divisor, `Err(CurrencyMismatch)` on `AnyMoney` (ducat's `RangeError`, `CurrencyMismatchError`, currency checked first) |
+| `Money#ratioOf` | `Money::ratio_of`, `AnyMoney::ratio_of` | same | a reduced `Ratio`; `Err(DivisionByZero)`, `Err(CurrencyMismatch)` on `AnyMoney`, as `Money#divideToIntegral` |
+| `Money#remainder` | `Money::remainder`, `AnyMoney::remainder` | same | at the larger scale with the dividend's sign; errors as `Money#divideToIntegral` |
+| `Money#trimScale` | `Money::trim_scale`, `AnyMoney::trim_scale` | same | the minimum is an `Option<u16>` (`None` is the exponent, ducat's default): `Err(InvalidScale)` past `MAX_SCALE`, where ducat throws `RangeError`; the `u16` rules out negative and fractional minimums |
 | `average` | `Money::average`, `AnyMoney::average` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
-| `divideToIntegral` | `Money::divide_to_integral` | same | |
-| `ratioAdd` | `Ratio::add`, `+` | same | |
-| `ratioCompare` | `Ord` for `Ratio` | same | |
-| `ratioComplement` | `Ratio::complement` | same | |
-| `ratioDivide` | `Ratio::div`, `/` | same | |
-| `ratioMultiply` | `Ratio::mul`, `*` | same | |
-| `ratioNegate` | `Ratio::neg`, unary `-` | same | |
-| `ratioOf` | `Money::ratio_of` | same | |
-| `ratioSubtract` | `Ratio::sub`, `-` | same | |
-| `remainder` | `Money::remainder` | same | |
-| `trimScale` | `Money::trim_scale` | same | |
+| `divideToIntegral` | `Money::divide_to_integral`, `AnyMoney::divide_to_integral` | same | as `Money#divideToIntegral` |
+| `ratioAdd` | `Ratio::add` | same | a method on `&Ratio`; there are no `Ratio` operators (`+`). ducat's functions take any `Factor`: parse a string to a `Ratio` first |
+| `ratioCompare` | `Ord` for `Ratio` | same | `Ordering`, ducat's −1, 0, 1 |
+| `ratioComplement` | `Ratio::complement` | same | `1 − self` |
+| `ratioDivide` | `Ratio::div` | same | a method returning `Err(DivisionByZero)` for a zero divisor, where ducat throws `RangeError`; there is no `/` operator |
+| `ratioMultiply` | `Ratio::mul` | same | a method; there is no `*` operator |
+| `ratioNegate` | `Ratio::neg` | same | a method; there is no unary `-` |
+| `ratioOf` | `Money::ratio_of`, `AnyMoney::ratio_of` | same | as `Money#ratioOf` |
+| `ratioSubtract` | `Ratio::sub` | same | a method; there is no `-` operator |
+| `remainder` | `Money::remainder`, `AnyMoney::remainder` | same | as `Money#remainder` |
+| `trimScale` | `Money::trim_scale`, `AnyMoney::trim_scale` | same | as `Money#trimScale` |
 
 ### `./convert`
 

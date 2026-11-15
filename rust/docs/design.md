@@ -437,6 +437,9 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
   currency's exponent, so the result's scale is the largest of the items' and the exponent; ducat starts from the first
   item, so items all below the exponent (EUR at scale 0) keep their scale. The values are equal; `identical` tells
   them apart. The currency is always known, so ducat's `RangeError` for an empty list without one has no counterpart.
+- **No float weights.** `IntoWeight` takes integers, `Int` and decimal strings. ducat's `allocate` and `schedule`
+  also take a float weight (`0.7`) at its shortest form under the 15-digit rule; here, as for factors, a float comes
+  in only through an explicit conversion, and a weight is written as a string (`"0.7"`).
 - **A ratio string has one slash.** `Ratio`'s `FromStr` reads `"a/b"` with a decimal on each side; ducat's `ratio()`
   splits at the first slash and reads the rest as a ratio again, so `"1/2/3"` is 3/2 there and `Error::Syntax` here.
 
