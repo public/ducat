@@ -1,4 +1,10 @@
 #![doc = include_str!("../README.md")]
+// The README is the crate's front page and links `UreqTransport`, which exists only with the `ureq`
+// feature: with it the link goes to the type, without it to the README's Features section, which
+// says how to get it.
+#![doc = ""]
+#![cfg_attr(feature = "ureq", doc = "[`UreqTransport`]: UreqTransport")]
+#![cfg_attr(not(feature = "ureq"), doc = "[`UreqTransport`]: #features")]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
