@@ -1,0 +1,115 @@
+name: Rust build timings
+
+# Where the Rust port's build time and size go: cold builds from an empty target dir (no caching),
+# then incremental rebuilds after touching ducat's lib.rs and ducat-format's format.rs. Each
+# configuration runs once with CARGO_BUILD_JOBS=1 (the dev boxes' setting) and once with the
+# runner's default parallelism. The cargo --timings reports are uploaded as artifacts.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/rust-build-timings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  timings:
+    name: ${{ matrix.config.name }} (jobs ${{ matrix.jobs }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        jobs: ['1', 'default']
+        config:
+          - id: ducat-lib
+            name: a. cargo build -p ducat
+            cmd: cargo build -p ducat --locked
+          - id: workspace-tests
+            name: b. cargo test --workspace --no-run
+            cmd: cargo test --workspace --locked --no-run
+          - id: format-full-tests
+            name: c. cargo test -p ducat-format --features full --no-run
+            cmd: cargo test -p ducat-format --features full --locked --no-run
+          - id: format-release
+            name: d. cargo build -p ducat-format --release, default then full
+            cmd: cargo build -p ducat-format --release --locked
+            cmd2: cargo build -p ducat-format --release --locked --features full
+    env:
+      CMD: ${{ matrix.config.cmd }}
+      CMD2: ${{ matrix.config.cmd2 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Set CARGO_BUILD_JOBS
+        if: matrix.jobs == '1'
+        run: echo "CARGO_BUILD_JOBS=1" >> "$GITHUB_ENV"
+      - name: Environment
+        run: |
+          rustc -Vv
+          cargo -V
+          nproc
+          free -h
+          echo "CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS:-<runner default>}"
+          # every job starts from an empty target dir
+          rm -rf target
+      - name: Helpers
+        run: |
+          cat > "$RUNNER_TEMP/timed.sh" <<'SH'
+          # timed LABEL COMMAND...: runs COMMAND with --timings under /usr/bin/time -v, then prints
+          # the wall clock and max RSS, the target dir's size and the largest files in deps/
+          timed() {
+            label="$1"; shift
+            echo "::group::$label: $*"
+            /usr/bin/time -v -o "$RUNNER_TEMP/time.txt" "$@" --timings
+            echo "::endgroup::"
+            echo "== $label: $*"
+            grep -E 'Elapsed \(wall clock\)|Maximum resident set size' "$RUNNER_TEMP/time.txt"
+            du -sh target
+            for dir in target/debug/deps target/release/deps; do
+              if [ -d "$dir" ]; then
+                echo "-- 15 largest files in $dir"
+                find "$dir" -type f -printf '%s %p\n' | sort -rn | awk 'NR <= 15' | numfmt --field=1 --to=iec --padding=7
+              fi
+            done
+          }
+          # run_all LABEL: the configuration's command, then its second command if it has one
+          run_all() {
+            # shellcheck disable=SC2086
+            timed "$1" $CMD
+            if [ -n "$CMD2" ]; then
+              # shellcheck disable=SC2086
+              timed "$1" $CMD2
+            fi
+          }
+          SH
+      - name: Cold build
+        run: |
+          . "$RUNNER_TEMP/timed.sh"
+          run_all cold
+      - name: Incremental, after touching ducat/src/lib.rs
+        run: |
+          . "$RUNNER_TEMP/timed.sh"
+          echo '// incremental build timing probe' >> crates/ducat/src/lib.rs
+          run_all incremental-ducat-lib
+      - name: Incremental, after touching ducat-format/src/format.rs
+        run: |
+          . "$RUNNER_TEMP/timed.sh"
+          echo '// incremental build timing probe' >> crates/ducat-format/src/format.rs
+          run_all incremental-ducat-format
+      - name: Upload cargo timings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cargo-timings-${{ matrix.config.id }}-jobs-${{ matrix.jobs }}
+          path: rust/target/cargo-timings/*.html
+          if-no-files-found: warn
