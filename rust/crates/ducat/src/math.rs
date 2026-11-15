@@ -20,7 +20,7 @@
 //! # Ok::<(), ducat::Error>(())
 //! ```
 
-use crate::amount::{Amount, check_scale};
+use crate::amount::{Amount, AmountSum, check_scale};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Int, Money, Ratio, RoundingInput};
 
 impl Ratio {
@@ -51,9 +51,11 @@ impl Amount {
             return Err(Error::NoAmounts);
         };
         // the sum is exact at the largest scale, so the division is the only rounding
-        let sum = amounts[1..]
-            .iter()
-            .fold((*first).clone(), |total, amount| total.add(amount));
+        let mut total = AmountSum::starting_at(first);
+        for amount in &amounts[1..] {
+            total.add(amount);
+        }
+        let sum = total.finish();
         sum.round_input(
             &Int::ONE,
             &Int::from(amounts.len()),

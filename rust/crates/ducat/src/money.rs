@@ -10,7 +10,7 @@ use core::marker::PhantomData;
 use core::ops::{Add, Neg, Sub};
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money in the currency `C`: a count of 10^−scale units of any size.
@@ -604,14 +604,22 @@ impl<C: Currency> Sum for Money<C> {
     /// The exact sum, at the largest scale among the items; zero at the currency's exponent for
     /// none.
     fn sum<I: Iterator<Item = Self>>(items: I) -> Self {
-        items.fold(Self::zero(), |sum, item| sum + item)
+        let mut sum = AmountSum::zero(u16::from(C::CODE.exponent()));
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
 impl<'a, C: Currency> Sum<&'a Money<C>> for Money<C> {
     /// As the sum of owned values.
     fn sum<I: Iterator<Item = &'a Money<C>>>(items: I) -> Self {
-        items.fold(Self::zero(), |sum, item| sum + item)
+        let mut sum = AmountSum::zero(u16::from(C::CODE.exponent()));
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 

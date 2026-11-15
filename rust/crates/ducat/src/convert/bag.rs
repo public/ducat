@@ -8,6 +8,7 @@ use core::cell::RefCell;
 use core::cmp::Ordering;
 
 use super::{AnyRate, RateProvider, RateQuery, rate_of};
+use crate::amount::AmountSum;
 use crate::exact::AnyExactMoney;
 use crate::{AnyMoney, CurrencyCode, Error, Rounding};
 
@@ -27,17 +28,22 @@ pub struct TotalOptions {
 /// None in practice: adding amounts in one currency can't mismatch. The `Result` is
 /// [`AnyMoney::checked_add`]'s.
 pub fn sum_by_currency(items: impl IntoIterator<Item = AnyMoney>) -> Result<Vec<AnyMoney>, Error> {
-    let mut totals: Vec<AnyMoney> = Vec::new();
+    // a running sum per currency, each starting at that currency's first item, as folding them
+    // with `checked_add` does
+    let mut totals: Vec<(CurrencyCode, AmountSum)> = Vec::new();
     for money in items {
         match totals
             .iter_mut()
-            .find(|total| total.currency() == money.currency())
+            .find(|(currency, _)| *currency == money.currency())
         {
-            Some(total) => *total = total.checked_add(&money)?,
-            None => totals.push(money),
+            Some((_, total)) => total.add(&money.amount),
+            None => totals.push((money.currency(), AmountSum::starting_at(&money.amount))),
         }
     }
-    Ok(totals)
+    Ok(totals
+        .into_iter()
+        .map(|(currency, total)| AnyMoney::from_parts(total.finish(), currency))
+        .collect())
 }
 
 /// An immutable set of per-currency totals: a bag of 10 EUR, 5 USD and 2 EUR holds 12 EUR and

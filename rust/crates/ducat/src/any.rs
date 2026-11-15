@@ -6,7 +6,7 @@ use core::fmt;
 use core::ops::Neg;
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::{CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money whose currency is a run-time [`CurrencyCode`]: for values from
@@ -43,14 +43,14 @@ impl AnyMoney {
         Self { amount, currency }
     }
 
-    fn with_amount(&self, amount: Amount) -> Self {
+    pub(crate) fn with_amount(&self, amount: Amount) -> Self {
         Self {
             amount,
             currency: self.currency,
         }
     }
 
-    fn same_currency(&self, other: &Self) -> Result<(), Error> {
+    pub(crate) fn same_currency(&self, other: &Self) -> Result<(), Error> {
         if self.currency == other.currency {
             Ok(())
         } else {
@@ -292,9 +292,18 @@ impl AnyMoney {
         items: impl IntoIterator<Item = &'a Self>,
         currency: CurrencyCode,
     ) -> Result<Self, Error> {
-        items
-            .into_iter()
-            .try_fold(Self::zero(currency), |sum, item| sum.checked_add(item))
+        let mut sum = AmountSum::zero(u16::from(currency.exponent()));
+        for item in items {
+            // the error `Self::zero(currency).checked_add(item)` gives, at the first mismatch
+            if item.currency != currency {
+                return Err(Error::CurrencyMismatch {
+                    expected: currency,
+                    actual: item.currency,
+                });
+            }
+            sum.add(&item.amount);
+        }
+        Ok(Self::from_parts(sum.finish(), currency))
     }
 
     /// `self × factor`, rounded once to `self`'s scale.
