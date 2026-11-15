@@ -127,41 +127,41 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | TS | Rust | status | note |
 |---|---|---|---|
 | `Money` | `ducat::Money<C>`, `ducat::AnyMoney` | same | |
-| `Money#currency` | `Money::currency` | same | |
-| `Money#minor` | `Money::units` | same | |
-| `Money#scale` | `Money::scale` | same | |
+| `Money#currency` | `Money::currency`, `AnyMoney::currency` | same | a `CurrencyCode` (code and exponent), not a string |
+| `Money#minor` | `Money::units`, `AnyMoney::units` | same | the integer at the value's scale |
+| `Money#scale` | `Money::scale`, `AnyMoney::scale` | same |  |
 | `Money#toJSON` | `serde::Serialize` | divergent: [serde writes the value's scale](design.md#decisions-made-while-building-milestone-1) | |
 | `Money#toString` | `Display` | divergent: [display is exact](design.md#decisions-made-while-building-milestone-1) | |
-| `abs` | `Money::abs` | same | methods, not free functions |
-| `add` | `Add`; `AnyMoney::checked_add` | same | |
+| `abs` | `Money::abs`, `AnyMoney::abs` | same | methods, not free functions |
+| `add` | `Add`; `AnyMoney::checked_add` | same | as `.` `Money#add` |
 | `clamp` | — | missing | as `Money#clamp` |
-| `compare` | `Ord::cmp`; `AnyMoney::compare` | same | |
+| `compare` | `Ord::cmp`; `AnyMoney::compare` | same | as `.` `Money#compare` |
 | `divide` | `Money::divide` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
-| `equals` | `==` | same | |
-| `greaterThan` | `>` | same | |
-| `greaterThanOrEqual` | `>=` | same | |
+| `equals` | `==`; `AnyMoney::eq_value` | same | as `.` `Money#equals` |
+| `greaterThan` | `>`; `AnyMoney::compare` | same | as `.` `Money#greaterThan` |
+| `greaterThanOrEqual` | `>=`; `AnyMoney::compare` | same | as `.` `Money#greaterThanOrEqual` |
 | `hasFraction` | — | missing | as `Money#hasFraction` |
-| `identical` | `Money::identical` | same | |
-| `isNegative` | `Money::is_negative` | same | |
-| `isPositive` | `Money::is_positive` | same | |
-| `isZero` | `Money::is_zero` | same | |
-| `lessThan` | `<` | same | |
-| `lessThanOrEqual` | `<=` | same | |
+| `identical` | `Money::identical`, `AnyMoney::identical` | same | as `.` `Money#identical` |
+| `isNegative` | `Money::is_negative`, `AnyMoney::is_negative` | same |  |
+| `isPositive` | `Money::is_positive`, `AnyMoney::is_positive` | same |  |
+| `isZero` | `Money::is_zero`, `AnyMoney::is_zero` | same |  |
+| `lessThan` | `<`; `AnyMoney::compare` | same | as `.` `Money#lessThan` |
+| `lessThanOrEqual` | `<=`; `AnyMoney::compare` | same | as `.` `Money#lessThanOrEqual` |
 | `majorPart` | — | missing | as `Money#majorPart` |
-| `max` | `Ord::max` | same | |
-| `min` | `Ord::min` | same | |
+| `max` | `Ord::max` | missing | as `.` `Money#max`: no `AnyMoney` form, and `Ord::max` keeps the second of equal values where ducat keeps the first |
+| `min` | `Ord::min` | missing | as `.` `Money#min`: no `AnyMoney` form |
 | `minorPart` | — | missing | as `Money#minorPart` |
 | `multiply` | `Money::multiply` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
-| `negate` | `Neg` | same | |
+| `negate` | `Neg` for `Money<C>` and `AnyMoney` | same |  |
 | `round` | `Money::round` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | |
-| `sign` | `Money::signum` | same | |
-| `subtract` | `Sub`; `AnyMoney::checked_sub` | same | |
-| `toDecimal` | `Money::to_decimal` | same | |
-| `toMinor` | `Money::to_minor` | same | |
+| `sign` | `Money::signum`, `AnyMoney::signum` | same | an `i8` |
+| `subtract` | `Sub`; `AnyMoney::checked_sub` | same | as `.` `Money#subtract` |
+| `toDecimal` | `Money::to_decimal`, `AnyMoney::to_decimal` | same |  |
+| `toMinor` | `Money::to_minor`, `AnyMoney::to_minor` | same | as `.` `Money#toMinor` |
 | `toMinorNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_minor_f64`; for display or interop only, never round-trip; never called inside ducat |
 | `toNumber` | — | missing | decided ([floats only go out](design.md#parity-decisions)): an explicitly lossy, output-only `to_f64`; for display or interop only, never round-trip; never called inside ducat |
-| `toScale` | `Money::to_scale` | same | |
-| `toScaledUnits` | `Money::units` | same | |
+| `toScale` | `Money::to_scale`, `AnyMoney::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | as `.` `Money#toScale`: the `Rounding` is required |
+| `toScaledUnits` | `Money::units`, `AnyMoney::units` | same | an `&Int` |
 
 ### `./iso`
 
@@ -1328,7 +1328,7 @@ Every `missing` row, grouped into pull requests in the order users would hit the
 **decided**); the rest are proposals.
 
 1. **Checked clamp, min and max, and rate validity** (`ducat`, one small PR): `.` `Money#clamp`, `./fn` `clamp`,
-   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`, `.` `Money#min`, `.` `Money#max`. `min` and `max`
+   `./exact` `ExactMoney#clamp`, `./convert` `Rate#checkValidity`, `.` `Money#min`, `.` `Money#max`, `./fn` `min`, `./fn` `max`. `min` and `max`
    on `AnyMoney` (`Err(CurrencyMismatch)`), and a `max` on `Money<C>` that keeps the first of equal values, as ducat
    (`Ord::max` keeps the second). `clamp(&self, lo, hi) -> Result` on `Money`,
    `AnyMoney` and `ExactMoney` (an `Err` for `lo > hi` and across currencies, where `Ord::clamp` panics; `Money`
