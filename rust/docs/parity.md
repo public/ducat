@@ -1011,7 +1011,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 |---|---|---|---|
 | `Money#toStripe` | `Money::to_stripe`, `AnyMoney::to_stripe` | same |  |
 | `Money#toStripeAmount` | `Money::to_stripe_amount` | same |  |
-| `STRIPE_RULES` | `ducat::processors::stripe::rule` | missing | per-currency `rule` only; the table can't be listed. Fix: a public `currencies()` iterator (or `pub` table) |
+| `STRIPE_RULES` | `ducat::processors::stripe::rules` (`StripeEntry`), `rule` | same | a sorted `&'static [StripeEntry]` (`code`, `exponent`, `charge_multiple`, `payout_multiple`; `#[non_exhaustive]`, `StripeEntry::rule` its `StripeRule`): ducat's record of `[exponent, chargeMultiple, payoutMultiple]` as rows, with the same codes and values |
 | `StripeAmountOptions` | `ducat::processors::stripe::StripeOptions` | same |  |
 | `StripeAmountOptions#payout` | `StripeOptions::payout` | same |  |
 | `StripeAmountOptions#rounding` | `StripeOptions::rounding` | same |  |
@@ -1027,7 +1027,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `ADYEN_EXPONENTS` | `ducat::processors::adyen::exponent`, `rule` | missing | `exponent`/`rule` lookups only; the table can't be listed. Fix: a public `currencies()` iterator |
+| `ADYEN_EXPONENTS` | `ducat::processors::adyen::exponents` (`ExponentEntry`), `exponent`, `rule` | same | a sorted `&'static [ExponentEntry]` (`code`, `exponent`; `#[non_exhaustive]`, `ducat::processors::ExponentEntry`): ducat's record as rows, with the same codes and exponents |
 | `Money#toAdyen` | `Money::to_adyen`, `AnyMoney::to_adyen` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `adyenExponent` | `ducat::processors::adyen::exponent` | same |  |
 | `fromAdyen` | `Money::from_adyen`, `AnyMoney::from_adyen` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
@@ -1040,16 +1040,16 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `CHECKOUT_RULES` | `ducat::processors::checkout::rule` (`CheckoutRule`) | missing | `rule` lookup only; the table can't be listed. Fix: a public `currencies()` iterator |
+| `CHECKOUT_RULES` | `ducat::processors::checkout::rules` (`CheckoutEntry`), `rule` (`CheckoutRule`) | same | a sorted `&'static [CheckoutEntry]` (`code`, `exponent`, `multiple`, `standalone_multiple`; `#[non_exhaustive]`, `CheckoutEntry::rule` its `CheckoutRule`): ducat's record of `[exponent, multiple, standaloneMultiple]` as rows, with the same codes and values |
 | `CheckoutAmountOptions` | `ducat::processors::checkout::CheckoutOptions` | same |  |
 | `CheckoutAmountOptions#rounding` | `CheckoutOptions::rounding` | same |  |
 | `CheckoutAmountOptions#standalone` | `CheckoutOptions::standalone` | same |  |
-| `Money#toCheckout` | `Money::to_checkout`, `AnyMoney::to_checkout` | missing | the `currency` field isn't uppercased. Fix: `to_ascii_uppercase()` the code, as TS does |
+| `Money#toCheckout` | `Money::to_checkout`, `AnyMoney::to_checkout` | same | `currency` in uppercase, as ducat: a custom currency defined in lowercase (`CurrencyCode::custom("usd", 2)`, ducat's `defineCurrency('usd', 2)`) is sent as `USD`. The failures are `toCheckoutAmount`'s, in its order |
 | `Money#toCheckoutAmount` | `Money::to_checkout_amount` | same |  |
 | `checkoutExponent` | `ducat::processors::checkout::exponent` | same |  |
 | `fromCheckout` | `Money::from_checkout`, `AnyMoney::from_checkout` | divergent: [integer amounts are `i64`, read back whatever their size](design.md#milestone-5c-payment-processors) |  |
 | `isCheckoutCurrency` | `ducat::processors::checkout::is_currency` | same |  |
-| `toCheckout` | `Money::to_checkout` | missing | as `Money#toCheckout` |
+| `toCheckout` | `Money::to_checkout`, `AnyMoney::to_checkout` | same | as `Money#toCheckout` |
 | `toCheckoutAmount` | `Money::to_checkout_amount`, `AnyMoney::to_checkout_amount` | same | an `i64`; the same failures in ducat's order: `UnsupportedCurrency` (TS `RangeError`), `Rounding` (`RoundingError`), `AmountTooLarge` beyond 2^53 − 1, `NegativeAmount` (`RangeError`). The `i64` divergence is the read-back path (`fromCheckout`) only |
 
 ### `./paypal`
@@ -1058,15 +1058,15 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `Money#toPayPal` | `Money::to_paypal`, `AnyMoney::to_paypal` | missing | `currency_code` isn't uppercased. Fix: `to_ascii_uppercase()` the code |
+| `Money#toPayPal` | `Money::to_paypal`, `AnyMoney::to_paypal` | same | `currency_code` in uppercase, as ducat: a custom currency defined in lowercase (`usd`) is sent as `USD`. The failures are `toPayPalValue`'s, in its order |
 | `Money#toPayPalValue` | `Money::to_paypal_value` | same |  |
-| `PAYPAL_EXPONENTS` | `ducat::processors::paypal::exponent`, `rule` | missing | `exponent`/`rule` lookups only. Fix: a public `currencies()` iterator |
+| `PAYPAL_EXPONENTS` | `ducat::processors::paypal::exponents` (`ExponentEntry`), `exponent`, `rule` | same | a sorted `&'static [ExponentEntry]` (`code`, `exponent`; `#[non_exhaustive]`, `ducat::processors::ExponentEntry`): ducat's record as rows, with the same codes and exponents |
 | `PayPalAmountOptions` | the `Rounding` argument | same |  |
 | `PayPalAmountOptions#rounding` | the `Rounding` argument of `to_paypal` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `fromPayPal` | `Money::from_paypal`, `AnyMoney::from_paypal` | same |  |
 | `isPayPalCurrency` | `ducat::processors::paypal::is_currency` | same |  |
 | `paypalExponent` | `ducat::processors::paypal::exponent` | same |  |
-| `toPayPal` | `Money::to_paypal` | missing | as `Money#toPayPal` |
+| `toPayPal` | `Money::to_paypal`, `AnyMoney::to_paypal` | same | as `Money#toPayPal` |
 | `toPayPalValue` | `Money::to_paypal_value` | same |  |
 
 ### `./braintree`
@@ -1075,7 +1075,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `BRAINTREE_EXPONENTS` | `ducat::processors::braintree::exponent`, `rule` | missing | `exponent`/`rule` lookups only. Fix: a public `currencies()` iterator |
+| `BRAINTREE_EXPONENTS` | `ducat::processors::braintree::exponents` (`ExponentEntry`), `exponent`, `rule` | same | a sorted `&'static [ExponentEntry]` (`code`, `exponent`; `#[non_exhaustive]`, `ducat::processors::ExponentEntry`): ducat's record as rows, with the same codes and exponents |
 | `BraintreeAmountOptions` | the `Rounding` argument | same |  |
 | `BraintreeAmountOptions#rounding` | the `Rounding` argument of `to_braintree` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `Money#toBraintree` | `Money::to_braintree`, `AnyMoney::to_braintree` | same |  |
@@ -1090,7 +1090,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `KLARNA_EXPONENTS` | `ducat::processors::klarna::exponent`, `rule` | missing | `exponent`/`rule` lookups only. Fix: a public `currencies()` iterator |
+| `KLARNA_EXPONENTS` | `ducat::processors::klarna::exponents` (`ExponentEntry`), `exponent`, `rule` | same | a sorted `&'static [ExponentEntry]` (`code`, `exponent`; `#[non_exhaustive]`, `ducat::processors::ExponentEntry`): ducat's record as rows, with the same codes and exponents |
 | `KlarnaAmountOptions` | the `Rounding` argument | same |  |
 | `KlarnaAmountOptions#rounding` | the `Rounding` argument of `to_klarna` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) |  |
 | `Money#toKlarna` | `Money::to_klarna`, `AnyMoney::to_klarna` | same |  |
@@ -1327,11 +1327,6 @@ Re-exports every plugin entry and `./fn`'s functions, and installs every plugin'
 Every `missing` row, grouped into pull requests in the order users would hit them. Three pieces are decided (marked
 **decided**); the rest are proposals.
 
-10. **Processor tables and wire currency case** (`ducat`; from the re-audit): `./stripe` `STRIPE_RULES`,
-   `./adyen` `ADYEN_EXPONENTS`, `./checkout` `CHECKOUT_RULES`, `./paypal` `PAYPAL_EXPONENTS`,
-   `./braintree` `BRAINTREE_EXPONENTS`, `./klarna` `KLARNA_EXPONENTS` (a public `currencies()` iterator: the tables
-   are private), `./checkout` `Money#toCheckout`, `./checkout` `toCheckout`, `./paypal` `Money#toPayPal`,
-   `./paypal` `toPayPal` (uppercase the code, as ducat does).
 12. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
    `ducat-fetch` on `Transport`): `./convert` `snapshots`, `./convert` `snapshotsFrom`, `./convert` `Snapshots`,
    `./convert` `Snapshots#at`, `./convert` `SnapshotOptions`, `./convert` `SnapshotOptions#lookback`,

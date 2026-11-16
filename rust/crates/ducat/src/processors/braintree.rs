@@ -8,14 +8,28 @@
 use alloc::string::String;
 
 use super::tables::BRAINTREE;
-use super::{Sign, all_digits, from_decimal, lookup, to_decimal};
+use super::{ExponentEntry, Sign, all_digits, from_decimal, lookup, to_decimal};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Money, Rounding};
+
+/// Every currency Braintree lists with its exponent, sorted by code: ducat's `BRAINTREE_EXPONENTS`
+/// (code → exponent) as a slice.
+///
+/// ```
+/// use ducat::processors::braintree;
+///
+/// let entry = braintree::exponents().iter().find(|entry| entry.code == "JPY").unwrap();
+/// assert_eq!(entry.exponent, 0);
+/// ```
+#[must_use]
+pub fn exponents() -> &'static [ExponentEntry] {
+    &BRAINTREE
+}
 
 /// The decimals Braintree takes for a currency (JPY 0, LAK 0, USD 2), case-insensitive, or `None`
 /// for one it doesn't list.
 #[must_use]
 pub fn rule(currency: &str) -> Option<u8> {
-    lookup(&BRAINTREE, currency, false, |entry| entry.0).map(|entry| entry.1)
+    lookup(&BRAINTREE, currency, false, |entry| entry.code).map(|entry| entry.exponent)
 }
 
 /// Whether Braintree lists the currency (case-insensitive).
