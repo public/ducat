@@ -65,6 +65,18 @@ pub enum FetchError {
     },
     /// An `end` without a `start` (ducat's `RangeError`), before any request.
     EndWithoutStart,
+    /// A snapshot lookup's own failure: [`ducat::Error::NoSnapshot`] when no day in the lookback
+    /// has a table (ducat's `RateUnavailableError`), or [`ducat::Error::NotPositive`] for
+    /// [`SnapshotOptions`](ducat::convert::SnapshotOptions) with a `max` of 0 (ducat's
+    /// `RangeError`), before any request.
+    Snapshot(ducat::Error),
+}
+
+/// A snapshot lookup's own failure, [`FetchError::Snapshot`].
+impl From<ducat::Error> for FetchError {
+    fn from(error: ducat::Error) -> Self {
+        Self::Snapshot(error)
+    }
 }
 
 impl FetchError {
@@ -104,6 +116,7 @@ impl fmt::Display for FetchError {
             },
             Self::EndBeforeStart { start, end } => write!(f, "end {end} is before start {start}"),
             Self::EndWithoutStart => f.write_str("end needs a start"),
+            Self::Snapshot(error) => write!(f, "{error}"),
         }
     }
 }
@@ -113,6 +126,7 @@ impl StdError for FetchError {
         match self {
             Self::Parse { source, .. } => Some(source),
             Self::Transport { source, .. } => Some(source),
+            Self::Snapshot(error) => Some(error),
             _ => None,
         }
     }

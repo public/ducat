@@ -8,3 +8,4 @@
 mod fetch;
 #[cfg(feature = "ureq")]
 mod live;
+mod snapshots;
