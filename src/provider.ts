@@ -319,6 +319,9 @@ export function snapshots(
   // pending loads too, so lookups of a day share one, placed when asked for like any use. Only the
   // days kept (loaded with a table) count toward `max`, and room is made when a load returns a
   // table, so a miss, pending or not, never drops a kept day. A pending load is never dropped.
+  // A pending hit that resolves after newer loads keeps the place of when it was asked for (request
+  // order): this is the existing behaviour, kept on purpose, as its callers still get the table, and
+  // moving to resolution order would be a separate behaviour change.
   const cache = new Map<string, Promise<RateProvider | undefined>>();
   const kept = new Set<string>();
 
