@@ -43,7 +43,7 @@ pub use savings::{
 };
 
 pub use crate::MoneyKind;
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::{CurrencyCode, Error, Int, Ratio, RoundingInput};
 
 /// The most periods a schedule or a compounding may have: `(1 + r)^n` has about `n` times the
@@ -171,11 +171,9 @@ pub(crate) fn check_periods(periods: u32, minimum: u32) -> Result<(), Error> {
 
 /// The sum of amounts, from zero at `exponent`.
 fn sum_amounts<'a>(amounts: impl Iterator<Item = &'a Amount>, exponent: u16) -> Amount {
-    amounts.fold(
-        Amount {
-            units: Int::ZERO,
-            scale: exponent,
-        },
-        |total, amount| total.add(amount),
-    )
+    let mut total = AmountSum::zero(exponent);
+    for amount in amounts {
+        total.add(amount);
+    }
+    total.finish()
 }

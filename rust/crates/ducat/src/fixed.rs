@@ -21,7 +21,7 @@ use core::iter::Sum;
 use core::ops::{Add, Neg, Sub};
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::decimal::{faithful_decimal, parse_decimal};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, Rounding};
 
@@ -444,14 +444,22 @@ impl Neg for Fixed {
 impl Sum for Fixed {
     /// The exact sum, at the largest scale among the items.
     fn sum<I: Iterator<Item = Self>>(items: I) -> Self {
-        items.fold(Self::ZERO, |sum, item| sum + item)
+        let mut sum = AmountSum::zero(0);
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
 impl<'a> Sum<&'a Fixed> for Fixed {
     /// As the sum of owned values.
     fn sum<I: Iterator<Item = &'a Fixed>>(items: I) -> Self {
-        items.fold(Self::ZERO, |sum, item| sum + item)
+        let mut sum = AmountSum::zero(0);
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
@@ -532,5 +540,19 @@ mod serde_impl {
             let text = String::deserialize(deserializer)?;
             text.parse().map_err(de::Error::custom)
         }
+    }
+}
+
+/// The general path that summing `Fixed` took before its inline fast path, for the differential
+/// tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Fixed;
+
+    /// `Sum`: a fold with the general add from zero at scale 0.
+    pub(crate) fn sum<'a>(items: impl IntoIterator<Item = &'a Fixed>) -> Fixed {
+        items.into_iter().fold(Fixed::ZERO, |sum, item| {
+            Fixed::from_amount(sum.amount.add_general(&item.amount))
+        })
     }
 }

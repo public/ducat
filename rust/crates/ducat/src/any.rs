@@ -6,7 +6,7 @@ use core::fmt;
 use core::ops::Neg;
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::{CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money whose currency is a run-time [`CurrencyCode`]: for values from
@@ -292,9 +292,18 @@ impl AnyMoney {
         items: impl IntoIterator<Item = &'a Self>,
         currency: CurrencyCode,
     ) -> Result<Self, Error> {
-        items
-            .into_iter()
-            .try_fold(Self::zero(currency), |sum, item| sum.checked_add(item))
+        let mut sum = AmountSum::zero(u16::from(currency.exponent()));
+        for item in items {
+            // the error `Self::zero(currency).checked_add(item)` gives, at the first mismatch
+            if item.currency != currency {
+                return Err(Error::CurrencyMismatch {
+                    expected: currency,
+                    actual: item.currency,
+                });
+            }
+            sum.add(&item.amount);
+        }
+        Ok(Self::from_parts(sum.finish(), currency))
     }
 
     /// `self × factor`, rounded once to `self`'s scale.
@@ -573,5 +582,37 @@ impl fmt::Debug for AnyMoney {
         f.write_str("AnyMoney(")?;
         fmt::Display::fmt(self, f)?;
         f.write_str(")")
+    }
+}
+
+/// The general paths that adding and summing `AnyMoney` took before their inline fast paths, for
+/// the differential tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::AnyMoney;
+    use crate::{CurrencyCode, Error};
+
+    /// [`AnyMoney::checked_add`], by the general path.
+    pub(crate) fn checked_add(a: &AnyMoney, b: &AnyMoney) -> Result<AnyMoney, Error> {
+        a.same_currency(b)?;
+        Ok(a.with_amount(a.amount.add_general(&b.amount)))
+    }
+
+    /// [`AnyMoney::checked_sub`], by the general path.
+    pub(crate) fn checked_sub(a: &AnyMoney, b: &AnyMoney) -> Result<AnyMoney, Error> {
+        a.same_currency(b)?;
+        Ok(a.with_amount(a.amount.sub_general(&b.amount)))
+    }
+
+    /// [`AnyMoney::try_sum`]: a fold with [`checked_add`] from zero in `currency`.
+    pub(crate) fn try_sum<'a>(
+        items: impl IntoIterator<Item = &'a AnyMoney>,
+        currency: CurrencyCode,
+    ) -> Result<AnyMoney, Error> {
+        items
+            .into_iter()
+            .try_fold(AnyMoney::zero(currency), |sum, item| {
+                checked_add(&sum, item)
+            })
     }
 }

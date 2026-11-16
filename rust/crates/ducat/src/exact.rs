@@ -149,13 +149,18 @@ fn net_share(percent: impl Factor) -> Result<Ratio, Error> {
 ///
 /// Equality, `Hash` and `Ord` are by value. There is no `Display` of an amount that a person
 /// would mistake for rounded money: it prints `10/3 EUR`, for debugging.
+///
+/// It has no JSON form, on purpose, as ducat's `ExactMoney#toJSON` throws (`ExactMoney has no
+/// JSON form; round() it to Money first`): neither it nor [`AnyExactMoney`] implements serde's
+/// `Serialize` or `Deserialize`, so storing one is a compile error. Round it to [`Money`] first
+/// ([`ExactMoney::round`], or [`ExactMoney::to_money`] where it is exact).
 pub struct ExactMoney<C: Currency> {
     value: Ratio,
     currency: PhantomData<C>,
 }
 
 /// An exact amount whose currency is known only at run time: as [`ExactMoney`], with
-/// [`Error::CurrencyMismatch`] for operands in another currency.
+/// [`Error::CurrencyMismatch`] for operands in another currency. No serde, as [`ExactMoney`].
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct AnyExactMoney {
     value: Ratio,
@@ -289,6 +294,24 @@ impl<C: Currency> ExactMoney<C> {
     /// [`Error::DivisionByZero`] for a zero total, ducat's `RangeError`.
     pub fn ratio_of(&self, total: impl Into<Self>) -> Result<Ratio, Error> {
         self.value.div(&total.into().value)
+    }
+
+    /// Whether the amount is zero.
+    #[must_use]
+    pub fn is_zero(&self) -> bool {
+        self.value.is_zero()
+    }
+
+    /// Whether the amount is above zero.
+    #[must_use]
+    pub fn is_positive(&self) -> bool {
+        self.value.numer().is_positive()
+    }
+
+    /// Whether the amount is below zero.
+    #[must_use]
+    pub fn is_negative(&self) -> bool {
+        self.value.numer().is_negative()
     }
 
     /// −1, 0 or 1.
@@ -512,6 +535,24 @@ impl AnyExactMoney {
     #[must_use]
     pub const fn value(&self) -> &Ratio {
         &self.value
+    }
+
+    /// Whether the amount is zero.
+    #[must_use]
+    pub fn is_zero(&self) -> bool {
+        self.value.is_zero()
+    }
+
+    /// Whether the amount is above zero.
+    #[must_use]
+    pub fn is_positive(&self) -> bool {
+        self.value.numer().is_positive()
+    }
+
+    /// Whether the amount is below zero.
+    #[must_use]
+    pub fn is_negative(&self) -> bool {
+        self.value.numer().is_negative()
     }
 
     /// `self + other`, exactly.

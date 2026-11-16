@@ -816,9 +816,9 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | `ExactMoney#greaterThan` | `>` | same | `>`; `compare(..)?.is_gt()`; call `.exact()` on a `Money` first |
 | `ExactMoney#greaterThanOrEqual` | `>=` | same | `>=`; `compare(..)?.is_ge()`; call `.exact()` on a `Money` first |
 | `ExactMoney#isExact` | `ExactMoney::is_exact`, `AnyExactMoney::is_exact` | same | a `Result<bool>`: `Err(InvalidScale)` for a scale past `MAX_SCALE`, ducat's `RangeError` (`Invalid scale`); `None` is ducat's default, the currency's exponent |
-| `ExactMoney#isNegative` | — | missing | `signum() < 0` is the workaround |
-| `ExactMoney#isPositive` | — | missing | `signum() > 0` |
-| `ExactMoney#isZero` | — | missing | `signum() == 0` |
+| `ExactMoney#isNegative` | `ExactMoney::is_negative`, `AnyExactMoney::is_negative` | same | |
+| `ExactMoney#isPositive` | `ExactMoney::is_positive`, `AnyExactMoney::is_positive` | same | |
+| `ExactMoney#isZero` | `ExactMoney::is_zero`, `AnyExactMoney::is_zero` | same | |
 | `ExactMoney#lessThan` | `<` | same | `<` (typed); `AnyExactMoney::compare(..)?.is_lt()`; call `.exact()` on a `Money` first |
 | `ExactMoney#lessThanOrEqual` | `<=` | same | `<=`; `compare(..)?.is_le()`; call `.exact()` on a `Money` first |
 | `ExactMoney#max` | `ExactMoney::max`, `ExactMoney::max_of`; `AnyExactMoney::max`, `AnyExactMoney::max_of` | same | as `.` `Money#max`: the first of equal values wins (not `Ord::max`'s second; the inherent `ExactMoney::max` takes `self` by value so that `a.max(b)` resolves to it); `other` may be exact or `Money`, as ducat's; `max_of` is the variadic form over an iterator (`None` for none). `AnyExactMoney`'s return `Err(CurrencyMismatch)` where ducat throws, with ducat's `expected` (the candidate's currency) and `actual` (the largest so far's) |
@@ -833,7 +833,7 @@ The crate [`ducat-fetch`](../crates/ducat-fetch/src/lib.rs): a sans-IO core and 
 | `ExactMoney#roundWithResidual` | `ExactMoney::round_with_residual` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the mode is required |
 | `ExactMoney#sign` | `ExactMoney::signum`, `AnyExactMoney::signum` | same | |
 | `ExactMoney#subtract` | `Sub`; `AnyExactMoney::checked_sub` | same | as add: `checked_sub` takes only `&AnyExactMoney` |
-| `ExactMoney#toJSON` | — | missing | no `serde` impls for `ExactMoney` |
+| `ExactMoney#toJSON` | no `serde` impls, on purpose | same | ducat's `toJSON` always throws (`TypeError`: `ExactMoney has no JSON form; round() it to Money first`), so there is no shape to port; neither `ExactMoney<C>` nor `AnyExactMoney` implements `Serialize` or `Deserialize`, and serializing one is a compile error rather than a run-time one ([parity decisions](design.md#parity-decisions)). Round to `Money` first |
 | `ExactMoney#toMoney` | `ExactMoney::to_money`, `AnyExactMoney::to_money` | same | in ducat's order: `Err(InvalidScale)` for a minimum past `MAX_SCALE`, `Err(Rounding)` for a value with no finite decimal form (ducat's `RoundingError`), then `Err(InvalidScale)` for one needing more than `MAX_SCALE` places (ducat's `RangeError`) |
 | `ExactMoney#toNumber` | `ExactMoney::to_f64`, `AnyExactMoney::to_f64` | same | [floats only go out](design.md#parity-decisions): for display or interop only, never round-trip, never called inside ducat. ducat's algorithm step for step (a 65- or 66-bit quotient with a sticky bit, rounded once, scaled by powers of two), so the bits match, subnormals included |
 | `ExactMoney#toString` | `Display` | same | |
@@ -1327,9 +1327,6 @@ Re-exports every plugin entry and `./fn`'s functions, and installs every plugin'
 Every `missing` row, grouped into pull requests in the order users would hit them. Four pieces are decided (marked
 **decided**); the rest are proposals.
 
-6. **`ExactMoney` gaps** (`ducat`, feature `exact`): `./exact` `ExactMoney#isZero`, `./exact` `ExactMoney#isPositive`,
-   `./exact` `ExactMoney#isNegative`, `./exact` `ExactMoney#toJSON`. The predicates are one-liners over `signum`;
-   `serde` for exact amounts lets a total be stored before it is rounded.
 8. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
    `./drizzle/pg` `moneyJson`, `./drizzle/mysql` `moneyJson`, `./drizzle/sqlite` `moneyJson`. Storing money is the
    first thing an application does, and a JSON column is the layout that needs no currency column.
