@@ -49,7 +49,7 @@ pub use composite::{MONEY_TYPE_NAME, MoneyRecord, PgMoney, money_type_sql};
 use ducat_sql_core::record::{NUMERIC_OID, TEXT_OID, VARCHAR_OID};
 pub use numeric::{decode_numeric, encode_numeric};
 
-use crate::{Decimal, DecimalColumn, Error, JsonColumn, MinorColumn, MoneyValue};
+use crate::{Decimal, DecimalColumn, JsonColumn, MinorColumn, MoneyValue};
 
 /// NUMERIC[]'s OID.
 const NUMERIC_ARRAY_OID: u32 = 1231;
@@ -277,11 +277,18 @@ fn json_text<'r>(value: &PgValueRef<'r>) -> Result<&'r str, BoxDynError> {
     let bytes = match (value.format(), value.type_info().oid()) {
         (PgValueFormat::Binary, Some(Oid(JSONB_OID))) => match bytes.split_first() {
             Some((1, text)) => text,
-            _ => return Err(Error::Malformed("a jsonb value of an unknown format version").into()),
+            _ => {
+                return Err(
+                    crate::Error::Malformed("a jsonb value of an unknown format version").into(),
+                );
+            }
         },
         _ => bytes,
     };
-    Ok(core::str::from_utf8(bytes).map_err(|_| Error::Malformed("JSON that isn't UTF-8"))?)
+    Ok(
+        core::str::from_utf8(bytes)
+            .map_err(|_| crate::Error::Malformed("JSON that isn't UTF-8"))?,
+    )
 }
 
 impl<M: MoneyValue> Type<Postgres> for JsonColumn<M> {
