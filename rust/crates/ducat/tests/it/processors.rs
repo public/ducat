@@ -682,3 +682,70 @@ fn klarna_only_the_purchase_currencies() -> Result {
     assert_eq!(klarna::exponent("huf")?, 2);
     Ok(())
 }
+
+// --- the code's case in the processors' objects ---------------------------------------------------
+
+ducat::define_currency! {
+    /// USD defined in lowercase, as ducat's `defineCurrency('usd', 2)`: a code ISO doesn't list.
+    LowerUsd = "usd", 2
+}
+ducat::define_currency! {
+    /// A lowercase code no processor lists.
+    LowerPoints = "pts", 2
+}
+
+/// ducat (checked under node): `toCheckout(money('1', 'usd'))` is `{ amount: 100, currency: 'USD' }`
+/// and `toPayPal` `{ currency_code: 'USD', value: '1.00' }`; `toStripe` keeps Stripe's lowercase,
+/// and Adyen's case-sensitive table refuses `usd`. The failures come in the same order as for an
+/// uppercase code.
+#[test]
+fn checkout_and_paypal_send_the_code_in_uppercase() -> Result {
+    let usd = m::<LowerUsd>("1");
+    let any = AnyMoney::from(usd.clone());
+    let checkout = CheckoutAmount {
+        amount: 100,
+        currency: "USD".into(),
+    };
+    assert_eq!(usd.to_checkout(&CheckoutOptions::default())?, checkout);
+    assert_eq!(any.to_checkout(&CheckoutOptions::default())?, checkout);
+    let paypal = PayPalAmount {
+        currency_code: "USD".into(),
+        value: "1.00".into(),
+    };
+    assert_eq!(usd.to_paypal(Rounding::Unnecessary)?, paypal);
+    assert_eq!(any.to_paypal(Rounding::Unnecessary)?, paypal);
+    assert_eq!(usd.to_stripe(&stripe_default())?.currency, "usd");
+    assert_eq!(
+        usd.to_adyen(Rounding::Unnecessary),
+        Err(Error::UnsupportedCurrency)
+    );
+
+    let negative = m::<LowerUsd>("-1");
+    assert_eq!(
+        negative.to_checkout(&CheckoutOptions::default()),
+        Err(Error::NegativeAmount)
+    );
+    assert_eq!(
+        negative.to_paypal(Rounding::Unnecessary),
+        Err(Error::NegativeAmount)
+    );
+    let fraction = m::<LowerUsd>("1.001");
+    assert_eq!(
+        fraction.to_checkout(&CheckoutOptions::default()),
+        Err(Error::Rounding)
+    );
+    assert_eq!(
+        fraction.to_paypal(Rounding::Unnecessary),
+        Err(Error::Rounding)
+    );
+    let points = m::<LowerPoints>("1");
+    assert_eq!(
+        points.to_checkout(&CheckoutOptions::default()),
+        Err(Error::UnsupportedCurrency)
+    );
+    assert_eq!(
+        AnyMoney::from(points).to_paypal(Rounding::Unnecessary),
+        Err(Error::UnsupportedCurrency)
+    );
+    Ok(())
+}

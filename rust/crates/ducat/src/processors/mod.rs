@@ -49,6 +49,24 @@ use crate::amount::Amount;
 use crate::rounding::{Rounding, rescale_ratio};
 use crate::{CurrencyCode, Error, Int};
 
+/// A row of a processor's exponent table (ducat's `ADYEN_EXPONENTS`, `PAYPAL_EXPONENTS`,
+/// `BRAINTREE_EXPONENTS` and `KLARNA_EXPONENTS`): a currency the processor lists and the exponent
+/// its API uses for it.
+#[cfg(any(
+    feature = "adyen",
+    feature = "braintree",
+    feature = "klarna",
+    feature = "paypal"
+))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct ExponentEntry {
+    /// The currency code, as the processor lists it (uppercase).
+    pub code: &'static str,
+    /// The exponent (number of decimals) the processor's API uses.
+    pub exponent: u8,
+}
+
 /// The largest integer amount a processor is sent, 2^53 − 1: ducat's safe integers, since the
 /// APIs take JSON numbers.
 pub const MAX_INTEGER_AMOUNT: i64 = (1 << 53) - 1;

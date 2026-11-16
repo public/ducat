@@ -136,34 +136,54 @@ fn generate() -> String {
         "// Do not edit by hand: run `DUCAT_REGENERATE=1 cargo test -p ducat --test it processor_tables::`.",
     );
     line("");
+    line(
+        "#[cfg(any(feature = \"adyen\", feature = \"braintree\", feature = \"klarna\", feature = \"paypal\"))]",
+    );
+    line("use super::ExponentEntry;");
+    line("#[cfg(feature = \"checkout\")]");
+    line("use super::checkout::CheckoutEntry;");
+    line("#[cfg(feature = \"stripe\")]");
+    line("use super::stripe::StripeEntry;");
+    line("");
+    // (feature, table name, entry type, the names of the two multiples)
+    type Triple<'a> = (&'a str, &'a str, &'a str, [&'a str; 2]);
     let triples = |line: &mut dyn FnMut(&str),
-                   feature: &str,
-                   name: &str,
+                   (feature, name, entry, [first_name, second_name]): Triple<'_>,
                    doc: &str,
                    table: &BTreeMap<String, (u64, u64, u64)>| {
         line(&format!("/// {doc} ({} codes, sorted).", table.len()));
         line(&format!("#[cfg(feature = \"{feature}\")]"));
         line(&format!(
-            "pub(crate) const {name}: [(&str, u8, u64, u64); {}] = [",
+            "pub(crate) static {name}: [{entry}; {}] = [",
             table.len()
         ));
         for (code, (exponent, first, second)) in table {
-            line(&format!("    ({code:?}, {exponent}, {first}, {second}),"));
+            line(&format!(
+                "    {entry} {{ code: {code:?}, exponent: {exponent}, {first_name}: {first}, {second_name}: {second} }},"
+            ));
         }
         line("];");
         line("");
     };
     triples(
         &mut line,
-        "stripe",
-        "STRIPE",
+        (
+            "stripe",
+            "STRIPE",
+            "StripeEntry",
+            ["charge_multiple", "payout_multiple"],
+        ),
         "Stripe presentment currencies: code, API exponent, charge multiple, payout multiple",
         &stripe(),
     );
     triples(
         &mut line,
-        "checkout",
-        "CHECKOUT",
+        (
+            "checkout",
+            "CHECKOUT",
+            "CheckoutEntry",
+            ["multiple", "standalone_multiple"],
+        ),
         "Checkout.com currencies: code, API exponent, payment multiple, Standalone API multiple",
         &checkout(),
     );
@@ -178,11 +198,13 @@ fn generate() -> String {
         line(&format!("/// {doc} ({} codes, sorted).", table.len()));
         line(&format!("#[cfg(feature = \"{feature}\")]"));
         line(&format!(
-            "pub(crate) const {name}: [(&str, u8); {}] = [",
+            "pub(crate) static {name}: [ExponentEntry; {}] = [",
             table.len()
         ));
         for (code, exponent) in table {
-            line(&format!("    ({code:?}, {exponent}),"));
+            line(&format!(
+                "    ExponentEntry {{ code: {code:?}, exponent: {exponent} }},"
+            ));
         }
         line("];");
         line("");
@@ -227,4 +249,177 @@ fn committed_tables_are_the_generators_output() {
         committed == generated,
         "src/processors/tables.rs is stale: run `DUCAT_REGENERATE=1 cargo test -p ducat --test it processor_tables::`"
     );
+}
+
+// --- the public tables ---------------------------------------------------------------------------
+
+/// A table as `(code, exponent, first multiple, second multiple)` rows, the multiples 1 where the
+/// processor has none.
+type Rows = Vec<(String, u64, u64, u64)>;
+
+/// Every public table by processor, as [`Rows`].
+fn public_tables() -> Vec<(&'static str, Rows)> {
+    use ducat::processors::{adyen, braintree, checkout, klarna, paypal, stripe};
+    let exponents = |table: &[ducat::processors::ExponentEntry]| -> Rows {
+        table
+            .iter()
+            .map(|entry| (entry.code.to_owned(), u64::from(entry.exponent), 1, 1))
+            .collect()
+    };
+    vec![
+        (
+            "stripe",
+            stripe::rules()
+                .iter()
+                .map(|entry| {
+                    let (code, exponent) = (entry.code.to_owned(), u64::from(entry.exponent));
+                    (code, exponent, entry.charge_multiple, entry.payout_multiple)
+                })
+                .collect(),
+        ),
+        (
+            "checkout",
+            checkout::rules()
+                .iter()
+                .map(|entry| {
+                    let (code, exponent) = (entry.code.to_owned(), u64::from(entry.exponent));
+                    (code, exponent, entry.multiple, entry.standalone_multiple)
+                })
+                .collect(),
+        ),
+        ("adyen", exponents(adyen::exponents())),
+        ("paypal", exponents(paypal::exponents())),
+        ("braintree", exponents(braintree::exponents())),
+        ("klarna", exponents(klarna::exponents())),
+    ]
+}
+
+/// ducat's table from its generated module (`src/generated/<processor>.ts`, written by
+/// scripts/gen-currencies.mjs): its `  CODE: [exponent,first,second],` or `  CODE: exponent,`
+/// lines, in the file's order.
+fn ducats_table(processor: &str) -> Rows {
+    let path = root().join(format!("src/generated/{processor}.ts"));
+    let text = std::fs::read_to_string(&path).unwrap();
+    let (_, body) = text
+        .split_once("> = {\n")
+        .unwrap_or_else(|| panic!("{}: no table", path.display()));
+    let (body, _) = body.split_once("\n};").unwrap();
+    body.lines()
+        .map(|line| {
+            let (code, value) = line.trim().split_once(": ").unwrap();
+            let value = value.trim_end_matches(',');
+            let numbers: Vec<u64> = value
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .split(',')
+                .map(|number| number.parse().unwrap())
+                .collect();
+            match numbers[..] {
+                [exponent] => (code.to_owned(), exponent, 1, 1),
+                [exponent, first, second] => (code.to_owned(), exponent, first, second),
+                _ => panic!("{processor}: unexpected entry {line}"),
+            }
+        })
+        .collect()
+}
+
+#[test]
+fn public_tables_are_ducats_tables() {
+    for (processor, table) in public_tables() {
+        let mut ducat = ducats_table(processor);
+        // ducat's are records, in the generator's order; Rust's are sorted for lookup
+        ducat.sort();
+        assert_eq!(table, ducat, "{processor}");
+        assert!(table.is_sorted(), "{processor}: not sorted");
+    }
+}
+
+#[test]
+fn public_tables_are_the_spec_vectors_listed_currencies() {
+    let path = root().join("spec/vectors/processors/rules.json");
+    let vectors: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let rules = vectors["tables"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|table| table["op"] == "processor.rule")
+        .unwrap();
+    for (processor, table) in public_tables() {
+        // the uppercase codes with a rule; the lowercase and unlisted ones test the lookups
+        let listed: Rows = rules["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["processor"] == processor && !row["exponent"].is_null())
+            .map(|row| {
+                let code = row["currency"].as_str().unwrap().to_owned();
+                (
+                    code,
+                    number(&row["exponent"]),
+                    number(&row["multiple"]),
+                    number(&row["contextMultiple"]),
+                )
+            })
+            .filter(|row| row.0.bytes().all(|byte| byte.is_ascii_uppercase()))
+            .collect();
+        let mut sorted = listed.clone();
+        sorted.sort();
+        assert_eq!(table, sorted, "{processor}");
+    }
+}
+
+#[test]
+fn every_public_entry_is_its_lookup() {
+    use ducat::processors::{adyen, braintree, checkout, klarna, paypal, stripe};
+    for entry in stripe::rules() {
+        assert_eq!(
+            stripe::rule(entry.code),
+            Some(entry.rule()),
+            "{}",
+            entry.code
+        );
+        let lower = entry.code.to_ascii_lowercase();
+        assert_eq!(stripe::rule(&lower), Some(entry.rule()), "{lower}");
+    }
+    for entry in checkout::rules() {
+        assert_eq!(
+            checkout::rule(entry.code),
+            Some(entry.rule()),
+            "{}",
+            entry.code
+        );
+        let lower = entry.code.to_ascii_lowercase();
+        assert_eq!(checkout::rule(&lower), Some(entry.rule()), "{lower}");
+    }
+    for entry in adyen::exponents() {
+        assert_eq!(
+            adyen::rule(entry.code),
+            Some(entry.exponent),
+            "{}",
+            entry.code
+        );
+        // Adyen's lookup is case-sensitive, as ducat's
+        assert_eq!(
+            adyen::rule(&entry.code.to_ascii_lowercase()),
+            None,
+            "{}",
+            entry.code
+        );
+    }
+    type Lookup = (
+        fn(&str) -> Option<u8>,
+        &'static [ducat::processors::ExponentEntry],
+    );
+    let lookups: [Lookup; 3] = [
+        (paypal::rule, paypal::exponents()),
+        (braintree::rule, braintree::exponents()),
+        (klarna::rule, klarna::exponents()),
+    ];
+    for (rule, table) in lookups {
+        for entry in table {
+            assert_eq!(rule(entry.code), Some(entry.exponent), "{}", entry.code);
+            let lower = entry.code.to_ascii_lowercase();
+            assert_eq!(rule(&lower), Some(entry.exponent), "{lower}");
+        }
+    }
 }
