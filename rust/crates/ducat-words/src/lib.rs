@@ -466,7 +466,14 @@ impl Gender {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct AmountInWordsOptions<'a> {
     /// The currency's name in the plural forms the language uses (`euro`, `euros`). `None` takes
-    /// CLDR's (feature `cldr-names`; see [`currency_names`]), as ducat takes `Intl`'s.
+    #[cfg_attr(
+        feature = "cldr-names",
+        doc = "CLDR's (feature `cldr-names`; see [`currency_names`]), as ducat takes `Intl`'s."
+    )]
+    #[cfg_attr(
+        not(feature = "cldr-names"),
+        doc = "CLDR's (feature `cldr-names`; see `currency_names`), as ducat takes `Intl`'s."
+    )]
     pub currency: Option<UnitNames>,
     /// The gender of the currency's name (Spanish `un euro` but `una libra`); default masculine,
     /// where the language has genders.
@@ -507,7 +514,14 @@ fn whole(digits: &str) -> Result<i128, Error> {
 /// out with `minor` names. ducat's `amountInWords`.
 ///
 /// Without `options.currency`, the currency's name is CLDR 48's in the language (feature
-/// `cldr-names`; see [`currency_names`]), as `Intl` gives ducat's: a three-letter code CLDR doesn't
+#[cfg_attr(
+    feature = "cldr-names",
+    doc = "`cldr-names`; see [`currency_names`]), as `Intl` gives ducat's: a three-letter code CLDR doesn't"
+)]
+#[cfg_attr(
+    not(feature = "cldr-names"),
+    doc = "`cldr-names`; see `currency_names`), as `Intl` gives ducat's: a three-letter code CLDR doesn't"
+)]
 /// name in the language is written as the code, upper-cased (`five XBT`), as `Intl` writes it.
 ///
 /// # Errors

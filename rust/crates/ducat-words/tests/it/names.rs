@@ -3,10 +3,7 @@
 //! the feature, the defaults are an error.
 
 use ducat::{AnyMoney, CurrencyCode};
-use ducat_words::{
-    AmountInWordsOptions, DUTCH, ENGLISH, Error, FRENCH, GERMAN, ITALIAN, PORTUGUESE, SPANISH,
-    SpelloutRules, UnitNames, amount_in_words,
-};
+use ducat_words::{AmountInWordsOptions, ENGLISH, Error, SpelloutRules, amount_in_words};
 
 /// `units` × 10^−`scale` of `code` (an ISO code, else a custom one at scale 2), in words with
 /// the default options.
@@ -21,7 +18,9 @@ fn words(units: i64, scale: u16, code: &str, rules: &SpelloutRules) -> Result<St
 #[cfg(feature = "cldr-names")]
 mod cldr {
     use super::*;
-    use ducat_words::{Locale, currency_names};
+    use ducat_words::{
+        DUTCH, FRENCH, GERMAN, ITALIAN, Locale, PORTUGUESE, SPANISH, UnitNames, currency_names,
+    };
 
     #[test]
     fn names_by_plural_category_as_intl_writes_them() {
