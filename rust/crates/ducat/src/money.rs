@@ -10,7 +10,7 @@ use core::marker::PhantomData;
 use core::ops::{Add, Neg, Sub};
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money in the currency `C`: a count of 10^−scale units of any size.
@@ -604,14 +604,22 @@ impl<C: Currency> Sum for Money<C> {
     /// The exact sum, at the largest scale among the items; zero at the currency's exponent for
     /// none.
     fn sum<I: Iterator<Item = Self>>(items: I) -> Self {
-        items.fold(Self::zero(), |sum, item| sum + item)
+        let mut sum = AmountSum::zero(u16::from(C::CODE.exponent()));
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
 impl<'a, C: Currency> Sum<&'a Money<C>> for Money<C> {
     /// As the sum of owned values.
     fn sum<I: Iterator<Item = &'a Money<C>>>(items: I) -> Self {
-        items.fold(Self::zero(), |sum, item| sum + item)
+        let mut sum = AmountSum::zero(u16::from(C::CODE.exponent()));
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
@@ -679,5 +687,33 @@ impl<C: Currency> PartialEq<Money<C>> for AnyMoney {
     /// The same currency and the same value, whatever the scales.
     fn eq(&self, other: &Money<C>) -> bool {
         other == self
+    }
+}
+
+/// The general paths that adding and summing `Money` took before their inline fast paths, for the
+/// differential tests in `crate::sum_tests`: every add aligns both amounts to the larger scale and
+/// builds a new value, and every sum folds with that add from zero at the currency's exponent.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Money;
+    use crate::Currency;
+
+    /// `a + b`, by the general path.
+    pub(crate) fn add<C: Currency>(a: &Money<C>, b: &Money<C>) -> Money<C> {
+        Money::from_amount(a.amount.add_general(&b.amount))
+    }
+
+    /// `a − b`, by the general path.
+    pub(crate) fn sub<C: Currency>(a: &Money<C>, b: &Money<C>) -> Money<C> {
+        Money::from_amount(a.amount.sub_general(&b.amount))
+    }
+
+    /// `Sum`: a fold with [`add`] from zero at the currency's exponent.
+    pub(crate) fn sum<'a, C: Currency + 'a>(
+        items: impl IntoIterator<Item = &'a Money<C>>,
+    ) -> Money<C> {
+        items
+            .into_iter()
+            .fold(Money::zero(), |sum, item| add(&sum, item))
     }
 }

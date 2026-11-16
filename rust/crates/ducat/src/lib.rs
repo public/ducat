@@ -107,11 +107,21 @@ mod ratio;
 mod rounding;
 #[cfg(feature = "serde")]
 mod serde_impl;
+// the sum and add fast paths against the general paths they replaced
+#[cfg(all(
+    test,
+    feature = "iso",
+    feature = "fixed",
+    feature = "convert",
+    feature = "math"
+))]
+mod sum_tests;
 #[cfg(feature = "tax")]
 pub mod tax;
 #[cfg(feature = "territories")]
 pub mod territories;
-#[cfg(feature = "proptest")]
+// unit tests use the strategies too, without the `proptest` feature (proptest is a dev-dependency)
+#[cfg(any(test, feature = "proptest"))]
 pub mod testing;
 mod wide;
 #[cfg(feature = "wire")]

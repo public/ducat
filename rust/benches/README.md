@@ -43,6 +43,23 @@ For each benchmark the table gives the median over the 3 runs of criterion's med
 `convert/ducat/big`, 12.8% (160.8, 177.0, 156.5 ns). Every other spread is at most 6.2% (`convert/bigdecimal/big`),
 and all but three are under 5%.
 
+The `add` and `sum of 1,000` rows (both sizes, every library) were measured again on the same PC on 2026-11-15
+for the sum and add fast paths (`AmountSum` and the inline `Amount::add`): only those benchmarks
+(`cargo bench -p ducat-benches -- 'sum|add'`), 3 runs before (main at e1b6e98) and 3 after, one session, no other
+build or test running in the sandbox (`/proc/loadavg` `0.00 0.00 0.00` before and after every run), the criterion directory
+cleared before each run, the bench build with `CARGO_BUILD_JOBS=2`; same toolchain and harness. The rows give the
+after runs. Spreads: at most 2.4% before (`sum1000/bigdecimal/normal`) and 5.6% after (`add/ducat/big`: 94.6, 89.5,
+90.7 ns), every other one under 3.5%. The same-session before runs put ducat's sum at 11,039 ns rather than the
+9,959 of the full-suite runs above, and fixed's at 270 rather than 222; other libraries' rows moved by under 2%,
+except rusty-money's sum (10,916 before, 9,634 after, without a change to it).
+
+| benchmark | before | after |
+|---|---|---|
+| add, ducat | 9.9 | 7.0 |
+| add, ducat, past i128 | 91.4 | 90.7 |
+| sum of 1,000, ducat | 11,039 | 889 |
+| sum of 1,000, ducat, past i128 | 92,556 | 12,115 |
+
 ## Inputs
 
 Every library gets the same values, EUR at scale 2:
@@ -72,44 +89,50 @@ ducat took twice as long and 0.50 half as long. "n/a": the library has no such o
 | operation | ducat | rust_decimal | rusty-money | bigdecimal | fixed (I64F64) | i64 minor units |
 |---|---|---|---|---|---|---|
 | parse | 48.8 | 9.8 (4.97) | 124 (0.39) | 74.0 (0.66) | 85.0 (0.57) | 9.0 (5.41) |
-| add | 10.0 | 5.3 (1.90) | 10.7 (0.94) | 42.7 (0.24) | 1.3 (7.93) | 0.6 (15.87) |
+| add | 7.0 | 5.3 (1.31) | 10.8 (0.65) | 42.8 (0.16) | 1.3 (5.56) | 0.6 (11.11) |
 | multiply, half-even | 41.5 | 15.9 (2.62) | 75.0 (0.55) | 86.8 (0.48) | 2.7 (15.20) ‡ | 5.4 (7.75) |
 | divide by 3, half-even | 53.7 | 15.4 (3.50) | 41.1 (1.31) | 41.0 (1.31) | 5.2 (10.25) ‡ | 5.1 (10.58) |
 | split 100.00 into 3 | 167 | n/a | 300 (0.56) § | n/a | n/a | 69.6 (2.41) |
 | allocate 100.00 by 1, 2, 3 | 217 | n/a | 271 (0.80) § | n/a | n/a | 70.2 (3.09) |
 | convert at a rate | 53.7 | 16.8 (3.20) | 37.2 (1.45) | 85.2 (0.63) | 2.7 (19.70) ‡ | 5.0 (10.81) |
 | to string | 57.0 | 45.7 (1.25) | 271 (0.21) | 72.9 (0.78) | 65.0 (0.88) | 49.2 (1.16) |
-| sum of 1,000 | 9,959 | 4,608 (2.16) | 10,428 (0.96) | 18,883 (0.53) | 222 (44.84) | 215 (46.40) |
+| sum of 1,000 | 889 | 4,648 (0.19) | 9,634 (0.09) | 19,270 (0.05) | 223 (3.99) | 215 (4.14) |
 
 ### Past i128 (ducat's heap path)
 
 | operation | ducat | bigdecimal |
 |---|---|---|
 | parse | 241 | 150 (1.61) |
-| add | 92.8 | 53.4 (1.74) |
+| add | 90.7 | 53.2 (1.71) |
 | multiply, half-even | 123 | 181 (0.68) |
 | divide by 3, half-even | 136 | 2,772 (0.05) |
 | split into 3 | 667 | n/a |
 | allocate by 1, 2, 3 | 694 | n/a |
 | convert at a rate | 161 † | 181 (0.89) |
 | to string | 126 | 132 (0.96) |
-| sum of 1,000 | 91,471 | 24,920 (3.67) |
+| sum of 1,000 | 12,115 | 25,243 (0.48) |
 
 † spread above 10% (12.8%). ‡ does not round to cents (see fixed below). § different result: whole euros, not
 cents (see rusty-money below).
 
 ### Where ducat is slower, and why
 
-- Against rust_decimal (1.25–4.97 times as long) and the i64 baseline (1.16–46 times): ducat's amounts are an enum
+- Against rust_decimal (1.25–4.97 times as long, except the sum) and the i64 baseline (1.16–11.1 times): ducat's
+  amounts are an enum
   of `i128` and a boxed `BigInt` plus a `u16` scale, and every operation checks for overflow and promotes to the
   heap path instead of failing. Multiply, divide and convert go through an exact `Ratio` (numerator and
   denominator) and one rounding step to the currency's exponent; rust_decimal multiplies 96-bit mantissas and the
   baseline does one `i128` multiply and divide. Parse is ducat's full grammar (exponents, signs, a scale check
   against the currency); rust_decimal's `from_str_exact` and the baseline parse fewer forms.
-- Sum of 1,000: ducat's `Sum` folds with `+`, which creates a new value and aligns scales at every step, about
-  10 ns per addition; rust_decimal is about 4.6 ns and the integers about 0.2 ns. Past i128 the gap to bigdecimal
-  (3.67 times) is because each ducat addition allocates a new `BigInt`, where bigdecimal's `Sum` adds into the accumulator it owns, reusing its buffer.
-- Past i128, parse and add are 1.6–1.7 times bigdecimal's, for the same reason: ducat builds a new boxed
+- Sum of 1,000: ducat's `Sum` used to fold with `+`, creating a new value and aligning scales at every step: 11,039 ns
+  (about 11 ns per addition; 2.38 times rust_decimal's). It now adds the units into one running `i128` with
+  `checked_add`, at the largest scale seen so far, and moves to a `BigInt` once on overflow: 889 ns, about 0.9 ns per
+  item, a fifth of rust_decimal's time and 4.1 times the integers'. Past i128 it
+  used to allocate a new `BigInt` per addition (92,556 ns, 3.67 times bigdecimal's); it now adds into the one
+  `BigInt` it owns, as bigdecimal's `Sum` does: 12,115 ns, about half of bigdecimal's.
+- Add: two inline amounts at one scale are one `checked_add` now, without aligning scales or building the operands'
+  copies first: 9.9 ns before, 7.0 after (1.31 times rust_decimal's).
+- Past i128, parse and add are 1.6–1.7 times bigdecimal's: ducat builds a new boxed
   `BigInt` per result and checks whether it fits back into `i128`.
 - ducat is faster than bigdecimal on big division (0.05) because bigdecimal divides to its default precision of
   100 significant digits before the rounding to 2 decimals, where ducat computes the exact quotient's rounding

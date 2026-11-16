@@ -4,6 +4,7 @@ use core::cmp::Ordering;
 use core::fmt;
 
 use crate::decimal::{Decimal, MAX_SCALE, faithful_decimal, parse_decimal, write_scaled};
+use crate::int::IntSum;
 use crate::rounding::{Rounding, RoundingInput, rescale_ratio};
 use crate::{CurrencyCode, Error, Int, Ratio};
 
@@ -181,7 +182,44 @@ impl Amount {
         self.mul_ratio(&divisor.recip()?, scale, rounding)
     }
 
+    /// `self + other`, exactly, at the larger scale. Two inline amounts at one scale are one
+    /// `checked_add`; anything else (an overflow, a heap value, unequal scales) takes
+    /// [`Amount::add_general`], which gives the same result.
+    #[inline]
     pub(crate) fn add(&self, other: &Self) -> Self {
+        if self.scale == other.scale {
+            if let (Some(left), Some(right)) = (self.units.to_i128(), other.units.to_i128()) {
+                if let Some(units) = left.checked_add(right) {
+                    return Self {
+                        units: Int::from(units),
+                        scale: self.scale,
+                    };
+                }
+            }
+        }
+        self.add_general(other)
+    }
+
+    /// `self − other`, as [`Amount::add`]: one `checked_sub` on the inline path, else
+    /// [`Amount::sub_general`].
+    #[inline]
+    pub(crate) fn sub(&self, other: &Self) -> Self {
+        if self.scale == other.scale {
+            if let (Some(left), Some(right)) = (self.units.to_i128(), other.units.to_i128()) {
+                if let Some(units) = left.checked_sub(right) {
+                    return Self {
+                        units: Int::from(units),
+                        scale: self.scale,
+                    };
+                }
+            }
+        }
+        self.sub_general(other)
+    }
+
+    /// `self + other` by aligning both to the larger scale: any scales, any sizes. The reference
+    /// for [`Amount::add`]'s inline path, and its fallback.
+    pub(crate) fn add_general(&self, other: &Self) -> Self {
         let scale = self.scale.max(other.scale);
         Self {
             units: self.units_at(scale) + other.units_at(scale),
@@ -189,7 +227,8 @@ impl Amount {
         }
     }
 
-    pub(crate) fn sub(&self, other: &Self) -> Self {
+    /// `self − other` by aligning both to the larger scale, as [`Amount::add_general`].
+    pub(crate) fn sub_general(&self, other: &Self) -> Self {
         let scale = self.scale.max(other.scale);
         Self {
             units: self.units_at(scale) - other.units_at(scale),
@@ -246,6 +285,54 @@ impl Amount {
 
     pub(crate) fn write(&self, f: &mut dyn fmt::Write) -> fmt::Result {
         write_scaled(f, &self.units, self.scale)
+    }
+}
+
+/// A running sum of amounts: the units at the largest scale seen so far, in an [`IntSum`] (an
+/// `i128` with `checked_add`, moving to the heap once on overflow and staying there). Adding the
+/// amounts one by one into it gives what folding them with [`Amount::add`] from the same start
+/// gives, value and scale, without building an amount per step.
+#[derive(Clone, Debug)]
+pub(crate) struct AmountSum {
+    total: IntSum,
+    scale: u16,
+}
+
+impl AmountSum {
+    /// Zero at `scale` (a valid scale: the currency's exponent, or 0).
+    pub(crate) const fn zero(scale: u16) -> Self {
+        Self {
+            total: IntSum::Small(0),
+            scale,
+        }
+    }
+
+    /// A sum starting at `start`, at its scale.
+    #[cfg(any(feature = "math", feature = "convert"))]
+    pub(crate) fn starting_at(start: &Amount) -> Self {
+        Self {
+            total: IntSum::new(&start.units),
+            scale: start.scale,
+        }
+    }
+
+    /// `sum += amount`, at the larger of the two scales.
+    #[inline]
+    pub(crate) fn add(&mut self, amount: &Amount) {
+        if amount.scale > self.scale {
+            self.total.mul_pow10(u32::from(amount.scale - self.scale));
+            self.scale = amount.scale;
+        }
+        self.total
+            .add_scaled(&amount.units, u32::from(self.scale - amount.scale));
+    }
+
+    /// The sum.
+    pub(crate) fn finish(self) -> Amount {
+        Amount {
+            units: self.total.finish(),
+            scale: self.scale,
+        }
     }
 }
 
