@@ -180,8 +180,8 @@ fn tries_a_failed_load_again_and_bounds_what_it_keeps() {
 }
 
 #[test]
-fn a_miss_makes_room_as_ducat_does() {
-    // ducat: 06, then 08, 07, 06 again (08's load dropped the kept 06), then nothing
+fn a_miss_keeps_the_kept_day() {
+    // ducat: 06, then 08 and 07 (misses, which make no room) before the kept 06, then nothing
     let (calls, load) = recording(vec![("2026-11-06", ecb())]);
     let mut history = snapshots(
         load,
@@ -195,10 +195,7 @@ fn a_miss_makes_room_as_ducat_does() {
         let found = history.at(&time(at)).unwrap();
         assert_eq!(found.as_of(), Some(time("2026-11-06")));
     }
-    assert_eq!(
-        taken(&calls),
-        ["2026-11-06", "2026-11-08", "2026-11-07", "2026-11-06"]
-    );
+    assert_eq!(taken(&calls), ["2026-11-06", "2026-11-08", "2026-11-07"]);
 }
 
 #[test]
