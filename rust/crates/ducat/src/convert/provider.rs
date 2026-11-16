@@ -58,6 +58,19 @@ impl<P: RateProvider + ?Sized> RateProvider for alloc::boxed::Box<P> {
     }
 }
 
+impl<P: RateProvider + ?Sized> RateProvider for alloc::rc::Rc<P> {
+    fn rate(&self, from: CurrencyCode, to: CurrencyCode, query: &RateQuery) -> Option<AnyRate> {
+        (**self).rate(from, to, query)
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<P: RateProvider + ?Sized> RateProvider for alloc::sync::Arc<P> {
+    fn rate(&self, from: CurrencyCode, to: CurrencyCode, query: &RateQuery) -> Option<AnyRate> {
+        (**self).rate(from, to, query)
+    }
+}
+
 /// The rate for the pair, for a lookup that must succeed: ducat's `rateOf`.
 ///
 /// # Errors
