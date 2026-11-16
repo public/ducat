@@ -40,17 +40,11 @@ jobs:
       - name: Check the tag is the crates' version
         env:
           TAG: ${{ github.ref_name }}
+        # the publishable crates (publish = false ones, like ducat-benches, aren't) must be the
+        # script's list, each at the tag's version
         run: |
-          want="${TAG#rust-v}"
-          versions=$(cargo metadata --no-deps --format-version 1 --locked | jq -r '.packages[] | "\(.name) \(.version)"')
-          echo "$versions"
-          bad=$(echo "$versions" | awk -v want="$want" '$2 != want')
-          if [ -n "$bad" ]; then
-            echo "::error::tag $TAG wants version $want, but these crates have another:"
-            echo "$bad"
-            exit 1
-          fi
-          echo "VERSION=$want" >> "$GITHUB_ENV"
+          version=$(../scripts/rust-release.sh check "$TAG")
+          echo "VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Record the spec commit
         run: |
@@ -71,7 +65,8 @@ jobs:
             curl -fsS "https://index.crates.io/${1:0:2}/${1:2:2}/$1" 2>/dev/null \
               | jq -e --arg v "$VERSION" 'select(.vers == $v)' > /dev/null
           }
-          for crate in ducat ducat-words ducat-format ducat-sql-core ducat-sqlx ducat-diesel ducat-fetch; do
+          # the list the tag check used, in dependency order
+          for crate in $(../scripts/rust-release.sh crates); do
             if indexed "$crate"; then
               echo "$crate $VERSION is already on crates.io; skipping"
               continue

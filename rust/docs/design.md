@@ -813,7 +813,9 @@ milestone 1).
 - **ducat-sql-core is internal.** It is published only because `ducat-sqlx` and `ducat-diesel` depend on it; its items
   are `#[doc(hidden)]` and it makes no stability promise, whatever its version says.
 - **Publish order:** `ducat`, `ducat-words`, `ducat-format`, `ducat-sql-core`, `ducat-sqlx`, `ducat-diesel`,
-  `ducat-fetch`; each crate after those it depends on. Path dependencies between the crates carry
+  `ducat-fetch`; each crate after those it depends on. That list lives once, in `scripts/rust-release.sh`, which the
+  release's tag check and its publish loop both read; the check also fails if the workspace's publishable crates
+  (`ducat-benches` is `publish = false`) aren't exactly that list, and rust.yml dry-runs it on every PR. Path dependencies between the crates carry
   `version = "<the version>"`, so a release bumps them with `workspace.package.version`.
 - **Publishing:** the first release (0.1.0) is published by hand, in that order. From the second on, pushing a tag
   `rust-v<version>` runs `.github/workflows/rust-release.yml`: it checks that the tag is the crates' version, waits for

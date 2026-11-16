@@ -177,6 +177,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal --component rustfmt,clippy && rustup default stable
       - run: cargo fmt --all -- --check
+      - name: Dry-run the release's tag check (scripts/rust-release.sh, as rust-release.yml runs it)
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 --locked | jq -r '.packages[] | select(.name == "ducat") | .version')
+          ../scripts/rust-release.sh check "rust-v$version"
+          if ../scripts/rust-release.sh check "rust-v$version-not-this" 2>/dev/null; then
+            echo "::error::the tag check passed a tag whose version no crate has"; exit 1
+          fi
       - run: cargo clippy --workspace --exclude ducat-benches --all-targets --all-features --locked -- -D warnings
       # the benchmarks compile and lint clean; they are never run in CI
       - run: cargo clippy -p ducat-benches --benches --locked -- -D warnings
