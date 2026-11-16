@@ -29,6 +29,8 @@ import { loadVectorFiles, vectorSchema } from './spec/load.ts';
 import { TABLE_OPERATIONS } from './spec/tables.ts';
 import {
   CANARIES,
+  canaryName,
+  isSkipped,
   declaredRuntime,
   INTL_OPERATIONS,
   intlVerdict,
@@ -54,7 +56,7 @@ const CASES_PER_AREA: Record<string, number> = {
   currency: 1367,
   processors: 2372,
   wire: 790,
-  format: 4846,
+  format: 8388,
   parse: 3386,
 };
 
@@ -386,10 +388,10 @@ describe('@ducatjs/money-spec', () => {
         found.expected,
       ]),
     );
-    expect([...expected.keys()]).toEqual(CANARIES.map((canary) => canary.locale));
+    expect([...expected.keys()]).toEqual(CANARIES.map(canaryName));
     // de-CH as Deno 2.9.8 writes it; the others as expected
-    const stub = (canary: { locale: string }) => {
-      const text = expected.get(canary.locale)!;
+    const stub = (canary: (typeof CANARIES)[number]) => {
+      const text = expected.get(canaryName(canary))!;
       return canary.locale === 'de-CH' ? text.replace("'", '’') : text;
     };
     const onReference = intlVerdict(files, stub, true);
@@ -617,7 +619,7 @@ for (const [path, file] of files) {
         }
         // a locale whose Intl data differs on this runtime is skipped (and reported above)
         const rows = INTL_OPERATIONS.has(table.op)
-          ? table.rows.filter((row) => !intl.skipped.has(row['locale'] as string))
+          ? table.rows.filter((row) => !isSkipped(intl, row))
           : table.rows;
         const mismatches = [
           ...(operation.checkTable?.(rows) ?? []),

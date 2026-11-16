@@ -2,245 +2,925 @@
 // Do not edit by hand: run `DUCAT_REGENERATE=1 cargo test -p ducat-format --test it data::`.
 
 use crate::tables::{CurrencyData, LocaleData, Numbers, Operand, Relation, Rule};
+#[cfg(feature = "compact")]
+use crate::{compact::Table, tables::Compact};
 
 /// The CLDR release of these tables.
 pub(crate) const CLDR_VERSION: &str = "48.0";
 
+#[cfg(all(feature = "compact", feature = "af"))]
+pub(crate) static COMPACT_AF: Compact = Compact { decimal_short: Table("0350\u{a0}k\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}m\u{1f}07500\u{a0}m\u{1f}085000\u{a0}m\u{1f}0950\u{a0}mjd\u{1f}10500\u{a0}mjd\u{1f}115000\u{a0}mjd\u{1f}1250\u{a0}bn\u{1f}13500\u{a0}bn\u{1f}145000\u{a0}bn"), decimal_long: Table("0350 duisend\u{1f}04500 duisend\u{1f}055000 duisend\u{1f}0650 miljoen\u{1f}07500 miljoen\u{1f}085000 miljoen\u{1f}0950 miljard\u{1f}10500 miljard\u{1f}115000 miljard\u{1f}1250 biljoen\u{1f}13500 biljoen\u{1f}145000 biljoen"), currency_short: Table("035¤0\u{a0}k\u{1f}045¤00\u{a0}k\u{1f}055¤000\u{a0}k\u{1f}065¤0\u{a0}m\u{1f}075¤00\u{a0}m\u{1f}085¤000\u{a0}m\u{1f}095¤0\u{a0}mjd\u{1f}105¤00\u{a0}mjd\u{1f}115¤000\u{a0}mjd\u{1f}125¤0\u{a0}bn\u{1f}135¤00\u{a0}bn\u{1f}145¤000\u{a0}bn") };
+
+#[cfg(all(feature = "compact", feature = "ak"))]
+pub(crate) static COMPACT_AK: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("035apem 0\u{1f}045mpem 00\u{1f}055mpem 000\u{1f}065ɔpepem 0\u{1f}075ɔpepem 00\u{1f}085ɔpepem 000\u{1f}095ɔpepepem 0\u{1f}105ɔpepepem 00\u{1f}115ɔpepepem 000\u{1f}125ɔpepepepem 0\u{1f}135ɔpepepepem 00\u{1f}145ɔpepepepem 000"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0G\u{1f}105¤00G\u{1f}115¤000G\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "am"))]
+pub(crate) static COMPACT_AM: Compact = Compact { decimal_short: Table("0350\u{a0}ሺ\u{1f}04500\u{a0}ሺ\u{1f}055000\u{a0}ሺ\u{1f}0650\u{a0}ሚ\u{1f}07500\u{a0}ሚ\u{1f}085000\u{a0}ሚ\u{1f}0950\u{a0}ቢ\u{1f}10500\u{a0}ቢ\u{1f}115000\u{a0}ቢ\u{1f}1250\u{a0}ት\u{1f}13500\u{a0}ት\u{1f}145000\u{a0}ት"), decimal_long: Table("0350 ሺ\u{1f}04500 ሺ\u{1f}055000 ሺ\u{1f}0650 ሚሊዮን\u{1f}07500 ሚሊዮን\u{1f}085000 ሚሊዮን\u{1f}0950 ቢሊዮን\u{1f}10500 ቢሊዮን\u{1f}115000 ቢሊዮን\u{1f}1250 ትሪሊዮን\u{1f}13500 ትሪሊዮን\u{1f}145000 ትሪሊዮን"), currency_short: Table("035¤0\u{a0}ሺ\u{1f}045¤00\u{a0}ሺ\u{1f}055¤000\u{a0}ሺ\u{1f}065¤0\u{a0}ሚ\u{1f}075¤00\u{a0}ሚ\u{1f}085¤000\u{a0}ሚ\u{1f}095¤0\u{a0}ቢ\u{1f}105¤00\u{a0}ቢ\u{1f}115¤000\u{a0}ቢ\u{1f}125¤0\u{a0}ት\u{1f}135¤00\u{a0}ት\u{1f}145¤000\u{a0}ት") };
+
+#[cfg(all(feature = "compact", feature = "ar"))]
+pub(crate) static COMPACT_AR: Compact = Compact { decimal_short: Table("0330\u{a0}آلاف\u{1f}0350\u{a0}ألف\u{1f}04500\u{a0}ألف\u{1f}055000\u{a0}ألف\u{1f}0650\u{a0}مليون\u{1f}07500\u{a0}مليون\u{1f}085000\u{a0}مليون\u{1f}0950\u{a0}مليار\u{1f}10500\u{a0}مليار\u{1f}115000\u{a0}مليار\u{1f}1250\u{a0}ترليون\u{1f}13500\u{a0}ترليون\u{1f}145000\u{a0}ترليون"), decimal_long: Table("0330 آلاف\u{1f}0350 ألف\u{1f}04500 ألف\u{1f}055000 ألف\u{1f}0630 ملايين\u{1f}0650 مليون\u{1f}07300 ملايين\u{1f}07500 مليون\u{1f}085000 مليون\u{1f}0950 مليار\u{1f}10500 مليار\u{1f}115000 مليار\u{1f}1250 ترليون\u{1f}13500 ترليون\u{1f}145000 ترليون"), currency_short: Table("033\u{200f}0\u{a0}آلاف\u{a0}¤\u{1f}035\u{200f}0\u{a0}ألف\u{a0}¤\u{1f}045\u{200f}00\u{a0}ألف\u{a0}¤\u{1f}055\u{200f}000\u{a0}ألف\u{a0}¤\u{1f}065\u{200f}0\u{a0}مليون\u{a0}¤\u{1f}075\u{200f}00\u{a0}مليون\u{a0}¤\u{1f}085\u{200f}000\u{a0}مليون\u{a0}¤\u{1f}095\u{200f}0\u{a0}مليار\u{a0}¤\u{1f}105\u{200f}00\u{a0}مليار\u{a0}¤\u{1f}115\u{200f}000\u{a0}مليار\u{a0}¤\u{1f}125\u{200f}0\u{a0}ترليون\u{a0}¤\u{1f}135\u{200f}00\u{a0}ترليون\u{a0}¤\u{1f}145\u{200f}000\u{a0}ترليون\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "as"))]
+pub(crate) static COMPACT_AS: Compact = Compact { decimal_short: Table("0350\u{a0}হ\u{9be}জ\u{9be}ৰ\u{1f}04500\u{a0}হ\u{9be}জ\u{9be}ৰ\u{1f}0550\u{a0}ল\u{9be}খ\u{1f}0650\u{a0}নিয\u{9c1}ত\u{1f}07500\u{a0}নিয\u{9c1}ত\u{1f}0850\u{a0}নিঃ\u{1f}0950\u{a0}শঃ\u{a0}কোঃ\u{1f}10500\u{a0}শঃ\u{a0}কোঃ\u{1f}115000\u{a0}শঃ\u{a0}কঃ\u{1f}1250\u{a0}শঃ\u{a0}পঃ\u{1f}13500\u{a0}শঃ\u{a0}পঃ\u{1f}145000\u{a0}শঃ\u{a0}পঃ"), decimal_long: Table("0350 হ\u{9be}জ\u{9be}ৰ\u{1f}04500 হ\u{9be}জ\u{9be}ৰ\u{1f}0550 ল\u{9be}খ\u{1f}0650 নিয\u{9c1}ত\u{1f}07500 নিয\u{9c1}ত\u{1f}085000 নিয\u{9c1}ত\u{1f}0950 শত কোটি\u{1f}10500 শত কোটি\u{1f}115000 শত কোটি\u{1f}1250 শত পৰ\u{9be}ৰ\u{9cd}দ\u{9cd}ধ\u{1f}13500 শত পৰ\u{9be}ৰ\u{9cd}দ\u{9cd}ধ\u{1f}145000 শত পৰ\u{9be}ৰ\u{9cd}দ\u{9cd}ধ"), currency_short: Table("035¤\u{a0}0\u{a0}হ\u{9be}জ\u{9be}ৰ\u{1f}045¤\u{a0}00\u{a0}হ\u{9be}জ\u{9be}ৰ\u{1f}055¤\u{a0}0\u{a0}ল\u{9be}খ\u{1f}065¤\u{a0}0\u{a0}নিয\u{9c1}ত\u{1f}075¤\u{a0}00\u{a0}নিয\u{9c1}ত\u{1f}085¤\u{a0}0\u{a0}নিঃ\u{1f}095¤\u{a0}0\u{a0}শঃ\u{a0}কোঃ\u{1f}105¤\u{a0}00\u{a0}শঃ\u{a0}কোঃ\u{1f}115¤\u{a0}000\u{a0}শঃ\u{a0}কঃ\u{1f}125¤\u{a0}0\u{a0}শঃ\u{a0}পঃ\u{1f}135¤\u{a0}00\u{a0}শঃ\u{a0}পঃ\u{1f}145¤\u{a0}000\u{a0}শঃ\u{a0}পঃ") };
+
+#[cfg(all(feature = "compact", feature = "az"))]
+pub(crate) static COMPACT_AZ: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650\u{a0}mln\u{1f}07500\u{a0}mln\u{1f}085000\u{a0}mln\u{1f}0950\u{a0}mlrd\u{1f}10500\u{a0}mlrd\u{1f}115000\u{a0}mlrd\u{1f}1250\u{a0}trln\u{1f}13500\u{a0}trln\u{1f}145000\u{a0}trln"), decimal_long: Table("0350 min\u{1f}04500 min\u{1f}055000 min\u{1f}0650 milyon\u{1f}07500 milyon\u{1f}085000 milyon\u{1f}0950 milyard\u{1f}10500 milyard\u{1f}115000 milyard\u{1f}1250 trilyon\u{1f}13500 trilyon\u{1f}145000 trilyon"), currency_short: Table("0350K\u{a0}¤\u{1f}04500K\u{a0}¤\u{1f}055000K\u{a0}¤\u{1f}0650\u{a0}mln\u{a0}¤\u{1f}07500\u{a0}mln\u{a0}¤\u{1f}085000\u{a0}mln\u{a0}¤\u{1f}0950\u{a0}mlrd\u{a0}¤\u{1f}10500\u{a0}mlrd\u{a0}¤\u{1f}115000\u{a0}mlrd\u{a0}¤\u{1f}1250\u{a0}trln\u{a0}¤\u{1f}13500\u{a0}trln\u{a0}¤\u{1f}145000\u{a0}trln\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ba"))]
+pub(crate) static COMPACT_BA: Compact = Compact { decimal_short: Table("0350\u{a0}мең\u{1f}04500\u{a0}мең\u{1f}055000\u{a0}мең\u{1f}0650\u{a0}млн\u{1f}07500\u{a0}млн\u{1f}085000\u{a0}млн\u{1f}0950\u{a0}млрд\u{1f}10500\u{a0}млрд\u{1f}115000\u{a0}млрд\u{1f}1250\u{a0}трлн\u{1f}13500\u{a0}трлн\u{1f}145000\u{a0}трлн"), decimal_long: Table("0350 мең\u{1f}04500 мең\u{1f}055000 мең\u{1f}0650 миллион\u{1f}07500 миллион\u{1f}085000 миллион\u{1f}0950 миллиард\u{1f}10500 миллиард\u{1f}115000 миллиард\u{1f}1250 триллион\u{1f}13500 триллион\u{1f}145000 триллион"), currency_short: Table("0350\u{a0}мең\u{a0}¤\u{1f}04500\u{a0}мең\u{a0}¤\u{1f}055000\u{a0}мең\u{a0}¤\u{1f}0650\u{a0}млн\u{a0}¤\u{1f}07500\u{a0}млн\u{a0}¤\u{1f}085000\u{a0}млн\u{a0}¤\u{1f}0950\u{a0}млрд\u{a0}¤\u{1f}10500\u{a0}млрд\u{a0}¤\u{1f}115000\u{a0}млрд\u{a0}¤\u{1f}1250\u{a0}трлн\u{a0}¤\u{1f}13500\u{a0}трлн\u{a0}¤\u{1f}145000\u{a0}трлн\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "be"))]
+pub(crate) static COMPACT_BE: Compact = Compact { decimal_short: Table("0350\u{a0}тыс'.'\u{1f}04500\u{a0}тыс'.'\u{1f}055000\u{a0}тыс'.'\u{1f}0650\u{a0}млн\u{1f}07500\u{a0}млн\u{1f}085000\u{a0}млн\u{1f}0950\u{a0}млрд\u{1f}10500\u{a0}млрд\u{1f}115000\u{a0}млрд\u{1f}1250\u{a0}трлн\u{1f}13500\u{a0}трлн\u{1f}145000\u{a0}трлн"), decimal_long: Table("0310 тысяча\u{1f}0340 тысяч\u{1f}0350 тысячы\u{1f}04100 тысяча\u{1f}04400 тысяч\u{1f}04500 тысячы\u{1f}051000 тысяча\u{1f}054000 тысяч\u{1f}055000 тысячы\u{1f}0610 мільён\u{1f}0630 мільёны\u{1f}0640 мільёнаў\u{1f}0650 мільёна\u{1f}07100 мільён\u{1f}07300 мільёны\u{1f}07400 мільёнаў\u{1f}07500 мільёна\u{1f}081000 мільён\u{1f}083000 мільёны\u{1f}084000 мільёнаў\u{1f}085000 мільёна\u{1f}0910 мільярд\u{1f}0930 мільярды\u{1f}0940 мільярдаў\u{1f}0950 мільярда\u{1f}10100 мільярд\u{1f}10300 мільярды\u{1f}10400 мільярдаў\u{1f}10500 мільярда\u{1f}111000 мільярд\u{1f}113000 мільярды\u{1f}114000 мільярдаў\u{1f}115000 мільярда\u{1f}1210 трыльён\u{1f}1230 трыльёны\u{1f}1240 трыльёнаў\u{1f}1250 трыльёна\u{1f}13100 трыльён\u{1f}13300 трыльёны\u{1f}13400 трыльёнаў\u{1f}13500 трыльёна\u{1f}141000 трыльён\u{1f}143000 трыльёны\u{1f}144000 трыльёнаў\u{1f}145000 трыльёна"), currency_short: Table("0350\u{a0}тыс'.'\u{a0}¤\u{1f}04500\u{a0}тыс'.'\u{a0}¤\u{1f}055000\u{a0}тыс'.'\u{a0}¤\u{1f}0650\u{a0}млн\u{a0}¤\u{1f}07500\u{a0}млн\u{a0}¤\u{1f}085000\u{a0}млн\u{a0}¤\u{1f}0950\u{a0}млрд\u{a0}¤\u{1f}10500\u{a0}млрд\u{a0}¤\u{1f}115000\u{a0}млрд\u{a0}¤\u{1f}1250\u{a0}трлн\u{a0}¤\u{1f}13500\u{a0}трлн\u{a0}¤\u{1f}145000\u{a0}трлн\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "bg"))]
+pub(crate) static COMPACT_BG: Compact = Compact { decimal_short: Table("0350\u{a0}хил'.'\u{1f}04500\u{a0}хил'.'\u{1f}055000\u{a0}хил'.'\u{1f}0650\u{a0}млн'.'\u{1f}07500\u{a0}млн'.'\u{1f}085000\u{a0}млн'.'\u{1f}0950\u{a0}млрд'.'\u{1f}10500\u{a0}млрд'.'\u{1f}115000\u{a0}млрд'.'\u{1f}1250\u{a0}трлн'.'\u{1f}13500\u{a0}трлн'.'\u{1f}145000\u{a0}трлн'.'"), decimal_long: Table("0310 хил'.'\u{1f}0350 хиляди\u{1f}04500 хиляди\u{1f}055000 хиляди\u{1f}0610 милион\u{1f}0650 милиона\u{1f}07500 милиона\u{1f}085000 милиона\u{1f}0910 милиард\u{1f}0950 милиарда\u{1f}10500 милиарда\u{1f}115000 милиарда\u{1f}1210 трилион\u{1f}1250 трилиона\u{1f}13500 трилиона\u{1f}145000 трилиона"), currency_short: Table("0350\u{a0}хил'.'\u{a0}¤\u{1f}04500\u{a0}хил'.'\u{a0}¤\u{1f}055000\u{a0}хил'.'\u{a0}¤\u{1f}0650\u{a0}млн'.'\u{a0}¤\u{1f}07500\u{a0}млн'.'\u{a0}¤\u{1f}085000\u{a0}млн'.'\u{a0}¤\u{1f}0950\u{a0}млрд'.'\u{a0}¤\u{1f}10500\u{a0}млрд'.'\u{a0}¤\u{1f}115000\u{a0}млрд'.'\u{a0}¤\u{1f}1250\u{a0}трлн'.'\u{a0}¤\u{1f}13500\u{a0}трлн'.'\u{a0}¤\u{1f}145000\u{a0}трлн'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "bn"))]
+pub(crate) static COMPACT_BN: Compact = Compact { decimal_short: Table("0350\u{a0}হ\u{9be}\u{1f}04500\u{a0}হ\u{9be}\u{1f}0550\u{a0}ল\u{9be}\u{1f}06500\u{a0}ল\u{9be}\u{1f}0750\u{a0}কো\u{1f}08500\u{a0}কো\u{1f}095000\u{a0}কো\u{1f}1010\u{a0}শত\u{a0}কো\u{1f}1050শত\u{a0}কো\u{1f}1150কো\u{1f}1250\u{a0}ল\u{9be}'.'কো'.'\u{1f}13500\u{a0}ল\u{9be}'.'কো'.'\u{1f}145000\u{a0}ল\u{9be}'.'কো'.'"), decimal_long: Table("0350 হ\u{9be}জ\u{9be}র\u{1f}04500 হ\u{9be}জ\u{9be}র\u{1f}0550 ল\u{9be}খ\u{1f}06500 ল\u{9be}খ\u{1f}0750 কোটি\u{1f}08500 কোটি\u{1f}095000 কোটি\u{1f}1050000 কোটি\u{1f}11500000 কোটি\u{1f}1250 ল\u{9be}খ কোটি\u{1f}13500 ল\u{9be}খ কোটি\u{1f}145000 ল\u{9be}খ কোটি"), currency_short: Table("0350\u{a0}হ\u{9be}¤\u{1f}04500\u{a0}হ\u{9be}¤\u{1f}0550\u{a0}ল\u{9be}¤\u{1f}06500\u{a0}ল\u{9be}¤\u{1f}0750\u{a0}কো¤\u{1f}08500\u{a0}কো¤\u{1f}095000\u{a0}কো¤\u{1f}1010\u{a0}শত\u{a0}কো¤\u{1f}1050শত\u{a0}কো¤\u{1f}1150কো¤\u{1f}1250\u{a0}ল\u{9be}'.'কো'.'¤\u{1f}13500\u{a0}ল\u{9be}'.'কো'.'¤\u{1f}145000\u{a0}ল\u{9be}'.'কো'.'¤") };
+
+#[cfg(all(feature = "compact", any(feature = "bs", feature = "sr")))]
+pub(crate) static COMPACT_BS: Compact = Compact { decimal_short: Table("0350\u{a0}hilj'.'\u{1f}04500\u{a0}hilj'.'\u{1f}055000\u{a0}hilj'.'\u{1f}0650\u{a0}mil'.'\u{1f}07500\u{a0}mil'.'\u{1f}085000\u{a0}mil'.'\u{1f}0950\u{a0}mlrd'.'\u{1f}10500\u{a0}mlrd'.'\u{1f}115000\u{a0}mlrd'.'\u{1f}1250\u{a0}bil'.'\u{1f}13500\u{a0}bil'.'\u{1f}145000\u{a0}bil'.'"), decimal_long: Table("0330 hiljade\u{1f}0350 hiljada\u{1f}04300 hiljade\u{1f}04500 hiljada\u{1f}053000 hiljade\u{1f}055000 hiljada\u{1f}0610 milion\u{1f}0650 miliona\u{1f}07100 milion\u{1f}07500 miliona\u{1f}081000 milion\u{1f}085000 miliona\u{1f}0910 milijarda\u{1f}0930 milijarde\u{1f}0950 milijardi\u{1f}10100 milijarda\u{1f}10300 milijarde\u{1f}10500 milijardi\u{1f}111000 milijarda\u{1f}113000 milijarde\u{1f}115000 milijardi\u{1f}1210 bilion\u{1f}1250 biliona\u{1f}13100 bilion\u{1f}13500 biliona\u{1f}141000 bilion\u{1f}145000 biliona"), currency_short: Table("0350\u{a0}hilj'.'\u{a0}¤\u{1f}04500\u{a0}hilj'.'\u{a0}¤\u{1f}055000\u{a0}hilj'.'\u{a0}¤\u{1f}0650\u{a0}mil'.'\u{a0}¤\u{1f}07500\u{a0}mil'.'\u{a0}¤\u{1f}085000\u{a0}mil'.'\u{a0}¤\u{1f}0950\u{a0}mlrd'.'\u{a0}¤\u{1f}10500\u{a0}mlrd'.'\u{a0}¤\u{1f}115000\u{a0}mlrd'.'\u{a0}¤\u{1f}1250\u{a0}bil'.'\u{a0}¤\u{1f}13500\u{a0}bil'.'\u{a0}¤\u{1f}145000\u{a0}bil'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ca"))]
+pub(crate) static COMPACT_CA: Compact = Compact { decimal_short: Table("0350\u{a0}k\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500\u{a0}kM\u{1f}115000\u{a0}kM\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0310 miler\u{1f}0350 milers\u{1f}04500 milers\u{1f}055000 milers\u{1f}0610 milió\u{1f}0650 milions\u{1f}07500 milions\u{1f}085000 milions\u{1f}0910 miler de milions\u{1f}0950 milers de milions\u{1f}10500 milers de milions\u{1f}115000 milers de milions\u{1f}1210 bilió\u{1f}1250 bilions\u{1f}13500 bilions\u{1f}145000 bilions"), currency_short: Table("0350\u{a0}k\u{a0}¤\u{1f}04500\u{a0}k\u{a0}¤\u{1f}055000\u{a0}k\u{a0}¤\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950000\u{a0}M\u{a0}¤\u{1f}10500\u{a0}kM\u{a0}¤\u{1f}115000\u{a0}kM\u{a0}¤\u{1f}1250\u{a0}B\u{a0}¤\u{1f}13500\u{a0}B\u{a0}¤\u{1f}145000\u{a0}B\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "chr"))]
+pub(crate) static COMPACT_CHR: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 ᎢᏯᎦᏴᎵ\u{1f}04500 ᎢᏯᎦᏴᎵ\u{1f}055000 ᎢᏯᎦᏴᎵ\u{1f}0650 ᎢᏳᏆᏗᏅᏛ\u{1f}07500 ᎢᏳᏆᏗᏅᏛ\u{1f}085000 ᎢᏳᏆᏗᏅᏛ\u{1f}0950 ᎢᏯᏔᎳᏗᏅᏛ\u{1f}10500 ᎢᏯᏔᎳᏗᏅᏛ\u{1f}115000 ᎢᏯᏔᎳᏗᏅᏛ\u{1f}1250 ᎢᏯᏦᎠᏗᏅᏛ\u{1f}13500 ᎢᏯᏦᎠᏗᏅᏛ\u{1f}145000 ᎢᏯᏦᎠᏗᏅᏛ"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "cs"))]
+pub(crate) static COMPACT_CS: Compact = Compact { decimal_short: Table("0350\u{a0}tis'.'\u{1f}04500\u{a0}tis'.'\u{1f}055000\u{a0}tis'.'\u{1f}0650\u{a0}mil'.'\u{1f}07500\u{a0}mil'.'\u{1f}085000\u{a0}mil'.'\u{1f}0950\u{a0}mld'.'\u{1f}10500\u{a0}mld'.'\u{1f}115000\u{a0}mld'.'\u{1f}1250\u{a0}bil'.'\u{1f}13500\u{a0}bil'.'\u{1f}145000\u{a0}bil'.'"), decimal_long: Table("0330 tisíce\u{1f}0340 tisíce\u{1f}0350 tisíc\u{1f}04400 tisíce\u{1f}04500 tisíc\u{1f}054000 tisíce\u{1f}055000 tisíc\u{1f}0610 milion\u{1f}0630 miliony\u{1f}0640 milionu\u{1f}0650 milionů\u{1f}07400 milionu\u{1f}07500 milionů\u{1f}084000 milionu\u{1f}085000 milionů\u{1f}0910 miliarda\u{1f}0930 miliardy\u{1f}0940 miliardy\u{1f}0950 miliard\u{1f}10400 miliardy\u{1f}10500 miliard\u{1f}114000 miliardy\u{1f}115000 miliard\u{1f}1210 bilion\u{1f}1230 biliony\u{1f}1240 bilionu\u{1f}1250 bilionů\u{1f}13400 bilionu\u{1f}13500 bilionů\u{1f}144000 bilionu\u{1f}145000 bilionů"), currency_short: Table("0350\u{a0}tis'.'\u{a0}¤\u{1f}04500\u{a0}tis'.'\u{a0}¤\u{1f}055000\u{a0}tis'.'\u{a0}¤\u{1f}0650\u{a0}mil'.'\u{a0}¤\u{1f}07500\u{a0}mil'.'\u{a0}¤\u{1f}085000\u{a0}mil'.'\u{a0}¤\u{1f}0950\u{a0}mld'.'\u{a0}¤\u{1f}10500\u{a0}mld'.'\u{a0}¤\u{1f}115000\u{a0}mld'.'\u{a0}¤\u{1f}1250\u{a0}bil'.'\u{a0}¤\u{1f}13500\u{a0}bil'.'\u{a0}¤\u{1f}145000\u{a0}bil'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "cv"))]
+pub(crate) static COMPACT_CV: Compact = Compact { decimal_short: Table("0350\u{a0}пин\u{1f}04500\u{a0}пин\u{1f}055000\u{a0}пин\u{1f}0650\u{a0}млн\u{1f}07500\u{a0}млн\u{1f}085000\u{a0}млн\u{1f}0950\u{a0}млрд\u{1f}10500\u{a0}млрд\u{1f}115000\u{a0}млрд\u{1f}1250\u{a0}трлн\u{1f}13500\u{a0}трлн\u{1f}145000\u{a0}трлн"), decimal_long: Table("0350 пин\u{1f}04500 пин\u{1f}055000 пин\u{1f}0650 млн\u{1f}07500 млн\u{1f}085000 млн\u{1f}0950 млрд\u{1f}10500 млрд\u{1f}115000 млрд\u{1f}1250 трлн\u{1f}13500 трлн\u{1f}145000 трлн"), currency_short: Table("0350\u{a0}пин\u{a0}¤\u{1f}04500\u{a0}пин\u{a0}¤\u{1f}055000\u{a0}пин\u{a0}¤\u{1f}0650\u{a0}млн\u{a0}¤\u{1f}07500\u{a0}млн\u{a0}¤\u{1f}085000\u{a0}млн\u{a0}¤\u{1f}0950\u{a0}млрд\u{a0}¤\u{1f}10500\u{a0}млрд\u{a0}¤\u{1f}115000\u{a0}млрд\u{a0}¤\u{1f}1250\u{a0}трлн\u{a0}¤\u{1f}13500\u{a0}трлн\u{a0}¤\u{1f}145000\u{a0}трлн\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "cy"))]
+pub(crate) static COMPACT_CY: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0320K\u{1f}0330K\u{1f}0340K\u{1f}0350 mil\u{1f}04000K\u{1f}04200K\u{1f}04300K\u{1f}04400K\u{1f}04500 mil\u{1f}050000K\u{1f}052000K\u{1f}053000K\u{1f}054000K\u{1f}055000 mil\u{1f}0650 miliwn\u{1f}07500 miliwn\u{1f}085000 miliwn\u{1f}0950 biliwn\u{1f}10500 biliwn\u{1f}115000 biliwn\u{1f}1250 triliwn\u{1f}13500 triliwn\u{1f}141000T\u{1f}145000 triliwn"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "da"))]
+pub(crate) static COMPACT_DA: Compact = Compact { decimal_short: Table("0350\u{a0}t\u{1f}04500\u{a0}t\u{1f}055000\u{a0}t\u{1f}0650\u{a0}mio'.'\u{1f}07500\u{a0}mio'.'\u{1f}085000\u{a0}mio'.'\u{1f}0950\u{a0}mia'.'\u{1f}10500\u{a0}mia'.'\u{1f}115000\u{a0}mia'.'\u{1f}1250\u{a0}bio'.'\u{1f}13500\u{a0}bio'.'\u{1f}145000\u{a0}bio'.'"), decimal_long: Table("0350 tusind\u{1f}04500 tusind\u{1f}055000 tusind\u{1f}0610 million\u{1f}0650 millioner\u{1f}07500 millioner\u{1f}085000 millioner\u{1f}0910 milliard\u{1f}0950 milliarder\u{1f}10500 milliarder\u{1f}115000 milliarder\u{1f}1210 billion\u{1f}1250 billioner\u{1f}13500 billioner\u{1f}145000 billioner"), currency_short: Table("0350\u{a0}t\u{a0}¤\u{1f}04500\u{a0}t\u{a0}¤\u{1f}055000\u{a0}t\u{a0}¤\u{1f}0650\u{a0}mio'.'\u{a0}¤\u{1f}07500\u{a0}mio'.'\u{a0}¤\u{1f}085000\u{a0}mio'.'\u{a0}¤\u{1f}0950\u{a0}mia'.'\u{a0}¤\u{1f}10500\u{a0}mia'.'\u{a0}¤\u{1f}115000\u{a0}mia'.'\u{a0}¤\u{1f}1250\u{a0}bio'.'\u{a0}¤\u{1f}13500\u{a0}bio'.'\u{a0}¤\u{1f}145000\u{a0}bio'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "de"))]
+pub(crate) static COMPACT_DE: Compact = Compact { decimal_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}Mio'.'\u{1f}07500\u{a0}Mio'.'\u{1f}085000\u{a0}Mio'.'\u{1f}0950\u{a0}Mrd'.'\u{1f}10500\u{a0}Mrd'.'\u{1f}115000\u{a0}Mrd'.'\u{1f}1250\u{a0}Bio'.'\u{1f}13500\u{a0}Bio'.'\u{1f}145000\u{a0}Bio'.'"), decimal_long: Table("0350 Tausend\u{1f}04500 Tausend\u{1f}055000 Tausend\u{1f}0610 Million\u{1f}0650 Millionen\u{1f}07500 Millionen\u{1f}085000 Millionen\u{1f}0910 Milliarde\u{1f}0950 Milliarden\u{1f}10500 Milliarden\u{1f}115000 Milliarden\u{1f}1210 Billion\u{1f}1250 Billionen\u{1f}13500 Billionen\u{1f}145000 Billionen"), currency_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}Mio'.'\u{a0}¤\u{1f}07500\u{a0}Mio'.'\u{a0}¤\u{1f}085000\u{a0}Mio'.'\u{a0}¤\u{1f}0950\u{a0}Mrd'.'\u{a0}¤\u{1f}10500\u{a0}Mrd'.'\u{a0}¤\u{1f}115000\u{a0}Mrd'.'\u{a0}¤\u{1f}1250\u{a0}Bio'.'\u{a0}¤\u{1f}13500\u{a0}Bio'.'\u{a0}¤\u{1f}145000\u{a0}Bio'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "de"))]
+pub(crate) static COMPACT_DE_CH: Compact = Compact { decimal_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}Mio'.'\u{1f}07500\u{a0}Mio'.'\u{1f}085000\u{a0}Mio'.'\u{1f}0950\u{a0}Mrd'.'\u{1f}10500\u{a0}Mrd'.'\u{1f}115000\u{a0}Mrd'.'\u{1f}1250\u{a0}Bio'.'\u{1f}13500\u{a0}Bio'.'\u{1f}145000\u{a0}Bio'.'"), decimal_long: Table("0350 Tausend\u{1f}04500 Tausend\u{1f}055000 Tausend\u{1f}0610 Million\u{1f}0650 Millionen\u{1f}07500 Millionen\u{1f}085000 Millionen\u{1f}0910 Milliarde\u{1f}0950 Milliarden\u{1f}10500 Milliarden\u{1f}115000 Milliarden\u{1f}1210 Billion\u{1f}1250 Billionen\u{1f}13500 Billionen\u{1f}145000 Billionen"), currency_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}065¤\u{a0}0\u{a0}Mio'.'\u{1f}075¤\u{a0}00\u{a0}Mio'.'\u{1f}085¤\u{a0}000\u{a0}Mio'.'\u{1f}095¤\u{a0}0\u{a0}Mrd'.'\u{1f}105¤\u{a0}00\u{a0}Mrd'.'\u{1f}115¤\u{a0}000\u{a0}Mrd'.'\u{1f}125¤\u{a0}0\u{a0}Bio'.'\u{1f}135¤\u{a0}00\u{a0}Bio'.'\u{1f}145¤\u{a0}000\u{a0}Bio'.'") };
+
+#[cfg(all(feature = "compact", feature = "dsb"))]
+pub(crate) static COMPACT_DSB: Compact = Compact { decimal_short: Table("0350\u{a0}tys'.'\u{1f}04500\u{a0}tys'.'\u{1f}055000\u{a0}tys'.'\u{1f}0650\u{a0}mio'.'\u{1f}07500\u{a0}mio'.'\u{1f}085000\u{a0}mio'.'\u{1f}0950\u{a0}mrd'.'\u{1f}10500\u{a0}mrd'.'\u{1f}115000\u{a0}mrd'.'\u{1f}1250\u{a0}bil'.'\u{1f}13500\u{a0}bil'.'\u{1f}145000\u{a0}bil'.'"), decimal_long: Table("0350 tysac\u{1f}04500 tysac\u{1f}055000 tysac\u{1f}0610 milion\u{1f}0620 miliona\u{1f}0630 miliony\u{1f}0650 milionow\u{1f}07500 milionow\u{1f}085000 milionow\u{1f}0910 miliarda\u{1f}0920 miliarźe\u{1f}0930 miliardy\u{1f}0950 miliardow\u{1f}10500 miliardow\u{1f}115000 miliardow\u{1f}1210 bilion\u{1f}1220 biliona\u{1f}1230 biliony\u{1f}1250 bilionow\u{1f}13500 bilionow\u{1f}145000 bilionow"), currency_short: Table("0350\u{a0}tys'.'\u{a0}¤\u{1f}04500\u{a0}tys'.'\u{a0}¤\u{1f}055000\u{a0}tys'.'\u{a0}¤\u{1f}0650\u{a0}mio'.'\u{a0}¤\u{1f}07500\u{a0}mio'.'\u{a0}¤\u{1f}085000\u{a0}mio'.'\u{a0}¤\u{1f}0950\u{a0}mrd'.'\u{a0}¤\u{1f}10500\u{a0}mrd'.'\u{a0}¤\u{1f}115000\u{a0}mrd'.'\u{a0}¤\u{1f}1250\u{a0}bil'.'\u{a0}¤\u{1f}13500\u{a0}bil'.'\u{a0}¤\u{1f}145000\u{a0}bil'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "el"))]
+pub(crate) static COMPACT_EL: Compact = Compact { decimal_short: Table("0350\u{a0}χιλ'.'\u{1f}04500\u{a0}χιλ'.'\u{1f}055000\u{a0}χιλ'.'\u{1f}0650\u{a0}εκ'.'\u{1f}07500\u{a0}εκ'.'\u{1f}085000\u{a0}εκ'.'\u{1f}0950\u{a0}δισ'.'\u{1f}10500\u{a0}δισ'.'\u{1f}115000\u{a0}δισ'.'\u{1f}1250\u{a0}τρισ'.'\u{1f}13500\u{a0}τρισ'.'\u{1f}145000\u{a0}τρισ'.'"), decimal_long: Table("0310 χιλιάδα\u{1f}0350 χιλιάδες\u{1f}04500 χιλιάδες\u{1f}055000 χιλιάδες\u{1f}0610 εκατομμύριο\u{1f}0650 εκατομμύρια\u{1f}07500 εκατομμύρια\u{1f}085000 εκατομμύρια\u{1f}0910 δισεκατομμύριο\u{1f}0950 δισεκατομμύρια\u{1f}10500 δισεκατομμύρια\u{1f}115000 δισεκατομμύρια\u{1f}1210 τρισεκατομμύριο\u{1f}1250 τρισεκατομμύρια\u{1f}13500 τρισεκατομμύρια\u{1f}145000 τρισεκατομμύρια"), currency_short: Table("0350\u{a0}χιλ'.'\u{a0}¤\u{1f}04500\u{a0}χιλ'.'\u{a0}¤\u{1f}055000\u{a0}χιλ'.'\u{a0}¤\u{1f}0650\u{a0}εκ'.'\u{a0}¤\u{1f}07500\u{a0}εκ'.'\u{a0}¤\u{1f}085000\u{a0}εκ'.'\u{a0}¤\u{1f}0950\u{a0}δισ'.'\u{a0}¤\u{1f}10500\u{a0}δισ'.'\u{a0}¤\u{1f}115000\u{a0}δισ'.'\u{a0}¤\u{1f}1250\u{a0}τρισ'.'\u{a0}¤\u{1f}13500\u{a0}τρισ'.'\u{a0}¤\u{1f}145000\u{a0}τρισ'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "en"))]
+pub(crate) static COMPACT_EN: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 thousand\u{1f}04500 thousand\u{1f}055000 thousand\u{1f}0650 million\u{1f}07500 million\u{1f}085000 million\u{1f}0950 billion\u{1f}10500 billion\u{1f}115000 billion\u{1f}1250 trillion\u{1f}13500 trillion\u{1f}145000 trillion"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "en"))]
+pub(crate) static COMPACT_EN_GB: Compact = Compact { decimal_short: Table("0350k\u{1f}04500k\u{1f}055000k\u{1f}0650m\u{1f}07500m\u{1f}085000m\u{1f}0950bn\u{1f}10500bn\u{1f}115000bn\u{1f}1250tn\u{1f}13500tn\u{1f}145000tn"), decimal_long: Table("0350 thousand\u{1f}04500 thousand\u{1f}055000 thousand\u{1f}0650 million\u{1f}07500 million\u{1f}085000 million\u{1f}0950 billion\u{1f}10500 billion\u{1f}115000 billion\u{1f}1250 trillion\u{1f}13500 trillion\u{1f}145000 trillion"), currency_short: Table("035¤0k\u{1f}045¤00k\u{1f}055¤000k\u{1f}065¤0m\u{1f}075¤00m\u{1f}085¤000m\u{1f}095¤0bn\u{1f}105¤00bn\u{1f}115¤000bn\u{1f}125¤0tn\u{1f}135¤00tn\u{1f}145¤000tn") };
+
+#[cfg(all(feature = "compact", any(feature = "en", feature = "hi")))]
+pub(crate) static COMPACT_EN_IN: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}0550L\u{1f}06500L\u{1f}0750Cr\u{1f}08500Cr\u{1f}095000Cr\u{1f}1050KCr\u{1f}11500KCr\u{1f}1250LCr\u{1f}13500LCr\u{1f}145000LCr"), decimal_long: Table("0350 thousand\u{1f}04500 thousand\u{1f}0550\u{202f}lakh\u{1f}06500\u{202f}lakh\u{1f}0750\u{202f}crore\u{1f}08500\u{202f}crore\u{1f}095000\u{202f}crore\u{1f}1050000\u{202f}crore\u{1f}11500000\u{202f}crore\u{1f}1250\u{202f}lakh\u{202f}crore\u{1f}13500\u{202f}lakh\u{202f}crore\u{1f}145000\u{202f}lakh\u{202f}crore"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤0L\u{1f}065¤00L\u{1f}075¤0Cr\u{1f}085¤00Cr\u{1f}095¤000Cr\u{1f}105¤0KCr\u{1f}115¤00KCr\u{1f}125¤0LCr\u{1f}135¤00LCr\u{1f}145¤000LCr") };
+
+#[cfg(all(feature = "compact", feature = "es"))]
+pub(crate) static COMPACT_ES: Compact = Compact { decimal_short: Table("0350\u{a0}mil\u{1f}04500\u{a0}mil\u{1f}055000\u{a0}mil\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500\u{a0}mil\u{a0}M\u{1f}115000\u{a0}mil\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 millón\u{1f}0650 millones\u{1f}07500 millones\u{1f}085000 millones\u{1f}0950 mil millones\u{1f}10500 mil millones\u{1f}115000 mil millones\u{1f}1210 billón\u{1f}1250 billones\u{1f}13500 billones\u{1f}145000 billones"), currency_short: Table("0350\u{a0}mil\u{a0}¤\u{1f}04500\u{a0}mil\u{a0}¤\u{1f}055000\u{a0}mil\u{a0}¤\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950000\u{a0}M\u{a0}¤\u{1f}10500\u{a0}mil\u{a0}M\u{a0}¤\u{1f}115000\u{a0}mil\u{a0}M\u{a0}¤\u{1f}1250\u{a0}B\u{a0}¤\u{1f}13500\u{a0}B\u{a0}¤\u{1f}145000\u{a0}B\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "es"))]
+pub(crate) static COMPACT_ES_419: Compact = Compact { decimal_short: Table("0350\u{a0}K\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500\u{a0}mil\u{a0}M\u{1f}115000\u{a0}mil\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 millón\u{1f}0650 millones\u{1f}07500 millones\u{1f}085000 millones\u{1f}0950 mil millones\u{1f}10500 mil millones\u{1f}115000 mil millones\u{1f}1210 billón\u{1f}1250 billones\u{1f}13500 billones\u{1f}145000 billones"), currency_short: Table("035¤0\u{a0}K\u{1f}045¤00\u{a0}k\u{1f}055¤000\u{a0}k\u{1f}065¤0\u{a0}M\u{1f}075¤00\u{a0}M\u{1f}085¤000\u{a0}M\u{1f}095¤0000\u{a0}M\u{1f}105¤00\u{a0}mil\u{a0}M\u{1f}115¤000\u{a0}mil\u{a0}M\u{1f}125¤0\u{a0}B\u{1f}135¤00\u{a0}B\u{1f}145¤000\u{a0}B") };
+
+#[cfg(all(feature = "compact", feature = "es"))]
+pub(crate) static COMPACT_ES_GT: Compact = Compact { decimal_short: Table("0350\u{a0}K\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500\u{a0}mil\u{a0}M\u{1f}115000\u{a0}mil\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 millón\u{1f}0650 millones\u{1f}07500 millones\u{1f}085000 millones\u{1f}0950 mil millones\u{1f}10500 mil millones\u{1f}115000 mil millones\u{1f}1210 billón\u{1f}1250 billones\u{1f}13500 billones\u{1f}145000 billones"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0000M\u{1f}105¤00MRD\u{1f}115¤000MRD\u{1f}125¤0\u{a0}B\u{1f}135¤00\u{a0}B\u{1f}145¤000\u{a0}B") };
+
+#[cfg(all(feature = "compact", feature = "es"))]
+pub(crate) static COMPACT_ES_MX: Compact = Compact { decimal_short: Table("0350\u{a0}k\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500\u{a0}mil\u{a0}M\u{1f}115000\u{a0}mil\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 millón\u{1f}0650 millones\u{1f}07500 millones\u{1f}085000 millones\u{1f}0950 mil millones\u{1f}10500 mil millones\u{1f}115000 mil millones\u{1f}1210 billón\u{1f}1250 billones\u{1f}13500 billones\u{1f}145000 billones"), currency_short: Table("035¤0\u{a0}k\u{1f}045¤00\u{a0}k\u{1f}055¤000\u{a0}k\u{1f}065¤0\u{a0}M\u{1f}075¤00\u{a0}M\u{1f}085¤000\u{a0}M\u{1f}095¤0000\u{a0}M\u{1f}105¤00\u{a0}mil\u{a0}M\u{1f}115¤000\u{a0}mil\u{a0}M\u{1f}125¤0\u{a0}B\u{1f}135¤00\u{a0}B\u{1f}145¤000\u{a0}B") };
+
+#[cfg(all(feature = "compact", feature = "es"))]
+pub(crate) static COMPACT_ES_PE: Compact = Compact { decimal_short: Table("0350\u{a0}K\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500\u{a0}mil\u{a0}M\u{1f}115000\u{a0}mil\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 millón\u{1f}0650 millones\u{1f}07500 millones\u{1f}085000 millones\u{1f}0950 mil millones\u{1f}10500 mil millones\u{1f}115000 mil millones\u{1f}1210 billón\u{1f}1250 billones\u{1f}13500 billones\u{1f}145000 billones"), currency_short: Table("035¤\u{a0}0\u{a0}K\u{1f}045¤\u{a0}00\u{a0}K\u{1f}055¤\u{a0}000\u{a0}K\u{1f}065¤\u{a0}0\u{a0}M\u{1f}075¤\u{a0}00\u{a0}M\u{1f}085¤\u{a0}000\u{a0}M\u{1f}095¤\u{a0}0000\u{a0}M\u{1f}105¤\u{a0}00\u{a0}MRD\u{1f}115¤\u{a0}000\u{a0}MRD\u{1f}125¤\u{a0}0\u{a0}B\u{1f}135¤\u{a0}00\u{a0}B\u{1f}145¤\u{a0}000\u{a0}B") };
+
+#[cfg(all(feature = "compact", feature = "es"))]
+pub(crate) static COMPACT_ES_US: Compact = Compact { decimal_short: Table("0350\u{a0}K\u{1f}04500\u{a0}K\u{1f}055000\u{a0}K\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500\u{a0}mil\u{a0}M\u{1f}115000\u{a0}mil\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 millón\u{1f}0650 millones\u{1f}07500 millones\u{1f}085000 millones\u{1f}0950 mil millones\u{1f}10500 mil millones\u{1f}115000 mil millones\u{1f}1210 billón\u{1f}1250 billones\u{1f}13500 billones\u{1f}145000 billones"), currency_short: Table("035¤0\u{a0}K\u{1f}045¤00\u{a0}K\u{1f}055¤000\u{a0}K\u{1f}065¤0\u{a0}M\u{1f}075¤00\u{a0}M\u{1f}085¤000\u{a0}M\u{1f}095¤0000\u{a0}M\u{1f}105¤00\u{a0}mil\u{a0}M\u{1f}115¤000\u{a0}mil\u{a0}M\u{1f}125¤0\u{a0}B\u{1f}135¤00\u{a0}B\u{1f}145¤000\u{a0}B") };
+
+#[cfg(all(feature = "compact", feature = "et"))]
+pub(crate) static COMPACT_ET: Compact = Compact { decimal_short: Table("0350\u{a0}tuh\u{1f}04500\u{a0}tuh\u{1f}055000\u{a0}tuh\u{1f}0650\u{a0}mln\u{1f}07500\u{a0}mln\u{1f}085000\u{a0}mln\u{1f}0950\u{a0}mld\u{1f}10500\u{a0}mld\u{1f}115000\u{a0}mld\u{1f}1250\u{a0}trln\u{1f}13500\u{a0}trln\u{1f}145000\u{a0}trln"), decimal_long: Table("0350 tuhat\u{1f}04500 tuhat\u{1f}055000 tuhat\u{1f}0610 miljon\u{1f}0650 miljonit\u{1f}07500 miljonit\u{1f}085000 miljonit\u{1f}0910 miljard\u{1f}0950 miljardit\u{1f}10500 miljardit\u{1f}115000 miljardit\u{1f}1210 triljon\u{1f}1250 triljonit\u{1f}13500 triljonit\u{1f}145000 triljonit"), currency_short: Table("0350\u{a0}tuh\u{a0}¤\u{1f}04500\u{a0}tuh\u{a0}¤\u{1f}055000\u{a0}tuh\u{a0}¤\u{1f}0650\u{a0}mln\u{a0}¤\u{1f}07500\u{a0}mln\u{a0}¤\u{1f}085000\u{a0}mln\u{a0}¤\u{1f}0950\u{a0}mld\u{a0}¤\u{1f}10500\u{a0}mld\u{a0}¤\u{1f}115000\u{a0}mld\u{a0}¤\u{1f}1250\u{a0}trln\u{a0}¤\u{1f}13500\u{a0}trln\u{a0}¤\u{1f}145000\u{a0}trln\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "eu"))]
+pub(crate) static COMPACT_EU: Compact = Compact { decimal_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500000\u{a0}M\u{1f}115000000\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650 milioi\u{1f}07500 milioi\u{1f}085000 milioi\u{1f}0950000 milioi\u{1f}10500000 milioi\u{1f}115000000 milioi\u{1f}1250 bilioi\u{1f}13500 bilioi\u{1f}145000 bilioi"), currency_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950000\u{a0}M\u{a0}¤\u{1f}10500000\u{a0}M\u{a0}¤\u{1f}115000000\u{a0}M\u{a0}¤\u{1f}1250\u{a0}B\u{a0}¤\u{1f}13500\u{a0}B\u{a0}¤\u{1f}145000\u{a0}B\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "fa"))]
+pub(crate) static COMPACT_FA: Compact = Compact { decimal_short: Table("0350\u{a0}هزار\u{1f}04500\u{a0}هزار\u{1f}055000\u{a0}هزار\u{1f}0650\u{a0}میلیون\u{1f}07500\u{a0}میلیون\u{1f}085000\u{a0}میلیون\u{1f}0950\u{a0}میلیارد\u{1f}10500\u{a0}میلیارد\u{1f}115000\u{a0}میلیارد\u{1f}1250\u{a0}تریلیون\u{1f}13500\u{a0}تریلیون\u{1f}145000\u{a0}تریلیون"), decimal_long: Table("0350 هزار\u{1f}04500 هزار\u{1f}055000 هزار\u{1f}0650 میلیون\u{1f}07500 میلیون\u{1f}085000 میلیون\u{1f}0950 میلیارد\u{1f}10500 میلیارد\u{1f}115000 میلیارد\u{1f}1250 هزارمیلیارد\u{1f}13500 هزارمیلیارد\u{1f}145000 هزارمیلیارد"), currency_short: Table("035\u{200e}¤\u{a0}0\u{a0}هزار\u{1f}045\u{200e}¤\u{a0}00\u{a0}هزار\u{1f}055\u{200e}¤\u{a0}000\u{a0}هزار\u{1f}065\u{200e}¤\u{a0}0\u{a0}میلیون\u{1f}075\u{200e}¤\u{a0}00\u{a0}میلیون\u{1f}085\u{200e}¤\u{a0}000\u{a0}میلیون\u{1f}095\u{200e}¤\u{a0}0\u{a0}میلیارد\u{1f}105\u{200e}¤\u{a0}00\u{a0}میلیارد\u{1f}115\u{200e}¤\u{a0}000\u{a0}میلیارد\u{1f}125\u{200e}¤\u{a0}0\u{a0}تریلیون\u{1f}135\u{200e}¤\u{a0}00\u{a0}تریلیون\u{1f}145\u{200e}¤\u{a0}000\u{a0}تریلیون") };
+
+#[cfg(all(feature = "compact", feature = "fi"))]
+pub(crate) static COMPACT_FI: Compact = Compact { decimal_short: Table("0350\u{a0}t'.'\u{1f}04500\u{a0}t'.'\u{1f}055000\u{a0}t'.'\u{1f}0650\u{a0}milj'.'\u{1f}07500\u{a0}milj'.'\u{1f}085000\u{a0}milj'.'\u{1f}0950\u{a0}mrd'.'\u{1f}10500\u{a0}mrd'.'\u{1f}115000\u{a0}mrd'.'\u{1f}1250\u{a0}bilj'.'\u{1f}13500\u{a0}bilj'.'\u{1f}145000\u{a0}bilj'.'"), decimal_long: Table("0310 tuhat\u{1f}0350 tuhatta\u{1f}04500 tuhatta\u{1f}055000 tuhatta\u{1f}0610 miljoona\u{1f}0650 miljoonaa\u{1f}07500 miljoonaa\u{1f}085000 miljoonaa\u{1f}0910 miljardi\u{1f}0950 miljardia\u{1f}10500 miljardia\u{1f}115000 miljardia\u{1f}1210 biljoona\u{1f}1250 biljoonaa\u{1f}13500 biljoonaa\u{1f}145000 biljoonaa"), currency_short: Table("0350\u{a0}t'.'\u{a0}¤\u{1f}04500\u{a0}t'.'\u{a0}¤\u{1f}055000\u{a0}t'.'\u{a0}¤\u{1f}0650\u{a0}milj'.'\u{a0}¤\u{1f}07500\u{a0}milj'.'\u{a0}¤\u{1f}085000\u{a0}milj'.'\u{a0}¤\u{1f}0950\u{a0}mrd'.'\u{a0}¤\u{1f}10500\u{a0}mrd'.'\u{a0}¤\u{1f}115000\u{a0}mrd'.'\u{a0}¤\u{1f}1250\u{a0}bilj'.'\u{a0}¤\u{1f}13500\u{a0}bilj'.'\u{a0}¤\u{1f}145000\u{a0}bilj'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "fil"))]
+pub(crate) static COMPACT_FIL: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0310 libo\u{1f}0350 na libo\u{1f}04100 libo\u{1f}04500 na libo\u{1f}051000 libo\u{1f}055000 na libo\u{1f}0610 milyon\u{1f}0650 na milyon\u{1f}07100 milyon\u{1f}07500 na milyon\u{1f}081000 milyon\u{1f}085000 na milyon\u{1f}0910 bilyon\u{1f}0950 na bilyon\u{1f}10100 bilyon\u{1f}10500 na bilyon\u{1f}111000 bilyon\u{1f}115000 na bilyon\u{1f}1210 trilyon\u{1f}1250 na trilyon\u{1f}13100 trilyon\u{1f}13500 na trilyon\u{1f}141000 trilyon\u{1f}145000 na trilyon"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", any(feature = "fr", feature = "ht")))]
+pub(crate) static COMPACT_FR: Compact = Compact { decimal_short: Table("0350\u{a0}k\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950\u{a0}Md\u{1f}10500\u{a0}Md\u{1f}115000\u{a0}Md\u{1f}1250\u{a0}Bn\u{1f}13500\u{a0}Bn\u{1f}145000\u{a0}Bn"), decimal_long: Table("0310 millier\u{1f}0350 mille\u{1f}03ymille\u{1f}04500 mille\u{1f}055000 mille\u{1f}0610 million\u{1f}0650 millions\u{1f}07100 million\u{1f}07500 millions\u{1f}081000 million\u{1f}085000 millions\u{1f}0910 milliard\u{1f}0950 milliards\u{1f}10100 milliard\u{1f}10500 milliards\u{1f}111000 milliard\u{1f}115000 milliards\u{1f}1210 billion\u{1f}1250 billions\u{1f}13100 billion\u{1f}13500 billions\u{1f}141000 billion\u{1f}145000 billions"), currency_short: Table("0350\u{a0}k\u{a0}¤\u{1f}04500\u{a0}k\u{a0}¤\u{1f}055000\u{a0}k\u{a0}¤\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950\u{a0}Md\u{a0}¤\u{1f}10500\u{a0}Md\u{a0}¤\u{1f}115000\u{a0}Md\u{a0}¤\u{1f}1250\u{a0}Bn\u{a0}¤\u{1f}13500\u{a0}Bn\u{a0}¤\u{1f}145000\u{a0}Bn\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "fr"))]
+pub(crate) static COMPACT_FR_CA: Compact = Compact { decimal_short: Table("0350\u{a0}k\u{1f}04500\u{a0}k\u{1f}055000\u{a0}k\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950\u{a0}G\u{1f}10500\u{a0}G\u{1f}115000\u{a0}G\u{1f}1250\u{a0}T\u{1f}13500\u{a0}T\u{1f}145000\u{a0}T"), decimal_long: Table("0350 mille\u{1f}04500 mille\u{1f}055000 mille\u{1f}0610 million\u{1f}0650 millions\u{1f}07100 million\u{1f}07500 millions\u{1f}081000 million\u{1f}085000 millions\u{1f}0910 milliard\u{1f}0950 milliards\u{1f}10100 milliard\u{1f}10500 milliards\u{1f}111000 milliard\u{1f}115000 milliards\u{1f}1210 billion\u{1f}1250 billions\u{1f}13100 billion\u{1f}13500 billions\u{1f}141000 billion\u{1f}145000 billions"), currency_short: Table("0350\u{a0}k\u{a0}¤\u{1f}04500\u{a0}k\u{a0}¤\u{1f}055000\u{a0}k\u{a0}¤\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950\u{a0}G\u{a0}¤\u{1f}10500\u{a0}G\u{a0}¤\u{1f}115000\u{a0}G\u{a0}¤\u{1f}1250\u{a0}T\u{a0}¤\u{1f}13500\u{a0}T\u{a0}¤\u{1f}145000\u{a0}T\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ga"))]
+pub(crate) static COMPACT_GA: Compact = Compact { decimal_short: Table("0350k\u{1f}04500k\u{1f}055000k\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0310 mhíle\u{1f}0320 mhíle\u{1f}0330 mhíle\u{1f}0350 míle\u{1f}04500 míle\u{1f}055000 míle\u{1f}0610 mhilliún\u{1f}0620 mhilliún\u{1f}0630 mhilliún\u{1f}0650 milliún\u{1f}07500 milliún\u{1f}085000 milliún\u{1f}0910 bhilliún\u{1f}0920 bhilliún\u{1f}0930 bhilliún\u{1f}0940 mbilliún\u{1f}0950 billiún\u{1f}10400 mbilliún\u{1f}10500 billiún\u{1f}115000 billiún\u{1f}1220 thrilliún\u{1f}1230 thrilliún\u{1f}1240 dtrilliún\u{1f}1250 trilliún\u{1f}13400 dtrilliún\u{1f}13500 trilliún\u{1f}145000 trilliún"), currency_short: Table("035¤0k\u{1f}045¤00k\u{1f}055¤000k\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "gd"))]
+pub(crate) static COMPACT_GD: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0310 mhìle\u{1f}0320 mhìle\u{1f}0330 mìltean\u{1f}0350 mìle\u{1f}04100 mhìle\u{1f}04200 mhìle\u{1f}04300 mìltean\u{1f}04500 mìle\u{1f}051000 mhìle\u{1f}052000 mhìle\u{1f}053000 mìltean\u{1f}055000 mìle\u{1f}0610 mhillean\u{1f}0620 mhillean\u{1f}0630 milleanan\u{1f}0650 millean\u{1f}07100 mhillean\u{1f}07200 mhillean\u{1f}07300 milleanan\u{1f}07500 millean\u{1f}081000 mhillean\u{1f}082000 mhillean\u{1f}083000 milleanan\u{1f}085000 millean\u{1f}0910 bhillean\u{1f}0920 bhillean\u{1f}0930 billeanan\u{1f}0950 billean\u{1f}10100 bhillean\u{1f}10200 bhillean\u{1f}10300 billeanan\u{1f}10500 billean\u{1f}111000 bhillean\u{1f}112000 bhillean\u{1f}113000 billeanan\u{1f}115000 billean\u{1f}1220 thrillean\u{1f}1230 trilleanan\u{1f}1250 trillean\u{1f}13200 thrillean\u{1f}13300 trilleanan\u{1f}13500 trillean\u{1f}142000 thrillean\u{1f}143000 trilleanan\u{1f}145000 trillean"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "gl"))]
+pub(crate) static COMPACT_GL: Compact = Compact { decimal_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950000\u{a0}M\u{1f}10500000\u{a0}M\u{1f}115000000\u{a0}M\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350\u{1f}0450\u{1f}0550\u{1f}0610 millón\u{1f}0650 millóns\u{1f}07500 millóns\u{1f}085000 millóns\u{1f}0950000 millóns\u{1f}10500000 millóns\u{1f}115000000 millóns\u{1f}1210 billón\u{1f}1250 billóns\u{1f}13500 billóns\u{1f}145000 billóns"), currency_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950000\u{a0}M\u{a0}¤\u{1f}10500000\u{a0}M\u{a0}¤\u{1f}115000000\u{a0}M\u{a0}¤\u{1f}1250\u{a0}B\u{a0}¤\u{1f}13500\u{a0}B\u{a0}¤\u{1f}145000\u{a0}B\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "gu"))]
+pub(crate) static COMPACT_GU: Compact = Compact { decimal_short: Table("0350\u{a0}હજાર\u{1f}04500\u{a0}હજાર\u{1f}0550\u{a0}લાખ\u{1f}06500\u{a0}લાખ\u{1f}0750\u{a0}કરોડ\u{1f}08500\u{a0}કરોડ\u{1f}0950\u{a0}અબજ\u{1f}10500\u{a0}અબજ\u{1f}1150\u{a0}નિખર\u{acd}વ\u{1f}1250\u{a0}મહાપદ\u{acd}મ\u{1f}1350\u{a0}શ\u{a82}ક\u{ac1}\u{1f}1450\u{a0}જલધિ"), decimal_long: Table("0350 હજાર\u{1f}04500 હજાર\u{1f}0550 લાખ\u{1f}06500 લાખ\u{1f}0750 કરોડ\u{1f}08500 કરોડ\u{1f}0950 અબજ\u{1f}10500 અબજ\u{1f}1150 નિખર\u{acd}વ\u{1f}1250 મહાપદ\u{acd}મ\u{1f}1350 શ\u{a82}ક\u{ac1}\u{1f}1450 જલધિ"), currency_short: Table("035¤0\u{a0}હજાર\u{1f}045¤00\u{a0}હજાર\u{1f}055¤0\u{a0}લાખ\u{1f}065¤00\u{a0}લાખ\u{1f}075¤0\u{a0}કરોડ\u{1f}085¤00\u{a0}કરોડ\u{1f}095¤0\u{a0}અબજ\u{1f}105¤00\u{a0}અબજ\u{1f}115¤0\u{a0}નિખર\u{acd}વ\u{1f}125¤0\u{a0}મહાપદ\u{acd}મ\u{1f}135¤0\u{a0}શ\u{a82}ક\u{ac1}\u{1f}145¤0\u{a0}જલધિ") };
+
+#[cfg(all(feature = "compact", feature = "ha"))]
+pub(crate) static COMPACT_HA: Compact = Compact { decimal_short: Table("0350K\u{1f}04500D\u{1f}055000D\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("035Dubu 0\u{1f}045Dubu 00\u{1f}055Dubu 000\u{1f}065Miliyan 0\u{1f}075Miliyan 00\u{1f}085Miliyan 000\u{1f}095Biliyan 0\u{1f}105Biliyan 00\u{1f}115Biliyan 000\u{1f}125Triliyan 0\u{1f}135Triliyan 00\u{1f}145Triliyan 000"), currency_short: Table("035¤\u{a0}0K\u{1f}045¤\u{a0}00D\u{1f}055¤\u{a0}000D\u{1f}065¤\u{a0}0M\u{1f}075¤\u{a0}00M\u{1f}085¤\u{a0}000M\u{1f}095¤\u{a0}0B\u{1f}105¤\u{a0}00B\u{1f}115¤\u{a0}000B\u{1f}125¤\u{a0}0T\u{1f}135¤\u{a0}00T\u{1f}145¤\u{a0}000T") };
+
+#[cfg(all(feature = "compact", feature = "he"))]
+pub(crate) static COMPACT_HE: Compact = Compact { decimal_short: Table("0350K\u{200f}\u{1f}04500K\u{200f}\u{1f}055000K\u{200f}\u{1f}0650M\u{200f}\u{1f}07500M\u{200f}\u{1f}085000M\u{200f}\u{1f}0950B\u{200f}\u{1f}10500B\u{200f}\u{1f}115000B\u{200f}\u{1f}1250T\u{200f}\u{1f}13500T\u{200f}\u{1f}145000T\u{200f}"), decimal_long: Table("035\u{200f}0 אלף\u{1f}045\u{200f}00 אלף\u{1f}055\u{200f}000 אלף\u{1f}065\u{200f}0 מיליון\u{1f}075\u{200f}00 מיליון\u{1f}085\u{200f}000 מיליון\u{1f}095\u{200f}0 מיליארד\u{1f}105\u{200f}00 מיליארד\u{1f}115\u{200f}000 מיליארד\u{1f}125\u{200f}0 טריליון\u{1f}135\u{200f}00 טריליון\u{1f}145\u{200f}000 טריליון"), currency_short: Table("035\u{200f}0K\u{200f}\u{a0}\u{200f}¤\u{1f}045\u{200f}00K\u{200f}\u{a0}\u{200f}¤\u{1f}055\u{200f}000K\u{200f}\u{a0}\u{200f}¤\u{1f}065\u{200f}0M\u{200f}\u{a0}\u{200f}¤\u{1f}075\u{200f}00M\u{200f}\u{a0}\u{200f}¤\u{1f}085\u{200f}000M\u{200f}\u{a0}\u{200f}¤\u{1f}095\u{200f}0B\u{200f}\u{a0}\u{200f}¤\u{1f}105\u{200f}00B\u{200f}\u{a0}\u{200f}¤\u{1f}115\u{200f}000B\u{200f}\u{a0}\u{200f}¤\u{1f}125\u{200f}0T\u{200f}\u{a0}\u{200f}¤\u{1f}135\u{200f}00T\u{200f}\u{a0}\u{200f}¤\u{1f}145\u{200f}000T\u{200f}\u{a0}\u{200f}¤") };
+
+#[cfg(all(feature = "compact", feature = "hi"))]
+pub(crate) static COMPACT_HI: Compact = Compact { decimal_short: Table("0350\u{a0}हज\u{93c}ार\u{1f}04500\u{a0}हज\u{93c}ार\u{1f}0550\u{a0}लाख\u{1f}06500\u{a0}लाख\u{1f}0750\u{a0}क॰\u{1f}08500\u{a0}क॰\u{1f}0950\u{a0}अ॰\u{1f}10500\u{a0}अ॰\u{1f}1150\u{a0}ख॰\u{1f}12500\u{a0}ख॰\u{1f}1350\u{a0}नील\u{1f}14500\u{a0}नील"), decimal_long: Table("0350 हज\u{93c}ार\u{1f}04500 हज\u{93c}ार\u{1f}0550 लाख\u{1f}06500 लाख\u{1f}0750 करोड\u{93c}\u{1f}08500 करोड\u{93c}\u{1f}0950 अरब\u{1f}10500 अरब\u{1f}1150 खरब\u{1f}12500 खरब\u{1f}135000 खरब\u{1f}1450000 खरब"), currency_short: Table("035¤0\u{a0}हज\u{93c}ार\u{1f}045¤00\u{a0}हज\u{93c}ार\u{1f}055¤0\u{a0}लाख\u{1f}065¤00\u{a0}लाख\u{1f}075¤0\u{a0}क॰\u{1f}085¤00\u{a0}क॰\u{1f}095¤0\u{a0}अ॰\u{1f}105¤00\u{a0}अ॰\u{1f}115¤0\u{a0}ख॰\u{1f}125¤00\u{a0}ख॰\u{1f}135¤0\u{a0}नील\u{1f}145¤00\u{a0}नील") };
+
+#[cfg(all(feature = "compact", feature = "hr"))]
+pub(crate) static COMPACT_HR: Compact = Compact { decimal_short: Table("0350\u{a0}tis'.'\u{1f}04500\u{a0}tis'.'\u{1f}055000\u{a0}tis'.'\u{1f}0650\u{a0}mil'.'\u{1f}07500\u{a0}mil'.'\u{1f}085000\u{a0}mil'.'\u{1f}0950\u{a0}mlr'.'\u{1f}10500\u{a0}mlr'.'\u{1f}115000\u{a0}mlr'.'\u{1f}1250\u{a0}bil'.'\u{1f}13500\u{a0}bil'.'\u{1f}145000\u{a0}bil'.'"), decimal_long: Table("0330 tisuće\u{1f}0350 tisuća\u{1f}04300 tisuće\u{1f}04500 tisuća\u{1f}053000 tisuće\u{1f}055000 tisuća\u{1f}0610 milijun\u{1f}0650 milijuna\u{1f}07100 milijun\u{1f}07500 milijuna\u{1f}081000 milijun\u{1f}085000 milijuna\u{1f}0910 milijarda\u{1f}0930 milijarde\u{1f}0950 milijardi\u{1f}10100 milijarda\u{1f}10300 milijarde\u{1f}10500 milijardi\u{1f}111000 milijarda\u{1f}113000 milijarde\u{1f}115000 milijardi\u{1f}1210 bilijun\u{1f}1250 bilijuna\u{1f}13100 bilijun\u{1f}13500 bilijuna\u{1f}141000 bilijun\u{1f}145000 bilijuna"), currency_short: Table("0350\u{a0}tis'.'\u{a0}¤\u{1f}04500\u{a0}tis'.'\u{a0}¤\u{1f}055000\u{a0}tis'.'\u{a0}¤\u{1f}0650\u{a0}mil'.'\u{a0}¤\u{1f}07500\u{a0}mil'.'\u{a0}¤\u{1f}085000\u{a0}mil'.'\u{a0}¤\u{1f}0950\u{a0}mlr'.'\u{a0}¤\u{1f}10500\u{a0}mlr'.'\u{a0}¤\u{1f}115000\u{a0}mlr'.'\u{a0}¤\u{1f}1250\u{a0}bil'.'\u{a0}¤\u{1f}13500\u{a0}bil'.'\u{a0}¤\u{1f}145000\u{a0}bil'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "hsb"))]
+pub(crate) static COMPACT_HSB: Compact = Compact { decimal_short: Table("0350\u{a0}tys'.'\u{1f}04500\u{a0}tys'.'\u{1f}055000\u{a0}tys'.'\u{1f}0650\u{a0}mio'.'\u{1f}07500\u{a0}mio'.'\u{1f}085000\u{a0}mio'.'\u{1f}0950\u{a0}mrd'.'\u{1f}10500\u{a0}mrd'.'\u{1f}115000\u{a0}mrd'.'\u{1f}1250\u{a0}bil'.'\u{1f}13500\u{a0}bil'.'\u{1f}145000\u{a0}bil'.'"), decimal_long: Table("0350 tysac\u{1f}04500 tysac\u{1f}055000 tysac\u{1f}0610 milion\u{1f}0620 milionaj\u{1f}0630 miliony\u{1f}0650 milionow\u{1f}07500 milionow\u{1f}085000 milionow\u{1f}0910 miliarda\u{1f}0920 miliardźe\u{1f}0930 miliardy\u{1f}0950 miliardow\u{1f}10500 miliardow\u{1f}115000 miliardow\u{1f}1210 bilion\u{1f}1220 bilionaj\u{1f}1230 biliony\u{1f}1250 bilionow\u{1f}13500 bilionow\u{1f}145000 bilionow"), currency_short: Table("0350\u{a0}tys'.'\u{a0}¤\u{1f}04500\u{a0}tys'.'\u{a0}¤\u{1f}055000\u{a0}tys'.'\u{a0}¤\u{1f}0650\u{a0}mio'.'\u{a0}¤\u{1f}07500\u{a0}mio'.'\u{a0}¤\u{1f}085000\u{a0}mio'.'\u{a0}¤\u{1f}0950\u{a0}mrd'.'\u{a0}¤\u{1f}10500\u{a0}mrd'.'\u{a0}¤\u{1f}115000\u{a0}mrd'.'\u{a0}¤\u{1f}1250\u{a0}bil'.'\u{a0}¤\u{1f}13500\u{a0}bil'.'\u{a0}¤\u{1f}145000\u{a0}bil'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "hu"))]
+pub(crate) static COMPACT_HU: Compact = Compact { decimal_short: Table("0350\u{a0}E\u{1f}04500\u{a0}E\u{1f}055000\u{a0}E\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950\u{a0}Mrd\u{1f}10500\u{a0}Mrd\u{1f}115000\u{a0}Mrd\u{1f}1250\u{a0}B\u{1f}13500\u{a0}B\u{1f}145000\u{a0}B"), decimal_long: Table("0350 ezer\u{1f}04500 ezer\u{1f}055000 ezer\u{1f}0650 millió\u{1f}07500 millió\u{1f}085000 millió\u{1f}0950 milliárd\u{1f}10500 milliárd\u{1f}115000 milliárd\u{1f}1250 billió\u{1f}13500 billió\u{1f}145000 billió"), currency_short: Table("0350\u{a0}E\u{a0}¤\u{1f}04500\u{a0}E\u{a0}¤\u{1f}055000\u{a0}E\u{a0}¤\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950\u{a0}Mrd\u{a0}¤\u{1f}10500\u{a0}Mrd\u{a0}¤\u{1f}115000\u{a0}Mrd\u{a0}¤\u{1f}1250\u{a0}B\u{a0}¤\u{1f}13500\u{a0}B\u{a0}¤\u{1f}145000\u{a0}B\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "hy"))]
+pub(crate) static COMPACT_HY: Compact = Compact { decimal_short: Table("0350\u{a0}հզր\u{1f}04500\u{a0}հզր\u{1f}055000\u{a0}հզր\u{1f}0650\u{a0}մլն\u{1f}07500\u{a0}մլն\u{1f}085000\u{a0}մլն\u{1f}0950\u{a0}մլրդ\u{1f}10500\u{a0}մլրդ\u{1f}115000\u{a0}մլրդ\u{1f}1250\u{a0}տրլն\u{1f}13500\u{a0}տրլն\u{1f}145000\u{a0}տրլն"), decimal_long: Table("0350 հազար\u{1f}04500 հազար\u{1f}055000 հազար\u{1f}0650 միլիոն\u{1f}07500 միլիոն\u{1f}085000 միլիոն\u{1f}0950 միլիարդ\u{1f}10500 միլիարդ\u{1f}115000 միլիարդ\u{1f}1250 տրիլիոն\u{1f}13500 տրիլիոն\u{1f}145000 տրիլիոն"), currency_short: Table("0350\u{a0}հզր\u{a0}¤\u{1f}04500\u{a0}հզր\u{a0}¤\u{1f}055000\u{a0}հզր\u{a0}¤\u{1f}0650\u{a0}մլն\u{a0}¤\u{1f}07500\u{a0}մլն\u{a0}¤\u{1f}085000\u{a0}մլն\u{a0}¤\u{1f}0950\u{a0}մլրդ\u{a0}¤\u{1f}10500\u{a0}մլրդ\u{a0}¤\u{1f}115000\u{a0}մլրդ\u{a0}¤\u{1f}1250\u{a0}տրլն\u{a0}¤\u{1f}13500\u{a0}տրլն\u{a0}¤\u{1f}145000\u{a0}տրլն\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "id"))]
+pub(crate) static COMPACT_ID: Compact = Compact { decimal_short: Table("0350\u{a0}rb\u{1f}04500\u{a0}rb\u{1f}055000\u{a0}rb\u{1f}0650\u{a0}jt\u{1f}07500\u{a0}jt\u{1f}085000\u{a0}jt\u{1f}0950\u{a0}M\u{1f}10500\u{a0}M\u{1f}115000\u{a0}M\u{1f}1250\u{a0}T\u{1f}13500\u{a0}T\u{1f}145000\u{a0}T"), decimal_long: Table("0350 ribu\u{1f}04500 ribu\u{1f}055000 ribu\u{1f}0650 juta\u{1f}07500 juta\u{1f}085000 juta\u{1f}0950 miliar\u{1f}10500 miliar\u{1f}115000 miliar\u{1f}1250 triliun\u{1f}13500 triliun\u{1f}145000 triliun"), currency_short: Table("035¤0\u{a0}rb\u{1f}045¤00\u{a0}rb\u{1f}055¤000\u{a0}rb\u{1f}065¤0\u{a0}jt\u{1f}075¤00\u{a0}jt\u{1f}085¤000\u{a0}jt\u{1f}095¤0\u{a0}M\u{1f}105¤00\u{a0}M\u{1f}115¤000\u{a0}M\u{1f}125¤0\u{a0}T\u{1f}135¤00\u{a0}T\u{1f}145¤000\u{a0}T") };
+
+#[cfg(all(feature = "compact", feature = "ig"))]
+pub(crate) static COMPACT_IG: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0G\u{1f}105¤00G\u{1f}115¤000G\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "is"))]
+pub(crate) static COMPACT_IS: Compact = Compact { decimal_short: Table("0350\u{a0}þ'.'\u{1f}04500\u{a0}þ'.'\u{1f}055000\u{a0}þ'.'\u{1f}0650\u{a0}m'.'\u{1f}07500\u{a0}m'.'\u{1f}085000\u{a0}m'.'\u{1f}0950\u{a0}ma'.'\u{1f}10500\u{a0}ma'.'\u{1f}115000\u{a0}ma'.'\u{1f}1250\u{a0}bn\u{1f}13500\u{a0}bn\u{1f}145000\u{a0}bn"), decimal_long: Table("0350 þúsund\u{1f}04500 þúsund\u{1f}055000 þúsund\u{1f}0610 milljón\u{1f}0650 milljónir\u{1f}07100 milljón\u{1f}07500 milljónir\u{1f}081000 milljón\u{1f}085000 milljónir\u{1f}0910 milljarður\u{1f}0950 milljarðar\u{1f}10100 milljarður\u{1f}10500 milljarðar\u{1f}111000 milljarður\u{1f}115000 milljarðar\u{1f}1210 billjón\u{1f}1250 billjónir\u{1f}13100 billjón\u{1f}13500 billjónir\u{1f}141000 billjón\u{1f}145000 billjónir"), currency_short: Table("0350\u{a0}þ'.'\u{a0}¤\u{1f}04500\u{a0}þ'.'\u{a0}¤\u{1f}055000\u{a0}þ'.'\u{a0}¤\u{1f}0650\u{a0}m'.'\u{a0}¤\u{1f}07500\u{a0}m'.'\u{a0}¤\u{1f}085000\u{a0}m'.'\u{a0}¤\u{1f}0950\u{a0}ma'.'\u{a0}¤\u{1f}10500\u{a0}ma'.'\u{a0}¤\u{1f}115000\u{a0}ma'.'\u{a0}¤\u{1f}1250\u{a0}bn\u{a0}¤\u{1f}13500\u{a0}bn\u{a0}¤\u{1f}145000\u{a0}bn\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "it"))]
+pub(crate) static COMPACT_IT: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650\u{a0}Mln\u{1f}07500\u{a0}Mln\u{1f}085000\u{a0}Mln\u{1f}0950\u{a0}Mld\u{1f}10500\u{a0}Mld\u{1f}115000\u{a0}Mld\u{1f}1250\u{a0}Bln\u{1f}13500\u{a0}Bln\u{1f}145000\u{a0}Bln"), decimal_long: Table("031mille\u{1f}0350 mila\u{1f}04500 mila\u{1f}055000 mila\u{1f}0610 milione\u{1f}0650 milioni\u{1f}07500 milioni\u{1f}085000 milioni\u{1f}0910 miliardo\u{1f}0950 miliardi\u{1f}10500 miliardi\u{1f}115000 miliardi\u{1f}1210 mille miliardi\u{1f}1250 mila miliardi\u{1f}13500 mila miliardi\u{1f}145000 mila miliardi"), currency_short: Table("0350K\u{a0}¤\u{1f}04500K\u{a0}¤\u{1f}055000K\u{a0}¤\u{1f}0650\u{a0}Mln\u{a0}¤\u{1f}07500\u{a0}Mln\u{a0}¤\u{1f}085000\u{a0}Mln\u{a0}¤\u{1f}0950\u{a0}Mld\u{a0}¤\u{1f}10500\u{a0}Mld\u{a0}¤\u{1f}115000\u{a0}Mld\u{a0}¤\u{1f}1250\u{a0}Bln\u{a0}¤\u{1f}13500\u{a0}Bln\u{a0}¤\u{1f}145000\u{a0}Bln\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ja"))]
+pub(crate) static COMPACT_JA: Compact = Compact { decimal_short: Table("0350\u{1f}0450万\u{1f}05500万\u{1f}065000万\u{1f}0750000万\u{1f}0850億\u{1f}09500億\u{1f}105000億\u{1f}1150000億\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆\u{1f}1550000兆\u{1f}1650京\u{1f}17500京\u{1f}185000京\u{1f}1950000京"), decimal_long: Table("0350\u{1f}0450万\u{1f}05500万\u{1f}065000万\u{1f}0750000万\u{1f}0850億\u{1f}09500億\u{1f}105000億\u{1f}1150000億\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆\u{1f}1550000兆\u{1f}1650京\u{1f}17500京\u{1f}185000京\u{1f}1950000京"), currency_short: Table("0350\u{1f}045¤0万\u{1f}055¤00万\u{1f}065¤000万\u{1f}075¤0000万\u{1f}085¤0億\u{1f}095¤00億\u{1f}105¤000億\u{1f}115¤0000億\u{1f}125¤0兆\u{1f}135¤00兆\u{1f}145¤000兆\u{1f}155¤0000兆\u{1f}165¤0京\u{1f}175¤00京\u{1f}185¤000京\u{1f}195¤0000京") };
+
+#[cfg(all(feature = "compact", feature = "jv"))]
+pub(crate) static COMPACT_JV: Compact = Compact { decimal_short: Table("0350È\u{1f}04500È\u{1f}055000È\u{1f}0650Y\u{1f}07500Y\u{1f}085000Y\u{1f}0950M\u{1f}10500M\u{1f}115000M\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 èwu\u{1f}04500 èwu\u{1f}055000 èwu\u{1f}0650 yuta\u{1f}07500 yuta\u{1f}085000 yuta\u{1f}0950 milyar\u{1f}10500 milyar\u{1f}115000 milyar\u{1f}1250 trilyun\u{1f}13500 trilyun\u{1f}145000 trilyun"), currency_short: Table("035¤\u{a0}0È\u{1f}045¤\u{a0}00È\u{1f}055¤\u{a0}000È\u{1f}065¤\u{a0}0Y\u{1f}075¤\u{a0}00Y\u{1f}085¤\u{a0}000Y\u{1f}095¤\u{a0}0M\u{1f}105¤\u{a0}00M\u{1f}115¤\u{a0}000M\u{1f}125¤\u{a0}0T\u{1f}135¤\u{a0}00T\u{1f}145¤\u{a0}000T") };
+
+#[cfg(all(feature = "compact", feature = "ka"))]
+pub(crate) static COMPACT_KA: Compact = Compact { decimal_short: Table("0350\u{a0}ათ'.'\u{1f}04500\u{a0}ათ'.'\u{1f}055000\u{a0}ათ'.'\u{1f}0650\u{a0}მლნ'.'\u{1f}07500\u{a0}მლნ'.'\u{1f}085000\u{a0}მლნ'.'\u{1f}0950\u{a0}მლრდ'.'\u{1f}10500\u{a0}მლრდ'.'\u{1f}115000\u{a0}მლრ'.'\u{1f}1250\u{a0}ტრლ'.'\u{1f}13500\u{a0}ტრლ'.'\u{1f}145000\u{a0}ტრლ'.'"), decimal_long: Table("0350 ათასი\u{1f}04500 ათასი\u{1f}055000 ათასი\u{1f}0650 მილიონი\u{1f}07500 მილიონი\u{1f}085000 მილიონი\u{1f}0950 მილიარდი\u{1f}10500 მილიარდი\u{1f}115000 მილიარდი\u{1f}1250 ტრილიონი\u{1f}13500 ტრილიონი\u{1f}145000 ტრილიონი"), currency_short: Table("0350\u{a0}ათ'.'\u{a0}¤\u{1f}04500\u{a0}ათ'.'\u{a0}¤\u{1f}055000\u{a0}ათ'.'\u{a0}¤\u{1f}0650\u{a0}მლნ'.'\u{a0}¤\u{1f}07500\u{a0}მლნ'.'\u{a0}¤\u{1f}085000\u{a0}მლნ'.'\u{a0}¤\u{1f}0950\u{a0}მლრდ'.'\u{a0}¤\u{1f}10500\u{a0}მლრდ'.'\u{a0}¤\u{1f}115000\u{a0}მლრ'.'\u{a0}¤\u{1f}1250\u{a0}ტრლ'.'\u{a0}¤\u{1f}13500\u{a0}ტრლ'.'\u{a0}¤\u{1f}145000\u{a0}ტრლ'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "kk"))]
+pub(crate) static COMPACT_KK: Compact = Compact { decimal_short: Table("0350\u{a0}мың\u{1f}04500\u{a0}мың\u{1f}055000\u{a0}м'.'\u{1f}0650\u{a0}млн\u{1f}07500\u{a0}млн\u{1f}085000\u{a0}млн\u{1f}0950\u{a0}млрд\u{1f}10500\u{a0}млрд\u{1f}115000\u{a0}млрд\u{1f}1250\u{a0}трлн\u{1f}13500\u{a0}трлн\u{1f}145000\u{a0}трлн"), decimal_long: Table("0350 мың\u{1f}04500 мың\u{1f}055000 мың\u{1f}0650 миллион\u{1f}07500 миллион\u{1f}085000 миллион\u{1f}0950 миллиард\u{1f}10500 миллиард\u{1f}115000 миллиард\u{1f}1250 триллион\u{1f}13500 триллион\u{1f}145000 триллион"), currency_short: Table("0350\u{a0}мың\u{a0}¤\u{1f}04500\u{a0}мың\u{a0}¤\u{1f}055000\u{a0}м'.'\u{a0}¤\u{1f}0650\u{a0}млн\u{a0}¤\u{1f}07500\u{a0}млн\u{a0}¤\u{1f}085000\u{a0}млн\u{a0}¤\u{1f}0950\u{a0}млрд\u{a0}¤\u{1f}10500\u{a0}млрд\u{a0}¤\u{1f}115000\u{a0}млрд\u{a0}¤\u{1f}1250\u{a0}трлн\u{a0}¤\u{1f}13500\u{a0}трлн\u{a0}¤\u{1f}145000\u{a0}трлн\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "kk"))]
+pub(crate) static COMPACT_KK_ARAB: Compact = Compact { decimal_short: Table("0350\u{a0}مىڭ\u{1f}04500\u{a0}مىڭ\u{1f}055000\u{a0}مىڭ\u{1f}0650\u{a0}ميلليون\u{1f}07500\u{a0}ميلليون\u{1f}085000\u{a0}ملن\u{1f}0950\u{a0}ميلليارد\u{1f}10500\u{a0}ملرد\u{1f}115000\u{a0}ملرد\u{1f}1250\u{a0}تريلليون\u{1f}13500\u{a0}ترلن\u{1f}145000\u{a0}ترلن"), decimal_long: Table("0350 مىڭ\u{1f}04500 مىڭ\u{1f}055000 مىڭ\u{1f}0650 ميلليون\u{1f}07500 ميلليون\u{1f}085000 ميلليون\u{1f}0950 ميلليارد\u{1f}10500 ميلليارد\u{1f}115000 ميلليارد\u{1f}1250 تريلليون\u{1f}13500 تريلليون\u{1f}145000 تريلليون"), currency_short: Table("035¤\u{a0}0\u{a0}مىڭ\u{1f}045¤\u{a0}00\u{a0}مىڭ\u{1f}055¤\u{a0}000\u{a0}مىڭ\u{1f}065¤\u{a0}0\u{a0}ميلليون\u{1f}075¤\u{a0}00\u{a0}ميلليون\u{1f}085¤\u{a0}000\u{a0}ملن\u{1f}095¤\u{a0}0\u{a0}ميلليارد\u{1f}105¤\u{a0}00\u{a0}ملرد\u{1f}115¤\u{a0}000\u{a0}ملرد\u{1f}125¤\u{a0}0\u{a0}تريلليون\u{1f}135¤\u{a0}00\u{a0}ترلن\u{1f}145¤\u{a0}000\u{a0}ترلن") };
+
+#[cfg(all(feature = "compact", feature = "km"))]
+pub(crate) static COMPACT_KM: Compact = Compact { decimal_short: Table("0350ពាន\u{17cb}\u{1f}04500\u{a0}ពាន\u{17cb}\u{1f}055000\u{a0}ពាន\u{17cb}\u{1f}0650\u{a0}លាន\u{1f}07500\u{a0}លាន\u{1f}085000\u{a0}លាន\u{1f}0950\u{a0}ប\u{17ca}\u{17b8}លាន\u{1f}10500\u{a0}ប\u{17ca}\u{17b8}លាន\u{1f}115000\u{a0}ប\u{17ca}\u{17b8}លាន\u{1f}1250\u{a0}ទ\u{17d2}រ\u{17b8}លាន\u{1f}13500\u{a0}ទ\u{17d2}រ\u{17b8}លាន\u{1f}145000\u{a0}ទ\u{17d2}រ\u{17b8}លាន"), decimal_long: Table("0350 ពាន\u{17cb}\u{1f}04500 ពាន\u{17cb}\u{1f}055000ពាន\u{17cb}\u{1f}0650 លាន\u{1f}07500 លាន\u{1f}085000 លាន\u{1f}0950 ប\u{17ca}\u{17b8}លាន\u{1f}10500 ប\u{17ca}\u{17b8}លាន\u{1f}115000 ប\u{17ca}\u{17b8}លាន\u{1f}1250 ទ\u{17d2}រ\u{17b8}លាន\u{1f}13500 ទ\u{17d2}រ\u{17b8}លាន\u{1f}145000 ទ\u{17d2}រ\u{17b8}លាន"), currency_short: Table("0350ពាន\u{17cb}¤\u{1f}04500\u{a0}ពាន\u{17cb}¤\u{1f}055000\u{a0}ពាន\u{17cb}¤\u{1f}0650\u{a0}លាន¤\u{1f}07500\u{a0}លាន¤\u{1f}085000\u{a0}លាន¤\u{1f}0950\u{a0}ប\u{17ca}\u{17b8}លាន¤\u{1f}10500\u{a0}ប\u{17ca}\u{17b8}លាន¤\u{1f}115000\u{a0}ប\u{17ca}\u{17b8}លាន¤\u{1f}1250\u{a0}ទ\u{17d2}រ\u{17b8}លាន¤\u{1f}13500\u{a0}ទ\u{17d2}រ\u{17b8}លាន¤\u{1f}145000\u{a0}ទ\u{17d2}រ\u{17b8}លាន¤") };
+
+#[cfg(all(feature = "compact", feature = "kn"))]
+pub(crate) static COMPACT_KN: Compact = Compact { decimal_short: Table("0350ಸಾ\u{1f}04500ಸಾ\u{1f}055000ಸಾ\u{1f}0650ಮ\u{cbf}\u{1f}07500ಮ\u{cbf}\u{1f}085000ಮ\u{cbf}\u{1f}0950ಬ\u{cbf}\u{1f}10500ಬ\u{cbf}\u{1f}115000ಬ\u{cbf}\u{1f}1250ಟ\u{ccd}ರ\u{cbf}\u{1f}13500ಟ\u{ccd}ರ\u{cbf}\u{1f}145000ಟ\u{ccd}ರ\u{cbf}"), decimal_long: Table("0350 ಸಾವ\u{cbf}ರ\u{1f}04500 ಸಾವ\u{cbf}ರ\u{1f}055000 ಸಾವ\u{cbf}ರ\u{1f}0650 ಮ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{1f}07500 ಮ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{1f}085000 ಮ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{1f}0950 ಬ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{1f}10500 ಬ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{1f}115000 ಬ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{1f}1250 ಟ\u{ccd}ರ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{200c}\u{1f}13500 ಟ\u{ccd}ರ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{200c}\u{1f}145000 ಟ\u{ccd}ರ\u{cbf}ಲ\u{cbf}ಯನ\u{ccd}\u{200c}"), currency_short: Table("035¤0ಸಾ\u{1f}045¤00ಸಾ\u{1f}055¤000ಸಾ\u{1f}065¤0ಮ\u{cbf}\u{1f}075¤00ಮ\u{cbf}\u{1f}085¤000ಮ\u{cbf}\u{1f}095¤0ಬ\u{cbf}\u{1f}105¤00ಬ\u{cbf}\u{1f}115¤000ಬ\u{cbf}\u{1f}125¤0ಟ\u{ccd}ರ\u{cbf}\u{1f}135¤00ಟ\u{ccd}ರ\u{cbf}\u{1f}145¤000ಟ\u{ccd}ರ\u{cbf}") };
+
+#[cfg(all(feature = "compact", feature = "ko"))]
+pub(crate) static COMPACT_KO: Compact = Compact { decimal_short: Table("0350천\u{1f}0450만\u{1f}05500만\u{1f}065000만\u{1f}0750000만\u{1f}0850억\u{1f}09500억\u{1f}105000억\u{1f}1150000억\u{1f}1250조\u{1f}13500조\u{1f}145000조"), decimal_long: Table("0350천\u{1f}0450만\u{1f}05500만\u{1f}065000만\u{1f}0750000만\u{1f}0850억\u{1f}09500억\u{1f}105000억\u{1f}1150000억\u{1f}1250조\u{1f}13500조\u{1f}145000조"), currency_short: Table("035¤0천\u{1f}045¤0만\u{1f}055¤00만\u{1f}065¤000만\u{1f}075¤0000만\u{1f}085¤0억\u{1f}095¤00억\u{1f}105¤000억\u{1f}115¤0000억\u{1f}125¤0조\u{1f}135¤00조\u{1f}145¤000조") };
+
+#[cfg(all(feature = "compact", feature = "kok"))]
+pub(crate) static COMPACT_KOK: Compact = Compact { decimal_short: Table("0350हज\u{1f}04500हज\u{1f}0550लाख\u{1f}06500लाख\u{1f}0750कोटी\u{1f}08500कोटी\u{1f}0950अब\u{94d}ज\u{1f}10500अब\u{94d}ज\u{1f}1150निख\u{1f}12500निख\u{1f}135000निख\u{1f}1450हज'.'निख'.'"), decimal_long: Table("0310हज\u{1f}0350 हजार\u{1f}04100हज\u{1f}04500 हजार\u{1f}0510लाख\u{1f}0550 लाख\u{1f}06100लाख\u{1f}06500 लाख\u{1f}0710कोटी\u{1f}0750 कोटी\u{1f}08100कोटी\u{1f}08500 कोटी\u{1f}0910अब\u{94d}ज\u{1f}0950 अब\u{94d}ज\u{1f}10100अब\u{94d}ज\u{1f}10500 अब\u{94d}ज\u{1f}1110निख\u{1f}1150 निखर\u{94d}व\u{1f}12100निख\u{1f}12500 निखर\u{94d}व\u{1f}131000निख\u{1f}135000 निखर\u{94d}व\u{1f}1410हज'.'निख'.'\u{1f}1450 हजार निखर\u{94d}व"), currency_short: Table("035¤0हज\u{1f}045¤00हज\u{1f}055¤0लाख\u{1f}065¤00लाख\u{1f}075¤0कोटी\u{1f}085¤00कोटी\u{1f}095¤0अब\u{94d}ज\u{1f}105¤00अब\u{94d}ज\u{1f}115¤0निख\u{1f}125¤00निख\u{1f}135¤000निख\u{1f}145¤0हज'.'निख'.'") };
+
+#[cfg(all(feature = "compact", feature = "ky"))]
+pub(crate) static COMPACT_KY: Compact = Compact { decimal_short: Table("0350\u{a0}миң\u{1f}04500\u{a0}миң\u{1f}055000\u{a0}миң\u{1f}0650\u{a0}млн\u{1f}07500\u{a0}млн\u{1f}085000\u{a0}млн\u{1f}0950\u{a0}млд\u{1f}10500\u{a0}млд\u{1f}115000\u{a0}млд\u{1f}1250\u{a0}трлн\u{1f}13500\u{a0}трлн\u{1f}145000\u{a0}трлн"), decimal_long: Table("0350 миң\u{1f}04500 миң\u{1f}055000 миң\u{1f}0650 миллион\u{1f}07500 миллион\u{1f}085000 миллион\u{1f}0950 миллиард\u{1f}10500 миллиард\u{1f}115000 миллиард\u{1f}1250 триллион\u{1f}13500 триллион\u{1f}145000 триллион"), currency_short: Table("0350\u{a0}миң\u{a0}¤\u{1f}04500\u{a0}миң\u{a0}¤\u{1f}055000\u{a0}миң\u{a0}¤\u{1f}0650\u{a0}млн\u{a0}¤\u{1f}07500\u{a0}млн\u{a0}¤\u{1f}085000\u{a0}млн\u{a0}¤\u{1f}0950\u{a0}млд\u{a0}¤\u{1f}10500\u{a0}млд\u{a0}¤\u{1f}115000\u{a0}млд\u{a0}¤\u{1f}1250\u{a0}трлн\u{a0}¤\u{1f}13500\u{a0}трлн\u{a0}¤\u{1f}145000\u{a0}трлн\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "lo"))]
+pub(crate) static COMPACT_LO: Compact = Compact { decimal_short: Table("0350\u{a0}ພ\u{eb1}ນ\u{1f}04500\u{a0}ພ\u{eb1}ນ\u{1f}055000\u{a0}ພ\u{eb1}ນ\u{1f}0650\u{a0}ລ\u{ec9}ານ\u{1f}07500\u{a0}ລ\u{ec9}ານ\u{1f}085000\u{a0}ລ\u{ec9}ານ\u{1f}0950\u{a0}ຕ\u{eb7}\u{ec9}\u{1f}10500\u{a0}ຕ\u{eb7}\u{ec9}\u{1f}115000\u{a0}ຕ\u{eb7}\u{ec9}\u{1f}1250\u{a0}ລ\u{ec9}ານລ\u{ec9}ານ\u{1f}13500ລລ\u{1f}145000ລລ"), decimal_long: Table("0350 ພ\u{eb1}ນ\u{1f}04500 ພ\u{eb1}ນ\u{1f}0550 ແສນ\u{1f}0650 ລ\u{ec9}ານ\u{1f}07500 ລ\u{ec9}ານ\u{1f}085000 ລ\u{ec9}ານ\u{1f}0950 ຕ\u{eb7}\u{ec9}\u{1f}10500 ຕ\u{eb7}\u{ec9}\u{1f}115000 ຕ\u{eb7}\u{ec9}\u{1f}1250 ລ\u{ec9}ານລ\u{ec9}ານ\u{1f}13500 ລ\u{ec9}ານລ\u{ec9}ານ\u{1f}145000 ລ\u{ec9}ານລ\u{ec9}ານ"), currency_short: Table("035¤0\u{a0}ພ\u{eb1}ນ\u{1f}045¤00\u{a0}ພ\u{eb1}ນ\u{1f}055¤000\u{a0}ພ\u{eb1}ນ\u{1f}065¤0\u{a0}ລ\u{ec9}ານ\u{1f}075¤00\u{a0}ລ\u{ec9}ານ\u{1f}085¤000\u{a0}ລ\u{ec9}ານ\u{1f}095¤0\u{a0}ຕ\u{eb7}\u{ec9}\u{1f}105¤00\u{a0}ຕ\u{eb7}\u{ec9}\u{1f}115¤000\u{a0}ຕ\u{eb7}\u{ec9}\u{1f}125¤0\u{a0}ລ\u{ec9}ານລ\u{ec9}ານ\u{1f}135¤00ລລ\u{1f}145¤000ລລ") };
+
+#[cfg(all(feature = "compact", all(feature = "numbering-systems", feature = "lo")))]
+pub(crate) static COMPACT_LO_LAOO: Compact = Compact { decimal_short: Table("0350ພ\u{eb1}ນ\u{1f}04500ພ\u{eb1}ນ\u{1f}055000ພ\u{eb1}ນ\u{1f}0650ລ\u{ec9}ານ\u{1f}07500ລ\u{ec9}ານ\u{1f}085000ລ\u{ec9}ານ\u{1f}0950ຕ\u{eb7}\u{ec9}\u{1f}10500ຕ\u{eb7}\u{ec9}\u{1f}115000ຕ\u{eb7}\u{ec9}\u{1f}1250000ຕ\u{eb7}\u{ec9}\u{1f}13500ພ\u{eb1}ນຕ\u{eb7}\u{ec9}\u{1f}145000ພ\u{eb1}ນຕ\u{eb7}\u{ec9}"), decimal_long: Table("0350ພ\u{eb1}ນ\u{1f}04500ພ\u{eb1}ນ\u{1f}055000ພ\u{eb1}ນ\u{1f}0650ລ\u{ec9}ານ\u{1f}07500ລ\u{ec9}ານ\u{1f}085000ລ\u{ec9}ານ\u{1f}0950ພ\u{eb1}ນລ\u{ec9}ານ\u{1f}10500ພ\u{eb1}ນລ\u{ec9}ານ\u{1f}115000ພ\u{eb1}ນລ\u{ec9}ານ\u{1f}1250000ພ\u{eb1}ນລ\u{ec9}ານ\u{1f}13500ລ\u{ec9}ານລ\u{ec9}ານ\u{1f}145000ລ\u{ec9}ານລ\u{ec9}ານ"), currency_short: Table("035¤0ພ\u{eb1}ນ\u{1f}045¤00ພ\u{eb1}ນ\u{1f}055¤000ພ\u{eb1}ນ\u{1f}065¤0ລ\u{ec9}ານ\u{1f}075¤00ລ\u{ec9}ານ\u{1f}085¤000ລ\u{ec9}ານ\u{1f}095¤0ຕ\u{eb7}\u{ec9}\u{1f}105¤00ຕ\u{eb7}\u{ec9}\u{1f}115¤000ຕ\u{eb7}\u{ec9}\u{1f}125¤0000ຕ\u{eb7}\u{ec9}\u{1f}135¤00ພ\u{eb1}ນຕ\u{eb7}\u{ec9}\u{1f}145¤000ພ\u{eb1}ນຕ\u{eb7}\u{ec9}") };
+
+#[cfg(all(feature = "compact", feature = "lt"))]
+pub(crate) static COMPACT_LT: Compact = Compact { decimal_short: Table("0350\u{a0}tūkst'.'\u{1f}04500\u{a0}tūkst'.'\u{1f}055000\u{a0}tūkst'.'\u{1f}0650\u{a0}mln'.'\u{1f}07500\u{a0}mln'.'\u{1f}085000\u{a0}mln'.'\u{1f}0950\u{a0}mlrd'.'\u{1f}10500\u{a0}mlrd'.'\u{1f}115000\u{a0}mlrd'.'\u{1f}1250\u{a0}trln'.'\u{1f}13500\u{a0}trln'.'\u{1f}145000\u{a0}trln'.'"), decimal_long: Table("0310 tūkstantis\u{1f}0330 tūkstančiai\u{1f}0340 tūkstančio\u{1f}0350 tūkstančių\u{1f}04100 tūkstantis\u{1f}04300 tūkstančiai\u{1f}04400 tūkstančio\u{1f}04500 tūkstančių\u{1f}051000 tūkstantis\u{1f}053000 tūkstančiai\u{1f}054000 tūkstančio\u{1f}055000 tūkstančių\u{1f}0610 milijonas\u{1f}0630 milijonai\u{1f}0640 milijono\u{1f}0650 milijonų\u{1f}07100 milijonas\u{1f}07300 milijonai\u{1f}07400 milijono\u{1f}07500 milijonų\u{1f}081000 milijonas\u{1f}083000 milijonai\u{1f}084000 milijono\u{1f}085000 milijonų\u{1f}0910 milijardas\u{1f}0930 milijardai\u{1f}0940 milijardo\u{1f}0950 milijardų\u{1f}10100 milijardas\u{1f}10300 milijardai\u{1f}10400 milijardo\u{1f}10500 milijardų\u{1f}111000 milijardas\u{1f}113000 milijardai\u{1f}114000 milijardo\u{1f}115000 milijardų\u{1f}1210 trilijonas\u{1f}1230 trilijonai\u{1f}1240 trilijono\u{1f}1250 trilijonų\u{1f}13100 trilijonas\u{1f}13300 trilijonai\u{1f}13400 trilijono\u{1f}13500 trilijonų\u{1f}141000 trilijonas\u{1f}143000 trilijonai\u{1f}144000 trilijono\u{1f}145000 trilijonų"), currency_short: Table("0350\u{a0}tūkst'.'\u{a0}¤\u{1f}04500\u{a0}tūkst'.'\u{a0}¤\u{1f}055000\u{a0}tūkst'.'\u{a0}¤\u{1f}0650\u{a0}mln'.'\u{a0}¤\u{1f}07500\u{a0}mln'.'\u{a0}¤\u{1f}085000\u{a0}mln'.'\u{a0}¤\u{1f}0950\u{a0}mlrd'.'\u{a0}¤\u{1f}10500\u{a0}mlrd'.'\u{a0}¤\u{1f}115000\u{a0}mlrd'.'\u{a0}¤\u{1f}1250\u{a0}trln'.'\u{a0}¤\u{1f}13500\u{a0}trln'.'\u{a0}¤\u{1f}145000\u{a0}trln'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "lv"))]
+pub(crate) static COMPACT_LV: Compact = Compact { decimal_short: Table("0350\u{a0}tūkst'.'\u{1f}04500\u{a0}tūkst'.'\u{1f}055000\u{a0}tūkst'.'\u{1f}0650\u{a0}milj'.'\u{1f}07500\u{a0}milj'.'\u{1f}085000\u{a0}milj'.'\u{1f}0950\u{a0}mljrd'.'\u{1f}10500\u{a0}mljrd'.'\u{1f}115000\u{a0}mljrd'.'\u{1f}1250\u{a0}trilj'.'\u{1f}13500\u{a0}trilj'.'\u{1f}145000\u{a0}trilj'.'"), decimal_long: Table("0300 tūkstošu\u{1f}0310 tūkstotis\u{1f}0350 tūkstoši\u{1f}04100 tūkstotis\u{1f}04500 tūkstoši\u{1f}051000 tūkstotis\u{1f}055000 tūkstoši\u{1f}0600 miljonu\u{1f}0610 miljons\u{1f}0650 miljoni\u{1f}07100 miljons\u{1f}07500 miljoni\u{1f}081000 miljons\u{1f}085000 miljoni\u{1f}0900 miljardu\u{1f}0910 miljards\u{1f}0950 miljardi\u{1f}10100 miljards\u{1f}10500 miljardi\u{1f}111000 miljards\u{1f}115000 miljardi\u{1f}1200 triljonu\u{1f}1210 triljons\u{1f}1250 triljoni\u{1f}13100 triljons\u{1f}13500 triljoni\u{1f}141000 triljons\u{1f}145000 triljoni"), currency_short: Table("0350\u{a0}tūkst'.'\u{a0}¤\u{1f}04500\u{a0}tūkst'.'\u{a0}¤\u{1f}055000\u{a0}tūkst'.'\u{a0}¤\u{1f}0650\u{a0}milj'.'\u{a0}¤\u{1f}07500\u{a0}milj'.'\u{a0}¤\u{1f}085000\u{a0}milj'.'\u{a0}¤\u{1f}0950\u{a0}mljrd'.'\u{a0}¤\u{1f}10500\u{a0}mljrd'.'\u{a0}¤\u{1f}115000\u{a0}mljrd'.'\u{a0}¤\u{1f}1250\u{a0}trilj'.'\u{a0}¤\u{1f}13500\u{a0}trilj'.'\u{a0}¤\u{1f}145000\u{a0}trilj'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "mk"))]
+pub(crate) static COMPACT_MK: Compact = Compact { decimal_short: Table("0350\u{a0}илј'.'\u{1f}04500\u{a0}илј'.'\u{1f}055000\u{a0}илј'.'\u{1f}0650\u{a0}мил'.'\u{1f}07500\u{a0}мил'.'\u{1f}085000\u{a0}М\u{1f}0950\u{a0}милј'.'\u{1f}10500\u{a0}милј'.'\u{1f}111000\u{a0}мј'.'\u{1f}115000\u{a0}ми'.'\u{1f}1250\u{a0}бил'.'\u{1f}13500\u{a0}бил'.'\u{1f}145000\u{a0}бил'.'"), decimal_long: Table("0310 илјада\u{1f}0350 илјади\u{1f}04100 илјада\u{1f}04500 илјади\u{1f}051000 илјада\u{1f}055000 илјади\u{1f}0610 милион\u{1f}0650 милиони\u{1f}07100 милион\u{1f}07500 милиони\u{1f}081000 милион\u{1f}085000 милиони\u{1f}0910 милијарда\u{1f}0950 милијарди\u{1f}10100 милијарда\u{1f}10500 милијарди\u{1f}111000 милијарда\u{1f}115000 милијарди\u{1f}1210 билион\u{1f}1250 билиони\u{1f}13100 билион\u{1f}13500 билиони\u{1f}141000 билион\u{1f}145000 билиони"), currency_short: Table("0350\u{a0}илј'.'\u{a0}¤\u{1f}04500\u{a0}илј'.'\u{a0}¤\u{1f}055000\u{a0}илј'.'\u{a0}¤\u{1f}0650\u{a0}мил'.'\u{a0}¤\u{1f}07500\u{a0}мил'.'\u{a0}¤\u{1f}085000\u{a0}М\u{a0}¤\u{1f}0950\u{a0}милј'.'\u{a0}¤\u{1f}10500\u{a0}милј'.'\u{a0}¤\u{1f}111000\u{a0}мј'.'\u{a0}¤\u{1f}115000\u{a0}ми'.'\u{a0}¤\u{1f}1250\u{a0}бил'.'\u{a0}¤\u{1f}13500\u{a0}бил'.'\u{a0}¤\u{1f}145000\u{a0}бил'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ml"))]
+pub(crate) static COMPACT_ML: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 ആയിരം\u{1f}04500 ആയിരം\u{1f}055000 ആയിരം\u{1f}0650 ദശലക\u{d4d}ഷം\u{1f}07500 ദശലക\u{d4d}ഷം\u{1f}085000 ദശലക\u{d4d}ഷം\u{1f}0950 ബില\u{d4d}യൺ\u{1f}10500 ബില\u{d4d}യൺ\u{1f}115000 ബില\u{d4d}യൺ\u{1f}1250 ട\u{d4d}രില\u{d4d}യൺ\u{1f}13500 ട\u{d4d}രില\u{d4d}യൺ\u{1f}145000 ട\u{d4d}രില\u{d4d}യൺ"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "mn"))]
+pub(crate) static COMPACT_MN: Compact = Compact { decimal_short: Table("0310\u{a0}мян'.'\u{1f}0350\u{a0}мян\u{1f}04100\u{a0}мян'.'\u{1f}04500\u{a0}мян\u{1f}051000\u{a0}мян'.'\u{1f}055000\u{a0}мян\u{1f}0650\u{a0}сая\u{1f}07500\u{a0}сая\u{1f}085000\u{a0}сая\u{1f}0950\u{a0}тэрбум\u{1f}10500\u{a0}тэрбум\u{1f}115000Т\u{1f}1250ИН\u{1f}13500ИН\u{1f}145000ИН"), decimal_long: Table("0350 мянга\u{1f}04500 мянга\u{1f}055000 мянга\u{1f}0650 сая\u{1f}07500 сая\u{1f}085000 сая\u{1f}0950 тэрбум\u{1f}10500 тэрбум\u{1f}115000 тэрбум\u{1f}1250 их наяд\u{1f}13500 их наяд\u{1f}145000 их наяд"), currency_short: Table("031¤\u{a0}0\u{a0}мян'.'\u{1f}035¤\u{a0}0\u{a0}мян\u{1f}041¤\u{a0}00\u{a0}мян'.'\u{1f}045¤\u{a0}00\u{a0}мян\u{1f}051¤\u{a0}000\u{a0}мян'.'\u{1f}055¤\u{a0}000\u{a0}мян\u{1f}065¤\u{a0}0\u{a0}сая\u{1f}075¤\u{a0}00\u{a0}сая\u{1f}085¤\u{a0}000\u{a0}сая\u{1f}095¤\u{a0}0\u{a0}тэрбум\u{1f}105¤\u{a0}00\u{a0}тэрбум\u{1f}115¤\u{a0}000Т\u{1f}125¤\u{a0}0ИН\u{1f}135¤\u{a0}00ИН\u{1f}145¤\u{a0}000ИН") };
+
+#[cfg(all(feature = "compact", feature = "mr"))]
+pub(crate) static COMPACT_MR: Compact = Compact { decimal_short: Table("0350\u{a0}ह\u{1f}04500\u{a0}ह\u{1f}0550\u{a0}लाख\u{1f}06500\u{a0}लाख\u{1f}0750\u{a0}कोटी\u{1f}08500\u{a0}कोटी\u{1f}0950\u{a0}अब\u{94d}ज\u{1f}10500\u{a0}अब\u{94d}ज\u{1f}1150\u{a0}खर\u{94d}व\u{1f}12500\u{a0}खर\u{94d}व\u{1f}1350\u{a0}पद\u{94d}म\u{1f}14500\u{a0}पद\u{94d}म"), decimal_long: Table("0350 हजार\u{1f}04500 हजार\u{1f}0550 लाख\u{1f}06500 लाख\u{1f}0750 कोटी\u{1f}08500 कोटी\u{1f}0950 अब\u{94d}ज\u{1f}10500 अब\u{94d}ज\u{1f}1150 खर\u{94d}व\u{1f}12500 खर\u{94d}व\u{1f}1350 पद\u{94d}म\u{1f}14500 पद\u{94d}म"), currency_short: Table("035¤0\u{a0}ह\u{1f}045¤00\u{a0}ह\u{1f}055¤0\u{a0}लाख\u{1f}065¤00\u{a0}लाख\u{1f}075¤0\u{a0}कोटी\u{1f}085¤00\u{a0}कोटी\u{1f}095¤0\u{a0}अब\u{94d}ज\u{1f}105¤00\u{a0}अब\u{94d}ज\u{1f}115¤0\u{a0}खर\u{94d}व\u{1f}125¤00\u{a0}खर\u{94d}व\u{1f}135¤0\u{a0}पद\u{94d}म\u{1f}145¤00\u{a0}पद\u{94d}म") };
+
+#[cfg(all(feature = "compact", feature = "ms"))]
+pub(crate) static COMPACT_MS: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650J\u{1f}07500J\u{1f}085000J\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 ribu\u{1f}04500 ribu\u{1f}055000 ribu\u{1f}0650 juta\u{1f}07500 juta\u{1f}085000 juta\u{1f}0950 bilion\u{1f}10500 bilion\u{1f}115000 bilion\u{1f}1250 trilion\u{1f}13500 trilion\u{1f}145000 trilion"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0J\u{1f}075¤00J\u{1f}085¤000J\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "my"))]
+pub(crate) static COMPACT_MY: Compact = Compact { decimal_short: Table("0350\u{a0}ထောင\u{103a}\u{1f}0450\u{a0}သောင\u{103a}း\u{1f}0550\u{a0}သ\u{102d}န\u{103a}း\u{1f}0650\u{a0}သန\u{103a}း\u{1f}0750\u{a0}က\u{102f}ဋေ\u{1f}08500\u{a0}က\u{102f}ဋေ\u{1f}095000\u{a0}ဋေ\u{1f}105ဋေ\u{a0}0\u{a0}ထ\u{1f}115ဋေ\u{a0}0\u{a0}သ\u{1f}125ဋေ\u{a0}0\u{a0}သ\u{102d}န\u{103a}း\u{1f}135ဋေ\u{a0}0\u{a0}သန\u{103a}း\u{1f}1450\u{a0}ကောဋ\u{102d}"), decimal_long: Table("0350 ထောင\u{103a}\u{1f}0450 သောင\u{103a}း\u{1f}0550 သ\u{102d}န\u{103a}း\u{1f}0650 သန\u{103a}း\u{1f}0750 က\u{102f}ဋေ\u{1f}08500 က\u{102f}ဋေ\u{1f}095000 က\u{102f}ဋေ\u{1f}1050000 က\u{102f}ဋေ\u{1f}115က\u{102f}ဋေ 0 သောင\u{103a}း\u{1f}125က\u{102f}ဋေ 0 သ\u{102d}န\u{103a}း\u{1f}135က\u{102f}ဋေ 0 သန\u{103a}း\u{1f}1450 ကောဋ\u{102d}"), currency_short: Table("0350\u{a0}ထောင\u{103a}\u{a0}¤\u{1f}0450\u{a0}သောင\u{103a}း\u{a0}¤\u{1f}0550\u{a0}သ\u{102d}န\u{103a}း\u{a0}¤\u{1f}0650\u{a0}သန\u{103a}း\u{a0}¤\u{1f}0750\u{a0}က\u{102f}ဋေ\u{a0}¤\u{1f}08500\u{a0}က\u{102f}ဋေ\u{a0}¤\u{1f}095000\u{a0}ဋေ\u{a0}¤\u{1f}105ဋေ\u{a0}0\u{a0}ထ\u{a0}¤\u{1f}115ဋေ\u{a0}0\u{a0}သ\u{a0}¤\u{1f}125ဋေ\u{a0}0\u{a0}သ\u{102d}န\u{103a}း\u{a0}¤\u{1f}135ဋေ\u{a0}0\u{a0}သန\u{103a}း\u{a0}¤\u{1f}1450\u{a0}ကောဋ\u{102d}\u{a0}¤") };
+
+#[cfg(all(feature = "compact", any(feature = "nb", feature = "no")))]
+pub(crate) static COMPACT_NB: Compact = Compact { decimal_short: Table("0350k\u{1f}04500k\u{1f}055000k\u{1f}0650\u{a0}mill'.'\u{1f}07500\u{a0}mill'.'\u{1f}085000\u{a0}mill'.'\u{1f}0950\u{a0}mrd'.'\u{1f}10500\u{a0}mrd'.'\u{1f}115000\u{a0}mrd'.'\u{1f}1250\u{a0}bill'.'\u{1f}13500\u{a0}bill'.'\u{1f}145000\u{a0}bill'.'"), decimal_long: Table("0350 tusen\u{1f}04500 tusen\u{1f}055000 tusen\u{1f}0610 million\u{1f}0650 millioner\u{1f}07500 millioner\u{1f}085000 millioner\u{1f}0910 milliard\u{1f}0950 milliarder\u{1f}10500 milliarder\u{1f}115000 milliarder\u{1f}1210 billion\u{1f}1250 billioner\u{1f}13500 billioner\u{1f}145000 billioner"), currency_short: Table("0350k\u{a0}¤\u{1f}04500k\u{a0}¤\u{1f}055000k\u{a0}¤\u{1f}0650\u{a0}mill'.'\u{a0}¤\u{1f}07500\u{a0}mill'.'\u{a0}¤\u{1f}085000\u{a0}mill'.'\u{a0}¤\u{1f}0950\u{a0}mrd'.'\u{a0}¤\u{1f}10500\u{a0}mrd'.'\u{a0}¤\u{1f}115000\u{a0}mrd'.'\u{a0}¤\u{1f}1250\u{a0}bill'.'\u{a0}¤\u{1f}13500\u{a0}bill'.'\u{a0}¤\u{1f}145000\u{a0}bill'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ne"))]
+pub(crate) static COMPACT_NE: Compact = Compact { decimal_short: Table("0350\u{a0}हजार\u{1f}04500\u{a0}हजार\u{1f}0550\u{a0}लाख\u{1f}06500\u{a0}लाख\u{1f}0750\u{a0}करोड\u{1f}08500\u{a0}करोड\u{1f}0950\u{a0}अरब\u{1f}10500\u{a0}अरब\u{1f}1150\u{a0}खरब\u{1f}12500\u{a0}खरब\u{1f}1350\u{a0}श\u{902}ख\u{1f}14500\u{a0}श\u{902}ख"), decimal_long: Table("0350 हजार\u{1f}04500 हजार\u{1f}0550 लाख\u{1f}0650 करोड\u{1f}07500 करोड\u{1f}085000 करोड\u{1f}0950 अरब\u{1f}10500 अरब\u{1f}115000 अरब\u{1f}12500 खरब\u{1f}1350 श\u{902}ख\u{1f}14500 श\u{902}ख"), currency_short: Table("035¤\u{a0}0\u{a0}हजार\u{1f}045¤\u{a0}00\u{a0}हजार\u{1f}055¤\u{a0}0\u{a0}लाख\u{1f}065¤\u{a0}00\u{a0}लाख\u{1f}075¤\u{a0}0\u{a0}करोड\u{1f}085¤\u{a0}00\u{a0}करोड\u{1f}095¤\u{a0}0\u{a0}अरब\u{1f}105¤\u{a0}00\u{a0}अरब\u{1f}115¤\u{a0}0\u{a0}खरब\u{1f}125¤\u{a0}00\u{a0}खरब\u{1f}135¤\u{a0}0\u{a0}श\u{902}ख\u{1f}145¤\u{a0}00\u{a0}श\u{902}ख") };
+
+#[cfg(all(feature = "compact", feature = "nl"))]
+pub(crate) static COMPACT_NL: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650\u{a0}mln'.'\u{1f}07500\u{a0}mln'.'\u{1f}085000\u{a0}mln'.'\u{1f}0950\u{a0}mld'.'\u{1f}10500\u{a0}mld'.'\u{1f}115000\u{a0}mld'.'\u{1f}1250\u{a0}bln'.'\u{1f}13500\u{a0}bln'.'\u{1f}145000\u{a0}bln'.'"), decimal_long: Table("0350 duizend\u{1f}04500 duizend\u{1f}055000 duizend\u{1f}0650 miljoen\u{1f}07500 miljoen\u{1f}085000 miljoen\u{1f}0950 miljard\u{1f}10500 miljard\u{1f}115000 miljard\u{1f}1250 biljoen\u{1f}13500 biljoen\u{1f}145000 biljoen"), currency_short: Table("035¤\u{a0}0K\u{1f}045¤\u{a0}00K\u{1f}055¤\u{a0}000K\u{1f}065¤\u{a0}0\u{a0}mln'.'\u{1f}075¤\u{a0}00\u{a0}mln'.'\u{1f}085¤\u{a0}000\u{a0}mln'.'\u{1f}095¤\u{a0}0\u{a0}mld'.'\u{1f}105¤\u{a0}00\u{a0}mld'.'\u{1f}115¤\u{a0}000\u{a0}mld'.'\u{1f}125¤\u{a0}0\u{a0}bln'.'\u{1f}135¤\u{a0}00\u{a0}bln'.'\u{1f}145¤\u{a0}000\u{a0}bln'.'") };
+
+#[cfg(all(feature = "compact", feature = "nn"))]
+pub(crate) static COMPACT_NN: Compact = Compact { decimal_short: Table("0350k\u{1f}04500k\u{1f}055000k\u{1f}0650\u{a0}mill'.'\u{1f}07500\u{a0}mill'.'\u{1f}085000\u{a0}mill'.'\u{1f}0950\u{a0}mrd'.'\u{1f}10500\u{a0}mrd'.'\u{1f}115000\u{a0}mrd'.'\u{1f}1250\u{a0}bill'.'\u{1f}13500\u{a0}bill'.'\u{1f}145000\u{a0}bill'.'"), decimal_long: Table("0350 tusen\u{1f}04500 tusen\u{1f}055000 tusen\u{1f}0610 million\u{1f}0650 millionar\u{1f}07500 millionar\u{1f}085000 millionar\u{1f}0910 milliard\u{1f}0950 milliardar\u{1f}10500 milliardar\u{1f}115000 milliardar\u{1f}1210 billion\u{1f}1250 billionar\u{1f}13500 billionar\u{1f}145000 billionar"), currency_short: Table("0350k\u{a0}¤\u{1f}04500k\u{a0}¤\u{1f}055000k\u{a0}¤\u{1f}0650\u{a0}mill'.'\u{a0}¤\u{1f}07500\u{a0}mill'.'\u{a0}¤\u{1f}085000\u{a0}mill'.'\u{a0}¤\u{1f}0950\u{a0}mrd'.'\u{a0}¤\u{1f}10500\u{a0}mrd'.'\u{a0}¤\u{1f}115000\u{a0}mrd'.'\u{a0}¤\u{1f}1250\u{a0}bill'.'\u{a0}¤\u{1f}13500\u{a0}bill'.'\u{a0}¤\u{1f}145000\u{a0}bill'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "or"))]
+pub(crate) static COMPACT_OR: Compact = Compact { decimal_short: Table("0350ହ\u{1f}04500ହ\u{1f}055000ହ\u{1f}0650ନ\u{b3f}\u{1f}07500ନ\u{b3f}\u{1f}085000ନ\u{b3f}\u{1f}0950ବ\u{b3f}\u{1f}10500ବ\u{b3f}\u{1f}115000ବ\u{b3f}\u{1f}1250ଟ\u{b4d}ର\u{b3f}\u{1f}13500ଟ\u{b4d}ର\u{b3f}\u{1f}145000ଟ\u{b4d}ର\u{b3f}"), decimal_long: Table("0350 ହଜ\u{b3e}ର\u{1f}04500 ହଜ\u{b3e}ର\u{1f}055000 ହଜ\u{b3e}ର\u{1f}0650 ନ\u{b3f}ୟ\u{b41}ତ\u{1f}07500 ନ\u{b3f}ୟ\u{b41}ତ\u{1f}085000 ନ\u{b3f}ୟ\u{b41}ତ\u{1f}0950 ଶହକୋଟ\u{b3f}\u{1f}10500 ଶହକୋଟ\u{b3f}\u{1f}115000 ଶହକୋଟ\u{b3f}\u{1f}1250 ଲକ\u{b4d}ଷକୋଟ\u{b3f}\u{1f}13500 ଲକ\u{b4d}ଷକୋଟ\u{b3f}\u{1f}145000 ଲକ\u{b4d}ଷକୋଟ\u{b3f}"), currency_short: Table("035¤0ହ\u{1f}045¤00ହ\u{1f}055¤000ହ\u{1f}065¤0ନ\u{b3f}\u{1f}075¤00ନ\u{b3f}\u{1f}085¤000ନ\u{b3f}\u{1f}095¤0ବ\u{b3f}\u{1f}105¤00ବ\u{b3f}\u{1f}115¤000ବ\u{b3f}\u{1f}125¤0ଟ\u{b4d}ର\u{b3f}\u{1f}135¤00ଟ\u{b4d}ର\u{b3f}\u{1f}145¤000ଟ\u{b4d}ର\u{b3f}") };
+
+#[cfg(all(feature = "compact", feature = "pa"))]
+pub(crate) static COMPACT_PA: Compact = Compact { decimal_short: Table("0350\u{a0}ਹਜ\u{a3c}ਾਰ\u{1f}04500\u{a0}ਹਜ\u{a3c}ਾਰ\u{1f}0550\u{a0}ਲ\u{a71}ਖ\u{1f}06500\u{a0}ਲ\u{a71}ਖ\u{1f}0750\u{a0}ਕਰ\u{a4b}ੜ\u{1f}08500\u{a0}ਕਰ\u{a4b}ੜ\u{1f}0950\u{a0}ਅਰਬ\u{1f}10500\u{a0}ਅਰਬ\u{1f}1150\u{a0}ਖਰਬ\u{1f}12500\u{a0}ਖਰਬ\u{1f}1350\u{a0}ਨੀਲ\u{1f}14500\u{a0}ਨੀਲ"), decimal_long: Table("0350 ਹਜ\u{a3c}ਾਰ\u{1f}04500 ਹਜ\u{a3c}ਾਰ\u{1f}0550 ਲ\u{a71}ਖ\u{1f}06500 ਲ\u{a71}ਖ\u{1f}0750 ਕਰ\u{a4b}ੜ\u{1f}08500 ਕਰ\u{a4b}ੜ\u{1f}0950 ਅਰਬ\u{1f}10500 ਅਰਬ\u{1f}1150 ਖਰਬ\u{1f}12500 ਖਰਬ\u{1f}1350 ਨੀਲ\u{1f}14500 ਨੀਲ"), currency_short: Table("035¤0\u{a0}ਹਜ\u{a3c}ਾਰ\u{1f}045¤00\u{a0}ਹਜ\u{a3c}ਾਰ\u{1f}055¤0\u{a0}ਲ\u{a71}ਖ\u{1f}065¤00\u{a0}ਲ\u{a71}ਖ\u{1f}075¤0\u{a0}ਕਰ\u{a4b}ੜ\u{1f}085¤00\u{a0}ਕਰ\u{a4b}ੜ\u{1f}095¤0\u{a0}ਅਰਬ\u{1f}105¤00\u{a0}ਅਰਬ\u{1f}115¤0\u{a0}ਖਰਬ\u{1f}125¤00\u{a0}ਖਰਬ\u{1f}135¤0\u{a0}ਨੀਲ\u{1f}145¤00\u{a0}ਨੀਲ") };
+
+#[cfg(all(feature = "compact", feature = "pcm"))]
+pub(crate) static COMPACT_PCM: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 Taúzan\u{1f}04500 Taúzan\u{1f}055000 Taúzan\u{1f}0650 Míliọn\u{1f}07500 Míliọn\u{1f}085000 Míliọn\u{1f}0950 Bíliọn\u{1f}10500 Bíliọn\u{1f}115000 Bíliọn\u{1f}1250 Tríliọn\u{1f}13500 Tríliọn\u{1f}145000 Tríliọn"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "pl"))]
+pub(crate) static COMPACT_PL: Compact = Compact { decimal_short: Table("0350\u{a0}tys'.'\u{1f}04500\u{a0}tys'.'\u{1f}055000\u{a0}tys'.'\u{1f}0650\u{a0}mln\u{1f}07500\u{a0}mln\u{1f}085000\u{a0}mln\u{1f}0950\u{a0}mld\u{1f}10500\u{a0}mld\u{1f}115000\u{a0}mld\u{1f}1250\u{a0}bln\u{1f}13500\u{a0}bln\u{1f}145000\u{a0}bln"), decimal_long: Table("0310 tysiąc\u{1f}0330 tysiące\u{1f}0340 tysięcy\u{1f}0350 tysiąca\u{1f}04100 tysiąc\u{1f}04300 tysiące\u{1f}04400 tysięcy\u{1f}04500 tysiąca\u{1f}051000 tysiąc\u{1f}053000 tysiące\u{1f}054000 tysięcy\u{1f}055000 tysiąca\u{1f}0610 milion\u{1f}0630 miliony\u{1f}0640 milionów\u{1f}0650 miliona\u{1f}07100 milion\u{1f}07300 miliony\u{1f}07400 milionów\u{1f}07500 miliona\u{1f}081000 milion\u{1f}083000 miliony\u{1f}084000 milionów\u{1f}085000 miliona\u{1f}0910 miliard\u{1f}0930 miliardy\u{1f}0940 miliardów\u{1f}0950 miliarda\u{1f}10100 miliard\u{1f}10300 miliardy\u{1f}10400 miliardów\u{1f}10500 miliarda\u{1f}111000 miliard\u{1f}113000 miliardy\u{1f}114000 miliardów\u{1f}115000 miliarda\u{1f}1210 bilion\u{1f}1230 biliony\u{1f}1240 bilionów\u{1f}1250 biliona\u{1f}13100 bilion\u{1f}13300 biliony\u{1f}13400 bilionów\u{1f}13500 biliona\u{1f}141000 bilion\u{1f}143000 biliony\u{1f}144000 bilionów\u{1f}145000 biliona"), currency_short: Table("0350\u{a0}tys'.'\u{a0}¤\u{1f}04500\u{a0}tys'.'\u{a0}¤\u{1f}055000\u{a0}tys'.'\u{a0}¤\u{1f}0650\u{a0}mln\u{a0}¤\u{1f}07500\u{a0}mln\u{a0}¤\u{1f}085000\u{a0}mln\u{a0}¤\u{1f}0950\u{a0}mld\u{a0}¤\u{1f}10500\u{a0}mld\u{a0}¤\u{1f}115000\u{a0}mld\u{a0}¤\u{1f}1250\u{a0}bln\u{a0}¤\u{1f}13500\u{a0}bln\u{a0}¤\u{1f}145000\u{a0}bln\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ps"))]
+pub(crate) static COMPACT_PS: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}111000G\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), currency_short: Table("035¤\u{a0}0K\u{1f}045¤\u{a0}00K\u{1f}055¤\u{a0}000K\u{1f}065¤\u{a0}0M\u{1f}075¤\u{a0}00M\u{1f}085¤\u{a0}000M\u{1f}095¤\u{a0}0B\u{1f}105¤\u{a0}00B\u{1f}111¤\u{a0}000G\u{1f}115¤\u{a0}000B\u{1f}125¤\u{a0}0T\u{1f}135¤\u{a0}00T\u{1f}145¤\u{a0}000T") };
+
+#[cfg(all(feature = "compact", feature = "pt"))]
+pub(crate) static COMPACT_PT: Compact = Compact { decimal_short: Table("0350\u{a0}mil\u{1f}04500\u{a0}mil\u{1f}055000\u{a0}mil\u{1f}0650\u{a0}mi\u{1f}07500\u{a0}mi\u{1f}085000\u{a0}mi\u{1f}0950\u{a0}bi\u{1f}10500\u{a0}bi\u{1f}115000\u{a0}bi\u{1f}1250\u{a0}tri\u{1f}13500\u{a0}tri\u{1f}145000\u{a0}tri"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 milhão\u{1f}0650 milhões\u{1f}07100 milhão\u{1f}07500 milhões\u{1f}081000 milhão\u{1f}085000 milhões\u{1f}0910 bilhão\u{1f}0950 bilhões\u{1f}10100 bilhão\u{1f}10500 bilhões\u{1f}111000 bilhão\u{1f}115000 bilhões\u{1f}1210 trilhão\u{1f}1250 trilhões\u{1f}13100 trilhão\u{1f}13500 trilhões\u{1f}141000 trilhão\u{1f}145000 trilhões"), currency_short: Table("035¤\u{a0}0\u{a0}mil\u{1f}045¤\u{a0}00\u{a0}mil\u{1f}055¤\u{a0}000\u{a0}mil\u{1f}065¤\u{a0}0\u{a0}mi\u{1f}075¤\u{a0}00\u{a0}mi\u{1f}085¤\u{a0}000\u{a0}mi\u{1f}095¤\u{a0}0\u{a0}bi\u{1f}105¤\u{a0}00\u{a0}bi\u{1f}115¤\u{a0}000\u{a0}bi\u{1f}125¤\u{a0}0\u{a0}tri\u{1f}135¤\u{a0}00\u{a0}tri\u{1f}145¤\u{a0}000\u{a0}tri") };
+
+#[cfg(all(feature = "compact", feature = "pt"))]
+pub(crate) static COMPACT_PT_AO: Compact = Compact { decimal_short: Table("0350\u{a0}mil\u{1f}04500\u{a0}mil\u{1f}055000\u{a0}mil\u{1f}0650\u{a0}M\u{1f}07500\u{a0}M\u{1f}085000\u{a0}M\u{1f}0950\u{a0}mM\u{1f}10500\u{a0}mM\u{1f}115000\u{a0}mM\u{1f}1250\u{a0}Bi\u{1f}13500\u{a0}Bi\u{1f}145000\u{a0}Bi"), decimal_long: Table("0350 mil\u{1f}04500 mil\u{1f}055000 mil\u{1f}0610 milhão\u{1f}0650 milhões\u{1f}07500 milhões\u{1f}085000 milhões\u{1f}0950 mil milhões\u{1f}10500 mil milhões\u{1f}115000 mil milhões\u{1f}1210 bilião\u{1f}1250 biliões\u{1f}13500 biliões\u{1f}145000 biliões"), currency_short: Table("0350\u{a0}mil\u{a0}¤\u{1f}04500\u{a0}mil\u{a0}¤\u{1f}055000\u{a0}mil\u{a0}¤\u{1f}0650\u{a0}M\u{a0}¤\u{1f}07500\u{a0}M\u{a0}¤\u{1f}085000\u{a0}M\u{a0}¤\u{1f}0950\u{a0}mM\u{a0}¤\u{1f}10500\u{a0}mM\u{a0}¤\u{1f}115000\u{a0}mM\u{a0}¤\u{1f}1250\u{a0}Bi\u{a0}¤\u{1f}13500\u{a0}Bi\u{a0}¤\u{1f}145000\u{a0}Bi\u{a0}¤") };
+
+#[cfg(feature = "compact")]
+pub(crate) static COMPACT_QU: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), currency_short: Table("035¤\u{a0}0K\u{1f}045¤\u{a0}00K\u{1f}055¤\u{a0}000K\u{1f}065¤\u{a0}0M\u{1f}075¤\u{a0}00M\u{1f}085¤\u{a0}000M\u{1f}095¤\u{a0}0G\u{1f}105¤\u{a0}00G\u{1f}115¤\u{a0}000G\u{1f}125¤\u{a0}0T\u{1f}135¤\u{a0}00T\u{1f}145¤\u{a0}000T") };
+
+#[cfg(all(feature = "compact", feature = "rm"))]
+pub(crate) static COMPACT_RM: Compact = Compact { decimal_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}0650\u{a0}miu'.'\u{1f}07500\u{a0}miu'.'\u{1f}085000\u{a0}miu'.'\u{1f}0950\u{a0}mia'.'\u{1f}10500\u{a0}mia'.'\u{1f}115000\u{a0}mia'.'\u{1f}1250\u{a0}biu'.'\u{1f}13500\u{a0}biu'.'\u{1f}141000T\u{a0}biu'.'\u{1f}145000\u{a0}biu'.'"), decimal_long: Table("0350\u{1f}0450\u{1f}0550\u{1f}0610 milliun\u{1f}0650 milliuns\u{1f}07500 milliuns\u{1f}085000 milliuns\u{1f}0910 milliarda\u{1f}0950 milliardas\u{1f}10500 milliardas\u{1f}115000 milliardas\u{1f}1210 billiun\u{1f}1250 billiuns\u{1f}13500 billiuns\u{1f}145000 billiuns"), currency_short: Table("0350\u{1f}0450\u{1f}0550\u{1f}065¤0\u{a0}miu'.'\u{1f}075¤00\u{a0}miu'.'\u{1f}085¤000\u{a0}miu'.'\u{1f}095¤0\u{a0}mia'.'\u{1f}105¤00\u{a0}mia'.'\u{1f}115¤000\u{a0}mia'.'\u{1f}125¤0\u{a0}biu'.'\u{1f}135¤00\u{a0}biu'.'\u{1f}141¤000T\u{a0}biu'.'\u{1f}145¤000\u{a0}biu'.'") };
+
+#[cfg(all(feature = "compact", feature = "ro"))]
+pub(crate) static COMPACT_RO: Compact = Compact { decimal_short: Table("0350\u{a0}K\u{1f}04500\u{a0}K\u{1f}055000\u{a0}K\u{1f}0650\u{a0}mil'.'\u{1f}07500\u{a0}mil'.'\u{1f}085000\u{a0}mil'.'\u{1f}0950\u{a0}mld'.'\u{1f}10500\u{a0}mld'.'\u{1f}115000\u{a0}mld'.'\u{1f}1250\u{a0}tril'.'\u{1f}13500\u{a0}tril'.'\u{1f}145000\u{a0}tril'.'"), decimal_long: Table("0310 mie\u{1f}0330 mii\u{1f}0350 de mii\u{1f}04100 mie\u{1f}04300 mii\u{1f}04500 de mii\u{1f}051000 mie\u{1f}053000 mii\u{1f}055000 de mii\u{1f}0610 milion\u{1f}0630 milioane\u{1f}0650 de milioane\u{1f}07100 milion\u{1f}07300 milioane\u{1f}07500 de milioane\u{1f}081000 milion\u{1f}083000 milioane\u{1f}085000 de milioane\u{1f}0910 miliard\u{1f}0930 miliarde\u{1f}0950 de miliarde\u{1f}10100 miliard\u{1f}10300 miliarde\u{1f}10500 de miliarde\u{1f}111000 miliard\u{1f}113000 miliarde\u{1f}115000 de miliarde\u{1f}1210 trilion\u{1f}1230 trilioane\u{1f}1250 de trilioane\u{1f}13100 trilion\u{1f}13300 trilioane\u{1f}13500 de trilioane\u{1f}141000 trilion\u{1f}143000 trilioane\u{1f}145000 de trilioane"), currency_short: Table("0350\u{a0}K\u{a0}¤\u{1f}04500\u{a0}K\u{a0}¤\u{1f}055000\u{a0}K\u{a0}¤\u{1f}0650\u{a0}mil'.'\u{a0}¤\u{1f}07500\u{a0}mil'.'\u{a0}¤\u{1f}085000\u{a0}mil'.'\u{a0}¤\u{1f}0950\u{a0}mld'.'\u{a0}¤\u{1f}10500\u{a0}mld'.'\u{a0}¤\u{1f}115000\u{a0}mld'.'\u{a0}¤\u{1f}1250\u{a0}tril'.'\u{a0}¤\u{1f}13500\u{a0}tril'.'\u{a0}¤\u{1f}145000\u{a0}tril'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ru"))]
+pub(crate) static COMPACT_RU: Compact = Compact { decimal_short: Table("0350\u{a0}тыс'.'\u{1f}04500\u{a0}тыс'.'\u{1f}055000\u{a0}тыс'.'\u{1f}0650\u{a0}млн\u{1f}07500\u{a0}млн\u{1f}085000\u{a0}млн\u{1f}0950\u{a0}млрд\u{1f}10500\u{a0}млрд\u{1f}115000\u{a0}млрд\u{1f}1250\u{a0}трлн\u{1f}13500\u{a0}трлн\u{1f}145000\u{a0}трлн"), decimal_long: Table("0310 тысяча\u{1f}0340 тысяч\u{1f}0350 тысячи\u{1f}04100 тысяча\u{1f}04400 тысяч\u{1f}04500 тысячи\u{1f}051000 тысяча\u{1f}054000 тысяч\u{1f}055000 тысячи\u{1f}0610 миллион\u{1f}0640 миллионов\u{1f}0650 миллиона\u{1f}07100 миллион\u{1f}07400 миллионов\u{1f}07500 миллиона\u{1f}081000 миллион\u{1f}084000 миллионов\u{1f}085000 миллиона\u{1f}0910 миллиард\u{1f}0940 миллиардов\u{1f}0950 миллиарда\u{1f}10100 миллиард\u{1f}10400 миллиардов\u{1f}10500 миллиарда\u{1f}111000 миллиард\u{1f}114000 миллиардов\u{1f}115000 миллиарда\u{1f}1210 триллион\u{1f}1240 триллионов\u{1f}1250 триллиона\u{1f}13100 триллион\u{1f}13400 триллионов\u{1f}13500 триллиона\u{1f}141000 триллион\u{1f}144000 триллионов\u{1f}145000 триллиона"), currency_short: Table("0350\u{a0}тыс'.'\u{a0}¤\u{1f}04500\u{a0}тыс'.'\u{a0}¤\u{1f}055000\u{a0}тыс'.'\u{a0}¤\u{1f}0650\u{a0}млн\u{a0}¤\u{1f}07500\u{a0}млн\u{a0}¤\u{1f}085000\u{a0}млн\u{a0}¤\u{1f}0950\u{a0}млрд\u{a0}¤\u{1f}10500\u{a0}млрд\u{a0}¤\u{1f}115000\u{a0}млрд\u{a0}¤\u{1f}1250\u{a0}трлн\u{a0}¤\u{1f}13500\u{a0}трлн\u{a0}¤\u{1f}145000\u{a0}трлн\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "sd"))]
+pub(crate) static COMPACT_SD: Compact = Compact { decimal_short: Table("0350\u{a0}هزار\u{1f}04500\u{a0}هزار\u{1f}055000\u{a0}هزار\u{1f}0650\u{a0}ملين\u{1f}07500\u{a0}ملين\u{1f}085000\u{a0}ملين\u{1f}0950\u{a0}بلين\u{1f}10500\u{a0}بلين\u{1f}115000\u{a0}بلين\u{1f}1250\u{a0}ٽرلين\u{1f}13500\u{a0}ٽرلين\u{1f}145000\u{a0}ٽرلين"), decimal_long: Table("0350 ھزار\u{1f}04100 ھزار\u{1f}04500 هزار\u{1f}055000 هزار\u{1f}0650 ملين\u{1f}07500 ملين\u{1f}085000 ملين\u{1f}0950 بلين\u{1f}10500 بلين\u{1f}115000 بلين\u{1f}1250 ٽرلين\u{1f}13500 ٽرلين\u{1f}145000 ٽرلين"), currency_short: Table("035¤\u{a0}0\u{a0}هزار\u{1f}045¤\u{a0}00\u{a0}هزار\u{1f}055¤\u{a0}000\u{a0}هزار\u{1f}065¤\u{a0}0\u{a0}ملين\u{1f}075¤\u{a0}00\u{a0}ملين\u{1f}085¤\u{a0}000\u{a0}ملين\u{1f}095¤\u{a0}0\u{a0}بلين\u{1f}105¤\u{a0}00\u{a0}بلين\u{1f}115¤\u{a0}000\u{a0}بلين\u{1f}125¤\u{a0}0\u{a0}ٽرلين\u{1f}135¤\u{a0}00\u{a0}ٽرلين\u{1f}145¤\u{a0}000\u{a0}ٽرلين") };
+
+#[cfg(all(feature = "compact", feature = "shn"))]
+pub(crate) static COMPACT_SHN: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 ႁ\u{1035}င\u{103a}\u{1f}0450 မ\u{102d}\u{102f}ၼ\u{103a}ႇ\u{1f}0550 သ\u{1085}ၼ\u{103a}\u{1f}0650 လၢၼ\u{103a}ႉ\u{1f}07500 လၢၼ\u{103a}ႉ\u{1f}085000 လၢၼ\u{103a}ႉ\u{1f}0950 ႁ\u{1035}င\u{103a}လၢၼ\u{103a}ႉ\u{1f}1050 မ\u{102d}\u{102f}ၼ\u{103a}ႇလၢၼ\u{103a}ႉ\u{1f}1150 သ\u{1085}ၼ\u{103a}လၢၼ\u{103a}ႉ\u{1f}1250 လၢၼ\u{103a}ႉလၢၼ\u{103a}ႉ\u{1f}13500 လၢၼ\u{103a}ႉလၢၼ\u{103a}ႉ\u{1f}145000 လၢၼ\u{103a}ႉလၢၼ\u{103a}ႉ"), currency_short: Table("035¤\u{a0}0K\u{1f}045¤\u{a0}00K\u{1f}055¤\u{a0}000K\u{1f}065¤\u{a0}0M\u{1f}075¤\u{a0}00M\u{1f}085¤\u{a0}000M\u{1f}095¤\u{a0}0G\u{1f}105¤\u{a0}00G\u{1f}115¤\u{a0}000G\u{1f}125¤\u{a0}0T\u{1f}135¤\u{a0}00T\u{1f}145¤\u{a0}000T") };
+
+#[cfg(all(feature = "compact", feature = "si"))]
+pub(crate) static COMPACT_SI: Compact = Compact { decimal_short: Table("035ද0\u{1f}045ද00\u{1f}055ද000\u{1f}065ම\u{dd2}0\u{1f}075ම\u{dd2}00\u{1f}085ම\u{dd2}000\u{1f}095බ\u{dd2}0\u{1f}105බ\u{dd2}00\u{1f}115බ\u{dd2}000\u{1f}125ට\u{dca}\u{200d}ර\u{dd2}0\u{1f}135ට\u{dca}\u{200d}ර\u{dd2}00\u{1f}145ට\u{dca}\u{200d}ර\u{dd2}000"), decimal_long: Table("035දහස 0\u{1f}045දහස 00\u{1f}055දහස 000\u{1f}065ම\u{dd2}ල\u{dd2}යන 0\u{1f}075ම\u{dd2}ල\u{dd2}යන 00\u{1f}085ම\u{dd2}ල\u{dd2}යන 000\u{1f}095බ\u{dd2}ල\u{dd2}යන 0\u{1f}105බ\u{dd2}ල\u{dd2}යන 00\u{1f}115බ\u{dd2}ල\u{dd2}යන 000\u{1f}125ට\u{dca}\u{200d}ර\u{dd2}ල\u{dd2}යන 0\u{1f}135ට\u{dca}\u{200d}ර\u{dd2}ල\u{dd2}යන 00\u{1f}145ට\u{dca}\u{200d}ර\u{dd2}ල\u{dd2}යන 000"), currency_short: Table("035¤ද0\u{1f}045¤ද00\u{1f}055¤ද000\u{1f}065¤ම\u{dd2}0\u{1f}075¤ම\u{dd2}00\u{1f}085¤ම\u{dd2}000\u{1f}095¤බ\u{dd2}0\u{1f}105¤බ\u{dd2}00\u{1f}115¤බ\u{dd2}000\u{1f}125¤ට\u{dca}\u{200d}ර\u{dd2}0\u{1f}135¤ට\u{dca}\u{200d}ර\u{dd2}00\u{1f}145¤ට\u{dca}\u{200d}ර\u{dd2}000") };
+
+#[cfg(all(feature = "compact", feature = "sk"))]
+pub(crate) static COMPACT_SK: Compact = Compact { decimal_short: Table("0350\u{a0}tis'.'\u{1f}04500\u{a0}tis'.'\u{1f}055000\u{a0}tis'.'\u{1f}0650\u{a0}mil'.'\u{1f}07500\u{a0}mil'.'\u{1f}085000\u{a0}mil'.'\u{1f}0950\u{a0}mld'.'\u{1f}10500\u{a0}mld'.'\u{1f}115000\u{a0}mld'.'\u{1f}1250\u{a0}bil'.'\u{1f}13500\u{a0}bil'.'\u{1f}145000\u{a0}bil'.'"), decimal_long: Table("0330 tisíce\u{1f}0340 tisíca\u{1f}0350 tisíc\u{1f}04400 tisíca\u{1f}04500 tisíc\u{1f}054000 tisíca\u{1f}055000 tisíc\u{1f}0610 milión\u{1f}0630 milióny\u{1f}0640 milióna\u{1f}0650 miliónov\u{1f}07400 milióna\u{1f}07500 miliónov\u{1f}084000 milióna\u{1f}085000 miliónov\u{1f}0910 miliarda\u{1f}0930 miliardy\u{1f}0940 miliardy\u{1f}0950 miliárd\u{1f}10400 miliardy\u{1f}10500 miliárd\u{1f}114000 miliardy\u{1f}115000 miliárd\u{1f}1210 bilión\u{1f}1230 bilióny\u{1f}1240 bilióna\u{1f}1250 biliónov\u{1f}13400 bilióna\u{1f}13500 biliónov\u{1f}144000 bilióna\u{1f}145000 biliónov"), currency_short: Table("0350\u{a0}tis'.'\u{a0}¤\u{1f}04500\u{a0}tis'.'\u{a0}¤\u{1f}055000\u{a0}tis'.'\u{a0}¤\u{1f}0650\u{a0}mil'.'\u{a0}¤\u{1f}07500\u{a0}mil'.'\u{a0}¤\u{1f}085000\u{a0}mil'.'\u{a0}¤\u{1f}0950\u{a0}mld'.'\u{a0}¤\u{1f}10500\u{a0}mld'.'\u{a0}¤\u{1f}115000\u{a0}mld'.'\u{a0}¤\u{1f}1250\u{a0}bil'.'\u{a0}¤\u{1f}13500\u{a0}bil'.'\u{a0}¤\u{1f}145000\u{a0}bil'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "sl"))]
+pub(crate) static COMPACT_SL: Compact = Compact { decimal_short: Table("0350\u{a0}tis'.'\u{1f}04500\u{a0}tis'.'\u{1f}055000\u{a0}tis'.'\u{1f}0650\u{a0}mio'.'\u{1f}07500\u{a0}mio'.'\u{1f}085000\u{a0}mio'.'\u{1f}0950\u{a0}mrd'.'\u{1f}10500\u{a0}mrd'.'\u{1f}115000\u{a0}mrd'.'\u{1f}1250\u{a0}bil'.'\u{1f}13500\u{a0}bil'.'\u{1f}145000\u{a0}bil'.'"), decimal_long: Table("0350 tisoč\u{1f}04500 tisoč\u{1f}055000 tisoč\u{1f}0610 milijon\u{1f}0620 milijona\u{1f}0630 milijoni\u{1f}0650 milijonov\u{1f}07100 milijon\u{1f}07200 milijona\u{1f}07300 milijona\u{1f}07500 milijonov\u{1f}081000 milijon\u{1f}082000 milijona\u{1f}083000 milijoni\u{1f}085000 milijonov\u{1f}0910 milijarda\u{1f}0920 milijardi\u{1f}0930 milijarde\u{1f}0950 milijard\u{1f}10100 milijarda\u{1f}10200 milijardi\u{1f}10300 milijarde\u{1f}10500 milijard\u{1f}111000 milijarda\u{1f}112000 milijardi\u{1f}113000 milijarde\u{1f}115000 milijard\u{1f}1210 bilijon\u{1f}1220 bilijona\u{1f}1230 bilijoni\u{1f}1250 bilijonov\u{1f}13100 bilijon\u{1f}13200 bilijona\u{1f}13300 bilijoni\u{1f}13500 bilijonov\u{1f}141000 bilijon\u{1f}142000 bilijona\u{1f}143000 bilijoni\u{1f}145000 bilijonov"), currency_short: Table("0350\u{a0}tis'.'\u{a0}¤\u{1f}04500\u{a0}tis'.'\u{a0}¤\u{1f}055000\u{a0}tis'.'\u{a0}¤\u{1f}0650\u{a0}mio'.'\u{a0}¤\u{1f}07500\u{a0}mio'.'\u{a0}¤\u{1f}085000\u{a0}mio'.'\u{a0}¤\u{1f}0950\u{a0}mrd'.'\u{a0}¤\u{1f}10500\u{a0}mrd'.'\u{a0}¤\u{1f}115000\u{a0}mrd'.'\u{a0}¤\u{1f}1250\u{a0}bil'.'\u{a0}¤\u{1f}13500\u{a0}bil'.'\u{a0}¤\u{1f}145000\u{a0}bil'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "so"))]
+pub(crate) static COMPACT_SO: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0310 kun\u{1f}0350 Kun\u{1f}04500 Kun\u{1f}055000 Kun\u{1f}0650 Milyan\u{1f}07500 Milyan\u{1f}085000 Milyan\u{1f}0950 Bilyan\u{1f}10500 Bilyan\u{1f}115000 Bilyan\u{1f}1250 Tirilyan\u{1f}13500 Tirilyan\u{1f}145000 Tirilyan"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "sq"))]
+pub(crate) static COMPACT_SQ: Compact = Compact { decimal_short: Table("0350\u{a0}mijë\u{1f}04500\u{a0}mijë\u{1f}055000\u{a0}mijë\u{1f}0650\u{a0}mln\u{1f}07500\u{a0}mln\u{1f}085000\u{a0}mln\u{1f}0950\u{a0}mld\u{1f}10500\u{a0}mld\u{1f}115000\u{a0}mld\u{1f}1250\u{a0}bln\u{1f}13500\u{a0}bln\u{1f}145000\u{a0}bln"), decimal_long: Table("0350 mijë\u{1f}04500 mijë\u{1f}055000 mijë\u{1f}0650 milion\u{1f}07500 milion\u{1f}085000 milion\u{1f}0950 miliard\u{1f}10500 miliard\u{1f}115000 miliard\u{1f}1250 bilion\u{1f}13500 bilion\u{1f}145000 bilion"), currency_short: Table("0350\u{a0}mijë\u{a0}¤\u{1f}04500\u{a0}mijë\u{a0}¤\u{1f}055000\u{a0}mijë\u{a0}¤\u{1f}0650\u{a0}mln\u{a0}¤\u{1f}07500\u{a0}mln\u{a0}¤\u{1f}085000\u{a0}mln\u{a0}¤\u{1f}0950\u{a0}mld\u{a0}¤\u{1f}10500\u{a0}mld\u{a0}¤\u{1f}115000\u{a0}mld\u{a0}¤\u{1f}1250\u{a0}bln\u{a0}¤\u{1f}13500\u{a0}bln\u{a0}¤\u{1f}145000\u{a0}bln\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "sr"))]
+pub(crate) static COMPACT_SR: Compact = Compact { decimal_short: Table("0350\u{a0}хиљ'.'\u{1f}04500\u{a0}хиљ'.'\u{1f}055000\u{a0}хиљ'.'\u{1f}0650\u{a0}мил'.'\u{1f}07500\u{a0}мил'.'\u{1f}085000\u{a0}мил'.'\u{1f}0950\u{a0}млрд'.'\u{1f}10500\u{a0}млрд'.'\u{1f}115000\u{a0}млрд'.'\u{1f}1250\u{a0}бил'.'\u{1f}13500\u{a0}бил'.'\u{1f}145000\u{a0}бил'.'"), decimal_long: Table("0330 хиљаде\u{1f}0350 хиљада\u{1f}04300 хиљаде\u{1f}04500 хиљада\u{1f}053000 хиљаде\u{1f}055000 хиљада\u{1f}0610 милион\u{1f}0650 милиона\u{1f}07100 милион\u{1f}07500 милиона\u{1f}081000 милион\u{1f}085000 милиона\u{1f}0910 милијарда\u{1f}0930 милијарде\u{1f}0950 милијарди\u{1f}10100 милијарда\u{1f}10300 милијарде\u{1f}10500 милијарди\u{1f}111000 милијарда\u{1f}113000 милијарде\u{1f}115000 милијарди\u{1f}1210 билион\u{1f}1250 билиона\u{1f}13100 билион\u{1f}13500 билиона\u{1f}141000 билион\u{1f}145000 билиона"), currency_short: Table("0350\u{a0}хиљ'.'\u{a0}¤\u{1f}04500\u{a0}хиљ'.'\u{a0}¤\u{1f}055000\u{a0}хиљ'.'\u{a0}¤\u{1f}0650\u{a0}мил'.'\u{a0}¤\u{1f}07500\u{a0}мил'.'\u{a0}¤\u{1f}085000\u{a0}мил'.'\u{a0}¤\u{1f}0950\u{a0}млрд'.'\u{a0}¤\u{1f}10500\u{a0}млрд'.'\u{a0}¤\u{1f}115000\u{a0}млрд'.'\u{a0}¤\u{1f}1250\u{a0}бил'.'\u{a0}¤\u{1f}13500\u{a0}бил'.'\u{a0}¤\u{1f}145000\u{a0}бил'.'\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "sv"))]
+pub(crate) static COMPACT_SV: Compact = Compact { decimal_short: Table("0350\u{a0}tn\u{1f}04500\u{a0}tn\u{1f}055000\u{a0}tn\u{1f}0650\u{a0}mn\u{1f}07500\u{a0}mn\u{1f}085000\u{a0}mn\u{1f}0950\u{a0}md\u{1f}10500\u{a0}md\u{1f}115000\u{a0}md\u{1f}1250\u{a0}bn\u{1f}13500\u{a0}bn\u{1f}145000\u{a0}bn"), decimal_long: Table("0350 tusen\u{1f}04500 tusen\u{1f}055000 tusen\u{1f}0610 miljon\u{1f}0650 miljoner\u{1f}07100 miljon\u{1f}07500 miljoner\u{1f}085000 miljoner\u{1f}0910 miljard\u{1f}0950 miljarder\u{1f}10500 miljarder\u{1f}115000 miljarder\u{1f}1210 biljon\u{1f}1250 biljoner\u{1f}13500 biljoner\u{1f}145000 biljoner"), currency_short: Table("0350\u{a0}tn\u{a0}¤\u{1f}04500\u{a0}tn\u{a0}¤\u{1f}055000\u{a0}tn\u{a0}¤\u{1f}0650\u{a0}mn\u{a0}¤\u{1f}07500\u{a0}mn\u{a0}¤\u{1f}085000\u{a0}mn\u{a0}¤\u{1f}0950\u{a0}md\u{a0}¤\u{1f}10500\u{a0}md\u{a0}¤\u{1f}115000\u{a0}md\u{a0}¤\u{1f}1250\u{a0}bn\u{a0}¤\u{1f}13500\u{a0}bn\u{a0}¤\u{1f}145000\u{a0}bn\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "sw"))]
+pub(crate) static COMPACT_SW: Compact = Compact { decimal_short: Table("035elfu\u{a0}0;elfu\u{a0}-0\u{1f}045elfu\u{a0}00;elfu\u{a0}-00\u{1f}055elfu\u{a0}000;elfu\u{a0}-000\u{1f}0610M;-0M\u{1f}0650M\u{1f}07100M;-00M\u{1f}07500M\u{1f}081000M;-000M\u{1f}085000M\u{1f}0950B;-0B\u{1f}10500B;-00B\u{1f}115000B;-000B\u{1f}1210T;-0T\u{1f}1250T\u{1f}13100T;-00T\u{1f}13500T\u{1f}141000T;-000T\u{1f}145000T"), decimal_long: Table("035elfu 0;elfu -0\u{1f}045elfu 00;elfu -00\u{1f}055elfu 000;elfu -000\u{1f}065milioni 0;milioni -0\u{1f}075milioni 00;milioni -00\u{1f}085milioni 000;milioni -000\u{1f}095bilioni 0;bilioni -0\u{1f}105bilioni 00;bilioni -00\u{1f}115bilioni 000;bilioni -000\u{1f}125trilioni 0;trilioni -0\u{1f}135trilioni 00;trilioni -00\u{1f}145trilioni 000;trilioni -000"), currency_short: Table("035¤\u{a0}elfu\u{a0}0;¤\u{a0}elfu\u{a0}-0\u{1f}045¤\u{a0}elfu\u{a0}00;¤\u{a0}elfu\u{a0}-00\u{1f}055¤\u{a0}elfu\u{a0}000;¤\u{a0}elfu\u{a0}-000\u{1f}061¤\u{a0}0M;¤\u{a0}-0M\u{1f}065¤\u{a0}0M\u{1f}071¤\u{a0}00M;¤\u{a0}-00M\u{1f}075¤\u{a0}00M\u{1f}081¤\u{a0}000M;¤\u{a0}-000M\u{1f}085¤\u{a0}000M\u{1f}095¤\u{a0}0B;¤\u{a0}-0B\u{1f}105¤\u{a0}00B;¤\u{a0}-00B\u{1f}115¤\u{a0}000B;¤\u{a0}-000B\u{1f}121¤\u{a0}0T;¤\u{a0}-0T\u{1f}125¤\u{a0}0T\u{1f}131¤\u{a0}00T;¤\u{a0}-00T\u{1f}135¤\u{a0}00T\u{1f}141¤\u{a0}000T;¤\u{a0}-000T\u{1f}145¤\u{a0}000T") };
+
+#[cfg(all(feature = "compact", feature = "sw"))]
+pub(crate) static COMPACT_SW_KE: Compact = Compact { decimal_short: Table("035elfu\u{a0}0\u{1f}045elfu\u{a0}00\u{1f}055elfu\u{a0}000\u{1f}065M0\u{1f}075M00\u{1f}085M000\u{1f}095B0\u{1f}105B00\u{1f}115B000\u{1f}125T0\u{1f}135T00\u{1f}145T000"), decimal_long: Table("035elfu 0;elfu -0\u{1f}041elfu 00;elfu -00\u{1f}045elfu 00\u{1f}055elfu 000\u{1f}065milioni 0\u{1f}075milioni 00\u{1f}085milioni 000\u{1f}095bilioni 0\u{1f}105bilioni 00\u{1f}115bilioni 000\u{1f}125trilioni 0\u{1f}135trilioni 00\u{1f}145trilioni 000"), currency_short: Table("035¤\u{a0}elfu\u{a0}0\u{1f}045¤\u{a0}elfu\u{a0}00\u{1f}055¤\u{a0}elfu\u{a0}000\u{1f}065¤\u{a0}M0\u{1f}075¤\u{a0}M00\u{1f}085¤\u{a0}M000\u{1f}095¤\u{a0}B0\u{1f}105¤\u{a0}B00\u{1f}115¤\u{a0}B000\u{1f}125¤\u{a0}T0\u{1f}135¤\u{a0}T00\u{1f}145¤\u{a0}T000") };
+
+#[cfg(all(feature = "compact", feature = "ta"))]
+pub(crate) static COMPACT_TA: Compact = Compact { decimal_short: Table("0350ஆ\u{1f}04500ஆ\u{1f}055000ஆ\u{1f}0650மி\u{1f}07500மி\u{1f}085000மி\u{1f}0950பி\u{1f}10500பி\u{1f}115000பி\u{1f}1250டி\u{1f}13500டி\u{1f}145000டி"), decimal_long: Table("0350 ஆயிரம\u{bcd}\u{1f}04500 ஆயிரம\u{bcd}\u{1f}055000 ஆயிரம\u{bcd}\u{1f}0650 மில\u{bcd}லியன\u{bcd}\u{1f}07500 மில\u{bcd}லியன\u{bcd}\u{1f}085000 மில\u{bcd}லியன\u{bcd}\u{1f}0950 பில\u{bcd}லியன\u{bcd}\u{1f}10500 பில\u{bcd}லியன\u{bcd}\u{1f}115000 பில\u{bcd}லியன\u{bcd}\u{1f}1250 டிரில\u{bcd}லியன\u{bcd}\u{1f}13500 டிரில\u{bcd}லியன\u{bcd}\u{1f}145000 டிரில\u{bcd}லியன\u{bcd}"), currency_short: Table("035¤0ஆ\u{1f}045¤00ஆ\u{1f}055¤000ஆ\u{1f}065¤0மி\u{1f}075¤00மி\u{1f}085¤000மி\u{1f}095¤0பி\u{1f}105¤00பி\u{1f}115¤000பி\u{1f}125¤0டி\u{1f}135¤00டி\u{1f}145¤000டி") };
+
+#[cfg(all(feature = "compact", feature = "te"))]
+pub(crate) static COMPACT_TE: Compact = Compact { decimal_short: Table("0350వ\u{c47}\u{1f}04500వ\u{c47}\u{1f}055000వ\u{c47}\u{1f}0650మ\u{c3f}\u{1f}07500మ\u{c3f}\u{1f}085000మ\u{c3f}\u{1f}0950బ\u{c3f}\u{1f}10500బ\u{c3f}\u{1f}115000బ\u{c3f}\u{1f}1250ట\u{c4d}ర\u{c3f}\u{1f}13500ట\u{c4d}ర\u{c3f}\u{1f}145000ట\u{c4d}ర\u{c3f}"), decimal_long: Table("0310 వ\u{c47}య\u{c3f}\u{1f}0350 వ\u{c47}లు\u{1f}04500 వ\u{c47}లు\u{1f}055000 వ\u{c47}లు\u{1f}0610 మ\u{c3f}ల\u{c3f}యన\u{c4d}\u{1f}0650 మ\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}07500 మ\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}085000 మ\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}0910 బ\u{c3f}ల\u{c3f}యన\u{c4d}\u{1f}0950 బ\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}10500 బ\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}115000 బ\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}1210 ట\u{c4d}ర\u{c3f}ల\u{c3f}యన\u{c4d}\u{1f}1250 ట\u{c4d}ర\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}13500 ట\u{c4d}ర\u{c3f}ల\u{c3f}యన\u{c4d}లు\u{1f}145000 ట\u{c4d}ర\u{c3f}ల\u{c3f}యన\u{c4d}లు"), currency_short: Table("035¤0వ\u{c47}\u{1f}045¤00వ\u{c47}\u{1f}055¤000వ\u{c47}\u{1f}065¤0మ\u{c3f}\u{1f}075¤00మ\u{c3f}\u{1f}085¤000మ\u{c3f}\u{1f}095¤0బ\u{c3f}\u{1f}105¤00బ\u{c3f}\u{1f}115¤000బ\u{c3f}\u{1f}125¤0ట\u{c4d}ర\u{c3f}\u{1f}135¤00ట\u{c4d}ర\u{c3f}\u{1f}145¤000ట\u{c4d}ర\u{c3f}") };
+
+#[cfg(all(feature = "compact", feature = "th"))]
+pub(crate) static COMPACT_TH: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 พ\u{e31}น\u{1f}0450 หม\u{e37}\u{e48}น\u{1f}0550 แสน\u{1f}0650 ล\u{e49}าน\u{1f}07500 ล\u{e49}าน\u{1f}085000 ล\u{e49}าน\u{1f}0950 พ\u{e31}นล\u{e49}าน\u{1f}1050 หม\u{e37}\u{e48}นล\u{e49}าน\u{1f}1150 แสนล\u{e49}าน\u{1f}1250 ล\u{e49}านล\u{e49}าน\u{1f}13500 ล\u{e49}านล\u{e49}าน\u{1f}145000 ล\u{e49}านล\u{e49}าน"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "ti"))]
+pub(crate) static COMPACT_TI: Compact = Compact { decimal_short: Table("0350\u{a0}ሽ\u{1f}04500\u{a0}ሽ\u{1f}055000\u{a0}ሽ\u{1f}0650\u{a0}ሚ\u{1f}07500\u{a0}ሚ\u{1f}085000\u{a0}ሚ\u{1f}0950\u{a0}ቢ\u{1f}10500\u{a0}ቢ\u{1f}115000\u{a0}ቢ\u{1f}1250\u{a0}ት\u{1f}13500\u{a0}ት\u{1f}145000\u{a0}ት"), decimal_long: Table("0350 ሽሕ\u{1f}04500 ሽሕ\u{1f}055000 ሽሕ\u{1f}0650 ሚልዮን\u{1f}07500 ሚልዮን\u{1f}085000 ሚልዮን\u{1f}0950 ቢልዮን\u{1f}10500 ቢልዮን\u{1f}115000 ቢልዮን\u{1f}1250 ትሪልዮን\u{1f}13500 ትሪልዮን\u{1f}145000 ትሪልዮን"), currency_short: Table("035¤0\u{a0}ሽ\u{1f}045¤00\u{a0}ሽ\u{1f}055¤000\u{a0}ሽ\u{1f}065¤0\u{a0}ሚ\u{1f}075¤00\u{a0}ሚ\u{1f}085¤000\u{a0}ሚ\u{1f}095¤0\u{a0}ቢ\u{1f}105¤00\u{a0}ቢ\u{1f}115¤000\u{a0}ቢ\u{1f}125¤0\u{a0}ት\u{1f}135¤00\u{a0}ት\u{1f}145¤000\u{a0}ት") };
+
+#[cfg(all(feature = "compact", feature = "tk"))]
+pub(crate) static COMPACT_TK: Compact = Compact { decimal_short: Table("0350\u{a0}müň\u{1f}04500\u{a0}müň\u{1f}055000\u{a0}müň\u{1f}0650\u{a0}mln\u{1f}07500\u{a0}mln\u{1f}085000\u{a0}mln\u{1f}0950\u{a0}mlrd\u{1f}10500\u{a0}mlrd\u{1f}115000\u{a0}mlrd\u{1f}1250\u{a0}trln\u{1f}13500\u{a0}trln\u{1f}145000\u{a0}trln"), decimal_long: Table("0350 müň\u{1f}04500 müň\u{1f}055000 müň\u{1f}0650 million\u{1f}07500 million\u{1f}085000 million\u{1f}0950 milliard\u{1f}10500 milliard\u{1f}115000 milliard\u{1f}1250 trillion\u{1f}13500 trillion\u{1f}145000 trillion"), currency_short: Table("0350\u{a0}müň\u{a0}¤\u{1f}04500\u{a0}müň\u{a0}¤\u{1f}055000\u{a0}müň\u{a0}¤\u{1f}0650\u{a0}mln\u{a0}¤\u{1f}07500\u{a0}mln\u{a0}¤\u{1f}085000\u{a0}mln\u{a0}¤\u{1f}0950\u{a0}mlrd\u{a0}¤\u{1f}10500\u{a0}mlrd\u{a0}¤\u{1f}115000\u{a0}mlrd\u{a0}¤\u{1f}1250\u{a0}trln\u{a0}¤\u{1f}13500\u{a0}trln\u{a0}¤\u{1f}145000\u{a0}trln\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "tr"))]
+pub(crate) static COMPACT_TR: Compact = Compact { decimal_short: Table("0350\u{a0}B\u{1f}04500\u{a0}B\u{1f}055000\u{a0}B\u{1f}0650\u{a0}Mn\u{1f}07500\u{a0}Mn\u{1f}085000\u{a0}Mn\u{1f}0950\u{a0}Mr\u{1f}10500\u{a0}Mr\u{1f}115000\u{a0}Mr\u{1f}1250\u{a0}Tn\u{1f}13500\u{a0}Tn\u{1f}145000\u{a0}Tn"), decimal_long: Table("0350 bin\u{1f}04500 bin\u{1f}055000 bin\u{1f}0650 milyon\u{1f}07500 milyon\u{1f}085000 milyon\u{1f}0950 milyar\u{1f}10500 milyar\u{1f}115000 milyar\u{1f}1250 trilyon\u{1f}13500 trilyon\u{1f}145000 trilyon"), currency_short: Table("035¤0\u{a0}B\u{1f}045¤00\u{a0}B\u{1f}055¤000\u{a0}B\u{1f}065¤0\u{a0}Mn\u{1f}075¤00\u{a0}Mn\u{1f}085¤000\u{a0}Mn\u{1f}095¤0\u{a0}Mr\u{1f}105¤00\u{a0}Mr\u{1f}115¤000\u{a0}Mr\u{1f}125¤0\u{a0}Tn\u{1f}135¤00\u{a0}Tn\u{1f}145¤000\u{a0}Tn") };
+
+#[cfg(all(feature = "compact", feature = "uk"))]
+pub(crate) static COMPACT_UK: Compact = Compact { decimal_short: Table("0350\u{a0}тис'.'\u{1f}04500\u{a0}тис'.'\u{1f}055000\u{a0}тис'.'\u{1f}0650\u{a0}млн\u{1f}07500\u{a0}млн\u{1f}085000\u{a0}млн\u{1f}0950\u{a0}млрд\u{1f}10500\u{a0}млрд\u{1f}115000\u{a0}млрд\u{1f}1250\u{a0}трлн\u{1f}13500\u{a0}трлн\u{1f}145000\u{a0}трлн"), decimal_long: Table("0310 тисяча\u{1f}0340 тисяч\u{1f}0350 тисячі\u{1f}04100 тисяча\u{1f}04400 тисяч\u{1f}04500 тисячі\u{1f}051000 тисяча\u{1f}054000 тисяч\u{1f}055000 тисячі\u{1f}0610 мільйон\u{1f}0630 мільйони\u{1f}0640 мільйонів\u{1f}0650 мільйона\u{1f}07100 мільйон\u{1f}07300 мільйони\u{1f}07400 мільйонів\u{1f}07500 мільйона\u{1f}081000 мільйон\u{1f}083000 мільйони\u{1f}084000 мільйонів\u{1f}085000 мільйона\u{1f}0910 мільярд\u{1f}0930 мільярди\u{1f}0940 мільярдів\u{1f}0950 мільярда\u{1f}10100 мільярд\u{1f}10300 мільярди\u{1f}10400 мільярдів\u{1f}10500 мільярда\u{1f}111000 мільярд\u{1f}113000 мільярди\u{1f}114000 мільярдів\u{1f}115000 мільярда\u{1f}1210 трильйон\u{1f}1230 трильйони\u{1f}1240 трильйонів\u{1f}1250 трильйона\u{1f}13100 трильйон\u{1f}13300 трильйони\u{1f}13400 трильйонів\u{1f}13500 трильйона\u{1f}141000 трильйон\u{1f}143000 трильйони\u{1f}144000 трильйонів\u{1f}145000 трильйона"), currency_short: Table("0350\u{a0}тис'.'\u{a0}¤\u{1f}04500\u{a0}тис'.'\u{a0}¤\u{1f}055000\u{a0}тис'.'\u{a0}¤\u{1f}0650\u{a0}млн\u{a0}¤\u{1f}07500\u{a0}млн\u{a0}¤\u{1f}085000\u{a0}млн\u{a0}¤\u{1f}0950\u{a0}млрд\u{a0}¤\u{1f}10500\u{a0}млрд\u{a0}¤\u{1f}115000\u{a0}млрд\u{a0}¤\u{1f}1250\u{a0}трлн\u{a0}¤\u{1f}13500\u{a0}трлн\u{a0}¤\u{1f}145000\u{a0}трлн\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "ur"))]
+pub(crate) static COMPACT_UR: Compact = Compact { decimal_short: Table("0350\u{a0}ہزار\u{1f}04500\u{a0}ہزار\u{1f}0550\u{a0}لاکھ\u{1f}06500\u{a0}لاکھ\u{1f}0750\u{a0}کروڑ\u{1f}08500\u{a0}کروڑ\u{1f}0950\u{a0}ارب\u{1f}10500\u{a0}ارب\u{1f}1150\u{a0}کھرب\u{1f}12500\u{a0}کھرب\u{1f}13500\u{a0}ٹریلین\u{1f}145000\u{a0}ٹریلین"), decimal_long: Table("0350 ہزار\u{1f}04500 ہزار\u{1f}0550 لاکھ\u{1f}06500 لاکھ\u{1f}0750 کروڑ\u{1f}08500 کروڑ\u{1f}0950 ارب\u{1f}10500 ارب\u{1f}1150 کھرب\u{1f}12500 کھرب\u{1f}13500 ٹریلین\u{1f}145000 ٹریلین"), currency_short: Table("035¤0\u{a0}ہزار\u{1f}045¤00\u{a0}ہزار\u{1f}055¤0\u{a0}لاکھ\u{1f}065¤00\u{a0}لاکھ\u{1f}075¤0\u{a0}کروڑ\u{1f}085¤00\u{a0}کروڑ\u{1f}095¤0\u{a0}ارب\u{1f}105¤00\u{a0}ارب\u{1f}115¤0\u{a0}کھرب\u{1f}125¤00\u{a0}کھرب\u{1f}135¤00\u{a0}ٹریلین\u{1f}145¤000\u{a0}ٹریلین") };
+
+#[cfg(all(feature = "compact", feature = "uz"))]
+pub(crate) static COMPACT_UZ: Compact = Compact { decimal_short: Table("0350\u{a0}ming\u{1f}04500\u{a0}ming\u{1f}055000\u{a0}ming\u{1f}0650\u{a0}mln\u{1f}07500\u{a0}mln\u{1f}085000\u{a0}mln\u{1f}0950\u{a0}mlrd\u{1f}10500\u{a0}mlrd\u{1f}115000\u{a0}mlrd\u{1f}1250\u{a0}trln\u{1f}13500\u{a0}trln\u{1f}145000\u{a0}trln"), decimal_long: Table("0350 ming\u{1f}04500 ming\u{1f}055000 ming\u{1f}0650 million\u{1f}07500 million\u{1f}085000 million\u{1f}0950 milliard\u{1f}10500 milliard\u{1f}115000 milliard\u{1f}1250 trillion\u{1f}13500 trillion\u{1f}145000 trillion"), currency_short: Table("0350\u{a0}ming\u{a0}¤\u{1f}04500\u{a0}ming\u{a0}¤\u{1f}055000\u{a0}ming\u{a0}¤\u{1f}0650\u{a0}mln\u{a0}¤\u{1f}07500\u{a0}mln\u{a0}¤\u{1f}085000\u{a0}mln\u{a0}¤\u{1f}0950\u{a0}mlrd\u{a0}¤\u{1f}10500\u{a0}mlrd\u{a0}¤\u{1f}115000\u{a0}mlrd\u{a0}¤\u{1f}1250\u{a0}trln\u{a0}¤\u{1f}13500\u{a0}trln\u{a0}¤\u{1f}145000\u{a0}trln\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "vi"))]
+pub(crate) static COMPACT_VI: Compact = Compact { decimal_short: Table("0350\u{a0}N\u{1f}04500\u{a0}N\u{1f}055000\u{a0}N\u{1f}0650\u{a0}Tr\u{1f}07500\u{a0}Tr\u{1f}085000\u{a0}Tr\u{1f}0950\u{a0}T\u{1f}10500\u{a0}T\u{1f}115000\u{a0}T\u{1f}1250\u{a0}NT\u{1f}13500\u{a0}NT\u{1f}145000\u{a0}NT"), decimal_long: Table("0350 nghìn\u{1f}04500 nghìn\u{1f}055000 nghìn\u{1f}0650 triệu\u{1f}07500 triệu\u{1f}085000 triệu\u{1f}0950 tỷ\u{1f}10500 tỷ\u{1f}115000 tỷ\u{1f}1250 nghìn tỷ\u{1f}13500 nghìn tỷ\u{1f}145000 nghìn tỷ"), currency_short: Table("0350\u{a0}N\u{a0}¤\u{1f}04500\u{a0}N\u{a0}¤\u{1f}055000\u{a0}N\u{a0}¤\u{1f}0650\u{a0}Tr\u{a0}¤\u{1f}07500\u{a0}Tr\u{a0}¤\u{1f}085000\u{a0}Tr\u{a0}¤\u{1f}0950\u{a0}T\u{a0}¤\u{1f}10500\u{a0}T\u{a0}¤\u{1f}115000\u{a0}T\u{a0}¤\u{1f}1250\u{a0}NT\u{a0}¤\u{1f}13500\u{a0}NT\u{a0}¤\u{1f}145000\u{a0}NT\u{a0}¤") };
+
+#[cfg(all(feature = "compact", feature = "yo"))]
+pub(crate) static COMPACT_YO: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 ẹgbẹ\u{300}rún\u{1f}04500 ẹgbẹ\u{300}rún\u{1f}055000 ẹgbẹ\u{300}rún\u{1f}0650 mílíọ\u{300}nù\u{1f}07500 mílíọ\u{300}nù\u{1f}085000 mílíọ\u{300}nù\u{1f}0950 bilíọ\u{300}nù\u{1f}10500 bilíọ\u{300}nù\u{1f}115000 bilíọ\u{300}nù\u{1f}1250 tiriliọ\u{300}nù\u{1f}13500 tiriliọ\u{300}nù\u{1f}145000 tiriliọ\u{300}nù"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0G\u{1f}105¤00G\u{1f}115¤000G\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "yo"))]
+pub(crate) static COMPACT_YO_BJ: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950G\u{1f}10500G\u{1f}115000G\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 ɛgbɛ\u{300}rún\u{1f}04500 ɛgbɛ\u{300}rún\u{1f}055000 ɛgbɛ\u{300}rún\u{1f}0650 mílíɔ\u{300}nù\u{1f}07500 mílíɔ\u{300}nù\u{1f}085000 mílíɔ\u{300}nù\u{1f}0950 bilíɔ\u{300}nù\u{1f}10500 bilíɔ\u{300}nù\u{1f}115000 bilíɔ\u{300}nù\u{1f}1250 tiriliɔ\u{300}nù\u{1f}13500 tiriliɔ\u{300}nù\u{1f}145000 tiriliɔ\u{300}nù"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0G\u{1f}105¤00G\u{1f}115¤000G\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "yue"))]
+pub(crate) static COMPACT_YUE: Compact = Compact { decimal_short: Table("0350千\u{1f}0450萬\u{1f}05500萬\u{1f}065000萬\u{1f}0750000萬\u{1f}0850億\u{1f}09500億\u{1f}105000億\u{1f}1150000億\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆"), decimal_long: Table("0350千\u{1f}0450萬\u{1f}05500萬\u{1f}065000萬\u{1f}0750000萬\u{1f}0850億\u{1f}09500億\u{1f}105000億\u{1f}1150000億\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆"), currency_short: Table("035¤0千\u{1f}045¤0萬\u{1f}055¤00萬\u{1f}065¤000萬\u{1f}075¤0000萬\u{1f}085¤0億\u{1f}095¤00億\u{1f}105¤000億\u{1f}115¤0000億\u{1f}125¤0兆\u{1f}135¤00兆\u{1f}145¤000兆") };
+
+#[cfg(all(feature = "compact", feature = "yue"))]
+pub(crate) static COMPACT_YUE_HANS: Compact = Compact { decimal_short: Table("0350千\u{1f}0450万\u{1f}05500万\u{1f}065000万\u{1f}0750000万\u{1f}0850亿\u{1f}09500亿\u{1f}105000亿\u{1f}1150000亿\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆"), decimal_long: Table("0350千\u{1f}0450万\u{1f}05500万\u{1f}065000万\u{1f}0750000万\u{1f}0850亿\u{1f}09500亿\u{1f}105000亿\u{1f}1150000亿\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆"), currency_short: Table("035¤0千\u{1f}045¤0万\u{1f}055¤00万\u{1f}065¤000万\u{1f}075¤0000万\u{1f}085¤0亿\u{1f}095¤00亿\u{1f}105¤000亿\u{1f}115¤0000亿\u{1f}125¤0兆\u{1f}135¤00兆\u{1f}145¤000兆") };
+
+#[cfg(all(feature = "compact", feature = "zh"))]
+pub(crate) static COMPACT_ZH: Compact = Compact { decimal_short: Table("0350\u{1f}0450万\u{1f}05500万\u{1f}065000万\u{1f}0750000万\u{1f}0850亿\u{1f}09500亿\u{1f}105000亿\u{1f}1150000亿\u{1f}1250万亿\u{1f}13500万亿\u{1f}145000万亿"), decimal_long: Table("0350\u{1f}0450万\u{1f}05500万\u{1f}065000万\u{1f}0750000万\u{1f}0850亿\u{1f}09500亿\u{1f}105000亿\u{1f}1150000亿\u{1f}1250万亿\u{1f}13500万亿\u{1f}145000万亿"), currency_short: Table("0350\u{1f}045¤0万\u{1f}055¤00万\u{1f}065¤000万\u{1f}075¤0000万\u{1f}085¤0亿\u{1f}095¤00亿\u{1f}105¤000亿\u{1f}115¤0000亿\u{1f}125¤0万亿\u{1f}135¤00万亿\u{1f}145¤000万亿") };
+
+#[cfg(all(feature = "compact", feature = "zh"))]
+pub(crate) static COMPACT_ZH_HANT: Compact = Compact { decimal_short: Table("0350\u{1f}0450萬\u{1f}05500萬\u{1f}065000萬\u{1f}0750000萬\u{1f}0850億\u{1f}09500億\u{1f}105000億\u{1f}1150000億\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆"), decimal_long: Table("0350\u{1f}0450萬\u{1f}05500萬\u{1f}065000萬\u{1f}0750000萬\u{1f}0850億\u{1f}09500億\u{1f}105000億\u{1f}1150000億\u{1f}1250兆\u{1f}13500兆\u{1f}145000兆"), currency_short: Table("0350\u{1f}045¤0萬\u{1f}055¤00萬\u{1f}065¤000萬\u{1f}075¤0000萬\u{1f}085¤0億\u{1f}095¤00億\u{1f}105¤000億\u{1f}115¤0000億\u{1f}125¤0兆\u{1f}135¤00兆\u{1f}145¤000兆") };
+
+#[cfg(all(feature = "compact", feature = "zh"))]
+pub(crate) static COMPACT_ZH_HANT_HK: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
+#[cfg(all(feature = "compact", feature = "zu"))]
+pub(crate) static COMPACT_ZU: Compact = Compact { decimal_short: Table("0350K\u{1f}04500K\u{1f}055000K\u{1f}0650M\u{1f}07500M\u{1f}085000M\u{1f}0950B\u{1f}10500B\u{1f}115000B\u{1f}1250T\u{1f}13500T\u{1f}145000T"), decimal_long: Table("0350 inkulungwane\u{1f}04500 inkulungwane\u{1f}055000 inkulungwane\u{1f}0650 isigidi\u{1f}07500 isigidi\u{1f}085000 isigidi\u{1f}0950 isigidi sezigidi\u{1f}10500 isigidi sezigidi\u{1f}115000 isigidi sezigidi\u{1f}1250 isigidintathu\u{1f}13500 isigidintathu\u{1f}145000 isigidintathu"), currency_short: Table("035¤0K\u{1f}045¤00K\u{1f}055¤000K\u{1f}065¤0M\u{1f}075¤00M\u{1f}085¤000M\u{1f}095¤0B\u{1f}105¤00B\u{1f}115¤000B\u{1f}125¤0T\u{1f}135¤00T\u{1f}145¤000T") };
+
 #[cfg(feature = "af")]
-static NUMBERS_AF: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_AF: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AF };
 
-#[cfg(any(feature = "ak", feature = "am", feature = "chr", feature = "cy", feature = "es", feature = "fil", feature = "ga", feature = "gd", feature = "ig", feature = "kn", feature = "ko", feature = "ms", feature = "th", feature = "yo", feature = "yue", feature = "zh", feature = "zu"))]
-static NUMBERS_AK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "ak")]
+static NUMBERS_AK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AK };
 
-#[cfg(feature = "ar")]
-static NUMBERS_AR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}¤;\u{200f}-#,##0.00\u{a0}¤", accounting_pattern: "\u{61c}#,##0.00¤;(\u{61c}#,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
-
-#[cfg(feature = "ar")]
-static NUMBERS_AR_BH: Numbers = Numbers { digits: ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'], decimal: "٫", group: "٬", minus: "\u{61c}-", plus: "\u{61c}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}¤", accounting_pattern: "\u{200f}#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("zero", "{0} {1}"), ("one", "{0} {1}"), ("two", "{0} {1}"), ("few", "{0} {1}"), ("many", "{0} {1}"), ("other", "{0} {1}")] };
+#[cfg(feature = "am")]
+static NUMBERS_AM: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AM };
 
 #[cfg(feature = "ar")]
-static NUMBERS_AR_DZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}¤;\u{200f}-#,##0.00\u{a0}¤", accounting_pattern: "\u{61c}#,##0.00¤;(\u{61c}#,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_AR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}¤;\u{200f}-#,##0.00\u{a0}¤", accounting_pattern: "\u{61c}#,##0.00¤;(\u{61c}#,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AR };
+
+#[cfg(feature = "ar")]
+static NUMBERS_AR_ARAB: Numbers = Numbers { digits: ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'], decimal: "٫", group: "٬", minus: "\u{61c}-", plus: "\u{61c}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}¤", accounting_pattern: "\u{200f}#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("zero", "{0} {1}"), ("one", "{0} {1}"), ("two", "{0} {1}"), ("few", "{0} {1}"), ("many", "{0} {1}"), ("other", "{0} {1}")], exponential: "أس", #[cfg(feature = "compact")] compact: &COMPACT_AR };
+
+#[cfg(feature = "ar")]
+static NUMBERS_AR_DZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}¤;\u{200f}-#,##0.00\u{a0}¤", accounting_pattern: "\u{61c}#,##0.00¤;(\u{61c}#,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AR };
 
 #[cfg(feature = "as")]
-static NUMBERS_AS: Numbers = Numbers { digits: ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤\u{a0}#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_AS: Numbers = Numbers { digits: ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤\u{a0}#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AS };
 
-#[cfg(any(feature = "az", feature = "bs", feature = "da", feature = "de", feature = "dsb", feature = "el", feature = "hsb", feature = "is", feature = "mk", feature = "vi"))]
-static NUMBERS_AZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(all(feature = "numbering-systems", feature = "as"))]
+static NUMBERS_AS_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤\u{a0}#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AS };
+
+#[cfg(feature = "az")]
+static NUMBERS_AZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_AZ };
 
 #[cfg(feature = "ba")]
-static NUMBERS_BA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_BA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BA };
 
-#[cfg(any(feature = "be", feature = "hu", feature = "hy", feature = "ka", feature = "lv", feature = "ru"))]
-static NUMBERS_BE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "be")]
+static NUMBERS_BE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BE };
 
-#[cfg(any(feature = "bg", feature = "pl", feature = "pt", feature = "sq"))]
-static NUMBERS_BG: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
-
-#[cfg(feature = "bn")]
-static NUMBERS_BN: Numbers = Numbers { digits: ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "#,##,##0.00¤", accounting_pattern: "#,##,##0.00¤;(#,##,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "bg")]
+static NUMBERS_BG: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BG };
 
 #[cfg(feature = "bn")]
-static NUMBERS_BN_IN: Numbers = Numbers { digits: ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00;(¤#,##,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_BN: Numbers = Numbers { digits: ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "#,##,##0.00¤", accounting_pattern: "#,##,##0.00¤;(#,##,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BN };
 
-#[cfg(any(feature = "ca", feature = "fr", feature = "gl", feature = "sr"))]
-static NUMBERS_CA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "bn")]
+static NUMBERS_BN_IN: Numbers = Numbers { digits: ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00;(¤#,##,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BN };
 
-#[cfg(any(feature = "cs", feature = "kk", feature = "ky", feature = "ru", feature = "tk", feature = "uk"))]
-static NUMBERS_CS: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(all(feature = "numbering-systems", feature = "bn"))]
+static NUMBERS_BN_IN_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00;(¤#,##,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BN };
 
-#[cfg(any(feature = "cv", feature = "ht", feature = "pt", feature = "sk"))]
-static NUMBERS_CV: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(all(feature = "numbering-systems", feature = "bn"))]
+static NUMBERS_BN_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "#,##,##0.00¤", accounting_pattern: "#,##,##0.00¤;(#,##,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BN };
 
-#[cfg(any(feature = "de", feature = "es", feature = "jv", feature = "pt", feature = "qu"))]
-static NUMBERS_DE_AT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "bs")]
+static NUMBERS_BS: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BS };
+
+#[cfg(feature = "ca")]
+static NUMBERS_CA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_CA };
+
+#[cfg(feature = "chr")]
+static NUMBERS_CHR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_CHR };
+
+#[cfg(feature = "cs")]
+static NUMBERS_CS: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_CS };
+
+#[cfg(feature = "cv")]
+static NUMBERS_CV: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_CV };
+
+#[cfg(feature = "cy")]
+static NUMBERS_CY: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_CY };
+
+#[cfg(feature = "da")]
+static NUMBERS_DA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_DA };
 
 #[cfg(feature = "de")]
-static NUMBERS_DE_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_DE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_DE };
 
 #[cfg(feature = "de")]
-static NUMBERS_DE_LI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_DE_AT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_DE };
 
-#[cfg(any(feature = "en", feature = "so"))]
-static NUMBERS_EN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+#[cfg(feature = "de")]
+static NUMBERS_DE_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_DE_CH };
 
-#[cfg(feature = "en")]
-static NUMBERS_EN_150: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+#[cfg(feature = "de")]
+static NUMBERS_DE_LI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_DE };
 
-#[cfg(feature = "en")]
-static NUMBERS_EN_AT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+#[cfg(feature = "dsb")]
+static NUMBERS_DSB: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_DSB };
 
-#[cfg(feature = "en")]
-static NUMBERS_EN_BE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
-
-#[cfg(feature = "en")]
-static NUMBERS_EN_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+#[cfg(feature = "el")]
+static NUMBERS_EL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "e", #[cfg(feature = "compact")] compact: &COMPACT_EL };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_CZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_FR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_150: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_ID: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_AT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_IN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_AU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "e", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_MV: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_BE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_NL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_PL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_CZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_PT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_FR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "en")]
-static NUMBERS_EN_ZA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_EN_GB: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN_GB };
 
-#[cfg(any(feature = "es", feature = "it"))]
-static NUMBERS_ES: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "en")]
+static NUMBERS_EN_ID: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
-#[cfg(any(feature = "es", feature = "pcm", feature = "ti"))]
-static NUMBERS_ES_419: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "en")]
+static NUMBERS_EN_IN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN_IN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_MV: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_NL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_PL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_PT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_SE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "×10^", #[cfg(feature = "compact")] compact: &COMPACT_EN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_SI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "e", #[cfg(feature = "compact")] compact: &COMPACT_EN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_SK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "e", #[cfg(feature = "compact")] compact: &COMPACT_EN };
+
+#[cfg(feature = "en")]
+static NUMBERS_EN_ZA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN };
 
 #[cfg(feature = "es")]
-static NUMBERS_ES_AR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
-
-#[cfg(any(feature = "es", feature = "id", feature = "ms"))]
-static NUMBERS_ES_BO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
-
-#[cfg(any(feature = "es", feature = "lo"))]
-static NUMBERS_ES_CL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00;¤-#,##0.00", accounting_pattern: "¤#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_ES: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES };
 
 #[cfg(feature = "es")]
-static NUMBERS_ES_CR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_ES_419: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
 
 #[cfg(feature = "es")]
-static NUMBERS_ES_GQ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
-
-static NUMBERS_ES_PE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_ES_AR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
 
 #[cfg(feature = "es")]
-static NUMBERS_ES_PY: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_ES_BO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_CL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00;¤-#,##0.00", accounting_pattern: "¤#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_CO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_CR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_DO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_GQ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_GT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_GT };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_MX: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_MX };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_PE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_PE };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_PY: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_419 };
+
+#[cfg(feature = "es")]
+static NUMBERS_ES_US: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ES_US };
 
 #[cfg(feature = "et")]
-static NUMBERS_ET: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_ET: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "×10^", #[cfg(feature = "compact")] compact: &COMPACT_ET };
 
 #[cfg(feature = "eu")]
-static NUMBERS_EU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_EU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EU };
 
 #[cfg(feature = "fa")]
-static NUMBERS_FA: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}−", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200e}¤#,##0.00", accounting_pattern: "\u{200e}¤\u{a0}#,##0.00;\u{200e}(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_FA: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}−", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200e}¤#,##0.00", accounting_pattern: "\u{200e}¤\u{a0}#,##0.00;\u{200e}(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "×۱۰^", #[cfg(feature = "compact")] compact: &COMPACT_FA };
 
 #[cfg(feature = "fa")]
-static NUMBERS_FA_AF: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}−", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;\u{200e}(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_FA_AF: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}−", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;\u{200e}(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "×۱۰^", #[cfg(feature = "compact")] compact: &COMPACT_FA };
 
-#[cfg(any(feature = "fi", feature = "lt", feature = "sv"))]
-static NUMBERS_FI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(all(feature = "numbering-systems", feature = "fa"))]
+static NUMBERS_FA_AF_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}−", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;\u{200e}(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FA };
+
+#[cfg(all(feature = "numbering-systems", feature = "fa"))]
+static NUMBERS_FA_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}−", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200e}¤\u{a0}#,##0.00", accounting_pattern: "\u{200e}¤\u{a0}#,##0.00;\u{200e}(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FA };
+
+#[cfg(feature = "fi")]
+static NUMBERS_FI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FI };
+
+#[cfg(feature = "fil")]
+static NUMBERS_FIL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FIL };
 
 #[cfg(feature = "fr")]
-static NUMBERS_FR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_FR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FR };
 
 #[cfg(feature = "fr")]
-static NUMBERS_FR_CA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0}\u{a0}{1}"), ("other", "{0}\u{a0}{1}")] };
+static NUMBERS_FR_CA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0}\u{a0}{1}"), ("other", "{0}\u{a0}{1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FR_CA };
 
 #[cfg(feature = "fr")]
-static NUMBERS_FR_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_FR_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FR };
+
+#[cfg(feature = "fr")]
+static NUMBERS_FR_LU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FR };
+
+#[cfg(feature = "ga")]
+static NUMBERS_GA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_GA };
+
+#[cfg(feature = "gd")]
+static NUMBERS_GD: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_GD };
+
+#[cfg(feature = "gl")]
+static NUMBERS_GL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_GL };
 
 #[cfg(feature = "gu")]
-static NUMBERS_GU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00;(¤#,##,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_GU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00;(¤#,##,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_GU };
+
+#[cfg(all(feature = "numbering-systems", feature = "gu"))]
+static NUMBERS_GU_GUJR: Numbers = Numbers { digits: ['૦', '૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##,##0.00;(¤#,##,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_GU };
+
+#[cfg(feature = "ha")]
+static NUMBERS_HA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HA };
 
 #[cfg(feature = "he")]
-static NUMBERS_HE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}\u{200f}¤;\u{200f}-#,##0.00\u{a0}\u{200f}¤", accounting_pattern: "\u{200f}#,##0.00\u{a0}\u{200f}¤;\u{200f}-#,##0.00\u{a0}\u{200f}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
-
-#[cfg(any(feature = "hi", feature = "kok"))]
-static NUMBERS_HI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_HE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "\u{200f}#,##0.00\u{a0}\u{200f}¤;\u{200f}-#,##0.00\u{a0}\u{200f}¤", accounting_pattern: "\u{200f}#,##0.00\u{a0}\u{200f}¤;\u{200f}-#,##0.00\u{a0}\u{200f}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HE };
 
 #[cfg(feature = "hi")]
-static NUMBERS_HI_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")] };
+static NUMBERS_HI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HI };
+
+#[cfg(all(feature = "numbering-systems", feature = "hi"))]
+static NUMBERS_HI_DEVA: Numbers = Numbers { digits: ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HI };
+
+#[cfg(feature = "hi")]
+static NUMBERS_HI_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_EN_IN };
 
 #[cfg(feature = "hr")]
-static NUMBERS_HR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_HR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HR };
+
+#[cfg(feature = "hsb")]
+static NUMBERS_HSB: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HSB };
+
+#[cfg(feature = "ht")]
+static NUMBERS_HT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_FR };
+
+#[cfg(feature = "hu")]
+static NUMBERS_HU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HU };
+
+#[cfg(feature = "hy")]
+static NUMBERS_HY: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_HY };
+
+#[cfg(feature = "id")]
+static NUMBERS_ID: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ID };
+
+#[cfg(feature = "ig")]
+static NUMBERS_IG: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_IG };
+
+#[cfg(feature = "is")]
+static NUMBERS_IS: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_IS };
 
 #[cfg(feature = "it")]
-static NUMBERS_IT_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_IT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_IT };
 
-#[cfg(any(feature = "ja", feature = "zh"))]
-static NUMBERS_JA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0}{1}")] };
+#[cfg(feature = "it")]
+static NUMBERS_IT_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_IT };
+
+#[cfg(feature = "ja")]
+static NUMBERS_JA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0}{1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_JA };
+
+#[cfg(feature = "jv")]
+static NUMBERS_JV: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_JV };
+
+#[cfg(all(feature = "numbering-systems", feature = "jv"))]
+static NUMBERS_JV_JAVA: Numbers = Numbers { digits: ['꧐', '꧑', '꧒', '꧓', '꧔', '꧕', '꧖', '꧗', '꧘', '꧙'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_JV };
+
+#[cfg(feature = "ka")]
+static NUMBERS_KA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KA };
+
+#[cfg(feature = "kk")]
+static NUMBERS_KK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KK };
+
+#[cfg(feature = "kk")]
+static NUMBERS_KK_ARAB: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KK_ARAB };
 
 #[cfg(feature = "km")]
-static NUMBERS_KM: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00¤", accounting_pattern: "#,##0.00¤;(#,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_KM: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00¤", accounting_pattern: "#,##0.00¤;(#,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KM };
 
-#[cfg(any(feature = "ml", feature = "or"))]
-static NUMBERS_ML: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(all(feature = "numbering-systems", feature = "km"))]
+static NUMBERS_KM_KHMR: Numbers = Numbers { digits: ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00¤", accounting_pattern: "#,##0.00¤;(#,##0.00¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KM };
+
+#[cfg(feature = "kn")]
+static NUMBERS_KN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KN };
+
+#[cfg(all(feature = "numbering-systems", feature = "kn"))]
+static NUMBERS_KN_KNDA: Numbers = Numbers { digits: ['೦', '೧', '೨', '೩', '೪', '೫', '೬', '೭', '೮', '೯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KN };
+
+#[cfg(feature = "ko")]
+static NUMBERS_KO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KO };
+
+#[cfg(feature = "kok")]
+static NUMBERS_KOK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KOK };
+
+#[cfg(all(feature = "numbering-systems", feature = "kok"))]
+static NUMBERS_KOK_DEVA: Numbers = Numbers { digits: ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KOK };
+
+#[cfg(feature = "ky")]
+static NUMBERS_KY: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_KY };
+
+#[cfg(feature = "lo")]
+static NUMBERS_LO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00;¤-#,##0.00", accounting_pattern: "¤#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_LO };
+
+#[cfg(all(feature = "numbering-systems", feature = "lo"))]
+static NUMBERS_LO_LAOO: Numbers = Numbers { digits: ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00;¤-#,##0.00", accounting_pattern: "¤#,##0.00;¤-#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_LO_LAOO };
+
+#[cfg(feature = "lt")]
+static NUMBERS_LT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "×10^", #[cfg(feature = "compact")] compact: &COMPACT_LT };
+
+#[cfg(feature = "lv")]
+static NUMBERS_LV: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_LV };
+
+#[cfg(feature = "mk")]
+static NUMBERS_MK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MK };
+
+#[cfg(feature = "ml")]
+static NUMBERS_ML: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ML };
+
+#[cfg(all(feature = "numbering-systems", feature = "ml"))]
+static NUMBERS_ML_MLYM: Numbers = Numbers { digits: ['൦', '൧', '൨', '൩', '൪', '൫', '൬', '൭', '൮', '൯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ML };
+
+#[cfg(feature = "mn")]
+static NUMBERS_MN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MN };
 
 #[cfg(feature = "mr")]
-static NUMBERS_MR: Numbers = Numbers { digits: ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_MR: Numbers = Numbers { digits: ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MR };
+
+#[cfg(all(feature = "numbering-systems", feature = "mr"))]
+static NUMBERS_MR_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MR };
 
 #[cfg(feature = "ms")]
-static NUMBERS_MS_BN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_MS: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MS };
+
+#[cfg(feature = "ms")]
+static NUMBERS_MS_BN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MS };
+
+#[cfg(feature = "ms")]
+static NUMBERS_MS_ID: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MS };
 
 #[cfg(feature = "my")]
-static NUMBERS_MY: Numbers = Numbers { digits: ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{1} {0}")] };
+static NUMBERS_MY: Numbers = Numbers { digits: ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{1} {0}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MY };
 
-#[cfg(any(feature = "nb", feature = "nn", feature = "no"))]
-static NUMBERS_NB: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤;-#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(all(feature = "numbering-systems", feature = "my"))]
+static NUMBERS_MY_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{1} {0}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_MY };
+
+#[cfg(any(feature = "nb", feature = "no"))]
+static NUMBERS_NB: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤;-#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_NB };
 
 #[cfg(feature = "ne")]
-static NUMBERS_NE: Numbers = Numbers { digits: ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤\u{a0}#,##,##0.00", accounting_pattern: "¤\u{a0}#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_NE: Numbers = Numbers { digits: ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤\u{a0}#,##,##0.00", accounting_pattern: "¤\u{a0}#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_NE };
+
+#[cfg(all(feature = "numbering-systems", feature = "ne"))]
+static NUMBERS_NE_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤\u{a0}#,##,##0.00", accounting_pattern: "¤\u{a0}#,##,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_NE };
 
 #[cfg(feature = "nl")]
-static NUMBERS_NL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_NL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00;¤\u{a0}-#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_NL };
+
+#[cfg(feature = "nn")]
+static NUMBERS_NN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤;-#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00;(¤\u{a0}#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_NN };
+
+#[cfg(feature = "or")]
+static NUMBERS_OR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_OR };
+
+#[cfg(all(feature = "numbering-systems", feature = "or"))]
+static NUMBERS_OR_ORYA: Numbers = Numbers { digits: ['୦', '୧', '୨', '୩', '୪', '୫', '୬', '୭', '୮', '୯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_OR };
 
 #[cfg(feature = "pa")]
-static NUMBERS_PA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_PA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PA };
+
+#[cfg(all(feature = "numbering-systems", feature = "pa"))]
+static NUMBERS_PA_GURU: Numbers = Numbers { digits: ['੦', '੧', '੨', '੩', '੪', '੫', '੬', '੭', '੮', '੯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PA };
+
+#[cfg(feature = "pcm")]
+static NUMBERS_PCM: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PCM };
+
+#[cfg(feature = "pl")]
+static NUMBERS_PL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PL };
 
 #[cfg(feature = "ps")]
-static NUMBERS_PS: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}-\u{200e}", plus: "\u{200e}+\u{200e}", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_PS: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}-\u{200e}", plus: "\u{200e}+\u{200e}", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "×۱۰^", #[cfg(feature = "compact")] compact: &COMPACT_PS };
+
+#[cfg(all(feature = "numbering-systems", feature = "ps"))]
+static NUMBERS_PS_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "\u{200e}−", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PS };
+
+#[cfg(feature = "pt")]
+static NUMBERS_PT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PT };
+
+#[cfg(feature = "pt")]
+static NUMBERS_PT_AO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PT_AO };
+
+#[cfg(feature = "pt")]
+static NUMBERS_PT_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_PT_AO };
+
+static NUMBERS_QU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_QU };
+
+#[cfg(feature = "qu")]
+static NUMBERS_QU_BO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_QU };
 
 #[cfg(feature = "rm")]
-static NUMBERS_RM: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_RM: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{202f}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_RM };
 
 #[cfg(feature = "ro")]
-static NUMBERS_RO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("few", "{0} {1}"), ("other", "{0} de {1}")] };
+static NUMBERS_RO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("few", "{0} {1}"), ("other", "{0} de {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_RO };
+
+#[cfg(feature = "ru")]
+static NUMBERS_RU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_RU };
+
+#[cfg(feature = "ru")]
+static NUMBERS_RU_UA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_RU };
 
 #[cfg(feature = "sd")]
-static NUMBERS_SD: Numbers = Numbers { digits: ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'], decimal: ".", group: "٬", minus: "\u{61c}-", plus: "\u{61c}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_SD: Numbers = Numbers { digits: ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'], decimal: ".", group: "٬", minus: "\u{61c}-", plus: "\u{61c}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "اس", #[cfg(feature = "compact")] compact: &COMPACT_SD };
+
+#[cfg(all(feature = "numbering-systems", feature = "sd"))]
+static NUMBERS_SD_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SD };
+
+#[cfg(feature = "shn")]
+static NUMBERS_SHN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SHN };
 
 #[cfg(feature = "si")]
-static NUMBERS_SI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{1}{0}"), ("other", "{1}{0}")] };
+static NUMBERS_SI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{1}{0}"), ("other", "{1}{0}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SI };
+
+#[cfg(feature = "sk")]
+static NUMBERS_SK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "e", #[cfg(feature = "compact")] compact: &COMPACT_SK };
 
 #[cfg(feature = "sl")]
-static NUMBERS_SL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "−", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_SL: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "−", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "e", #[cfg(feature = "compact")] compact: &COMPACT_SL };
+
+#[cfg(feature = "so")]
+static NUMBERS_SO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SO };
+
+#[cfg(feature = "sq")]
+static NUMBERS_SQ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 2, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SQ };
+
+#[cfg(feature = "sr")]
+static NUMBERS_SR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SR };
+
+#[cfg(feature = "sr")]
+static NUMBERS_SR_LATN: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_BS };
+
+#[cfg(feature = "sv")]
+static NUMBERS_SV: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "−", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "×10^", #[cfg(feature = "compact")] compact: &COMPACT_SV };
 
 #[cfg(feature = "sw")]
-static NUMBERS_SW: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{1} {0}")] };
+static NUMBERS_SW: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{1} {0}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SW };
 
 #[cfg(feature = "sw")]
-static NUMBERS_SW_CD: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{1} {0}")] };
+static NUMBERS_SW_CD: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{1} {0}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SW };
 
-#[cfg(any(feature = "ta", feature = "te"))]
-static NUMBERS_TA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+#[cfg(feature = "sw")]
+static NUMBERS_SW_KE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("one", "{0} {1}"), ("other", "{1} {0}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_SW_KE };
 
 #[cfg(feature = "ta")]
-static NUMBERS_TA_MY: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_TA: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TA };
+
+#[cfg(feature = "ta")]
+static NUMBERS_TA_MY: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤\u{a0}#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TA };
+
+#[cfg(all(feature = "numbering-systems", feature = "ta"))]
+static NUMBERS_TA_MY_TAMLDEC: Numbers = Numbers { digits: ['௦', '௧', '௨', '௩', '௪', '௫', '௬', '௭', '௮', '௯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TA };
+
+#[cfg(all(feature = "numbering-systems", feature = "ta"))]
+static NUMBERS_TA_TAMLDEC: Numbers = Numbers { digits: ['௦', '௧', '௨', '௩', '௪', '௫', '௬', '௭', '௮', '௯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TA };
+
+#[cfg(feature = "te")]
+static NUMBERS_TE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TE };
+
+#[cfg(all(feature = "numbering-systems", feature = "te"))]
+static NUMBERS_TE_TELU: Numbers = Numbers { digits: ['౦', '౧', '౨', '౩', '౪', '౫', '౬', '౭', '౮', '౯'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TE };
+
+#[cfg(feature = "th")]
+static NUMBERS_TH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TH };
+
+#[cfg(all(feature = "numbering-systems", feature = "th"))]
+static NUMBERS_TH_THAI: Numbers = Numbers { digits: ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TH };
+
+#[cfg(feature = "ti")]
+static NUMBERS_TI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TI };
+
+#[cfg(feature = "tk")]
+static NUMBERS_TK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TK };
 
 #[cfg(feature = "tr")]
-static NUMBERS_TR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_TR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_TR };
+
+#[cfg(feature = "uk")]
+static NUMBERS_UK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "Е", #[cfg(feature = "compact")] compact: &COMPACT_UK };
 
 #[cfg(feature = "ur")]
-static NUMBERS_UR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_UR: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "\u{200e}-", plus: "\u{200e}+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_UR };
 
 #[cfg(feature = "ur")]
-static NUMBERS_UR_IN: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}-\u{200e}", plus: "\u{200e}+\u{200e}", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_UR_ARABEXT: Numbers = Numbers { digits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], decimal: "٫", group: "٬", minus: "\u{200e}-\u{200e}", plus: "\u{200e}+\u{200e}", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "×۱۰^", #[cfg(feature = "compact")] compact: &COMPACT_UR };
 
 #[cfg(feature = "uz")]
-static NUMBERS_UZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_UZ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: "\u{a0}", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_UZ };
+
+#[cfg(feature = "vi")]
+static NUMBERS_VI: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ",", group: ".", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_VI };
+
+#[cfg(feature = "yo")]
+static NUMBERS_YO: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_YO };
+
+#[cfg(feature = "yo")]
+static NUMBERS_YO_BJ: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_YO_BJ };
+
+#[cfg(feature = "yue")]
+static NUMBERS_YUE: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_YUE };
+
+#[cfg(all(feature = "numbering-systems", feature = "yue"))]
+static NUMBERS_YUE_HANIDEC: Numbers = Numbers { digits: ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_YUE };
+
+#[cfg(feature = "yue")]
+static NUMBERS_YUE_HANS: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_YUE_HANS };
+
+#[cfg(all(feature = "numbering-systems", feature = "yue"))]
+static NUMBERS_YUE_HANS_HANIDEC: Numbers = Numbers { digits: ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_YUE_HANS };
+
+#[cfg(feature = "zh")]
+static NUMBERS_ZH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0}{1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZH };
+
+#[cfg(all(feature = "numbering-systems", feature = "zh"))]
+static NUMBERS_ZH_HANIDEC: Numbers = Numbers { digits: ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZH };
+
+#[cfg(feature = "zh")]
+static NUMBERS_ZH_HANS_HK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZH };
+
+#[cfg(feature = "zh")]
+static NUMBERS_ZH_HANT: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZH_HANT };
+
+#[cfg(all(feature = "numbering-systems", feature = "zh"))]
+static NUMBERS_ZH_HANT_HANIDEC: Numbers = Numbers { digits: ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZH_HANT };
+
+#[cfg(feature = "zh")]
+static NUMBERS_ZH_HANT_HK: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZH_HANT_HK };
+
+#[cfg(all(feature = "numbering-systems", feature = "zh"))]
+static NUMBERS_ZH_HANT_HK_HANIDEC: Numbers = Numbers { digits: ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZH_HANT_HK };
+
+#[cfg(feature = "zu")]
+static NUMBERS_ZU: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "¤#,##0.00", accounting_pattern: "¤#,##0.00;(¤#,##0.00)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &COMPACT_ZU };
 
 #[cfg(feature = "af")]
 static PLURALS_AF: &[Rule] = &[Rule { category: "one", any: &[&[Relation { operand: Operand::N, modulus: 0, equal: true, ranges: &[(1, 1)] }]] }];
@@ -539,7 +1219,7 @@ static PLURALS_ZH: &[Rule] = &[];
 static PLURALS_ZU: &[Rule] = &[Rule { category: "one", any: &[&[Relation { operand: Operand::I, modulus: 0, equal: true, ranges: &[(0, 0)] }], &[Relation { operand: Operand::N, modulus: 0, equal: true, ranges: &[(1, 1)] }]] }];
 
 #[cfg(feature = "af")]
-static L_AF: LocaleData = LocaleData { name: "af", parent: "und", numbers: &NUMBERS_AF, plurals: PLURALS_AF, currencies: &[
+static L_AF: LocaleData = LocaleData { name: "af", parent: "und", system: "latn", numbers: &NUMBERS_AF, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_AF, currencies: &[
     CurrencyData { code: *b"AED", fields: "dVerenigde Arabiese Emirate-dirham\u{1f}1VAE-dirham\u{1f}5VAE-dirham" },
     CurrencyData { code: *b"AFN", fields: "dAfgaanse afgani\u{1f}5Afgaanse afgani" },
     CurrencyData { code: *b"ALL", fields: "dAlbanese lek\u{1f}5Albanese lek" },
@@ -717,12 +1397,12 @@ static L_AF: LocaleData = LocaleData { name: "af", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "af")]
-static L_AF_NA: LocaleData = LocaleData { name: "af-NA", parent: "af", numbers: &NUMBERS_AF, plurals: PLURALS_AF, currencies: &[
+static L_AF_NA: LocaleData = LocaleData { name: "af-NA", parent: "af", system: "latn", numbers: &NUMBERS_AF, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_AF, currencies: &[
     CurrencyData { code: *b"NAD", fields: "s$" },
 ] };
 
 #[cfg(feature = "ak")]
-static L_AK: LocaleData = LocaleData { name: "ak", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_AK, currencies: &[
+static L_AK: LocaleData = LocaleData { name: "ak", parent: "und", system: "latn", numbers: &NUMBERS_AK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_AK, currencies: &[
     CurrencyData { code: *b"AED", fields: "dƐmirete Arab Nkabɔmu Deram\u{1f}5Ɛmirete Arab Nkabɔmu Deram" },
     CurrencyData { code: *b"AFN", fields: "dAfghanfoɔ Afghani\u{1f}5Afghanfoɔ Afghani" },
     CurrencyData { code: *b"ALL", fields: "dAlbania Lek\u{1f}1Albania lek\u{1f}5Albania lekë" },
@@ -894,7 +1574,7 @@ static L_AK: LocaleData = LocaleData { name: "ak", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "am")]
-static L_AM: LocaleData = LocaleData { name: "am", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_AM, currencies: &[
+static L_AM: LocaleData = LocaleData { name: "am", parent: "und", system: "latn", numbers: &NUMBERS_AM, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_AM, currencies: &[
     CurrencyData { code: *b"AED", fields: "dየተባበሩት የአረብ ኤምሬትስ ድርሀም\u{1f}5የተባበሩት የአረብ ኤምሬትስ ድርሀም" },
     CurrencyData { code: *b"AFN", fields: "dየአፍጋን አፍጋኒ\u{1f}5የአፍጋን አፍጋኒ" },
     CurrencyData { code: *b"ALL", fields: "dየአልባንያ ሌክ\u{1f}5የአልባንያ ሌክ" },
@@ -1068,7 +1748,7 @@ static L_AM: LocaleData = LocaleData { name: "am", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR: LocaleData = LocaleData { name: "ar", parent: "und", numbers: &NUMBERS_AR, plurals: PLURALS_AR, currencies: &[
+static L_AR: LocaleData = LocaleData { name: "ar", parent: "und", system: "latn", numbers: &NUMBERS_AR, #[cfg(feature = "numbering-systems")] systems: &[("arab", &NUMBERS_AR_ARAB)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dبيستا أندوري\u{1f}5بيستا أندوري" },
     CurrencyData { code: *b"AED", fields: "sد.إ.\u{200f}\u{1f}dدرهم إماراتي\u{1f}5درهم إماراتي" },
     CurrencyData { code: *b"AFA", fields: "dأفغاني - 1927-2002\u{1f}5أفغاني - 1927-2002" },
@@ -1334,123 +2014,123 @@ static L_AR: LocaleData = LocaleData { name: "ar", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_AE: LocaleData = LocaleData { name: "ar-AE", parent: "ar", numbers: &NUMBERS_AR, plurals: PLURALS_AR, currencies: &[
+static L_AR_AE: LocaleData = LocaleData { name: "ar-AE", parent: "ar", system: "latn", numbers: &NUMBERS_AR, #[cfg(feature = "numbering-systems")] systems: &[("arab", &NUMBERS_AR_ARAB)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"BND", fields: "n$" },
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_BH: LocaleData = LocaleData { name: "ar-BH", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_BH: LocaleData = LocaleData { name: "ar-BH", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_DJ: LocaleData = LocaleData { name: "ar-DJ", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_DJ: LocaleData = LocaleData { name: "ar-DJ", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"DJF", fields: "sFdj" },
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_DZ: LocaleData = LocaleData { name: "ar-DZ", parent: "ar", numbers: &NUMBERS_AR_DZ, plurals: PLURALS_AR, currencies: &[
+static L_AR_DZ: LocaleData = LocaleData { name: "ar-DZ", parent: "ar", system: "latn", numbers: &NUMBERS_AR_DZ, #[cfg(feature = "numbering-systems")] systems: &[("arab", &NUMBERS_AR_ARAB)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_EG: LocaleData = LocaleData { name: "ar-EG", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_EG: LocaleData = LocaleData { name: "ar-EG", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_EH: LocaleData = LocaleData { name: "ar-EH", parent: "ar", numbers: &NUMBERS_AR, plurals: PLURALS_AR, currencies: &[
+static L_AR_EH: LocaleData = LocaleData { name: "ar-EH", parent: "ar", system: "latn", numbers: &NUMBERS_AR, #[cfg(feature = "numbering-systems")] systems: &[("arab", &NUMBERS_AR_ARAB)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_ER: LocaleData = LocaleData { name: "ar-ER", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_ER: LocaleData = LocaleData { name: "ar-ER", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"ERN", fields: "sNfk" },
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_IL: LocaleData = LocaleData { name: "ar-IL", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_IL: LocaleData = LocaleData { name: "ar-IL", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_IQ: LocaleData = LocaleData { name: "ar-IQ", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_IQ: LocaleData = LocaleData { name: "ar-IQ", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_JO: LocaleData = LocaleData { name: "ar-JO", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_JO: LocaleData = LocaleData { name: "ar-JO", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_KM: LocaleData = LocaleData { name: "ar-KM", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_KM: LocaleData = LocaleData { name: "ar-KM", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"KMF", fields: "sCF" },
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_KW: LocaleData = LocaleData { name: "ar-KW", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_KW: LocaleData = LocaleData { name: "ar-KW", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_LB: LocaleData = LocaleData { name: "ar-LB", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_LB: LocaleData = LocaleData { name: "ar-LB", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR_DZ)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"SDG", fields: "sSDG" },
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_LY: LocaleData = LocaleData { name: "ar-LY", parent: "ar", numbers: &NUMBERS_AR_DZ, plurals: PLURALS_AR, currencies: &[
+static L_AR_LY: LocaleData = LocaleData { name: "ar-LY", parent: "ar", system: "latn", numbers: &NUMBERS_AR_DZ, #[cfg(feature = "numbering-systems")] systems: &[("arab", &NUMBERS_AR_ARAB)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_MA: LocaleData = LocaleData { name: "ar-MA", parent: "ar", numbers: &NUMBERS_AR_DZ, plurals: PLURALS_AR, currencies: &[
+static L_AR_MA: LocaleData = LocaleData { name: "ar-MA", parent: "ar", system: "latn", numbers: &NUMBERS_AR_DZ, #[cfg(feature = "numbering-systems")] systems: &[("arab", &NUMBERS_AR_ARAB)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_MR: LocaleData = LocaleData { name: "ar-MR", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_MR: LocaleData = LocaleData { name: "ar-MR", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR_DZ)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_OM: LocaleData = LocaleData { name: "ar-OM", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_OM: LocaleData = LocaleData { name: "ar-OM", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_PS: LocaleData = LocaleData { name: "ar-PS", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_PS: LocaleData = LocaleData { name: "ar-PS", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_QA: LocaleData = LocaleData { name: "ar-QA", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_QA: LocaleData = LocaleData { name: "ar-QA", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_SA: LocaleData = LocaleData { name: "ar-SA", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_SA: LocaleData = LocaleData { name: "ar-SA", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_SD: LocaleData = LocaleData { name: "ar-SD", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_SD: LocaleData = LocaleData { name: "ar-SD", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_SO: LocaleData = LocaleData { name: "ar-SO", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_SO: LocaleData = LocaleData { name: "ar-SO", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"SOS", fields: "sS" },
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_SS: LocaleData = LocaleData { name: "ar-SS", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_SS: LocaleData = LocaleData { name: "ar-SS", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
     CurrencyData { code: *b"GBP", fields: "sGB£" },
     CurrencyData { code: *b"SSP", fields: "s£" },
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_SY: LocaleData = LocaleData { name: "ar-SY", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_SY: LocaleData = LocaleData { name: "ar-SY", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_TD: LocaleData = LocaleData { name: "ar-TD", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_TD: LocaleData = LocaleData { name: "ar-TD", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_TN: LocaleData = LocaleData { name: "ar-TN", parent: "ar", numbers: &NUMBERS_AR_DZ, plurals: PLURALS_AR, currencies: &[
+static L_AR_TN: LocaleData = LocaleData { name: "ar-TN", parent: "ar", system: "latn", numbers: &NUMBERS_AR_DZ, #[cfg(feature = "numbering-systems")] systems: &[("arab", &NUMBERS_AR_ARAB)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "ar")]
-static L_AR_YE: LocaleData = LocaleData { name: "ar-YE", parent: "ar", numbers: &NUMBERS_AR_BH, plurals: PLURALS_AR, currencies: &[
+static L_AR_YE: LocaleData = LocaleData { name: "ar-YE", parent: "ar", system: "arab", numbers: &NUMBERS_AR_ARAB, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AR)], plurals: PLURALS_AR, currencies: &[
 ] };
 
 #[cfg(feature = "as")]
-static L_AS: LocaleData = LocaleData { name: "as", parent: "und", numbers: &NUMBERS_AS, plurals: PLURALS_AS, currencies: &[
+static L_AS: LocaleData = LocaleData { name: "as", parent: "und", system: "beng", numbers: &NUMBERS_AS, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_AS_LATN)], plurals: PLURALS_AS, currencies: &[
     CurrencyData { code: *b"AED", fields: "dসংয\u{9c1}ক\u{9cd}ত আৰব আমিৰ\u{9be}ত ডিৰহেম\u{1f}5সংয\u{9c1}ক\u{9cd}ত আৰব আমিৰ\u{9be}ত ডিৰহেম" },
     CurrencyData { code: *b"AFN", fields: "dআফগ\u{9be}ন আফগ\u{9be}নী\u{1f}5আফগ\u{9be}ন আফগ\u{9be}নী" },
     CurrencyData { code: *b"ALL", fields: "dআলবেনীয\u{9bc} লেক\u{1f}5আলবেনীয\u{9bc} লেক" },
@@ -1618,7 +2298,7 @@ static L_AS: LocaleData = LocaleData { name: "as", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "az")]
-static L_AZ: LocaleData = LocaleData { name: "az", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_AZ, currencies: &[
+static L_AZ: LocaleData = LocaleData { name: "az", parent: "und", system: "latn", numbers: &NUMBERS_AZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_AZ, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndora Pesetası\u{1f}1Andora pesetası\u{1f}5Andora pesetası" },
     CurrencyData { code: *b"AED", fields: "dBirləşmiş Ərəb Əmirlikləri Dirhəmi\u{1f}1BƏƏ dirhəmi\u{1f}5BƏƏ dirhəmi" },
     CurrencyData { code: *b"AFA", fields: "dƏfqanıstan Əfqanisi (1927–2002)\u{1f}1Əfqanıstan əfqanisi (1927–2002)\u{1f}5Əfqanıstan əfqanisi (1927–2002)" },
@@ -1894,11 +2574,11 @@ static L_AZ: LocaleData = LocaleData { name: "az", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "az")]
-static L_AZ_LATN: LocaleData = LocaleData { name: "az-Latn", parent: "az", numbers: &NUMBERS_AZ, plurals: PLURALS_AZ, currencies: &[
+static L_AZ_LATN: LocaleData = LocaleData { name: "az-Latn", parent: "az", system: "latn", numbers: &NUMBERS_AZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_AZ, currencies: &[
 ] };
 
 #[cfg(feature = "ba")]
-static L_BA: LocaleData = LocaleData { name: "ba", parent: "und", numbers: &NUMBERS_BA, plurals: PLURALS_UND, currencies: &[
+static L_BA: LocaleData = LocaleData { name: "ba", parent: "und", system: "latn", numbers: &NUMBERS_BA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dАндорра песетаһы\u{1f}5Андорра песетаһы" },
     CurrencyData { code: *b"AED", fields: "dБерләшкән Ғәрәп Әмирлектәре дирһәме\u{1f}5Берләшкән Ғәрәп Әмирлектәре дирһамы" },
     CurrencyData { code: *b"AFA", fields: "dАфған афғаниһы (1927–2002)\u{1f}5Афған афғаниһы (1927–2002)" },
@@ -2209,7 +2889,7 @@ static L_BA: LocaleData = LocaleData { name: "ba", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "be")]
-static L_BE: LocaleData = LocaleData { name: "be", parent: "und", numbers: &NUMBERS_BE, plurals: PLURALS_BE, currencies: &[
+static L_BE: LocaleData = LocaleData { name: "be", parent: "und", system: "latn", numbers: &NUMBERS_BE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_BE, currencies: &[
     CurrencyData { code: *b"AED", fields: "dдырхам ААЭ\u{1f}1дырхам ААЭ\u{1f}3дырхамы ААЭ\u{1f}4дырхамаў ААЭ\u{1f}5дырхама ААЭ" },
     CurrencyData { code: *b"AFN", fields: "dафганскі афгані\u{1f}1афганскі афгані\u{1f}3афганскія афгані\u{1f}4афганскіх афгані\u{1f}5афганскага афгані" },
     CurrencyData { code: *b"ALL", fields: "dалбанскі лек\u{1f}1албанскі лек\u{1f}3албанскія лекі\u{1f}4албанскіх лекаў\u{1f}5албанскага лека" },
@@ -2377,11 +3057,11 @@ static L_BE: LocaleData = LocaleData { name: "be", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "be")]
-static L_BE_TARASK: LocaleData = LocaleData { name: "be-tarask", parent: "be", numbers: &NUMBERS_BE, plurals: PLURALS_BE, currencies: &[
+static L_BE_TARASK: LocaleData = LocaleData { name: "be-tarask", parent: "be", system: "latn", numbers: &NUMBERS_BE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_BE, currencies: &[
 ] };
 
 #[cfg(feature = "bg")]
-static L_BG: LocaleData = LocaleData { name: "bg", parent: "und", numbers: &NUMBERS_BG, plurals: PLURALS_BG, currencies: &[
+static L_BG: LocaleData = LocaleData { name: "bg", parent: "und", system: "latn", numbers: &NUMBERS_BG, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_BG, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dАндорска песета\u{1f}1андорска песета\u{1f}5андорски песети" },
     CurrencyData { code: *b"AED", fields: "dДирхам на Обединените арабски емирства\u{1f}1дирхам на Обединените арабски емирства\u{1f}5дирхама на Обединените арабски емирства" },
     CurrencyData { code: *b"AFA", fields: "dАфганистански афган (1927–2002)\u{1f}1афганистански афган (1927–2002)\u{1f}5афганистански афгана (1927–2002)" },
@@ -2657,7 +3337,7 @@ static L_BG: LocaleData = LocaleData { name: "bg", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "bn")]
-static L_BN: LocaleData = LocaleData { name: "bn", parent: "und", numbers: &NUMBERS_BN, plurals: PLURALS_BN, currencies: &[
+static L_BN: LocaleData = LocaleData { name: "bn", parent: "und", system: "beng", numbers: &NUMBERS_BN, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_BN_LATN)], plurals: PLURALS_BN, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dএ\u{9cd}য\u{9be}ন\u{9cd}ডোর\u{9be}ন পেসেত\u{9be}\u{1f}5এ\u{9cd}য\u{9be}ন\u{9cd}ডোর\u{9be}ন পেসেত\u{9be}" },
     CurrencyData { code: *b"AED", fields: "dসংয\u{9c1}ক\u{9cd}ত আরব আমির\u{9be}ত দিরহ\u{9be}ম\u{1f}5সংয\u{9c1}ক\u{9cd}ত আরব আমির\u{9be}ত দিরহ\u{9be}ম" },
     CurrencyData { code: *b"AFA", fields: "dআফগ\u{9be}নি (১৯২৭–২০০২)\u{1f}5আফগ\u{9be}নি (১৯২৭–২০০২)" },
@@ -2938,7 +3618,7 @@ static L_BN: LocaleData = LocaleData { name: "bn", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "bn")]
-static L_BN_IN: LocaleData = LocaleData { name: "bn-IN", parent: "bn", numbers: &NUMBERS_BN_IN, plurals: PLURALS_BN, currencies: &[
+static L_BN_IN: LocaleData = LocaleData { name: "bn-IN", parent: "bn", system: "beng", numbers: &NUMBERS_BN_IN, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_BN_IN_LATN)], plurals: PLURALS_BN, currencies: &[
     CurrencyData { code: *b"ANG", fields: "dনেদ\u{9be}রল\u{9cd}য\u{9be}ন\u{9cd}ডস অ\u{9cd}য\u{9be}ন\u{9cd}টিলিয\u{9bc}\u{9be}ন গিল\u{9cd}ড\u{9be}র\u{1f}5নেদ\u{9be}রল\u{9cd}য\u{9be}ন\u{9cd}ডস অ\u{9cd}য\u{9be}ন\u{9cd}টিলিয\u{9bc}\u{9be}ন গিল\u{9cd}ড\u{9be}র" },
     CurrencyData { code: *b"AWG", fields: "dআর\u{9c1}ব\u{9be}ন গিল\u{9cd}ড\u{9be}র\u{1f}5আর\u{9c1}ব\u{9be}ন গিল\u{9cd}ড\u{9be}র" },
     CurrencyData { code: *b"BMD", fields: "dব\u{9be}রম\u{9c1}ড\u{9be}ন ডল\u{9be}র\u{1f}5ব\u{9be}রম\u{9c1}ড\u{9be}ন ডল\u{9be}র" },
@@ -2951,7 +3631,7 @@ static L_BN_IN: LocaleData = LocaleData { name: "bn-IN", parent: "bn", numbers: 
 ] };
 
 #[cfg(feature = "bs")]
-static L_BS: LocaleData = LocaleData { name: "bs", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_BS, currencies: &[
+static L_BS: LocaleData = LocaleData { name: "bs", parent: "und", system: "latn", numbers: &NUMBERS_BS, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_BS, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorska pezeta\u{1f}1Andorijska pezeta\u{1f}3Andorijske pezete\u{1f}5Andorijske pezete" },
     CurrencyData { code: *b"AED", fields: "dDirham Ujedinjenih Arapskih Emirata\u{1f}1dirham (UAE)\u{1f}3dirhama (UAE)\u{1f}5dirhama (UAE)" },
     CurrencyData { code: *b"AFA", fields: "dAvganistanski avgani (1927–2002)\u{1f}1Avganistanski avgan (1927–2002)\u{1f}3Avganistanska avgana (1927–2002)\u{1f}5Avganistanski avgan (1927–2002)" },
@@ -3257,11 +3937,11 @@ static L_BS: LocaleData = LocaleData { name: "bs", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "bs")]
-static L_BS_LATN: LocaleData = LocaleData { name: "bs-Latn", parent: "bs", numbers: &NUMBERS_AZ, plurals: PLURALS_BS, currencies: &[
+static L_BS_LATN: LocaleData = LocaleData { name: "bs-Latn", parent: "bs", system: "latn", numbers: &NUMBERS_BS, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_BS, currencies: &[
 ] };
 
 #[cfg(feature = "ca")]
-static L_CA: LocaleData = LocaleData { name: "ca", parent: "und", numbers: &NUMBERS_CA, plurals: PLURALS_CA, currencies: &[
+static L_CA: LocaleData = LocaleData { name: "ca", parent: "und", system: "latn", numbers: &NUMBERS_CA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CA, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpesseta andorrana\u{1f}1pesseta andorrana\u{1f}5pessetes andorranes" },
     CurrencyData { code: *b"AED", fields: "ddírham dels Emirats Àrabs Units\u{1f}1dírham dels Emirats Àrabs Units\u{1f}5dírhams dels Emirats Àrabs Units" },
     CurrencyData { code: *b"AFA", fields: "dafgani afganès (1927–2002)\u{1f}1afgani afganès (1927–2002)\u{1f}5afganis afganesos (1927–2002)" },
@@ -3567,24 +4247,24 @@ static L_CA: LocaleData = LocaleData { name: "ca", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ca")]
-static L_CA_AD: LocaleData = LocaleData { name: "ca-AD", parent: "ca", numbers: &NUMBERS_CA, plurals: PLURALS_CA, currencies: &[
+static L_CA_AD: LocaleData = LocaleData { name: "ca-AD", parent: "ca", system: "latn", numbers: &NUMBERS_CA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CA, currencies: &[
 ] };
 
 #[cfg(feature = "ca")]
-static L_CA_ES_VALENCIA: LocaleData = LocaleData { name: "ca-ES-valencia", parent: "ca", numbers: &NUMBERS_CA, plurals: PLURALS_CA, currencies: &[
+static L_CA_ES_VALENCIA: LocaleData = LocaleData { name: "ca-ES-valencia", parent: "ca", system: "latn", numbers: &NUMBERS_CA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CA, currencies: &[
 ] };
 
 #[cfg(feature = "ca")]
-static L_CA_FR: LocaleData = LocaleData { name: "ca-FR", parent: "ca", numbers: &NUMBERS_CA, plurals: PLURALS_CA, currencies: &[
+static L_CA_FR: LocaleData = LocaleData { name: "ca-FR", parent: "ca", system: "latn", numbers: &NUMBERS_CA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CA, currencies: &[
     CurrencyData { code: *b"FRF", fields: "sF" },
 ] };
 
 #[cfg(feature = "ca")]
-static L_CA_IT: LocaleData = LocaleData { name: "ca-IT", parent: "ca", numbers: &NUMBERS_CA, plurals: PLURALS_CA, currencies: &[
+static L_CA_IT: LocaleData = LocaleData { name: "ca-IT", parent: "ca", system: "latn", numbers: &NUMBERS_CA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CA, currencies: &[
 ] };
 
 #[cfg(feature = "chr")]
-static L_CHR: LocaleData = LocaleData { name: "chr", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_CHR, currencies: &[
+static L_CHR: LocaleData = LocaleData { name: "chr", parent: "und", system: "latn", numbers: &NUMBERS_CHR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CHR, currencies: &[
     CurrencyData { code: *b"AED", fields: "dᏌᏊ ᎢᏳᎾᎵᏍᏔᏅ ᎡᎳᏈ ᎢᎹᎵᏘᏏ ᎠᏕᎳ\u{1f}1UAE ᎠᏕᎳ\u{1f}5UAE ᎠᏕᎳ" },
     CurrencyData { code: *b"AFN", fields: "dᎠᏫᎨᏂᏍᏖᏂ ᎠᏕᎳ\u{1f}5ᎠᏫᎨᏂᏍᏖᏂ ᎠᏕᎳ" },
     CurrencyData { code: *b"ALL", fields: "dᎠᎵᏇᏂᏯ ᎠᏕᎳ\u{1f}5ᎠᎵᏇᏂᏯ ᎠᏕᎳ" },
@@ -3752,7 +4432,7 @@ static L_CHR: LocaleData = LocaleData { name: "chr", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "cs")]
-static L_CS: LocaleData = LocaleData { name: "cs", parent: "und", numbers: &NUMBERS_CS, plurals: PLURALS_CS, currencies: &[
+static L_CS: LocaleData = LocaleData { name: "cs", parent: "und", system: "latn", numbers: &NUMBERS_CS, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CS, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorrská peseta\u{1f}1andorrská peseta\u{1f}3andorrské pesety\u{1f}4andorrské pesety\u{1f}5andorrských peset" },
     CurrencyData { code: *b"AED", fields: "dSAE dirham\u{1f}1SAE dirham\u{1f}3SAE dirhamy\u{1f}4SAE dirhamu\u{1f}5SAE dirhamů" },
     CurrencyData { code: *b"AFA", fields: "dafghánský afghán (1927–2002)\u{1f}1afghánský afghán (1927–2002)\u{1f}3afghánské afghány (1927–2002)\u{1f}4afghánského afghánu (1927–2002)\u{1f}5afghánských afghánů (1927–2002)" },
@@ -4060,7 +4740,7 @@ static L_CS: LocaleData = LocaleData { name: "cs", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "cv")]
-static L_CV: LocaleData = LocaleData { name: "cv", parent: "und", numbers: &NUMBERS_CV, plurals: PLURALS_CV, currencies: &[
+static L_CV: LocaleData = LocaleData { name: "cv", parent: "und", system: "latn", numbers: &NUMBERS_CV, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CV, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dАндорра песи\u{1f}0Андорра песи\u{1f}1Андорра песи\u{1f}5Андорра песи" },
     CurrencyData { code: *b"AED", fields: "dПӗрлешнӗ Араб Эмирачӗсен дирхамӗ\u{1f}0ПАЭ дирхамӗ\u{1f}1ПАЭ дирхамӗ\u{1f}5ПАЭ дирхамӗ" },
     CurrencyData { code: *b"AFA", fields: "dАфганистан афганийӗ (1927–2002)\u{1f}0Афганистан афганийӗ (1927–2002)\u{1f}1Афганистан афганийӗ (1927–2002)\u{1f}5Афганистан афганийӗ (1927–2002)" },
@@ -4371,7 +5051,7 @@ static L_CV: LocaleData = LocaleData { name: "cv", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "cy")]
-static L_CY: LocaleData = LocaleData { name: "cy", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_CY, currencies: &[
+static L_CY: LocaleData = LocaleData { name: "cy", parent: "und", system: "latn", numbers: &NUMBERS_CY, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_CY, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirham Yr Emiradau Arabaidd Unedig\u{1f}0dirham yr Emiradau Arabaidd Unedig\u{1f}1dirham yr Emiradau Arabaidd Unedig\u{1f}2dirham yr Emiradau Arabaidd Unedig\u{1f}3dirham yr Emiradau Arabaidd Unedig\u{1f}4dirham yr Emiradau Arabaidd Unedig\u{1f}5dirham yr Emiradau Arabaidd Unedig" },
     CurrencyData { code: *b"AFA", fields: "dAfghani Afghanistan (1927–2002)\u{1f}0afghani Afghanistan (1927–2002)\u{1f}1afghani Afghanistan (1927–2002)\u{1f}2afghani Afghanistan (1927–2002)\u{1f}3afghani Afghanistan (1927–2002)\u{1f}4afghani Afghanistan (1927–2002)\u{1f}5afghani Afghanistan (1927–2002)" },
     CurrencyData { code: *b"AFN", fields: "dAfghani Afghanistan\u{1f}0afghani Afghanistan\u{1f}1afghani Afghanistan\u{1f}2afghani Afghanistan\u{1f}3afghani Afghanistan\u{1f}4afghani Afghanistan\u{1f}5afghani Afghanistan" },
@@ -4638,7 +5318,7 @@ static L_CY: LocaleData = LocaleData { name: "cy", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "da")]
-static L_DA: LocaleData = LocaleData { name: "da", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_DA, currencies: &[
+static L_DA: LocaleData = LocaleData { name: "da", parent: "und", system: "latn", numbers: &NUMBERS_DA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DA, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorransk peseta\u{1f}1Andorransk peseta\u{1f}5Andorranske pesetas" },
     CurrencyData { code: *b"AED", fields: "ddirham fra de Forenede Arabiske Emirater\u{1f}1FAE-dirham\u{1f}5FAE-dirham" },
     CurrencyData { code: *b"AFA", fields: "dAfghansk afghani (1927–2002)\u{1f}1Afghansk afghani (1927–2002)\u{1f}5Afghanske afghani (1927–2002)" },
@@ -4917,11 +5597,11 @@ static L_DA: LocaleData = LocaleData { name: "da", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "da")]
-static L_DA_GL: LocaleData = LocaleData { name: "da-GL", parent: "da", numbers: &NUMBERS_AZ, plurals: PLURALS_DA, currencies: &[
+static L_DA_GL: LocaleData = LocaleData { name: "da-GL", parent: "da", system: "latn", numbers: &NUMBERS_DA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DA, currencies: &[
 ] };
 
 #[cfg(feature = "de")]
-static L_DE: LocaleData = LocaleData { name: "de", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_DE, currencies: &[
+static L_DE: LocaleData = LocaleData { name: "de", parent: "und", system: "latn", numbers: &NUMBERS_DE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DE, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorranische Pesete\u{1f}1Andorranische Pesete\u{1f}5Andorranische Peseten" },
     CurrencyData { code: *b"AED", fields: "dVAE-Dirham\u{1f}5VAE-Dirham" },
     CurrencyData { code: *b"AFA", fields: "dAfghanische Afghani (1927–2002)\u{1f}5Afghanische Afghani (1927–2002)" },
@@ -5230,15 +5910,15 @@ static L_DE: LocaleData = LocaleData { name: "de", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "de")]
-static L_DE_AT: LocaleData = LocaleData { name: "de-AT", parent: "de", numbers: &NUMBERS_DE_AT, plurals: PLURALS_DE, currencies: &[
+static L_DE_AT: LocaleData = LocaleData { name: "de-AT", parent: "de", system: "latn", numbers: &NUMBERS_DE_AT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DE, currencies: &[
 ] };
 
 #[cfg(feature = "de")]
-static L_DE_BE: LocaleData = LocaleData { name: "de-BE", parent: "de", numbers: &NUMBERS_AZ, plurals: PLURALS_DE, currencies: &[
+static L_DE_BE: LocaleData = LocaleData { name: "de-BE", parent: "de", system: "latn", numbers: &NUMBERS_DE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DE, currencies: &[
 ] };
 
 #[cfg(feature = "de")]
-static L_DE_CH: LocaleData = LocaleData { name: "de-CH", parent: "de", numbers: &NUMBERS_DE_CH, plurals: PLURALS_DE, currencies: &[
+static L_DE_CH: LocaleData = LocaleData { name: "de-CH", parent: "de", system: "latn", numbers: &NUMBERS_DE_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DE, currencies: &[
     CurrencyData { code: *b"BYN", fields: "dWeissrussischer Rubel\u{1f}1Weissrussischer Rubel\u{1f}5Weissrussische Rubel" },
     CurrencyData { code: *b"BYR", fields: "dWeissrussischer Rubel (2000–2016)\u{1f}1Weissrussischer Rubel (2000–2016)\u{1f}5Weissrussische Rubel (2000–2016)" },
     CurrencyData { code: *b"EUR", fields: "sEUR\u{1f}nEUR" },
@@ -5247,21 +5927,21 @@ static L_DE_CH: LocaleData = LocaleData { name: "de-CH", parent: "de", numbers: 
 ] };
 
 #[cfg(feature = "de")]
-static L_DE_IT: LocaleData = LocaleData { name: "de-IT", parent: "de", numbers: &NUMBERS_AZ, plurals: PLURALS_DE, currencies: &[
+static L_DE_IT: LocaleData = LocaleData { name: "de-IT", parent: "de", system: "latn", numbers: &NUMBERS_DE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DE, currencies: &[
 ] };
 
 #[cfg(feature = "de")]
-static L_DE_LI: LocaleData = LocaleData { name: "de-LI", parent: "de", numbers: &NUMBERS_DE_LI, plurals: PLURALS_DE, currencies: &[
+static L_DE_LI: LocaleData = LocaleData { name: "de-LI", parent: "de", system: "latn", numbers: &NUMBERS_DE_LI, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DE, currencies: &[
     CurrencyData { code: *b"EUR", fields: "sEUR" },
 ] };
 
 #[cfg(feature = "de")]
-static L_DE_LU: LocaleData = LocaleData { name: "de-LU", parent: "de", numbers: &NUMBERS_AZ, plurals: PLURALS_DE, currencies: &[
+static L_DE_LU: LocaleData = LocaleData { name: "de-LU", parent: "de", system: "latn", numbers: &NUMBERS_DE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DE, currencies: &[
     CurrencyData { code: *b"LUF", fields: "sF\u{1f}..\u{1f},," },
 ] };
 
 #[cfg(feature = "dsb")]
-static L_DSB: LocaleData = LocaleData { name: "dsb", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_DSB, currencies: &[
+static L_DSB: LocaleData = LocaleData { name: "dsb", parent: "und", system: "latn", numbers: &NUMBERS_DSB, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_DSB, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorraska peseta\u{1f}1andorraska peseta\u{1f}2andorraskej peseśe\u{1f}3andorraske pesety\u{1f}5andorraskich pesetow" },
     CurrencyData { code: *b"AED", fields: "dZAE dirham\u{1f}1ZAE dirham\u{1f}2ZAE dirhama\u{1f}3SAE dirhamy\u{1f}5SAE dirhamow" },
     CurrencyData { code: *b"AFN", fields: "dafghaniski afgani\u{1f}1afghaniski afgani\u{1f}2afghaniskej afganija\u{1f}3afghaniske afganije\u{1f}5afghaniskich afganijow" },
@@ -5457,7 +6137,7 @@ static L_DSB: LocaleData = LocaleData { name: "dsb", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "el")]
-static L_EL: LocaleData = LocaleData { name: "el", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_EL, currencies: &[
+static L_EL: LocaleData = LocaleData { name: "el", parent: "und", system: "latn", numbers: &NUMBERS_EL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EL, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dΠεσέτα Ανδόρας\u{1f}1πεσέτα Ανδόρας\u{1f}5πεσέτες Ανδόρας" },
     CurrencyData { code: *b"AED", fields: "dΝτιράμ Ηνωμένων Αραβικών Εμιράτων\u{1f}1ντιράμ Ηνωμένων Αραβικών Εμιράτων\u{1f}5ντιράμ Ηνωμένων Αραβικών Εμιράτων" },
     CurrencyData { code: *b"AFA", fields: "dΑφγανί Αφγανιστάν (1927–2002)\u{1f}1αφγάνι Αφγανιστάν (AFA)\u{1f}5αφγάνι Αφγανιστάν (AFA)" },
@@ -5734,11 +6414,11 @@ static L_EL: LocaleData = LocaleData { name: "el", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "el")]
-static L_EL_CY: LocaleData = LocaleData { name: "el-CY", parent: "el", numbers: &NUMBERS_AZ, plurals: PLURALS_EL, currencies: &[
+static L_EL_CY: LocaleData = LocaleData { name: "el-CY", parent: "el", system: "latn", numbers: &NUMBERS_EL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EL, currencies: &[
 ] };
 
 #[cfg(feature = "el")]
-static L_EL_POLYTON: LocaleData = LocaleData { name: "el-polyton", parent: "el", numbers: &NUMBERS_AZ, plurals: PLURALS_EL, currencies: &[
+static L_EL_POLYTON: LocaleData = LocaleData { name: "el-polyton", parent: "el", system: "latn", numbers: &NUMBERS_EL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EL, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dΠεσέτα Ἀνδόρας" },
     CurrencyData { code: *b"AED", fields: "dΝτιρὰμ Ἡνωμένων Ἀραβικῶν Ἐμιράτων" },
     CurrencyData { code: *b"ALL", fields: "dΛὲκ Ἀλβανίας" },
@@ -5844,7 +6524,7 @@ static L_EL_POLYTON: LocaleData = LocaleData { name: "el-polyton", parent: "el",
 ] };
 
 #[cfg(feature = "en")]
-static L_EN: LocaleData = LocaleData { name: "en", parent: "und", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN: LocaleData = LocaleData { name: "en", parent: "und", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorran Peseta\u{1f}1Andorran peseta\u{1f}5Andorran pesetas" },
     CurrencyData { code: *b"AED", fields: "sAED\u{1f}dUnited Arab Emirates Dirham\u{1f}1UAE dirham\u{1f}5UAE dirhams" },
     CurrencyData { code: *b"AFA", fields: "dAfghan Afghani (1927–2002)\u{1f}1Afghan afghani (1927–2002)\u{1f}5Afghan afghanis (1927–2002)" },
@@ -6155,7 +6835,7 @@ static L_EN: LocaleData = LocaleData { name: "en", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_001: LocaleData = LocaleData { name: "en-001", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_001: LocaleData = LocaleData { name: "en-001", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AFN", fields: "1Afghan afghani\u{1f}5Afghan afghanis" },
     CurrencyData { code: *b"BMD", fields: "dBermudian Dollar\u{1f}1Bermudian dollar\u{1f}5Bermudian dollars" },
     CurrencyData { code: *b"BYB", fields: "dBelarusian New Rouble (1994–1999)\u{1f}1Belarusian new rouble (1994–1999)\u{1f}5Belarusian new roubles (1994–1999)" },
@@ -6176,35 +6856,35 @@ static L_EN_001: LocaleData = LocaleData { name: "en-001", parent: "en", numbers
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_150: LocaleData = LocaleData { name: "en-150", parent: "en-001", numbers: &NUMBERS_EN_150, plurals: PLURALS_EN, currencies: &[
+static L_EN_150: LocaleData = LocaleData { name: "en-150", parent: "en-001", system: "latn", numbers: &NUMBERS_EN_150, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"EUR", fields: "p¤#,##0.00" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_AE: LocaleData = LocaleData { name: "en-AE", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_AE: LocaleData = LocaleData { name: "en-AE", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_AG: LocaleData = LocaleData { name: "en-AG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_AG: LocaleData = LocaleData { name: "en-AG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_AI: LocaleData = LocaleData { name: "en-AI", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_AI: LocaleData = LocaleData { name: "en-AI", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_AS: LocaleData = LocaleData { name: "en-AS", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_AS: LocaleData = LocaleData { name: "en-AS", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_AT: LocaleData = LocaleData { name: "en-AT", parent: "en-150", numbers: &NUMBERS_EN_AT, plurals: PLURALS_EN, currencies: &[
+static L_EN_AT: LocaleData = LocaleData { name: "en-AT", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_AT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"EUR", fields: "p¤\u{a0}#,##0.00" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_AU: LocaleData = LocaleData { name: "en-AU", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_AU: LocaleData = LocaleData { name: "en-AU", parent: "en-001", system: "latn", numbers: &NUMBERS_EN_AU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AFN", fields: "1Afghan Afghani\u{1f}5Afghan Afghanis" },
     CurrencyData { code: *b"AUD", fields: "s$" },
     CurrencyData { code: *b"BAM", fields: "dBosnia-Herzegovina Convertible Marka\u{1f}1Bosnia-Herzegovina convertible marka\u{1f}5Bosnia-Herzegovina convertible marka" },
@@ -6258,41 +6938,41 @@ static L_EN_AU: LocaleData = LocaleData { name: "en-AU", parent: "en-001", numbe
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_BB: LocaleData = LocaleData { name: "en-BB", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_BB: LocaleData = LocaleData { name: "en-BB", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"BBD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_BE: LocaleData = LocaleData { name: "en-BE", parent: "en-150", numbers: &NUMBERS_EN_BE, plurals: PLURALS_EN, currencies: &[
+static L_EN_BE: LocaleData = LocaleData { name: "en-BE", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_BE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_BI: LocaleData = LocaleData { name: "en-BI", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_BI: LocaleData = LocaleData { name: "en-BI", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"BIF", fields: "sFBu" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_BM: LocaleData = LocaleData { name: "en-BM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_BM: LocaleData = LocaleData { name: "en-BM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"BMD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_BS: LocaleData = LocaleData { name: "en-BS", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_BS: LocaleData = LocaleData { name: "en-BS", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"BSD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_BW: LocaleData = LocaleData { name: "en-BW", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_BW: LocaleData = LocaleData { name: "en-BW", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"BWP", fields: "sP" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_BZ: LocaleData = LocaleData { name: "en-BZ", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_BZ: LocaleData = LocaleData { name: "en-BZ", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"BZD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CA: LocaleData = LocaleData { name: "en-CA", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_CA: LocaleData = LocaleData { name: "en-CA", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AFN", fields: "1Afghan afghani\u{1f}5Afghan afghanis" },
     CurrencyData { code: *b"BMD", fields: "dBermudian Dollar\u{1f}1Bermudian dollar\u{1f}5Bermudian dollars" },
     CurrencyData { code: *b"BYB", fields: "dBelarusian New Rouble (1994–1999)\u{1f}1Belarusian new rouble (1994–1999)\u{1f}5Belarusian new roubles (1994–1999)" },
@@ -6311,166 +6991,166 @@ static L_EN_CA: LocaleData = LocaleData { name: "en-CA", parent: "en", numbers: 
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CC: LocaleData = LocaleData { name: "en-CC", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_CC: LocaleData = LocaleData { name: "en-CC", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AUD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CH: LocaleData = LocaleData { name: "en-CH", parent: "en-150", numbers: &NUMBERS_EN_CH, plurals: PLURALS_EN, currencies: &[
+static L_EN_CH: LocaleData = LocaleData { name: "en-CH", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CK: LocaleData = LocaleData { name: "en-CK", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_CK: LocaleData = LocaleData { name: "en-CK", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NZD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CM: LocaleData = LocaleData { name: "en-CM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_CM: LocaleData = LocaleData { name: "en-CM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CX: LocaleData = LocaleData { name: "en-CX", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_CX: LocaleData = LocaleData { name: "en-CX", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AUD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CY: LocaleData = LocaleData { name: "en-CY", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_CY: LocaleData = LocaleData { name: "en-CY", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_CZ: LocaleData = LocaleData { name: "en-CZ", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_CZ: LocaleData = LocaleData { name: "en-CZ", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_DE: LocaleData = LocaleData { name: "en-DE", parent: "en-150", numbers: &NUMBERS_EN_BE, plurals: PLURALS_EN, currencies: &[
+static L_EN_DE: LocaleData = LocaleData { name: "en-DE", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_BE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_DG: LocaleData = LocaleData { name: "en-DG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_DG: LocaleData = LocaleData { name: "en-DG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_DK: LocaleData = LocaleData { name: "en-DK", parent: "en-150", numbers: &NUMBERS_EN_BE, plurals: PLURALS_EN, currencies: &[
+static L_EN_DK: LocaleData = LocaleData { name: "en-DK", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_BE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"DKK", fields: "skr." },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_DM: LocaleData = LocaleData { name: "en-DM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_DM: LocaleData = LocaleData { name: "en-DM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_EE: LocaleData = LocaleData { name: "en-EE", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_EE: LocaleData = LocaleData { name: "en-EE", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_ER: LocaleData = LocaleData { name: "en-ER", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_ER: LocaleData = LocaleData { name: "en-ER", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"ERN", fields: "sNfk" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_ES: LocaleData = LocaleData { name: "en-ES", parent: "en-150", numbers: &NUMBERS_EN_BE, plurals: PLURALS_EN, currencies: &[
+static L_EN_ES: LocaleData = LocaleData { name: "en-ES", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_BE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_FI: LocaleData = LocaleData { name: "en-FI", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_FI: LocaleData = LocaleData { name: "en-FI", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_FJ: LocaleData = LocaleData { name: "en-FJ", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_FJ: LocaleData = LocaleData { name: "en-FJ", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"FJD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_FK: LocaleData = LocaleData { name: "en-FK", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_FK: LocaleData = LocaleData { name: "en-FK", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"FKP", fields: "s£" },
     CurrencyData { code: *b"GBP", fields: "sGB£" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_FM: LocaleData = LocaleData { name: "en-FM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_FM: LocaleData = LocaleData { name: "en-FM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_FR: LocaleData = LocaleData { name: "en-FR", parent: "en-150", numbers: &NUMBERS_EN_FR, plurals: PLURALS_EN, currencies: &[
+static L_EN_FR: LocaleData = LocaleData { name: "en-FR", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GB: LocaleData = LocaleData { name: "en-GB", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GB: LocaleData = LocaleData { name: "en-GB", parent: "en-001", system: "latn", numbers: &NUMBERS_EN_GB, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GD: LocaleData = LocaleData { name: "en-GD", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GD: LocaleData = LocaleData { name: "en-GD", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GE: LocaleData = LocaleData { name: "en-GE", parent: "en-150", numbers: &NUMBERS_EN_FR, plurals: PLURALS_EN, currencies: &[
+static L_EN_GE: LocaleData = LocaleData { name: "en-GE", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GEL", fields: "s₾" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GG: LocaleData = LocaleData { name: "en-GG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GG: LocaleData = LocaleData { name: "en-GG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GBP", fields: "dUK Pound\u{1f}1UK pound\u{1f}5UK pounds" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GH: LocaleData = LocaleData { name: "en-GH", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GH: LocaleData = LocaleData { name: "en-GH", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GHS", fields: "sGH₵" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GI: LocaleData = LocaleData { name: "en-GI", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GI: LocaleData = LocaleData { name: "en-GI", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GBP", fields: "sGB£" },
     CurrencyData { code: *b"GIP", fields: "s£" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GM: LocaleData = LocaleData { name: "en-GM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GM: LocaleData = LocaleData { name: "en-GM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GMD", fields: "sD" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GS: LocaleData = LocaleData { name: "en-GS", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GS: LocaleData = LocaleData { name: "en-GS", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GU: LocaleData = LocaleData { name: "en-GU", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GU: LocaleData = LocaleData { name: "en-GU", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_GY: LocaleData = LocaleData { name: "en-GY", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_GY: LocaleData = LocaleData { name: "en-GY", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GYD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_HK: LocaleData = LocaleData { name: "en-HK", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_HK: LocaleData = LocaleData { name: "en-HK", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_HU: LocaleData = LocaleData { name: "en-HU", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_HU: LocaleData = LocaleData { name: "en-HU", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_ID: LocaleData = LocaleData { name: "en-ID", parent: "en-001", numbers: &NUMBERS_EN_ID, plurals: PLURALS_EN, currencies: &[
+static L_EN_ID: LocaleData = LocaleData { name: "en-ID", parent: "en-001", system: "latn", numbers: &NUMBERS_EN_ID, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"IDR", fields: "sRp" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_IE: LocaleData = LocaleData { name: "en-IE", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_IE: LocaleData = LocaleData { name: "en-IE", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_IL: LocaleData = LocaleData { name: "en-IL", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_IL: LocaleData = LocaleData { name: "en-IL", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_IM: LocaleData = LocaleData { name: "en-IM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_IM: LocaleData = LocaleData { name: "en-IM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GBP", fields: "dUK Pound\u{1f}1UK pound\u{1f}5UK pounds" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_IN: LocaleData = LocaleData { name: "en-IN", parent: "en-001", numbers: &NUMBERS_EN_IN, plurals: PLURALS_EN, currencies: &[
+static L_EN_IN: LocaleData = LocaleData { name: "en-IN", parent: "en-001", system: "latn", numbers: &NUMBERS_EN_IN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"ANG", fields: "1Netherlands Antillean Guilder\u{1f}5Netherlands Antillean Guilders" },
     CurrencyData { code: *b"KGS", fields: "dKyrgyzstani Som\u{1f}1Kyrgyzstani Som\u{1f}5Kyrgyzstani Soms" },
     CurrencyData { code: *b"KZT", fields: "1Kazakhstani Tenge\u{1f}5Kazakhstani Tenges" },
@@ -6486,341 +7166,341 @@ static L_EN_IN: LocaleData = LocaleData { name: "en-IN", parent: "en-001", numbe
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_IO: LocaleData = LocaleData { name: "en-IO", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_IO: LocaleData = LocaleData { name: "en-IO", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_IT: LocaleData = LocaleData { name: "en-IT", parent: "en-150", numbers: &NUMBERS_EN_BE, plurals: PLURALS_EN, currencies: &[
+static L_EN_IT: LocaleData = LocaleData { name: "en-IT", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_BE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_JE: LocaleData = LocaleData { name: "en-JE", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_JE: LocaleData = LocaleData { name: "en-JE", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GBP", fields: "dUK Pound\u{1f}1UK pound\u{1f}5UK pounds" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_JM: LocaleData = LocaleData { name: "en-JM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_JM: LocaleData = LocaleData { name: "en-JM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"JMD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_JP: LocaleData = LocaleData { name: "en-JP", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_JP: LocaleData = LocaleData { name: "en-JP", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_KE: LocaleData = LocaleData { name: "en-KE", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_KE: LocaleData = LocaleData { name: "en-KE", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"KES", fields: "sKsh" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_KI: LocaleData = LocaleData { name: "en-KI", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_KI: LocaleData = LocaleData { name: "en-KI", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AUD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_KN: LocaleData = LocaleData { name: "en-KN", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_KN: LocaleData = LocaleData { name: "en-KN", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_KY: LocaleData = LocaleData { name: "en-KY", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_KY: LocaleData = LocaleData { name: "en-KY", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"KYD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_LC: LocaleData = LocaleData { name: "en-LC", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_LC: LocaleData = LocaleData { name: "en-LC", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_LR: LocaleData = LocaleData { name: "en-LR", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_LR: LocaleData = LocaleData { name: "en-LR", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"LRD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_LS: LocaleData = LocaleData { name: "en-LS", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_LS: LocaleData = LocaleData { name: "en-LS", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"ZAR", fields: "sR" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_LT: LocaleData = LocaleData { name: "en-LT", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_LT: LocaleData = LocaleData { name: "en-LT", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_LV: LocaleData = LocaleData { name: "en-LV", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_LV: LocaleData = LocaleData { name: "en-LV", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MG: LocaleData = LocaleData { name: "en-MG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MG: LocaleData = LocaleData { name: "en-MG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"MGA", fields: "sAr" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MH: LocaleData = LocaleData { name: "en-MH", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MH: LocaleData = LocaleData { name: "en-MH", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MO: LocaleData = LocaleData { name: "en-MO", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MO: LocaleData = LocaleData { name: "en-MO", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"MOP", fields: "sMOP$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MP: LocaleData = LocaleData { name: "en-MP", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MP: LocaleData = LocaleData { name: "en-MP", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MS: LocaleData = LocaleData { name: "en-MS", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MS: LocaleData = LocaleData { name: "en-MS", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MT: LocaleData = LocaleData { name: "en-MT", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MT: LocaleData = LocaleData { name: "en-MT", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GBP", fields: "sGB£" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MU: LocaleData = LocaleData { name: "en-MU", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MU: LocaleData = LocaleData { name: "en-MU", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"MUR", fields: "sRs" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MV: LocaleData = LocaleData { name: "en-MV", parent: "en-001", numbers: &NUMBERS_EN_MV, plurals: PLURALS_EN, currencies: &[
+static L_EN_MV: LocaleData = LocaleData { name: "en-MV", parent: "en-001", system: "latn", numbers: &NUMBERS_EN_MV, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"MVR", fields: "sRf" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MW: LocaleData = LocaleData { name: "en-MW", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MW: LocaleData = LocaleData { name: "en-MW", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"MWK", fields: "sMK" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_MY: LocaleData = LocaleData { name: "en-MY", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_MY: LocaleData = LocaleData { name: "en-MY", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"MYR", fields: "sRM" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NA: LocaleData = LocaleData { name: "en-NA", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_NA: LocaleData = LocaleData { name: "en-NA", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NAD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NF: LocaleData = LocaleData { name: "en-NF", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_NF: LocaleData = LocaleData { name: "en-NF", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AUD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NG: LocaleData = LocaleData { name: "en-NG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_NG: LocaleData = LocaleData { name: "en-NG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NGN", fields: "s₦" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NL: LocaleData = LocaleData { name: "en-NL", parent: "en-150", numbers: &NUMBERS_EN_NL, plurals: PLURALS_EN, currencies: &[
+static L_EN_NL: LocaleData = LocaleData { name: "en-NL", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NO: LocaleData = LocaleData { name: "en-NO", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_NO: LocaleData = LocaleData { name: "en-NO", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NOK", fields: "skr" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NR: LocaleData = LocaleData { name: "en-NR", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_NR: LocaleData = LocaleData { name: "en-NR", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AUD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NU: LocaleData = LocaleData { name: "en-NU", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_NU: LocaleData = LocaleData { name: "en-NU", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NZD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_NZ: LocaleData = LocaleData { name: "en-NZ", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_NZ: LocaleData = LocaleData { name: "en-NZ", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NZD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PG: LocaleData = LocaleData { name: "en-PG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_PG: LocaleData = LocaleData { name: "en-PG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"PGK", fields: "sK" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PH: LocaleData = LocaleData { name: "en-PH", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_PH: LocaleData = LocaleData { name: "en-PH", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PK: LocaleData = LocaleData { name: "en-PK", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_PK: LocaleData = LocaleData { name: "en-PK", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"PKR", fields: "sRs" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PL: LocaleData = LocaleData { name: "en-PL", parent: "en-150", numbers: &NUMBERS_EN_PL, plurals: PLURALS_EN, currencies: &[
+static L_EN_PL: LocaleData = LocaleData { name: "en-PL", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_PL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PN: LocaleData = LocaleData { name: "en-PN", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_PN: LocaleData = LocaleData { name: "en-PN", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NZD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PR: LocaleData = LocaleData { name: "en-PR", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_PR: LocaleData = LocaleData { name: "en-PR", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PT: LocaleData = LocaleData { name: "en-PT", parent: "en-150", numbers: &NUMBERS_EN_PT, plurals: PLURALS_EN, currencies: &[
+static L_EN_PT: LocaleData = LocaleData { name: "en-PT", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_PT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_PW: LocaleData = LocaleData { name: "en-PW", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_PW: LocaleData = LocaleData { name: "en-PW", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_RO: LocaleData = LocaleData { name: "en-RO", parent: "en-150", numbers: &NUMBERS_EN_PL, plurals: PLURALS_EN, currencies: &[
+static L_EN_RO: LocaleData = LocaleData { name: "en-RO", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_PL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_RW: LocaleData = LocaleData { name: "en-RW", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_RW: LocaleData = LocaleData { name: "en-RW", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"RWF", fields: "sRF" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SB: LocaleData = LocaleData { name: "en-SB", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SB: LocaleData = LocaleData { name: "en-SB", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"SBD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SC: LocaleData = LocaleData { name: "en-SC", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SC: LocaleData = LocaleData { name: "en-SC", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"SCR", fields: "sSR" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SD: LocaleData = LocaleData { name: "en-SD", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SD: LocaleData = LocaleData { name: "en-SD", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SE: LocaleData = LocaleData { name: "en-SE", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_SE: LocaleData = LocaleData { name: "en-SE", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_SE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"SEK", fields: "skr" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SG: LocaleData = LocaleData { name: "en-SG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SG: LocaleData = LocaleData { name: "en-SG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"SGD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SH: LocaleData = LocaleData { name: "en-SH", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SH: LocaleData = LocaleData { name: "en-SH", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GBP", fields: "sGB£" },
     CurrencyData { code: *b"SHP", fields: "s£" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SI: LocaleData = LocaleData { name: "en-SI", parent: "en-150", numbers: &NUMBERS_EN_PL, plurals: PLURALS_EN, currencies: &[
+static L_EN_SI: LocaleData = LocaleData { name: "en-SI", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_SI, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SK: LocaleData = LocaleData { name: "en-SK", parent: "en-150", numbers: &NUMBERS_EN_PT, plurals: PLURALS_EN, currencies: &[
+static L_EN_SK: LocaleData = LocaleData { name: "en-SK", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_SK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SL: LocaleData = LocaleData { name: "en-SL", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SL: LocaleData = LocaleData { name: "en-SL", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"SLE", fields: "sLe" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SS: LocaleData = LocaleData { name: "en-SS", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SS: LocaleData = LocaleData { name: "en-SS", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"GBP", fields: "sGB£" },
     CurrencyData { code: *b"SSP", fields: "s£" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SX: LocaleData = LocaleData { name: "en-SX", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SX: LocaleData = LocaleData { name: "en-SX", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"ANG", fields: "sNAf." },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_SZ: LocaleData = LocaleData { name: "en-SZ", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_SZ: LocaleData = LocaleData { name: "en-SZ", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"SZL", fields: "sE" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_TC: LocaleData = LocaleData { name: "en-TC", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_TC: LocaleData = LocaleData { name: "en-TC", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_TK: LocaleData = LocaleData { name: "en-TK", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_TK: LocaleData = LocaleData { name: "en-TK", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"NZD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_TO: LocaleData = LocaleData { name: "en-TO", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_TO: LocaleData = LocaleData { name: "en-TO", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"TOP", fields: "sT$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_TT: LocaleData = LocaleData { name: "en-TT", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_TT: LocaleData = LocaleData { name: "en-TT", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"TTD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_TV: LocaleData = LocaleData { name: "en-TV", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_TV: LocaleData = LocaleData { name: "en-TV", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"AUD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_TZ: LocaleData = LocaleData { name: "en-TZ", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_TZ: LocaleData = LocaleData { name: "en-TZ", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"TZS", fields: "sTSh" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_UA: LocaleData = LocaleData { name: "en-UA", parent: "en-150", numbers: &NUMBERS_EN_CZ, plurals: PLURALS_EN, currencies: &[
+static L_EN_UA: LocaleData = LocaleData { name: "en-UA", parent: "en-150", system: "latn", numbers: &NUMBERS_EN_CZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_UG: LocaleData = LocaleData { name: "en-UG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_UG: LocaleData = LocaleData { name: "en-UG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"UGX", fields: "sUSh" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_UM: LocaleData = LocaleData { name: "en-UM", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_UM: LocaleData = LocaleData { name: "en-UM", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_VC: LocaleData = LocaleData { name: "en-VC", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_VC: LocaleData = LocaleData { name: "en-VC", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"XCD", fields: "s$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_VG: LocaleData = LocaleData { name: "en-VG", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_VG: LocaleData = LocaleData { name: "en-VG", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_VI: LocaleData = LocaleData { name: "en-VI", parent: "en", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_VI: LocaleData = LocaleData { name: "en-VI", parent: "en", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_VU: LocaleData = LocaleData { name: "en-VU", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_VU: LocaleData = LocaleData { name: "en-VU", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"VUV", fields: "sVT" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_WS: LocaleData = LocaleData { name: "en-WS", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_WS: LocaleData = LocaleData { name: "en-WS", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"WST", fields: "sWS$" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_ZA: LocaleData = LocaleData { name: "en-ZA", parent: "en-001", numbers: &NUMBERS_EN_ZA, plurals: PLURALS_EN, currencies: &[
+static L_EN_ZA: LocaleData = LocaleData { name: "en-ZA", parent: "en-001", system: "latn", numbers: &NUMBERS_EN_ZA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"ZAR", fields: "sR" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_ZM: LocaleData = LocaleData { name: "en-ZM", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_ZM: LocaleData = LocaleData { name: "en-ZM", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
     CurrencyData { code: *b"ZMW", fields: "sK" },
 ] };
 
 #[cfg(feature = "en")]
-static L_EN_ZW: LocaleData = LocaleData { name: "en-ZW", parent: "en-001", numbers: &NUMBERS_EN, plurals: PLURALS_EN, currencies: &[
+static L_EN_ZW: LocaleData = LocaleData { name: "en-ZW", parent: "en-001", system: "latn", numbers: &NUMBERS_EN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EN, currencies: &[
 ] };
 
 #[cfg(feature = "es")]
-static L_ES: LocaleData = LocaleData { name: "es", parent: "und", numbers: &NUMBERS_ES, plurals: PLURALS_ES, currencies: &[
+static L_ES: LocaleData = LocaleData { name: "es", parent: "und", system: "latn", numbers: &NUMBERS_ES, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpeseta andorrana\u{1f}1peseta andorrana\u{1f}5pesetas andorranas" },
     CurrencyData { code: *b"AED", fields: "ddírham de los Emiratos Árabes Unidos\u{1f}1dírham de los Emiratos Árabes Unidos\u{1f}5dírhams de los Emiratos Árabes Unidos" },
     CurrencyData { code: *b"AFA", fields: "dafgani (1927–2002)\u{1f}5afgani (1927–2002)" },
@@ -7107,7 +7787,7 @@ static L_ES: LocaleData = LocaleData { name: "es", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_419: LocaleData = LocaleData { name: "es-419", parent: "es", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_419: LocaleData = LocaleData { name: "es-419", parent: "es", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"ANG", fields: "dflorín de las Antillas Neerlandesas\u{1f}1florín de las Antillas Neerlandesas\u{1f}5florines de las Antillas Neerlandesas" },
     CurrencyData { code: *b"BMD", fields: "ddólar de Bermudas\u{1f}1dólar de Bermudas\u{1f}5dólares de Bermudas" },
     CurrencyData { code: *b"EGP", fields: "nE£" },
@@ -7130,85 +7810,85 @@ static L_ES_419: LocaleData = LocaleData { name: "es-419", parent: "es", numbers
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_AR: LocaleData = LocaleData { name: "es-AR", parent: "es-419", numbers: &NUMBERS_ES_AR, plurals: PLURALS_ES, currencies: &[
+static L_ES_AR: LocaleData = LocaleData { name: "es-AR", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_AR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"ARS", fields: "s$" },
     CurrencyData { code: *b"USD", fields: "sUS$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_BO: LocaleData = LocaleData { name: "es-BO", parent: "es-419", numbers: &NUMBERS_ES_BO, plurals: PLURALS_ES, currencies: &[
+static L_ES_BO: LocaleData = LocaleData { name: "es-BO", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_BO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"BOB", fields: "sBs" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_BR: LocaleData = LocaleData { name: "es-BR", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_BR: LocaleData = LocaleData { name: "es-BR", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"BRL", fields: "sR$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_BZ: LocaleData = LocaleData { name: "es-BZ", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_BZ: LocaleData = LocaleData { name: "es-BZ", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"BZD", fields: "s$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_CL: LocaleData = LocaleData { name: "es-CL", parent: "es-419", numbers: &NUMBERS_ES_CL, plurals: PLURALS_ES, currencies: &[
+static L_ES_CL: LocaleData = LocaleData { name: "es-CL", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_CL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"CLP", fields: "s$\u{1f}dPeso chileno" },
     CurrencyData { code: *b"USD", fields: "sUS$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_CO: LocaleData = LocaleData { name: "es-CO", parent: "es-419", numbers: &NUMBERS_DE_AT, plurals: PLURALS_ES, currencies: &[
+static L_ES_CO: LocaleData = LocaleData { name: "es-CO", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_CO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"COP", fields: "s$" },
     CurrencyData { code: *b"USD", fields: "sUS$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_CR: LocaleData = LocaleData { name: "es-CR", parent: "es-419", numbers: &NUMBERS_ES_CR, plurals: PLURALS_ES, currencies: &[
+static L_ES_CR: LocaleData = LocaleData { name: "es-CR", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_CR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"CRC", fields: "s₡" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_CU: LocaleData = LocaleData { name: "es-CU", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_CU: LocaleData = LocaleData { name: "es-CU", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"CUP", fields: "s$" },
     CurrencyData { code: *b"USD", fields: "sUS$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_DO: LocaleData = LocaleData { name: "es-DO", parent: "es-419", numbers: &NUMBERS_AK, plurals: PLURALS_ES, currencies: &[
+static L_ES_DO: LocaleData = LocaleData { name: "es-DO", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_DO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"DOP", fields: "sRD$" },
     CurrencyData { code: *b"USD", fields: "sUS$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_EA: LocaleData = LocaleData { name: "es-EA", parent: "es", numbers: &NUMBERS_ES, plurals: PLURALS_ES, currencies: &[
+static L_ES_EA: LocaleData = LocaleData { name: "es-EA", parent: "es", system: "latn", numbers: &NUMBERS_ES, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_EC: LocaleData = LocaleData { name: "es-EC", parent: "es-419", numbers: &NUMBERS_ES_CL, plurals: PLURALS_ES, currencies: &[
+static L_ES_EC: LocaleData = LocaleData { name: "es-EC", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_CL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"USD", fields: "s$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_GQ: LocaleData = LocaleData { name: "es-GQ", parent: "es", numbers: &NUMBERS_ES_GQ, plurals: PLURALS_ES, currencies: &[
+static L_ES_GQ: LocaleData = LocaleData { name: "es-GQ", parent: "es", system: "latn", numbers: &NUMBERS_ES_GQ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"XAF", fields: "sFCFA" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_GT: LocaleData = LocaleData { name: "es-GT", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_GT: LocaleData = LocaleData { name: "es-GT", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_GT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"GTQ", fields: "sQ\u{1f}dquetzal\u{1f}1quetzal\u{1f}5quetzales" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_HN: LocaleData = LocaleData { name: "es-HN", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_HN: LocaleData = LocaleData { name: "es-HN", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"HNL", fields: "sL" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_IC: LocaleData = LocaleData { name: "es-IC", parent: "es", numbers: &NUMBERS_ES, plurals: PLURALS_ES, currencies: &[
+static L_ES_IC: LocaleData = LocaleData { name: "es-IC", parent: "es", system: "latn", numbers: &NUMBERS_ES, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_MX: LocaleData = LocaleData { name: "es-MX", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_MX: LocaleData = LocaleData { name: "es-MX", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_MX, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"BTN", fields: "dngultrum butanés\u{1f}1ngultrum butanés\u{1f}5ngultrums butaneses" },
     CurrencyData { code: *b"BYN", fields: "np." },
     CurrencyData { code: *b"FKP", fields: "n£" },
@@ -7228,42 +7908,42 @@ static L_ES_MX: LocaleData = LocaleData { name: "es-MX", parent: "es-419", numbe
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_NI: LocaleData = LocaleData { name: "es-NI", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_NI: LocaleData = LocaleData { name: "es-NI", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"NIO", fields: "sC$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_PA: LocaleData = LocaleData { name: "es-PA", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_PA: LocaleData = LocaleData { name: "es-PA", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"PAB", fields: "sB/." },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_PE: LocaleData = LocaleData { name: "es-PE", parent: "es-419", numbers: &NUMBERS_ES_PE, plurals: PLURALS_ES, currencies: &[
+static L_ES_PE: LocaleData = LocaleData { name: "es-PE", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_PE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"PEN", fields: "sS/" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_PH: LocaleData = LocaleData { name: "es-PH", parent: "es", numbers: &NUMBERS_ES, plurals: PLURALS_ES, currencies: &[
+static L_ES_PH: LocaleData = LocaleData { name: "es-PH", parent: "es", system: "latn", numbers: &NUMBERS_ES, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"PHP", fields: "s₱" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_PR: LocaleData = LocaleData { name: "es-PR", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_PR: LocaleData = LocaleData { name: "es-PR", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"USD", fields: "s$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_PY: LocaleData = LocaleData { name: "es-PY", parent: "es-419", numbers: &NUMBERS_ES_PY, plurals: PLURALS_ES, currencies: &[
+static L_ES_PY: LocaleData = LocaleData { name: "es-PY", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_PY, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"PYG", fields: "sGs." },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_SV: LocaleData = LocaleData { name: "es-SV", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_SV: LocaleData = LocaleData { name: "es-SV", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_419, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"USD", fields: "s$" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_US: LocaleData = LocaleData { name: "es-US", parent: "es-419", numbers: &NUMBERS_ES_419, plurals: PLURALS_ES, currencies: &[
+static L_ES_US: LocaleData = LocaleData { name: "es-US", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_US, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"BTN", fields: "dngultrum butanés\u{1f}1ngultrum butanés\u{1f}5gultrums bultaneses" },
     CurrencyData { code: *b"ETB", fields: "dbirr\u{1f}1birr\u{1f}5birres" },
     CurrencyData { code: *b"FKP", fields: "n£" },
@@ -7281,20 +7961,20 @@ static L_ES_US: LocaleData = LocaleData { name: "es-US", parent: "es-419", numbe
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_UY: LocaleData = LocaleData { name: "es-UY", parent: "es-419", numbers: &NUMBERS_ES_AR, plurals: PLURALS_ES, currencies: &[
+static L_ES_UY: LocaleData = LocaleData { name: "es-UY", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_AR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"USD", fields: "sUS$" },
     CurrencyData { code: *b"UYU", fields: "s$" },
     CurrencyData { code: *b"UYW", fields: "sUP" },
 ] };
 
 #[cfg(feature = "es")]
-static L_ES_VE: LocaleData = LocaleData { name: "es-VE", parent: "es-419", numbers: &NUMBERS_ES_CL, plurals: PLURALS_ES, currencies: &[
+static L_ES_VE: LocaleData = LocaleData { name: "es-VE", parent: "es-419", system: "latn", numbers: &NUMBERS_ES_CL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ES, currencies: &[
     CurrencyData { code: *b"VEF", fields: "sBs.\u{1f}nBs." },
     CurrencyData { code: *b"VES", fields: "sBs.S\u{1f}dbolívar soberano\u{1f}1bolívar soberano\u{1f}5bolívares soberanos" },
 ] };
 
 #[cfg(feature = "et")]
-static L_ET: LocaleData = LocaleData { name: "et", parent: "und", numbers: &NUMBERS_ET, plurals: PLURALS_ET, currencies: &[
+static L_ET: LocaleData = LocaleData { name: "et", parent: "und", system: "latn", numbers: &NUMBERS_ET, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ET, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorra peseeta\u{1f}1Andorra peseeta\u{1f}5Andorra peseetat" },
     CurrencyData { code: *b"AED", fields: "dAraabia Ühendemiraatide dirhem\u{1f}1Araabia Ühendemiraatide dirhem\u{1f}5Araabia Ühendemiraatide dirhemit" },
     CurrencyData { code: *b"AFA", fields: "dAfganistani afgaani (1927–2002)\u{1f}1Afganistani afgaani (1927–2002)\u{1f}5Afganistani afgaanit (1927–2002)" },
@@ -7578,7 +8258,7 @@ static L_ET: LocaleData = LocaleData { name: "et", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "eu")]
-static L_EU: LocaleData = LocaleData { name: "eu", parent: "und", numbers: &NUMBERS_EU, plurals: PLURALS_EU, currencies: &[
+static L_EU: LocaleData = LocaleData { name: "eu", parent: "und", system: "latn", numbers: &NUMBERS_EU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_EU, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpezeta andorratarra\u{1f}1pezeta andorratar\u{1f}5pezeta andorratar" },
     CurrencyData { code: *b"AED", fields: "dArabiar Emirerri Batuetako dirhama\u{1f}1Arabiar Emirerri Batuetako dirham\u{1f}5Arabiar Emirerri Batuetako dirham" },
     CurrencyData { code: *b"AFA", fields: "dafghani afgandarra (1927–2002)\u{1f}1afghani afgandar (1927–2002)\u{1f}5afghani afgandar (1927–2002)" },
@@ -7889,7 +8569,7 @@ static L_EU: LocaleData = LocaleData { name: "eu", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "fa")]
-static L_FA: LocaleData = LocaleData { name: "fa", parent: "und", numbers: &NUMBERS_FA, plurals: PLURALS_FA, currencies: &[
+static L_FA: LocaleData = LocaleData { name: "fa", parent: "und", system: "arabext", numbers: &NUMBERS_FA, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_FA_LATN)], plurals: PLURALS_FA, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dپزتای آندورا\u{1f}5پزتای آندورا" },
     CurrencyData { code: *b"AED", fields: "dدرهم امارات متحده\u{654} عربی\u{1f}5درهم امارات متحده\u{654} عربی" },
     CurrencyData { code: *b"AFA", fields: "dافغانی افغانستان (۱۹۲۷ تا ۲۰۰۲)\u{1f}5افغانی افغانستان (۱۹۲۷ تا ۲۰۰۲)" },
@@ -8130,7 +8810,7 @@ static L_FA: LocaleData = LocaleData { name: "fa", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "fa")]
-static L_FA_AF: LocaleData = LocaleData { name: "fa-AF", parent: "fa", numbers: &NUMBERS_FA_AF, plurals: PLURALS_FA, currencies: &[
+static L_FA_AF: LocaleData = LocaleData { name: "fa-AF", parent: "fa", system: "arabext", numbers: &NUMBERS_FA_AF, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_FA_AF_LATN)], plurals: PLURALS_FA, currencies: &[
     CurrencyData { code: *b"AUD", fields: "dدالر آسترالیا\u{1f}5دالر آسترالیا" },
     CurrencyData { code: *b"BND", fields: "dدالر برونی\u{1f}5دالر برونی" },
     CurrencyData { code: *b"BYN", fields: "dروبل روسیه\u{654} سفید\u{1f}5روبل روسیه\u{654} سفید" },
@@ -8149,7 +8829,7 @@ static L_FA_AF: LocaleData = LocaleData { name: "fa-AF", parent: "fa", numbers: 
 ] };
 
 #[cfg(feature = "fi")]
-static L_FI: LocaleData = LocaleData { name: "fi", parent: "und", numbers: &NUMBERS_FI, plurals: PLURALS_FI, currencies: &[
+static L_FI: LocaleData = LocaleData { name: "fi", parent: "und", system: "latn", numbers: &NUMBERS_FI, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FI, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorran peseta\u{1f}1Andorran peseta\u{1f}5Andorran pesetaa" },
     CurrencyData { code: *b"AED", fields: "dArabiemiirikuntien dirhami\u{1f}1Arabiemiirikuntien dirhami\u{1f}5Arabiemiirikuntien dirhamia" },
     CurrencyData { code: *b"AFA", fields: "dAfganistanin afgaani (1927–2002)\u{1f}1Afganistanin afgaani (1927–2002)\u{1f}5Afganistanin afgaania (1927–2002)" },
@@ -8459,7 +9139,7 @@ static L_FI: LocaleData = LocaleData { name: "fi", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "fil")]
-static L_FIL: LocaleData = LocaleData { name: "fil", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_FIL, currencies: &[
+static L_FIL: LocaleData = LocaleData { name: "fil", parent: "und", system: "latn", numbers: &NUMBERS_FIL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FIL, currencies: &[
     CurrencyData { code: *b"AED", fields: "dUnited Arab Emirates Dirham\u{1f}1dirham ng UAE\u{1f}5UAE dirhams" },
     CurrencyData { code: *b"AFN", fields: "dAfghan Afghani\u{1f}1Afghan Afghani\u{1f}5Afghan Afghanis" },
     CurrencyData { code: *b"ALL", fields: "dLek ng Albania\u{1f}1lek ng Albania\u{1f}5leke ng Albania" },
@@ -8636,7 +9316,7 @@ static L_FIL: LocaleData = LocaleData { name: "fil", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR: LocaleData = LocaleData { name: "fr", parent: "und", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR: LocaleData = LocaleData { name: "fr", parent: "und", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpeseta andorrane\u{1f}1peseta andorrane\u{1f}5pesetas andorranes" },
     CurrencyData { code: *b"AED", fields: "ddirham des Émirats arabes unis\u{1f}1dirham des Émirats arabes unis\u{1f}5dirhams des Émirats arabes unis" },
     CurrencyData { code: *b"AFA", fields: "dafghani (1927–2002)\u{1f}1afghani (1927–2002)\u{1f}5afghanis (1927–2002)" },
@@ -8924,28 +9604,28 @@ static L_FR: LocaleData = LocaleData { name: "fr", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_BE: LocaleData = LocaleData { name: "fr-BE", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_BE: LocaleData = LocaleData { name: "fr-BE", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_BF: LocaleData = LocaleData { name: "fr-BF", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_BF: LocaleData = LocaleData { name: "fr-BF", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_BI: LocaleData = LocaleData { name: "fr-BI", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_BI: LocaleData = LocaleData { name: "fr-BI", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"BIF", fields: "sFBu" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_BJ: LocaleData = LocaleData { name: "fr-BJ", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_BJ: LocaleData = LocaleData { name: "fr-BJ", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_BL: LocaleData = LocaleData { name: "fr-BL", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_BL: LocaleData = LocaleData { name: "fr-BL", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_CA: LocaleData = LocaleData { name: "fr-CA", parent: "fr", numbers: &NUMBERS_FR_CA, plurals: PLURALS_FR, currencies: &[
+static L_FR_CA: LocaleData = LocaleData { name: "fr-CA", parent: "fr", system: "latn", numbers: &NUMBERS_FR_CA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"AFN", fields: "5afghanis afghans" },
     CurrencyData { code: *b"ARS", fields: "sARS" },
     CurrencyData { code: *b"AUD", fields: "s$\u{a0}AU" },
@@ -9001,179 +9681,179 @@ static L_FR_CA: LocaleData = LocaleData { name: "fr-CA", parent: "fr", numbers: 
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_CD: LocaleData = LocaleData { name: "fr-CD", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_CD: LocaleData = LocaleData { name: "fr-CD", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"CDF", fields: "sFC" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_CF: LocaleData = LocaleData { name: "fr-CF", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_CF: LocaleData = LocaleData { name: "fr-CF", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_CG: LocaleData = LocaleData { name: "fr-CG", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_CG: LocaleData = LocaleData { name: "fr-CG", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_CH: LocaleData = LocaleData { name: "fr-CH", parent: "fr", numbers: &NUMBERS_FR_CH, plurals: PLURALS_FR, currencies: &[
+static L_FR_CH: LocaleData = LocaleData { name: "fr-CH", parent: "fr", system: "latn", numbers: &NUMBERS_FR_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_CI: LocaleData = LocaleData { name: "fr-CI", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_CI: LocaleData = LocaleData { name: "fr-CI", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_CM: LocaleData = LocaleData { name: "fr-CM", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_CM: LocaleData = LocaleData { name: "fr-CM", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_DJ: LocaleData = LocaleData { name: "fr-DJ", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_DJ: LocaleData = LocaleData { name: "fr-DJ", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"DJF", fields: "sFdj" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_DZ: LocaleData = LocaleData { name: "fr-DZ", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_DZ: LocaleData = LocaleData { name: "fr-DZ", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"DZD", fields: "sDA" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_GA: LocaleData = LocaleData { name: "fr-GA", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_GA: LocaleData = LocaleData { name: "fr-GA", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_GF: LocaleData = LocaleData { name: "fr-GF", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_GF: LocaleData = LocaleData { name: "fr-GF", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_GN: LocaleData = LocaleData { name: "fr-GN", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_GN: LocaleData = LocaleData { name: "fr-GN", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"GNF", fields: "sFG" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_GP: LocaleData = LocaleData { name: "fr-GP", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_GP: LocaleData = LocaleData { name: "fr-GP", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_GQ: LocaleData = LocaleData { name: "fr-GQ", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_GQ: LocaleData = LocaleData { name: "fr-GQ", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_HT: LocaleData = LocaleData { name: "fr-HT", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_HT: LocaleData = LocaleData { name: "fr-HT", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"HTG", fields: "sG" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_KM: LocaleData = LocaleData { name: "fr-KM", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_KM: LocaleData = LocaleData { name: "fr-KM", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"KMF", fields: "sCF" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_LU: LocaleData = LocaleData { name: "fr-LU", parent: "fr", numbers: &NUMBERS_CA, plurals: PLURALS_FR, currencies: &[
+static L_FR_LU: LocaleData = LocaleData { name: "fr-LU", parent: "fr", system: "latn", numbers: &NUMBERS_FR_LU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"FRF", fields: "sFRF" },
     CurrencyData { code: *b"LUF", fields: "sF" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_MA: LocaleData = LocaleData { name: "fr-MA", parent: "fr", numbers: &NUMBERS_CA, plurals: PLURALS_FR, currencies: &[
+static L_FR_MA: LocaleData = LocaleData { name: "fr-MA", parent: "fr", system: "latn", numbers: &NUMBERS_FR_LU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_MC: LocaleData = LocaleData { name: "fr-MC", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_MC: LocaleData = LocaleData { name: "fr-MC", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_MF: LocaleData = LocaleData { name: "fr-MF", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_MF: LocaleData = LocaleData { name: "fr-MF", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_MG: LocaleData = LocaleData { name: "fr-MG", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_MG: LocaleData = LocaleData { name: "fr-MG", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"MGA", fields: "sAr" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_ML: LocaleData = LocaleData { name: "fr-ML", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_ML: LocaleData = LocaleData { name: "fr-ML", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_MQ: LocaleData = LocaleData { name: "fr-MQ", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_MQ: LocaleData = LocaleData { name: "fr-MQ", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_MR: LocaleData = LocaleData { name: "fr-MR", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_MR: LocaleData = LocaleData { name: "fr-MR", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"MRU", fields: "sUM" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_MU: LocaleData = LocaleData { name: "fr-MU", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_MU: LocaleData = LocaleData { name: "fr-MU", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"MUR", fields: "sRs" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_NC: LocaleData = LocaleData { name: "fr-NC", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_NC: LocaleData = LocaleData { name: "fr-NC", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_NE: LocaleData = LocaleData { name: "fr-NE", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_NE: LocaleData = LocaleData { name: "fr-NE", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_PF: LocaleData = LocaleData { name: "fr-PF", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_PF: LocaleData = LocaleData { name: "fr-PF", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_PM: LocaleData = LocaleData { name: "fr-PM", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_PM: LocaleData = LocaleData { name: "fr-PM", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_RE: LocaleData = LocaleData { name: "fr-RE", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_RE: LocaleData = LocaleData { name: "fr-RE", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_RW: LocaleData = LocaleData { name: "fr-RW", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_RW: LocaleData = LocaleData { name: "fr-RW", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"RWF", fields: "sRF" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_SC: LocaleData = LocaleData { name: "fr-SC", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_SC: LocaleData = LocaleData { name: "fr-SC", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"SCR", fields: "sSR" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_SN: LocaleData = LocaleData { name: "fr-SN", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_SN: LocaleData = LocaleData { name: "fr-SN", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_SY: LocaleData = LocaleData { name: "fr-SY", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_SY: LocaleData = LocaleData { name: "fr-SY", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"SYP", fields: "sLS" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_TD: LocaleData = LocaleData { name: "fr-TD", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_TD: LocaleData = LocaleData { name: "fr-TD", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_TG: LocaleData = LocaleData { name: "fr-TG", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_TG: LocaleData = LocaleData { name: "fr-TG", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_TN: LocaleData = LocaleData { name: "fr-TN", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_TN: LocaleData = LocaleData { name: "fr-TN", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"TND", fields: "sDT" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_VU: LocaleData = LocaleData { name: "fr-VU", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_VU: LocaleData = LocaleData { name: "fr-VU", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
     CurrencyData { code: *b"VUV", fields: "sVT" },
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_WF: LocaleData = LocaleData { name: "fr-WF", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_WF: LocaleData = LocaleData { name: "fr-WF", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "fr")]
-static L_FR_YT: LocaleData = LocaleData { name: "fr-YT", parent: "fr", numbers: &NUMBERS_FR, plurals: PLURALS_FR, currencies: &[
+static L_FR_YT: LocaleData = LocaleData { name: "fr-YT", parent: "fr", system: "latn", numbers: &NUMBERS_FR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_FR, currencies: &[
 ] };
 
 #[cfg(feature = "ga")]
-static L_GA: LocaleData = LocaleData { name: "ga", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_GA, currencies: &[
+static L_GA: LocaleData = LocaleData { name: "ga", parent: "und", system: "latn", numbers: &NUMBERS_GA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_GA, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dPeseta Andóra\u{1f}1pheseta Andóra\u{1f}2pheseta Andóra\u{1f}3pheseta Andóra\u{1f}4bpeseta Andóra\u{1f}5peseta Andóra" },
     CurrencyData { code: *b"AED", fields: "dDirham Aontas na nÉimíríochtaí Arabacha\u{1f}1dirham Aontas na nÉimíríochtaí Arabacha\u{1f}2dhirham Aontas na nÉimíríochtaí Arabacha\u{1f}3dhirham Aontas na nÉimíríochtaí Arabacha\u{1f}4ndirham Aontas na nÉimíríochtaí Arabacha\u{1f}5dirham Aontas na nÉimíríochtaí Arabacha" },
     CurrencyData { code: *b"AFA", fields: "dAfgainí (1927–2002)\u{1f}5Afgainí (1927–2002)" },
@@ -9461,11 +10141,11 @@ static L_GA: LocaleData = LocaleData { name: "ga", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ga")]
-static L_GA_GB: LocaleData = LocaleData { name: "ga-GB", parent: "ga", numbers: &NUMBERS_AK, plurals: PLURALS_GA, currencies: &[
+static L_GA_GB: LocaleData = LocaleData { name: "ga-GB", parent: "ga", system: "latn", numbers: &NUMBERS_GA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_GA, currencies: &[
 ] };
 
 #[cfg(feature = "gd")]
-static L_GD: LocaleData = LocaleData { name: "gd", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_GD, currencies: &[
+static L_GD: LocaleData = LocaleData { name: "gd", parent: "und", system: "latn", numbers: &NUMBERS_GD, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_GD, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dPeseta Andorrach\u{1f}1pheseta Andorrach\u{1f}2pheseta Andorrach\u{1f}3peseta Andorrach\u{1f}5peseta Andorrach" },
     CurrencyData { code: *b"AED", fields: "dDirham nan Iomaratan Arabach Aonaichte\u{1f}1dirham nan IAA\u{1f}2dhirham nan IAA\u{1f}3dirham nan IAA\u{1f}5dirham nan IAA" },
     CurrencyData { code: *b"AFA", fields: "dAfghani Afghanach (1927–2002)\u{1f}1afghani Afghanach (1927–2002)\u{1f}2afghani Afghanach (1927–2002)\u{1f}3afghani Afghanach (1927–2002)\u{1f}5afghani Afghanach (1927–2002)" },
@@ -9776,7 +10456,7 @@ static L_GD: LocaleData = LocaleData { name: "gd", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "gl")]
-static L_GL: LocaleData = LocaleData { name: "gl", parent: "und", numbers: &NUMBERS_CA, plurals: PLURALS_GL, currencies: &[
+static L_GL: LocaleData = LocaleData { name: "gl", parent: "und", system: "latn", numbers: &NUMBERS_GL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_GL, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpeseta andorrana\u{1f}1peseta andorrana\u{1f}5pesetas andorranas" },
     CurrencyData { code: *b"AED", fields: "ddirham dos Emiratos Árabes Unidos\u{1f}1dirham dos Emiratos Árabes Unidos\u{1f}5dirhams dos Emiratos Árabes Unidos" },
     CurrencyData { code: *b"AFN", fields: "dafgani afgán\u{1f}1afgani afgán\u{1f}5afganis afgáns" },
@@ -9993,7 +10673,7 @@ static L_GL: LocaleData = LocaleData { name: "gl", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "gu")]
-static L_GU: LocaleData = LocaleData { name: "gu", parent: "und", numbers: &NUMBERS_GU, plurals: PLURALS_GU, currencies: &[
+static L_GU: LocaleData = LocaleData { name: "gu", parent: "und", system: "latn", numbers: &NUMBERS_GU, #[cfg(feature = "numbering-systems")] systems: &[("gujr", &NUMBERS_GU_GUJR)], plurals: PLURALS_GU, currencies: &[
     CurrencyData { code: *b"AED", fields: "dય\u{ac1}નાઈટ\u{ac7}ડ આરબ અમિરાત દિરહામ\u{1f}1[UAE] દિરહામ\u{1f}5[UAE] દિરહામ" },
     CurrencyData { code: *b"AFN", fields: "dઅફ\u{acd}ગાન અફ\u{acd}ગાની\u{1f}5અફ\u{acd}ગાન અફ\u{acd}ગાની" },
     CurrencyData { code: *b"ALL", fields: "dઅલ\u{acd}બ\u{ac7}નિયન લ\u{ac7}ક\u{1f}5અલ\u{acd}બ\u{ac7}નિયન લ\u{ac7}ક" },
@@ -10164,7 +10844,7 @@ static L_GU: LocaleData = LocaleData { name: "gu", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ha")]
-static L_HA: LocaleData = LocaleData { name: "ha", parent: "und", numbers: &NUMBERS_ES_PE, plurals: PLURALS_HA, currencies: &[
+static L_HA: LocaleData = LocaleData { name: "ha", parent: "und", system: "latn", numbers: &NUMBERS_HA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HA, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirham na Haɗaɗɗiyar Daular Larabawa\u{1f}1Dirham na Haɗaɗɗiyar Daular Larabawa\u{1f}5Dirham na Haɗaɗɗiyar Daular Larabawa" },
     CurrencyData { code: *b"AFN", fields: "dAfghani na ƙasar Afghanistan\u{1f}5Afghani na ƙasar Afghanistan" },
     CurrencyData { code: *b"ALL", fields: "dLek na Albania\u{1f}1Lek na Albania\u{1f}5Lekë na Albania" },
@@ -10335,16 +11015,16 @@ static L_HA: LocaleData = LocaleData { name: "ha", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ha")]
-static L_HA_GH: LocaleData = LocaleData { name: "ha-GH", parent: "ha", numbers: &NUMBERS_ES_PE, plurals: PLURALS_HA, currencies: &[
+static L_HA_GH: LocaleData = LocaleData { name: "ha-GH", parent: "ha", system: "latn", numbers: &NUMBERS_HA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HA, currencies: &[
     CurrencyData { code: *b"GHS", fields: "sGH₵" },
 ] };
 
 #[cfg(feature = "ha")]
-static L_HA_NE: LocaleData = LocaleData { name: "ha-NE", parent: "ha", numbers: &NUMBERS_ES_PE, plurals: PLURALS_HA, currencies: &[
+static L_HA_NE: LocaleData = LocaleData { name: "ha-NE", parent: "ha", system: "latn", numbers: &NUMBERS_HA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HA, currencies: &[
 ] };
 
 #[cfg(feature = "he")]
-static L_HE: LocaleData = LocaleData { name: "he", parent: "und", numbers: &NUMBERS_HE, plurals: PLURALS_HE, currencies: &[
+static L_HE: LocaleData = LocaleData { name: "he", parent: "und", system: "latn", numbers: &NUMBERS_HE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HE, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dפזטה אנדורית\u{1f}5פזטה אנדורית" },
     CurrencyData { code: *b"AED", fields: "dדירהם של איחוד הנסיכויות הערביות\u{1f}5דירהם של איחוד הנסיכויות הערביות" },
     CurrencyData { code: *b"AFN", fields: "dאפגני אפגני\u{1f}5אפגני אפגני" },
@@ -10580,7 +11260,7 @@ static L_HE: LocaleData = LocaleData { name: "he", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "hi")]
-static L_HI: LocaleData = LocaleData { name: "hi", parent: "und", numbers: &NUMBERS_HI, plurals: PLURALS_HI, currencies: &[
+static L_HI: LocaleData = LocaleData { name: "hi", parent: "und", system: "latn", numbers: &NUMBERS_HI, #[cfg(feature = "numbering-systems")] systems: &[("deva", &NUMBERS_HI_DEVA)], plurals: PLURALS_HI, currencies: &[
     CurrencyData { code: *b"AED", fields: "dस\u{902}य\u{941}क\u{94d}त अरब अमीरात दिरहाम\u{1f}5स\u{902}य\u{941}क\u{94d}त अरब अमीरात दिरहाम" },
     CurrencyData { code: *b"AFA", fields: "dअफगानी (1927–2002)\u{1f}5अफगानी (1927–2002)" },
     CurrencyData { code: *b"AFN", fields: "dअफ\u{93c}गान अफ\u{93c}गानी\u{1f}5अफ\u{93c}गान अफ\u{93c}गानी" },
@@ -10776,7 +11456,7 @@ static L_HI: LocaleData = LocaleData { name: "hi", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "hi")]
-static L_HI_LATN: LocaleData = LocaleData { name: "hi-Latn", parent: "en-IN", numbers: &NUMBERS_HI_LATN, plurals: PLURALS_HI, currencies: &[
+static L_HI_LATN: LocaleData = LocaleData { name: "hi-Latn", parent: "en-IN", system: "latn", numbers: &NUMBERS_HI_LATN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HI, currencies: &[
     CurrencyData { code: *b"ALL", fields: "5Albanian leke" },
     CurrencyData { code: *b"CRC", fields: "dCosta Rican colon\u{1f}1Costa Rican colon\u{1f}5Costa Rican colons" },
     CurrencyData { code: *b"ISK", fields: "dIcelandic krona\u{1f}1Icelandic krona\u{1f}5Icelandic kronur" },
@@ -10789,7 +11469,7 @@ static L_HI_LATN: LocaleData = LocaleData { name: "hi-Latn", parent: "en-IN", nu
 ] };
 
 #[cfg(feature = "hr")]
-static L_HR: LocaleData = LocaleData { name: "hr", parent: "und", numbers: &NUMBERS_HR, plurals: PLURALS_HR, currencies: &[
+static L_HR: LocaleData = LocaleData { name: "hr", parent: "und", system: "latn", numbers: &NUMBERS_HR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HR, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorska pezeta\u{1f}1andorska pezeta\u{1f}3andorske pezete\u{1f}5andorskih pezeta" },
     CurrencyData { code: *b"AED", fields: "dUAE dirham\u{1f}1UAE dirham\u{1f}3UAE dirhama\u{1f}5UAE dirhama" },
     CurrencyData { code: *b"AFA", fields: "dafganistanski afgani (1927.–2002.)\u{1f}1afganistanski afgan (1927.–2002.)\u{1f}3afganistanska afgana (1927.–2002.)\u{1f}5afganistanskih afgana (1927.–2002.)" },
@@ -11096,12 +11776,12 @@ static L_HR: LocaleData = LocaleData { name: "hr", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "hr")]
-static L_HR_BA: LocaleData = LocaleData { name: "hr-BA", parent: "hr", numbers: &NUMBERS_HR, plurals: PLURALS_HR, currencies: &[
+static L_HR_BA: LocaleData = LocaleData { name: "hr-BA", parent: "hr", system: "latn", numbers: &NUMBERS_HR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HR, currencies: &[
     CurrencyData { code: *b"BAM", fields: "sKM" },
 ] };
 
 #[cfg(feature = "hsb")]
-static L_HSB: LocaleData = LocaleData { name: "hsb", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_HSB, currencies: &[
+static L_HSB: LocaleData = LocaleData { name: "hsb", parent: "und", system: "latn", numbers: &NUMBERS_HSB, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HSB, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorraska peseta\u{1f}1andorraska peseta\u{1f}2andorraskej peseće\u{1f}3andorraske pesety\u{1f}5andorraskich pesetow" },
     CurrencyData { code: *b"AED", fields: "dZAE dirham\u{1f}1ZAE dirham\u{1f}2ZAE dirhamaj\u{1f}3SAE dirhamy\u{1f}5SAE dirhamow" },
     CurrencyData { code: *b"AFN", fields: "dafghaniski afghani\u{1f}1afghaniski afghani\u{1f}2afghaniskej afghanijej\u{1f}3afghaniske afghanije\u{1f}5afghaniskich afghanijow" },
@@ -11297,11 +11977,11 @@ static L_HSB: LocaleData = LocaleData { name: "hsb", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "ht")]
-static L_HT: LocaleData = LocaleData { name: "ht", parent: "fr-HT", numbers: &NUMBERS_CV, plurals: PLURALS_UND, currencies: &[
+static L_HT: LocaleData = LocaleData { name: "ht", parent: "fr-HT", system: "latn", numbers: &NUMBERS_HT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
 ] };
 
 #[cfg(feature = "hu")]
-static L_HU: LocaleData = LocaleData { name: "hu", parent: "und", numbers: &NUMBERS_BE, plurals: PLURALS_HU, currencies: &[
+static L_HU: LocaleData = LocaleData { name: "hu", parent: "und", system: "latn", numbers: &NUMBERS_HU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HU, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorrai peseta\u{1f}5Andorrai peseta" },
     CurrencyData { code: *b"AED", fields: "dEAE-dirham\u{1f}5EAE-dirham" },
     CurrencyData { code: *b"AFA", fields: "dafgán afghani (1927–2002)\u{1f}5afgán afghani (1927–2002)" },
@@ -11596,7 +12276,7 @@ static L_HU: LocaleData = LocaleData { name: "hu", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "hy")]
-static L_HY: LocaleData = LocaleData { name: "hy", parent: "und", numbers: &NUMBERS_BE, plurals: PLURALS_HY, currencies: &[
+static L_HY: LocaleData = LocaleData { name: "hy", parent: "und", system: "latn", numbers: &NUMBERS_HY, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_HY, currencies: &[
     CurrencyData { code: *b"AED", fields: "dԱրաբական Միացյալ Էմիրությունների դիրհամ\u{1f}1ԱՄԷ դիրհամ\u{1f}5ԱՄԷ դիրհամ" },
     CurrencyData { code: *b"AFN", fields: "dաֆղանական աֆղանի\u{1f}5աֆղանական աֆղանի" },
     CurrencyData { code: *b"ALL", fields: "dալբանական լեկ\u{1f}5ալբանական լեկ" },
@@ -11767,7 +12447,7 @@ static L_HY: LocaleData = LocaleData { name: "hy", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "id")]
-static L_ID: LocaleData = LocaleData { name: "id", parent: "und", numbers: &NUMBERS_ES_BO, plurals: PLURALS_ID, currencies: &[
+static L_ID: LocaleData = LocaleData { name: "id", parent: "und", system: "latn", numbers: &NUMBERS_ID, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ID, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dPeseta Andorra\u{1f}5Peseta Andorra" },
     CurrencyData { code: *b"AED", fields: "dDirham Uni Emirat Arab\u{1f}5Dirham Uni Emirat Arab" },
     CurrencyData { code: *b"AFA", fields: "dAfgani Afganistan (1927–2002)\u{1f}5Afgani Afganistan (1927–2002)" },
@@ -12072,7 +12752,7 @@ static L_ID: LocaleData = LocaleData { name: "id", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ig")]
-static L_IG: LocaleData = LocaleData { name: "ig", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_IG, currencies: &[
+static L_IG: LocaleData = LocaleData { name: "ig", parent: "und", system: "latn", numbers: &NUMBERS_IG, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_IG, currencies: &[
     CurrencyData { code: *b"AED", fields: "dEgo Dirham obodo United Arab Emirates\u{1f}5Ego dirhams obodo UAE" },
     CurrencyData { code: *b"AFN", fields: "dEgo Afghani Obodo Afghanistan\u{1f}5Ego Afghani Obodo Afghanistan" },
     CurrencyData { code: *b"ALL", fields: "dEgo Lek Obodo Albania\u{1f}5Ego Lek Obodo Albania" },
@@ -12236,7 +12916,7 @@ static L_IG: LocaleData = LocaleData { name: "ig", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "is")]
-static L_IS: LocaleData = LocaleData { name: "is", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_IS, currencies: &[
+static L_IS: LocaleData = LocaleData { name: "is", parent: "und", system: "latn", numbers: &NUMBERS_IS, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_IS, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorrskur peseti\u{1f}5Andorrskur peseti" },
     CurrencyData { code: *b"AED", fields: "darabískt dírham\u{1f}1arabískt dírham\u{1f}5arabísk dírhöm" },
     CurrencyData { code: *b"AFN", fields: "dafgani\u{1f}1afgani\u{1f}5afganar" },
@@ -12470,7 +13150,7 @@ static L_IS: LocaleData = LocaleData { name: "is", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "it")]
-static L_IT: LocaleData = LocaleData { name: "it", parent: "und", numbers: &NUMBERS_ES, plurals: PLURALS_IT, currencies: &[
+static L_IT: LocaleData = LocaleData { name: "it", parent: "und", system: "latn", numbers: &NUMBERS_IT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_IT, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpeseta andorrana\u{1f}5peseta andorrana" },
     CurrencyData { code: *b"AED", fields: "ddirham degli Emirati Arabi Uniti\u{1f}1dirham degli EAU\u{1f}5dirham degli EAU" },
     CurrencyData { code: *b"AFA", fields: "dafgani (1927–2002)\u{1f}5afgani (1927–2002)" },
@@ -12751,19 +13431,19 @@ static L_IT: LocaleData = LocaleData { name: "it", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "it")]
-static L_IT_CH: LocaleData = LocaleData { name: "it-CH", parent: "it", numbers: &NUMBERS_IT_CH, plurals: PLURALS_IT, currencies: &[
+static L_IT_CH: LocaleData = LocaleData { name: "it-CH", parent: "it", system: "latn", numbers: &NUMBERS_IT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_IT, currencies: &[
 ] };
 
 #[cfg(feature = "it")]
-static L_IT_SM: LocaleData = LocaleData { name: "it-SM", parent: "it", numbers: &NUMBERS_ES, plurals: PLURALS_IT, currencies: &[
+static L_IT_SM: LocaleData = LocaleData { name: "it-SM", parent: "it", system: "latn", numbers: &NUMBERS_IT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_IT, currencies: &[
 ] };
 
 #[cfg(feature = "it")]
-static L_IT_VA: LocaleData = LocaleData { name: "it-VA", parent: "it", numbers: &NUMBERS_ES, plurals: PLURALS_IT, currencies: &[
+static L_IT_VA: LocaleData = LocaleData { name: "it-VA", parent: "it", system: "latn", numbers: &NUMBERS_IT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_IT, currencies: &[
 ] };
 
 #[cfg(feature = "ja")]
-static L_JA: LocaleData = LocaleData { name: "ja", parent: "und", numbers: &NUMBERS_JA, plurals: PLURALS_JA, currencies: &[
+static L_JA: LocaleData = LocaleData { name: "ja", parent: "und", system: "latn", numbers: &NUMBERS_JA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_JA, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dアンドラ ペセタ\u{1f}5アンドラ ペセタ" },
     CurrencyData { code: *b"AED", fields: "dアラブ首長国連邦ディルハム\u{1f}5UAE ディルハム" },
     CurrencyData { code: *b"AFA", fields: "dアフガニスタン アフガニー (1927–2002)\u{1f}5アフガニスタン アフガニー (1927–2002)" },
@@ -13072,7 +13752,7 @@ static L_JA: LocaleData = LocaleData { name: "ja", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "jv")]
-static L_JV: LocaleData = LocaleData { name: "jv", parent: "und", numbers: &NUMBERS_DE_AT, plurals: PLURALS_JV, currencies: &[
+static L_JV: LocaleData = LocaleData { name: "jv", parent: "und", system: "latn", numbers: &NUMBERS_JV, #[cfg(feature = "numbering-systems")] systems: &[("java", &NUMBERS_JV_JAVA)], plurals: PLURALS_JV, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirham Uni Emirat Arab\u{1f}5Dirham Uni Emirat Arab" },
     CurrencyData { code: *b"AFN", fields: "dAfghani Afganistan\u{1f}5Afghani Afganistan" },
     CurrencyData { code: *b"ALL", fields: "dLek Albania\u{1f}5Lek Albania" },
@@ -13238,7 +13918,7 @@ static L_JV: LocaleData = LocaleData { name: "jv", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ka")]
-static L_KA: LocaleData = LocaleData { name: "ka", parent: "und", numbers: &NUMBERS_BE, plurals: PLURALS_KA, currencies: &[
+static L_KA: LocaleData = LocaleData { name: "ka", parent: "und", system: "latn", numbers: &NUMBERS_KA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KA, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dანდორული პესეტა\u{1f}5ანდორული პესეტა" },
     CurrencyData { code: *b"AED", fields: "dარაბთა გაერთიანებული საამიროების დირჰამი\u{1f}5არაბთა გაერთიანებული საამიროების დირჰამი" },
     CurrencyData { code: *b"AFA", fields: "dავღანი (1927–2002)\u{1f}5ავღანი (1927–2002)" },
@@ -13492,7 +14172,7 @@ static L_KA: LocaleData = LocaleData { name: "ka", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "kk")]
-static L_KK: LocaleData = LocaleData { name: "kk", parent: "und", numbers: &NUMBERS_CS, plurals: PLURALS_KK, currencies: &[
+static L_KK: LocaleData = LocaleData { name: "kk", parent: "und", system: "latn", numbers: &NUMBERS_KK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KK, currencies: &[
     CurrencyData { code: *b"AED", fields: "dБіріккен Араб Әмірліктерінің дирхамы\u{1f}1БАӘ дирхамы\u{1f}5БАӘ дирхамы" },
     CurrencyData { code: *b"AFN", fields: "dАуғанстан афганиі\u{1f}5Ауғанстан афганиі" },
     CurrencyData { code: *b"ALL", fields: "dАлбания легі\u{1f}5Албания легі" },
@@ -13662,7 +14342,7 @@ static L_KK: LocaleData = LocaleData { name: "kk", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "kk")]
-static L_KK_ARAB: LocaleData = LocaleData { name: "kk-Arab", parent: "und", numbers: &NUMBERS_ES_PE, plurals: PLURALS_KK, currencies: &[
+static L_KK_ARAB: LocaleData = LocaleData { name: "kk-Arab", parent: "und", system: "latn", numbers: &NUMBERS_KK_ARAB, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KK, currencies: &[
     CurrencyData { code: *b"AED", fields: "dبىرىككەن اراب امىرلىكتەرىنىڭ ديرحامى\u{1f}1ب ا ءا ديرحامى\u{1f}5ب ا ءا ديرحامى" },
     CurrencyData { code: *b"AFN", fields: "dاۋعانستان افگانيى\u{1f}5اۋعانستان افگانيى" },
     CurrencyData { code: *b"ALL", fields: "dالبانيا لەگى\u{1f}5البانيا لەگى" },
@@ -13826,15 +14506,15 @@ static L_KK_ARAB: LocaleData = LocaleData { name: "kk-Arab", parent: "und", numb
 ] };
 
 #[cfg(feature = "kk")]
-static L_KK_CYRL: LocaleData = LocaleData { name: "kk-Cyrl", parent: "kk", numbers: &NUMBERS_CS, plurals: PLURALS_KK, currencies: &[
+static L_KK_CYRL: LocaleData = LocaleData { name: "kk-Cyrl", parent: "kk", system: "latn", numbers: &NUMBERS_KK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KK, currencies: &[
 ] };
 
 #[cfg(feature = "kk")]
-static L_KK_KZ: LocaleData = LocaleData { name: "kk-KZ", parent: "kk", numbers: &NUMBERS_CS, plurals: PLURALS_KK, currencies: &[
+static L_KK_KZ: LocaleData = LocaleData { name: "kk-KZ", parent: "kk", system: "latn", numbers: &NUMBERS_KK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KK, currencies: &[
 ] };
 
 #[cfg(feature = "km")]
-static L_KM: LocaleData = LocaleData { name: "km", parent: "und", numbers: &NUMBERS_KM, plurals: PLURALS_KM, currencies: &[
+static L_KM: LocaleData = LocaleData { name: "km", parent: "und", system: "latn", numbers: &NUMBERS_KM, #[cfg(feature = "numbering-systems")] systems: &[("khmr", &NUMBERS_KM_KHMR)], plurals: PLURALS_KM, currencies: &[
     CurrencyData { code: *b"AED", fields: "dឌៀរហា\u{17c6}\u{200b}អារ\u{17c9}ាប\u{17cb}រ\u{17bd}ម\u{1f}5ឌៀរហា\u{17c6}\u{200b}អារ\u{17c9}ាប\u{17cb}រ\u{17bd}ម" },
     CurrencyData { code: *b"AFN", fields: "dអាហ\u{17d2}វហ\u{17d2}គាន\u{17b8}\u{200b}អាហ\u{17d2}វហ\u{17d2}គាន\u{17b8}ស\u{17d2}ថាន\u{1f}5អាហ\u{17d2}វហ\u{17d2}គាន\u{17b8}\u{200b}អាហ\u{17d2}វហ\u{17d2}គាន\u{17b8}ស\u{17d2}ថាន" },
     CurrencyData { code: *b"ALL", fields: "dល\u{17b7}ក\u{200b}អាល\u{17cb}បាន\u{17b8}\u{1f}5ល\u{17b7}ក\u{200b}អាល\u{17cb}បាន\u{17b8}" },
@@ -14005,7 +14685,7 @@ static L_KM: LocaleData = LocaleData { name: "km", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "kn")]
-static L_KN: LocaleData = LocaleData { name: "kn", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_KN, currencies: &[
+static L_KN: LocaleData = LocaleData { name: "kn", parent: "und", system: "latn", numbers: &NUMBERS_KN, #[cfg(feature = "numbering-systems")] systems: &[("knda", &NUMBERS_KN_KNDA)], plurals: PLURALS_KN, currencies: &[
     CurrencyData { code: *b"AED", fields: "dಸಂಯುಕ\u{ccd}ತ ಅರಬ\u{ccd}\u{200c} ಎಮ\u{cbf}ರ\u{cc7}ಟ\u{ccd}\u{200c}\u{200c}ಗಳ ದ\u{cbf}ರಾಮ\u{ccd}\u{200c}\u{200c}\u{1f}1ಯುಎಇ ದ\u{cbf}ರಾಮ\u{ccd}\u{1f}5ಯುಎಇ ದ\u{cbf}ರಾಮ\u{ccd}\u{200c}ಗಳು" },
     CurrencyData { code: *b"AFN", fields: "dಅಫ\u{ccd}\u{200c}ಘನ\u{ccd} ಅಫಘಾನ\u{cbf}\u{1f}1ಅಫ\u{ccd}\u{200c}ಘನ\u{ccd} ಅಫಘಾನ\u{cbf}\u{1f}5ಅಫ\u{ccd}\u{200c}ಘನ\u{ccd} ಅಫಘಾನ\u{cbf}ಗಳು" },
     CurrencyData { code: *b"ALL", fields: "dಅಲ\u{ccd}\u{200c}ಬ\u{cc7}ನ\u{cbf}ಯನ\u{ccd} ಲ\u{cc6}ಕ\u{ccd}\u{1f}5ಅಲ\u{ccd}\u{200c}ಬ\u{cc7}ನ\u{cbf}ಯನ\u{ccd} ಲ\u{cc6}ಕ\u{ccd}" },
@@ -14176,7 +14856,7 @@ static L_KN: LocaleData = LocaleData { name: "kn", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ko")]
-static L_KO: LocaleData = LocaleData { name: "ko", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_KO, currencies: &[
+static L_KO: LocaleData = LocaleData { name: "ko", parent: "und", system: "latn", numbers: &NUMBERS_KO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KO, currencies: &[
     CurrencyData { code: *b"ADP", fields: "d안도라 페세타\u{1f}5안도라 페세타" },
     CurrencyData { code: *b"AED", fields: "d아랍에미리트 디르함\u{1f}5아랍에미리트 디르함" },
     CurrencyData { code: *b"AFA", fields: "d아프가니 (1927–2002)\u{1f}5아프가니 (1927–2002)" },
@@ -14475,15 +15155,15 @@ static L_KO: LocaleData = LocaleData { name: "ko", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ko")]
-static L_KO_CN: LocaleData = LocaleData { name: "ko-CN", parent: "ko", numbers: &NUMBERS_AK, plurals: PLURALS_KO, currencies: &[
+static L_KO_CN: LocaleData = LocaleData { name: "ko-CN", parent: "ko", system: "latn", numbers: &NUMBERS_KO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KO, currencies: &[
 ] };
 
 #[cfg(feature = "ko")]
-static L_KO_KP: LocaleData = LocaleData { name: "ko-KP", parent: "ko", numbers: &NUMBERS_AK, plurals: PLURALS_KO, currencies: &[
+static L_KO_KP: LocaleData = LocaleData { name: "ko-KP", parent: "ko", system: "latn", numbers: &NUMBERS_KO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KO, currencies: &[
 ] };
 
 #[cfg(feature = "kok")]
-static L_KOK: LocaleData = LocaleData { name: "kok", parent: "und", numbers: &NUMBERS_HI, plurals: PLURALS_KOK, currencies: &[
+static L_KOK: LocaleData = LocaleData { name: "kok", parent: "und", system: "latn", numbers: &NUMBERS_KOK, #[cfg(feature = "numbering-systems")] systems: &[("deva", &NUMBERS_KOK_DEVA)], plurals: PLURALS_KOK, currencies: &[
     CurrencyData { code: *b"AED", fields: "dय\u{941}नाइट\u{947}ड अरब इमीर\u{945}ट\u{94d}स दिरहम\u{1f}5य\u{941}नाइट\u{947}ड अरब इमीर\u{945}ट\u{94d}स दिरहम" },
     CurrencyData { code: *b"AFN", fields: "dअफगाण अफगाणी\u{1f}5अफगाण अफगाणी" },
     CurrencyData { code: *b"ALL", fields: "dअल\u{94d}ब\u{947}नियन ल\u{947}क\u{1f}5अल\u{94d}ब\u{947}नियन ल\u{947}क" },
@@ -14647,11 +15327,11 @@ static L_KOK: LocaleData = LocaleData { name: "kok", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "kok")]
-static L_KOK_DEVA: LocaleData = LocaleData { name: "kok-Deva", parent: "kok", numbers: &NUMBERS_HI, plurals: PLURALS_KOK, currencies: &[
+static L_KOK_DEVA: LocaleData = LocaleData { name: "kok-Deva", parent: "kok", system: "latn", numbers: &NUMBERS_KOK, #[cfg(feature = "numbering-systems")] systems: &[("deva", &NUMBERS_KOK_DEVA)], plurals: PLURALS_KOK, currencies: &[
 ] };
 
 #[cfg(feature = "ky")]
-static L_KY: LocaleData = LocaleData { name: "ky", parent: "und", numbers: &NUMBERS_CS, plurals: PLURALS_KY, currencies: &[
+static L_KY: LocaleData = LocaleData { name: "ky", parent: "und", system: "latn", numbers: &NUMBERS_KY, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_KY, currencies: &[
     CurrencyData { code: *b"AED", fields: "dБириккен Араб Эмираттарынын дирхамы\u{1f}1БАЭ дирхамы\u{1f}5БАЭ дирхамы" },
     CurrencyData { code: *b"AFN", fields: "dАфганстан афганиси\u{1f}5Афганстан афганиси" },
     CurrencyData { code: *b"ALL", fields: "dалбан леги\u{1f}5албан леги" },
@@ -14821,7 +15501,7 @@ static L_KY: LocaleData = LocaleData { name: "ky", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "lo")]
-static L_LO: LocaleData = LocaleData { name: "lo", parent: "und", numbers: &NUMBERS_ES_CL, plurals: PLURALS_LO, currencies: &[
+static L_LO: LocaleData = LocaleData { name: "lo", parent: "und", system: "latn", numbers: &NUMBERS_LO, #[cfg(feature = "numbering-systems")] systems: &[("laoo", &NUMBERS_LO_LAOO)], plurals: PLURALS_LO, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dເປເຊຕາ ອ\u{eb1}ນໂດລາ\u{1f}5ເປເຊຕາ ອ\u{eb1}ນໂດລາ" },
     CurrencyData { code: *b"AED", fields: "dສະ\u{200b}ຫະ\u{200b}ລ\u{eb1}ດ\u{200b}ອາ\u{200b}ຣ\u{eb1}ບ\u{200b}ອາ\u{200b}ມ\u{eb4}\u{200b}ເຣດ ເດ\u{eb5}\u{200b}ແຮມ\u{1f}5ສະ\u{200b}ຫະ\u{200b}ລ\u{eb1}ດ\u{200b}ອາ\u{200b}ຣ\u{eb1}ບ\u{200b}ອາ\u{200b}ມ\u{eb4}\u{200b}ເຣດ ເດ\u{eb5}\u{200b}ແຮມ" },
     CurrencyData { code: *b"AFA", fields: "dອ\u{eb1}ບການ\u{eb4} ອ\u{eb1}ບການ\u{eb4}ສະຖານ (1927–2002)\u{1f}5ອ\u{eb1}ບການ\u{eb4} ອ\u{eb1}ບການ\u{eb4}ສະຖານ (1927–2002)" },
@@ -15123,7 +15803,7 @@ static L_LO: LocaleData = LocaleData { name: "lo", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "lt")]
-static L_LT: LocaleData = LocaleData { name: "lt", parent: "und", numbers: &NUMBERS_FI, plurals: PLURALS_LT, currencies: &[
+static L_LT: LocaleData = LocaleData { name: "lt", parent: "und", system: "latn", numbers: &NUMBERS_LT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_LT, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndoros peseta\u{1f}1Andoros peseta\u{1f}3Andoros pesetos\u{1f}4Andoros pesetos\u{1f}5Andoros pesetos" },
     CurrencyData { code: *b"AED", fields: "dJungtinių Arabų Emyratų dirhamas\u{1f}1JAE dirhamas\u{1f}3JAE dirhamai\u{1f}4JAE dirhamo\u{1f}5JAE dirhamų" },
     CurrencyData { code: *b"AFA", fields: "dAfganistano afganis (1927–2002)\u{1f}1Afganistano afganis (1927–2002)\u{1f}3Afganistano afganiai (1927–2002)\u{1f}4Afganistano afganio (1927–2002)\u{1f}5Afganistano afganių (1927–2002)" },
@@ -15432,7 +16112,7 @@ static L_LT: LocaleData = LocaleData { name: "lt", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "lv")]
-static L_LV: LocaleData = LocaleData { name: "lv", parent: "und", numbers: &NUMBERS_BE, plurals: PLURALS_LV, currencies: &[
+static L_LV: LocaleData = LocaleData { name: "lv", parent: "und", system: "latn", numbers: &NUMBERS_LV, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_LV, currencies: &[
     CurrencyData { code: *b"AED", fields: "dApvienoto Arābu Emirātu dirhēms\u{1f}0AAE dirhēmi\u{1f}1AAE dirhēms\u{1f}5AAE dirhēmi" },
     CurrencyData { code: *b"AFN", fields: "dAfganistānas afgāns\u{1f}0Afganistānas afgāni\u{1f}1Afganistānas afgāns\u{1f}5Afganistānas afgāni" },
     CurrencyData { code: *b"ALL", fields: "dAlbānijas leks\u{1f}0Albānijas leki\u{1f}1Albānijas leks\u{1f}5Albānijas leki" },
@@ -15648,7 +16328,7 @@ static L_LV: LocaleData = LocaleData { name: "lv", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "mk")]
-static L_MK: LocaleData = LocaleData { name: "mk", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_MK, currencies: &[
+static L_MK: LocaleData = LocaleData { name: "mk", parent: "und", system: "latn", numbers: &NUMBERS_MK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_MK, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dАндорска Пезета\u{1f}5Андорска Пезета" },
     CurrencyData { code: *b"AED", fields: "dДирхам на Обединети Арапски Емирати\u{1f}1Дирхам на Обединети Арапски Емирати\u{1f}5Дирхами на Обединети Арапски Емирати" },
     CurrencyData { code: *b"AFA", fields: "dАвгани (1927–2002)\u{1f}5Авгани (1927–2002)" },
@@ -15884,7 +16564,7 @@ static L_MK: LocaleData = LocaleData { name: "mk", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ml")]
-static L_ML: LocaleData = LocaleData { name: "ml", parent: "und", numbers: &NUMBERS_ML, plurals: PLURALS_ML, currencies: &[
+static L_ML: LocaleData = LocaleData { name: "ml", parent: "und", system: "latn", numbers: &NUMBERS_ML, #[cfg(feature = "numbering-systems")] systems: &[("mlym", &NUMBERS_ML_MLYM)], plurals: PLURALS_ML, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dഅൻഡോറൻ പെസെയ\u{d4d}റ\u{d4d}റ\u{1f}1അൻഡോറൻ പെസെയ\u{d4d}റ\u{d4d}റ\u{1f}5അൻഡോറൻ പെസെയ\u{d4d}റ\u{d4d}റ\u{d3e}സ\u{d4d}" },
     CurrencyData { code: *b"AED", fields: "dയ\u{d41}ണൈറ\u{d4d}റഡ\u{d4d} അറബ\u{d4d} എമിറേറ\u{d4d}റ\u{d4d}സ\u{d4d} ദിർഹം\u{1f}1യ\u{d41}.എ.ഇ. ദിർഹം\u{1f}5യ\u{d41}.എ.ഇ. ദിർഹം" },
     CurrencyData { code: *b"AFA", fields: "dഅഫ\u{d4d}ഘ\u{d3e}നി (1927–2002)\u{1f}1അഫ\u{d4d}ഘ\u{d3e}നി (AFA)\u{1f}5അഫ\u{d4d}ഘ\u{d3e}നിസ\u{d4d} (AFA)" },
@@ -16169,7 +16849,7 @@ static L_ML: LocaleData = LocaleData { name: "ml", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "mn")]
-static L_MN: LocaleData = LocaleData { name: "mn", parent: "und", numbers: &NUMBERS_ES_PE, plurals: PLURALS_MN, currencies: &[
+static L_MN: LocaleData = LocaleData { name: "mn", parent: "und", system: "latn", numbers: &NUMBERS_MN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_MN, currencies: &[
     CurrencyData { code: *b"AED", fields: "dарабын нэгдсэн эмиратын дирхам\u{1f}5арабын нэгдсэн эмиратын дирхам" },
     CurrencyData { code: *b"AFN", fields: "dАфганистаны афгани\u{1f}5Афганистаны афгани" },
     CurrencyData { code: *b"ALL", fields: "dАлбанийн лек\u{1f}5Албанийн лек" },
@@ -16340,7 +17020,7 @@ static L_MN: LocaleData = LocaleData { name: "mn", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "mr")]
-static L_MR: LocaleData = LocaleData { name: "mr", parent: "und", numbers: &NUMBERS_MR, plurals: PLURALS_MR, currencies: &[
+static L_MR: LocaleData = LocaleData { name: "mr", parent: "und", system: "deva", numbers: &NUMBERS_MR, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_MR_LATN)], plurals: PLURALS_MR, currencies: &[
     CurrencyData { code: *b"AED", fields: "dस\u{902}य\u{941}क\u{94d}त अरब अमीरात दिरह\u{945}म\u{1f}5स\u{902}य\u{941}क\u{94d}त अरब अमीरात दिरह\u{945}म" },
     CurrencyData { code: *b"AFN", fields: "dअफगाण अफगाणी\u{1f}5अफगाण अफगाणी" },
     CurrencyData { code: *b"ALL", fields: "dअल\u{94d}बानियन ल\u{947}क\u{1f}1अल\u{94d}बानियन ल\u{947}क\u{1f}5अल\u{94d}बानियन ल\u{947}क\u{947}" },
@@ -16511,7 +17191,7 @@ static L_MR: LocaleData = LocaleData { name: "mr", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ms")]
-static L_MS: LocaleData = LocaleData { name: "ms", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_MS, currencies: &[
+static L_MS: LocaleData = LocaleData { name: "ms", parent: "und", system: "latn", numbers: &NUMBERS_MS, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_MS, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirham Emiriah Arab Bersatu\u{1f}5Dirham UAE" },
     CurrencyData { code: *b"AFN", fields: "dAfghani Afghanistan\u{1f}5Afghani Afghanistan" },
     CurrencyData { code: *b"ALL", fields: "dLek Albania\u{1f}5Lek Albania" },
@@ -16690,22 +17370,22 @@ static L_MS: LocaleData = LocaleData { name: "ms", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ms")]
-static L_MS_BN: LocaleData = LocaleData { name: "ms-BN", parent: "ms", numbers: &NUMBERS_MS_BN, plurals: PLURALS_MS, currencies: &[
+static L_MS_BN: LocaleData = LocaleData { name: "ms-BN", parent: "ms", system: "latn", numbers: &NUMBERS_MS_BN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_MS, currencies: &[
     CurrencyData { code: *b"BND", fields: "s$" },
 ] };
 
 #[cfg(feature = "ms")]
-static L_MS_ID: LocaleData = LocaleData { name: "ms-ID", parent: "ms", numbers: &NUMBERS_ES_BO, plurals: PLURALS_MS, currencies: &[
+static L_MS_ID: LocaleData = LocaleData { name: "ms-ID", parent: "ms", system: "latn", numbers: &NUMBERS_MS_ID, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_MS, currencies: &[
     CurrencyData { code: *b"IDR", fields: "sRp" },
 ] };
 
 #[cfg(feature = "ms")]
-static L_MS_SG: LocaleData = LocaleData { name: "ms-SG", parent: "ms", numbers: &NUMBERS_AK, plurals: PLURALS_MS, currencies: &[
+static L_MS_SG: LocaleData = LocaleData { name: "ms-SG", parent: "ms", system: "latn", numbers: &NUMBERS_MS, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_MS, currencies: &[
     CurrencyData { code: *b"SGD", fields: "s$" },
 ] };
 
 #[cfg(feature = "my")]
-static L_MY: LocaleData = LocaleData { name: "my", parent: "und", numbers: &NUMBERS_MY, plurals: PLURALS_MY, currencies: &[
+static L_MY: LocaleData = LocaleData { name: "my", parent: "und", system: "mymr", numbers: &NUMBERS_MY, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_MY_LATN)], plurals: PLURALS_MY, currencies: &[
     CurrencyData { code: *b"AED", fields: "dအာရပ\u{103a}စော\u{103a}ဘ\u{103d}ားများ ပြည\u{103a}ထောင\u{103a}စ\u{102f} ဒါဟမ\u{103a}း\u{1f}5အာရပ\u{103a}စော\u{103a}ဘ\u{103d}ားများ ပြည\u{103a}ထောင\u{103a}စ\u{102f} ဒါဟမ\u{103a}း" },
     CurrencyData { code: *b"AFN", fields: "dအာဖဂန\u{103a} အာဖဂါန\u{102e}\u{1f}5အာဖဂန\u{103a} အာဖဂါန\u{102e}" },
     CurrencyData { code: *b"ALL", fields: "dအယ\u{103a}ဘေးန\u{102e}းယား လ\u{102e}ခ\u{103a}\u{1f}5အယ\u{103a}ဘေးန\u{102e}းယား လ\u{102e}ခ\u{103a}" },
@@ -16898,15 +17578,15 @@ static L_MY: LocaleData = LocaleData { name: "my", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "nb")]
-static L_NB: LocaleData = LocaleData { name: "nb", parent: "no", numbers: &NUMBERS_NB, plurals: PLURALS_NB, currencies: &[
+static L_NB: LocaleData = LocaleData { name: "nb", parent: "no", system: "latn", numbers: &NUMBERS_NB, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NB, currencies: &[
 ] };
 
 #[cfg(feature = "nb")]
-static L_NB_SJ: LocaleData = LocaleData { name: "nb-SJ", parent: "nb", numbers: &NUMBERS_NB, plurals: PLURALS_NB, currencies: &[
+static L_NB_SJ: LocaleData = LocaleData { name: "nb-SJ", parent: "nb", system: "latn", numbers: &NUMBERS_NB, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NB, currencies: &[
 ] };
 
 #[cfg(feature = "ne")]
-static L_NE: LocaleData = LocaleData { name: "ne", parent: "und", numbers: &NUMBERS_NE, plurals: PLURALS_NE, currencies: &[
+static L_NE: LocaleData = LocaleData { name: "ne", parent: "und", system: "deva", numbers: &NUMBERS_NE, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_NE_LATN)], plurals: PLURALS_NE, currencies: &[
     CurrencyData { code: *b"AED", fields: "dस\u{902}य\u{941}क\u{94d}त अरब एमिराट\u{94d}स डिर\u{94d}हाम\u{1f}5स\u{902}य\u{941}क\u{94d}त अरब एमिराट\u{94d}स डिर\u{94d}हाम" },
     CurrencyData { code: *b"AFA", fields: "dअफ\u{94d}गानी(१९२७–२००२)\u{1f}5अफ\u{94d}गानी(१९२७–२००२)" },
     CurrencyData { code: *b"AFN", fields: "dअफ\u{94d}गान अफ\u{94d}गानी\u{1f}5अफ\u{94d}गान अफ\u{94d}गानी" },
@@ -17078,11 +17758,11 @@ static L_NE: LocaleData = LocaleData { name: "ne", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ne")]
-static L_NE_IN: LocaleData = LocaleData { name: "ne-IN", parent: "ne", numbers: &NUMBERS_NE, plurals: PLURALS_NE, currencies: &[
+static L_NE_IN: LocaleData = LocaleData { name: "ne-IN", parent: "ne", system: "deva", numbers: &NUMBERS_NE, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_NE_LATN)], plurals: PLURALS_NE, currencies: &[
 ] };
 
 #[cfg(feature = "nl")]
-static L_NL: LocaleData = LocaleData { name: "nl", parent: "und", numbers: &NUMBERS_NL, plurals: PLURALS_NL, currencies: &[
+static L_NL: LocaleData = LocaleData { name: "nl", parent: "und", system: "latn", numbers: &NUMBERS_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NL, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorrese peseta\u{1f}5Andorrese peseta" },
     CurrencyData { code: *b"AED", fields: "dVerenigde Arabische Emiraten-dirham\u{1f}1VAE-dirham\u{1f}5VAE-dirham" },
     CurrencyData { code: *b"AFA", fields: "dAfghani (1927–2002)\u{1f}1Afghani (AFA)\u{1f}5Afghani (AFA)" },
@@ -17393,36 +18073,36 @@ static L_NL: LocaleData = LocaleData { name: "nl", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "nl")]
-static L_NL_AW: LocaleData = LocaleData { name: "nl-AW", parent: "nl", numbers: &NUMBERS_NL, plurals: PLURALS_NL, currencies: &[
+static L_NL_AW: LocaleData = LocaleData { name: "nl-AW", parent: "nl", system: "latn", numbers: &NUMBERS_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NL, currencies: &[
     CurrencyData { code: *b"AWG", fields: "sAfl." },
 ] };
 
 #[cfg(feature = "nl")]
-static L_NL_BE: LocaleData = LocaleData { name: "nl-BE", parent: "nl", numbers: &NUMBERS_NL, plurals: PLURALS_NL, currencies: &[
+static L_NL_BE: LocaleData = LocaleData { name: "nl-BE", parent: "nl", system: "latn", numbers: &NUMBERS_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NL, currencies: &[
 ] };
 
 #[cfg(feature = "nl")]
-static L_NL_BQ: LocaleData = LocaleData { name: "nl-BQ", parent: "nl", numbers: &NUMBERS_NL, plurals: PLURALS_NL, currencies: &[
+static L_NL_BQ: LocaleData = LocaleData { name: "nl-BQ", parent: "nl", system: "latn", numbers: &NUMBERS_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NL, currencies: &[
     CurrencyData { code: *b"USD", fields: "s$" },
 ] };
 
 #[cfg(feature = "nl")]
-static L_NL_CW: LocaleData = LocaleData { name: "nl-CW", parent: "nl", numbers: &NUMBERS_NL, plurals: PLURALS_NL, currencies: &[
+static L_NL_CW: LocaleData = LocaleData { name: "nl-CW", parent: "nl", system: "latn", numbers: &NUMBERS_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NL, currencies: &[
     CurrencyData { code: *b"ANG", fields: "sNAf." },
 ] };
 
 #[cfg(feature = "nl")]
-static L_NL_SR: LocaleData = LocaleData { name: "nl-SR", parent: "nl", numbers: &NUMBERS_NL, plurals: PLURALS_NL, currencies: &[
+static L_NL_SR: LocaleData = LocaleData { name: "nl-SR", parent: "nl", system: "latn", numbers: &NUMBERS_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NL, currencies: &[
     CurrencyData { code: *b"SRD", fields: "s$" },
 ] };
 
 #[cfg(feature = "nl")]
-static L_NL_SX: LocaleData = LocaleData { name: "nl-SX", parent: "nl", numbers: &NUMBERS_NL, plurals: PLURALS_NL, currencies: &[
+static L_NL_SX: LocaleData = LocaleData { name: "nl-SX", parent: "nl", system: "latn", numbers: &NUMBERS_NL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NL, currencies: &[
     CurrencyData { code: *b"ANG", fields: "sNAf." },
 ] };
 
 #[cfg(feature = "nn")]
-static L_NN: LocaleData = LocaleData { name: "nn", parent: "no", numbers: &NUMBERS_NB, plurals: PLURALS_NN, currencies: &[
+static L_NN: LocaleData = LocaleData { name: "nn", parent: "no", system: "latn", numbers: &NUMBERS_NN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NN, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorranske peseta" },
     CurrencyData { code: *b"AFA", fields: "dafghanske afghani (1927–2002)" },
     CurrencyData { code: *b"AOK", fields: "dangolske kwanza (1977–1990)" },
@@ -17540,7 +18220,7 @@ static L_NN: LocaleData = LocaleData { name: "nn", parent: "no", numbers: &NUMBE
 ] };
 
 #[cfg(feature = "no")]
-static L_NO: LocaleData = LocaleData { name: "no", parent: "und", numbers: &NUMBERS_NB, plurals: PLURALS_NO, currencies: &[
+static L_NO: LocaleData = LocaleData { name: "no", parent: "und", system: "latn", numbers: &NUMBERS_NB, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_NO, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorranske pesetas\u{1f}1andorransk pesetas\u{1f}5andorranske pesetas" },
     CurrencyData { code: *b"AED", fields: "demiratarabiske dirham\u{1f}1emiratarabisk dirham\u{1f}5emiratarabiske dirham" },
     CurrencyData { code: *b"AFA", fields: "dafgansk afghani (1927–2002)\u{1f}1afghansk afghani (1927–2002)\u{1f}5afghanske afghani (1927–2002)" },
@@ -17849,7 +18529,7 @@ static L_NO: LocaleData = LocaleData { name: "no", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "or")]
-static L_OR: LocaleData = LocaleData { name: "or", parent: "und", numbers: &NUMBERS_ML, plurals: PLURALS_OR, currencies: &[
+static L_OR: LocaleData = LocaleData { name: "or", parent: "und", system: "latn", numbers: &NUMBERS_OR, #[cfg(feature = "numbering-systems")] systems: &[("orya", &NUMBERS_OR_ORYA)], plurals: PLURALS_OR, currencies: &[
     CurrencyData { code: *b"AED", fields: "dଯ\u{b41}କ\u{b4d}ତ ଆରବ ଏମ\u{b3f}ରେଟସ\u{b4d} ଦ\u{b3f}ରହ\u{b3e}ମ\u{b4d}\u{1f}1UAE ଦ\u{b3f}ରହ\u{b3e}ମ\u{b4d}\u{1f}5UAE ଦ\u{b3f}ରହ\u{b3e}ମ\u{b4d}" },
     CurrencyData { code: *b"AFN", fields: "dଆଫଗ\u{b3e}ନ ଆଫଗ\u{b3e}ନ\u{b3f}\u{1f}5ଆଫଗ\u{b3e}ନ ଆଫଗ\u{b3e}ନ\u{b3f}" },
     CurrencyData { code: *b"ALL", fields: "dଆଲବ\u{b3e}ନ\u{b3f}ୟ ଲେକ\u{b4d}\u{1f}5ଆଲବ\u{b3e}ନ\u{b3f}ୟ ଲେକ\u{b4d}" },
@@ -18016,7 +18696,7 @@ static L_OR: LocaleData = LocaleData { name: "or", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "pa")]
-static L_PA: LocaleData = LocaleData { name: "pa", parent: "und", numbers: &NUMBERS_PA, plurals: PLURALS_PA, currencies: &[
+static L_PA: LocaleData = LocaleData { name: "pa", parent: "und", system: "latn", numbers: &NUMBERS_PA, #[cfg(feature = "numbering-systems")] systems: &[("guru", &NUMBERS_PA_GURU)], plurals: PLURALS_PA, currencies: &[
     CurrencyData { code: *b"AED", fields: "dਸ\u{a70}ਯ\u{a41}ਕਤ ਅਰਬ ਅਮੀਰਾਤ ਦਿਰਹਾਮ\u{1f}5ਸ\u{a70}ਯ\u{a41}ਕਤ ਅਰਬ ਅਮੀਰਾਤ ਦਿਰਹਾਮ" },
     CurrencyData { code: *b"AFN", fields: "dਅਫ\u{a3c}ਗਾਨ ਅਫ\u{a3c}ਗਾਨੀ\u{1f}5ਅਫ\u{a3c}ਗਾਨ ਅਫ\u{a3c}ਗਾਨੀ" },
     CurrencyData { code: *b"ALL", fields: "dਅਲਬਾਨੀਆਈ ਲ\u{a47}ਕ\u{1f}5ਅਲਬਾਨੀਆਈ ਲ\u{a47}ਕ" },
@@ -18210,11 +18890,11 @@ static L_PA: LocaleData = LocaleData { name: "pa", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "pa")]
-static L_PA_GURU: LocaleData = LocaleData { name: "pa-Guru", parent: "pa", numbers: &NUMBERS_PA, plurals: PLURALS_PA, currencies: &[
+static L_PA_GURU: LocaleData = LocaleData { name: "pa-Guru", parent: "pa", system: "latn", numbers: &NUMBERS_PA, #[cfg(feature = "numbering-systems")] systems: &[("guru", &NUMBERS_PA_GURU)], plurals: PLURALS_PA, currencies: &[
 ] };
 
 #[cfg(feature = "pcm")]
-static L_PCM: LocaleData = LocaleData { name: "pcm", parent: "und", numbers: &NUMBERS_ES_419, plurals: PLURALS_PCM, currencies: &[
+static L_PCM: LocaleData = LocaleData { name: "pcm", parent: "und", system: "latn", numbers: &NUMBERS_PCM, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PCM, currencies: &[
     CurrencyData { code: *b"AED", fields: "dYunaítẹ\u{301}d Áráb Ẹ\u{301}míréts Dírham\u{1f}1Yunaítẹ\u{301}d Áráb Ẹ\u{301}míréts dírham\u{1f}5Yunaítẹ\u{301}d Áráb Ẹ\u{301}míréts dírhams" },
     CurrencyData { code: *b"AFN", fields: "dAfgán Afgáni\u{1f}1Afgán afgáni\u{1f}5Afgán afgánis" },
     CurrencyData { code: *b"ALL", fields: "dAlbéniá Lẹk\u{1f}5Albéniá Lẹk" },
@@ -18378,7 +19058,7 @@ static L_PCM: LocaleData = LocaleData { name: "pcm", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "pl")]
-static L_PL: LocaleData = LocaleData { name: "pl", parent: "und", numbers: &NUMBERS_BG, plurals: PLURALS_PL, currencies: &[
+static L_PL: LocaleData = LocaleData { name: "pl", parent: "und", system: "latn", numbers: &NUMBERS_PL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PL, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpeseta andorska\u{1f}1peseta andorska\u{1f}3pesety andorskie\u{1f}4peset andorskich\u{1f}5peseta andorska" },
     CurrencyData { code: *b"AED", fields: "ddirham ZEA\u{1f}1dirham ZEA\u{1f}3dirhamy ZEA\u{1f}4dirhamów ZEA\u{1f}5dirhama ZEA" },
     CurrencyData { code: *b"AFA", fields: "dafgani (1927–2002)\u{1f}5afgani (1927–2002)" },
@@ -18652,7 +19332,7 @@ static L_PL: LocaleData = LocaleData { name: "pl", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ps")]
-static L_PS: LocaleData = LocaleData { name: "ps", parent: "und", numbers: &NUMBERS_PS, plurals: PLURALS_PS, currencies: &[
+static L_PS: LocaleData = LocaleData { name: "ps", parent: "und", system: "arabext", numbers: &NUMBERS_PS, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_PS_LATN)], plurals: PLURALS_PS, currencies: &[
     CurrencyData { code: *b"AED", fields: "dمتحده عرب امارات درهم\u{1f}1UAE درهم\u{1f}5UAE درهمې" },
     CurrencyData { code: *b"AFA", fields: "dافغانۍ (1927–2002)\u{1f}5افغانۍ (1927–2002)" },
     CurrencyData { code: *b"AFN", fields: "s؋\u{1f}dافغانۍ\u{1f}5افغانۍ" },
@@ -18817,13 +19497,13 @@ static L_PS: LocaleData = LocaleData { name: "ps", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ps")]
-static L_PS_PK: LocaleData = LocaleData { name: "ps-PK", parent: "ps", numbers: &NUMBERS_PS, plurals: PLURALS_PS, currencies: &[
+static L_PS_PK: LocaleData = LocaleData { name: "ps-PK", parent: "ps", system: "arabext", numbers: &NUMBERS_PS, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_PS_LATN)], plurals: PLURALS_PS, currencies: &[
     CurrencyData { code: *b"PKR", fields: "sRs\u{1f}5پاکستانۍ کلدارے" },
     CurrencyData { code: *b"XXX", fields: "dنامعلومه مروجه پېسے\u{1f}5(نامعلومه مروجه پېسے)" },
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT: LocaleData = LocaleData { name: "pt", parent: "und", numbers: &NUMBERS_DE_AT, plurals: PLURALS_PT, currencies: &[
+static L_PT: LocaleData = LocaleData { name: "pt", parent: "und", system: "latn", numbers: &NUMBERS_PT, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dPeseta de Andorra\u{1f}1Peseta de Andorra\u{1f}5Pesetas de Andorra" },
     CurrencyData { code: *b"AED", fields: "dDirham dos Emirados Árabes Unidos\u{1f}1Dirham dos EAU\u{1f}5Dirhams dos EAU" },
     CurrencyData { code: *b"AFA", fields: "dAfegane (1927–2002)\u{1f}1Afegane do Afeganistão (AFA)\u{1f}5Afeganes do Afeganistão (AFA)" },
@@ -19129,45 +19809,45 @@ static L_PT: LocaleData = LocaleData { name: "pt", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_AO: LocaleData = LocaleData { name: "pt-AO", parent: "pt-PT", numbers: &NUMBERS_CV, plurals: PLURALS_PT, currencies: &[
+static L_PT_AO: LocaleData = LocaleData { name: "pt-AO", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_AO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
     CurrencyData { code: *b"AOA", fields: "sKz" },
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_CH: LocaleData = LocaleData { name: "pt-CH", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_CH: LocaleData = LocaleData { name: "pt-CH", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_CV: LocaleData = LocaleData { name: "pt-CV", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_CV: LocaleData = LocaleData { name: "pt-CV", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
     CurrencyData { code: *b"CVE", fields: "s\u{200b}\u{1f}.$" },
     CurrencyData { code: *b"PTE", fields: "sPTE" },
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_GQ: LocaleData = LocaleData { name: "pt-GQ", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_GQ: LocaleData = LocaleData { name: "pt-GQ", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_GW: LocaleData = LocaleData { name: "pt-GW", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_GW: LocaleData = LocaleData { name: "pt-GW", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_LU: LocaleData = LocaleData { name: "pt-LU", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_LU: LocaleData = LocaleData { name: "pt-LU", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
     CurrencyData { code: *b"LUF", fields: "sF" },
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_MO: LocaleData = LocaleData { name: "pt-MO", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_MO: LocaleData = LocaleData { name: "pt-MO", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
     CurrencyData { code: *b"MOP", fields: "sMOP$" },
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_MZ: LocaleData = LocaleData { name: "pt-MZ", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_MZ: LocaleData = LocaleData { name: "pt-MZ", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
     CurrencyData { code: *b"MZN", fields: "sMTn" },
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_PT: LocaleData = LocaleData { name: "pt-PT", parent: "pt", numbers: &NUMBERS_BG, plurals: PLURALS_PT_PT, currencies: &[
+static L_PT_PT: LocaleData = LocaleData { name: "pt-PT", parent: "pt", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT_PT, currencies: &[
     CurrencyData { code: *b"AED", fields: "ddirham dos Emirados Árabes Unidos\u{1f}1dirham dos Emirados Árabes Unidos\u{1f}5sdirham dos Emirados Árabes Unidos" },
     CurrencyData { code: *b"AFA", fields: "dAfeghani (1927–2002)" },
     CurrencyData { code: *b"AFN", fields: "dafegâni afegão\u{1f}1afegâni afegão\u{1f}5afegânis afegãos" },
@@ -19347,16 +20027,16 @@ static L_PT_PT: LocaleData = LocaleData { name: "pt-PT", parent: "pt", numbers: 
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_ST: LocaleData = LocaleData { name: "pt-ST", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_ST: LocaleData = LocaleData { name: "pt-ST", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
     CurrencyData { code: *b"STN", fields: "sDb" },
 ] };
 
 #[cfg(feature = "pt")]
-static L_PT_TL: LocaleData = LocaleData { name: "pt-TL", parent: "pt-PT", numbers: &NUMBERS_BG, plurals: PLURALS_PT, currencies: &[
+static L_PT_TL: LocaleData = LocaleData { name: "pt-TL", parent: "pt-PT", system: "latn", numbers: &NUMBERS_PT_CH, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_PT, currencies: &[
 ] };
 
 #[cfg(feature = "qu")]
-static L_QU: LocaleData = LocaleData { name: "qu", parent: "und", numbers: &NUMBERS_ES_PE, plurals: PLURALS_UND, currencies: &[
+static L_QU: LocaleData = LocaleData { name: "qu", parent: "und", system: "latn", numbers: &NUMBERS_QU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirham de Emiratos Árabes Unidos\u{1f}5UAE dirhams" },
     CurrencyData { code: *b"AFN", fields: "dAfgani Afgano\u{1f}5Afgani afgano" },
     CurrencyData { code: *b"ALL", fields: "dLek albanés\u{1f}5Lek albanés" },
@@ -19520,19 +20200,19 @@ static L_QU: LocaleData = LocaleData { name: "qu", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "qu")]
-static L_QU_BO: LocaleData = LocaleData { name: "qu-BO", parent: "qu", numbers: &NUMBERS_DE_AT, plurals: PLURALS_UND, currencies: &[
+static L_QU_BO: LocaleData = LocaleData { name: "qu-BO", parent: "qu", system: "latn", numbers: &NUMBERS_QU_BO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
     CurrencyData { code: *b"BOB", fields: "sBs" },
     CurrencyData { code: *b"PEN", fields: "sPEN" },
 ] };
 
 #[cfg(feature = "qu")]
-static L_QU_EC: LocaleData = LocaleData { name: "qu-EC", parent: "qu", numbers: &NUMBERS_ES_PE, plurals: PLURALS_UND, currencies: &[
+static L_QU_EC: LocaleData = LocaleData { name: "qu-EC", parent: "qu", system: "latn", numbers: &NUMBERS_QU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
     CurrencyData { code: *b"PEN", fields: "sPEN" },
     CurrencyData { code: *b"USD", fields: "s$" },
 ] };
 
 #[cfg(feature = "rm")]
-static L_RM: LocaleData = LocaleData { name: "rm", parent: "und", numbers: &NUMBERS_RM, plurals: PLURALS_RM, currencies: &[
+static L_RM: LocaleData = LocaleData { name: "rm", parent: "und", system: "latn", numbers: &NUMBERS_RM, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RM, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpeseta andorrana\u{1f}1peseta andorrana\u{1f}5pesetas andorranas" },
     CurrencyData { code: *b"AED", fields: "ddirham dals Emirats Arabs Unids\u{1f}1dirham dals Emirats Arabs Unids\u{1f}5dirhams dals Emirats Arabs Unids" },
     CurrencyData { code: *b"AFA", fields: "dafgani afgan (1927–2002)\u{1f}1afgani afgan (1927–2002)\u{1f}5afganis afgans (1927–2002)" },
@@ -19836,7 +20516,7 @@ static L_RM: LocaleData = LocaleData { name: "rm", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ro")]
-static L_RO: LocaleData = LocaleData { name: "ro", parent: "und", numbers: &NUMBERS_RO, plurals: PLURALS_RO, currencies: &[
+static L_RO: LocaleData = LocaleData { name: "ro", parent: "und", system: "latn", numbers: &NUMBERS_RO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RO, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dpesetă andorrană\u{1f}1pesetă andorrană\u{1f}3pesete andorrane\u{1f}5pesete andorrane" },
     CurrencyData { code: *b"AED", fields: "ddirham din Emiratele Arabe Unite\u{1f}1dirham din Emiratele Arabe Unite\u{1f}3dirhami din Emiratele Arabe Unite\u{1f}5dirhami din Emiratele Arabe Unite" },
     CurrencyData { code: *b"AFN", fields: "dafgani afgan\u{1f}1afgani afgan\u{1f}3afgani afgani\u{1f}5afgani afgani" },
@@ -20094,12 +20774,12 @@ static L_RO: LocaleData = LocaleData { name: "ro", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ro")]
-static L_RO_MD: LocaleData = LocaleData { name: "ro-MD", parent: "ro", numbers: &NUMBERS_RO, plurals: PLURALS_RO, currencies: &[
+static L_RO_MD: LocaleData = LocaleData { name: "ro-MD", parent: "ro", system: "latn", numbers: &NUMBERS_RO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RO, currencies: &[
     CurrencyData { code: *b"MDL", fields: "sL" },
 ] };
 
 #[cfg(feature = "ru")]
-static L_RU: LocaleData = LocaleData { name: "ru", parent: "und", numbers: &NUMBERS_CS, plurals: PLURALS_RU, currencies: &[
+static L_RU: LocaleData = LocaleData { name: "ru", parent: "und", system: "latn", numbers: &NUMBERS_RU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RU, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dАндоррская песета\u{1f}1андоррская песета\u{1f}3андоррские песеты\u{1f}4андоррских песет\u{1f}5андоррских песет" },
     CurrencyData { code: *b"AED", fields: "dдирхам ОАЭ\u{1f}1дирхам ОАЭ\u{1f}3дирхама ОАЭ\u{1f}4дирхамов ОАЭ\u{1f}5дирхама ОАЭ" },
     CurrencyData { code: *b"AFA", fields: "dАфгани (1927–2002)\u{1f}5Афгани (1927–2002)" },
@@ -20385,32 +21065,32 @@ static L_RU: LocaleData = LocaleData { name: "ru", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ru")]
-static L_RU_BY: LocaleData = LocaleData { name: "ru-BY", parent: "ru", numbers: &NUMBERS_CS, plurals: PLURALS_RU, currencies: &[
+static L_RU_BY: LocaleData = LocaleData { name: "ru-BY", parent: "ru", system: "latn", numbers: &NUMBERS_RU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RU, currencies: &[
     CurrencyData { code: *b"BYN", fields: "sBr\u{1f}nBr" },
     CurrencyData { code: *b"RUR", fields: "sRUR" },
 ] };
 
 #[cfg(feature = "ru")]
-static L_RU_KG: LocaleData = LocaleData { name: "ru-KG", parent: "ru", numbers: &NUMBERS_CS, plurals: PLURALS_RU, currencies: &[
+static L_RU_KG: LocaleData = LocaleData { name: "ru-KG", parent: "ru", system: "latn", numbers: &NUMBERS_RU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RU, currencies: &[
     CurrencyData { code: *b"KGS", fields: "sсом" },
 ] };
 
 #[cfg(feature = "ru")]
-static L_RU_KZ: LocaleData = LocaleData { name: "ru-KZ", parent: "ru", numbers: &NUMBERS_CS, plurals: PLURALS_RU, currencies: &[
+static L_RU_KZ: LocaleData = LocaleData { name: "ru-KZ", parent: "ru", system: "latn", numbers: &NUMBERS_RU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RU, currencies: &[
     CurrencyData { code: *b"KZT", fields: "s₸" },
 ] };
 
 #[cfg(feature = "ru")]
-static L_RU_MD: LocaleData = LocaleData { name: "ru-MD", parent: "ru", numbers: &NUMBERS_CS, plurals: PLURALS_RU, currencies: &[
+static L_RU_MD: LocaleData = LocaleData { name: "ru-MD", parent: "ru", system: "latn", numbers: &NUMBERS_RU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RU, currencies: &[
     CurrencyData { code: *b"MDL", fields: "sL" },
 ] };
 
 #[cfg(feature = "ru")]
-static L_RU_UA: LocaleData = LocaleData { name: "ru-UA", parent: "ru", numbers: &NUMBERS_BE, plurals: PLURALS_RU, currencies: &[
+static L_RU_UA: LocaleData = LocaleData { name: "ru-UA", parent: "ru", system: "latn", numbers: &NUMBERS_RU_UA, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_RU, currencies: &[
 ] };
 
 #[cfg(feature = "sd")]
-static L_SD: LocaleData = LocaleData { name: "sd", parent: "und", numbers: &NUMBERS_SD, plurals: PLURALS_SD, currencies: &[
+static L_SD: LocaleData = LocaleData { name: "sd", parent: "und", system: "arab", numbers: &NUMBERS_SD, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_SD_LATN)], plurals: PLURALS_SD, currencies: &[
     CurrencyData { code: *b"AED", fields: "dگڏيل عرب امارات درهم\u{1f}5گڏيل عرب امارات درهم" },
     CurrencyData { code: *b"AFN", fields: "dافغاني افغاني\u{1f}5افغاني افغاني" },
     CurrencyData { code: *b"ALL", fields: "dالباني ليڪ\u{1f}5الباني ليڪ" },
@@ -20577,11 +21257,11 @@ static L_SD: LocaleData = LocaleData { name: "sd", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "sd")]
-static L_SD_ARAB: LocaleData = LocaleData { name: "sd-Arab", parent: "sd", numbers: &NUMBERS_SD, plurals: PLURALS_SD, currencies: &[
+static L_SD_ARAB: LocaleData = LocaleData { name: "sd-Arab", parent: "sd", system: "arab", numbers: &NUMBERS_SD, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_SD_LATN)], plurals: PLURALS_SD, currencies: &[
 ] };
 
 #[cfg(feature = "shn")]
-static L_SHN: LocaleData = LocaleData { name: "shn", parent: "und", numbers: &NUMBERS_ES_PE, plurals: PLURALS_UND, currencies: &[
+static L_SHN: LocaleData = LocaleData { name: "shn", parent: "und", system: "latn", numbers: &NUMBERS_SHN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dပေႇသႄႇတႃႇဢ\u{1085}ၼ\u{103a}ႇတ\u{1030}ဝ\u{103a}ႇရႃႇ\u{1f}5ပေႇသႄႇတႃႇဢ\u{1085}ၼ\u{103a}ႇတ\u{1030}ဝ\u{103a}ႇရႃႇ" },
     CurrencyData { code: *b"AED", fields: "dတ\u{102e}ႇရမ\u{103a}ႇမ\u{102d}\u{1030}င\u{103a}းႁ\u{1030}မ\u{103a}ႈတ\u{102f}မ\u{103a} ၸဝ\u{103a}ႈၾႃႉ ဢႃႇရၢပ\u{103a}ႈ\u{1f}5တ\u{102e}ႇရမ\u{103a}ႇမ\u{102d}\u{1030}င\u{103a}းႁ\u{1030}မ\u{103a}ႈတ\u{102f}မ\u{103a} ၸဝ\u{103a}ႈၾႃႉ ဢႃႇရၢပ\u{103a}ႈ" },
     CurrencyData { code: *b"AFA", fields: "dဢႃႇၾၵၢၼ\u{103a}ႇၼ\u{102e}ႇဢႃႇၾၵၢၼ\u{103a}ႇ (1927–2002)\u{1f}5ဢႃႇၾၵၢၼ\u{103a}ႇၼ\u{102e}ႇဢႃႇၾၵၢၼ\u{103a}ႇ (1927–2002)" },
@@ -20892,11 +21572,11 @@ static L_SHN: LocaleData = LocaleData { name: "shn", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "shn")]
-static L_SHN_TH: LocaleData = LocaleData { name: "shn-TH", parent: "shn", numbers: &NUMBERS_ES_PE, plurals: PLURALS_UND, currencies: &[
+static L_SHN_TH: LocaleData = LocaleData { name: "shn-TH", parent: "shn", system: "latn", numbers: &NUMBERS_SHN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
 ] };
 
 #[cfg(feature = "si")]
-static L_SI: LocaleData = LocaleData { name: "si", parent: "und", numbers: &NUMBERS_SI, plurals: PLURALS_SI, currencies: &[
+static L_SI: LocaleData = LocaleData { name: "si", parent: "und", system: "latn", numbers: &NUMBERS_SI, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SI, currencies: &[
     CurrencyData { code: *b"AED", fields: "dඑක\u{dca}සත\u{dca} අර\u{dcf}බ\u{dd2} එම\u{dd2}රේට\u{dca}ස\u{dca} ඩ\u{dd2}ර\u{dcf}ම\u{dca}\u{1f}5එක\u{dca}සත\u{dca} අර\u{dcf}බ\u{dd2} එම\u{dd2}රේට\u{dca}ස\u{dca} ඩ\u{dd2}ර\u{dcf}ම\u{dca}" },
     CurrencyData { code: *b"AFN", fields: "dඇෆ\u{dca}ගන\u{dd2}ථ\u{dcf}න ඇෆ\u{dca}ගන\u{dd2}\u{1f}5ඇෆ\u{dca}ගන\u{dd2}ථ\u{dcf}න ඇෆ\u{dca}ගන\u{dd2}" },
     CurrencyData { code: *b"ALL", fields: "dඇල\u{dca}බේන\u{dd2}ය\u{dcf}න\u{dd4} ලෙක\u{dca}\u{1f}5ඇල\u{dca}බේන\u{dd2}ය\u{dcf}න\u{dd4} ලෙක\u{dca}" },
@@ -21067,7 +21747,7 @@ static L_SI: LocaleData = LocaleData { name: "si", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "sk")]
-static L_SK: LocaleData = LocaleData { name: "sk", parent: "und", numbers: &NUMBERS_CV, plurals: PLURALS_SK, currencies: &[
+static L_SK: LocaleData = LocaleData { name: "sk", parent: "und", system: "latn", numbers: &NUMBERS_SK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SK, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorrská peseta\u{1f}1andorrská peseta\u{1f}3andorrské pesety\u{1f}4andorrskej pesety\u{1f}5andorrských pesiet" },
     CurrencyData { code: *b"AED", fields: "dSAE dirham\u{1f}1SAE dirham\u{1f}3SAE dirhamy\u{1f}4SAE dirhamu\u{1f}5SAE dirhamov" },
     CurrencyData { code: *b"AFA", fields: "dafganský afgání (1927 – 2002)\u{1f}1afganský afgání (1927 – 2002)\u{1f}3afganské afgání (1927 – 2002)\u{1f}4afganského afgání (1927 – 2002)\u{1f}5afganských afgání (1927 – 2002)" },
@@ -21376,7 +22056,7 @@ static L_SK: LocaleData = LocaleData { name: "sk", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "sl")]
-static L_SL: LocaleData = LocaleData { name: "sl", parent: "und", numbers: &NUMBERS_SL, plurals: PLURALS_SL, currencies: &[
+static L_SL: LocaleData = LocaleData { name: "sl", parent: "und", system: "latn", numbers: &NUMBERS_SL, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SL, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorska peseta\u{1f}5andorska peseta" },
     CurrencyData { code: *b"AED", fields: "ddirham Združenih arabskih emiratov\u{1f}1dirham Združenih arabskih emiratov\u{1f}2dirhama Združenih arabskih emiratov\u{1f}3dirhami Združenih arabskih emiratov\u{1f}5dirhamov Združenih arabskih emiratov" },
     CurrencyData { code: *b"AFA", fields: "dstari afganistanski afgani (1927–2002)\u{1f}5stari afganistanski afgani (1927–2002)" },
@@ -21660,7 +22340,7 @@ static L_SL: LocaleData = LocaleData { name: "sl", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "so")]
-static L_SO: LocaleData = LocaleData { name: "so", parent: "und", numbers: &NUMBERS_EN, plurals: PLURALS_SO, currencies: &[
+static L_SO: LocaleData = LocaleData { name: "so", parent: "und", system: "latn", numbers: &NUMBERS_SO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SO, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirhamka Isutaga Imaaraatka Carabta\u{1f}1dirhamka Isutaga Imaaraatka Carabta\u{1f}5dirhamka Isutaga Imaaraatka Carabta" },
     CurrencyData { code: *b"AFN", fields: "dAfgan Afgani\u{1f}5Afgan Afgani" },
     CurrencyData { code: *b"ALL", fields: "dLekta Albaniya\u{1f}1lekta Abaniya\u{1f}5lekta Albaniya" },
@@ -21837,22 +22517,22 @@ static L_SO: LocaleData = LocaleData { name: "so", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "so")]
-static L_SO_DJ: LocaleData = LocaleData { name: "so-DJ", parent: "so", numbers: &NUMBERS_EN, plurals: PLURALS_SO, currencies: &[
+static L_SO_DJ: LocaleData = LocaleData { name: "so-DJ", parent: "so", system: "latn", numbers: &NUMBERS_SO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SO, currencies: &[
     CurrencyData { code: *b"DJF", fields: "sFdj" },
 ] };
 
 #[cfg(feature = "so")]
-static L_SO_ET: LocaleData = LocaleData { name: "so-ET", parent: "so", numbers: &NUMBERS_EN, plurals: PLURALS_SO, currencies: &[
+static L_SO_ET: LocaleData = LocaleData { name: "so-ET", parent: "so", system: "latn", numbers: &NUMBERS_SO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SO, currencies: &[
     CurrencyData { code: *b"ETB", fields: "sBr" },
 ] };
 
 #[cfg(feature = "so")]
-static L_SO_KE: LocaleData = LocaleData { name: "so-KE", parent: "so", numbers: &NUMBERS_EN, plurals: PLURALS_SO, currencies: &[
+static L_SO_KE: LocaleData = LocaleData { name: "so-KE", parent: "so", system: "latn", numbers: &NUMBERS_SO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SO, currencies: &[
     CurrencyData { code: *b"KES", fields: "sKsh" },
 ] };
 
 #[cfg(feature = "sq")]
-static L_SQ: LocaleData = LocaleData { name: "sq", parent: "und", numbers: &NUMBERS_BG, plurals: PLURALS_SQ, currencies: &[
+static L_SQ: LocaleData = LocaleData { name: "sq", parent: "und", system: "latn", numbers: &NUMBERS_SQ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SQ, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirhami i Emirateve të Bashkuara Arabe\u{1f}1dirham i Emirateve të Bashkuara Arabe\u{1f}5dirhamë të Emirateve të Bashkuara Arabe" },
     CurrencyData { code: *b"AFN", fields: "nAFN\u{1f}dAfgani afgan\u{1f}1afgan afgan\u{1f}5afganë afganë" },
     CurrencyData { code: *b"ALL", fields: "sLekë\u{1f}dLeku shqiptar\u{1f}1lek shqiptar\u{1f}5lekë shqiptar" },
@@ -22022,16 +22702,16 @@ static L_SQ: LocaleData = LocaleData { name: "sq", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "sq")]
-static L_SQ_MK: LocaleData = LocaleData { name: "sq-MK", parent: "sq", numbers: &NUMBERS_BG, plurals: PLURALS_SQ, currencies: &[
+static L_SQ_MK: LocaleData = LocaleData { name: "sq-MK", parent: "sq", system: "latn", numbers: &NUMBERS_SQ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SQ, currencies: &[
     CurrencyData { code: *b"MKD", fields: "sden" },
 ] };
 
 #[cfg(feature = "sq")]
-static L_SQ_XK: LocaleData = LocaleData { name: "sq-XK", parent: "sq", numbers: &NUMBERS_BG, plurals: PLURALS_SQ, currencies: &[
+static L_SQ_XK: LocaleData = LocaleData { name: "sq-XK", parent: "sq", system: "latn", numbers: &NUMBERS_SQ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SQ, currencies: &[
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR: LocaleData = LocaleData { name: "sr", parent: "und", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR: LocaleData = LocaleData { name: "sr", parent: "und", system: "latn", numbers: &NUMBERS_SR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dАндорска пезета\u{1f}1андорска пезета\u{1f}3андорске пезете\u{1f}5андорске пезете" },
     CurrencyData { code: *b"AED", fields: "dдирхам УАЕ\u{1f}1дирхам УАЕ\u{1f}3дирхама УАЕ\u{1f}5дирхама УАЕ" },
     CurrencyData { code: *b"AFA", fields: "dАвганистански авгани (1927–2002)\u{1f}1aвганистански авгани (1927–2002)\u{1f}3авганистанска авгана (1927–2002)\u{1f}5авганистанских авгана (1927–2002)" },
@@ -22321,11 +23001,11 @@ static L_SR: LocaleData = LocaleData { name: "sr", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_CYRL: LocaleData = LocaleData { name: "sr-Cyrl", parent: "sr", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_CYRL: LocaleData = LocaleData { name: "sr-Cyrl", parent: "sr", system: "latn", numbers: &NUMBERS_SR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_CYRL_BA: LocaleData = LocaleData { name: "sr-Cyrl-BA", parent: "sr-Cyrl", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_CYRL_BA: LocaleData = LocaleData { name: "sr-Cyrl-BA", parent: "sr-Cyrl", system: "latn", numbers: &NUMBERS_SR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
     CurrencyData { code: *b"BAM", fields: "dБосанскохерцеговачка конвертибилна марка" },
     CurrencyData { code: *b"BYN", fields: "dБјелоруска рубља\u{1f}1бјелоруска рубља\u{1f}3бјелоруске рубље\u{1f}5бјелоруских рубљи" },
     CurrencyData { code: *b"KPW", fields: "dСјевернокорејски вон\u{1f}1сјевернокорејски вон\u{1f}3сјевернокорејска вона\u{1f}5сјевернокорејских вона" },
@@ -22333,15 +23013,15 @@ static L_SR_CYRL_BA: LocaleData = LocaleData { name: "sr-Cyrl-BA", parent: "sr-C
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_CYRL_ME: LocaleData = LocaleData { name: "sr-Cyrl-ME", parent: "sr-Cyrl", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_CYRL_ME: LocaleData = LocaleData { name: "sr-Cyrl-ME", parent: "sr-Cyrl", system: "latn", numbers: &NUMBERS_SR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_CYRL_XK: LocaleData = LocaleData { name: "sr-Cyrl-XK", parent: "sr-Cyrl", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_CYRL_XK: LocaleData = LocaleData { name: "sr-Cyrl-XK", parent: "sr-Cyrl", system: "latn", numbers: &NUMBERS_SR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_LATN: LocaleData = LocaleData { name: "sr-Latn", parent: "und", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_LATN: LocaleData = LocaleData { name: "sr-Latn", parent: "und", system: "latn", numbers: &NUMBERS_SR_LATN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorska pezeta\u{1f}1andorska pezeta\u{1f}3andorske pezete\u{1f}5andorske pezete" },
     CurrencyData { code: *b"AED", fields: "ddirham UAE\u{1f}1dirham UAE\u{1f}3dirhama UAE\u{1f}5dirhama UAE" },
     CurrencyData { code: *b"AFA", fields: "dAvganistanski avgani (1927–2002)\u{1f}1avganistanski avgani (1927–2002)\u{1f}3avganistanska avgana (1927–2002)\u{1f}5avganistanskih avgana (1927–2002)" },
@@ -22631,7 +23311,7 @@ static L_SR_LATN: LocaleData = LocaleData { name: "sr-Latn", parent: "und", numb
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_LATN_BA: LocaleData = LocaleData { name: "sr-Latn-BA", parent: "sr-Latn", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_LATN_BA: LocaleData = LocaleData { name: "sr-Latn-BA", parent: "sr-Latn", system: "latn", numbers: &NUMBERS_SR_LATN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
     CurrencyData { code: *b"BAM", fields: "dBosanskohercegovačka konvertibilna marka" },
     CurrencyData { code: *b"BYN", fields: "dBjeloruska rublja\u{1f}1bjeloruska rublja\u{1f}3bjeloruske rublje\u{1f}5bjeloruskih rublji" },
     CurrencyData { code: *b"KPW", fields: "dSjevernokorejski von\u{1f}1sjevernokorejski von\u{1f}3sjevernokorejska vona\u{1f}5sjevernokorejskih vona" },
@@ -22639,15 +23319,15 @@ static L_SR_LATN_BA: LocaleData = LocaleData { name: "sr-Latn-BA", parent: "sr-L
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_LATN_ME: LocaleData = LocaleData { name: "sr-Latn-ME", parent: "sr-Latn", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_LATN_ME: LocaleData = LocaleData { name: "sr-Latn-ME", parent: "sr-Latn", system: "latn", numbers: &NUMBERS_SR_LATN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
 ] };
 
 #[cfg(feature = "sr")]
-static L_SR_LATN_XK: LocaleData = LocaleData { name: "sr-Latn-XK", parent: "sr-Latn", numbers: &NUMBERS_CA, plurals: PLURALS_SR, currencies: &[
+static L_SR_LATN_XK: LocaleData = LocaleData { name: "sr-Latn-XK", parent: "sr-Latn", system: "latn", numbers: &NUMBERS_SR_LATN, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SR, currencies: &[
 ] };
 
 #[cfg(feature = "sv")]
-static L_SV: LocaleData = LocaleData { name: "sv", parent: "und", numbers: &NUMBERS_FI, plurals: PLURALS_SV, currencies: &[
+static L_SV: LocaleData = LocaleData { name: "sv", parent: "und", system: "latn", numbers: &NUMBERS_SV, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SV, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dandorransk peseta\u{1f}1andorransk peseta\u{1f}5andorranska pesetas" },
     CurrencyData { code: *b"AED", fields: "demiratisk dirham\u{1f}5emiratisk dirham" },
     CurrencyData { code: *b"AFA", fields: "dafghani (1927–2002)\u{1f}5afghani (1927–2002)" },
@@ -22957,15 +23637,15 @@ static L_SV: LocaleData = LocaleData { name: "sv", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "sv")]
-static L_SV_AX: LocaleData = LocaleData { name: "sv-AX", parent: "sv", numbers: &NUMBERS_FI, plurals: PLURALS_SV, currencies: &[
+static L_SV_AX: LocaleData = LocaleData { name: "sv-AX", parent: "sv", system: "latn", numbers: &NUMBERS_SV, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SV, currencies: &[
 ] };
 
 #[cfg(feature = "sv")]
-static L_SV_FI: LocaleData = LocaleData { name: "sv-FI", parent: "sv", numbers: &NUMBERS_FI, plurals: PLURALS_SV, currencies: &[
+static L_SV_FI: LocaleData = LocaleData { name: "sv-FI", parent: "sv", system: "latn", numbers: &NUMBERS_SV, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SV, currencies: &[
 ] };
 
 #[cfg(feature = "sw")]
-static L_SW: LocaleData = LocaleData { name: "sw", parent: "und", numbers: &NUMBERS_SW, plurals: PLURALS_SW, currencies: &[
+static L_SW: LocaleData = LocaleData { name: "sw", parent: "und", system: "latn", numbers: &NUMBERS_SW, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SW, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDirham ya Falme za Kiarabu\u{1f}1dirham ya Falme za Kiarabu\u{1f}5dirham za Falme za Kiarabu" },
     CurrencyData { code: *b"AFN", fields: "dAfghani ya Afghanistan\u{1f}1afghani ya Afghanistan\u{1f}5afghani za Afghanistan" },
     CurrencyData { code: *b"ALL", fields: "dLek ya Albania\u{1f}1lek ya Albania\u{1f}5lek za Albania" },
@@ -23141,7 +23821,7 @@ static L_SW: LocaleData = LocaleData { name: "sw", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "sw")]
-static L_SW_CD: LocaleData = LocaleData { name: "sw-CD", parent: "sw", numbers: &NUMBERS_SW_CD, plurals: PLURALS_SW, currencies: &[
+static L_SW_CD: LocaleData = LocaleData { name: "sw-CD", parent: "sw", system: "latn", numbers: &NUMBERS_SW_CD, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SW, currencies: &[
     CurrencyData { code: *b"CDF", fields: "sFC" },
     CurrencyData { code: *b"CNY", fields: "dYuan Renminbi ya China" },
     CurrencyData { code: *b"ETB", fields: "dBir ya Uhabeshi" },
@@ -23155,7 +23835,7 @@ static L_SW_CD: LocaleData = LocaleData { name: "sw-CD", parent: "sw", numbers: 
 ] };
 
 #[cfg(feature = "sw")]
-static L_SW_KE: LocaleData = LocaleData { name: "sw-KE", parent: "sw", numbers: &NUMBERS_SW, plurals: PLURALS_SW, currencies: &[
+static L_SW_KE: LocaleData = LocaleData { name: "sw-KE", parent: "sw", system: "latn", numbers: &NUMBERS_SW_KE, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SW, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDiramu ya Falme za Kiarabu\u{1f}1diramu ya Falme za Kiarabu\u{1f}5diramu za Falme za Kiarabu" },
     CurrencyData { code: *b"AFN", fields: "dAfghani ya Afghanistani\u{1f}1afghani ya Afghanistani\u{1f}5afghani za Afghanistani" },
     CurrencyData { code: *b"ANG", fields: "dGilda ya Antili ya Uholanzi\u{1f}1gilda ya Antili ya Uholanzi\u{1f}5gilda za Antili ya Uholanzi" },
@@ -23233,12 +23913,12 @@ static L_SW_KE: LocaleData = LocaleData { name: "sw-KE", parent: "sw", numbers: 
 ] };
 
 #[cfg(feature = "sw")]
-static L_SW_UG: LocaleData = LocaleData { name: "sw-UG", parent: "sw", numbers: &NUMBERS_SW, plurals: PLURALS_SW, currencies: &[
+static L_SW_UG: LocaleData = LocaleData { name: "sw-UG", parent: "sw", system: "latn", numbers: &NUMBERS_SW, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_SW, currencies: &[
     CurrencyData { code: *b"UGX", fields: "sUSh" },
 ] };
 
 #[cfg(feature = "ta")]
-static L_TA: LocaleData = LocaleData { name: "ta", parent: "und", numbers: &NUMBERS_TA, plurals: PLURALS_TA, currencies: &[
+static L_TA: LocaleData = LocaleData { name: "ta", parent: "und", system: "latn", numbers: &NUMBERS_TA, #[cfg(feature = "numbering-systems")] systems: &[("tamldec", &NUMBERS_TA_TAMLDEC)], plurals: PLURALS_TA, currencies: &[
     CurrencyData { code: *b"AED", fields: "dஐக\u{bcd}கிய அரபு எமிரேட\u{bcd}ஸ\u{bcd} திர\u{bcd}ஹ\u{bbe}ம\u{bcd}\u{1f}1ஐக\u{bcd}கிய அரபு எமிரேட\u{bcd}ஸ\u{bcd} திர\u{bcd}ஹ\u{bbe}ம\u{bcd}\u{1f}5ஐக\u{bcd}கிய அரபு எமிரேட\u{bcd}ஸ\u{bcd} திர\u{bcd}ஹ\u{bbe}ம\u{bcd}கள\u{bcd}" },
     CurrencyData { code: *b"AFN", fields: "dஆஃப\u{bcd}க\u{bbe}ன\u{bcd} ஆஃப\u{bcd}க\u{bbe}னி\u{1f}1ஆஃப\u{bcd}க\u{bbe}ன\u{bcd} ஆஃப\u{bcd}க\u{bbe}னி\u{1f}5ஆஃப\u{bcd}க\u{bbe}ன\u{bcd} ஆஃப\u{bcd}க\u{bbe}னிகள\u{bcd}" },
     CurrencyData { code: *b"ALL", fields: "dஅல\u{bcd}பேனியன\u{bcd} லெக\u{bcd}\u{1f}1அல\u{bcd}பேனியன\u{bcd} லெக\u{bcd}\u{1f}5அல\u{bcd}பேனியன\u{bcd} லெகே" },
@@ -23409,25 +24089,25 @@ static L_TA: LocaleData = LocaleData { name: "ta", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ta")]
-static L_TA_LK: LocaleData = LocaleData { name: "ta-LK", parent: "ta", numbers: &NUMBERS_TA, plurals: PLURALS_TA, currencies: &[
+static L_TA_LK: LocaleData = LocaleData { name: "ta-LK", parent: "ta", system: "latn", numbers: &NUMBERS_TA, #[cfg(feature = "numbering-systems")] systems: &[("tamldec", &NUMBERS_TA_TAMLDEC)], plurals: PLURALS_TA, currencies: &[
     CurrencyData { code: *b"LKR", fields: "sRs." },
 ] };
 
 #[cfg(feature = "ta")]
-static L_TA_MY: LocaleData = LocaleData { name: "ta-MY", parent: "ta", numbers: &NUMBERS_TA_MY, plurals: PLURALS_TA, currencies: &[
+static L_TA_MY: LocaleData = LocaleData { name: "ta-MY", parent: "ta", system: "latn", numbers: &NUMBERS_TA_MY, #[cfg(feature = "numbering-systems")] systems: &[("tamldec", &NUMBERS_TA_MY_TAMLDEC)], plurals: PLURALS_TA, currencies: &[
     CurrencyData { code: *b"MYR", fields: "sRM" },
     CurrencyData { code: *b"SGD", fields: "sS$" },
 ] };
 
 #[cfg(feature = "ta")]
-static L_TA_SG: LocaleData = LocaleData { name: "ta-SG", parent: "ta", numbers: &NUMBERS_TA_MY, plurals: PLURALS_TA, currencies: &[
+static L_TA_SG: LocaleData = LocaleData { name: "ta-SG", parent: "ta", system: "latn", numbers: &NUMBERS_TA_MY, #[cfg(feature = "numbering-systems")] systems: &[("tamldec", &NUMBERS_TA_MY_TAMLDEC)], plurals: PLURALS_TA, currencies: &[
     CurrencyData { code: *b"MYR", fields: "sRM" },
     CurrencyData { code: *b"SGD", fields: "s$" },
     CurrencyData { code: *b"USD", fields: "sUS$" },
 ] };
 
 #[cfg(feature = "te")]
-static L_TE: LocaleData = LocaleData { name: "te", parent: "und", numbers: &NUMBERS_TA, plurals: PLURALS_TE, currencies: &[
+static L_TE: LocaleData = LocaleData { name: "te", parent: "und", system: "latn", numbers: &NUMBERS_TE, #[cfg(feature = "numbering-systems")] systems: &[("telu", &NUMBERS_TE_TELU)], plurals: PLURALS_TE, currencies: &[
     CurrencyData { code: *b"AED", fields: "dయున\u{c48}ట\u{c46}డ\u{c4d} ఆరబ\u{c4d} ఎమ\u{c3f}ర\u{c47}ట\u{c4d}స\u{c4d} ద\u{c3f}ర\u{c3e}మ\u{c4d}\u{1f}1యున\u{c48}ట\u{c46}డ\u{c4d} ఆరబ\u{c4d} ఎమ\u{c3f}ర\u{c47}ట\u{c4d}స\u{c4d} ద\u{c3f}ర\u{c3e}మ\u{c4d}\u{1f}5యున\u{c48}ట\u{c46}డ\u{c4d} ఆరబ\u{c4d} ఎమ\u{c3f}ర\u{c47}ట\u{c4d}స\u{c4d} ద\u{c3f}ర\u{c3e}మ\u{c4d}\u{200c}లు" },
     CurrencyData { code: *b"AFN", fields: "dఆఫ\u{c4d}ఘ\u{c3e}న\u{c4d} ఆఫ\u{c4d}ఘ\u{c3e}న\u{c3f}\u{1f}1ఆఫ\u{c4d}ఘ\u{c3e}న\u{c4d} ఆఫ\u{c4d}ఘ\u{c3e}న\u{c3f}\u{1f}5ఆఫ\u{c4d}ఘ\u{c3e}న\u{c4d} ఆఫ\u{c4d}ఘ\u{c3e}న\u{c40}లు" },
     CurrencyData { code: *b"ALL", fields: "dఆల\u{c4d}బ\u{c47}న\u{c3f}యన\u{c4d} ల\u{c47}క\u{c4d}\u{1f}5ఆల\u{c4d}బ\u{c47}న\u{c3f}యన\u{c4d} ల\u{c47}క\u{c4d}" },
@@ -23598,7 +24278,7 @@ static L_TE: LocaleData = LocaleData { name: "te", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "th")]
-static L_TH: LocaleData = LocaleData { name: "th", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_TH, currencies: &[
+static L_TH: LocaleData = LocaleData { name: "th", parent: "und", system: "latn", numbers: &NUMBERS_TH, #[cfg(feature = "numbering-systems")] systems: &[("thai", &NUMBERS_TH_THAI)], plurals: PLURALS_TH, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dเปเซตาอ\u{e31}นดอร\u{e4c}รา\u{1f}5เปเซตาอ\u{e31}นดอร\u{e4c}รา" },
     CurrencyData { code: *b"AED", fields: "dเดอร\u{e4c}แฮมสหร\u{e31}ฐอาหร\u{e31}บเอม\u{e34}เรตส\u{e4c}\u{1f}5เดอร\u{e4c}แฮมสหร\u{e31}ฐอาหร\u{e31}บเอม\u{e34}เรตส\u{e4c}" },
     CurrencyData { code: *b"AFA", fields: "dอ\u{e31}ฟกาน\u{e35}อ\u{e31}ฟกาน\u{e34}สถาน (1927–2002)\u{1f}5อ\u{e31}ฟกาน\u{e35}อ\u{e31}ฟกาน\u{e34}สถาน (1927–2002)" },
@@ -23902,7 +24582,7 @@ static L_TH: LocaleData = LocaleData { name: "th", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ti")]
-static L_TI: LocaleData = LocaleData { name: "ti", parent: "und", numbers: &NUMBERS_ES_419, plurals: PLURALS_TI, currencies: &[
+static L_TI: LocaleData = LocaleData { name: "ti", parent: "und", system: "latn", numbers: &NUMBERS_TI, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_TI, currencies: &[
     CurrencyData { code: *b"AED", fields: "dሕቡራት ኢማራት ዓረብ ዲርሃም\u{1f}1ኢማራት ዲርሃም\u{1f}5ኢማራት ዲርሃም" },
     CurrencyData { code: *b"AFN", fields: "dኣፍጋኒስታናዊ ኣፍጋን\u{1f}1ኣፍጋኒስታናዊ ኣፍጋን\u{1f}5ኣፍጋኒስታናዊ ኣፍጋን" },
     CurrencyData { code: *b"ALL", fields: "dኣልባናዊ ሌክ\u{1f}1ኣልባናዊ ሌክ\u{1f}5ኣልባናዊ ሌኬ" },
@@ -24074,12 +24754,12 @@ static L_TI: LocaleData = LocaleData { name: "ti", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ti")]
-static L_TI_ER: LocaleData = LocaleData { name: "ti-ER", parent: "ti", numbers: &NUMBERS_ES_419, plurals: PLURALS_TI, currencies: &[
+static L_TI_ER: LocaleData = LocaleData { name: "ti-ER", parent: "ti", system: "latn", numbers: &NUMBERS_TI, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_TI, currencies: &[
     CurrencyData { code: *b"ERN", fields: "sNfk" },
 ] };
 
 #[cfg(feature = "tk")]
-static L_TK: LocaleData = LocaleData { name: "tk", parent: "und", numbers: &NUMBERS_CS, plurals: PLURALS_TK, currencies: &[
+static L_TK: LocaleData = LocaleData { name: "tk", parent: "und", system: "latn", numbers: &NUMBERS_TK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_TK, currencies: &[
     CurrencyData { code: *b"AED", fields: "dBAE dirhemi\u{1f}5BAE dirhemi" },
     CurrencyData { code: *b"AFN", fields: "dOwgan afganisi\u{1f}1owgan afganisi\u{1f}5owgan afganisi" },
     CurrencyData { code: *b"ALL", fields: "dAlban leki\u{1f}1alban leki\u{1f}5alban leki" },
@@ -24247,7 +24927,7 @@ static L_TK: LocaleData = LocaleData { name: "tk", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "tr")]
-static L_TR: LocaleData = LocaleData { name: "tr", parent: "und", numbers: &NUMBERS_TR, plurals: PLURALS_TR, currencies: &[
+static L_TR: LocaleData = LocaleData { name: "tr", parent: "und", system: "latn", numbers: &NUMBERS_TR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_TR, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dAndorra Pezetası\u{1f}5Andorra Pezetası" },
     CurrencyData { code: *b"AED", fields: "dBirleşik Arap Emirlikleri dirhemi\u{1f}1BAE dirhemi\u{1f}5BAE dirhemi" },
     CurrencyData { code: *b"AFA", fields: "dAfganistan Afganisi (1927–2002)\u{1f}5Afganistan Afganisi (1927–2002)" },
@@ -24556,11 +25236,11 @@ static L_TR: LocaleData = LocaleData { name: "tr", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "tr")]
-static L_TR_CY: LocaleData = LocaleData { name: "tr-CY", parent: "tr", numbers: &NUMBERS_TR, plurals: PLURALS_TR, currencies: &[
+static L_TR_CY: LocaleData = LocaleData { name: "tr-CY", parent: "tr", system: "latn", numbers: &NUMBERS_TR, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_TR, currencies: &[
 ] };
 
 #[cfg(feature = "uk")]
-static L_UK: LocaleData = LocaleData { name: "uk", parent: "und", numbers: &NUMBERS_CS, plurals: PLURALS_UK, currencies: &[
+static L_UK: LocaleData = LocaleData { name: "uk", parent: "und", system: "latn", numbers: &NUMBERS_UK, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UK, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dандоррська песета\u{1f}1андоррська песета\u{1f}3андоррські песети\u{1f}4андоррських песет\u{1f}5андоррських песет" },
     CurrencyData { code: *b"AED", fields: "dдирхам ОАЕ\u{1f}1дирхам ОАЕ\u{1f}3дирхами ОАЕ\u{1f}4дирхамів ОАЕ\u{1f}5дирхама ОАЕ" },
     CurrencyData { code: *b"AFA", fields: "dафгані (1927–2002)\u{1f}5афгані (1927–2002)" },
@@ -24845,7 +25525,7 @@ static L_UK: LocaleData = LocaleData { name: "uk", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"ZWL", fields: "dзімбабвійський долар (2009)\u{1f}1зімбабвійський долар (2009)\u{1f}3зімбабвійські долари (2009)\u{1f}4зімбабвійських доларів (2009)\u{1f}5зімбабвійського долара (2009)" },
 ] };
 
-static L_UND: LocaleData = LocaleData { name: "und", parent: "", numbers: &NUMBERS_ES_PE, plurals: PLURALS_UND, currencies: &[
+static L_UND: LocaleData = LocaleData { name: "und", parent: "", system: "latn", numbers: &NUMBERS_QU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UND, currencies: &[
     CurrencyData { code: *b"AFN", fields: "n؋" },
     CurrencyData { code: *b"AMD", fields: "n֏" },
     CurrencyData { code: *b"AOA", fields: "nKz" },
@@ -24956,7 +25636,7 @@ static L_UND: LocaleData = LocaleData { name: "und", parent: "", numbers: &NUMBE
 ] };
 
 #[cfg(feature = "ur")]
-static L_UR: LocaleData = LocaleData { name: "ur", parent: "und", numbers: &NUMBERS_UR, plurals: PLURALS_UR, currencies: &[
+static L_UR: LocaleData = LocaleData { name: "ur", parent: "und", system: "latn", numbers: &NUMBERS_UR, #[cfg(feature = "numbering-systems")] systems: &[("arabext", &NUMBERS_UR_ARABEXT)], plurals: PLURALS_UR, currencies: &[
     CurrencyData { code: *b"AED", fields: "dمتحدہ عرب اماراتی درہم\u{1f}5متحدہ عرب اماراتی درہم" },
     CurrencyData { code: *b"AFN", fields: "dافغان افغانی\u{1f}5افغان افغانی" },
     CurrencyData { code: *b"ALL", fields: "dالبانیا کا لیک\u{1f}5البانیا کا لیک" },
@@ -25132,7 +25812,7 @@ static L_UR: LocaleData = LocaleData { name: "ur", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "ur")]
-static L_UR_IN: LocaleData = LocaleData { name: "ur-IN", parent: "ur", numbers: &NUMBERS_UR_IN, plurals: PLURALS_UR, currencies: &[
+static L_UR_IN: LocaleData = LocaleData { name: "ur-IN", parent: "ur", system: "arabext", numbers: &NUMBERS_UR_ARABEXT, #[cfg(feature = "numbering-systems")] systems: &[("latn", &NUMBERS_UR)], plurals: PLURALS_UR, currencies: &[
     CurrencyData { code: *b"CRC", fields: "dکوسٹا ریکا کولون\u{1f}5کوسٹا ریکا کولون" },
     CurrencyData { code: *b"CUC", fields: "dقابل منتقلی کیوبائی پیسو\u{1f}5قابل منتقلی کیوبائی پیسو" },
     CurrencyData { code: *b"CUP", fields: "dکیوبائی پیسو\u{1f}5کیوبائی پیسو" },
@@ -25144,7 +25824,7 @@ static L_UR_IN: LocaleData = LocaleData { name: "ur-IN", parent: "ur", numbers: 
 ] };
 
 #[cfg(feature = "uz")]
-static L_UZ: LocaleData = LocaleData { name: "uz", parent: "und", numbers: &NUMBERS_UZ, plurals: PLURALS_UZ, currencies: &[
+static L_UZ: LocaleData = LocaleData { name: "uz", parent: "und", system: "latn", numbers: &NUMBERS_UZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UZ, currencies: &[
     CurrencyData { code: *b"AED", fields: "dBirlashgan Arab Amirliklari dirhami\u{1f}1BAA dirhami\u{1f}5BAA dirhami" },
     CurrencyData { code: *b"AFN", fields: "dAfg‘oniston afg‘oniysi\u{1f}5Afg‘oniston afg‘oniysi" },
     CurrencyData { code: *b"ALL", fields: "dAlbaniya leki\u{1f}5Albaniya leki" },
@@ -25314,11 +25994,11 @@ static L_UZ: LocaleData = LocaleData { name: "uz", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "uz")]
-static L_UZ_LATN: LocaleData = LocaleData { name: "uz-Latn", parent: "uz", numbers: &NUMBERS_UZ, plurals: PLURALS_UZ, currencies: &[
+static L_UZ_LATN: LocaleData = LocaleData { name: "uz-Latn", parent: "uz", system: "latn", numbers: &NUMBERS_UZ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_UZ, currencies: &[
 ] };
 
 #[cfg(feature = "vi")]
-static L_VI: LocaleData = LocaleData { name: "vi", parent: "und", numbers: &NUMBERS_AZ, plurals: PLURALS_VI, currencies: &[
+static L_VI: LocaleData = LocaleData { name: "vi", parent: "und", system: "latn", numbers: &NUMBERS_VI, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_VI, currencies: &[
     CurrencyData { code: *b"ADP", fields: "dĐồng Peseta của Andora\u{1f}5Đồng Peseta của Andora" },
     CurrencyData { code: *b"AED", fields: "dDirham UAE\u{1f}5dirham UAE" },
     CurrencyData { code: *b"AFA", fields: "dĐồng Afghani của Afghanistan (1927–2002)\u{1f}5Đồng Afghani của Afghanistan (1927–2002)" },
@@ -25621,7 +26301,7 @@ static L_VI: LocaleData = LocaleData { name: "vi", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "yo")]
-static L_YO: LocaleData = LocaleData { name: "yo", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_YO, currencies: &[
+static L_YO: LocaleData = LocaleData { name: "yo", parent: "und", system: "latn", numbers: &NUMBERS_YO, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_YO, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDiami ti Awon Orílẹ\u{301}ède Arabu\u{1f}5Diami ti Awon Orílẹ\u{301}ède Arabu" },
     CurrencyData { code: *b"AFN", fields: "dAfugánì Afuganísítàànì\u{1f}5Afugánì Afuganísítàànì" },
     CurrencyData { code: *b"ALL", fields: "dLẹ\u{301}ẹ\u{300}kì Àlìbáníà\u{1f}5lẹ\u{301}kè Àlìbéníà" },
@@ -25793,7 +26473,7 @@ static L_YO: LocaleData = LocaleData { name: "yo", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "yo")]
-static L_YO_BJ: LocaleData = LocaleData { name: "yo-BJ", parent: "yo", numbers: &NUMBERS_AK, plurals: PLURALS_YO, currencies: &[
+static L_YO_BJ: LocaleData = LocaleData { name: "yo-BJ", parent: "yo", system: "latn", numbers: &NUMBERS_YO_BJ, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_YO, currencies: &[
     CurrencyData { code: *b"AED", fields: "dDiami ti Awon Orílɛ\u{301}ède Arabu\u{1f}5Diami ti Awon Orílɛ\u{301}ède Arabu" },
     CurrencyData { code: *b"ALL", fields: "dLɛ\u{301}ɛ\u{300}kì Àlìbáníà\u{1f}5lɛ\u{301}kè Àlìbéníà" },
     CurrencyData { code: *b"AMD", fields: "dDírààmù Àmɛ\u{301}níà\u{1f}5Dírààmù Àmɛ\u{301}níà" },
@@ -25932,7 +26612,7 @@ static L_YO_BJ: LocaleData = LocaleData { name: "yo-BJ", parent: "yo", numbers: 
 ] };
 
 #[cfg(feature = "yue")]
-static L_YUE: LocaleData = LocaleData { name: "yue", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_YUE, currencies: &[
+static L_YUE: LocaleData = LocaleData { name: "yue", parent: "und", system: "latn", numbers: &NUMBERS_YUE, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_YUE_HANIDEC)], plurals: PLURALS_YUE, currencies: &[
     CurrencyData { code: *b"ADP", fields: "d安道爾陪士特\u{1f}5安道爾陪士特" },
     CurrencyData { code: *b"AED", fields: "d阿拉伯聯合大公國迪爾汗\u{1f}5阿拉伯聯合大公國迪爾汗" },
     CurrencyData { code: *b"AFA", fields: "d阿富汗尼 (1927–2002)\u{1f}5阿富汗尼 (1927–2002)" },
@@ -26240,7 +26920,7 @@ static L_YUE: LocaleData = LocaleData { name: "yue", parent: "und", numbers: &NU
 ] };
 
 #[cfg(feature = "yue")]
-static L_YUE_HANS: LocaleData = LocaleData { name: "yue-Hans", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_YUE, currencies: &[
+static L_YUE_HANS: LocaleData = LocaleData { name: "yue-Hans", parent: "und", system: "latn", numbers: &NUMBERS_YUE_HANS, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_YUE_HANS_HANIDEC)], plurals: PLURALS_YUE, currencies: &[
     CurrencyData { code: *b"ADP", fields: "d安道尔陪士特\u{1f}5安道尔陪士特" },
     CurrencyData { code: *b"AED", fields: "d阿拉伯联合大公国迪尔汗\u{1f}5阿拉伯联合大公国迪尔汗" },
     CurrencyData { code: *b"AFA", fields: "d阿富汗尼 (1927–2002)\u{1f}5阿富汗尼 (1927–2002)" },
@@ -26548,19 +27228,19 @@ static L_YUE_HANS: LocaleData = LocaleData { name: "yue-Hans", parent: "und", nu
 ] };
 
 #[cfg(feature = "yue")]
-static L_YUE_HANT: LocaleData = LocaleData { name: "yue-Hant", parent: "yue", numbers: &NUMBERS_AK, plurals: PLURALS_YUE, currencies: &[
+static L_YUE_HANT: LocaleData = LocaleData { name: "yue-Hant", parent: "yue", system: "latn", numbers: &NUMBERS_YUE, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_YUE_HANIDEC)], plurals: PLURALS_YUE, currencies: &[
 ] };
 
 #[cfg(feature = "yue")]
-static L_YUE_HANT_CN: LocaleData = LocaleData { name: "yue-Hant-CN", parent: "yue-Hant", numbers: &NUMBERS_AK, plurals: PLURALS_YUE, currencies: &[
+static L_YUE_HANT_CN: LocaleData = LocaleData { name: "yue-Hant-CN", parent: "yue-Hant", system: "latn", numbers: &NUMBERS_YUE, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_YUE_HANIDEC)], plurals: PLURALS_YUE, currencies: &[
 ] };
 
 #[cfg(feature = "yue")]
-static L_YUE_HANT_MO: LocaleData = LocaleData { name: "yue-Hant-MO", parent: "yue-Hant", numbers: &NUMBERS_AK, plurals: PLURALS_YUE, currencies: &[
+static L_YUE_HANT_MO: LocaleData = LocaleData { name: "yue-Hant-MO", parent: "yue-Hant", system: "latn", numbers: &NUMBERS_YUE, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_YUE_HANIDEC)], plurals: PLURALS_YUE, currencies: &[
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH: LocaleData = LocaleData { name: "zh", parent: "und", numbers: &NUMBERS_JA, plurals: PLURALS_ZH, currencies: &[
+static L_ZH: LocaleData = LocaleData { name: "zh", parent: "und", system: "latn", numbers: &NUMBERS_ZH, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"ADP", fields: "d安道尔比塞塔\u{1f}5安道尔比塞塔" },
     CurrencyData { code: *b"AED", fields: "d阿联酋迪拉姆\u{1f}5阿联酋迪拉姆" },
     CurrencyData { code: *b"AFA", fields: "d阿富汗尼 (1927–2002)\u{1f}5阿富汗尼 (1927–2002)" },
@@ -26871,11 +27551,11 @@ static L_ZH: LocaleData = LocaleData { name: "zh", parent: "und", numbers: &NUMB
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANS: LocaleData = LocaleData { name: "zh-Hans", parent: "zh", numbers: &NUMBERS_JA, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANS: LocaleData = LocaleData { name: "zh-Hans", parent: "zh", system: "latn", numbers: &NUMBERS_ZH, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANS_HK: LocaleData = LocaleData { name: "zh-Hans-HK", parent: "zh-Hans", numbers: &NUMBERS_AK, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANS_HK: LocaleData = LocaleData { name: "zh-Hans-HK", parent: "zh-Hans", system: "latn", numbers: &NUMBERS_ZH_HANS_HK, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"CNY", fields: "sCN¥" },
     CurrencyData { code: *b"KYD", fields: "d开曼群岛元\u{1f}5开曼群岛元" },
     CurrencyData { code: *b"NIO", fields: "5尼加拉瓜科多巴" },
@@ -26883,7 +27563,7 @@ static L_ZH_HANS_HK: LocaleData = LocaleData { name: "zh-Hans-HK", parent: "zh-H
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANS_MO: LocaleData = LocaleData { name: "zh-Hans-MO", parent: "zh-Hans", numbers: &NUMBERS_AK, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANS_MO: LocaleData = LocaleData { name: "zh-Hans-MO", parent: "zh-Hans", system: "latn", numbers: &NUMBERS_ZH_HANS_HK, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"ANG", fields: "5荷兰安的列斯盾" },
     CurrencyData { code: *b"CNY", fields: "sCN¥" },
     CurrencyData { code: *b"MOP", fields: "sMOP$" },
@@ -26892,12 +27572,12 @@ static L_ZH_HANS_MO: LocaleData = LocaleData { name: "zh-Hans-MO", parent: "zh-H
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANS_MY: LocaleData = LocaleData { name: "zh-Hans-MY", parent: "zh-Hans", numbers: &NUMBERS_JA, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANS_MY: LocaleData = LocaleData { name: "zh-Hans-MY", parent: "zh-Hans", system: "latn", numbers: &NUMBERS_ZH, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"MYR", fields: "d马来西亚令吉\u{1f}5马来西亚令吉" },
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANS_SG: LocaleData = LocaleData { name: "zh-Hans-SG", parent: "zh-Hans", numbers: &NUMBERS_AK, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANS_SG: LocaleData = LocaleData { name: "zh-Hans-SG", parent: "zh-Hans", system: "latn", numbers: &NUMBERS_ZH_HANS_HK, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"ANG", fields: "5荷兰安的列斯盾" },
     CurrencyData { code: *b"CNY", fields: "sCN¥" },
     CurrencyData { code: *b"NIO", fields: "5尼加拉瓜科多巴" },
@@ -26906,7 +27586,7 @@ static L_ZH_HANS_SG: LocaleData = LocaleData { name: "zh-Hans-SG", parent: "zh-H
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANT: LocaleData = LocaleData { name: "zh-Hant", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANT: LocaleData = LocaleData { name: "zh-Hant", parent: "und", system: "latn", numbers: &NUMBERS_ZH_HANT, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANT_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"ADP", fields: "d安道爾陪士特\u{1f}5安道爾陪士特" },
     CurrencyData { code: *b"AED", fields: "d阿拉伯聯合大公國迪爾汗\u{1f}5阿拉伯聯合大公國迪爾汗" },
     CurrencyData { code: *b"AFA", fields: "d阿富汗尼 (1927–2002)\u{1f}5阿富汗尼 (1927–2002)" },
@@ -27214,7 +27894,7 @@ static L_ZH_HANT: LocaleData = LocaleData { name: "zh-Hant", parent: "und", numb
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANT_HK: LocaleData = LocaleData { name: "zh-Hant-HK", parent: "zh-Hant", numbers: &NUMBERS_AK, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANT_HK: LocaleData = LocaleData { name: "zh-Hant-HK", parent: "zh-Hant", system: "latn", numbers: &NUMBERS_ZH_HANT_HK, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANT_HK_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"AED", fields: "d阿拉伯聯合酋長國迪爾汗\u{1f}5阿拉伯聯合酋長國迪爾汗" },
     CurrencyData { code: *b"AUD", fields: "d澳元\u{1f}5澳元" },
     CurrencyData { code: *b"AWG", fields: "d阿魯巴盾\u{1f}5阿魯巴盾" },
@@ -27286,16 +27966,16 @@ static L_ZH_HANT_HK: LocaleData = LocaleData { name: "zh-Hant-HK", parent: "zh-H
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANT_MO: LocaleData = LocaleData { name: "zh-Hant-MO", parent: "zh-Hant-HK", numbers: &NUMBERS_AK, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANT_MO: LocaleData = LocaleData { name: "zh-Hant-MO", parent: "zh-Hant-HK", system: "latn", numbers: &NUMBERS_ZH_HANT_HK, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANT_HK_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
     CurrencyData { code: *b"MOP", fields: "sMOP$" },
 ] };
 
 #[cfg(feature = "zh")]
-static L_ZH_HANT_MY: LocaleData = LocaleData { name: "zh-Hant-MY", parent: "zh-Hant", numbers: &NUMBERS_AK, plurals: PLURALS_ZH, currencies: &[
+static L_ZH_HANT_MY: LocaleData = LocaleData { name: "zh-Hant-MY", parent: "zh-Hant", system: "latn", numbers: &NUMBERS_ZH_HANT, #[cfg(feature = "numbering-systems")] systems: &[("hanidec", &NUMBERS_ZH_HANT_HANIDEC)], plurals: PLURALS_ZH, currencies: &[
 ] };
 
 #[cfg(feature = "zu")]
-static L_ZU: LocaleData = LocaleData { name: "zu", parent: "und", numbers: &NUMBERS_AK, plurals: PLURALS_ZU, currencies: &[
+static L_ZU: LocaleData = LocaleData { name: "zu", parent: "und", system: "latn", numbers: &NUMBERS_ZU, #[cfg(feature = "numbering-systems")] systems: &[], plurals: PLURALS_ZU, currencies: &[
     CurrencyData { code: *b"AED", fields: "di-Dirham yase-United Arab Emirates\u{1f}5i-Dirham yase-United Arab Emirates" },
     CurrencyData { code: *b"AFN", fields: "di-Afghan Afghani\u{1f}5i-Afghan Afghani" },
     CurrencyData { code: *b"ALL", fields: "di-Albanian Lek\u{1f}5i-Albanian Lek" },
@@ -27464,6 +28144,92 @@ static L_ZU: LocaleData = LocaleData { name: "zu", parent: "und", numbers: &NUMB
     CurrencyData { code: *b"ZMW", fields: "di-Zambian Kwacha\u{1f}5i-Zambian Kwacha" },
     CurrencyData { code: *b"ZWG", fields: "dZimbabwean Gold\u{1f}1Zimbabwean gold\u{1f}5Zimbabwean gold" },
 ] };
+
+/// The name and digits of a numeric numbering system of CLDR's (`arab`, `deva`).
+#[cfg(feature = "numbering-systems")]
+pub(crate) fn digits(name: &str) -> Option<(&'static str, &'static [char; 10])> {
+    match name {
+        "adlm" => Some(("adlm", &['𞥐', '𞥑', '𞥒', '𞥓', '𞥔', '𞥕', '𞥖', '𞥗', '𞥘', '𞥙'])),
+        "ahom" => Some(("ahom", &['𑜰', '𑜱', '𑜲', '𑜳', '𑜴', '𑜵', '𑜶', '𑜷', '𑜸', '𑜹'])),
+        "arab" => Some(("arab", &['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'])),
+        "arabext" => Some(("arabext", &['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'])),
+        "bali" => Some(("bali", &['᭐', '᭑', '᭒', '᭓', '᭔', '᭕', '᭖', '᭗', '᭘', '᭙'])),
+        "beng" => Some(("beng", &['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'])),
+        "bhks" => Some(("bhks", &['𑱐', '𑱑', '𑱒', '𑱓', '𑱔', '𑱕', '𑱖', '𑱗', '𑱘', '𑱙'])),
+        "brah" => Some(("brah", &['𑁦', '𑁧', '𑁨', '𑁩', '𑁪', '𑁫', '𑁬', '𑁭', '𑁮', '𑁯'])),
+        "cakm" => Some(("cakm", &['𑄶', '𑄷', '𑄸', '𑄹', '𑄺', '𑄻', '𑄼', '𑄽', '𑄾', '𑄿'])),
+        "cham" => Some(("cham", &['꩐', '꩑', '꩒', '꩓', '꩔', '꩕', '꩖', '꩗', '꩘', '꩙'])),
+        "deva" => Some(("deva", &['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'])),
+        "diak" => Some(("diak", &['𑥐', '𑥑', '𑥒', '𑥓', '𑥔', '𑥕', '𑥖', '𑥗', '𑥘', '𑥙'])),
+        "fullwide" => Some(("fullwide", &['０', '１', '２', '３', '４', '５', '６', '７', '８', '９'])),
+        "gara" => Some(("gara", &['𐵀', '𐵁', '𐵂', '𐵃', '𐵄', '𐵅', '𐵆', '𐵇', '𐵈', '𐵉'])),
+        "gong" => Some(("gong", &['𑶠', '𑶡', '𑶢', '𑶣', '𑶤', '𑶥', '𑶦', '𑶧', '𑶨', '𑶩'])),
+        "gonm" => Some(("gonm", &['𑵐', '𑵑', '𑵒', '𑵓', '𑵔', '𑵕', '𑵖', '𑵗', '𑵘', '𑵙'])),
+        "gujr" => Some(("gujr", &['૦', '૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯'])),
+        "gukh" => Some(("gukh", &['𖄰', '𖄱', '𖄲', '𖄳', '𖄴', '𖄵', '𖄶', '𖄷', '𖄸', '𖄹'])),
+        "guru" => Some(("guru", &['੦', '੧', '੨', '੩', '੪', '੫', '੬', '੭', '੮', '੯'])),
+        "hanidec" => Some(("hanidec", &['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'])),
+        "hmng" => Some(("hmng", &['𖭐', '𖭑', '𖭒', '𖭓', '𖭔', '𖭕', '𖭖', '𖭗', '𖭘', '𖭙'])),
+        "hmnp" => Some(("hmnp", &['𞅀', '𞅁', '𞅂', '𞅃', '𞅄', '𞅅', '𞅆', '𞅇', '𞅈', '𞅉'])),
+        "java" => Some(("java", &['꧐', '꧑', '꧒', '꧓', '꧔', '꧕', '꧖', '꧗', '꧘', '꧙'])),
+        "kali" => Some(("kali", &['꤀', '꤁', '꤂', '꤃', '꤄', '꤅', '꤆', '꤇', '꤈', '꤉'])),
+        "kawi" => Some(("kawi", &['𑽐', '𑽑', '𑽒', '𑽓', '𑽔', '𑽕', '𑽖', '𑽗', '𑽘', '𑽙'])),
+        "khmr" => Some(("khmr", &['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'])),
+        "knda" => Some(("knda", &['೦', '೧', '೨', '೩', '೪', '೫', '೬', '೭', '೮', '೯'])),
+        "krai" => Some(("krai", &['𖵰', '𖵱', '𖵲', '𖵳', '𖵴', '𖵵', '𖵶', '𖵷', '𖵸', '𖵹'])),
+        "lana" => Some(("lana", &['᪀', '᪁', '᪂', '᪃', '᪄', '᪅', '᪆', '᪇', '᪈', '᪉'])),
+        "lanatham" => Some(("lanatham", &['᪐', '᪑', '᪒', '᪓', '᪔', '᪕', '᪖', '᪗', '᪘', '᪙'])),
+        "laoo" => Some(("laoo", &['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'])),
+        "latn" => Some(("latn", &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])),
+        "lepc" => Some(("lepc", &['᱀', '᱁', '᱂', '᱃', '᱄', '᱅', '᱆', '᱇', '᱈', '᱉'])),
+        "limb" => Some(("limb", &['᥆', '᥇', '᥈', '᥉', '᥊', '᥋', '᥌', '᥍', '᥎', '᥏'])),
+        "mathbold" => Some(("mathbold", &['𝟎', '𝟏', '𝟐', '𝟑', '𝟒', '𝟓', '𝟔', '𝟕', '𝟖', '𝟗'])),
+        "mathdbl" => Some(("mathdbl", &['𝟘', '𝟙', '𝟚', '𝟛', '𝟜', '𝟝', '𝟞', '𝟟', '𝟠', '𝟡'])),
+        "mathmono" => Some(("mathmono", &['𝟶', '𝟷', '𝟸', '𝟹', '𝟺', '𝟻', '𝟼', '𝟽', '𝟾', '𝟿'])),
+        "mathsanb" => Some(("mathsanb", &['𝟬', '𝟭', '𝟮', '𝟯', '𝟰', '𝟱', '𝟲', '𝟳', '𝟴', '𝟵'])),
+        "mathsans" => Some(("mathsans", &['𝟢', '𝟣', '𝟤', '𝟥', '𝟦', '𝟧', '𝟨', '𝟩', '𝟪', '𝟫'])),
+        "mlym" => Some(("mlym", &['൦', '൧', '൨', '൩', '൪', '൫', '൬', '൭', '൮', '൯'])),
+        "modi" => Some(("modi", &['𑙐', '𑙑', '𑙒', '𑙓', '𑙔', '𑙕', '𑙖', '𑙗', '𑙘', '𑙙'])),
+        "mong" => Some(("mong", &['᠐', '᠑', '᠒', '᠓', '᠔', '᠕', '᠖', '᠗', '᠘', '᠙'])),
+        "mroo" => Some(("mroo", &['𖩠', '𖩡', '𖩢', '𖩣', '𖩤', '𖩥', '𖩦', '𖩧', '𖩨', '𖩩'])),
+        "mtei" => Some(("mtei", &['꯰', '꯱', '꯲', '꯳', '꯴', '꯵', '꯶', '꯷', '꯸', '꯹'])),
+        "mymr" => Some(("mymr", &['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'])),
+        "mymrepka" => Some(("mymrepka", &['𑛚', '𑛛', '𑛜', '𑛝', '𑛞', '𑛟', '𑛠', '𑛡', '𑛢', '𑛣'])),
+        "mymrpao" => Some(("mymrpao", &['𑛐', '𑛑', '𑛒', '𑛓', '𑛔', '𑛕', '𑛖', '𑛗', '𑛘', '𑛙'])),
+        "mymrshan" => Some(("mymrshan", &['႐', '႑', '႒', '႓', '႔', '႕', '႖', '႗', '႘', '႙'])),
+        "mymrtlng" => Some(("mymrtlng", &['꧰', '꧱', '꧲', '꧳', '꧴', '꧵', '꧶', '꧷', '꧸', '꧹'])),
+        "nagm" => Some(("nagm", &['𞓰', '𞓱', '𞓲', '𞓳', '𞓴', '𞓵', '𞓶', '𞓷', '𞓸', '𞓹'])),
+        "newa" => Some(("newa", &['𑑐', '𑑑', '𑑒', '𑑓', '𑑔', '𑑕', '𑑖', '𑑗', '𑑘', '𑑙'])),
+        "nkoo" => Some(("nkoo", &['߀', '߁', '߂', '߃', '߄', '߅', '߆', '߇', '߈', '߉'])),
+        "olck" => Some(("olck", &['᱐', '᱑', '᱒', '᱓', '᱔', '᱕', '᱖', '᱗', '᱘', '᱙'])),
+        "onao" => Some(("onao", &['𞗱', '𞗲', '𞗳', '𞗴', '𞗵', '𞗶', '𞗷', '𞗸', '𞗹', '𞗺'])),
+        "orya" => Some(("orya", &['୦', '୧', '୨', '୩', '୪', '୫', '୬', '୭', '୮', '୯'])),
+        "osma" => Some(("osma", &['𐒠', '𐒡', '𐒢', '𐒣', '𐒤', '𐒥', '𐒦', '𐒧', '𐒨', '𐒩'])),
+        "outlined" => Some(("outlined", &['𜳰', '𜳱', '𜳲', '𜳳', '𜳴', '𜳵', '𜳶', '𜳷', '𜳸', '𜳹'])),
+        "rohg" => Some(("rohg", &['𐴰', '𐴱', '𐴲', '𐴳', '𐴴', '𐴵', '𐴶', '𐴷', '𐴸', '𐴹'])),
+        "saur" => Some(("saur", &['꣐', '꣑', '꣒', '꣓', '꣔', '꣕', '꣖', '꣗', '꣘', '꣙'])),
+        "segment" => Some(("segment", &['🯰', '🯱', '🯲', '🯳', '🯴', '🯵', '🯶', '🯷', '🯸', '🯹'])),
+        "shrd" => Some(("shrd", &['𑇐', '𑇑', '𑇒', '𑇓', '𑇔', '𑇕', '𑇖', '𑇗', '𑇘', '𑇙'])),
+        "sind" => Some(("sind", &['𑋰', '𑋱', '𑋲', '𑋳', '𑋴', '𑋵', '𑋶', '𑋷', '𑋸', '𑋹'])),
+        "sinh" => Some(("sinh", &['෦', '෧', '෨', '෩', '෪', '෫', '෬', '෭', '෮', '෯'])),
+        "sora" => Some(("sora", &['𑃰', '𑃱', '𑃲', '𑃳', '𑃴', '𑃵', '𑃶', '𑃷', '𑃸', '𑃹'])),
+        "sund" => Some(("sund", &['᮰', '᮱', '᮲', '᮳', '᮴', '᮵', '᮶', '᮷', '᮸', '᮹'])),
+        "sunu" => Some(("sunu", &['𑯰', '𑯱', '𑯲', '𑯳', '𑯴', '𑯵', '𑯶', '𑯷', '𑯸', '𑯹'])),
+        "takr" => Some(("takr", &['𑛀', '𑛁', '𑛂', '𑛃', '𑛄', '𑛅', '𑛆', '𑛇', '𑛈', '𑛉'])),
+        "talu" => Some(("talu", &['᧐', '᧑', '᧒', '᧓', '᧔', '᧕', '᧖', '᧗', '᧘', '᧙'])),
+        "tamldec" => Some(("tamldec", &['௦', '௧', '௨', '௩', '௪', '௫', '௬', '௭', '௮', '௯'])),
+        "telu" => Some(("telu", &['౦', '౧', '౨', '౩', '౪', '౫', '౬', '౭', '౮', '౯'])),
+        "thai" => Some(("thai", &['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'])),
+        "tibt" => Some(("tibt", &['༠', '༡', '༢', '༣', '༤', '༥', '༦', '༧', '༨', '༩'])),
+        "tirh" => Some(("tirh", &['𑓐', '𑓑', '𑓒', '𑓓', '𑓔', '𑓕', '𑓖', '𑓗', '𑓘', '𑓙'])),
+        "tnsa" => Some(("tnsa", &['𖫀', '𖫁', '𖫂', '𖫃', '𖫄', '𖫅', '𖫆', '𖫇', '𖫈', '𖫉'])),
+        "tols" => Some(("tols", &['𑷠', '𑷡', '𑷢', '𑷣', '𑷤', '𑷥', '𑷦', '𑷧', '𑷨', '𑷩'])),
+        "vaii" => Some(("vaii", &['꘠', '꘡', '꘢', '꘣', '꘤', '꘥', '꘦', '꘧', '꘨', '꘩'])),
+        "wara" => Some(("wara", &['𑣠', '𑣡', '𑣢', '𑣣', '𑣤', '𑣥', '𑣦', '𑣧', '𑣨', '𑣩'])),
+        "wcho" => Some(("wcho", &['𞋰', '𞋱', '𞋲', '𞋳', '𞋴', '𞋵', '𞋶', '𞋷', '𞋸', '𞋹'])),
+        _ => None,
+    }
+}
 
 /// Every locale of the snapshot, built or not, in code order.
 pub(crate) const NAMES: &[&str] = &["af", "af-NA", "ak", "am", "ar", "ar-AE", "ar-BH", "ar-DJ", "ar-DZ", "ar-EG", "ar-EH", "ar-ER", "ar-IL", "ar-IQ", "ar-JO", "ar-KM", "ar-KW", "ar-LB", "ar-LY", "ar-MA", "ar-MR", "ar-OM", "ar-PS", "ar-QA", "ar-SA", "ar-SD", "ar-SO", "ar-SS", "ar-SY", "ar-TD", "ar-TN", "ar-YE", "as", "az", "az-Latn", "ba", "be", "be-tarask", "bg", "bn", "bn-IN", "bs", "bs-Latn", "ca", "ca-AD", "ca-ES-valencia", "ca-FR", "ca-IT", "chr", "cs", "cv", "cy", "da", "da-GL", "de", "de-AT", "de-BE", "de-CH", "de-IT", "de-LI", "de-LU", "dsb", "el", "el-CY", "el-polyton", "en", "en-001", "en-150", "en-AE", "en-AG", "en-AI", "en-AS", "en-AT", "en-AU", "en-BB", "en-BE", "en-BI", "en-BM", "en-BS", "en-BW", "en-BZ", "en-CA", "en-CC", "en-CH", "en-CK", "en-CM", "en-CX", "en-CY", "en-CZ", "en-DE", "en-DG", "en-DK", "en-DM", "en-EE", "en-ER", "en-ES", "en-FI", "en-FJ", "en-FK", "en-FM", "en-FR", "en-GB", "en-GD", "en-GE", "en-GG", "en-GH", "en-GI", "en-GM", "en-GS", "en-GU", "en-GY", "en-HK", "en-HU", "en-ID", "en-IE", "en-IL", "en-IM", "en-IN", "en-IO", "en-IT", "en-JE", "en-JM", "en-JP", "en-KE", "en-KI", "en-KN", "en-KY", "en-LC", "en-LR", "en-LS", "en-LT", "en-LV", "en-MG", "en-MH", "en-MO", "en-MP", "en-MS", "en-MT", "en-MU", "en-MV", "en-MW", "en-MY", "en-NA", "en-NF", "en-NG", "en-NL", "en-NO", "en-NR", "en-NU", "en-NZ", "en-PG", "en-PH", "en-PK", "en-PL", "en-PN", "en-PR", "en-PT", "en-PW", "en-RO", "en-RW", "en-SB", "en-SC", "en-SD", "en-SE", "en-SG", "en-SH", "en-SI", "en-SK", "en-SL", "en-SS", "en-SX", "en-SZ", "en-TC", "en-TK", "en-TO", "en-TT", "en-TV", "en-TZ", "en-UA", "en-UG", "en-UM", "en-VC", "en-VG", "en-VI", "en-VU", "en-WS", "en-ZA", "en-ZM", "en-ZW", "es", "es-419", "es-AR", "es-BO", "es-BR", "es-BZ", "es-CL", "es-CO", "es-CR", "es-CU", "es-DO", "es-EA", "es-EC", "es-GQ", "es-GT", "es-HN", "es-IC", "es-MX", "es-NI", "es-PA", "es-PE", "es-PH", "es-PR", "es-PY", "es-SV", "es-US", "es-UY", "es-VE", "et", "eu", "fa", "fa-AF", "fi", "fil", "fr", "fr-BE", "fr-BF", "fr-BI", "fr-BJ", "fr-BL", "fr-CA", "fr-CD", "fr-CF", "fr-CG", "fr-CH", "fr-CI", "fr-CM", "fr-DJ", "fr-DZ", "fr-GA", "fr-GF", "fr-GN", "fr-GP", "fr-GQ", "fr-HT", "fr-KM", "fr-LU", "fr-MA", "fr-MC", "fr-MF", "fr-MG", "fr-ML", "fr-MQ", "fr-MR", "fr-MU", "fr-NC", "fr-NE", "fr-PF", "fr-PM", "fr-RE", "fr-RW", "fr-SC", "fr-SN", "fr-SY", "fr-TD", "fr-TG", "fr-TN", "fr-VU", "fr-WF", "fr-YT", "ga", "ga-GB", "gd", "gl", "gu", "ha", "ha-GH", "ha-NE", "he", "hi", "hi-Latn", "hr", "hr-BA", "hsb", "ht", "hu", "hy", "id", "ig", "is", "it", "it-CH", "it-SM", "it-VA", "ja", "jv", "ka", "kk", "kk-Arab", "kk-Cyrl", "kk-KZ", "km", "kn", "ko", "ko-CN", "ko-KP", "kok", "kok-Deva", "ky", "lo", "lt", "lv", "mk", "ml", "mn", "mr", "ms", "ms-BN", "ms-ID", "ms-SG", "my", "nb", "nb-SJ", "ne", "ne-IN", "nl", "nl-AW", "nl-BE", "nl-BQ", "nl-CW", "nl-SR", "nl-SX", "nn", "no", "or", "pa", "pa-Guru", "pcm", "pl", "ps", "ps-PK", "pt", "pt-AO", "pt-CH", "pt-CV", "pt-GQ", "pt-GW", "pt-LU", "pt-MO", "pt-MZ", "pt-PT", "pt-ST", "pt-TL", "qu", "qu-BO", "qu-EC", "rm", "ro", "ro-MD", "ru", "ru-BY", "ru-KG", "ru-KZ", "ru-MD", "ru-UA", "sd", "sd-Arab", "shn", "shn-TH", "si", "sk", "sl", "so", "so-DJ", "so-ET", "so-KE", "sq", "sq-MK", "sq-XK", "sr", "sr-Cyrl", "sr-Cyrl-BA", "sr-Cyrl-ME", "sr-Cyrl-XK", "sr-Latn", "sr-Latn-BA", "sr-Latn-ME", "sr-Latn-XK", "sv", "sv-AX", "sv-FI", "sw", "sw-CD", "sw-KE", "sw-UG", "ta", "ta-LK", "ta-MY", "ta-SG", "te", "th", "ti", "ti-ER", "tk", "tr", "tr-CY", "uk", "und", "ur", "ur-IN", "uz", "uz-Latn", "vi", "yo", "yo-BJ", "yue", "yue-Hans", "yue-Hant", "yue-Hant-CN", "yue-Hant-MO", "zh", "zh-Hans", "zh-Hans-HK", "zh-Hans-MO", "zh-Hans-MY", "zh-Hans-SG", "zh-Hant", "zh-Hant-HK", "zh-Hant-MO", "zh-Hant-MY", "zu"];

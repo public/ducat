@@ -17,6 +17,22 @@ mod data;
     feature = "uz"
 ))]
 mod locale;
+// Node's texts of the languages it formats
+#[cfg(all(
+    feature = "compact",
+    feature = "numbering-systems",
+    feature = "ar",
+    feature = "de",
+    feature = "en",
+    feature = "fr",
+    feature = "hi",
+    feature = "es",
+    feature = "pt",
+    feature = "sw",
+    feature = "th",
+    feature = "zh"
+))]
+mod notation;
 mod props;
 mod root;
 #[cfg(all(

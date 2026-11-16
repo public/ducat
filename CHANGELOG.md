@@ -46,6 +46,10 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 - ducat-format: some `FormatOptions` combinations that returned `InvalidOptions` now format, as
   Intl does (fraction digits beside significant digits under `roundingPriority` auto;
   `roundingIncrement` 1 beside significant digits).
+- ducat-format: a tag's `-u-nu-` keyword now picks the numbering system, where it was ignored
+  (`ar-EG-u-nu-latn` formats, and parses, in Western digits and latn's separators), and
+  `FormatOptions` takes `notation`, `compact_display` and `numbering_system`; spec vectors for
+  them. `FormatOptions` gains fields, and `PartKind` four kinds.
 - ducat (Rust) `Snapshots`: a miss no longer drops a kept day; room is made only when a load
   returns a table, matching the `snapshots` fix above, so `ducat_fetch::ecb_day_snapshots` no
   longer fetches a kept day again after a weekend or holiday.

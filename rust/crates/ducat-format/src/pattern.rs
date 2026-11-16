@@ -58,7 +58,7 @@ fn push_literal(affixes: &mut Vec<Affix>, ch: char) {
 }
 
 /// The affixes of `text`, which holds no number part; `'` quotes, and `''` is an apostrophe.
-fn affixes(text: &str) -> Result<Vec<Affix>, Malformed> {
+pub(crate) fn affixes(text: &str) -> Result<Vec<Affix>, Malformed> {
     let mut out = Vec::new();
     let mut chars = text.chars().peekable();
     while let Some(ch) = chars.next() {
@@ -158,32 +158,10 @@ fn grouping(number: &str) -> Result<Option<(usize, usize)>, Malformed> {
     Ok(Some((primary, secondary)))
 }
 
-/// Reads a pattern. Without a negative subpattern, the negative is the minus sign before the
-/// positive prefix (TR35).
-pub(crate) fn parse(pattern: &str) -> Result<Pattern, Malformed> {
-    if pattern.chars().count() > MAX_PATTERN {
-        return Err(Malformed);
-    }
-    let (positive, negative) = match pattern.split_once(';') {
-        Some((positive, negative)) => (positive, Some(negative)),
-        None => (pattern, None),
-    };
-    let (prefix, number, suffix) = split(positive)?;
-    let grouping = grouping(number)?;
-    let positive = Subpattern {
-        prefix: affixes(prefix)?,
-        suffix: affixes(suffix)?,
-    };
-    let explicit = match negative {
-        Some(negative) => {
-            let (prefix, _, suffix) = split(negative)?;
-            Some(Subpattern {
-                prefix: affixes(prefix)?,
-                suffix: affixes(suffix)?,
-            })
-        }
-        None => None,
-    };
+/// The negative and plus subpatterns: the explicit negative one, else the minus sign before
+/// the positive; the plus one is the negative with its minus sign replaced by the plus sign, or,
+/// where it has none, the plus sign before the positive subpattern (ICU's).
+fn signed_forms(positive: &Subpattern, explicit: Option<Subpattern>) -> (Subpattern, Subpattern) {
     let with_minus = explicit.as_ref().filter(|negative| {
         negative
             .prefix
@@ -226,12 +204,101 @@ pub(crate) fn parse(pattern: &str) -> Result<Pattern, Malformed> {
             }
         }
     };
+    (negative, plus)
+}
+
+/// Reads a pattern. Without a negative subpattern, the negative is the minus sign before the
+/// positive prefix (TR35).
+pub(crate) fn parse(pattern: &str) -> Result<Pattern, Malformed> {
+    if pattern.chars().count() > MAX_PATTERN {
+        return Err(Malformed);
+    }
+    let (positive, negative) = match pattern.split_once(';') {
+        Some((positive, negative)) => (positive, Some(negative)),
+        None => (pattern, None),
+    };
+    let (prefix, number, suffix) = split(positive)?;
+    let grouping = grouping(number)?;
+    let positive = Subpattern {
+        prefix: affixes(prefix)?,
+        suffix: affixes(suffix)?,
+    };
+    let explicit = match negative {
+        Some(negative) => {
+            let (prefix, _, suffix) = split(negative)?;
+            Some(Subpattern {
+                prefix: affixes(prefix)?,
+                suffix: affixes(suffix)?,
+            })
+        }
+        None => None,
+    };
+    let (negative, plus) = signed_forms(&positive, explicit);
     Ok(Pattern {
         positive,
         negative,
         plus,
         grouping,
     })
+}
+
+/// The prefix, suffix and whether there is a number of a compact subpattern: its zeros stand
+/// for the number.
+fn compact_subpattern(sub: &str) -> Result<(Subpattern, bool), Malformed> {
+    let mut quoted = false;
+    let mut start = None;
+    let mut end = sub.len();
+    for (at, ch) in sub.char_indices() {
+        if start.is_some() {
+            if ch != '0' {
+                end = at;
+                break;
+            }
+        } else if ch == '\'' {
+            quoted = !quoted;
+        } else if !quoted && ch == '0' {
+            start = Some(at);
+        }
+    }
+    let (prefix, suffix, has_number) = match start {
+        Some(start) => (&sub[..start], &sub[end..], true),
+        None => (sub, "", false),
+    };
+    Ok((
+        Subpattern {
+            prefix: affixes(prefix)?,
+            suffix: affixes(suffix)?,
+        },
+        has_number,
+    ))
+}
+
+/// Reads a compact pattern (`¤0K`, `0 Mio'.' ¤`, `mille`, sw's `elfu 0;elfu -0`): its zeros
+/// stand for the number, which a pattern without them doesn't show. The negative and plus forms
+/// are as [`parse`] makes them: the negative subpattern where there is one, else the minus sign
+/// before the positive one. Returns the pattern and whether it shows the number.
+pub(crate) fn parse_compact(pattern: &str) -> Result<(Pattern, bool), Malformed> {
+    if pattern.chars().count() > MAX_PATTERN {
+        return Err(Malformed);
+    }
+    let (positive, negative) = match pattern.split_once(';') {
+        Some((positive, negative)) => (positive, Some(negative)),
+        None => (pattern, None),
+    };
+    let (positive, has_number) = compact_subpattern(positive)?;
+    let explicit = negative
+        .map(|negative| compact_subpattern(negative).map(|(sub, _)| sub))
+        .transpose()?;
+    let (negative, plus) = signed_forms(&positive, explicit);
+    Ok((
+        Pattern {
+            positive,
+            negative,
+            plus,
+            grouping: None,
+        },
+        has_number,
+    ))
 }
 
 #[cfg(test)]
@@ -278,6 +345,30 @@ mod tests {
             vec![literal("' x")]
         );
         assert_eq!(parse("#0").unwrap().grouping, None);
+    }
+
+    #[test]
+    fn reads_compact_patterns() {
+        let (pattern, number) = parse_compact("¤0K").unwrap();
+        assert!(number);
+        assert_eq!(pattern.positive.prefix, vec![Affix::Currency]);
+        assert_eq!(pattern.positive.suffix, vec![literal("K")]);
+        assert_eq!(pattern.negative.prefix, vec![Affix::Minus, Affix::Currency]);
+        let (pattern, _) = parse_compact("000 Mio'.' ¤").unwrap();
+        assert_eq!(
+            pattern.positive.suffix,
+            vec![literal(" Mio. "), Affix::Currency]
+        );
+        let (pattern, number) = parse_compact("mille").unwrap();
+        assert!(!number);
+        assert_eq!(pattern.positive.prefix, vec![literal("mille")]);
+        let (pattern, _) = parse_compact("elfu 0;elfu -0").unwrap();
+        assert_eq!(
+            pattern.negative.prefix,
+            vec![literal("elfu "), Affix::Minus]
+        );
+        assert_eq!(pattern.plus.prefix, vec![literal("elfu "), Affix::Plus]);
+        assert_eq!(parse_compact("'0"), Err(Malformed));
     }
 
     #[test]

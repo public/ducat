@@ -900,19 +900,19 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | TS | Rust | status | note |
 |---|---|---|---|
 | `FormatOptions` | `ducat_format::FormatOptions` | same | `Default` is ducat's no-options call; the fields ducat passes to `Intl` are checked as `Intl` checks them (`Error::InvalidOptions` for its `RangeError`s) |
-| `FormatOptions#compactDisplay` | — | missing | Intl's `compactDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
+| `FormatOptions#compactDisplay` | `FormatOptions::compact_display` (`CompactDisplay`) | same | `Short` (default), `Long`: a name's compact patterns; a symbol or code always takes CLDR's short currency patterns, as ICU. A bad name is `FromStr`'s `Error::InvalidOptions`, `Intl`'s `RangeError` |
 | `FormatOptions#currency` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions)) | ducat sets it from the money; overriding it formats another code |
 | `FormatOptions#currencyDisplay` | `FormatOptions::currency_display`, `display` (`CurrencyDisplay`) | same | `CurrencyDisplay`: `Symbol` (default), `NarrowSymbol`, `Code`, `Name` |
 | `FormatOptions#currencySign` | `FormatOptions::currency_sign`, `sign` (`CurrencySign`) | same | `CurrencySign`: `Standard` (default), `Accounting` |
 | `FormatOptions#digits` | `FormatOptions::digits` | same | `Option<u16>`, rounded once by ducat's kernel; beside `Intl`'s digit options it is `Error::ConflictingOptions`, ducat's `TypeError` |
-| `FormatOptions#localeMatcher` | — | missing | Intl's `localeMatcher`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
+| `FormatOptions#localeMatcher` | `ducat_format::Locale::with_matcher` (`LocaleMatcher`) | same | the locale is resolved once, by `Locale`, so the matcher is its argument; `Lookup` and `BestFit` (default) resolve alike, as on V8, whose best fit is ECMA-402's lookup (checked for every CLDR locale by `scripts/check-locale-matcher.mjs`; [design](design.md#notation-numbering-systems-and-locale-matching)) |
 | `FormatOptions#maximumFractionDigits` | `FormatOptions::maximum_fraction_digits` | same | `Option<u16>`; past 100, or below the minimum, `Error::InvalidOptions` (`Intl`'s `RangeError`), except with significant digits and `roundingPriority` auto, where `Intl` neither uses nor validates the fraction digits, so they aren't checked then (as `Intl`) |
 | `FormatOptions#maximumSignificantDigits` | `FormatOptions::maximum_significant_digits` | same | `Option<u16>`, 1 to 21 (`Error::InvalidOptions` outside) |
 | `FormatOptions#minimumFractionDigits` | `FormatOptions::minimum_fraction_digits` | same | `Option<u16>`, as `#maximumFractionDigits`, including the exception: with significant digits and `roundingPriority` auto they aren't checked (as `Intl`, which neither uses nor validates them) |
 | `FormatOptions#minimumIntegerDigits` | `FormatOptions::minimum_integer_digits` | same | `Option<u16>`, 1 to 21 (`Error::InvalidOptions` outside, `Intl`'s `RangeError`); the padding zeros are grouped as digits are (`$00,001.00`) |
 | `FormatOptions#minimumSignificantDigits` | `FormatOptions::minimum_significant_digits` | same | `Option<u16>`, 1 to 21 and at most the maximum (`Error::InvalidOptions` otherwise); the maximum defaults to 21. With significant digits and `roundingPriority` auto the fraction digits play no part, unchecked, as in `Intl`; beside `digits` it is `Error::ConflictingOptions`, ducat's `TypeError` |
-| `FormatOptions#notation` | — | missing | Intl's `notation`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#numberingSystem` | — | missing | Intl's `numberingSystem`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
+| `FormatOptions#notation` | `FormatOptions::notation` (`Notation`) | same | `Standard` (default), `Scientific`, `Engineering`, `Compact` (feature `compact`): ECMA-402's `ComputeExponent` on the exact decimal, CLDR's compact patterns chosen as ICU 78.3 does; parts `Compact`, `ExponentSeparator`, `ExponentMinusSign`, `ExponentInteger`. ducat's fraction digits (the scale) round the mantissa (`$1.23K`), so `Intl`'s compact default of two significant digits never applies, there or here |
+| `FormatOptions#numberingSystem` | `FormatOptions::numbering_system`, and a tag's `-u-nu-` (`Locale::numbering_system`) | divergent: [arab and arabext without a locale's own CLDR data](design.md#notation-numbering-systems-and-locale-matching) | `Option<String>`: any numeric CLDR system (feature `numbering-systems`), the option over `-u-nu-`; an unsupported one is ignored, a malformed one `Error::InvalidOptions`. Where cldr-json gives a locale no data for `arab` or `arabext` (en, de, th), latn's patterns with their digits, where ICU writes root's |
 | `FormatOptions#rounding` | `FormatOptions::rounding` | same | `Option<Rounding>`, `None` is ducat's default halfExpand; without `digits` it is `Error::ConflictingOptions`, ducat's `TypeError` |
 | `FormatOptions#roundingIncrement` | `FormatOptions::rounding_increment` | same | `Option<u16>`, one of `Intl`'s 15 increments (`Error::InvalidOptions` otherwise) |
 | `FormatOptions#roundingMode` | `FormatOptions::rounding_mode` | same | `Option<Rounding>`, `None` is `Intl`'s halfExpand: how `Intl`'s fraction digits, significant digits and increment round, on the exact decimal with ducat's kernel (no floats). `Rounding::Unnecessary` is no `Intl` mode (`Error::InvalidOptions`, its `RangeError`); after `digits` there is nothing left to round |
@@ -922,7 +922,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | `FormatOptions#trailingZeroDisplay` | `FormatOptions::trailing_zero_display` (`TrailingZeroDisplay`) | same | `Auto` (default), `StripIfInteger` (`€5` for 5.00, after rounding); a name takes the plural of the number shown (`1 US dollar`) |
 | `FormatOptions#unit` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions); only with `style: 'unit'`) |  |
 | `FormatOptions#unitDisplay` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions); only with `style: 'unit'`) |  |
-| `FormatOptions#useGrouping` | `FormatOptions::use_grouping` (`UseGrouping`) | same | `Auto` (default; CLDR's minimum grouping digits), `Always` (`true`), `Min2` (at least two, or the locale's), `Off` (`false`); `From<bool>`, and `FromStr` for `Intl`'s strings (`"true"` and `"false"` are `Auto`, as in `Intl`). The option enums' `FromStr` take `Intl`'s names, `Error::InvalidOptions` for others |
+| `FormatOptions#useGrouping` | `FormatOptions::use_grouping` (`UseGrouping`) | same | `Auto` (default; CLDR's minimum grouping digits, and `Min2` in compact notation, as on V8), `Always` (`true`), `Min2` (at least two, or the locale's), `Off` (`false`); `From<bool>`, and `FromStr` for `Intl`'s strings (`"true"` and `"false"` are `Auto`, as in `Intl`). The option enums' `FromStr` take `Intl`'s names, `Error::InvalidOptions` for others |
 | `Money#format` | `ducat_format::format` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) | a free function over `AnyMoney` and a `Locale` |
 | `Money#formatToParts` | `ducat_format::format_to_parts` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) | `Part`, `PartKind` |
 | `format` | `ducat_format::format` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) |  |
@@ -1327,11 +1327,7 @@ Re-exports every plugin entry and `./fn`'s functions, and installs every plugin'
 Every `missing` row, grouped into pull requests in the order users would hit them. None is decided yet; they are
 proposals.
 
-15. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
-   `./format` `FormatOptions#compactDisplay`, `./format` `FormatOptions#numberingSystem`,
-   `./format` `FormatOptions#localeMatcher`. Dashboards (`€1.2M`) and native digits; compact patterns and numbering systems add
-   data to every locale, so they want their own features. `localeMatcher` chooses between `Intl`'s algorithms; the
-   port has one (TR35 fallback), so it may end up `not ported: by design`.
+None: every row above is ported or decided. What remains is below, outside parity.
 
 ### Follow-ups, not parity
 

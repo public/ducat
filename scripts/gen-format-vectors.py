@@ -103,18 +103,32 @@ def currencies(name: str) -> dict:
 
 
 class Locale:
-    def __init__(self, tag: str):
+    def __init__(self, tag: str, system=None):
+        """A locale's data in a numbering system (its default without one). A numbering system the
+        locale has no data for takes latn's symbols and patterns with its own digits (TR35)."""
         name = folder(tag)
         self.folder = name
         self.numbers = load(f"main/{name}/numbers.json")["main"][name]["numbers"]
         self.currencies = currencies(name)
-        self.system = self.numbers["defaultNumberingSystem"]
-        self.symbols = self.numbers[f"symbols-numberSystem-{self.system}"]
-        self.formats = self.numbers[f"currencyFormats-numberSystem-{self.system}"]
-        self.decimal_formats = self.numbers[f"decimalFormats-numberSystem-{self.system}"]
+        self.system = system or self.numbers["defaultNumberingSystem"]
+
+        def block(kind: str) -> dict:
+            return self.numbers.get(f"{kind}-numberSystem-{self.system}", self.numbers[f"{kind}-numberSystem-latn"])
+
+        self.symbols = block("symbols")
+        self.formats = block("currencyFormats")
+        self.decimal_formats = block("decimalFormats")
         self.digits = NUMBERING[self.system]["_digits"]
         self.minimum_grouping = int(self.numbers["minimumGroupingDigits"])
         self.language = name.split("-")[0]
+
+    def compact_patterns(self, kind: str, length: str) -> dict:
+        """The compact patterns ({"1000-count-one": "0K", ...}) of a decimalFormats or
+        currencyFormats block: the numbering system's, else latn's, as ICU falls back."""
+        inner = "decimalFormat" if kind == "decimalFormats" else "standard"
+        own = self.numbers.get(f"{kind}-numberSystem-{self.system}", {}).get(length, {}).get(inner)
+        latn = self.numbers[f"{kind}-numberSystem-latn"].get(length, {}).get(inner)
+        return own if own is not None else (latn or {})
 
     def currency_decimal(self) -> str:
         return self.symbols.get("currencyDecimal", self.symbols["decimal"])
@@ -169,10 +183,10 @@ WITH_ICU = {"on": False}
 LOCALES = {}
 
 
-def locale(tag: str) -> Locale:
-    key = (tag, WITH_ICU["on"])
+def locale(tag: str, system=None) -> Locale:
+    key = (tag, system, WITH_ICU["on"])
     if key not in LOCALES:
-        loc = Locale(tag)
+        loc = Locale(tag, system)
         if WITH_ICU["on"]:
             for system, symbols in icu_symbols(tag).items():
                 if system == loc.system:
@@ -184,8 +198,9 @@ def locale(tag: str) -> Locale:
 # --- plural rules (TR35 Part 3, Language Plural Rules) --------------------------------------------
 
 
-def operands(text: str) -> dict:
-    """The plural operands of a number as displayed, e.g. "1.00": n 1, i 1, v 2, w 0, f 0, t 0."""
+def operands(text: str, exponent: int = 0) -> dict:
+    """The plural operands of a number as displayed, e.g. "1.00": n 1, i 1, v 2, w 0, f 0, t 0;
+    c and e are the exponent of a number shown in scientific notation (TR35)."""
     digits = text.lstrip("-")
     whole, _, fraction = digits.partition(".")
     trimmed = fraction.rstrip("0")
@@ -196,8 +211,8 @@ def operands(text: str) -> dict:
         "w": len(trimmed),
         "f": int(fraction or "0"),
         "t": int(trimmed or "0"),
-        "c": 0,
-        "e": 0,
+        "c": exponent,
+        "e": exponent,
     }
 
 
@@ -222,16 +237,22 @@ def relation_holds(relation: str, values: dict) -> bool:
     return found if operator == "=" else not found
 
 
-def plural_category(language: str, text: str) -> str:
-    values = operands(text)
+def plural_category(language: str, text: str, exponent: int = 0) -> str:
+    """The plural category of a number as displayed. CLDR's rules exclude each other except with
+    an exponent (fr's one, i = 0,1, and many, e != 0..5, both hold for 1E-3): there the first
+    holding category by name is taken, as ICU tests its rule table, which is sorted by key."""
+    values = operands(text, exponent)
+    holding = []
     for key, rule in PLURALS[language].items():
         category = key.removeprefix("pluralRule-count-")
         condition = rule.split("@")[0].strip()
         if category == "other" or condition == "":
             continue
         if any(all(relation_holds(part, values) for part in alternative.split(" and ")) for alternative in condition.split(" or ")):
-            return category
-    return "other"
+            if exponent == 0:
+                return category
+            holding.append(category)
+    return min(holding) if holding else "other"
 
 
 # --- formatting (TR35 Part 3, Number Format Patterns) ---------------------------------------------
@@ -529,6 +550,206 @@ def sign_type(sign_display: str, negative: bool, zero: bool) -> str:
     return "plus" if sign_display == "exceptZero" and not zero else "positive"
 
 
+# --- notation (https://tc39.es/ecma402/#sec-computeexponent) and numbering systems -----------------
+
+NOTATIONS = ["standard", "scientific", "engineering", "compact"]
+# Unicode BCP 47's type: what numberingSystem must look like (RangeError otherwise)
+NU_TYPE = re.compile(r"^[a-zA-Z0-9]{3,8}(-[a-zA-Z0-9]{3,8})*$")
+# ICU's default ignorables, [[:Zs:][\t][:Bidi_Control:][:Variation_Selector:]]: the literals
+# around a compact pattern's abbreviation
+BIDI_CONTROLS = {0x61C, 0x200E, 0x200F, *range(0x202A, 0x202F), *range(0x2066, 0x206A)}
+VARIATION_SELECTORS = {*range(0x180B, 0x180E), 0x180F, *range(0xFE00, 0xFE10), *range(0xE0100, 0xE01F0)}
+
+
+def ignorable(ch: str) -> bool:
+    return unicodedata.category(ch) == "Zs" or ch == "\t" or ord(ch) in BIDI_CONTROLS or ord(ch) in VARIATION_SELECTORS
+
+
+def unicode_nu(tag: str):
+    """The type of the tag's -u- extension's nu keyword, lowercase (the first, if repeated)."""
+    parts = tag.split("-")
+    if "u" not in [part.lower() for part in parts[1:]]:
+        return None
+    start = [part.lower() for part in parts].index("u", 1) + 1
+    key, values, found = None, [], None
+    for part in parts[start:] + ["zz"]:
+        if len(part) == 1:
+            part = "zz"
+        if len(part) == 2:
+            if key == "nu" and found is None:
+                found = "-".join(values)
+            key, values = part.lower(), []
+        else:
+            values.append(part.lower())
+    return found
+
+
+def numeric_system(name) -> bool:
+    return name is not None and name in NUMBERING and NUMBERING[name]["_type"] == "numeric"
+
+
+def numbering_system(tag: str, option):
+    """ResolveLocale's nu: the option where it is supported (every numeric system is, for every
+    locale, as in ICU), else the tag's -u-nu- where supported, else the locale's default. (V8
+    drops the tag's -u-nu- for any option, supported or not; JavaScriptCore keeps it, as
+    ECMA-402 says: the rows leave that case out.)"""
+    if numeric_system(option):
+        return option
+    extension = unicode_nu(tag)
+    if numeric_system(extension):
+        return extension
+    return None
+
+
+def lookup(tag: str) -> str:
+    """ECMA-402's LookupMatcher (RFC 4647 lookup) over CLDR's available locales and default
+    contents, the tag's extensions removed: subtags dropped from the end (a singleton with the
+    one after it) until one is available. V8's "best fit" is the same matcher."""
+    candidate = tag.split("-u-")[0]
+    while True:
+        if candidate in AVAILABLE or candidate in DEFAULT_CONTENT:
+            return candidate
+        cut = candidate.rfind("-")
+        if cut < 0:
+            raise KeyError(f"lookup finds no locale for {tag}")
+        if cut >= 2 and candidate[cut - 2] == "-":
+            cut -= 2
+        candidate = candidate[:cut]
+
+
+def magnitude_of(x: Fraction) -> int:
+    """floor(log10(|x|)) for x != 0, exactly."""
+    size = abs(x)
+    exponent = len(str(size.numerator // size.denominator)) - 1 if size >= 1 else -1
+    while size < Fraction(10) ** exponent:
+        exponent -= 1
+    return exponent
+
+
+def compact_table(patterns: dict) -> dict:
+    """{magnitude: {category: pattern}} from {"1000-count-one": "0K", ...}."""
+    table = {}
+    for key, pattern in patterns.items():
+        power, _, category = key.partition("-count-")
+        table.setdefault(len(power) - 1, {})[category] = pattern
+    return table
+
+
+def compact_exponent(table: dict, magnitude: int) -> int:
+    """ICU's compact multiplier: the magnitude less the other pattern's zeros but one (above the
+    largest magnitude, the largest's); 0 for a 0 pattern, below a thousand, or no data."""
+    if not table or magnitude < 0:
+        return 0
+    entry = table.get(min(magnitude, max(table)))
+    if not entry or entry.get("other", "0") == "0":
+        return 0
+    zeros = entry["other"].split(";")[0].count("0")
+    return min(magnitude, max(table)) - zeros + 1
+
+
+def compact_pattern(table: dict, language: str, text: str, rounded: Fraction, exponent: int, negative: bool):
+    """The compact pattern for a rounded mantissa (as ICU's CompactData::getPattern picks it):
+    by the rounded value's magnitude, CLDR's explicit 0 and 1 forms for a whole mantissa (ICU's i
+    keeps the sign, so -1 isn't 1), else the mantissa's plural form, else other; None for 0."""
+    if not table or rounded == 0:
+        return None
+    magnitude = magnitude_of(rounded) + exponent
+    if magnitude < 0:
+        return None
+    entry = table.get(min(magnitude, max(table)), {})
+    pattern = None
+    if rounded.denominator == 1:
+        whole = abs(rounded)
+        if whole == 0:
+            pattern = entry.get("0")
+        elif whole == 1 and not negative:
+            pattern = entry.get("1")
+    if pattern is None:
+        pattern = entry.get(plural_category(language, text), entry.get("other"))
+    return None if pattern in (None, "0") else pattern
+
+
+def compact_subpatterns(pattern: str):
+    """A compact pattern's positive, negative and plus subpatterns, as subpatterns() makes them,
+    each (prefix, suffix, has_number): its run of zeros is the number."""
+
+    def parts(sub: str):
+        quoted, start, end = False, None, len(sub)
+        for index, ch in enumerate(sub):
+            if start is not None:
+                if ch != "0":
+                    end = index
+                    break
+            elif ch == "'":
+                quoted = not quoted
+            elif not quoted and ch == "0":
+                start = index
+        if start is None:
+            return sub, "", False
+        return sub[:start], sub[end:], True
+
+    positive, _, negative = pattern.partition(";")
+    pos = parts(positive)
+    neg = parts(negative) if negative else ("-" + pos[0], pos[1], pos[2])
+    if negative and "-" in neg[0] + neg[1]:
+        plus = (neg[0].replace("-", "+"), neg[1].replace("-", "+"), pos[2])
+    else:
+        plus = ("+" + pos[0], pos[1], pos[2])
+    return pos, neg, plus
+
+
+def compact_affix_chars(loc: Locale, affix: str, currency: str):
+    """A compact pattern's affix: its literal text is the abbreviation (the compact part), the
+    default ignorables at either end of each run literals, as ICU trims a field."""
+    out, run = [], []
+
+    def flush():
+        text = "".join(run)
+        start = 0
+        while start < len(text) and ignorable(text[start]):
+            start += 1
+        end = len(text)
+        while end > start and ignorable(text[end - 1]):
+            end -= 1
+        out.extend(("literal", ch) for ch in text[:start])
+        out.extend(("compact", ch) for ch in text[start:end])
+        out.extend(("literal", ch) for ch in text[end:])
+        run.clear()
+
+    for ch in affix:
+        if ch in "¤-+":
+            flush()
+            out.extend(affix_chars(loc, ch, currency))
+        elif ch != "'":
+            run.append(ch)
+    flush()
+    return out
+
+
+def exponent_chars(loc: Locale, exponent: int):
+    """Scientific notation's exponent: the exponential symbol, the minus sign for a negative
+    exponent, its digits in the numbering system."""
+    out = symbol_chars(loc.symbols["exponential"], "exponentSeparator")
+    if exponent < 0:
+        out += symbol_chars(loc.symbols["minusSign"], "exponentMinusSign")
+    return out + [("exponentInteger", loc.digits[int(ch)]) for ch in str(abs(exponent))]
+
+
+def shifted_text(text: str, exponent: int) -> str:
+    """ASCII digits (no sign) times 10^exponent, written out with their visible digits."""
+    whole, _, fraction = text.partition(".")
+    digits = whole + fraction
+    point = len(whole) + exponent
+    if point <= 0:
+        out = "0." + "0" * -point + digits
+    elif point >= len(digits):
+        out = digits + "0" * (point - len(digits))
+    else:
+        out = digits[:point] + "." + digits[point:]
+    out = out.lstrip("0")
+    return "0" + out if out == "" or out.startswith(".") else out
+
+
 def format_parts(amount: str, currency: str, tag: str, options: dict) -> list:
     """The parts of a money amount formatted the way ducat documents: its scale's fraction digits
     (or `digits`, rounded first with `rounding`), and the Intl options ducat passes on, as
@@ -544,47 +765,104 @@ def format_parts(amount: str, currency: str, tag: str, options: dict) -> list:
     if digits is not None:
         amount = scaled(round_integer(value * 10**digits, rounding or "halfExpand"), digits)
         value = Fraction(amount)
-    # Intl.NumberFormat's constructor, in its order: the currency options, the digit options,
-    # then useGrouping and signDisplay
+    # Intl.NumberFormat's constructor, in its order: localeMatcher and numberingSystem, the locale,
+    # the currency options, notation, the digit options, compactDisplay, then useGrouping and
+    # signDisplay
+    matcher = string_option(options, "localeMatcher", ["lookup", "best fit"], None)
+    system_option = options.pop("numberingSystem", None)
+    if system_option is not None and not NU_TYPE.match(system_option):
+        raise Refused("range")
+    if matcher is not None:
+        # V8's "best fit" is its lookup
+        tag = lookup(tag) + (tag[tag.index("-u-"):] if "-u-" in tag else "")
     display = string_option(options, "currencyDisplay", ["symbol", "narrowSymbol", "code", "name"], "symbol")
     sign = string_option(options, "currencySign", ["standard", "accounting"], "standard")
+    notation = string_option(options, "notation", NOTATIONS, "standard")
     number_options = digit_options(options, places_of(amount))
-    grouping = options.pop("useGrouping", "auto")
+    compact_display = string_option(options, "compactDisplay", ["short", "long"], "short")
+    grouping = options.pop("useGrouping", None)
     if grouping is True:
         grouping = "always"
     elif grouping in (False, ""):
         grouping = False
-    elif grouping in ("true", "false"):
+    elif grouping in (None, "true", "false"):
         grouping = "auto"
     elif grouping not in ("always", "auto", "min2"):
         raise Refused("range")
+    if notation == "compact" and grouping == "auto":
+        # V8 hands ICU no grouping strategy for auto, and ICU's compact default is min2
+        grouping = "min2"
     sign_display = string_option(options, "signDisplay", SIGN_DISPLAYS, "auto")
     if options:
         raise ValueError(f"options not modelled: {options}")
-    loc = locale(tag)
+    loc = locale(tag.split("-u-")[0], numbering_system(tag, system_option))
+    table = {}
+    if notation == "compact":
+        # a symbol or code takes the short currency patterns (CLDR has no long ones), a name the
+        # decimal ones of compactDisplay (short where a locale has no long ones), as ICU
+        if display == "name":
+            table = compact_table(loc.compact_patterns("decimalFormats", compact_display) or loc.compact_patterns("decimalFormats", "short"))
+        else:
+            table = compact_table(loc.compact_patterns("currencyFormats", "short"))
+
+    def exponent_for(magnitude: int) -> int:
+        if notation == "scientific":
+            return magnitude
+        if notation == "engineering":
+            return magnitude // 3 * 3
+        if notation == "compact":
+            return compact_exponent(table, magnitude)
+        return 0
+
+    # ComputeExponent: the mantissa rounded, scaled again if it rounded up to the next power
+    exponent = 0
     text, rounded = numeric_text(value, number_options)
+    if value != 0 and notation != "standard":
+        magnitude = magnitude_of(value)
+        exponent = exponent_for(magnitude)
+        text, rounded = numeric_text(value / Fraction(10) ** exponent, number_options)
+        if rounded != 0 and magnitude_of(rounded) != magnitude - exponent:
+            exponent = exponent_for(magnitude + 1)
+            text, rounded = numeric_text(value / Fraction(10) ** exponent, number_options)
+    scientific = notation in ("scientific", "engineering")
     subpattern = sign_type(sign_display, value < 0, rounded == 0)
     decimal, group = loc.currency_decimal(), loc.currency_group()
     pick = ("positive", "negative", "plus").index(subpattern)
-    if display == "name":
-        # the plural form of the number as shown, in the decimal pattern; no accounting form
-        prefix, number_pattern, suffix = subpatterns(loc.decimal_formats["standard"])[pick]
-        number = affix_chars(loc, prefix, "") + number_chars(loc, text, number_pattern, decimal, group, grouping) + affix_chars(loc, suffix, "")
+    compact = compact_pattern(table, loc.language, text, rounded, exponent, value < 0) if notation == "compact" else None
+    standard = loc.decimal_formats["standard"] if display == "name" else loc.formats[sign]
+    symbol = "" if display == "name" else loc.symbol(currency, display)
+    number_pattern = subpatterns(standard)[0][1]
+    number = number_chars(loc, text, number_pattern, decimal, group, grouping)
+    if scientific:
+        number += exponent_chars(loc, exponent)
+    if compact is not None:
+        prefix, suffix, has_number = compact_subpatterns(compact)[pick]
+        chars = spaced(loc, compact_affix_chars(loc, prefix, symbol), number if has_number else [], compact_affix_chars(loc, suffix, symbol))
+    else:
+        prefix, _, suffix = subpatterns(standard)[pick]
+        chars = spaced(loc, affix_chars(loc, prefix, symbol), number, affix_chars(loc, suffix, symbol))
+    if display != "name":
+        return merge(chars)
+    # the plural form of the number as shown, in the decimal pattern; no accounting form. In
+    # compact notation the amount's, rounded as standard notation rounds it (ICU chooses it
+    # before it scales the number); in scientific notation the whole value's, with its exponent
+    if notation == "compact":
+        category = plural_category(loc.language, numeric_text(value, number_options)[0])
+    elif scientific:
+        category = plural_category(loc.language, shifted_text(text, exponent), exponent)
+    else:
         category = plural_category(loc.language, text)
-        name = loc.name(currency, category)
-        unit = loc.formats.get(f"unitPattern-count-{category}", loc.formats["unitPattern-count-other"])
-        out = []
-        for piece in re.split(r"(\{[01]\})", unit):
-            if piece == "{0}":
-                out.extend(number)
-            elif piece == "{1}":
-                out.extend(("currency", ch) for ch in name)
-            else:
-                out.extend(("literal", ch) for ch in piece)
-        return merge(out)
-    prefix, number_pattern, suffix = subpatterns(loc.formats[sign])[pick]
-    symbol = loc.symbol(currency, display)
-    return merge(spaced(loc, affix_chars(loc, prefix, symbol), number_chars(loc, text, number_pattern, decimal, group, grouping), affix_chars(loc, suffix, symbol)))
+    name = loc.name(currency, category)
+    unit = loc.formats.get(f"unitPattern-count-{category}", loc.formats["unitPattern-count-other"])
+    out = []
+    for piece in re.split(r"(\{[01]\})", unit):
+        if piece == "{0}":
+            out.extend(chars)
+        elif piece == "{1}":
+            out.extend(("currency", ch) for ch in name)
+        else:
+            out.extend(("literal", ch) for ch in piece)
+    return merge(out)
 
 
 # --- parsing (docs/reference/parse.md) -------------------------------------------------------------
@@ -869,6 +1147,7 @@ def format_rows(tags: list, general: bool) -> list:
         for amount in ["0.000001", "-0.123456789012345678", "123456789.123456789012", "12345678901234567.89", "-9007199254740993.00", "0.00"]:
             rows.append(format_row(amount, "EUR", tag))
     rows.extend(option_rows())
+    rows.extend(notation_rows())
     # what format refuses: Intl's digit options beside digits, rounding without digits, an
     # invalid display or a malformed tag
     for options in [{"digits": 2, "maximumFractionDigits": 3}, {"digits": 2, "minimumFractionDigits": 1}, {"digits": 2, "maximumSignificantDigits": 3}, {"digits": 2, "roundingIncrement": 5}, {"rounding": "halfEven"}, {"currencyDisplay": "symbols"}, {"currencySign": "negative"}]:
@@ -1006,6 +1285,109 @@ def option_rows() -> list:
         {"maximumSignificantDigits": 3, "maximumFractionDigits": 101, "roundingPriority": "lessPrecision"},
         {"maximumFractionDigits": 1}, {"minimumSignificantDigits": 3, "digits": 2}, {"digits": 2, "signDisplay": "plus"},
         {"digits": 2, "roundingMode": "up"}, {"currencyDisplay": "symbols", "signDisplay": "plus"},
+    ]:
+        rows.append(format_row("1.00", "EUR", "en", options))
+    return rows
+
+
+# Notation and numbering systems: locales with each kind of compact pattern (a suffix, en's K;
+# a spaced one, fr's k; one before the number, sw-KE's elfu, with a negative subpattern; no
+# abbreviation for thousands, de-DE and ja; lakhs and crores, hi-IN, en-IN and bn), default
+# numbering systems other than latn (ar-EG, fa-IR, bn) and locales with another one (hi-IN's
+# deva, th-TH's thai)
+NOTATION_TAGS = ["en", "de-DE", "fr", "es", "it", "ja", "ar-EG", "fa-IR", "hi-IN", "th-TH", "bn", "sw-KE", "ru-RU", "sv-SE", "de-CH", "en-IN", "pt-BR", "nl"]
+COMPACT_AMOUNTS = [
+    "0.00", "5.00", "-5.00", "999.99", "999.995", "1234.50", "-1234.56", "12345.67", "123456.78", "999999.99",
+    "1000000.00", "-1500000.00", "123456789.12", "1000000000.00", "12345678901234.56", "1234567890123456789.00",
+]
+SCIENTIFIC_AMOUNTS = ["0.00", "0.001234", "-0.5", "1.00", "9.999", "1234.50", "-1234567.89", "999999.99", "12345678901234567.89"]
+
+
+def notation_rows() -> list:
+    rows = []
+    # compact notation: symbol, code, and names short and long, around each magnitude, rounding
+    # up to the next one (999999.99 is 1.00M) and past the largest pattern (T)
+    for tag in NOTATION_TAGS:
+        for amount in COMPACT_AMOUNTS:
+            for options in ({}, {"currencyDisplay": "code"}, {"currencyDisplay": "name"}, {"currencyDisplay": "name", "compactDisplay": "long"}, {"compactDisplay": "long"}):
+                if options.get("currencyDisplay") == "name" and len(amount) > 19:
+                    continue
+                rows.append(format_row(amount, "EUR", tag, {"notation": "compact", **options}))
+        # whole numbers: CLDR's explicit 1 forms (fr's mille, but -1 millier) and plural forms
+        for amount in ("1000", "-1000", "2000", "1", "21000", "1500000", "-1"):
+            rows.append(format_row(amount, "JPY", tag, {"notation": "compact", "currencyDisplay": "name", "compactDisplay": "long"}))
+            rows.append(format_row(amount, "JPY", tag, {"notation": "compact"}))
+    # signs: no accounting form in a compact pattern (but in the standard one below a thousand),
+    # the plus sign, and the sign before the pattern or in its negative subpattern
+    for tag in ["en", "fr", "ar-EG", "fa-IR", "sw-KE", "de-CH", "sv-SE", "bn"]:
+        for options in ({"currencySign": "accounting"}, {"signDisplay": "always"}, {"signDisplay": "exceptZero"}, {"signDisplay": "never"}, {"signDisplay": "always", "currencyDisplay": "name", "compactDisplay": "long"}):
+            for amount in ("-1234567.00", "-5.00", "0.00", "1234.00", "-0.001"):
+                rows.append(format_row(amount, "USD" if amount != "-0.001" else "KWD", tag, {"notation": "compact", **options}))
+    # rounding the mantissa: Intl's digit options apply to it, and grouping defaults to min2
+    compact_rounding = [
+        {"maximumSignificantDigits": 2}, {"minimumSignificantDigits": 3}, {"minimumFractionDigits": 0, "maximumFractionDigits": 0},
+        {"minimumFractionDigits": 0, "maximumFractionDigits": 1}, {"minimumFractionDigits": 2, "maximumFractionDigits": 2, "roundingIncrement": 5},
+        {"minimumIntegerDigits": 3}, {"trailingZeroDisplay": "stripIfInteger"}, {"roundingMode": "floor"}, {"roundingMode": "ceil", "maximumSignificantDigits": 1},
+        {"maximumSignificantDigits": 2, "roundingPriority": "morePrecision"}, {"maximumSignificantDigits": 2, "roundingPriority": "lessPrecision"},
+        # (no explicit "auto": V8 groups it as min2 in compact notation, JavaScriptCore as the locale does)
+        {"useGrouping": "always"}, {"useGrouping": "min2"}, {"useGrouping": False}, {"useGrouping": True}, {"useGrouping": "true"},
+        {"digits": 0}, {"digits": 1, "rounding": "floor"},
+    ]
+    for tag in ["en", "de-DE", "ja", "en-IN", "ar-EG"]:
+        for options in compact_rounding:
+            for amount in ("1234.56", "-9995.00", "999999.50", "1234.00", "12345678901234567.89"):
+                rows.append(format_row(amount, "EUR", tag, {"notation": "compact", **options}))
+    # scientific and engineering notation: the standard patterns (accounting too), the mantissa
+    # rounded, the exponent with its sign and the numbering system's digits; names in the plural
+    # of the whole value, with CLDR's e operand
+    for tag in ["en", "de-CH", "ar-EG", "fa-IR", "sv-SE", "bn", "hi-IN", "nl", "fr", "es", "ru-RU", "th-TH"]:
+        for notation in ("scientific", "engineering"):
+            for options in ({}, {"currencyDisplay": "name"}, {"currencySign": "accounting"}, {"currencyDisplay": "code"}):
+                for amount in SCIENTIFIC_AMOUNTS:
+                    rows.append(format_row(amount, "EUR", tag, {"notation": notation, **options}))
+        for amount in ("1", "1000000", "1500000", "2"):
+            rows.append(format_row(amount, "JPY", tag, {"notation": "scientific", "currencyDisplay": "name"}))
+        rows.append(format_row("0.001", "KWD", tag, {"notation": "scientific", "currencyDisplay": "name"}))
+    for options in [
+        {"maximumSignificantDigits": 2}, {"minimumIntegerDigits": 3}, {"minimumIntegerDigits": 5, "useGrouping": "always"}, {"minimumFractionDigits": 0, "maximumFractionDigits": 0},
+        {"signDisplay": "always"}, {"signDisplay": "exceptZero"}, {"trailingZeroDisplay": "stripIfInteger"}, {"roundingIncrement": 25, "minimumFractionDigits": 2, "maximumFractionDigits": 2},
+    ]:
+        for notation in ("scientific", "engineering"):
+            for amount in ("12345.00", "-0.00999", "9.995", "0.00"):
+                rows.append(format_row(amount, "EUR", "en", {"notation": notation, **options}))
+    # numbering systems: the option and -u-nu-, the option over the tag's, a locale's own systems
+    # and any numeric one in latn's patterns; unsupported values (algorithmic, unknown, another
+    # case) are ignored, as Intl ignores them
+    systems = [
+        ("ar-EG", "latn"), ("ar-EG-u-nu-latn", None), ("ar-EG-u-nu-latn", "arab"), ("fa-IR", "latn"), ("fa-IR-u-nu-latn", None), ("hi-IN", "deva"),
+        ("hi-IN-u-nu-deva", None), ("th-TH", "thai"), ("th-TH-u-nu-thai", None), ("bn", "latn"), ("bn-u-nu-latn", None), ("en", "thai"), ("en", "deva"),
+        ("en", "hanidec"), ("en-u-nu-beng", None), ("de-DE", "deva"), ("de-CH-u-nu-thai", None), ("ja", "fullwide"), ("ru-RU", "tamldec"),
+        ("en", "roman"), ("en", "native"), ("en", "xyz"), ("en", "ARAB"), ("en-u-nu-roman", None), ("ar-EG-u-nu-xyz", None), ("ar-EG", "finance"),
+        ("en-u-nu-thai-nu-deva", None), ("en-u-ca-gregory-nu-thai", None), ("hi-IN-u-nu-deva", "latn"), ("ar-EG", "arab"),
+    ]
+    for tag, system in systems:
+        options = {} if system is None else {"numberingSystem": system}
+        for amount in ("-1234567.50", "0.05"):
+            rows.append(format_row(amount, "EUR", tag, options))
+        for extra in ({"currencyDisplay": "name"}, {"notation": "compact"}, {"notation": "scientific"}, {"currencySign": "accounting"}):
+            rows.append(format_row("-1234567.50", "EUR", tag, {**options, **extra}))
+    # localeMatcher: both values match a tag to the same locale (V8's best fit is its lookup):
+    # dropped subtags, default contents and extensions
+    for tag in ["en-US", "de-XX", "fr-CA", "es-419", "en-001", "pt-XX", "de-CH-u-nu-thai", "ar-EG-u-nu-latn", "zh-Hans-CN", "zh-Hant-HK", "ja-JP"]:
+        for matcher in ("lookup", "best fit"):
+            rows.append(format_row("-1234.50", "EUR", tag, {"localeMatcher": matcher}))
+            rows.append(format_row("1234567.00", "EUR", tag, {"localeMatcher": matcher, "notation": "compact", "currencyDisplay": "name"}))
+    # what Intl refuses, in its order: localeMatcher, numberingSystem, the currency options,
+    # notation, the digit options, compactDisplay (read whatever the notation), useGrouping and
+    # signDisplay; ducat's own TypeError first
+    for options in [
+        {"notation": "x"}, {"notation": "Compact"}, {"compactDisplay": "x"}, {"compactDisplay": "x", "notation": "compact"}, {"localeMatcher": "x"}, {"localeMatcher": "Lookup"},
+        {"numberingSystem": "ab"}, {"numberingSystem": "latn-x"}, {"numberingSystem": "latn_x"}, {"numberingSystem": ""}, {"numberingSystem": "abcdefghi"}, {"numberingSystem": "latn-arab"},
+        {"localeMatcher": "x", "numberingSystem": "ab"}, {"numberingSystem": "ab", "currencyDisplay": "symbols"}, {"notation": "x", "minimumIntegerDigits": 0},
+        {"notation": "x", "roundingIncrement": 5, "maximumSignificantDigits": 3}, {"compactDisplay": "x", "roundingIncrement": 5, "maximumSignificantDigits": 3},
+        {"compactDisplay": "x", "minimumIntegerDigits": 0}, {"compactDisplay": "x", "useGrouping": "x"}, {"numberingSystem": "ab", "roundingIncrement": 5, "maximumSignificantDigits": 3},
+        {"numberingSystem": "ab", "digits": 2, "maximumFractionDigits": 3}, {"notation": "x", "rounding": "floor"}, {"notation": "compact", "roundingIncrement": 5, "maximumSignificantDigits": 3},
+        {"notation": "compact", "compactDisplay": "long", "signDisplay": "plus"},
     ]:
         rows.append(format_row("1.00", "EUR", "en", options))
     return rows
@@ -1173,7 +1555,11 @@ PARTS_RULE = (
     "That convention, and how a currency name is shown (the number in the decimal pattern with the currency's separators, never in the accounting form, then unitPattern with the name in the number's plural form), "
     "were settled after looking at ICU's output, so agreement on them is not independent evidence; the text of every other row is. "
     "So was the explicit plus sign (signDisplay always and exceptZero) where TR35 leaves it open: the negative subpattern with its minus sign replaced by the plus sign, "
-    "or, where the negative subpattern has no minus sign (accounting's parentheses) or there is none, the plus sign before the positive subpattern."
+    "or, where the negative subpattern has no minus sign (accounting's parentheses) or there is none, the plus sign before the positive subpattern. "
+    "So were the notation rules where ECMA-402 leaves the data to the implementation (spec/README.md): which compact pattern applies (CLDR's short currency patterns for a symbol or code, "
+    "the decimal ones of compactDisplay for a name; by the rounded magnitude and the mantissa's plural form, CLDR's explicit 1 form for a positive mantissa only; its negative subpattern or the minus sign before it), "
+    "the compact part without the default ignorables around it, min2 grouping by default in compact notation, the plural form of a name (the amount's in compact notation, the whole value's with its exponent in scientific, the first holding category by name), "
+    "and V8's locale matching (best fit is lookup)."
 )
 
 
