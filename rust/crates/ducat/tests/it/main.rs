@@ -13,6 +13,7 @@ mod exact_fixed_gaps;
 mod exact_rate;
 mod excel;
 mod finance;
+mod float_input_order;
 mod floats;
 mod iso_table;
 mod order;

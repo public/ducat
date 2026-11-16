@@ -109,7 +109,6 @@ impl Fixed {
     /// [`MAX_SCALE`](crate::MAX_SCALE); [`Error::NotFinite`] for NaN and the infinities;
     /// [`Error::Rounding`] for more decimals than `scale` with [`Rounding::Unnecessary`].
     pub fn from_f64_at(value: f64, scale: u16, rounding: Rounding) -> Result<Self, Error> {
-        let scale = crate::amount::check_scale(scale)?;
         Ok(Self::from_amount(Amount::from_f64(
             value, scale, rounding, false,
         )?))

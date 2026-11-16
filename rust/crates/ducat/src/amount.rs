@@ -57,14 +57,17 @@ impl Amount {
     }
 
     /// A float under ducat's rule: at its shortest form, rounded with `rounding`, and (when
-    /// `check_digits`) with at most 15 significant digits. The rounding is checked first, so
-    /// `0.1 + 0.2` at a scale of 2 is a rounding error, as in ducat.
+    /// `check_digits`) with at most 15 significant digits. The checks run in ducat's order: the
+    /// scale (`InvalidScale`), then the value (`NotFinite`), then the rounding, then the digits,
+    /// so NaN at a scale past `MAX_SCALE` is a scale error and `0.1 + 0.2` at a scale of 2 a
+    /// rounding error.
     pub(crate) fn from_f64(
         value: f64,
         scale: u16,
         rounding: Rounding,
         check_digits: bool,
     ) -> Result<Self, Error> {
+        let scale = check_scale(scale)?;
         let amount = Self::from_decimal(&faithful_decimal(value, false)?, scale, rounding)?;
         if check_digits {
             faithful_decimal(value, true)?;
