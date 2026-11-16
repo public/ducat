@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 
 use ducat::{AnyMoney, CurrencyCode, Int, MAX_SCALE, Rounding};
 use ducat_format::{
-    CurrencyDisplay, CurrencySign, Error, FormatOptions, Locale, ParseMoneyOptions, ParseOptions,
-    RoundingPriority, SignDisplay, TrailingZeroDisplay, UseGrouping, format, format_to_parts,
-    locales, parse, parse_money,
+    CompactDisplay, CurrencyDisplay, CurrencySign, Error, FormatOptions, Locale, ParseMoneyOptions,
+    ParseOptions, RoundingPriority, SignDisplay, TrailingZeroDisplay, UseGrouping, format,
+    format_to_parts, locales, parse, parse_money,
 };
 use proptest::prelude::*;
 
@@ -270,11 +270,19 @@ proptest! {
         units in units(),
         extra in prop_oneof![0_u16..4, Just(MAX_SCALE - 4)],
         options in options(),
+        notation in prop::sample::select(NOTATIONS.to_vec()),
+        long in any::<bool>(),
+        system in prop::option::of(prop::sample::select(vec!["latn", "arab", "thai", "deva", "beng", "roman", "ab", "latn-x"])),
     ) {
         let start = Instant::now();
         let Ok(locale) = Locale::new(&tag) else {
             return Ok(());
         };
+        let mut options = options.notation(notation.parse().unwrap());
+        if long {
+            options = options.compact_display(CompactDisplay::Long);
+        }
+        options.numbering_system = system.map(str::to_owned);
         let amount = money(code, units, extra);
         match format_to_parts(&amount, &locale, &options) {
             Ok(parts) => {
@@ -326,6 +334,12 @@ proptest! {
         prop_assert!(start.elapsed() < SLOW);
     }
 }
+
+/// The notations the build has.
+#[cfg(feature = "compact")]
+const NOTATIONS: [&str; 4] = ["standard", "scientific", "engineering", "compact"];
+#[cfg(not(feature = "compact"))]
+const NOTATIONS: [&str; 3] = ["standard", "scientific", "engineering"];
 
 static FORMAT_WORST: Worst = Worst::new();
 static PARSE_WORST: Worst = Worst::new();

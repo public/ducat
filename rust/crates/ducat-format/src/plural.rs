@@ -8,6 +8,8 @@ use crate::tables::{Operand, Relation, Rule};
 pub(crate) struct Operands<'a> {
     integer: &'a str,
     fraction: &'a str,
+    /// The compact or scientific exponent (CLDR's `c` and `e`), 0 in standard notation.
+    exponent: i64,
 }
 
 impl<'a> Operands<'a> {
@@ -17,7 +19,15 @@ impl<'a> Operands<'a> {
         Self {
             integer: integer.trim_start_matches('0'),
             fraction,
+            exponent: 0,
         }
+    }
+
+    /// With CLDR's `c` and `e` operands: the number is shown as a mantissa times 10^`exponent`
+    /// (the digits are the whole value's, `1200` for `1.2K`).
+    pub(crate) const fn with_exponent(mut self, exponent: i64) -> Self {
+        self.exponent = exponent;
+        self
     }
 
     /// The fraction digits without trailing zeros.
@@ -64,7 +74,14 @@ fn holds(relation: &Relation, operands: &Operands<'_>) -> bool {
         }
         Operand::F => (operands.fraction.trim_start_matches('0'), true),
         Operand::T => (operands.trimmed().trim_start_matches('0'), true),
-        Operand::E => ("", true),
+        Operand::E => {
+            // a negative exponent (scientific notation) is in no range
+            if operands.exponent < 0 {
+                return !relation.equal;
+            }
+            count_text = alloc::format!("{}", operands.exponent);
+            (count_text.trim_start_matches('0'), true)
+        }
     };
     let value = if relation.modulus == 0 {
         small(digits)
@@ -81,14 +98,25 @@ fn holds(relation: &Relation, operands: &Operands<'_>) -> bool {
     within == relation.equal
 }
 
-/// The plural category of a number as displayed.
+/// The plural category of a number as displayed. CLDR's rules exclude each other, except with
+/// an exponent (fr's `one`, `i = 0,1`, and `many`, `e != 0..5`, both hold for 1E-3): there the
+/// first by name holds, as ICU tests them (its rule tables are sorted by key).
 pub(crate) fn category(rules: &'static [Rule], operands: &Operands<'_>) -> &'static str {
+    let holding = |rule: &&Rule| {
+        rule.any
+            .iter()
+            .any(|all| all.iter().all(|relation| holds(relation, operands)))
+    };
+    if operands.exponent != 0 {
+        return rules
+            .iter()
+            .filter(holding)
+            .map(|rule| rule.category)
+            .min()
+            .unwrap_or("other");
+    }
     rules
         .iter()
-        .find(|rule| {
-            rule.any
-                .iter()
-                .any(|all| all.iter().all(|relation| holds(relation, operands)))
-        })
+        .find(holding)
         .map_or("other", |rule| rule.category)
 }

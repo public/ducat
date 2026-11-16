@@ -3,7 +3,9 @@
 // ICU and CLDR versions but ship other data for a few locales (spec/README.md, "Runtime
 // divergences"). A canary per such locale formats one value and compares it with the files' row:
 // - on the reference runtime a mismatch is a failure, so a change to its data turns CI red;
-// - on any other runtime it skips only that locale's format and parse rows, and says so.
+// - on any other runtime it skips only that locale's format and parse rows, and says so. A
+//   notation canary stands for the locale's rows in compact, scientific and engineering notation
+//   alone (Deno's older compact patterns differ where its standard ones don't).
 import { format, type FormatOptions } from '../../src/format.js';
 import { fromMinor } from '../../src/money.js';
 import type { SpecFile } from './format.ts';
@@ -21,6 +23,29 @@ export interface Canary {
   readonly amount: string;
   readonly currency: string;
   readonly options?: FormatOptions;
+  /** whether it stands for the locale's notation rows alone */
+  readonly notation?: boolean;
+}
+
+/** A canary's name in the verdict and the warnings: its locale, and whether for notation. */
+export const canaryName = (canary: Canary): string =>
+  canary.notation === true ? `${canary.locale} (notation)` : canary.locale;
+
+/**
+ * Whether a format or parse row is one a canary stands for: the canary's locale, also with
+ * `-u-` keywords (de-CH-u-nu-thai is de-CH's data); for a notation canary only the rows with a
+ * notation other than standard.
+ */
+export function covers(canary: Canary, row: Readonly<Record<string, unknown>>): boolean {
+  const base = String(row['locale']).split('-u-')[0];
+  if (base !== canary.locale) {
+    return false;
+  }
+  if (canary.notation !== true) {
+    return true;
+  }
+  const notation = (row['options'] as FormatOptions | undefined)?.notation;
+  return notation !== undefined && notation !== 'standard';
 }
 
 export const CANARIES: readonly Canary[] = [
@@ -30,11 +55,62 @@ export const CANARIES: readonly Canary[] = [
   { locale: 'fr-CA', amount: '1.00', currency: 'CAD', options: { currencyDisplay: 'name' } },
   // ICU 78.3 overrides CLDR's U+202F group with U+0027; Deno 2.9.8 keeps CLDR's
   { locale: 'fr-CH', amount: '1234.50', currency: 'CHF' },
+  // notation: ICU 78.3's (CLDR 48's) compact patterns, which Deno 2.9.8's data has older ones of
+  // 0 M ¤ (1,00 M €); Deno's 0 M¤
+  {
+    locale: 'es',
+    amount: '1000000.00',
+    currency: 'EUR',
+    options: { notation: 'compact' },
+    notation: true,
+  },
+  // 0K ¤ (1,23K €); Deno has none for thousands
+  {
+    locale: 'it',
+    amount: '1234.50',
+    currency: 'EUR',
+    options: { notation: 'compact' },
+    notation: true,
+  },
+  // an RLM before the number (‏١٫٢٣ ألف €)
+  {
+    locale: 'ar-EG',
+    amount: '1234.50',
+    currency: 'EUR',
+    options: { notation: 'compact' },
+    notation: true,
+  },
+  // the currency first (‎€ ۱٫۲۳ هزار)
+  {
+    locale: 'fa-IR',
+    amount: '1234.50',
+    currency: 'EUR',
+    options: { notation: 'compact' },
+    notation: true,
+  },
+  // a space after elfu (€ elfu 1.23)
+  {
+    locale: 'sw-KE',
+    amount: '1234.50',
+    currency: 'EUR',
+    options: { notation: 'compact' },
+    notation: true,
+  },
+  // lakhs in the long patterns (1.23 lakh euros)
+  {
+    locale: 'en-IN',
+    amount: '123456.78',
+    currency: 'EUR',
+    options: { notation: 'compact', currencyDisplay: 'name', compactDisplay: 'long' },
+    notation: true,
+  },
 ];
 
 /** What a canary found that differs from the files. */
 export interface Divergence {
+  /** the canary's name (`canaryName`) */
   readonly locale: string;
+  readonly canary: Canary;
   readonly expected: string;
   readonly actual: string;
   /** the locale's rows in the format and parse tables */
@@ -148,16 +224,26 @@ function expectedText(files: ReadonlyMap<string, unknown>, canary: Canary): stri
   throw new Error(`no format.money row for the ${canary.locale} canary`);
 }
 
-function rowsOf(files: ReadonlyMap<string, unknown>, locale: string): number {
+function rowsOf(files: ReadonlyMap<string, unknown>, canary: Canary): number {
   let count = 0;
   for (const file of files.values()) {
     for (const table of (file as SpecFile).tables ?? []) {
       if (INTL_OPERATIONS.has(table.op)) {
-        count += table.rows.filter((row) => row['locale'] === locale).length;
+        count += table.rows.filter((row) => covers(canary, row)).length;
       }
     }
   }
   return count;
+}
+
+/** Whether a row is skipped on this runtime: a differing canary stands for it. */
+export function isSkipped(verdict: IntlVerdict, row: Readonly<Record<string, unknown>>): boolean {
+  for (const divergence of verdict.skipped.values()) {
+    if (covers(divergence.canary, row)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Runs every canary. `formatText` and `reference` are parameters so a test can stub them. */
@@ -175,15 +261,16 @@ export function intlVerdict(
       continue;
     }
     const divergence = {
-      locale: canary.locale,
+      locale: canaryName(canary),
+      canary,
       expected,
       actual,
-      rows: rowsOf(files, canary.locale),
+      rows: rowsOf(files, canary),
     };
     if (reference) {
       failures.push(divergence);
     } else {
-      skipped.set(canary.locale, divergence);
+      skipped.set(divergence.locale, divergence);
     }
   }
   return { reference, declared: declaredRuntime(files), failures, skipped };

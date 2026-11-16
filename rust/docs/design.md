@@ -182,7 +182,7 @@ ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped di
   en-NL, `1.234,50 euros` in en-AT); never the currency's own pattern or symbol, which ICU's code puts there and
   garbles at other scales (`KWD 1,234.56 Kuwaiti dinars7` on Node 24); ducat's TypeScript is to match (ducat#363).
 - **Conformance:** the core runner delegates `format.money`, `parse.money` and `parse.detect` to `ducat-format`'s own
-  spec test (2,538, 1,629 and 1,757 rows, all passing, the icu-overrides files included). Its proptests round-trip
+  spec test (8,388, 1,629 and 1,757 rows, all passing, the icu-overrides files included). Its proptests round-trip
   format and parse in every built locale and feed arbitrary tags, options, amounts and text to the public API.
 
 #### Coverage
@@ -191,8 +191,10 @@ The crate has the locales CLDR rates modern: 430 (root, `und`, included) in 101 
 for all); `hi` also needs `en` (hi-Latn inherits en-IN), `ht` needs `fr`, `nb` and `nn` need `no`. The default set is
 31 languages, 313 locales: those of ducat's vectors (ar, da, de, en, es, fa, fr, hi, it, ja, nl, pt, ru, sv, sw, th)
 and the most spoken others (bn, fil, he, id, ko, mr, ms, pl, ta, te, tr, uk, ur, vi, zh). In a stripped release
-binary the data costs about 1.15 MB for the default set and 3.25 MB for `full` (`examples/locales.rs`, which links
-every built locale); root alone is nearly nothing. CI builds and tests root only and `en` only.
+binary the data costs about 1.23 MB for the default set and 3.42 MB for `full` (`examples/locales.rs`, which links
+every built locale); root alone is nearly nothing. Of that, the `compact` feature's patterns are 31 KB (81 KB in
+`full`) and the `numbering-systems` feature's data 21 KB (33 KB); both are default features, and without them the
+default set is 1.18 MB. CI builds and tests root only and `en` only.
 
 **The one difference from ducat's TypeScript:** Rust's set of locales is fixed when the crate is built; TypeScript
 formats any locale its runtime's `Intl` knows. A tag the build lacks falls back by TR35 (dropping subtags down to
@@ -225,6 +227,75 @@ symbol and long names (from the CLDR tables) as a whole beside the number, whate
 sign: PEN's `S/` in es-PE and CLF's `Chilean units of account (UF)` read back exactly, and anything else around the number
 is still refused. It also takes a long name's number grouped in the decimal pattern, as `Intl` writes it (lakhs in ml, mr
 and or).
+
+#### Notation, numbering systems and locale matching
+
+`FormatOptions::notation`, `compact_display` and `numbering_system`, a tag's `-u-nu-`, and `Locale::with_matcher`
+are ECMA-402's `notation`, `compactDisplay`, `numberingSystem` and `localeMatcher` (parity item 15), from data
+`trim-cldr.py` keeps: CLDR's short and long decimal and short currency compact patterns by magnitude and plural form,
+and the symbols and patterns of every numbering system cldr-json gives a locale, with the digits of every numeric
+system. The format vectors have 3,542 rows for them (18 locales, ar-EG, fa-IR, hi-IN, th-TH and bn among them), which
+ducat's TypeScript passes on Node 24 and Bun and ducat-format passes here.
+
+- **Rounding:** ECMA-402's `ComputeExponent`: the mantissa is rounded by the digit options, exactly, and scaled again if
+  it rounds up to the next power of ten (`$999,999.99` is `$1.00M`). ducat always gives `Intl` its fraction digits (the
+  amount's scale), so `Intl`'s compact default (at most two significant digits, `morePrecision`) never applies:
+  `$1,234.50` is `$1.23K`, through ducat and here. A TypeScript caller can get the default only by passing
+  `minimumFractionDigits: undefined` explicitly, which has no Rust counterpart, as for every other notation.
+- **Which compact pattern, as ICU 78.3 chooses it** (ECMA-402 leaves the data to the implementation): a symbol or code
+  takes CLDR's short currency patterns whatever `compactDisplay` (CLDR has no long ones), a name the decimal patterns of
+  `compactDisplay` (short where a locale has no long ones); by the rounded value's magnitude (above the largest, the
+  largest's: `$12,345,679T`), and the plural form of the mantissa as shown, CLDR's explicit `1` form only for a positive
+  mantissa (fr's `mille yens japonais`, but `-1 millier yens japonais`: ICU's `i` keeps the sign); a `0` pattern (de's
+  thousands, ja's) or a number below every pattern takes the standard pattern, accounting form included. A compact
+  pattern's negative subpattern is used where it has one (sw's `elfu -1.23`), else the sign goes before it; it has no
+  accounting form. Its text is the `compact` part, without the spaces and bidi marks around it (ICU's default
+  ignorables), which are literals. A numbering system without compact patterns takes latn's.
+- **Scientific and engineering notation** write the standard (or accounting) pattern with the mantissa and the
+  locale's `exponential` symbol (`E`, `×10^`, `أس`), the minus sign and the exponent in the numbering system's digits;
+  CLDR's `scientificFormats` aren't used by `Intl` and aren't kept.
+- **A name's plural form**, as ICU chooses it: in compact notation the amount's, rounded as standard notation would
+  (ICU picks it before it scales the number: fil's `1.23K euros` for 1234.56 but `1.23K euro` for 1234.50); in
+  scientific notation the whole value's with CLDR's `e` operand. CLDR's rules exclude each other except with an
+  exponent (fr's `one` and `many` both hold for `1E-3`): the first by name holds, as ICU's sorted rule table tests
+  them, so `1E-3 euros`. ICU reads the operands of a value past 2^53 through a double (fil writes `1,234,568
+  trilyon euro` for 1,234,567,890,123,456,789, whose last digit 9 would make it `euros`); ducat-format reads the exact
+  digits, and the vectors have no such row.
+- **Grouping:** compact notation groups as `min2` for `UseGrouping::Auto`. ECMA-402 defaults compact notation to
+  `min2` and keeps an explicit `'auto'` as the locale's; V8 hands ICU no strategy for `'auto'`, so an explicit `'auto'`
+  is `min2` on Node too, where JavaScriptCore (Bun) groups it as the locale does. `FormatOptions` can't tell an
+  explicit `Auto` from the default, so it follows Node; the vectors have no explicit `'auto'` in compact notation.
+- **Numbering systems:** every numeric CLDR system is supported for every locale, as ICU supports them (78 of them);
+  an algorithmic one (`roman`, `jpan`), `native`, `traditio`, `finance`, an unknown or an upper-case name is ignored,
+  a malformed one (not subtags of 3 to 8 letters and digits) is `Error::InvalidOptions`, `Intl`'s `RangeError`, read
+  before the digit options. The option wins over `-u-nu-`; an unsupported option keeps the tag's keyword, as
+  ECMA-402's `ResolveLocale` and JavaScriptCore do (V8 drops it: `th-TH-u-nu-thai` with `roman` is latn on Node; the
+  vectors leave that pair out). A system takes the locale's data for it, else latn's symbols and patterns with its
+  digits (TR35's fallback). **Known difference:** ICU's root has `arab` and `arabext` symbols and patterns that
+  cldr-json doesn't carry (it writes a locale's data only for the systems the locale names), so a locale without its
+  own data for them (en, de, th, ar's `arabext`) writes them here in latn's patterns and separators with Arabic-Indic
+  digits (`-€١,٢٣٤,٥٦٧.٥٠` in en), where Node writes root's (`؜-١٬٢٣٤٬٥٦٧٫٥٠ €`). Every other numeric system on Node is
+  latn's data with its digits, as here; the vectors use `arab` and `arabext` only where the locale has them (ar-EG,
+  fa-IR).
+- **Locale matching:** `LocaleMatcher::Lookup` and `BestFit` resolve alike, the resolution `Locale::new` has always
+  done. ECMA-402 lets `"best fit"` be `"lookup"`, and V8 does exactly that: `node scripts/check-locale-matcher.mjs`
+  formats every locale of CLDR's snapshot, alone, with an unknown region, with `-u-nu-latn` and with private use, and
+  the aliases ICU maps to a script (`zh-TW`, `sr-ME`, `pa-PK`, `uz-AF`), with both values: 2,697 tags, all alike on
+  Node 24 and on Bun. Node's `"lookup"` is ECMA-402's `LookupMatcher` over ICU's locales, whose aliases (`zh-TW`) load
+  a script's data (`zh-Hant-TW`): the likely-script step, then dropping subtags, that `Locale::new` does, so a plain RFC
+  4647 truncation over CLDR's names (`zh-TW` to `zh`, Simplified) would not match Node. The vectors' `localeMatcher`
+  rows (both values, 11 tags with dropped subtags, default contents and extensions) pin it, and `tests/it/notation.rs`
+  checks `zh-TW`. A `localeMatcher` name other than the two is `Intl`'s `RangeError` (`LocaleMatcher`'s `FromStr`).
+- **Errors in `Intl`'s order:** ducat's own `TypeError`s first, then `localeMatcher`, `numberingSystem`, the currency
+  options, `notation`, the digit options (their `TypeError` for an increment beside significant digits included),
+  `compactDisplay` (checked whatever the notation), `useGrouping`, `signDisplay`. The enum options are typed here, so
+  only `numbering_system` is checked by `format`; the conformance runner orders the names it can't express as `Intl`
+  reads them.
+- **Features:** `compact` (`Notation::Compact` exists only with it) and `numbering-systems` (without it, only a
+  locale's default system is supported and others are ignored, as `Intl` ignores an unsupported one) are default
+  features; see Coverage for their cost.
+- **Runtimes:** Deno 2.9.8's `Intl` has older compact patterns for es, it, ar-EG, fa-IR, sw-KE and en-IN; notation
+  canaries (`test/spec/intl-data.ts`) skip those locales' notation rows there, and only those.
 
 ### Milestone 7b: fetching rates
 

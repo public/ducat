@@ -721,10 +721,11 @@ BCP 47 tag, and `options` are ducat's: `currencyDisplay` (`symbol`, `narrowSymbo
 `name`), `currencySign` (`standard`, `accounting`), `digits` with `rounding`, and Intl's
 `signDisplay`, `useGrouping`, `minimumIntegerDigits`, `minimumFractionDigits`,
 `maximumFractionDigits`, `minimumSignificantDigits`, `maximumSignificantDigits`,
-`roundingIncrement`, `roundingMode`, `roundingPriority` and `trailingZeroDisplay` for `format`;
+`roundingIncrement`, `roundingMode`, `roundingPriority`, `trailingZeroDisplay`, `notation`
+(`standard`, `scientific`, `engineering`, `compact`), `compactDisplay`, `numberingSystem` and
+`localeMatcher` for `format` (a `-u-nu-` keyword in `locale` picks the numbering system too);
 `scale`, `rounding` and `lenient` for `parse`; and `hint`, `symbols`, `currencies`, `lenient`,
-`scale` and `rounding` for `parseMoney`. Intl's other options (`notation`, `compactDisplay`,
-`numberingSystem`, `localeMatcher`) aren't covered. Every field is judged exactly, as JSON.
+`scale` and `rounding` for `parseMoney`. Every field is judged exactly, as JSON.
 
 | op             | expected fields and how each is judged                                                                                                                                                                                                                 |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -736,11 +737,33 @@ TR35 doesn't define the parts. The rows use Intl's part types: the digits, separ
 are `integer`, `group`, `decimal`, `fraction` and `minusSign`; the symbol, code or name is
 `currency`; bidi marks (format characters) in a symbol, such as the ALM in ar-EG's minus sign, are
 `literal`, as are the pattern's other characters and the currency spacing; adjacent characters of
-one type form one part. A plus sign (`signDisplay` `always` and `exceptZero`) is `plusSign`.
+one type form one part. A plus sign (`signDisplay` `always` and `exceptZero`) is `plusSign`. In
+compact notation a compact pattern's text is `compact`, without the spaces and bidi marks around
+it (ICU's default ignorables), which are `literal`; in scientific and engineering notation the
+exponent is `exponentSeparator` (the locale's `exponential` symbol), `exponentMinusSign` and
+`exponentInteger`.
 
-That convention, and how a currency name is shown (the number in the decimal pattern with the
+Compact, scientific and engineering notation follow ECMA-402's `ComputeExponent` (the mantissa
+rounded by the digit options, which ducat always gives as the amount's fraction digits, so
+`Intl`'s compact default of two significant digits never applies) and, where ECMA-402 leaves the
+data to the implementation, ICU 78.3: the compact pattern is CLDR's short currency pattern for a
+symbol or code (whatever `compactDisplay`) and the decimal pattern of `compactDisplay` for a name,
+chosen by the rounded value's magnitude and the plural form of the mantissa shown (CLDR's
+explicit `1` form only for a positive one: fr's `mille`, `-1 millier`), with its negative
+subpattern or the minus sign before it, and no accounting form; below a compact pattern (or for a
+`0` one) the standard pattern. Compact notation groups as `min2` by default. A name takes the plural form of the amount rounded as standard notation rounds
+it in compact notation, and of the whole value with CLDR's `e` operand in scientific notation,
+where of several holding categories the first by name wins (fr's `many` over `one` for `1E-3`),
+as ICU tests them. Scientific notation writes the standard (or accounting) pattern. A
+`numberingSystem` option that is well formed but not a numeric system is ignored (the rows don't
+pair one with a tag's `-u-nu-`, which V8 drops then and JavaScriptCore keeps); a numbering system
+takes the locale's data for it, else latn's with its digits. Neither do they give compact notation
+an explicit `useGrouping` `auto`, which V8 groups as `min2` and JavaScriptCore as the locale does. `localeMatcher`'s two values match alike (V8's `best fit` is its `lookup`).
+
+That convention, how a currency name is shown (the number in the decimal pattern with the
 currency's separators, never in the accounting form, then the locale's `unitPattern` with the name
-in the number's plural form), are where TR35 leaves a choice; the oracle's choices were settled after
+in the number's plural form), and the notation and numbering-system rules above, are where TR35 and
+ECMA-402 leave a choice; the oracle's choices were settled after
 looking at ICU's output, so agreement on them isn't independent evidence. So was the explicit plus
 sign, which TR35 leaves open: the negative subpattern with its minus sign replaced by the plus sign,
 or the plus sign before the positive subpattern where the negative one has no minus sign

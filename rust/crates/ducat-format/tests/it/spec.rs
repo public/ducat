@@ -10,14 +10,14 @@ use std::process::ExitCode;
 
 use ducat::{AnyMoney, CurrencyCode, ErrorKind, Rounding};
 use ducat_format::{
-    CurrencyDisplay, CurrencySign, Error, FormatOptions, Locale, ParseMoneyOptions, ParseOptions,
-    UseGrouping, format_to_parts, parse, parse_money,
+    CurrencyDisplay, CurrencySign, Error, FormatOptions, Locale, LocaleMatcher, ParseMoneyOptions,
+    ParseOptions, UseGrouping, format_to_parts, parse, parse_money,
 };
 use serde_json::{Value, json};
 
 /// The rows per operation, from the spec's README (as the core runner's `CASES_PER_AREA`).
 const ROWS: [(&str, usize); 3] = [
-    ("format.money", 4846),
+    ("format.money", 8388),
     ("parse.money", 1629),
     ("parse.detect", 1757),
 ];
@@ -61,36 +61,58 @@ fn intl_name<T: std::str::FromStr>(value: &Value) -> Result<T, &'static str> {
     value.as_str().unwrap().parse().map_err(|_| "range")
 }
 
-/// The options of a format row; `Err` for an option value no Rust value expresses (an invalid
-/// display or sign name is `Intl`'s `RangeError`).
-fn format_options(options: &Value) -> Result<FormatOptions, &'static str> {
+/// When an option name no Rust value expresses (`Intl`'s `RangeError`) is checked, against the
+/// errors `format_to_parts` returns: before `Intl`'s digit options (only ducat's own
+/// `TypeError` comes first), or after them (`compactDisplay`, `useGrouping`, `signDisplay`).
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Invalid {
+    None,
+    BeforeDigits,
+    AfterDigits,
+}
+
+/// The options of a format row and its locale matcher, and where an option name no Rust value
+/// expresses was (the row's error is then the one `Intl` reaches first).
+fn format_options(options: &Value) -> (FormatOptions, LocaleMatcher, Invalid) {
     let mut out = FormatOptions::default();
+    let mut matcher = LocaleMatcher::default();
+    let mut invalid = Invalid::None;
     let Some(options) = options.as_object() else {
-        return Ok(out);
+        return (out, matcher, invalid);
+    };
+    let mut early = |result: Result<(), &'static str>| {
+        if result.is_err() && invalid == Invalid::None {
+            invalid = Invalid::BeforeDigits;
+        }
     };
     let digits = |key: &str| {
         options
             .get(key)
             .map(|value| u16::try_from(value.as_u64().unwrap()).unwrap())
     };
+    let mut late = false;
     for (key, value) in options {
         match key.as_str() {
-            "currencyDisplay" => {
-                out.currency_display = match value.as_str().unwrap() {
-                    "symbol" => CurrencyDisplay::Symbol,
-                    "narrowSymbol" => CurrencyDisplay::NarrowSymbol,
-                    "code" => CurrencyDisplay::Code,
-                    "name" => CurrencyDisplay::Name,
-                    _ => return Err("range"),
-                };
-            }
-            "currencySign" => {
-                out.currency_sign = match value.as_str().unwrap() {
-                    "standard" => CurrencySign::Standard,
-                    "accounting" => CurrencySign::Accounting,
-                    _ => return Err("range"),
-                };
-            }
+            "currencyDisplay" => early(
+                match value.as_str().unwrap() {
+                    "symbol" => Some(CurrencyDisplay::Symbol),
+                    "narrowSymbol" => Some(CurrencyDisplay::NarrowSymbol),
+                    "code" => Some(CurrencyDisplay::Code),
+                    "name" => Some(CurrencyDisplay::Name),
+                    _ => None,
+                }
+                .map(|display| out.currency_display = display)
+                .ok_or("range"),
+            ),
+            "currencySign" => early(
+                match value.as_str().unwrap() {
+                    "standard" => Some(CurrencySign::Standard),
+                    "accounting" => Some(CurrencySign::Accounting),
+                    _ => None,
+                }
+                .map(|sign| out.currency_sign = sign)
+                .ok_or("range"),
+            ),
             "digits" => out.digits = digits(key),
             "rounding" => out.rounding = rounding(value),
             "minimumFractionDigits" => out.minimum_fraction_digits = digits(key),
@@ -101,22 +123,40 @@ fn format_options(options: &Value) -> Result<FormatOptions, &'static str> {
             "minimumIntegerDigits" => out.minimum_integer_digits = digits(key),
             // Intl's names; another is its RangeError, as FromStr's InvalidOptions
             "roundingMode" => {
-                out.rounding_mode = Some(value.as_str().unwrap().parse().map_err(|_| "range")?);
+                early(intl_name(value).map(|mode: Rounding| out.rounding_mode = Some(mode)))
             }
-            "roundingPriority" => out.rounding_priority = intl_name(value)?,
-            "trailingZeroDisplay" => out.trailing_zero_display = intl_name(value)?,
-            "signDisplay" => out.sign_display = intl_name(value)?,
+            "roundingPriority" => {
+                early(intl_name(value).map(|found| out.rounding_priority = found))
+            }
+            "trailingZeroDisplay" => {
+                early(intl_name(value).map(|found| out.trailing_zero_display = found));
+            }
+            "notation" => early(intl_name(value).map(|found| out.notation = found)),
+            "localeMatcher" => early(intl_name(value).map(|found| matcher = found)),
+            "numberingSystem" => out.numbering_system = Some(value.as_str().unwrap().to_owned()),
+            "compactDisplay" => match intl_name(value) {
+                Ok(display) => out.compact_display = display,
+                Err(_) => late = true,
+            },
+            "signDisplay" => match intl_name(value) {
+                Ok(display) => out.sign_display = display,
+                Err(_) => late = true,
+            },
             // a boolean, or one of Intl's strings
-            "useGrouping" => {
-                out.use_grouping = match value.as_bool() {
-                    Some(grouping) => UseGrouping::from(grouping),
-                    None => intl_name(value)?,
-                };
-            }
+            "useGrouping" => match value.as_bool() {
+                Some(grouping) => out.use_grouping = UseGrouping::from(grouping),
+                None => match intl_name(value) {
+                    Ok(grouping) => out.use_grouping = grouping,
+                    Err(_) => late = true,
+                },
+            },
             other => panic!("a format option the runner doesn't know: {other}"),
         }
     }
-    Ok(out)
+    if late && invalid == Invalid::None {
+        invalid = Invalid::AfterDigits;
+    }
+    (out, matcher, invalid)
 }
 
 /// What ducat-format gives for a row, in the row's expected fields.
@@ -124,13 +164,17 @@ fn run(op: &str, row: &Value) -> Value {
     let locale = Locale::new(row["locale"].as_str().unwrap());
     match op {
         "format.money" => {
-            let result = format_options(&row["options"])
-                .map_err(|kind| kind.to_owned())
-                .and_then(|options| {
-                    let locale = locale.map_err(|error| kind(&error).to_owned())?;
-                    format_to_parts(&money(row), &locale, &options)
-                        .map_err(|error| kind(&error).to_owned())
-                });
+            let (options, matcher, invalid) = format_options(&row["options"]);
+            let result = Locale::with_matcher(row["locale"].as_str().unwrap(), matcher)
+                .and_then(|locale| format_to_parts(&money(row), &locale, &options));
+            let result = match (invalid, result) {
+                (Invalid::None, result) => result.map_err(|error| kind(&error)),
+                // ducat's own TypeError comes before Intl's checks; Intl's digit options before
+                // the late ones
+                (Invalid::BeforeDigits, Err(error @ Error::ConflictingOptions))
+                | (Invalid::AfterDigits, Err(error)) => Err(kind(&error)),
+                (_, _) => Err("range"),
+            };
             match result {
                 Ok(parts) => {
                     let text: String = parts.iter().map(|part| part.value.as_str()).collect();

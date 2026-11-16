@@ -7,10 +7,10 @@ use crate::tables::Numbers;
 pub(crate) const ICU_VERSION: &str = "78.3";
 
 #[cfg(feature = "fr")]
-static NUMBERS_FR_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_FR_CH: Numbers = Numbers { digits: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], decimal: ".", group: "'", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "#,##0.00\u{a0}¤;(#,##0.00\u{a0}¤)", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &crate::data::COMPACT_FR };
 
 #[cfg(feature = "my")]
-static NUMBERS_MY: Numbers = Numbers { digits: ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")] };
+static NUMBERS_MY: Numbers = Numbers { digits: ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'], decimal: ".", group: ",", minus: "-", plus: "+", minimum_grouping: 1, decimal_pattern: "#,##0.###", currency_pattern: "#,##0.00\u{a0}¤", accounting_pattern: "¤\u{a0}#,##0.00", spacing: ("\u{a0}", "\u{a0}"), unit_patterns: &[("other", "{0} {1}")], exponential: "E", #[cfg(feature = "compact")] compact: &crate::data::COMPACT_MY };
 
 /// The number data ICU ships for this cldr-json locale, where it overrides CLDR's.
 pub(crate) fn numbers(name: &str) -> Option<&'static Numbers> {

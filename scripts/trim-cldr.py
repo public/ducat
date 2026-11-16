@@ -9,9 +9,11 @@
 It checks the archive's sha256 against data/cldr/README.md's, then keeps only what ducat's
 /format and /parse need, for the locales their documentation and tests use:
 
-- each locale's numbers.json (its numbering systems' symbols and the standard decimal and
-  currency patterns) and currencies.json (every currency's symbols and names);
-- the supplemental plural and ordinal rules and numbering-system digits, for those languages;
+- each locale's numbers.json (its numbering systems' symbols, the standard decimal and currency
+  patterns, and the compact ones: decimal short and long, currency short) and currencies.json
+  (every currency's symbols and names);
+- the supplemental plural and ordinal rules, for those languages, and the digits of every
+  numeric numbering system;
 - cldr-core's list of available locales and default-content locales, which decide which tags
   have data (de-DE is de's default content; de-XX has none);
 - the en, de, fr, es, it, nl and pt list patterns, for ducat-words' word for "and";
@@ -45,8 +47,12 @@ LIST_LOCALES = ["de", "en", "es", "fr", "it", "nl", "pt"]
 
 # numbers.json: what a currency format reads (TR35 Part 3, Numbers)
 NUMBER_KEYS = re.compile(r"^(defaultNumberingSystem|otherNumberingSystems|minimumGroupingDigits|symbols-numberSystem-.+|decimalFormats-numberSystem-.+|currencyFormats-numberSystem-.+)$")
-# within a decimal or currency formats block: the standard patterns, not compact or long forms
-FORMAT_KEYS = re.compile(r"^(standard|standard-alphaNextToNumber|standard-noCurrency|accounting|accounting-alphaNextToNumber|accounting-noCurrency|currencySpacing|currencyPatternAppendISO|unitPattern-count-.+)$")
+# within a decimal or currency formats block: the standard patterns, and the compact ones
+# (short and long decimal, short currency) compact notation reads
+FORMAT_KEYS = re.compile(r"^(standard|standard-alphaNextToNumber|standard-noCurrency|accounting|accounting-alphaNextToNumber|accounting-noCurrency|currencySpacing|currencyPatternAppendISO|unitPattern-count-.+|short|long)$")
+# within a compact block: the patterns by magnitude and plural form; the alphaNextToNumber
+# variants aren't read (ICU 78.3's compact currency formats space a currency by currencySpacing)
+COMPACT_KEYS = re.compile(r"^1(0)*-count-[a-z0-9]+$")
 # a currency's symbols and names, and its own pattern and separators where CLDR gives them (en-150
 # writes EUR as €1,234.50)
 CURRENCY_KEYS = re.compile(r"^(displayName|displayName-count-.+|symbol|symbol-alt-narrow|pattern|decimal|group)$")
@@ -70,8 +76,16 @@ def write(relative: str, value) -> None:
 
 
 def used_systems(numbers: dict) -> list:
+    """Every numbering system the locale's numbers.json has symbols for: its default, latn, and
+    the others it lists (otherNumberingSystems' native, where CLDR gives it data)."""
     systems = {"latn", numbers["defaultNumberingSystem"]}
+    systems.update(key.split("-numberSystem-", 1)[1] for key in numbers if key.startswith("symbols-numberSystem-"))
     return sorted(systems)
+
+
+def trim_compact(value: dict) -> dict:
+    """A short or long block: its patterns (`decimalFormat` or `standard`), alternatives dropped."""
+    return {name: {key: pattern for key, pattern in patterns.items() if COMPACT_KEYS.match(key)} for name, patterns in value.items()}
 
 
 def trim_numbers(numbers: dict) -> dict:
@@ -84,7 +98,7 @@ def trim_numbers(numbers: dict) -> dict:
         if system is not None and system not in systems:
             continue
         if isinstance(value, dict) and key.startswith(("decimalFormats", "currencyFormats")):
-            value = {name: part for name, part in value.items() if FORMAT_KEYS.match(name)}
+            value = {name: (trim_compact(part) if name in ("short", "long") else part) for name, part in value.items() if FORMAT_KEYS.match(name)}
         out[key] = value
     return out
 
@@ -186,7 +200,10 @@ def main() -> None:
             wanted = kept | {locale.split("-")[0] for locale in locales}
             rules = {language: rule for language, rule in sorted(data[key].items()) if language in wanted}
             write(f"supplemental/{name}.json", {"supplemental": {"version": data["version"], key: rules}})
+        # every numeric numbering system (numberingSystem and -u-nu- take any), and the
+        # algorithmic ones the locales use
         data = read(archive, "cldr-core/supplemental/numberingSystems.json")["supplemental"]
+        systems.update(system for system, entry in data["numberingSystems"].items() if entry["_type"] == "numeric")
         systems_kept = {system: data["numberingSystems"][system] for system in sorted(systems)}
         write("supplemental/numberingSystems.json", {"supplemental": {"version": data["version"], "numberingSystems": systems_kept}})
         # likely subtags of the kept languages, with or without a region: they give the script a

@@ -107,6 +107,20 @@ pub(crate) fn is_symbol(ch: char) -> bool {
     is_currency_symbol(ch) || matches!(ch, '+' | '<' | '=' | '>' | '^' | '`' | '|' | '~')
 }
 
+/// ICU's default ignorables (`[[:Zs:][\t][:Bidi_Control:][:Variation_Selector:]]`), which it
+/// trims from the ends of a compact pattern's field.
+pub(crate) fn is_ignorable(ch: char) -> bool {
+    let code = u32::from(ch);
+    matches!(ch, '\t' | '\u{61c}' | '\u{200e}' | '\u{200f}')
+        || (0x202A..=0x202E).contains(&code)
+        || (0x2066..=0x2069).contains(&code)
+        || (0x180B..=0x180D).contains(&code)
+        || code == 0x180F
+        || (0xFE00..=0xFE0F).contains(&code)
+        || (0xE0100..=0xE01EF).contains(&code)
+        || (is_separator(ch) && !matches!(ch, '\u{2028}' | '\u{2029}'))
+}
+
 /// A letter (`\p{L}`). `core`'s `Alphabetic` also takes some combining vowel signs and letter
 /// numbers; ducat's regular expression doesn't (spec/README.md does not depend on the difference).
 pub(crate) fn is_letter(ch: char) -> bool {
@@ -152,5 +166,7 @@ mod tests {
         assert_eq!(digit_value('९'), Some(9));
         assert_eq!(digit_value('๕'), Some(5));
         assert_eq!(digit_value('a'), None);
+        assert!(is_ignorable(' ') && is_ignorable('\u{a0}') && is_ignorable('\u{200f}'));
+        assert!(!is_ignorable('K') && !is_ignorable('.') && !is_ignorable('\u{2028}'));
     }
 }
