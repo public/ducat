@@ -1316,7 +1316,7 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 | `decimalTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | `DecimalColumn<C>` |
 | `fromRawDecimal` | — | not ported: by design (adapter for a TypeScript ORM) | `DecimalColumn::from_decimal` |
 | `fromRawMinor` | — | not ported: by design (adapter for a TypeScript ORM) | `MinorColumn::from_minor_units` |
-| `jsonTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | the JSON column shape is a Known gap in both crates |
+| `jsonTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | `JsonColumn<M>` (`moneyJson`): `JsonColumn<AnyMoney>` is `jsonTransformer()`, `JsonColumn<Money<C>>` `jsonTransformer('EUR')`; `Err(ScaleMismatch)` on write, `Err(CurrencyMismatch)` on read |
 | `minorTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | `MinorColumn<C>` |
 
 ### `./all`
