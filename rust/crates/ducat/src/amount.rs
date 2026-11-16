@@ -58,19 +58,40 @@ impl Amount {
     }
 
     /// A float under ducat's rule: at its shortest form, rounded with `rounding`, and (when
-    /// `check_digits`) with at most 15 significant digits. The rounding is checked first, so
-    /// `0.1 + 0.2` at a scale of 2 is a rounding error, as in ducat.
+    /// `check_digits`) with at most 15 significant digits. The checks run in ducat's order: the
+    /// scale (`InvalidScale`), then the value (`NotFinite`), then the rounding, then the digits,
+    /// so NaN at a scale past `MAX_SCALE` is a scale error and `0.1 + 0.2` at a scale of 2 a
+    /// rounding error.
     pub(crate) fn from_f64(
         value: f64,
         scale: u16,
         rounding: Rounding,
         check_digits: bool,
     ) -> Result<Self, Error> {
+        let scale = check_scale(scale)?;
         let amount = Self::from_decimal(&faithful_decimal(value, false)?, scale, rounding)?;
         if check_digits {
             faithful_decimal(value, true)?;
         }
         Ok(amount)
+    }
+
+    /// The smallest scale, at least `minimum`, that keeps the value exact: trailing zeros dropped,
+    /// never digits added (a value at or below `minimum` stays as it is).
+    #[cfg(any(feature = "math", feature = "fixed"))]
+    pub(crate) fn trim_scale(&self, minimum: u16) -> Result<Self, Error> {
+        let minimum = check_scale(minimum)?;
+        let ten = Int::from(10u8);
+        let (mut units, mut scale) = (self.units.clone(), self.scale);
+        while scale > minimum {
+            let (quotient, rest) = units.div_rem(&ten);
+            if !rest.is_zero() {
+                break;
+            }
+            units = quotient;
+            scale -= 1;
+        }
+        Ok(Self { units, scale })
     }
 
     pub(crate) fn rescale(&self, scale: u16, rounding: Rounding) -> Result<Self, Error> {

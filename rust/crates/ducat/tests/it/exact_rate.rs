@@ -14,7 +14,7 @@ fn exact_examples() {
     let bigger = &share + &chf("0.50");
     assert_eq!(bigger.to_string(), "1153/300 CHF");
     assert!(share < chf("3.35").exact());
-    assert!(!share.is_exact(None));
+    assert!(!share.is_exact(None).unwrap());
     assert_eq!(
         share.round(Rounding::HalfEven, None).unwrap().to_string(),
         "3.34 CHF"

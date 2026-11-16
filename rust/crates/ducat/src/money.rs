@@ -187,8 +187,10 @@ impl<C: Currency> Money<C> {
     ///
     /// # Errors
     ///
-    /// [`Error::NotFinite`], [`Error::InvalidScale`], and [`Error::Rounding`] (with
-    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary)).
+    /// In ducat's order: [`Error::InvalidScale`] for a scale beyond
+    /// [`MAX_SCALE`](crate::MAX_SCALE), whatever the value; [`Error::NotFinite`] for NaN and the
+    /// infinities; [`Error::Rounding`] for more decimals than `scale` with
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn from_f64_at(value: f64, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(Amount::from_f64(
             value, scale, rounding, false,

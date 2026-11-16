@@ -577,9 +577,9 @@ lives").
    excess precision, NaN and the infinities, and out-of-range values. No `f64` is used in arithmetic, and a float is
    never a `Factor`. Floats come in only through explicit conversions, under ducat's binary64 rule (the shortest
    round-trip form; more than 15 significant digits is refused unless the value is a safe integer or a rounding is
-   given): `Ratio::try_from(f64)`, and `from_f64`/`from_f64_at` on the money types. The money constructors exist
-   because the spec's `money.fromBinary64` vectors check the order of the two errors: the rounding check comes
-   first, so `0.1 + 0.2` in EUR is a rounding error, as in ducat, which a `Ratio` can't express.
+   given): `Ratio::try_from(f64)`, and `from_f64`/`from_f64_at` on the money types and on `Fixed`. The money
+   constructors exist because the spec's `money.fromBinary64` vectors check the order of the two errors: the rounding
+   check comes first, so `0.1 + 0.2` in EUR is a rounding error, as in ducat, which a `Ratio` can't express.
 8. **One rounding kernel, two paths.** Every multiply, divide, convert and rescale rounds once, through one private
    kernel. When the operands fit `i128` it forms `units × numerator × 10^k` in 256 bits; when they don't, or the
    result doesn't fit, it computes the same quotient in arbitrary precision. Differential proptests check the two
