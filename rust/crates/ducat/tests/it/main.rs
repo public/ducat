@@ -27,6 +27,7 @@ mod rate_checks;
 mod rate_providers;
 mod rate_sources;
 mod regressions;
+mod snapshots;
 mod spec;
 mod tax_fixed;
 // ducat::testing needs the `proptest` feature: `cargo test -p ducat --features proptest --test it testing::`

@@ -1,7 +1,7 @@
 //! ducat's own tests of rate metadata, providers and bags (test/rate-edges.test.ts,
 //! test/provider.test.ts, test/bag.test.ts), ported value by value except where the Rust API
-//! differs: times are passed in rather than read from a clock, and snapshots (async loaders) aren't
-//! ported. ducat's two fast-check properties (via equals a consistent direct rate; the comparator
+//! differs: times are passed in rather than read from a clock, and snapshots are in the `snapshots`
+//! module. ducat's two fast-check properties (via equals a consistent direct rate; the comparator
 //! is transitive over inconsistent pairwise rates) are left out: the spec's `provider.rate` and
 //! `bag.sort` rows cover both behaviours on fixed data.
 

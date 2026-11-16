@@ -63,6 +63,7 @@ mod provider;
     feature = "adyen-fx"
 ))]
 mod rate_text;
+mod snapshots;
 #[cfg(feature = "stripe-fx")]
 pub mod stripe_fx;
 mod time;
@@ -79,6 +80,10 @@ pub use bag::{Comparator, MoneyBag, TotalOptions, comparator, sort_by_value, sum
 pub use provider::{
     Chain, FromFn, Identity, RateProvider, RateQuery, RateTable, RateTableBuilder, Reversed, Via,
     chain, from_fn, identity, rate_of, reversed, via,
+};
+pub use snapshots::{
+    SnapshotLoader, SnapshotOptions, SnapshotTable, Snapshots, SnapshotsFrom, snapshots,
+    snapshots_from,
 };
 pub use time::{Time, UtcInstant};
 

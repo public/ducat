@@ -214,6 +214,14 @@ pub enum Error {
         /// When it expired.
         valid_until: crate::convert::Time,
     },
+    /// A snapshot lookup found no table on the day asked for or the days its lookback covers
+    /// (ducat's `RateUnavailableError` with `from` and `to` both `*`, which aren't currency codes
+    /// here).
+    #[cfg(feature = "convert")]
+    NoSnapshot {
+        /// The UTC day asked for (ducat's `asOf`).
+        as_of: crate::date::Date,
+    },
 }
 
 /// The neutral error kinds of ducat's conformance suite.
@@ -315,7 +323,9 @@ impl Error {
             | Self::InvalidWire
             | Self::UndatedTable => ErrorKind::Range,
             #[cfg(feature = "convert")]
-            Self::RateUnavailable { .. } | Self::RateExpired { .. } => ErrorKind::Range,
+            Self::RateUnavailable { .. } | Self::RateExpired { .. } | Self::NoSnapshot { .. } => {
+                ErrorKind::Range
+            }
         }
     }
 }
@@ -423,6 +433,8 @@ impl fmt::Display for Error {
             Self::RateExpired { from, to, valid_until } => {
                 write!(f, "exchange rate {from}→{to} expired at {valid_until}")
             }
+            #[cfg(feature = "convert")]
+            Self::NoSnapshot { as_of } => write!(f, "no exchange rate *→* as of {as_of}"),
         }
     }
 }
