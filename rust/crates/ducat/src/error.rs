@@ -193,6 +193,10 @@ pub enum Error {
     /// A quote whose number isn't positive, or whose `per` isn't a positive integer: a quote is a
     /// positive price for a positive whole number of units.
     InvalidQuote,
+    /// A time zone that is neither an IANA name in the bundled tz database nor an offset
+    /// `±HH:MM` (ducat's `RangeError` from `Intl.DateTimeFormat`).
+    #[cfg(feature = "tz")]
+    UnknownTimeZone,
     /// No provider has a rate for the pair (ducat's `RateUnavailableError`).
     #[cfg(feature = "convert")]
     RateUnavailable {
@@ -326,6 +330,8 @@ impl Error {
             Self::RateUnavailable { .. } | Self::RateExpired { .. } | Self::NoSnapshot { .. } => {
                 ErrorKind::Range
             }
+            #[cfg(feature = "tz")]
+            Self::UnknownTimeZone => ErrorKind::Range,
         }
     }
 }
@@ -435,6 +441,8 @@ impl fmt::Display for Error {
             }
             #[cfg(feature = "convert")]
             Self::NoSnapshot { as_of } => write!(f, "no exchange rate *→* as of {as_of}"),
+            #[cfg(feature = "tz")]
+            Self::UnknownTimeZone => f.write_str("invalid time zone: expected an IANA name (Europe/Amsterdam) or an offset ±HH:MM"),
         }
     }
 }

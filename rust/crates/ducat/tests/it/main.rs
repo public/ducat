@@ -6,6 +6,12 @@
 
 mod common;
 
+mod adyen_fx;
+// the account time zone needs the `tz` feature: `cargo test -p ducat --features tz --test it adyen_tz::`
+#[cfg(feature = "tz")]
+mod adyen_tz;
+#[cfg(feature = "tz")]
+mod adyen_tz_cases;
 mod allocate;
 mod currency_data;
 mod currency_data_api;
