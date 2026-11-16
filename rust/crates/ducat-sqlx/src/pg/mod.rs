@@ -6,6 +6,7 @@
 //! | [`Decimal`] | NUMERIC | the exact value and its scale, binary or text | the same, binary |
 //! | [`DecimalColumn<C>`] | NUMERIC | `Money<C>` at the exponent, trailing zeros allowed | `Money<C>` at the exponent |
 //! | [`MinorColumn<C>`] | BIGINT | `Money<C>` from minor units | minor units |
+//! | [`JsonColumn<M>`] | jsonb or json | ducat's money JSON, in any currency or `C` | the same, as jsonb |
 //! | [`PgMoney<M>`] | [`ducat_money`](MONEY_TYPE_NAME) | `AnyMoney` or `Money<C>`, scale kept | the same |
 //! | [`MoneyRecord`] | [`ducat_money`](MONEY_TYPE_NAME) | the fields, currency unresolved | the fields |
 //!
@@ -42,13 +43,13 @@ use sqlx::postgres::types::Oid;
 use sqlx::postgres::{
     PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgTypeKind, PgValueFormat, PgValueRef, Postgres,
 };
-use sqlx::{Decode, Encode, Type, TypeInfo};
+use sqlx::{Decode, Encode, Type, TypeInfo, ValueRef};
 
 pub use composite::{MONEY_TYPE_NAME, MoneyRecord, PgMoney, money_type_sql};
 use ducat_sql_core::record::{NUMERIC_OID, TEXT_OID, VARCHAR_OID};
 pub use numeric::{decode_numeric, encode_numeric};
 
-use crate::{Decimal, DecimalColumn, MinorColumn, MoneyValue};
+use crate::{Decimal, DecimalColumn, Error, JsonColumn, MinorColumn, MoneyValue};
 
 /// NUMERIC[]'s OID.
 const NUMERIC_ARRAY_OID: u32 = 1231;
@@ -257,6 +258,54 @@ impl<M: MoneyValue> Decode<'_, Postgres> for PgMoney<M> {
 impl<M: MoneyValue> Encode<'_, Postgres> for PgMoney<M> {
     fn encode_by_ref(&self, buf: &mut PgArgumentBuffer) -> Result<IsNull, BoxDynError> {
         self.to_record().encode_binary(buf)?;
+        Ok(IsNull::No)
+    }
+}
+
+/// jsonb's and json's OIDs.
+const JSONB_OID: u32 = 3802;
+const JSON_OID: u32 = 114;
+
+fn is_json_type(ty: &PgTypeInfo) -> bool {
+    matches!(ty.oid(), Some(Oid(JSONB_OID | JSON_OID)))
+}
+
+/// A json or jsonb value's text: jsonb's binary format is a version byte (1) and the text, json's
+/// the text alone.
+fn json_text<'r>(value: &PgValueRef<'r>) -> Result<&'r str, BoxDynError> {
+    let bytes = value.as_bytes()?;
+    let bytes = match (value.format(), value.type_info().oid()) {
+        (PgValueFormat::Binary, Some(Oid(JSONB_OID))) => match bytes.split_first() {
+            Some((1, text)) => text,
+            _ => return Err(Error::Malformed("a jsonb value of an unknown format version").into()),
+        },
+        _ => bytes,
+    };
+    Ok(core::str::from_utf8(bytes).map_err(|_| Error::Malformed("JSON that isn't UTF-8"))?)
+}
+
+impl<M: MoneyValue> Type<Postgres> for JsonColumn<M> {
+    fn type_info() -> PgTypeInfo {
+        PgTypeInfo::with_oid(Oid(JSONB_OID))
+    }
+
+    fn compatible(ty: &PgTypeInfo) -> bool {
+        is_json_type(ty)
+    }
+}
+
+impl<M: MoneyValue> Decode<'_, Postgres> for JsonColumn<M> {
+    fn decode(value: PgValueRef<'_>) -> Result<Self, BoxDynError> {
+        Ok(Self::from_parsed_json(json_text(&value)?)?)
+    }
+}
+
+impl<M: MoneyValue> Encode<'_, Postgres> for JsonColumn<M> {
+    fn encode_by_ref(&self, buf: &mut PgArgumentBuffer) -> Result<IsNull, BoxDynError> {
+        let text = self.to_json()?;
+        // jsonb's binary format, version 1
+        buf.push(1);
+        buf.extend_from_slice(text.as_bytes());
         Ok(IsNull::No)
     }
 }

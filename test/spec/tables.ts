@@ -34,6 +34,7 @@ import {
 } from '../../src/cash.js';
 import { currencyFromNumeric, minorUnit, numericCode } from '../../src/currencies.js';
 import { ISO_EXPONENTS } from '../../src/currency.js';
+import { jsonFromDriver, jsonToDriver } from '../../src/sql.js';
 import {
   cryptoUnit,
   defineCryptoCurrencies,
@@ -909,6 +910,38 @@ const WIRE_OPERATIONS: Record<string, TableOperation> = {
   ),
 };
 
+/** The kind the spec names for a money JSON column's error. */
+function moneyJsonOutcome(error: unknown): string {
+  if (error instanceof CurrencyMismatchError) {
+    return 'currency-mismatch';
+  }
+  if (error instanceof TypeError) {
+    return 'type';
+  }
+  return wireOutcome(error);
+}
+
+const columnOf = (row: Row) => row['column'] as string | undefined;
+
+/** moneyJson's writer and reader (src/sql.ts), on a TEXT column's value. */
+const MONEY_JSON_OPERATIONS: Record<string, TableOperation> = {
+  'wire.toMoneyJson': fieldsOperation(['wire', 'error'], (row) => {
+    try {
+      return { wire: jsonToDriver(wireMoney(row), columnOf(row)), error: null };
+    } catch (error) {
+      return { wire: null, error: moneyJsonOutcome(error) };
+    }
+  }),
+  'wire.fromMoneyJson': fieldsOperation(['amount', 'currency', 'error'], (row) => {
+    try {
+      const read = jsonFromDriver(text(row, 'wire'), columnOf(row));
+      return { amount: read.toDecimal(), currency: read.currency, error: null };
+    } catch (error) {
+      return { amount: null, currency: null, error: moneyJsonOutcome(error) };
+    }
+  }),
+};
+
 // --- format and parse ---------------------------------------------------------------------------
 
 /** The kind the spec names for a format or parse error (RoundingError is a RangeError). */
@@ -1137,6 +1170,7 @@ export const TABLE_OPERATIONS: Record<string, TableOperation> = {
   ...RATE_OPERATIONS,
   ...SOURCE_OPERATIONS,
   ...WIRE_OPERATIONS,
+  ...MONEY_JSON_OPERATIONS,
   ...FORMAT_OPERATIONS,
   'allocate.byRemainder': { expects: REMAINDERS, checkRow: checkAllocation },
   'instalments.byRemainder': {

@@ -6,6 +6,7 @@
 //! | [`Decimal`] | DECIMAL (or a string) | the exact value and its scale | the decimal as a string, which MySQL converts exactly |
 //! | [`DecimalColumn<C>`] | DECIMAL(p, s) | `Money<C>` at the exponent, trailing zeros allowed | `Money<C>` at the exponent |
 //! | [`MinorColumn<C>`] | BIGINT | `Money<C>` from minor units | minor units |
+//! | [`JsonColumn<M>`] | JSON (or a string column) | ducat's money JSON, in any currency or `C` | the JSON text |
 //!
 //! MySQL sends DECIMAL as text in both its protocols, so nothing goes through a float. A FLOAT
 //! or DOUBLE value, or an unsigned BIGINT, is refused ([`Error::UnexpectedType`]). Outside strict
@@ -34,7 +35,7 @@ use sqlx::error::BoxDynError;
 use sqlx::mysql::{MySql, MySqlTypeInfo, MySqlValueRef};
 use sqlx::{Database, Decode, Encode, Type, TypeInfo, ValueRef};
 
-use crate::{Decimal, DecimalColumn, Error, MinorColumn};
+use crate::{Decimal, DecimalColumn, Error, JsonColumn, MinorColumn, MoneyValue};
 
 /// A DECIMAL, or a string column, which holds decimal text exactly.
 fn is_decimal_type(ty: &MySqlTypeInfo) -> bool {
@@ -135,5 +136,47 @@ impl<C: Currency> Encode<'_, MySql> for MinorColumn<C> {
         buf: &mut <MySql as Database>::ArgumentBuffer<'_>,
     ) -> Result<IsNull, BoxDynError> {
         <i64 as Encode<MySql>>::encode_by_ref(&self.minor_units()?, buf)
+    }
+}
+
+/// A JSON column, or a string column holding JSON text.
+fn is_json_type(ty: &MySqlTypeInfo) -> bool {
+    ty.name() == "JSON" || <str as Type<MySql>>::compatible(ty)
+}
+
+impl<M: MoneyValue> Type<MySql> for JsonColumn<M> {
+    fn type_info() -> MySqlTypeInfo {
+        // JSON goes to the server as text
+        <str as Type<MySql>>::type_info()
+    }
+
+    fn compatible(ty: &MySqlTypeInfo) -> bool {
+        is_json_type(ty)
+    }
+}
+
+impl<M: MoneyValue> Decode<'_, MySql> for JsonColumn<M> {
+    fn decode(value: MySqlValueRef<'_>) -> Result<Self, BoxDynError> {
+        let ty = value.type_info();
+        if !is_json_type(&ty) {
+            return Err(Error::UnexpectedType(ty.name().into()).into());
+        }
+        let is_json = ty.name() == "JSON";
+        let text = <&str as Decode<MySql>>::decode(value)?;
+        // mysql2 parses a JSON column's value before ducat reads it, not a string column's
+        Ok(if is_json {
+            Self::from_parsed_json(text)?
+        } else {
+            Self::from_json(text)?
+        })
+    }
+}
+
+impl<M: MoneyValue> Encode<'_, MySql> for JsonColumn<M> {
+    fn encode_by_ref(
+        &self,
+        buf: &mut <MySql as Database>::ArgumentBuffer<'_>,
+    ) -> Result<IsNull, BoxDynError> {
+        <&str as Encode<MySql>>::encode_by_ref(&self.to_json()?.as_str(), buf)
     }
 }

@@ -1203,6 +1203,8 @@
         "wire.fromMinorUnits",
         "wire.toDinero",
         "wire.fromDinero",
+        "wire.toMoneyJson",
+        "wire.fromMoneyJson",
         "format.money",
         "parse.money",
         "parse.detect"
@@ -3726,6 +3728,48 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/rows/wire.fromDinero"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.toMoneyJson"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.toMoneyJson"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "wire.fromMoneyJson"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/rows/wire.fromMoneyJson"
                 }
               }
             }
@@ -8214,6 +8258,88 @@
             "oneOf": [
               {
                 "enum": ["range"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.toMoneyJson": {
+        "type": "object",
+        "required": ["amount", "currency", "wire", "error"],
+        "properties": {
+          "amount": {
+            "$ref": "#/$defs/decimal"
+          },
+          "currency": {
+            "$ref": "#/$defs/currency"
+          },
+          "column": {
+            "description": "The column's fixed currency, if it has one.",
+            "$ref": "#/$defs/currency"
+          },
+          "wire": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["range", "currency-mismatch"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire.fromMoneyJson": {
+        "type": "object",
+        "required": ["wire", "amount", "currency", "error"],
+        "properties": {
+          "wire": {
+            "description": "The column's text.",
+            "type": "string"
+          },
+          "column": {
+            "description": "The column's fixed currency, if it has one.",
+            "$ref": "#/$defs/currency"
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/decimal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/currency"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "enum": ["syntax", "type", "range", "rounding", "currency-mismatch"]
               },
               {
                 "type": "null"

@@ -18,6 +18,7 @@ pub enum Error {
     WouldRound { size: ColumnSize, decimals: u16 },
     TooManyIntegerDigits { size: ColumnSize },
     InvalidScaleColumn(Option<i64>),
+    NotMoneyJson,
     Ducat(ducat::Error),
 }
 

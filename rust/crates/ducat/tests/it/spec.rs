@@ -54,7 +54,7 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("processors", 2372),
     ("rounding", 1800),
     ("tax", 1000),
-    ("wire", 610),
+    ("wire", 790),
     ("words", 6904),
 ];
 
@@ -69,6 +69,8 @@ const DELEGATED: &[(&str, &str)] = &[
     ("format.money", "delegated to ducat-format"),
     ("parse.money", "delegated to ducat-format"),
     ("parse.detect", "delegated to ducat-format"),
+    ("wire.toMoneyJson", "delegated to ducat-sqlx and ducat-diesel"),
+    ("wire.fromMoneyJson", "delegated to ducat-sqlx and ducat-diesel"),
 ];
 
 fn delegated(op: &str) -> Option<&'static str> {

@@ -6,6 +6,7 @@
 //! | [`Decimal`] | `Numeric` | NUMERIC | the exact value and its scale | the same |
 //! | [`DecimalColumn<C>`] | `Numeric` | NUMERIC | `Money<C>` at the exponent, trailing zeros allowed | `Money<C>` at the exponent |
 //! | [`MinorColumn<C>`] | `BigInt` | BIGINT | `Money<C>` from minor units | minor units |
+//! | [`JsonColumn<M>`] | `Jsonb`, `Json` | jsonb, json | ducat's money JSON, in any currency or `C` | the same |
 //! | [`PgMoney<M>`] | [`sql_types::DucatMoney`] | [`ducat_money`](MONEY_TYPE_NAME) | `AnyMoney` or `Money<C>`, scale kept | the same |
 //! | [`MoneyRecord`] | [`sql_types::DucatMoney`] | [`ducat_money`](MONEY_TYPE_NAME) | the fields, currency unresolved | the fields |
 //!
@@ -79,16 +80,18 @@
 mod composite;
 mod numeric;
 
+use std::io::Write as _;
+
 use diesel::deserialize::{self, FromSql};
 use diesel::pg::data_types::PgNumeric;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{self, Output, ToSql, WriteTuple};
-use diesel::sql_types::{BigInt, Numeric, Record, Text};
+use diesel::sql_types::{BigInt, Json, Jsonb, Numeric, Record, Text};
 use ducat::Currency;
 
 pub use composite::{MONEY_TYPE_NAME, MoneyRecord, PgMoney, money_type_sql};
 
-use crate::{Decimal, DecimalColumn, Error, MinorColumn, MoneyValue};
+use crate::{Decimal, DecimalColumn, Error, JsonColumn, MinorColumn, MoneyValue};
 
 /// The SQL type for ducat's composite money type.
 pub mod sql_types {
@@ -198,5 +201,40 @@ impl<M: MoneyValue> FromSql<Record<(Numeric, Text)>, Pg> for PgMoney<M> {
 impl<M: MoneyValue + core::fmt::Debug> ToSql<DucatMoney, Pg> for PgMoney<M> {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         write_record(&self.to_record(), out)
+    }
+}
+
+fn json_text(bytes: &[u8]) -> Result<&str, Error> {
+    core::str::from_utf8(bytes).map_err(|_| Error::Malformed("JSON that isn't UTF-8"))
+}
+
+impl<M: MoneyValue> FromSql<Json, Pg> for JsonColumn<M> {
+    fn from_sql(value: PgValue<'_>) -> deserialize::Result<Self> {
+        Ok(Self::from_parsed_json(json_text(value.as_bytes())?)?)
+    }
+}
+
+impl<M: MoneyValue> FromSql<Jsonb, Pg> for JsonColumn<M> {
+    fn from_sql(value: PgValue<'_>) -> deserialize::Result<Self> {
+        // jsonb's binary format: a version byte (1), then the text
+        let Some((1, text)) = value.as_bytes().split_first() else {
+            return Err(Error::Malformed("a jsonb value of an unknown format version").into());
+        };
+        Ok(Self::from_parsed_json(json_text(text)?)?)
+    }
+}
+
+impl<M: MoneyValue + core::fmt::Debug> ToSql<Json, Pg> for JsonColumn<M> {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        out.write_all(self.to_json()?.as_bytes())?;
+        Ok(serialize::IsNull::No)
+    }
+}
+
+impl<M: MoneyValue + core::fmt::Debug> ToSql<Jsonb, Pg> for JsonColumn<M> {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        out.write_all(&[1])?;
+        out.write_all(self.to_json()?.as_bytes())?;
+        Ok(serialize::IsNull::No)
     }
 }

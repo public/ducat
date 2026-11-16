@@ -16,6 +16,7 @@
 
 mod decimal;
 mod error;
+pub mod json;
 pub mod numeric;
 pub mod record;
 

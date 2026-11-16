@@ -6,6 +6,7 @@
 //! | [`Decimal`] | `Numeric` | DECIMAL (or a string) | the exact value and its scale | the decimal as text, which MySQL converts exactly |
 //! | [`DecimalColumn<C>`] | `Numeric` | DECIMAL(p, s) | `Money<C>` at the exponent, trailing zeros allowed | `Money<C>` at the exponent |
 //! | [`MinorColumn<C>`] | `BigInt` | BIGINT | `Money<C>` from minor units | minor units |
+//! | [`JsonColumn<M>`] | `Json` | JSON | ducat's money JSON, in any currency or `C` | the JSON text |
 //!
 //! MySQL sends DECIMAL as text in both its protocols, so nothing goes through a float. Each
 //! value's own type is checked, whatever the schema says: a FLOAT or DOUBLE value where a
@@ -48,10 +49,10 @@ use std::io::Write as _;
 use diesel::deserialize::{self, FromSql};
 use diesel::mysql::{Mysql, MysqlType, MysqlValue};
 use diesel::serialize::{self, IsNull, Output, ToSql};
-use diesel::sql_types::{BigInt, Numeric};
+use diesel::sql_types::{BigInt, Json, Numeric};
 use ducat::Currency;
 
-use crate::{Decimal, DecimalColumn, Error, MinorColumn};
+use crate::{Decimal, DecimalColumn, Error, JsonColumn, MinorColumn, MoneyValue};
 
 /// The MySQL name of a value's type, for [`Error::UnexpectedType`].
 fn type_name(ty: MysqlType) -> &'static str {
@@ -159,5 +160,21 @@ impl<C: Currency> ToSql<BigInt, Mysql> for MinorColumn<C> {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Mysql>) -> serialize::Result {
         let minor = self.minor_units()?;
         <i64 as ToSql<BigInt, Mysql>>::to_sql(&minor, &mut out.reborrow())
+    }
+}
+
+impl<M: MoneyValue> FromSql<Json, Mysql> for JsonColumn<M> {
+    fn from_sql(value: MysqlValue<'_>) -> deserialize::Result<Self> {
+        let text = core::str::from_utf8(value.as_bytes())
+            .map_err(|_| Error::Malformed("JSON that isn't UTF-8"))?;
+        // mysql2 parses a JSON column's value before ducat reads it
+        Ok(Self::from_parsed_json(text)?)
+    }
+}
+
+impl<M: MoneyValue + core::fmt::Debug> ToSql<Json, Mysql> for JsonColumn<M> {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Mysql>) -> serialize::Result {
+        out.write_all(self.to_json()?.as_bytes())?;
+        Ok(IsNull::No)
     }
 }
