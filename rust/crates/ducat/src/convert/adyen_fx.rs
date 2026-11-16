@@ -181,10 +181,11 @@ mod tz {
                 .then(|| text.parse::<i32>().ok())
                 .flatten()
         };
+        // `get`, not indexing: the text may have multibyte characters
         let (hours, minutes) = match rest.len() {
             2 => (two(rest)?, 0),
-            4 => (two(&rest[..2])?, two(&rest[2..])?),
-            5 if rest.as_bytes()[2] == b':' => (two(&rest[..2])?, two(&rest[3..])?),
+            4 => (two(rest.get(..2)?)?, two(rest.get(2..)?)?),
+            5 if rest.as_bytes()[2] == b':' => (two(rest.get(..2)?)?, two(rest.get(3..)?)?),
             _ => return None,
         };
         if hours > 23 || minutes > 59 {

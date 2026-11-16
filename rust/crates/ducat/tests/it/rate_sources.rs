@@ -44,6 +44,20 @@ fn every_parser(text: &str) {
         ("Creation Date", text),
         ("TimeZone", text),
     ]);
+    #[cfg(feature = "tz")]
+    for created in [text, "2026-11-06 12:00:00"] {
+        let _ = ducat::convert::adyen_fx::adyen_rate_with(
+            &[
+                ("Gross Currency", "EUR"),
+                ("Net Currency", "GBP"),
+                ("Exchange Rate", "1"),
+                ("Creation Date", created),
+            ],
+            ducat::convert::adyen_fx::AdyenRateOptions {
+                time_zone: Some(text),
+            },
+        );
+    }
     let _ = stripe_rate(
         text,
         &StripeBalanceTransaction {

@@ -329,6 +329,10 @@ fn offsets_as_intl_takes_them() {
         "\u{ff0b}01",
         "+\u{661}\u{662}",
         "+01\u{200b}",
+        "+1\u{e9}1",
+        "+\u{e9}12",
+        "+0\u{e9}:0",
+        "\u{2212}\u{e9}",
         "",
     ];
     for zone in refused {
