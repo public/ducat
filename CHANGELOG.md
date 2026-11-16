@@ -20,6 +20,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `adyenRate` with an account `timeZone` now resolves wall times in DST gaps and folds as Temporal's
+  `"compatible"`, which changes their instant: a fold now takes the earlier instant (it took the
+  later east of UTC, e.g. Amsterdam 02:30 on 25 October 2026 is now 00:30Z, not 01:30Z) and a gap
+  the wall time pushed forward (it went back west of UTC, e.g. New York 02:30 on 8 March 2026 is now
+  07:30Z, not 06:30Z).
 - `format` and `formatToParts` with `currencyDisplay: 'name'` no longer garble the amount in the
   other locales where ICU 78.3 (Node 24) applies one currency's pattern inside the long-name
   pattern: tr and tr-CY for the lira and tr-TR for every currency (`₺1.234,57 Türk lirası`), and

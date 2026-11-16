@@ -100,12 +100,25 @@ function ianaOffsetMinutes(timeZone: string, utcMs: number): number {
   return Math.round((wallClockAsUtc - Math.floor(utcMs / 1000) * 1000) / 60_000);
 }
 
-/** The UTC instant of a wall-clock time in an IANA zone, summer time included. */
+/**
+ * The UTC instant of a wall-clock time in an IANA zone, summer time included. A wall time the clocks
+ * pass twice (a fold) is the earlier instant, and one they skip (a gap) is pushed forward by the gap,
+ * as Temporal's 'compatible' disambiguation does.
+ */
 function ianaToUtc(localAsUtcMs: number, timeZone: string): number {
-  // The offset at the guess can differ from the offset at the answer across a clock change, so
-  // look it up again at the first answer.
-  const firstGuess = localAsUtcMs - ianaOffsetMinutes(timeZone, localAsUtcMs) * 60_000;
-  return localAsUtcMs - ianaOffsetMinutes(timeZone, firstGuess) * 60_000;
+  // The offsets a day either side bracket any clock change at this wall time; each gives one
+  // candidate instant, which is a real reading of the wall time if the zone has that offset there.
+  const before = ianaOffsetMinutes(timeZone, localAsUtcMs - 86_400_000);
+  const after = ianaOffsetMinutes(timeZone, localAsUtcMs + 86_400_000);
+  const byBefore = localAsUtcMs - before * 60_000;
+  const byAfter = localAsUtcMs - after * 60_000;
+  // In a fold both candidates read back (take byBefore, the earlier); in a gap neither does, and
+  // byBefore is the wall time pushed forward by the gap. Only past a change is it byAfter.
+  return before === after ||
+    ianaOffsetMinutes(timeZone, byBefore) === before ||
+    ianaOffsetMinutes(timeZone, byAfter) !== after
+    ? byBefore
+    : byAfter;
 }
 
 /** Creation Date as a UTC instant when its zone is known; otherwise its local day. */
