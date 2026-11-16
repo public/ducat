@@ -399,13 +399,13 @@ The crate [`ducat-words`](../crates/ducat-words/src/lib.rs): ducat's own RBNF in
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `AmountInWordsOptions` | `ducat_words::AmountInWordsOptions` | same | plus the required `currency: UnitNames` (see `amountInWords`) |
+| `AmountInWordsOptions` | `ducat_words::AmountInWordsOptions` | same | plus `currency: Option<UnitNames>`, the caller's names (`AmountInWordsOptions::new`); `Default` is ducat's defaults, CLDR's names with the feature `cldr-names` (see `amountInWords`) |
 | `AmountInWordsOptions#gender` | `AmountInWordsOptions::gender` (`Gender`) | same | `Option<Gender>`: `Masculine`, `Feminine`, `Neuter`; `None` is ducat's default |
 | `AmountInWordsOptions#minor` | `AmountInWordsOptions::minor` | same | `Option<UnitNames>`; `None` writes the minor part cheque-style (`45/100`), as ducat |
 | `AmountInWordsOptions#ruleSet` | `AmountInWordsOptions::rule_set` | same | `Option<&str>`: `Err(NoRuleSet)`, `Err(PrivateRuleSet)` where ducat throws `RangeError` |
 | `SpelloutRules` | `ducat_words::SpelloutRules`, `CompiledRules` | divergent: [a fixed set of languages for words](design.md#parity-decisions) | `locale` is a `Locale` (the seven shipped languages), not any BCP 47 tag: the plural rules, digit grouping and word for "and" come from the crate's CLDR 48 data, where ducat's come from `Intl` for any locale, so rule text for another language (Polish, say) can't be used. Malformed rule text is `Err(MalformedRules)` where ducat throws `SyntaxError` |
 | `UnitNames` | `ducat_words::UnitNames` | same | `other`, with `one`, `two`, `few` and `many`; ducat's type also allows `zero`, a category none of the seven languages has |
-| `amountInWords` | `ducat_words::amount_in_words` | divergent: [currency names are the caller's](design.md#currency-names-in-words) | `AmountInWordsOptions::currency` is required: no CLDR names as defaults yet (decided: feature `cldr-names`) |
+| `amountInWords` | `ducat_words::amount_in_words` | same | with the feature `cldr-names` (not a default), `currency: None` takes CLDR 48's names for the languages built in (`currency_names`), as ducat takes `Intl`'s, and writes a three-letter code CLDR doesn't name as the code; matches Node 24 for every CLDR and `Intl` currency in the seven languages but ITL in `it`, where ICU puts the currency's own pattern before the name and the crate follows TR35 ([currency names in words](design.md#currency-names-in-words)). `Err(NoCurrencyNames)` for a code that isn't three letters (ducat's `RangeError`) or a build without the feature |
 | `ruleSets` | `CompiledRules::rule_sets` | same | the public rule sets, in the rules' order, as ducat |
 | `spellOut` | `ducat_words::spell_out`, `spell_out_int` | same | values within ±(2^63 − 1), ICU's range: `Err(OutOfRange)` outside, `Err(PrivateRuleSet)`, `Err(NoRuleSet)`, `Err(NoRule)`, `Err(PluralTruncation)`, `Err(TooDeep)`, `Err(TooManySteps)` for ducat's `RangeError`s; `i128` or `&Int` input, so ducat's `RangeError` for an unsafe number can't arise |
 
@@ -1324,12 +1324,9 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 Re-exports every plugin entry and `./fn`'s functions, and installs every plugin's methods on `Money`; its rows are in those entries. Rust has no prototype to install on: every method is there once its feature is on ([mapping](design.md#mapping-ducats-entries)).
 
 ## Missing, in proposed order
-Every `missing` row, grouped into pull requests in the order users would hit them. Two pieces are decided (marked
+Every `missing` row, grouped into pull requests in the order users would hit them. One piece is decided (marked
 **decided**); the rest are proposals.
 
-13. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
-   generated names without all its data): no `missing` row; `./words` `amountInWords` is `divergent` until then,
-   because the caller must pass `UnitNames`.
 14. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
    default, not `no_std`): `./adyen-fx` `AdyenRateOptions`, `./adyen-fx` `AdyenRateOptions#timeZone`. Only reports
    whose TimeZone column switches with daylight saving need it; abbreviations and offsets already work.
