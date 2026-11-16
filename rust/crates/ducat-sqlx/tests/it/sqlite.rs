@@ -321,3 +321,107 @@ async fn a_scale_column_round_trips_any_scale() {
         Err(Error::InvalidScaleColumn(None))
     );
 }
+
+/// ducat's `moneyJson` on SQLite: TEXT holding `{"amount":"12.34","currency":"EUR"}`, any currency
+/// or a fixed one, and what a TEXT column could slip in instead.
+#[tokio::test]
+async fn json_columns_round_trip() {
+    use ducat_sqlx::JsonColumn;
+
+    let pool = database().await;
+    sqlx::raw_sql("CREATE TABLE docs (id INTEGER PRIMARY KEY, doc TEXT, loose)")
+        .execute(&pool)
+        .await
+        .unwrap();
+    for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
+        let money = AnyMoney::parse(amount, iso(code)).unwrap();
+        sqlx::query("INSERT INTO docs (id, doc) VALUES (?, ?)")
+            .bind(i64::try_from(id).unwrap())
+            .bind(JsonColumn(money))
+            .execute(&pool)
+            .await
+            .unwrap();
+    }
+    let rows: Vec<(JsonColumn<AnyMoney>, String)> =
+        sqlx::query_as("SELECT doc, doc FROM docs ORDER BY id")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    for ((JsonColumn(money), text), (amount, code)) in rows.iter().zip(AMOUNTS) {
+        assert!(money.identical(&AnyMoney::parse(amount, iso(code)).unwrap()));
+        assert_eq!(
+            text,
+            &format!(r#"{{"amount":"{amount}","currency":"{code}"}}"#)
+        );
+    }
+    // a fixed currency: written and read back, and refused for another
+    let price: Money<Eur> = "12.34".parse().unwrap();
+    sqlx::query("INSERT INTO docs (id, doc) VALUES (100, ?)")
+        .bind(JsonColumn(price.clone()))
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (JsonColumn(back),): (JsonColumn<Money<Eur>>,) =
+        sqlx::query_as("SELECT doc FROM docs WHERE id = 100")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert!(back.identical(&price));
+    let error =
+        sqlx::query_as::<_, (JsonColumn<Money<Jpy>>,)>("SELECT doc FROM docs WHERE id = 100")
+            .fetch_one(&pool)
+            .await
+            .unwrap_err();
+    assert!(matches!(
+        decode_error(&error),
+        Some(Error::CurrencyMismatch { .. })
+    ));
+    let mut query = sqlx::query::<sqlx::Sqlite>("INSERT INTO docs (id, doc) VALUES (101, ?)");
+    let error = query
+        .try_bind(JsonColumn(
+            price.to_scale(3, Rounding::Unnecessary).unwrap(),
+        ))
+        .unwrap_err();
+    assert!(matches!(
+        error.downcast_ref::<Error>(),
+        Some(Error::ScaleMismatch { .. })
+    ));
+    // TEXT that isn't money JSON, and values that aren't TEXT
+    sqlx::raw_sql(
+        r#"INSERT INTO docs (id, doc, loose) VALUES
+           (200, '{"amount":12.34,"currency":"EUR"}', 0.5), (201, '{', 12), (202, '"{\"amount\":\"1\",\"currency\":\"EUR\"}"', NULL)"#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let read = |id: i64, column: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query(&format!("SELECT {column} FROM docs WHERE id = ?"))
+                .bind(id)
+                .fetch_one(&pool)
+                .await
+                .unwrap()
+                .try_get_unchecked::<JsonColumn<AnyMoney>, _>(0)
+        }
+    };
+    assert_eq!(
+        decode_error(&read(200, "doc").await.unwrap_err()),
+        Some(&Error::NotMoneyJson)
+    );
+    assert!(matches!(
+        decode_error(&read(201, "doc").await.unwrap_err()),
+        Some(Error::Malformed(_))
+    ));
+    // TEXT is parsed once: a JSON string isn't money JSON
+    assert_eq!(
+        decode_error(&read(202, "doc").await.unwrap_err()),
+        Some(&Error::NotMoneyJson)
+    );
+    for id in [200, 201] {
+        assert!(matches!(
+            decode_error(&read(id, "loose").await.unwrap_err()),
+            Some(Error::UnexpectedType(_))
+        ));
+    }
+}

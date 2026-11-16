@@ -77,6 +77,7 @@ async fn postgres() {
     composite_sum(&pool).await;
     other_composite_names(&pool).await;
     scale_column(&pool).await;
+    json_columns(&pool).await;
     pool.close().await;
 }
 
@@ -487,6 +488,107 @@ async fn scale_column(pool: &PgPool) {
         Err(Error::InvalidScaleColumn(Some(1001)))
     );
     sqlx::raw_sql("DROP TABLE scaled")
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
+/// ducat's `moneyJson` on Postgres: jsonb (as ducat's Drizzle column) and json, written as
+/// jsonb, Postgres's own text of each, and the values node-postgres would parse twice.
+async fn json_columns(pool: &PgPool) {
+    use ducat_sqlx::JsonColumn;
+
+    sqlx::raw_sql("CREATE TABLE docs (id integer PRIMARY KEY, jb jsonb, j json)")
+        .execute(pool)
+        .await
+        .unwrap();
+    for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
+        let money = AnyMoney::parse(amount, iso(code)).unwrap();
+        sqlx::query("INSERT INTO docs (id, jb, j) VALUES ($1, $2, $3)")
+            .bind(i32::try_from(id).unwrap())
+            .bind(JsonColumn(money.clone()))
+            .bind(JsonColumn(money))
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+    let rows: Vec<(JsonColumn<AnyMoney>, JsonColumn<AnyMoney>, String, String)> =
+        sqlx::query_as("SELECT jb, j, jb::text, j::text FROM docs ORDER BY id")
+            .fetch_all(pool)
+            .await
+            .unwrap();
+    assert_eq!(rows.len(), AMOUNTS.len());
+    for ((JsonColumn(jb), JsonColumn(j), jb_text, j_text), (amount, code)) in
+        rows.iter().zip(AMOUNTS)
+    {
+        let original = AnyMoney::parse(amount, iso(code)).unwrap();
+        assert!(
+            jb.identical(&original) && j.identical(&original),
+            "{amount} {code}"
+        );
+        // json keeps the text as written; jsonb has its own spacing
+        assert_eq!(
+            j_text,
+            &format!(r#"{{"amount":"{amount}","currency":"{code}"}}"#)
+        );
+        assert_eq!(
+            jb_text,
+            &format!(r#"{{"amount": "{amount}", "currency": "{code}"}}"#)
+        );
+    }
+    // a fixed currency, read back from both types, and another refused
+    let (JsonColumn(eur), JsonColumn(eur_json)): (JsonColumn<Money<Eur>>, JsonColumn<Money<Eur>>) =
+        sqlx::query_as("SELECT jb, j FROM docs WHERE id = 1")
+            .fetch_one(pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        (eur.to_string(), eur_json.to_string()),
+        ("12.34 EUR".into(), "12.34 EUR".into())
+    );
+    let error = sqlx::query_scalar::<_, JsonColumn<Money<Jpy>>>("SELECT jb FROM docs WHERE id = 1")
+        .fetch_one(pool)
+        .await
+        .unwrap_err();
+    assert!(matches!(
+        decode_error(&error),
+        Some(Error::CurrencyMismatch { .. })
+    ));
+    // node-postgres parses json and jsonb, so ducat parses a JSON string's text again
+    let read = |sql: &'static str| async move {
+        sqlx::query_scalar::<_, JsonColumn<AnyMoney>>(sql)
+            .fetch_one(pool)
+            .await
+    };
+    let twice = read(r#"SELECT '"{\"amount\":\"1\",\"currency\":\"EUR\"}"'::jsonb"#)
+        .await
+        .unwrap();
+    assert_eq!(twice.0.to_string(), "1.00 EUR");
+    for sql in [
+        "SELECT '42'::jsonb",
+        r#"SELECT '{"amount": 12.34, "currency": "EUR"}'::jsonb"#,
+        r#"SELECT '{"amount": "1"}'::json"#,
+    ] {
+        assert_eq!(
+            decode_error(&read(sql).await.unwrap_err()),
+            Some(&Error::NotMoneyJson),
+            "{sql}"
+        );
+    }
+    let error = read(r#"SELECT '{"amount": "12.345", "currency": "EUR"}'::jsonb"#)
+        .await
+        .unwrap_err();
+    assert_eq!(
+        decode_error(&error),
+        Some(&Error::Ducat(ducat::Error::Rounding))
+    );
+    // text isn't JSON
+    let row = sqlx::query("SELECT '{}'::text")
+        .fetch_one(pool)
+        .await
+        .unwrap();
+    assert!(row.try_get::<JsonColumn<AnyMoney>, _>(0).is_err());
+    sqlx::raw_sql("DROP TABLE docs")
         .execute(pool)
         .await
         .unwrap();

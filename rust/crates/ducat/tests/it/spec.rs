@@ -69,8 +69,14 @@ const DELEGATED: &[(&str, &str)] = &[
     ("format.money", "delegated to ducat-format"),
     ("parse.money", "delegated to ducat-format"),
     ("parse.detect", "delegated to ducat-format"),
-    ("wire.toMoneyJson", "delegated to ducat-sqlx and ducat-diesel"),
-    ("wire.fromMoneyJson", "delegated to ducat-sqlx and ducat-diesel"),
+    (
+        "wire.toMoneyJson",
+        "delegated to ducat-sqlx and ducat-diesel",
+    ),
+    (
+        "wire.fromMoneyJson",
+        "delegated to ducat-sqlx and ducat-diesel",
+    ),
 ];
 
 fn delegated(op: &str) -> Option<&'static str> {
