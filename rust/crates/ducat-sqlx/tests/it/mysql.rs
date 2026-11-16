@@ -63,6 +63,8 @@ async fn mysql() {
     fixed_currency_columns(&pool).await;
     sized_writes(&pool).await;
     inexact_types_are_refused(&pool).await;
+    scale_column(&pool).await;
+    json_columns(&pool).await;
     sqlx::raw_sql("DROP TABLE ducat_sqlx_items")
         .execute(&pool)
         .await
@@ -233,6 +235,142 @@ async fn inexact_types_are_refused(pool: &MySqlPool) {
         .unwrap();
     assert_eq!(from_text, decimal("12.50"));
     sqlx::raw_sql("DELETE FROM ducat_sqlx_items")
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
+/// ducat's `moneyMinor('EUR', { scale })` with `scaledMoney` (ducat#380): `SCALED_EUROS` and a
+/// NULL amount round-trip with their scales through a BIGINT and a SMALLINT scale column; a NULL
+/// scale is refused.
+async fn scale_column(pool: &MySqlPool) {
+    use ducat_sqlx::ScaledMinorColumn;
+
+    use crate::scaled::{SCALED_EUROS, euros};
+
+    sqlx::raw_sql(
+        "DROP TABLE IF EXISTS ducat_sqlx_scaled;
+         CREATE TABLE ducat_sqlx_scaled (id INT PRIMARY KEY, amount_minor BIGINT, amount_scale SMALLINT)",
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    for (id, (amount, scale, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let (units, scale) = ScaledMinorColumn(euros(amount, scale))
+            .to_columns()
+            .unwrap();
+        sqlx::query("INSERT INTO ducat_sqlx_scaled VALUES (?, ?, ?)")
+            .bind(i32::try_from(id).unwrap())
+            .bind(units)
+            .bind(scale)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+    sqlx::raw_sql(
+        "INSERT INTO ducat_sqlx_scaled VALUES (100, NULL, NULL), (101, 5, NULL), (102, 5, 1001)",
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    let rows: Vec<(i32, Option<i64>, Option<i16>)> =
+        sqlx::query_as("SELECT id, amount_minor, amount_scale FROM ducat_sqlx_scaled ORDER BY id")
+            .fetch_all(pool)
+            .await
+            .unwrap();
+    assert_eq!(rows.len(), SCALED_EUROS.len() + 3);
+    let read = |index: usize| {
+        let (_, units, scale) = rows[index];
+        ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale.map(i64::from))
+    };
+    for (index, (amount, at, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let money = read(index).unwrap().unwrap().0;
+        assert!(money.identical(&euros(amount, at)), "{amount}");
+    }
+    assert_eq!(read(SCALED_EUROS.len()), Ok(None));
+    assert_eq!(
+        read(SCALED_EUROS.len() + 1),
+        Err(Error::InvalidScaleColumn(None))
+    );
+    assert_eq!(
+        read(SCALED_EUROS.len() + 2),
+        Err(Error::InvalidScaleColumn(Some(1001)))
+    );
+    sqlx::raw_sql("DROP TABLE ducat_sqlx_scaled")
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
+/// ducat's `moneyJson` on MySQL: a JSON column, MySQL's own text of it, a fixed currency, and the
+/// values mysql2 would parse twice.
+async fn json_columns(pool: &MySqlPool) {
+    use ducat_sqlx::JsonColumn;
+
+    sqlx::raw_sql(
+        "DROP TABLE IF EXISTS ducat_sqlx_docs;
+         CREATE TABLE ducat_sqlx_docs (id INT PRIMARY KEY, doc JSON)",
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
+        let money = AnyMoney::parse(amount, iso(code)).unwrap();
+        sqlx::query("INSERT INTO ducat_sqlx_docs (id, doc) VALUES (?, ?)")
+            .bind(i32::try_from(id).unwrap())
+            .bind(JsonColumn(money))
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+    let rows: Vec<(JsonColumn<AnyMoney>,)> =
+        sqlx::query_as("SELECT doc FROM ducat_sqlx_docs ORDER BY id")
+            .fetch_all(pool)
+            .await
+            .unwrap();
+    assert_eq!(rows.len(), AMOUNTS.len());
+    for ((JsonColumn(money),), (amount, code)) in rows.iter().zip(AMOUNTS) {
+        assert!(
+            money.identical(&AnyMoney::parse(amount, iso(code)).unwrap()),
+            "{amount}"
+        );
+    }
+    let (JsonColumn(eur),): (JsonColumn<Money<Eur>>,) =
+        sqlx::query_as("SELECT doc FROM ducat_sqlx_docs WHERE id = 1")
+            .fetch_one(pool)
+            .await
+            .unwrap();
+    assert_eq!(eur.to_string(), "12.34 EUR");
+    let error = sqlx::query_as::<_, (JsonColumn<Money<Jpy>>,)>(
+        "SELECT doc FROM ducat_sqlx_docs WHERE id = 1",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_err();
+    assert!(matches!(
+        decode_error(&error),
+        Some(Error::CurrencyMismatch { .. })
+    ));
+    sqlx::raw_sql(
+        r#"INSERT INTO ducat_sqlx_docs (id, doc) VALUES
+           (100, '"{\\"amount\\":\\"1\\",\\"currency\\":\\"EUR\\"}"'), (101, '42')"#,
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    let read = |id: i32| async move {
+        sqlx::query_as::<_, (JsonColumn<AnyMoney>,)>("SELECT doc FROM ducat_sqlx_docs WHERE id = ?")
+            .bind(id)
+            .fetch_one(pool)
+            .await
+    };
+    // mysql2 parses a JSON column, so ducat parses a JSON string's text again
+    assert_eq!(read(100).await.unwrap().0.0.to_string(), "1.00 EUR");
+    assert_eq!(
+        decode_error(&read(101).await.unwrap_err()),
+        Some(&Error::NotMoneyJson)
+    );
+    sqlx::raw_sql("DROP TABLE ducat_sqlx_docs")
         .execute(pool)
         .await
         .unwrap();

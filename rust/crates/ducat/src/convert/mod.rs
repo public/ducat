@@ -63,6 +63,7 @@ mod provider;
     feature = "adyen-fx"
 ))]
 mod rate_text;
+mod snapshots;
 #[cfg(feature = "stripe-fx")]
 pub mod stripe_fx;
 mod time;
@@ -73,10 +74,16 @@ use alloc::vec::Vec;
 use core::fmt;
 use core::marker::PhantomData;
 
+#[cfg(test)]
+pub(crate) use bag::reference as bag_reference;
 pub use bag::{Comparator, MoneyBag, TotalOptions, comparator, sort_by_value, sum_by_currency};
 pub use provider::{
     Chain, FromFn, Identity, RateProvider, RateQuery, RateTable, RateTableBuilder, Reversed, Via,
     chain, from_fn, identity, rate_of, reversed, via,
+};
+pub use snapshots::{
+    SnapshotLoader, SnapshotOptions, SnapshotTable, Snapshots, SnapshotsFrom, snapshots,
+    snapshots_from,
 };
 pub use time::{Time, UtcInstant};
 
@@ -386,18 +393,14 @@ impl<F: Currency, T: Currency> Rate<F, T> {
     }
 
     /// The exact rate that took `presented` to `settled`: `settled ÷ presented`, to audit what a
-    /// processor applied.
+    /// processor applied. ducat's `impliedRate` without `info`: chain [`Rate::with_info`], or
+    /// see [`AnyRate::implied`].
     ///
     /// # Errors
     ///
-    /// [`Error::NonPositiveRate`] when the quotient isn't positive (a zero or negative amount).
+    /// As [`AnyRate::implied`].
     pub fn implied(presented: &Money<F>, settled: &Money<T>) -> Result<Self, Error> {
-        let quotient = settled
-            .exact()
-            .value()
-            .div(presented.exact().value())
-            .map_err(|_| Error::NonPositiveRate)?;
-        Ok(Self::of(AnyRate::of(F::CODE, T::CODE, positive(quotient)?)))
+        AnyRate::implied(&presented.to_any(), &settled.to_any(), RateInfo::default()).map(Self::of)
     }
 
     /// The exact rate.
@@ -481,6 +484,15 @@ impl<F: Currency, T: Currency> Rate<F, T> {
         self.inner.is_available(at)
     }
 
+    /// Strict validity at `at`: ducat's `Rate#checkValidity`; see [`AnyRate::check_validity`].
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyRate::check_validity`].
+    pub fn check_validity(&self, at: &Time) -> Result<(), Error> {
+        self.inner.check_validity(at)
+    }
+
     /// Converts `money`, rounding once: with a mode to `T`'s exponent, with a rounding policy to
     /// its scale (by default `T`'s exponent) and increment, its currency checked against `T`.
     ///
@@ -539,7 +551,7 @@ impl<F: Currency, T: Currency> Rate<F, T> {
         rounding: impl Into<RoundingInput>,
         options: &ConvertOptions,
     ) -> Result<Rounded<Money<T>, ExactMoney<T>>, Error> {
-        self.inner.check_validity(options)?;
+        self.inner.check_options(options)?;
         self.convert_exact(&money.exact())
             .round_with_residual(rounding, options.scale)
     }
@@ -655,6 +667,31 @@ impl AnyRate {
         let mut rate = Self::of(from, to, positive(text.parse()?)?);
         rate.info.quote = published_digits(text);
         Ok(rate)
+    }
+
+    /// The exact rate that took `presented` to `settled`, in their currencies: `settled ÷
+    /// presented`, with `info` as its metadata (`RateInfo::default()` for none), as ducat's
+    /// `impliedRate(presented, settled, info)`. A refund, both amounts negative, gives a positive
+    /// rate.
+    ///
+    /// # Errors
+    ///
+    /// In ducat's order: [`Error::DivisionByZero`] for a zero `presented`;
+    /// [`Error::NonPositiveRate`] when the quotient isn't positive (a zero `settled`, or amounts
+    /// of opposite signs); then as [`AnyRate::with_info`] for a quote in `info` (ducat's
+    /// `RangeError`s).
+    pub fn implied(
+        presented: &AnyMoney,
+        settled: &AnyMoney,
+        info: RateInfo,
+    ) -> Result<Self, Error> {
+        let quotient = settled.exact().value().div(presented.exact().value())?;
+        Self::of(
+            presented.currency(),
+            settled.currency(),
+            positive(quotient)?,
+        )
+        .with_info(info)
     }
 
     /// The same rate with `info` as its metadata, as ducat's `exchangeRate(from, to, rate, info)`
@@ -857,17 +894,30 @@ impl AnyRate {
             .is_none_or(|available_at| available_at.has_started_by(at))
     }
 
-    fn check_validity(&self, options: &ConvertOptions) -> Result<(), Error> {
-        match (options.valid_at, self.info.valid_until) {
-            (Some(now), Some(valid_until)) if valid_until.has_ended_at(&now) => {
-                Err(Error::RateExpired {
-                    from: self.from,
-                    to: self.to,
-                    valid_until,
-                })
-            }
+    /// Strict validity at `at`, as ducat's `Rate#checkValidity` with `strictValidity: true` and
+    /// the clock reading `at` (ducat reads the system clock; the library reads none). Without
+    /// strict validity ducat checks nothing, which here is not calling it. Every conversion with
+    /// [`ConvertOptions::valid_at`] calls it, so the check can't differ between them.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::RateExpired`] when the rate has a `valid_until` that has passed at `at` (see
+    /// [`AnyRate::is_expired`]); never without a `valid_until`.
+    pub fn check_validity(&self, at: &Time) -> Result<(), Error> {
+        match self.info.valid_until {
+            Some(valid_until) if valid_until.has_ended_at(at) => Err(Error::RateExpired {
+                from: self.from,
+                to: self.to,
+                valid_until,
+            }),
             _ => Ok(()),
         }
+    }
+
+    fn check_options(&self, options: &ConvertOptions) -> Result<(), Error> {
+        options
+            .valid_at
+            .map_or(Ok(()), |at| self.check_validity(&at))
     }
 
     fn check(&self, currency: CurrencyCode) -> Result<(), Error> {
@@ -910,7 +960,7 @@ impl AnyRate {
         options: &ConvertOptions,
     ) -> Result<AnyMoney, Error> {
         self.check(money.currency())?;
-        self.check_validity(options)?;
+        self.check_options(options)?;
         match options.scale {
             None => money.convert(self.to, &self.ratio, rounding),
             Some(scale) => self
@@ -944,7 +994,7 @@ impl AnyRate {
         options: &ConvertOptions,
     ) -> Result<Rounded<AnyMoney, AnyExactMoney>, Error> {
         self.check(money.currency())?;
-        self.check_validity(options)?;
+        self.check_options(options)?;
         self.convert_exact(&money.exact())?
             .round_with_residual(rounding, options.scale)
     }

@@ -188,6 +188,13 @@ impl Ratio {
     /// 2 and 5) or needs more than [`MAX_SCALE`](crate::MAX_SCALE) places.
     #[must_use]
     pub fn terminating_scale(&self, minimum: u16) -> Option<u16> {
+        let scale = u16::try_from(self.decimal_places()?).ok()?.max(minimum);
+        (scale <= crate::MAX_SCALE).then_some(scale)
+    }
+
+    /// The decimal places the value needs, of any count, or `None` when its decimal expansion
+    /// doesn't terminate: `max(twos, fives)` for a denominator `2^twos × 5^fives`.
+    pub(crate) fn decimal_places(&self) -> Option<u32> {
         let (mut den, mut twos, mut fives) = (self.den.clone(), 0u32, 0u32);
         let (two, five) = (Int::from(2u8), Int::from(5u8));
         loop {
@@ -206,11 +213,7 @@ impl Ratio {
             den = quotient;
             fives += 1;
         }
-        if den != 1 {
-            return None;
-        }
-        let scale = u16::try_from(twos.max(fives)).ok()?.max(minimum);
-        (scale <= crate::MAX_SCALE).then_some(scale)
+        (den == 1).then_some(twos.max(fives))
     }
 
     /// An exact decimal `digits × 10^−scale` as a reduced ratio.

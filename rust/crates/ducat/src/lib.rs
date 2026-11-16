@@ -24,6 +24,11 @@
 //! assert_eq!(Money::<Eur>::try_from(any)?, "12.34".parse::<Money<Eur>>()?);
 //! # Ok::<(), ducat::Error>(())
 //! ```
+//!
+//! The optional `tz` feature (off by default; it implies `std`) reads Adyen's Creation Date in an
+//! account's IANA time zone (`convert::adyen_fx::adyen_rate_with`). It embeds the IANA time zone
+//! database that jiff bundles (tzdb 2026f with jiff 1.0.0) and never reads the host's, so its
+//! results follow that bundled version.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -78,6 +83,7 @@ pub mod excel;
 pub mod finance;
 #[cfg(feature = "fixed")]
 pub mod fixed;
+mod float;
 #[cfg(feature = "historic")]
 pub mod historic;
 mod int;
@@ -106,11 +112,21 @@ mod ratio;
 mod rounding;
 #[cfg(feature = "serde")]
 mod serde_impl;
+// the sum and add fast paths against the general paths they replaced
+#[cfg(all(
+    test,
+    feature = "iso",
+    feature = "fixed",
+    feature = "convert",
+    feature = "math"
+))]
+mod sum_tests;
 #[cfg(feature = "tax")]
 pub mod tax;
 #[cfg(feature = "territories")]
 pub mod territories;
-#[cfg(feature = "proptest")]
+// unit tests use the strategies too, without the `proptest` feature (proptest is a dev-dependency)
+#[cfg(any(test, feature = "proptest"))]
 pub mod testing;
 mod wide;
 #[cfg(feature = "wire")]
@@ -123,6 +139,7 @@ pub use currency::__custom_or_panic;
 pub use currency::{Currency, CurrencyCode, MAX_CUSTOM_EXPONENT};
 pub use decimal::MAX_SCALE;
 pub use error::{Error, ErrorKind};
+pub use float::ToMinorF64Options;
 pub use int::Int;
 pub use iso_table::ISO_4217_PUBLISHED;
 pub use kind::MoneyKind;

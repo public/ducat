@@ -20,7 +20,7 @@
 //! # Ok::<(), ducat::Error>(())
 //! ```
 
-use crate::amount::{Amount, check_scale};
+use crate::amount::{Amount, AmountSum};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Int, Money, Ratio, RoundingInput};
 
 impl Ratio {
@@ -51,9 +51,11 @@ impl Amount {
             return Err(Error::NoAmounts);
         };
         // the sum is exact at the largest scale, so the division is the only rounding
-        let sum = amounts[1..]
-            .iter()
-            .fold((*first).clone(), |total, amount| total.add(amount));
+        let mut total = AmountSum::starting_at(first);
+        for amount in &amounts[1..] {
+            total.add(amount);
+        }
+        let sum = total.finish();
         sum.round_input(
             &Int::ONE,
             &Int::from(amounts.len()),
@@ -87,21 +89,6 @@ impl Amount {
             units: left.div_rem(&right).1,
             scale,
         })
-    }
-
-    fn trim_scale(&self, minimum: u16) -> Result<Self, Error> {
-        let minimum = check_scale(minimum)?;
-        let ten = Int::from(10u8);
-        let (mut units, mut scale) = (self.units.clone(), self.scale);
-        while scale > minimum {
-            let (quotient, rest) = units.div_rem(&ten);
-            if !rest.is_zero() {
-                break;
-            }
-            units = quotient;
-            scale -= 1;
-        }
-        Ok(Self { units, scale })
     }
 }
 
@@ -230,5 +217,36 @@ impl AnyMoney {
             self.amount.trim_scale(minimum)?,
             self.currency(),
         ))
+    }
+}
+
+/// The general path that [`Money::average`] took before its running sum, for the differential
+/// tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use crate::amount::Amount;
+    use crate::{Currency, Error, Int, Money, RoundingInput};
+
+    /// [`Money::average`]: the sum folded with the general add from the first amount, rounded
+    /// once.
+    pub(crate) fn average<C: Currency>(
+        amounts: &[Money<C>],
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<Money<C>, Error> {
+        let Some(first) = amounts.first() else {
+            return Err(Error::NoAmounts);
+        };
+        let sum: Amount = amounts[1..]
+            .iter()
+            .fold(first.amount.clone(), |total, money| {
+                total.add_general(&money.amount)
+            });
+        Ok(Money::from_amount(sum.round_input(
+            &Int::ONE,
+            &Int::from(amounts.len()),
+            sum.scale,
+            rounding.into(),
+            C::CODE,
+        )?))
     }
 }

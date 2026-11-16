@@ -6,7 +6,7 @@
 //!
 //! let share = "10.03".parse::<Money<Chf>>()?.exact().divide(3)?;
 //! assert_eq!(share.to_string(), "1003/300 CHF");
-//! assert!(!share.is_exact(None));
+//! assert!(!share.is_exact(None)?);
 //! let rounded = share.round_with_residual(Rounding::HalfEven, None)?;
 //! assert_eq!(rounded.value.to_string(), "3.34 CHF");
 //! assert_eq!(rounded.residual.to_string(), "1/300 CHF");
@@ -91,10 +91,41 @@ fn round_input_value(
     }
 }
 
-/// `value` at the smallest scale, at least `minimum`, that holds it exactly.
+/// `value` at the smallest scale, at least `minimum`, that holds it exactly, with ducat's
+/// `toMoney` checks in its order: `InvalidScale` for the minimum, `Rounding` for a value with no
+/// finite decimal form, then `InvalidScale` for one that needs more than `MAX_SCALE` places.
 fn exact_amount(value: &Ratio, minimum: u16) -> Result<Amount, Error> {
-    let scale = value.terminating_scale(minimum).ok_or(Error::Rounding)?;
-    round_value(value, scale, Rounding::Unnecessary)
+    let minimum = crate::amount::check_scale(minimum)?;
+    let places = value.decimal_places().ok_or(Error::Rounding)?;
+    let places = u16::try_from(places).map_err(|_| Error::InvalidScale)?;
+    round_value(value, places.max(minimum), Rounding::Unnecessary)
+}
+
+/// Whether `value` is a decimal at `scale`, as ducat's `isExact`.
+fn is_exact_at(value: &Ratio, scale: u16) -> Result<bool, Error> {
+    let scale = crate::amount::check_scale(scale)?;
+    Ok(value
+        .decimal_places()
+        .is_some_and(|needed| needed <= u32::from(scale)))
+}
+
+/// The first of `items` that no later one is strictly `beyond` (by `ordering`), as ducat's
+/// variadic `min` and `max`: the first of equal values wins.
+fn extreme<'a, T: 'a + Clone>(
+    items: impl IntoIterator<Item = &'a T>,
+    mut beyond: impl FnMut(&T, &T) -> Result<bool, Error>,
+) -> Result<Option<T>, Error> {
+    let mut items = items.into_iter();
+    let Some(first) = items.next() else {
+        return Ok(None);
+    };
+    let mut best = first.clone();
+    for item in items {
+        if beyond(item, &best)? {
+            best = item.clone();
+        }
+    }
+    Ok(Some(best))
 }
 
 /// `percent / 100`.
@@ -118,13 +149,18 @@ fn net_share(percent: impl Factor) -> Result<Ratio, Error> {
 ///
 /// Equality, `Hash` and `Ord` are by value. There is no `Display` of an amount that a person
 /// would mistake for rounded money: it prints `10/3 EUR`, for debugging.
+///
+/// It has no JSON form, on purpose, as ducat's `ExactMoney#toJSON` throws (`ExactMoney has no
+/// JSON form; round() it to Money first`): neither it nor [`AnyExactMoney`] implements serde's
+/// `Serialize` or `Deserialize`, so storing one is a compile error. Round it to [`Money`] first
+/// ([`ExactMoney::round`], or [`ExactMoney::to_money`] where it is exact).
 pub struct ExactMoney<C: Currency> {
     value: Ratio,
     currency: PhantomData<C>,
 }
 
 /// An exact amount whose currency is known only at run time: as [`ExactMoney`], with
-/// [`Error::CurrencyMismatch`] for operands in another currency.
+/// [`Error::CurrencyMismatch`] for operands in another currency. No serde, as [`ExactMoney`].
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct AnyExactMoney {
     value: Ratio,
@@ -184,6 +220,24 @@ impl<C: Currency> ExactMoney<C> {
         C::CODE
     }
 
+    /// The amount in major units as the nearest double: 10/3 EUR is 3.3333333333333335. **For
+    /// display or interop only; never round-trip** (and never do arithmetic on it). Rounded once,
+    /// to the nearest double (ties to even), and ±infinity beyond the largest double, bit for bit
+    /// as ducat's `ExactMoney#toNumber`.
+    ///
+    /// ```
+    /// use ducat::Money;
+    /// use ducat::iso::Eur;
+    ///
+    /// let third = Money::<Eur>::from_units(10, 0)?.exact().divide(3)?;
+    /// assert_eq!(third.to_f64(), 10.0 / 3.0);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::ratio_to_f64(&self.value)
+    }
+
     /// The value in major units, exactly.
     #[must_use]
     pub const fn value(&self) -> &Ratio {
@@ -232,13 +286,32 @@ impl<C: Currency> ExactMoney<C> {
         Self::of(self.value.abs())
     }
 
-    /// The exact share `self ÷ total`.
+    /// The exact share `self ÷ total`, as ducat's `ratioOf`; `total` may be an exact amount or
+    /// a [`Money`] (owned or borrowed).
     ///
     /// # Errors
     ///
-    /// [`Error::DivisionByZero`] for a zero total.
-    pub fn ratio_of(&self, total: &Self) -> Result<Ratio, Error> {
-        self.value.div(&total.value)
+    /// [`Error::DivisionByZero`] for a zero total, ducat's `RangeError`.
+    pub fn ratio_of(&self, total: impl Into<Self>) -> Result<Ratio, Error> {
+        self.value.div(&total.into().value)
+    }
+
+    /// Whether the amount is zero.
+    #[must_use]
+    pub fn is_zero(&self) -> bool {
+        self.value.is_zero()
+    }
+
+    /// Whether the amount is above zero.
+    #[must_use]
+    pub fn is_positive(&self) -> bool {
+        self.value.numer().is_positive()
+    }
+
+    /// Whether the amount is below zero.
+    #[must_use]
+    pub fn is_negative(&self) -> bool {
+        self.value.numer().is_negative()
     }
 
     /// −1, 0 or 1.
@@ -247,13 +320,91 @@ impl<C: Currency> ExactMoney<C> {
         self.value.numer().signum()
     }
 
-    /// Whether the amount is exact at `scale` (default: the currency's exponent).
+    /// The smaller of `self` and `other`, as ducat's `min`; `self` on a tie. `other` may be an
+    /// exact amount or a [`Money`] (owned or borrowed).
+    ///
+    /// This inherent method takes `self` by value so that `a.min(b)` calls it rather than
+    /// [`Ord::min`]. Equal exact amounts are the same reduced fraction, so which of two equal
+    /// values is kept can't be seen; the rule is ducat's all the same.
     #[must_use]
-    pub fn is_exact(&self, scale: Option<u16>) -> bool {
-        let scale = scale.unwrap_or(u16::from(C::CODE.exponent()));
-        self.value
-            .terminating_scale(0)
-            .is_some_and(|needed| needed <= scale)
+    pub fn min(self, other: impl Into<Self>) -> Self {
+        let other = other.into();
+        if other.value < self.value {
+            other
+        } else {
+            self
+        }
+    }
+
+    /// The larger of `self` and `other`, as ducat's `max`; `self` on a tie (where [`Ord::max`]
+    /// keeps the second). `other` may be an exact amount or a [`Money`].
+    #[must_use]
+    pub fn max(self, other: impl Into<Self>) -> Self {
+        let other = other.into();
+        if other.value > self.value {
+            other
+        } else {
+            self
+        }
+    }
+
+    /// The smallest of `items`, the first of equal values winning, as ducat's variadic `min`;
+    /// `None` for none.
+    #[must_use]
+    pub fn min_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Option<Self>
+    where
+        C: 'a,
+    {
+        extreme(items, |item, best| Ok(item.value < best.value)).unwrap_or(None)
+    }
+
+    /// The largest of `items`, the first of equal values winning, as ducat's variadic `max`
+    /// (where `Iterator::max` keeps the last); `None` for none.
+    #[must_use]
+    pub fn max_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Option<Self>
+    where
+        C: 'a,
+    {
+        extreme(items, |item, best| Ok(item.value > best.value)).unwrap_or(None)
+    }
+
+    /// `self` limited to `[lo, hi]`, as ducat's `ExactMoney#clamp`. The bounds may be exact
+    /// amounts or [`Money`] (owned or borrowed), as ducat's take either.
+    ///
+    /// **Unlike [`Ord::clamp`]**, which panics when `lo > hi`, this returns an error. It takes
+    /// `self` by value so that `x.clamp(lo, hi)` calls it rather than `Ord::clamp`.
+    ///
+    /// On a `&ExactMoney` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods:
+    /// the second of equal values wins, and `clamp` panics when lo > hi. Call
+    /// `(*r).clone().clamp(..)` instead.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::LowAboveHigh`] when `lo > hi`, as ducat's `RangeError` (`clamp: lo > hi`).
+    pub fn clamp(self, lo: impl Into<Self>, hi: impl Into<Self>) -> Result<Self, Error> {
+        let (lo, hi) = (lo.into(), hi.into());
+        if lo.value > hi.value {
+            return Err(Error::LowAboveHigh);
+        }
+        // ducat's this.max(lo).min(hi): a bound replaces the value only when strictly beyond it
+        Ok(if lo.value > self.value {
+            lo
+        } else if hi.value < self.value {
+            hi
+        } else {
+            self
+        })
+    }
+
+    /// Whether the amount fits `scale` (default: the currency's exponent) without rounding, as
+    /// ducat's `isExact`.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::InvalidScale`] for a scale beyond [`MAX_SCALE`](crate::MAX_SCALE), ducat's
+    /// `RangeError`.
+    pub fn is_exact(&self, scale: Option<u16>) -> Result<bool, Error> {
+        is_exact_at(&self.value, scale.unwrap_or(u16::from(C::CODE.exponent())))
     }
 
     /// Rounds once: with a mode to `scale` (default: the currency's exponent), with a rounding
@@ -297,8 +448,10 @@ impl<C: Currency> ExactMoney<C> {
     ///
     /// # Errors
     ///
-    /// [`Error::Rounding`] when the value has no finite decimal form (10/3), or needs more than
-    /// [`MAX_SCALE`](crate::MAX_SCALE) places.
+    /// In ducat's order: [`Error::InvalidScale`] for a minimum beyond
+    /// [`MAX_SCALE`](crate::MAX_SCALE); [`Error::Rounding`] when the value has no finite decimal
+    /// form (10/3), ducat's `RoundingError`; [`Error::InvalidScale`] when it needs more than
+    /// `MAX_SCALE` places, ducat's `RangeError`.
     pub fn to_money(&self, minimum_scale: Option<u16>) -> Result<Money<C>, Error> {
         let minimum = minimum_scale.unwrap_or(u16::from(C::CODE.exponent()));
         Ok(Money::from_amount(exact_amount(&self.value, minimum)?))
@@ -371,10 +524,35 @@ impl AnyExactMoney {
         self.currency
     }
 
+    /// As [`ExactMoney::to_f64`]: the nearest double in major units. **For display or interop
+    /// only; never round-trip.**
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::ratio_to_f64(&self.value)
+    }
+
     /// The value in major units, exactly.
     #[must_use]
     pub const fn value(&self) -> &Ratio {
         &self.value
+    }
+
+    /// Whether the amount is zero.
+    #[must_use]
+    pub fn is_zero(&self) -> bool {
+        self.value.is_zero()
+    }
+
+    /// Whether the amount is above zero.
+    #[must_use]
+    pub fn is_positive(&self) -> bool {
+        self.value.numer().is_positive()
+    }
+
+    /// Whether the amount is below zero.
+    #[must_use]
+    pub fn is_negative(&self) -> bool {
+        self.value.numer().is_negative()
     }
 
     /// `self + other`, exactly.
@@ -415,6 +593,106 @@ impl AnyExactMoney {
         Ok(self.with(self.value.div(&divisor.to_ratio()?)?))
     }
 
+    /// As [`ExactMoney::percentage`].
+    ///
+    /// # Errors
+    ///
+    /// Whatever reading `percent` fails with.
+    pub fn percentage(&self, percent: impl Factor) -> Result<Self, Error> {
+        Ok(self.with(self.value.mul(&percent_of(percent)?)))
+    }
+
+    /// `|self|`.
+    #[must_use]
+    pub fn abs(&self) -> Self {
+        self.with(self.value.abs())
+    }
+
+    /// −1, 0 or 1.
+    #[must_use]
+    pub fn signum(&self) -> i8 {
+        self.value.numer().signum()
+    }
+
+    /// The exact share `self ÷ total`, as ducat's `ratioOf`; `total` may be an exact amount or
+    /// an [`AnyMoney`] (owned or borrowed).
+    ///
+    /// # Errors
+    ///
+    /// In ducat's order: [`Error::CurrencyMismatch`] for a total in another currency
+    /// (`expected` `self`'s currency, `actual` the total's); [`Error::DivisionByZero`] for a zero
+    /// total.
+    pub fn ratio_of(&self, total: impl Into<Self>) -> Result<Ratio, Error> {
+        let total = total.into();
+        self.same(&total)?;
+        self.value.div(&total.value)
+    }
+
+    /// The smaller of `self` and `other`, as ducat's `min`; `self` on a tie. `other` may be an
+    /// exact amount or an [`AnyMoney`] (owned or borrowed).
+    ///
+    /// # Errors
+    ///
+    /// [`Error::CurrencyMismatch`] for different currencies. As in ducat, which compares the
+    /// candidate with the smallest so far, `expected` is `other`'s currency and `actual`
+    /// `self`'s.
+    pub fn min(&self, other: impl Into<Self>) -> Result<Self, Error> {
+        let other = other.into();
+        Ok(if other.compare(self)?.is_lt() {
+            other
+        } else {
+            self.clone()
+        })
+    }
+
+    /// The larger of `self` and `other`, as ducat's `max`; `self` on a tie (where [`Ord::max`],
+    /// on types that have it, keeps the second).
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyExactMoney::min`].
+    pub fn max(&self, other: impl Into<Self>) -> Result<Self, Error> {
+        let other = other.into();
+        Ok(if other.compare(self)?.is_gt() {
+            other
+        } else {
+            self.clone()
+        })
+    }
+
+    /// The smallest of `items`, the first of equal values winning, as ducat's variadic `min`;
+    /// `None` for none.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::CurrencyMismatch`] at the first item in another currency than the first item's,
+    /// with `expected` that item's currency and `actual` the first's, as ducat.
+    pub fn min_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Result<Option<Self>, Error> {
+        extreme(items, |item, best| Ok(item.compare(best)?.is_lt()))
+    }
+
+    /// The largest of `items`, the first of equal values winning, as ducat's variadic `max`;
+    /// `None` for none.
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyExactMoney::min_of`].
+    pub fn max_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Result<Option<Self>, Error> {
+        extreme(items, |item, best| Ok(item.compare(best)?.is_gt()))
+    }
+
+    /// As [`ExactMoney::is_exact`].
+    ///
+    /// # Errors
+    ///
+    /// As [`ExactMoney::is_exact`].
+    pub fn is_exact(&self, scale: Option<u16>) -> Result<bool, Error> {
+        is_exact_at(
+            &self.value,
+            scale.unwrap_or(u16::from(self.currency.exponent())),
+        )
+    }
+
     /// The order of the two values.
     ///
     /// # Errors
@@ -423,6 +701,31 @@ impl AnyExactMoney {
     pub fn compare(&self, other: &Self) -> Result<Ordering, Error> {
         self.same(other)?;
         Ok(self.value.cmp(&other.value))
+    }
+
+    /// `self` limited to `[lo, hi]`, as ducat's `ExactMoney#clamp`. The bounds may be exact
+    /// amounts or [`AnyMoney`] (owned or borrowed), as ducat's take either. An error where
+    /// `Ord::clamp` would panic.
+    ///
+    /// # Errors
+    ///
+    /// In ducat's order: [`Error::CurrencyMismatch`] when `lo` and `hi` differ (`expected`
+    /// `lo`'s currency, `actual` `hi`'s); [`Error::LowAboveHigh`] when `lo > hi`;
+    /// [`Error::CurrencyMismatch`] when `self` is in another currency than the bounds
+    /// (`expected` `lo`'s currency, `actual` `self`'s: ducat's `this.max(lo)` compares `lo` with
+    /// `this`).
+    pub fn clamp(&self, lo: impl Into<Self>, hi: impl Into<Self>) -> Result<Self, Error> {
+        let (lo, hi) = (lo.into(), hi.into());
+        if lo.compare(&hi)? == Ordering::Greater {
+            return Err(Error::LowAboveHigh);
+        }
+        Ok(if lo.compare(self)? == Ordering::Greater {
+            lo
+        } else if hi.value < self.value {
+            hi
+        } else {
+            self.clone()
+        })
     }
 
     /// Rounds once to `scale` (default: the currency's exponent).
@@ -510,8 +813,10 @@ impl<C: Currency> Money<C> {
     ///
     /// # Errors
     ///
-    /// [`Error::Rounding`] when the product has no finite decimal form (a factor such as 1/3), or
-    /// needs more than [`MAX_SCALE`](crate::MAX_SCALE) places.
+    /// In ducat's order: whatever reading `factor` fails with; [`Error::Rounding`] when the
+    /// product has no finite decimal form (a factor such as 1/3), ducat's `RoundingError`;
+    /// [`Error::InvalidScale`] when it needs more than [`MAX_SCALE`](crate::MAX_SCALE) places,
+    /// ducat's `RangeError`.
     pub fn multiply_exact(&self, factor: impl Factor) -> Result<Self, Error> {
         let product = value_of(&self.amount).mul(&factor.to_ratio()?);
         Ok(Self::from_amount(exact_amount(
@@ -591,6 +896,22 @@ impl<C: Currency> Neg for ExactMoney<C> {
     }
 }
 
+impl Neg for &AnyExactMoney {
+    type Output = AnyExactMoney;
+
+    fn neg(self) -> AnyExactMoney {
+        self.with(self.value.neg())
+    }
+}
+
+impl Neg for AnyExactMoney {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        -&self
+    }
+}
+
 impl<C: Currency> core::iter::Sum for ExactMoney<C> {
     /// The exact sum; zero for none.
     fn sum<I: Iterator<Item = Self>>(items: I) -> Self {
@@ -630,6 +951,48 @@ impl<C: Currency> From<ExactMoney<C>> for AnyExactMoney {
             value: exact.value,
             currency: C::CODE,
         }
+    }
+}
+
+impl<C: Currency> From<&ExactMoney<C>> for ExactMoney<C> {
+    /// A copy, so that operations taking `impl Into<ExactMoney<C>>` take references too.
+    fn from(exact: &ExactMoney<C>) -> Self {
+        exact.clone()
+    }
+}
+
+impl<C: Currency> From<&Money<C>> for ExactMoney<C> {
+    /// As [`Money::exact`].
+    fn from(money: &Money<C>) -> Self {
+        money.exact()
+    }
+}
+
+impl<C: Currency> From<Money<C>> for ExactMoney<C> {
+    /// As [`Money::exact`].
+    fn from(money: Money<C>) -> Self {
+        money.exact()
+    }
+}
+
+impl From<&AnyExactMoney> for AnyExactMoney {
+    /// A copy, so that operations taking `impl Into<AnyExactMoney>` take references too.
+    fn from(exact: &AnyExactMoney) -> Self {
+        exact.clone()
+    }
+}
+
+impl From<&AnyMoney> for AnyExactMoney {
+    /// As [`AnyMoney::exact`].
+    fn from(money: &AnyMoney) -> Self {
+        money.exact()
+    }
+}
+
+impl From<AnyMoney> for AnyExactMoney {
+    /// As [`AnyMoney::exact`].
+    fn from(money: AnyMoney) -> Self {
+        money.exact()
     }
 }
 

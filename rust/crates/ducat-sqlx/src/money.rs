@@ -171,6 +171,210 @@ impl<C: Currency> From<MinorColumn<C>> for Money<C> {
     }
 }
 
+/// The units and scale to store in a minor-unit column with a scale column, for any money
+/// (ducat's `minorToDriver` with a scale, the layout of `toMinorColumns` and Kysely's `setMoney`
+/// with `{ scale }`): the amount in units of 10^−scale at the money's own scale, and that scale.
+/// [`ScaledMinorColumn`] binds a `Money<C>` the same way.
+///
+/// ```
+/// use ducat::{AnyMoney, CurrencyCode, Rounding};
+///
+/// let eur = CurrencyCode::iso("EUR")?;
+/// let money = AnyMoney::parse_at("1.005", eur, 3, Rounding::Unnecessary)?;
+/// assert_eq!(ducat_sqlx::scaled_minor_units(&money)?, (1005, 3));
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// # Errors
+///
+/// [`Error::OutOfRange`] beyond ±(2^63 − 1) units, where MySQL outside strict mode would store
+/// the nearest limit instead. Any scale is stored, so there is no [`Error::ScaleMismatch`].
+pub fn scaled_minor_units<M: MoneyValue>(money: &M) -> Result<(i64, i16), Error> {
+    Ok(ducat_sql_core::scaled_units(money.units(), money.scale())?)
+}
+
+/// A BIGINT (Postgres, MySQL) or INTEGER (SQLite) column of units with an integer scale column
+/// beside it, in a fixed currency: `(1005, 3)` is 1.005 EUR, `(12, 0)` is 12 EUR. ducat's
+/// `moneyMinor(currency, { scale })` with `scaledMoney` (ducat#380): the units are counted at
+/// each value's own scale, which the scale column records, so any scale round-trips (above, at or
+/// below the currency's exponent) and stored amounts keep their meaning if an exponent changes.
+///
+/// It spans two columns, so it is written with [`to_columns`](Self::to_columns) (bind the units
+/// and the scale) and read with [`from_columns`](Self::from_columns) from the units and the
+/// scale as selected, or [`from_nullable_columns`](Self::from_nullable_columns) for a nullable
+/// amount (ducat's `scaledMoney`: NULL for a NULL amount). A [`MinorColumn<C>`] reads the units
+/// column alone at the exponent, which is what ducat refuses for a column with a scale column:
+/// read both.
+///
+/// Writing refuses only units beyond ±(2^63 − 1) ([`Error::OutOfRange`]). Reading refuses a
+/// NULL, negative or too large scale ([`Error::InvalidScaleColumn`]), checked before the units,
+/// as ducat's `readScale`.
+///
+/// ```
+/// use ducat::{iso::Eur, Money, Rounding};
+/// use ducat_sqlx::{Error, ScaledMinorColumn};
+///
+/// let amount = ScaledMinorColumn(Money::<Eur>::parse_at("1.005", 3, Rounding::Unnecessary)?);
+/// assert_eq!(amount.to_columns()?, (1005, 3));
+/// assert_eq!(ScaledMinorColumn::<Eur>::from_columns(1005, Some(3))?, amount);
+/// assert_eq!(
+///     ScaledMinorColumn::<Eur>::from_columns(5, None),
+///     Err(Error::InvalidScaleColumn(None)),
+/// );
+/// assert_eq!(ScaledMinorColumn::<Eur>::from_nullable_columns(None, None)?, None);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct ScaledMinorColumn<C: Currency>(pub Money<C>);
+
+impl<C: Currency> ScaledMinorColumn<C> {
+    /// The units and the scale to store, as [`scaled_minor_units`].
+    ///
+    /// # Errors
+    ///
+    /// As [`scaled_minor_units`].
+    pub fn to_columns(&self) -> Result<(i64, i16), Error> {
+        scaled_minor_units(&self.0)
+    }
+
+    /// The money from stored units and the scale column's value (`None` for NULL).
+    ///
+    /// # Errors
+    ///
+    /// [`Error::InvalidScaleColumn`] for a NULL scale, a negative one or one beyond
+    /// [`ducat::MAX_SCALE`].
+    pub fn from_columns(units: i64, scale: Option<i64>) -> Result<Self, Error> {
+        let scale = ducat_sql_core::read_scale(scale)?;
+        Ok(Self(Money::from_units(units, scale)?))
+    }
+
+    /// The money from a nullable units column and its scale column: `None` for a NULL amount,
+    /// whatever the scale holds (ducat's `scaledMoney`), else as
+    /// [`from_columns`](Self::from_columns).
+    ///
+    /// # Errors
+    ///
+    /// As [`from_columns`](Self::from_columns), for a non-NULL amount.
+    pub fn from_nullable_columns(
+        units: Option<i64>,
+        scale: Option<i64>,
+    ) -> Result<Option<Self>, Error> {
+        units
+            .map(|units| Self::from_columns(units, scale))
+            .transpose()
+    }
+}
+
+impl<C: Currency> From<Money<C>> for ScaledMinorColumn<C> {
+    fn from(money: Money<C>) -> Self {
+        Self(money)
+    }
+}
+
+impl<C: Currency> From<ScaledMinorColumn<C>> for Money<C> {
+    fn from(column: ScaledMinorColumn<C>) -> Self {
+        column.0
+    }
+}
+
+/// A JSON column holding ducat's money JSON, `{"amount":"12.34","currency":"EUR"}`, with the
+/// currency in each value: Postgres jsonb or json, MySQL JSON, or SQLite TEXT. ducat's `moneyJson`
+/// column shape: `JsonColumn<AnyMoney>` is `moneyJson()`, any currency, and `JsonColumn<Money<C>>`
+/// is `moneyJson('EUR')`, a fixed one. The SQL types are Postgres jsonb (bound as jsonb; json columns take it by assignment) and json, MySQL JSON, and SQLite TEXT.
+///
+/// Writing gives exactly ducat's `JSON.stringify(money)`: the amount a string at the currency's
+/// exponent, then the code, in that order and without spaces; money at another scale is
+/// [`Error::ScaleMismatch`] (round it first, as ducat's `checkIsoScale` asks).
+///
+/// Reading is ducat's `jsonFromDriver`: any JSON object whose `amount` and `currency` are strings,
+/// other fields ignored and the last of duplicate keys winning (`JSON.parse`), else
+/// [`Error::NotMoneyJson`] (or [`Error::Malformed`] for text that isn't JSON). The amount is read
+/// in ducat's grammar at the JSON currency's exponent without rounding (`"12.3"` is 12.30 EUR,
+/// `"12.345"` is [`ducat::Error::Rounding`]); in ducat's order, an unknown code is
+/// [`Error::UnknownCurrency`] first, then the amount's errors, then another currency than `C`'s
+/// [`Error::CurrencyMismatch`]. A JSON or JSONB value that is a JSON string is parsed again, as
+/// ducat's drivers (node-postgres, mysql2) hand ducat the string; SQLite's TEXT is parsed once.
+///
+/// ```
+/// use ducat::{iso::Eur, AnyMoney, Money};
+/// use ducat_sqlx::{Error, JsonColumn};
+///
+/// let refund = JsonColumn("12.34".parse::<Money<Eur>>()?);
+/// assert_eq!(refund.to_json()?, r#"{"amount":"12.34","currency":"EUR"}"#);
+/// let any = JsonColumn::<AnyMoney>::from_json(r#"{"currency": "KWD", "amount": "1.5"}"#)?;
+/// assert_eq!(any.0.to_string(), "1.500 KWD");
+/// assert!(matches!(
+///     JsonColumn::<Money<Eur>>::from_json(r#"{"amount":"1","currency":"USD"}"#),
+///     Err(Error::CurrencyMismatch { .. }),
+/// ));
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct JsonColumn<M: MoneyValue>(pub M);
+
+impl<M: MoneyValue> JsonColumn<M> {
+    /// The JSON text the column stores.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::ScaleMismatch`] unless the money is at its currency's exponent.
+    pub fn to_json(&self) -> Result<String, Error> {
+        check_exponent_scale(&self.0)?;
+        let amount = Decimal::from_money(&self.0).to_string();
+        Ok(ducat_sql_core::json::write(
+            &amount,
+            self.0.currency().as_str(),
+        ))
+    }
+
+    /// The money from a TEXT column's JSON (ducat's `fromJSON` of the text).
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Malformed`] for text that isn't JSON; [`Error::NotMoneyJson`]; then as
+    /// [`JsonColumn`] says: [`Error::UnknownCurrency`], [`Error::Ducat`] for the amount
+    /// ([`ducat::Error::Syntax`], [`ducat::Error::Rounding`]), [`Error::CurrencyMismatch`].
+    pub fn from_json(text: &str) -> Result<Self, Error> {
+        let (amount, code) = ducat_sql_core::json::read(text)?;
+        Self::from_fields(&amount, &code)
+    }
+
+    /// The money from a JSON or JSONB column's JSON, where a JSON string is parsed again, as
+    /// ducat's drivers do (see [`JsonColumn`]).
+    ///
+    /// # Errors
+    ///
+    /// As [`from_json`](Self::from_json).
+    pub fn from_parsed_json(text: &str) -> Result<Self, Error> {
+        let (amount, code) = ducat_sql_core::json::read_parsed(text)?;
+        Self::from_fields(&amount, &code)
+    }
+
+    /// ducat's `money(amount, currency)` then `checkCurrency`: the JSON's currency is resolved
+    /// first (`C` itself for a custom currency), the amount read at its exponent, and only then
+    /// compared with `C`.
+    fn from_fields(amount: &str, code: &str) -> Result<Self, Error> {
+        let currency = match M::resolve_currency(code) {
+            Ok(currency) => currency,
+            Err(_) => CurrencyCode::iso(code).map_err(|_| Error::UnknownCurrency(code.into()))?,
+        };
+        let money = AnyMoney::parse(amount, currency)?;
+        Ok(Self(M::from_any(money)?))
+    }
+}
+
+impl<C: Currency> From<Money<C>> for JsonColumn<Money<C>> {
+    fn from(money: Money<C>) -> Self {
+        Self(money)
+    }
+}
+
+impl From<AnyMoney> for JsonColumn<AnyMoney> {
+    fn from(money: AnyMoney) -> Self {
+        Self(money)
+    }
+}
+
 /// A decimal column in a fixed currency, at the currency's exponent: Postgres NUMERIC, MySQL
 /// DECIMAL, or SQLite TEXT (SQLite's NUMERIC affinity would store some decimals as REAL and lose
 /// digits). ducat's `moneyDecimal` column shape.

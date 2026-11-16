@@ -7,18 +7,26 @@ Status: milestones 1 to 7 are done: milestones 1 to 3 (the core, allocation and 
 `Rate`), milestone 4 (`finance`, and `excel` for the functions named after Excel's, as in ducat), and milestones 5 to 7
 below. Milestone 8 (fuzzing) hasn't started.
 
+### Milestone 5a: policies, pricing, tiers and math
+
 Milestone 5a added rounding policies (`RoundingPolicy`, accepted wherever a mode is, as `impl Into<RoundingInput>`),
 pricing, tiers and math, with their vectors in `spec/`.
+
+### Milestone 5b: currency data
 
 Milestone 5b added the currency data (numeric codes, historic codes, territories, crypto units, CLDR's cash
 rules and `cash_policy`), generated from `data/` by `tests/it/currency_data.rs` with a drift check, as for ISO. The
 ISO exponent, CLDR's display digits and the cash rules stay separate figures.
+
+### Milestone 5c: payment processors
 
 Milestone 5c added the payment processors, one feature and module each under `ducat::processors`, with their
 tables generated from `data/` by `tests/it/processor_tables.rs` with a drift check. Integer amounts are `i64`, refused
 beyond 2^53 − 1 on the way to the processor as in ducat, and read back whatever their size (ducat refuses only
 unsafe JavaScript numbers there, and reads any `bigint`); the `from_*` constructors take a `CurrencyCode`, so only the `&str` lookups are
 case-insensitive (Adyen's excepted).
+
+### Milestone 5d1: rates, providers and bags
 
 Milestone 5d1 extended `ducat::convert` to ducat's rates, providers and bags, still under the `convert` feature
 (ducat ships the bag in its convert entry):
@@ -48,6 +56,8 @@ Milestone 5d1 extended `ducat::convert` to ducat's rates, providers and bags, st
 - **Left out:** `snapshots` and `snapshotsFrom`, which load tables asynchronously, and the rate-source parsers
   (milestone 5d2).
 
+### Milestone 5d2: rate sources
+
 Milestone 5d2 ported the rate-source parsers, one feature each (`ecb`, `boc`, `fed`, `boe`, `hmrc`, `history`,
 `stripe-fx`, `adyen-fx`), under `ducat::convert`. They take `&str`, never fetch, return `Error::MalformedRates`
 (ducat's `SyntaxError`) for a file they can't read, and give `RateTable`s with the metadata ducat attaches. The
@@ -68,7 +78,10 @@ fixtures live in `spec/fixtures/`, shared with ducat's tests, and `spec/vectors/
   read as ducat reads the number (at most 15 significant digits unless a safe integer).
 - **Years 0 to 99** are refused in file dates, as ducat's `Date.UTC` check refuses them.
 - **Left out:** Adyen's IANA `timeZone` option (it needs time-zone data; the TimeZone column's abbreviations and
-  offsets are read), and `src/fetch.ts` (milestone 7b's `ducat-fetch`).
+  offsets are read; it came later, behind the `tz` feature: "Adyen's account time zone" below), and `src/fetch.ts`
+  (milestone 7b's `ducat-fetch`).
+
+### Milestone 5e: wire formats
 
 Milestone 5e added `ducat::wire` (the default `wire` feature): `GoogleMoney`, `Iso20022Amount`, `MinorUnitAmount`
 and `DineroObject`, plain structs with conversions to and from `Money` and `AnyMoney`, and with `serde` each in its
@@ -76,7 +89,13 @@ format's JSON shape. Malformed input is an error, never a rounding (`Error::Inva
 20022 text). The readers take what the specs allow, as ducat does since #356: ProtoJSON's numbers or strings for
 `units` and `nanos`, exponent form included, and `xs:decimal`'s leading sign and `-0`. ducat's rule that a `units`
 *number* past 2^53 − 1 is refused is JavaScript's: serde reads JSON integers without loss, so the port has no such
-rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either.
+rule. ISO 20022 has no XML in ducat (an amount is its attribute and text), so none here either. Currencies outside ISO 4217
+have no registry to look up ([decision 2](#decisions-made-while-building-milestone-1)): a `Money<C>` reader reads `C::CODE` at its exponent, and `AnyMoney`'s
+`from_*_with` readers take the currencies ducat's `defineCurrency` would have registered as an argument
+(`wire::KnownCurrencies`: a code, a slice, or a resolver closure). ISO codes resolve first, then the caller's, then
+the withdrawn table, so a withdrawn code held at another exponent is the caller's.
+
+### Milestone 6a: words
 
 Milestone 6a added amounts and numbers in words, in their own crate, `ducat-words`, so a program that wants only words
 never pulls in format and parse data (milestone 6c's `ducat-format`). It is ducat's own RBNF interpreter
@@ -87,20 +106,56 @@ recursion is bounded, so adversarial rule text is an error, not a stack overflow
 the digit grouping of numbers the rules write as digits (separator and minimum grouping digits), and the word for "and"
 come from the CLDR 48 snapshot (`data/cldr/`), generated into `src/cldr.rs` by `tests/it/cldr.rs` with a drift check, as the
 rule text is; ducat reads them from `Intl`, CLDR 48 on Node 24. The rule text is CLDR 49 and these values
-CLDR 48, the release ducat's `Intl` carries. `amount_in_words` takes the currency's names from the caller, as both take the minor unit's.
+CLDR 48, the release ducat's `Intl` carries. `amount_in_words` takes the currency's names from the caller, as both take the minor unit's,
+or, with the feature `cldr-names`, CLDR 48's (below).
 
-**Currency names diverge here.** ducat's `amountInWords` takes the currency's name, its plural form and its place next to
-the number from the runtime's `Intl` (a currency format with `currencyDisplay: 'name'`, its digits replaced by the
-words), so the text follows that runtime's CLDR data and build: ICU 78.3 puts U+00A0 before a name in fr-CA, Deno
-2.9.8's data a space (spec/README.md, "Runtime divergences"). `ducat-words` has no `Intl`: the caller passes the
-names (`UnitNames`: `other`, with `one` and `many` where they differ), they follow the number after a plain space, and the plural category comes from
-CLDR 48's rules (`src/cldr.rs`). For the seven languages CLDR 48's `unitPattern` is `{0} {1}` with a plain space, so the
-two agree when the caller passes CLDR's names. They differ where the caller's names aren't CLDR's, where a runtime's
-data isn't CLDR 48 (or isn't ICU's build of it), and for `many` (a million euros in es, fr, it, pt): CLDR has no
-`many` name for most currencies, and `Intl` falls back to `other`, as `UnitNames` does without `many`. The snapshot
-in `data/cldr/` carries CLDR's names (`main/<locale>/currencies.json`), so a later milestone can offer them as
-defaults; until then they are the caller's, and the words vectors (`words.spellOut`) don't cover names. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
+#### Currency names in words
+
+ducat's `amountInWords` takes the currency's name, its plural form and its place next to the number from the runtime's
+`Intl` (a currency format with `currencyDisplay: 'name'`, its digits replaced by the words), so the text follows that
+runtime's CLDR data and build: ICU 78.3 puts U+00A0 before a name in fr-CA, Deno 2.9.8's data a space (spec/README.md,
+"Runtime divergences"). `ducat-words` has no `Intl`. The caller can pass the names (`AmountInWordsOptions::new`, with
+`UnitNames`: `other`, with `one` and `many` where they differ), or, with the feature `cldr-names` (not a default),
+take CLDR 48's (`AmountInWordsOptions::default()`, `currency: None`; `ducat_words::currency_names`). Either way the
+name follows the number after a plain space (for the seven languages CLDR 48's `unitPattern` is `{0} {1}`, which the
+generator checks), in the plural category CLDR 48's rules give (`src/cldr.rs`), else `other`.
+
+- **Data:** `tests/it/cldr.rs` also generates `src/names.rs` from `data/cldr/main/<language>/currencies.json`, with a
+  drift check, as it does `src/cldr.rs`: for each language a table sorted by code of `other`
+  (`displayName-count-other`, else `displayName`), and `one` and `many` where CLDR has them and they differ from
+  `other` (two, few and zero aren't categories of the seven languages; the generator refuses one that is). CLDR 48 has
+  no `many` name in these languages, so a million euros in es, fr, it and pt is `other`'s, as ICU falls back. The
+  languages inherit their names from root, which has none (the generator checks). Each table is behind its language's
+  feature too, so `cldr-names` with `en` alone carries English names only (about 300 currencies a language, some
+  30 KB of text each).
+- **Why not reuse `ducat-format`'s tables, or a crate of their own:** `ducat-format`'s names are spread through the
+  locale tables of its 430 locales (as differences from each parent, in the same records as symbols and patterns), so
+  depending on it, even for names alone, would pull its data and locale features in. A small shared crate
+  (`ducat-cldr-names`) would hold the same 2,000 entries `src/names.rs` does: `ducat-format` couldn't use it without
+  reshaping its per-locale inheritance (it needs every locale's names, not seven languages'), so it would remove no
+  duplication, and it would add a crate to build, publish and license. Generating into `ducat-words` keeps one
+  regeneration (`data/cldr/README.md`), one source snapshot for both crates, and nothing new to publish; the cost is
+  that the seven languages' names exist in both crates' generated files.
+- **Lookup:** the code is read as `Intl` reads it, three ASCII letters in either case (`btc` is `BTC`). A three-letter
+  code CLDR doesn't name in the language is written as the code, upper-cased (`two XBT`), as `Intl` writes it; a code
+  that isn't three letters (`USDC`) is `Err(NoCurrencyNames)`, ducat's `RangeError`, as is `currency: None` in a build
+  without `cldr-names` or without the language's feature.
+- **Checked against ducat:** every currency CLDR 48 or Node 24's `Intl.supportedValuesOf('currency')` names, plus
+  unknown, lower-case and longer codes (315 codes), at 0, 1, 2, 21, 101, a million, two million, a million and one,
+  three billion and four fractional amounts, in the seven languages: 28,189 amounts, compared with the built
+  `amountInWords` on Node 24 (ICU 78.3). All agree but the 13 of ITL in `it`: CLDR gives ITL there its own pattern
+  (`¤ #,##0.00`), and ICU puts its symbol before the name (`ITL un lire italiane e 00/100`); the crate writes
+  `un lire italiane e 00/100`, following TR35 as `ducat-format` does for names (milestone 6c), which leaves a
+  currency's own pattern and symbol out of the name form. That is a divergence from ducat's words: ducat's TypeScript
+  takes ICU's long name, garbled as in ducat#363, until [ducat#400](https://github.com/public/ducat/issues/400). `scripts/words-names-cases.mjs` writes the cases and
+  `tests/it/names.rs`' ignored `matches_ducat_on_node` compares them (`data/cldr/README.md`); the test keeps a spread
+  of them that runs every time.
+
+The words still differ from ducat where the caller's names aren't CLDR's and where a runtime's data isn't CLDR 48 (or
+isn't ICU's build of it); the words vectors (`words.spellOut`) don't cover names. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
 and runs every row; the MSRV is the core's, 1.85.
+
+### Milestone 6c: format and parse
 
 Milestone 6c added locale formatting and parsing, in their own crate, `ducat-format`, from CLDR 48's data and ducat's own
 code, with no ICU. ICU4X was the plan; ducat chose otherwise because no ICU4X release carries CLDR 48.0 throughout
@@ -130,7 +185,7 @@ ICU 78.3 carries CLDR 48, so the crate follows that release and ICU's shipped di
   spec test (2,538, 1,629 and 1,757 rows, all passing, the icu-overrides files included). Its proptests round-trip
   format and parse in every built locale and feed arbitrary tags, options, amounts and text to the public API.
 
-### Coverage
+#### Coverage
 
 The crate has the locales CLDR rates modern: 430 (root, `und`, included) in 101 languages, a feature each (`full`
 for all); `hi` also needs `en` (hi-Latn inherits en-IN), `ht` needs `fr`, `nb` and `nn` need `no`. The default set is
@@ -170,6 +225,8 @@ symbol and long names (from the CLDR tables) as a whole beside the number, whate
 sign: PEN's `S/` in es-PE and CLF's `Chilean units of account (UF)` read back exactly, and anything else around the number
 is still refused. It also takes a long name's number grouped in the decimal pattern, as `Intl` writes it (lakhs in ml, mr
 and or).
+
+### Milestone 7b: fetching rates
 
 Milestone 7b added ducat's `./convert/fetch` entry (`src/fetch.ts`: `fetchEcb`, `fetchEcbRange`, `fetchBankOfCanada`,
 `ECB_URLS`, `ECB_DATA_API`, `BANK_OF_CANADA_URL`, `FetchRatesError`) as its own crate, `ducat-fetch`, the only code
@@ -227,6 +284,8 @@ of the port that touches the network. It reuses `ducat::convert`'s `ecb` and `bo
   asserted as literals, byte for byte, and were checked against `fetch.ts` run under vitest with a recording fetch.
   `spec/vectors/` has no fetch area, so there is no spec test; a test fails if one appears. `tests/it/live.rs` calls the
   real endpoints through `UreqTransport` and is `#[ignore]`d: CI makes no requests.
+
+### Milestone 7c, part 1: sqlx
 
 Milestone 7c, part 1, added `ducat-sqlx`, money columns for sqlx 0.8: the counterpart of ducat's `./pg` and of the
 column shapes `./drizzle/mysql` and `./drizzle/sqlite` (through `src/sql.ts`) store.
@@ -287,6 +346,8 @@ column shapes `./drizzle/mysql` and `./drizzle/sqlite` (through `src/sql.ts`) st
   `macros`). sqlx 0.8.6 and every dependency it resolves to need Rust 1.85 at most, so the crate keeps the
   workspace's MSRV (CI checks it); sqlx 0.9 needs 1.94 and isn't used.
 
+### Milestone 7c, part 2: the shared SQL core
+
 Milestone 7c, part 2, first moved the database-library independent half of `ducat-sqlx` into an internal crate,
 `crates/ducat-sql-core` (`publish = false`, depending on `ducat` alone, no sqlx or diesel), so that `ducat-diesel` shares
 it instead of copying it:
@@ -305,6 +366,8 @@ it instead of copying it:
 - **Why not duplicate:** the shells left in each crate are mostly documentation; the copied logic would have been the
   NUMERIC conversion, the decimal grammar, the size checks and the record parser, where a fix in one crate and not the
   other would make the two disagree on what a column holds.
+
+### Milestone 7c, part 2: diesel
 
 Milestone 7c, part 2, then added `ducat-diesel`, money columns for diesel 2: the diesel counterpart of `ducat-sqlx`,
 with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
@@ -359,13 +422,133 @@ with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
   lockfile stays on diesel 2.2 (2.3 needs 1.86, 2.4 1.88). The requirement `2.2` admits them; the library was checked
   against diesel 2.4.0 outside the workspace and compiles unchanged.
 
+### Adyen's account time zone (`tz`)
+
+ducat's `adyenRate(row, { timeZone })` reads Creation Date in the account's IANA zone, summer time included, through
+`Intl.DateTimeFormat`. The port has it behind `tz`, an optional feature of `ducat`, off by default:
+`AdyenRateOptions { time_zone }` and `adyen_rate_with(row, options)` (`adyen_rate` is unchanged).
+- **Data:** jiff 1.0.0 (`default-features = false`, `std` and `tzdb-bundle-always`), which embeds the IANA time zone
+  database through jiff-tzdb (tzdb **2026f** in jiff-tzdb 1.0.0; public domain, listed in NOTICE). Zones are looked up
+  only in `TimeZoneDatabase::bundled()`, never `jiff::tz::db()` or the host's zoneinfo, so a result depends neither
+  on the machine nor on another crate in the build turning on jiff's `tzdb-zoneinfo`. The normal dependencies added
+  are jiff, jiff-core and jiff-tzdb (the lockfile also lists jiff-static, portable-atomic and portable-atomic-util,
+  which jiff declares for other targets and `cfg(any())`; none is built). A release binary reading one zone grows by
+  about 333 KiB with `tz` on (492,712 to 833,680 bytes, stripped, x86_64 Linux), nearly all of it the tzdb.
+- **Results follow the bundled tzdb's version,** not ducat's runtime's: a jiff-tzdb release with new rules changes
+  them. `tests/it/adyen_tz.rs` pins the version (`jiff_tzdb::VERSION == "2026f"`), so a bump that changes it fails
+  until someone re-checks the zones it changes and the docs. Node 24.22.2 (ducat's reference runtime) has tzdb 2026e;
+  of the 4,634 cases `scripts/adyen-tz-cases.mjs --all` writes (every zone `Intl` lists, at midday in four years
+  and around each 2026 clock change) one differs, America/Havana at 01:00 on 1 November 2026, which 2026f keeps on
+  −04:00. The test lists it.
+- **Only `std`:** `tz` implies `std` (jiff's cache of parsed zones). An alloc-only `tz` is a possible additive
+  follow-up: jiff builds with `alloc` and the bundled tzdb, parsing a zone on each lookup.
+- **Clock changes:** a wall time is resolved with `to_ambiguous_timestamp(dt).compatible()`, Temporal's
+  `'compatible'`, which ducat's own algorithm matches since #402: a fold is the earlier instant, a gap the wall time
+  pushed forward by the gap. jiff's instants end late on 9999-12-30, so the last hours of 9999 are resolved 400 years
+  earlier (the calendar and a zone's rule repeat); an instant past 9999 is no `as_of`, as for the TimeZone column.
+- **Names** are looked up case-insensitively, as `Intl`. `Intl` refuses the tzdb's `Factory` and jiff's
+  `Etc/Unknown`, so the port does too.
+- **Offsets** are what Node 24's `Intl.DateTimeFormat` takes as a `timeZone` (ES2024's offset time zones): a sign (`+`,
+  `-` or U+2212) and `HH`, `HHMM` or `HH:MM`, to 23:59, used as a fixed offset. A one-digit hour, seconds, `Z`, a `UTC`
+  or `GMT` prefix and spaces are refused, as `Intl` refuses them (the TimeZone column's own reading, which takes
+  `UTC+1` and `GMT-0530`, is unchanged).
+- **Errors:** a zone that is neither is `Error::UnknownTimeZone` (kind `Range`, ducat's `RangeError`), only when
+  Creation Date has a time to read in it: ducat builds its formatter there, so a day-only Creation Date, an unreadable
+  one or none at all never reaches the zone.
+
+### Known gaps
+
 Known gaps, to close later:
-- `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
-- The JSON column shapes (`moneyJson`, `jsonToDriver`) in `ducat-sqlx` and `ducat-diesel`.
-- CLDR's currency names as defaults for `ducat-words`' `amount_in_words` (the caller passes them).
+- `snapshots` and `snapshotsFrom` (asynchronous loaders).
 - Fuzzing (milestone 8).
 
 The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.
+
+## Parity decisions
+
+Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this section, and decisions it records:
+
+- **Single rounding into another scale.** TS's public kernel `multiplyByRatioAtScale(minor, ratio, scaleShift, mode)`
+  isn't public in Rust; the same single rounding is `Money::multiply` (or `AnyMoney::multiply`) with a
+  `RoundingPolicy` that carries the target scale (`RoundingPolicy::new(mode).with_scale(s)?`), which rounds the product
+  once, at `s`. `multiply` then `to_scale` would round twice. The failures differ: the TS kernel checks none of its
+  arguments (any integer `scaleShift` works, including one to a negative or a past-1000 scale; a fractional or
+  infinite shift is a native `RangeError` from `BigInt`, and `NaN` acts as 0), where the Rust target scale is a `u16`
+  that `with_scale` refuses past `MAX_SCALE` with `Error::InvalidScale`. No path panics.
+- **Two functions, not a `usage` field.** `currencyDigits(code, { usage })` is two functions: `cash_digits` for
+  `'cash'` and `CurrencyCode::exponent` for `'standard'`.
+- **Money is always formatted as its own currency.** `ducat-format` takes no `style`, `currency`, `unit` or
+  `unitDisplay`: a `Money` formats as a currency amount in its own currency; formatting another code or style would
+  drop or misstate the currency.
+- **Floats only go out.** "No floats in arithmetic" still holds: no float is read back or computed with. `to_f64`
+  and `to_minor_f64` (TS `toNumber`, `toMinorNumber` with `ToMinorF64Options::lossy`, `Fixed#toNumber`,
+  `ExactMoney#toNumber`) are explicitly lossy, output-only conversions, documented "for display or interop only;
+  never round-trip", and never called inside ducat: `rust/clippy.toml` disallows them across the workspace
+  (`clippy::disallowed_methods`), and only their own tests opt out. Each is rounded once, bit for bit as ducat: a
+  decimal amount is its exact decimal parsed with `str::parse::<f64>` (in `core`, correctly rounded, ties to even, as
+  JavaScript's `Number` of the decimal string), with no float arithmetic on the way; an `ExactMoney` follows ducat's
+  own algorithm (a 65- or 66-bit quotient with a sticky bit, converted once, then scaled by two exact powers of two),
+  which also keeps ducat's second rounding below 2^−1022. Overflow is ±infinity, as `Number('1e400')`, not an error;
+  `to_minor_f64` without `lossy` is `Err(Overflow)` past 2^53 − 1 minor units (ducat's `RangeError`), after
+  `Err(Rounding)` for digits below the minor unit. A zero amount has no sign, so it is +0.0 at any scale; −0.0 comes
+  only from a negative amount below the smallest subnormal (−1 at scale 400), as in ducat.
+- **Exact amounts have no JSON form.** ducat's `ExactMoney#toJSON` always throws (`TypeError`: `ExactMoney has no
+  JSON form; round() it to Money first`), and nothing reads one back, so there is no shape to port. `ExactMoney<C>`
+  and `AnyExactMoney` implement neither `Serialize` nor `Deserialize` under `serde`: where ducat fails when
+  `JSON.stringify` runs, here a value or struct holding one fails to compile. A total to be stored is rounded to
+  `Money` first (`round`, or `to_money` where it is exact), as in ducat. Earlier notes proposed serde for exact
+  amounts; it would be a JSON form ducat refuses.
+
+- **Adyen's Creation Date.** `adyen_rate` reads the Creation Date as `Date.parse` would but never fails on it: a date
+  or time it can't read gives the local day (or no `as_of`), where ducat throws a `RangeError`; and it takes ISO and
+  historic codes only (`UnknownCurrency`), where ducat takes any string.
+- **Adyen's account time zone.** `AdyenRateOptions::time_zone` refuses ICU's legacy three-letter IDs (`ACT`, `AET`,
+  `AGT`, `ART`, `AST`, `BET`, `BST`, `CAT`, `CNT`, `CST`, `CTT`, `EAT`, `ECT`, `IET`, `IST`, `JST`, `MIT`, `NET`, `NST`,
+  `PLT`, `PNT`, `PRT`, `PST`, `SST`, `VST`) and the removed `SystemV/` zones, `US/Pacific-New` and
+  `Canada/East-Saskatchewan`, which ducat's `Intl` (ICU 78) accepts: they aren't in the tz database, and some would
+  read differently from the TimeZone column. ICU's `IST` is Asia/Kolkata, where ducat's column reading leaves `IST`
+  out as ambiguous (India, Ireland or Israel), and ICU's `PST` is America/Los_Angeles with summer time, where the
+  column's `PST` is −08:00 all year. They are `Error::UnknownTimeZone`, ducat's error for an unknown zone; the IANA
+  name (`Asia/Kolkata`) works in both. The tzdb's own `EST`, `MST`, `HST`, `CET`, `EET`, `MET`, `WET` and `EST5EDT`-style
+  names are in the bundle and accepted. Offsets that include seconds (local mean time, Liberia before 1972) are used
+  exactly, where ducat rounds them to the minute, and years before 100 are read correctly, where ducat's `Date.UTC`
+  takes years 0 to 99 as 1900 to 1999.
+- **Column and test-strategy shapes.** `DecimalColumn<C>` carries no size and checks only the scale: a sized
+  NUMERIC/DECIMAL is checked with `DecimalColumnSize::check_currency` and `fit` (ducat's `moneyDecimal` checks the
+  integer digits itself). Decimal text read from a column (SQLite TEXT, a MySQL string column) is held to
+  `-?[0-9]+(\.[0-9]+)?`, where ducat reads it with `money()`, which also takes a `+` sign and an exponent.
+  `parseBigInt` has no reader of its own: sqlx and diesel decode BIGINT as `i64`, and `Int`'s `FromStr`, which also
+  takes a leading `+`, stands in for hand-read text. `Decimal`'s `FromStr` is `parseNumeric` returning a value, so text
+  with more than 1000 decimals, which `parseNumeric` returns unchanged, is an error. The proptest strategies
+  (`arb_currency`, `arb_money`) panic, with ducat's message, where ducat's arbitraries throw a `RangeError`: a strategy
+  is built in test code, where a panic is the failure.
+
+- **Rounding modes have one name each.** `Rounding` is an enum of ECMA-402's ten modes plus `Unnecessary`, with
+  ECMA-402's names (`HalfExpand`, `HalfEven`, `Trunc`, `Expand`). ducat's `Rounding` object also spells them
+  `HalfUp`, `HalfDown`, `Bankers`, `Up` and `Down`; Rust has no variant aliases, and a second name for a mode is a
+  second thing to read in a match.
+- **Sums start at the currency's exponent.** `Sum` for `Money<C>` and `AnyMoney::try_sum` fold from zero at the
+  currency's exponent, so the result's scale is the largest of the items' and the exponent; ducat starts from the first
+  item, so items all below the exponent (EUR at scale 0) keep their scale. The values are equal; `identical` tells
+  them apart. The currency is always known, so ducat's `RangeError` for an empty list without one has no counterpart.
+- **A fixed set of languages for words.** `ducat_words::SpelloutRules` names its language with the `Locale` enum (the
+  seven shipped ones), because the plural rules, digit grouping and word for "and" the interpreter needs come from the
+  crate's CLDR 48 snapshot, not from `Intl`. ducat's `SpelloutRules` takes any locale tag with any rule text, and
+  `Intl` supplies the rest, so it can spell out a language the port doesn't ship. Adding a language is adding its
+  CLDR data (and a feature), as for `ducat-format`'s locales.
+- **No float weights.** `IntoWeight` takes integers, `Int` and decimal strings. ducat's `allocate` and `schedule`
+  also take a float weight (`0.7`) at its shortest form under the 15-digit rule; here, as for factors, a float comes
+  in only through an explicit conversion, and a weight is written as a string (`"0.7"`).
+- **A ratio string has one slash.** `Ratio`'s `FromStr` reads `"a/b"` with a decimal on each side; ducat's `ratio()`
+  splits at the first slash and reads the rest as a ratio again, so `"1/2/3"` is 3/2 there and `Error::Syntax` here.
+- **Withdrawn codes need no registration.** Rust has no registry, so withdrawn codes come from the static historic
+  table without a `defineHistoricCurrencies` step. `from_iso20022_amount` reads a withdrawn code (HRK) with no setup,
+  where ducat reads one only once `defineHistoricCurrencies` registers it and refuses a `defineCurrency`'d HRK: Rust
+  accepts what ducat rejects.
+- **`max`, `min` and `clamp` on a reference are std's.** On a `&Money` (a reference receiver), `max`/`min`/`clamp` are
+  std's `Ord` methods: the second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().max(..)`
+  or the free `max_of` instead. The inherent methods (on `Money<C>` and `ExactMoney<C>`) keep ducat's: the first of
+  equal values, and `Err(LowAboveHigh)` for `clamp`.
 
 ## Goals
 - **The same answers as ducat,** checked by running ducat's conformance vectors, pinned to a ducat commit. The suite's
@@ -471,9 +654,9 @@ lives").
    excess precision, NaN and the infinities, and out-of-range values. No `f64` is used in arithmetic, and a float is
    never a `Factor`. Floats come in only through explicit conversions, under ducat's binary64 rule (the shortest
    round-trip form; more than 15 significant digits is refused unless the value is a safe integer or a rounding is
-   given): `Ratio::try_from(f64)`, and `from_f64`/`from_f64_at` on the money types. The money constructors exist
-   because the spec's `money.fromBinary64` vectors check the order of the two errors: the rounding check comes
-   first, so `0.1 + 0.2` in EUR is a rounding error, as in ducat, which a `Ratio` can't express.
+   given): `Ratio::try_from(f64)`, and `from_f64`/`from_f64_at` on the money types and on `Fixed`. The money
+   constructors exist because the spec's `money.fromBinary64` vectors check the order of the two errors: the rounding
+   check comes first, so `0.1 + 0.2` in EUR is a rounding error, as in ducat, which a `Ratio` can't express.
 8. **One rounding kernel, two paths.** Every multiply, divide, convert and rescale rounds once, through one private
    kernel. When the operands fit `i128` it forms `units × numerator × 10^k` in 256 bits; when they don't, or the
    result doesn't fit, it computes the same quotient in arbitrary precision. Differential proptests check the two

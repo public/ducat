@@ -8,6 +8,10 @@
 //!   at the currency's exponent.
 //! - [`MinorColumn<C>`]: a fixed-currency BIGINT (SQLite INTEGER) column of minor units, and
 //!   [`minor_units`] for any money.
+//! - [`ScaledMinorColumn<C>`]: a fixed-currency column of units with a scale column beside it,
+//!   for money at any scale, and [`scaled_minor_units`] for any money.
+//! - [`JsonColumn<M>`]: a JSON, JSONB or TEXT column of ducat's money JSON,
+//!   `{"amount":"12.34","currency":"EUR"}`, in any currency or a fixed one.
 //! - [`DecimalColumnSize::fit`]: the decimal to bind for a NUMERIC(p, s) column, or an error if
 //!   the database would round or clamp it.
 #![cfg_attr(
@@ -76,4 +80,7 @@ pub mod sqlite;
 
 pub use decimal::{DEFAULT_DECIMAL_SIZE, Decimal, DecimalColumnSize};
 pub use error::Error;
-pub use money::{DecimalColumn, MinorColumn, MoneyValue, minor_units};
+pub use money::{
+    DecimalColumn, JsonColumn, MinorColumn, MoneyValue, ScaledMinorColumn, minor_units,
+    scaled_minor_units,
+};

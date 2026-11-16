@@ -4,13 +4,27 @@
 //! Negative amounts pass through, for discount order lines.
 
 use super::tables::KLARNA;
-use super::{Sign, from_integer, lookup, to_integer};
+use super::{ExponentEntry, Sign, from_integer, lookup, to_integer};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Money, Rounding};
+
+/// Every currency Klarna lists with its exponent, sorted by code: ducat's `KLARNA_EXPONENTS`
+/// (code → exponent) as a slice.
+///
+/// ```
+/// use ducat::processors::klarna;
+///
+/// let entry = klarna::exponents().iter().find(|entry| entry.code == "EUR").unwrap();
+/// assert_eq!(entry.exponent, 2);
+/// ```
+#[must_use]
+pub fn exponents() -> &'static [ExponentEntry] {
+    &KLARNA
+}
 
 /// The ISO 4217 exponent of a Klarna purchase currency (case-insensitive), or `None` for any other.
 #[must_use]
 pub fn rule(currency: &str) -> Option<u8> {
-    lookup(&KLARNA, currency, false, |entry| entry.0).map(|entry| entry.1)
+    lookup(&KLARNA, currency, false, |entry| entry.code).map(|entry| entry.exponent)
 }
 
 /// Whether the currency is one of Klarna's purchase currencies (case-insensitive).

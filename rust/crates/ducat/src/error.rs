@@ -26,6 +26,9 @@ pub enum Error {
     Overflow,
     /// A division by zero, or a ratio with a zero denominator.
     DivisionByZero,
+    /// A `clamp` whose lower bound is above its upper bound: ducat's `RangeError` `clamp(): lo >
+    /// hi` (`clamp: lo > hi` from `ExactMoney#clamp`).
+    LowAboveHigh,
     /// A scale that isn't an integer from 0 to [`MAX_SCALE`](crate::MAX_SCALE).
     InvalidScale,
     /// A currency code that isn't in ISO 4217 List One with a minor unit, and wasn't made with
@@ -176,6 +179,9 @@ pub enum Error {
     /// A rate-source file that can't be read: not the source's format, a bad date, an unreadable
     /// cell, or two different values for one rate (ducat's `SyntaxError`).
     MalformedRates,
+    /// A dated history given a table without an `as_of`: ducat's `RangeError` `rateHistory needs
+    /// tables with an asOf`.
+    UndatedTable,
     /// A wire value that is malformed, or that its format can't hold: `google.type.Money` with
     /// `nanos` out of range or of the wrong sign, a negative ISO 20022 amount, more than 5 decimals
     /// for one.
@@ -187,6 +193,10 @@ pub enum Error {
     /// A quote whose number isn't positive, or whose `per` isn't a positive integer: a quote is a
     /// positive price for a positive whole number of units.
     InvalidQuote,
+    /// A time zone that is neither an IANA name in the bundled tz database nor an offset
+    /// `±HH:MM` (ducat's `RangeError` from `Intl.DateTimeFormat`).
+    #[cfg(feature = "tz")]
+    UnknownTimeZone,
     /// No provider has a rate for the pair (ducat's `RateUnavailableError`).
     #[cfg(feature = "convert")]
     RateUnavailable {
@@ -207,6 +217,14 @@ pub enum Error {
         to: CurrencyCode,
         /// When it expired.
         valid_until: crate::convert::Time,
+    },
+    /// A snapshot lookup found no table on the day asked for or the days its lookback covers
+    /// (ducat's `RateUnavailableError` with `from` and `to` both `*`, which aren't currency codes
+    /// here).
+    #[cfg(feature = "convert")]
+    NoSnapshot {
+        /// The UTC day asked for (ducat's `asOf`).
+        as_of: crate::date::Date,
     },
 }
 
@@ -239,6 +257,7 @@ impl Error {
             }
             Self::Overflow
             | Self::DivisionByZero
+            | Self::LowAboveHigh
             | Self::InvalidScale
             | Self::UnknownCurrency
             | Self::ExponentOutOfRange
@@ -305,9 +324,14 @@ impl Error {
             | Self::QuoteMismatch
             | Self::InvalidQuote
             | Self::InvalidDecimals
-            | Self::InvalidWire => ErrorKind::Range,
+            | Self::InvalidWire
+            | Self::UndatedTable => ErrorKind::Range,
             #[cfg(feature = "convert")]
-            Self::RateUnavailable { .. } | Self::RateExpired { .. } => ErrorKind::Range,
+            Self::RateUnavailable { .. } | Self::RateExpired { .. } | Self::NoSnapshot { .. } => {
+                ErrorKind::Range
+            }
+            #[cfg(feature = "tz")]
+            Self::UnknownTimeZone => ErrorKind::Range,
         }
     }
 }
@@ -321,6 +345,7 @@ impl fmt::Display for Error {
             }
             Self::Overflow => f.write_str("the value doesn't fit the type it is narrowed to"),
             Self::DivisionByZero => f.write_str("division by zero"),
+            Self::LowAboveHigh => f.write_str("clamp(): lo > hi"),
             Self::InvalidScale => {
                 write!(f, "invalid scale: use an integer from 0 to {}", crate::MAX_SCALE)
             }
@@ -398,6 +423,7 @@ impl fmt::Display for Error {
             Self::InvalidTime => f.write_str("an invalid date or time: expected YYYY-MM-DD, or YYYY-MM-DDTHH:MM[:SS[.sss]] with Z or an offset ±HH:MM"),
             Self::QuoteMismatch => f.write_str("the quote isn't the rate"),
             Self::MalformedRates => f.write_str("the rate file can't be read"),
+            Self::UndatedTable => f.write_str("rateHistory needs tables with an asOf"),
             Self::InvalidDecimals => f.write_str("a source's decimals are 0 to 30"),
             Self::InvalidWire => f.write_str("the wire value is malformed, or out of its format's range"),
             Self::InvalidQuote => f.write_str("a quote's number must be positive, and its per a positive integer"),
@@ -413,6 +439,10 @@ impl fmt::Display for Error {
             Self::RateExpired { from, to, valid_until } => {
                 write!(f, "exchange rate {from}→{to} expired at {valid_until}")
             }
+            #[cfg(feature = "convert")]
+            Self::NoSnapshot { as_of } => write!(f, "no exchange rate *→* as of {as_of}"),
+            #[cfg(feature = "tz")]
+            Self::UnknownTimeZone => f.write_str("invalid time zone: expected an IANA name (Europe/Amsterdam) or an offset ±HH:MM"),
         }
     }
 }

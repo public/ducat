@@ -20,6 +20,11 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
 
 ### Fixed
 
+- `adyenRate` with an account `timeZone` now resolves wall times in DST gaps and folds as Temporal's
+  `"compatible"`, which changes their instant: a fold now takes the earlier instant (it took the
+  later east of UTC, e.g. Amsterdam 02:30 on 25 October 2026 is now 00:30Z, not 01:30Z) and a gap
+  the wall time pushed forward (it went back west of UTC, e.g. New York 02:30 on 8 March 2026 is now
+  07:30Z, not 06:30Z).
 - `format` and `formatToParts` with `currencyDisplay: 'name'` no longer garble the amount in the
   other locales where ICU 78.3 (Node 24) applies one currency's pattern inside the long-name
   pattern: tr and tr-CY for the lira and tr-TR for every currency (`₺1.234,57 Türk lirası`), and
@@ -30,6 +35,20 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   `parse` reads such a name with or without the glued symbol, so `1234$50 escudos cabo-verdianos`
   in pt-CV, read as negative before, is positive. On a runtime without the bug, nothing
   changes.
+- `snapshots` (and so `snapshotsFrom`) no longer drops a kept day when a lookup misses: room was
+  made when a load started, so a day with no table (a weekend, a holiday) evicted the least
+  recently used table, which was then loaded again, a second fetch for a loader that fetches. Room
+  is now made only when a load returns a table to keep. Concurrent lookups still share a pending load,
+  and a pending load is no longer dropped to make room.
+
+### Repository
+
+- ducat-format: some `FormatOptions` combinations that returned `InvalidOptions` now format, as
+  Intl does (fraction digits beside significant digits under `roundingPriority` auto;
+  `roundingIncrement` 1 beside significant digits).
+- ducat (Rust) `Snapshots`: a miss no longer drops a kept day; room is made only when a load
+  returns a table, matching the `snapshots` fix above, so `ducat_fetch::ecb_day_snapshots` no
+  longer fetches a kept day again after a weekend or holiday.
 
 ## [0.4.1] - 2026-11-15
 

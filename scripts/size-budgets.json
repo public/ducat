@@ -28,7 +28,7 @@
     "@ducatjs/money/braintree": 0.75,
     "@ducatjs/money/klarna": 0.6,
     "@ducatjs/money/stripe-fx": 2.4,
-    "@ducatjs/money/adyen-fx": 2.33,
+    "@ducatjs/money/adyen-fx": 2.36,
     "@ducatjs/money/prisma": 0.39,
     "@ducatjs/money/drizzle/pg": 1.23,
     "@ducatjs/money/drizzle/mysql": 1.22,
@@ -63,7 +63,7 @@
   },
   "aggregateCeilings": {
     "@ducatjs/money/fn": 60,
-    "@ducatjs/money/all": 60.5
+    "@ducatjs/money/all": 60.6
   },
   "snippets": {
     "excel: xnpv alone": {

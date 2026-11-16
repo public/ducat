@@ -13,6 +13,7 @@ use std::borrow::Cow;
 mod boc;
 mod ecb;
 mod error;
+mod snapshots;
 mod transport;
 #[cfg(feature = "ureq")]
 mod ureq;
@@ -27,6 +28,7 @@ pub use ecb::{
     fetch_ecb_range,
 };
 pub use error::{Feed, FetchError};
+pub use snapshots::{EcbDayLoader, ecb_day_snapshots, ecb_snapshots};
 pub use transport::{Request, Response, Transport, TransportError, TransportErrorKind};
 #[cfg(feature = "ureq")]
 pub use ureq::{DEFAULT_BODY_LIMIT, DEFAULT_TIMEOUT, UreqTransport};

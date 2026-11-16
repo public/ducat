@@ -7,8 +7,22 @@
 use alloc::string::String;
 
 use super::tables::PAYPAL;
-use super::{Sign, all_digits, from_decimal, lookup, to_decimal};
+use super::{ExponentEntry, Sign, all_digits, from_decimal, lookup, to_decimal};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Money, Rounding};
+
+/// Every currency PayPal lists with its exponent, sorted by code: ducat's `PAYPAL_EXPONENTS`
+/// (code → exponent) as a slice.
+///
+/// ```
+/// use ducat::processors::paypal;
+///
+/// let entry = paypal::exponents().iter().find(|entry| entry.code == "HUF").unwrap();
+/// assert_eq!(entry.exponent, 0);
+/// ```
+#[must_use]
+pub fn exponents() -> &'static [ExponentEntry] {
+    &PAYPAL
+}
 
 /// PayPal allows at most 15 digits before the decimal point.
 const MAX_INTEGER_DIGITS: usize = 15;
@@ -20,7 +34,7 @@ const MAX_VALUE_LENGTH: usize = 32;
 /// or `None` for one it doesn't list.
 #[must_use]
 pub fn rule(currency: &str) -> Option<u8> {
-    lookup(&PAYPAL, currency, false, |entry| entry.0).map(|entry| entry.1)
+    lookup(&PAYPAL, currency, false, |entry| entry.code).map(|entry| entry.exponent)
 }
 
 /// Whether PayPal lists the currency (case-insensitive).
@@ -101,14 +115,15 @@ impl<C: Currency> Money<C> {
         to_value(&self.amount, C::CODE, rounding)
     }
 
-    /// A PayPal `money` object.
+    /// A PayPal `money` object, the code in uppercase (as ducat's `toPayPal`, for a custom
+    /// currency defined in lowercase).
     ///
     /// # Errors
     ///
     /// As [`Money::to_paypal_value`].
     pub fn to_paypal(&self, rounding: Rounding) -> Result<PayPalAmount, Error> {
         Ok(PayPalAmount {
-            currency_code: String::from(C::CODE.as_str()),
+            currency_code: C::CODE.as_str().to_ascii_uppercase(),
             value: self.to_paypal_value(rounding)?,
         })
     }
@@ -141,7 +156,7 @@ impl AnyMoney {
     /// As [`Money::to_paypal_value`].
     pub fn to_paypal(&self, rounding: Rounding) -> Result<PayPalAmount, Error> {
         Ok(PayPalAmount {
-            currency_code: String::from(self.currency().as_str()),
+            currency_code: self.currency().as_str().to_ascii_uppercase(),
             value: self.to_paypal_value(rounding)?,
         })
     }

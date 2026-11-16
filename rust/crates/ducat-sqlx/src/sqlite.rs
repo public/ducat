@@ -6,6 +6,7 @@
 //! | [`Decimal`] | TEXT | the exact value and its scale | the decimal text |
 //! | [`DecimalColumn<C>`] | TEXT | `Money<C>` at the exponent, trailing zeros allowed | `Money<C>` at the exponent |
 //! | [`MinorColumn<C>`] | INTEGER | `Money<C>` from minor units | minor units |
+//! | [`JsonColumn<M>`] | TEXT | ducat's money JSON, in any currency or `C` | the JSON text |
 //!
 //! Decimals are kept as TEXT because SQLite's NUMERIC affinity stores some of them as REAL and
 //! loses digits. SQLite types values, not columns, so each value's own type is checked: a REAL
@@ -32,7 +33,7 @@ use sqlx::error::BoxDynError;
 use sqlx::sqlite::{Sqlite, SqliteTypeInfo, SqliteValueRef};
 use sqlx::{Database, Decode, Encode, Type, TypeInfo, ValueRef};
 
-use crate::{Decimal, DecimalColumn, Error, MinorColumn};
+use crate::{Decimal, DecimalColumn, Error, JsonColumn, MinorColumn, MoneyValue};
 
 fn is_text(ty: &SqliteTypeInfo) -> bool {
     ty.name() == "TEXT"
@@ -143,5 +144,31 @@ impl<'q, C: Currency> Encode<'q, Sqlite> for MinorColumn<C> {
         buf: &mut <Sqlite as Database>::ArgumentBuffer<'q>,
     ) -> Result<IsNull, BoxDynError> {
         <i64 as Encode<'q, Sqlite>>::encode(self.minor_units()?, buf)
+    }
+}
+
+impl<M: MoneyValue> Type<Sqlite> for JsonColumn<M> {
+    fn type_info() -> SqliteTypeInfo {
+        <str as Type<Sqlite>>::type_info()
+    }
+
+    fn compatible(ty: &SqliteTypeInfo) -> bool {
+        is_text(ty)
+    }
+}
+
+impl<M: MoneyValue> Decode<'_, Sqlite> for JsonColumn<M> {
+    fn decode(value: SqliteValueRef<'_>) -> Result<Self, BoxDynError> {
+        check_value(&value, is_text)?;
+        Ok(Self::from_json(<&str as Decode<Sqlite>>::decode(value)?)?)
+    }
+}
+
+impl<'q, M: MoneyValue> Encode<'q, Sqlite> for JsonColumn<M> {
+    fn encode_by_ref(
+        &self,
+        buf: &mut <Sqlite as Database>::ArgumentBuffer<'q>,
+    ) -> Result<IsNull, BoxDynError> {
+        <String as Encode<'q, Sqlite>>::encode(self.to_json()?, buf)
     }
 }

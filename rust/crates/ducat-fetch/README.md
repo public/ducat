@@ -8,6 +8,9 @@ uses, take text and never fetch.
 - [`fetch_ecb`]: the ECB's eurofxref XML, the latest day, the last 90 days or since 1999.
 - [`fetch_ecb_range`]: a date range from the ECB Data Portal's SDMX API, with the published digits.
 - [`fetch_bank_of_canada`]: the Bank of Canada's Valet daily rates, the latest day or a range.
+- [`ecb_snapshots`]: `ducat::convert::snapshots_from` over [`fetch_ecb`]'s file, in one call (ducat's
+  `snapshotsFrom(await fetchEcb(..))`); [`ecb_day_snapshots`]: snapshots that fetch each day from
+  the Data Portal as lookups ask for it, through an [`EcbDayLoader`].
 
 Each gives `ducat::convert::RateTable`s, newest first, and fails with a [`FetchError`]: an HTTP
 status, a body that can't be parsed (with the URL it came from), a transport error, or an option
@@ -98,6 +101,9 @@ where
     ecb_range_tables(&requests, &series, &data, options)
 }
 ```
+
+The snapshots are synchronous too: `ducat::convert::snapshots` takes a plain loader. Its
+documentation shows an async loader driving it, with no runtime in either crate.
 
 ## Features
 

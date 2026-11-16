@@ -6,7 +6,7 @@ use core::fmt;
 use core::ops::Neg;
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::{CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money whose currency is a run-time [`CurrencyCode`]: for values from
@@ -196,6 +196,29 @@ impl AnyMoney {
         self.amount.scale
     }
 
+    /// The whole major units, truncated toward zero, as ducat's `majorPart`: 12 for 12.34 EUR,
+    /// −12 for −12.34 EUR, 0 for −0.05 EUR.
+    #[must_use]
+    pub fn major_part(&self) -> Int {
+        self.amount.parts().0
+    }
+
+    /// What is left after [`major_part`](Self::major_part), in 10^−scale units (not the
+    /// currency's minor units) and with the amount's sign, as ducat's `minorPart`: 34 for
+    /// 12.34 EUR, −34 for −12.34 EUR, 5 for 1.005 EUR at scale 3, 0 for JPY.
+    #[must_use]
+    pub fn minor_part(&self) -> Int {
+        self.amount.parts().1
+    }
+
+    /// Whether the amount has a non-zero fractional part, as ducat's `hasFraction`: true for
+    /// 12.34 EUR, −0.05 EUR and 1.005 EUR at scale 3; false for 12.00 EUR and 12.000 EUR at
+    /// scale 3.
+    #[must_use]
+    pub fn has_fraction(&self) -> bool {
+        !self.amount.parts().1.is_zero()
+    }
+
     /// The amount in the currency's minor units, whatever its scale.
     ///
     /// # Errors
@@ -206,6 +229,23 @@ impl AnyMoney {
             .amount
             .rescale(u16::from(self.currency.exponent()), Rounding::Unnecessary)?
             .units)
+    }
+
+    /// As [`Money::to_f64`](crate::Money::to_f64): the nearest double in major units. **For
+    /// display or interop only; never round-trip.**
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::decimal_to_f64(&self.amount.units, self.amount.scale)
+    }
+
+    /// As [`Money::to_minor_f64`](crate::Money::to_minor_f64): the minor units as a double.
+    /// **For display or interop only; never round-trip.**
+    ///
+    /// # Errors
+    ///
+    /// As [`Money::to_minor_f64`](crate::Money::to_minor_f64).
+    pub fn to_minor_f64(&self, options: crate::ToMinorF64Options) -> Result<f64, Error> {
+        crate::float::minor_to_f64(&self.to_minor()?, options)
     }
 
     /// The exact decimal in major units, with every place of the scale.
@@ -252,9 +292,18 @@ impl AnyMoney {
         items: impl IntoIterator<Item = &'a Self>,
         currency: CurrencyCode,
     ) -> Result<Self, Error> {
-        items
-            .into_iter()
-            .try_fold(Self::zero(currency), |sum, item| sum.checked_add(item))
+        let mut sum = AmountSum::zero(u16::from(currency.exponent()));
+        for item in items {
+            // the error `Self::zero(currency).checked_add(item)` gives, at the first mismatch
+            if item.currency != currency {
+                return Err(Error::CurrencyMismatch {
+                    expected: currency,
+                    actual: item.currency,
+                });
+            }
+            sum.add(&item.amount);
+        }
+        Ok(Self::from_parts(sum.finish(), currency))
     }
 
     /// `self × factor`, rounded once to `self`'s scale.
@@ -387,6 +436,91 @@ impl AnyMoney {
     pub fn signum(&self) -> i8 {
         self.amount.units.signum()
     }
+
+    /// The smaller of `self` and `other`; `self` on a tie of values, as ducat's `min`.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::CurrencyMismatch`] for different currencies. As in ducat, which compares the
+    /// candidate with the smallest so far, `expected` is `other`'s currency and `actual`
+    /// `self`'s.
+    pub fn min(&self, other: &Self) -> Result<Self, Error> {
+        Ok(if other.compare(self)? == Ordering::Less {
+            other.clone()
+        } else {
+            self.clone()
+        })
+    }
+
+    /// The larger of `self` and `other`; `self` on a tie of values, as ducat's `max` (where
+    /// [`Ord::max`], on types that have it, keeps the second).
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::min`].
+    pub fn max(&self, other: &Self) -> Result<Self, Error> {
+        Ok(if other.compare(self)? == Ordering::Greater {
+            other.clone()
+        } else {
+            self.clone()
+        })
+    }
+
+    /// The smallest of `items`, the first of equal values winning, as ducat's variadic `min`;
+    /// `None` for none.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::CurrencyMismatch`] at the first item in another currency than the first item's,
+    /// with `expected` that item's currency and `actual` the first's, as ducat.
+    pub fn min_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Result<Option<Self>, Error> {
+        let mut items = items.into_iter();
+        let Some(first) = items.next() else {
+            return Ok(None);
+        };
+        items
+            .try_fold(first.clone(), |smallest, item| smallest.min(item))
+            .map(Some)
+    }
+
+    /// The largest of `items`, the first of equal values winning, as ducat's variadic `max`;
+    /// `None` for none.
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::min_of`].
+    pub fn max_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Result<Option<Self>, Error> {
+        let mut items = items.into_iter();
+        let Some(first) = items.next() else {
+            return Ok(None);
+        };
+        items
+            .try_fold(first.clone(), |largest, item| largest.max(item))
+            .map(Some)
+    }
+
+    /// `self` limited to `[lo, hi]`, as ducat's `clamp`: `lo` when below it, `hi` when above it,
+    /// otherwise `self` as it is (a value equal to a bound keeps its own scale). An error where
+    /// `Ord::clamp` would panic.
+    ///
+    /// # Errors
+    ///
+    /// In ducat's order: [`Error::CurrencyMismatch`] when `lo` and `hi` differ (`expected`
+    /// `lo`'s currency, `actual` `hi`'s); [`Error::LowAboveHigh`] when `lo > hi`;
+    /// [`Error::CurrencyMismatch`] when `self` is in another currency than the bounds
+    /// (`expected` `self`'s, `actual` `lo`'s).
+    pub fn clamp(&self, lo: &Self, hi: &Self) -> Result<Self, Error> {
+        if lo.compare(hi)? == Ordering::Greater {
+            return Err(Error::LowAboveHigh);
+        }
+        Ok(if self.compare(lo)? == Ordering::Less {
+            lo.clone()
+        } else if self.compare(hi)? == Ordering::Greater {
+            hi.clone()
+        } else {
+            self.clone()
+        })
+    }
 }
 
 impl PartialEq for AnyMoney {
@@ -448,5 +582,37 @@ impl fmt::Debug for AnyMoney {
         f.write_str("AnyMoney(")?;
         fmt::Display::fmt(self, f)?;
         f.write_str(")")
+    }
+}
+
+/// The general paths that adding and summing `AnyMoney` took before their inline fast paths, for
+/// the differential tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::AnyMoney;
+    use crate::{CurrencyCode, Error};
+
+    /// [`AnyMoney::checked_add`], by the general path.
+    pub(crate) fn checked_add(a: &AnyMoney, b: &AnyMoney) -> Result<AnyMoney, Error> {
+        a.same_currency(b)?;
+        Ok(a.with_amount(a.amount.add_general(&b.amount)))
+    }
+
+    /// [`AnyMoney::checked_sub`], by the general path.
+    pub(crate) fn checked_sub(a: &AnyMoney, b: &AnyMoney) -> Result<AnyMoney, Error> {
+        a.same_currency(b)?;
+        Ok(a.with_amount(a.amount.sub_general(&b.amount)))
+    }
+
+    /// [`AnyMoney::try_sum`]: a fold with [`checked_add`] from zero in `currency`.
+    pub(crate) fn try_sum<'a>(
+        items: impl IntoIterator<Item = &'a AnyMoney>,
+        currency: CurrencyCode,
+    ) -> Result<AnyMoney, Error> {
+        items
+            .into_iter()
+            .try_fold(AnyMoney::zero(currency), |sum, item| {
+                checked_add(&sum, item)
+            })
     }
 }

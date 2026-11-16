@@ -50,6 +50,7 @@ impl Int {
 
     /// The value as an `i128`, when it fits.
     #[must_use]
+    #[inline]
     pub fn to_i128(&self) -> Option<i128> {
         match &self.0 {
             Repr::Small(value) => Some(*value),
@@ -298,6 +299,7 @@ impl PartialOrd for Int {
 macro_rules! from_primitive {
     ($($integer:ty),*) => {$(
         impl From<$integer> for Int {
+            #[inline]
             fn from(value: $integer) -> Self {
                 Self(Repr::Small(i128::from(value)))
             }
@@ -461,14 +463,120 @@ binary!(Add, add, checked_add);
 binary!(Sub, sub, checked_sub);
 binary!(Mul, mul, checked_mul);
 
+/// A running total of `Int`s, for sums: machine arithmetic while it fits an `i128`, then one
+/// `BigInt` that each later value is added into in place, so a long sum past `i128` allocates
+/// once rather than once per value. [`IntSum::finish`] gives the canonical `Int` (inline again if
+/// the total came back into range).
+#[derive(Clone, Debug)]
+pub(crate) enum IntSum {
+    Small(i128),
+    Big(BigInt),
+}
+
+impl IntSum {
+    /// A total starting at `start`.
+    #[cfg(any(feature = "math", feature = "convert"))]
+    pub(crate) fn new(start: &Int) -> Self {
+        match &start.0 {
+            Repr::Small(value) => Self::Small(*value),
+            Repr::Big(value) => Self::Big((**value).clone()),
+        }
+    }
+
+    /// `total += value`.
+    #[inline]
+    pub(crate) fn add(&mut self, value: &Int) {
+        if let (Self::Small(total), Repr::Small(value)) = (&mut *self, &value.0) {
+            if let Some(sum) = total.checked_add(*value) {
+                *total = sum;
+                return;
+            }
+        }
+        self.add_big(value);
+    }
+
+    /// `total += value`, past `i128`: the first overflow (or heap value) moves the total to the
+    /// heap, where it stays.
+    #[cold]
+    #[inline(never)]
+    fn add_big(&mut self, value: &Int) {
+        match self {
+            Self::Small(total) => {
+                let mut big = BigInt::from(*total);
+                add_into(&mut big, value);
+                *self = Self::Big(big);
+            }
+            Self::Big(total) => add_into(total, value),
+        }
+    }
+
+    /// `total += value × 10^exponent`.
+    #[inline]
+    pub(crate) fn add_scaled(&mut self, value: &Int, exponent: u32) {
+        if exponent == 0 {
+            self.add(value);
+        } else {
+            // inline unless the product leaves `i128`
+            self.add(&value.mul_pow10(exponent));
+        }
+    }
+
+    /// `total ×= 10^exponent`.
+    pub(crate) fn mul_pow10(&mut self, exponent: u32) {
+        match self {
+            Self::Small(total) => match Int(Repr::Small(*total)).mul_pow10(exponent).0 {
+                Repr::Small(product) => *total = product,
+                Repr::Big(product) => *self = Self::Big(*product),
+            },
+            Self::Big(total) => *total *= pow10_big(exponent),
+        }
+    }
+
+    /// The total.
+    pub(crate) fn finish(self) -> Int {
+        match self {
+            Self::Small(total) => Int(Repr::Small(total)),
+            Self::Big(total) => Int::from_big(total),
+        }
+    }
+}
+
+/// `total += value`, in place.
+fn add_into(total: &mut BigInt, value: &Int) {
+    match &value.0 {
+        Repr::Small(value) => *total += *value,
+        Repr::Big(value) => *total += &**value,
+    }
+}
+
 impl core::iter::Sum for Int {
     fn sum<I: Iterator<Item = Int>>(iter: I) -> Int {
-        iter.fold(Int::ZERO, |sum, value| sum + value)
+        let mut total = IntSum::Small(0);
+        for value in iter {
+            total.add(&value);
+        }
+        total.finish()
     }
 }
 
 impl<'a> core::iter::Sum<&'a Int> for Int {
     fn sum<I: Iterator<Item = &'a Int>>(iter: I) -> Int {
-        iter.fold(Int::ZERO, |sum, value| sum + value)
+        let mut total = IntSum::Small(0);
+        for value in iter {
+            total.add(value);
+        }
+        total.finish()
+    }
+}
+
+/// The general path that summing `Int`s took before [`IntSum`], for the differential tests in
+/// `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Int;
+
+    /// `Sum`: a fold with `+` from zero.
+    pub(crate) fn sum<'a>(items: impl IntoIterator<Item = &'a Int>) -> Int {
+        items.into_iter().fold(Int::ZERO, |sum, item| &sum + item)
     }
 }

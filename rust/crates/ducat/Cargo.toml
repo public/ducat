@@ -62,6 +62,10 @@ hmrc = ["convert", "historic"]
 stripe-fx = ["convert", "stripe", "historic"]
 ## The rate on an Adyen settlement row (`ducat::convert::adyen_fx`).
 adyen-fx = ["convert", "historic"]
+## Adyen's account time zone: `AdyenRateOptions::time_zone` reads Creation Date in an IANA zone
+## (`Europe/Amsterdam`), summer time included, with jiff and the IANA time zone database it
+## bundles (tzdb 2026f with jiff 1.0.0; never the host's). Implies `std`; off by default.
+tz = ["std", "dep:jiff"]
 ## Money to and from google.type.Money, ISO 20022 amounts, ISO minor units and dinero.js objects
 ## (`ducat::wire`).
 wire = ["historic"]
@@ -100,7 +104,13 @@ num-integer = { version = "0.1.46", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 serde = { version = "1.0.219", optional = true, default-features = false, features = ["alloc"] }
 proptest = { version = "1.6", optional = true, default-features = false, features = ["std"] }
+# the `tz` feature: zones from jiff's bundled copy of the IANA tz database only (jiff-tzdb), so
+# results don't depend on the host's zoneinfo or on what else enables jiff's features
+jiff = { version = "1.0.0", optional = true, default-features = false, features = ["std", "tzdb-bundle-always"] }
 
 [dev-dependencies]
 proptest = { version = "1.6", default-features = false, features = ["std"] }
 serde_json = "1.0.140"
+# the version of the tz database jiff bundles, pinned by tests/it/adyen_tz.rs (already a dependency
+# of jiff's)
+jiff-tzdb = "1.0.0"

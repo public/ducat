@@ -1,6 +1,7 @@
 //! `Money<C>`: an amount in a currency known at compile time.
 
 use alloc::string::String;
+use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -9,7 +10,7 @@ use core::marker::PhantomData;
 use core::ops::{Add, Neg, Sub};
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Ratio, Rounding, RoundingInput};
 
 /// An exact amount of money in the currency `C`: a count of 10^−scale units of any size.
@@ -186,8 +187,10 @@ impl<C: Currency> Money<C> {
     ///
     /// # Errors
     ///
-    /// [`Error::NotFinite`], [`Error::InvalidScale`], and [`Error::Rounding`] (with
-    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary)).
+    /// In ducat's order: [`Error::InvalidScale`] for a scale beyond
+    /// [`MAX_SCALE`](crate::MAX_SCALE), whatever the value; [`Error::NotFinite`] for NaN and the
+    /// infinities; [`Error::Rounding`] for more decimals than `scale` with
+    /// [`Rounding::Unnecessary`](crate::Rounding::Unnecessary).
     pub fn from_f64_at(value: f64, scale: u16, rounding: Rounding) -> Result<Self, Error> {
         Ok(Self::from_amount(Amount::from_f64(
             value, scale, rounding, false,
@@ -206,6 +209,29 @@ impl<C: Currency> Money<C> {
         self.amount.scale
     }
 
+    /// The whole major units, truncated toward zero, as ducat's `majorPart`: 12 for 12.34 EUR,
+    /// −12 for −12.34 EUR, 0 for −0.05 EUR.
+    #[must_use]
+    pub fn major_part(&self) -> Int {
+        self.amount.parts().0
+    }
+
+    /// What is left after [`major_part`](Self::major_part), in 10^−scale units (not the
+    /// currency's minor units) and with the amount's sign, as ducat's `minorPart`: 34 for
+    /// 12.34 EUR, −34 for −12.34 EUR, 5 for 1.005 EUR at scale 3, 0 for JPY.
+    #[must_use]
+    pub fn minor_part(&self) -> Int {
+        self.amount.parts().1
+    }
+
+    /// Whether the amount has a non-zero fractional part, as ducat's `hasFraction`: true for
+    /// 12.34 EUR, −0.05 EUR and 1.005 EUR at scale 3; false for 12.00 EUR and 12.000 EUR at
+    /// scale 3.
+    #[must_use]
+    pub fn has_fraction(&self) -> bool {
+        !self.amount.parts().1.is_zero()
+    }
+
     /// The amount in the currency's minor units, whatever its scale.
     ///
     /// # Errors
@@ -217,6 +243,52 @@ impl<C: Currency> Money<C> {
             .amount
             .rescale(u16::from(C::CODE.exponent()), Rounding::Unnecessary)?
             .units)
+    }
+
+    /// The amount in major units as the nearest double: 12.34 for 12.34 EUR. **For display or
+    /// interop only; never round-trip** (and never do arithmetic on it). Lossy on purpose, for
+    /// charts and APIs that take numbers: beyond a double's 15 to 17 significant digits the value
+    /// is rounded once, to the nearest double (ties to even), and beyond the largest double it is
+    /// ±infinity, bit for bit as ducat's `toNumber` (`Number` of the exact decimal string).
+    ///
+    /// ```
+    /// use ducat::Money;
+    /// use ducat::iso::Eur;
+    ///
+    /// let price: Money<Eur> = "12.34".parse()?;
+    /// assert_eq!(price.to_f64(), 12.34);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::decimal_to_f64(&self.amount.units, self.amount.scale)
+    }
+
+    /// The amount in the currency's minor units as a double: 1234.0 for 12.34 EUR. **For display
+    /// or interop only; never round-trip.** Exact up to 2^53 − 1 minor units; beyond that, the
+    /// nearest double (ties to even, ±infinity beyond the largest) with
+    /// [`lossy`](crate::ToMinorF64Options::lossy), as ducat's `toMinorNumber`.
+    ///
+    /// ```
+    /// use ducat::{Error, Money, ToMinorF64Options};
+    /// use ducat::iso::Eur;
+    ///
+    /// let price: Money<Eur> = "12.34".parse()?;
+    /// assert_eq!(price.to_minor_f64(ToMinorF64Options::default())?, 1234.0);
+    /// let huge = Money::<Eur>::from_units(1i64 << 53, 2)?;
+    /// assert_eq!(huge.to_minor_f64(ToMinorF64Options::default()), Err(Error::Overflow));
+    /// let lossy = ToMinorF64Options { lossy: true };
+    /// assert_eq!(huge.to_minor_f64(lossy)?, 9_007_199_254_740_992.0);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Rounding`] for non-zero digits below the minor unit (round first, or use
+    /// `to_f64`), where ducat throws `RoundingError`; then [`Error::Overflow`] beyond 2^53 − 1
+    /// minor units without `lossy`, where ducat throws `RangeError`.
+    pub fn to_minor_f64(&self, options: crate::ToMinorF64Options) -> Result<f64, Error> {
+        crate::float::minor_to_f64(&self.to_minor()?, options)
     }
 
     /// The exact decimal in major units, with every place of the scale: `"12.34"`, `"-0.05"`,
@@ -376,6 +448,99 @@ impl<C: Currency> Money<C> {
     pub fn signum(&self) -> i8 {
         self.amount.units.signum()
     }
+
+    /// The smaller of `self` and `other`; `self` on a tie of values, as ducat's `min`: 1.0 EUR
+    /// at scale 1 against 1.00 EUR keeps scale 1.
+    ///
+    /// This inherent method takes `self` by value so that `a.min(b)` and `a.min(&b)` call it
+    /// rather than [`Ord::min`] (which agrees on ties, keeping the first, but takes only an owned
+    /// `other`).
+    ///
+    /// On a `&Money` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods: the
+    /// second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().min(..)` or
+    /// the free [`Money::min_of`] instead.
+    #[must_use]
+    pub fn min(self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        if other.compare(&self) == Ordering::Less {
+            other.clone()
+        } else {
+            self
+        }
+    }
+
+    /// The larger of `self` and `other`; `self` on a tie of values, as ducat's `max`: 1.0 EUR
+    /// at scale 1 against 1.00 EUR keeps scale 1.
+    ///
+    /// **Unlike [`Ord::max`]**, which returns the *second* of two equal values. This inherent
+    /// method takes `self` by value so that `a.max(b)` and `a.max(&b)` call it rather than
+    /// `Ord::max`; `core::cmp::max(a, b)`, `Iterator::max` and generic `T: Ord` code still use
+    /// `Ord`'s rule.
+    ///
+    /// On a `&Money` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods: the
+    /// second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().max(..)` or
+    /// the free [`Money::max_of`] instead.
+    #[must_use]
+    pub fn max(self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        if other.compare(&self) == Ordering::Greater {
+            other.clone()
+        } else {
+            self
+        }
+    }
+
+    /// The smallest of `items`, the first of equal values winning, as ducat's variadic `min`;
+    /// `None` for none.
+    #[must_use]
+    pub fn min_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Option<Self>
+    where
+        C: 'a,
+    {
+        let mut items = items.into_iter();
+        let first = items.next()?.clone();
+        Some(items.fold(first, Self::min))
+    }
+
+    /// The largest of `items`, the first of equal values winning, as ducat's variadic `max`
+    /// (where `Iterator::max` keeps the last); `None` for none.
+    #[must_use]
+    pub fn max_of<'a>(items: impl IntoIterator<Item = &'a Self>) -> Option<Self>
+    where
+        C: 'a,
+    {
+        let mut items = items.into_iter();
+        let first = items.next()?.clone();
+        Some(items.fold(first, Self::max))
+    }
+
+    /// `self` limited to `[lo, hi]`, as ducat's `clamp`: `lo` when below it, `hi` when above it,
+    /// otherwise `self` as it is (a value equal to a bound keeps its own scale).
+    ///
+    /// **Unlike [`Ord::clamp`]**, which panics when `lo > hi`, this returns an error. It takes
+    /// `self` by value so that `a.clamp(lo, hi)` and `a.clamp(&lo, &hi)` call it rather than
+    /// `Ord::clamp`.
+    ///
+    /// On a `&Money` (a reference receiver), `max`/`min`/`clamp` are std's [`Ord`] methods: the
+    /// second of equal values wins, and `clamp` panics when lo > hi. Call `(*r).clone().clamp(..)`
+    /// or the free [`Money::max_of`] and [`Money::min_of`] instead.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::LowAboveHigh`] when `lo > hi`, as ducat's `RangeError`.
+    pub fn clamp(self, lo: impl Borrow<Self>, hi: impl Borrow<Self>) -> Result<Self, Error> {
+        let (lo, hi) = (lo.borrow(), hi.borrow());
+        if lo.compare(hi) == Ordering::Greater {
+            return Err(Error::LowAboveHigh);
+        }
+        Ok(if self.compare(lo) == Ordering::Less {
+            lo.clone()
+        } else if self.compare(hi) == Ordering::Greater {
+            hi.clone()
+        } else {
+            self
+        })
+    }
 }
 
 macro_rules! money_operator {
@@ -441,14 +606,22 @@ impl<C: Currency> Sum for Money<C> {
     /// The exact sum, at the largest scale among the items; zero at the currency's exponent for
     /// none.
     fn sum<I: Iterator<Item = Self>>(items: I) -> Self {
-        items.fold(Self::zero(), |sum, item| sum + item)
+        let mut sum = AmountSum::zero(u16::from(C::CODE.exponent()));
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
 impl<'a, C: Currency> Sum<&'a Money<C>> for Money<C> {
     /// As the sum of owned values.
     fn sum<I: Iterator<Item = &'a Money<C>>>(items: I) -> Self {
-        items.fold(Self::zero(), |sum, item| sum + item)
+        let mut sum = AmountSum::zero(u16::from(C::CODE.exponent()));
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
@@ -516,5 +689,33 @@ impl<C: Currency> PartialEq<Money<C>> for AnyMoney {
     /// The same currency and the same value, whatever the scales.
     fn eq(&self, other: &Money<C>) -> bool {
         other == self
+    }
+}
+
+/// The general paths that adding and summing `Money` took before their inline fast paths, for the
+/// differential tests in `crate::sum_tests`: every add aligns both amounts to the larger scale and
+/// builds a new value, and every sum folds with that add from zero at the currency's exponent.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Money;
+    use crate::Currency;
+
+    /// `a + b`, by the general path.
+    pub(crate) fn add<C: Currency>(a: &Money<C>, b: &Money<C>) -> Money<C> {
+        Money::from_amount(a.amount.add_general(&b.amount))
+    }
+
+    /// `a − b`, by the general path.
+    pub(crate) fn sub<C: Currency>(a: &Money<C>, b: &Money<C>) -> Money<C> {
+        Money::from_amount(a.amount.sub_general(&b.amount))
+    }
+
+    /// `Sum`: a fold with [`add`] from zero at the currency's exponent.
+    pub(crate) fn sum<'a, C: Currency + 'a>(
+        items: impl IntoIterator<Item = &'a Money<C>>,
+    ) -> Money<C> {
+        items
+            .into_iter()
+            .fold(Money::zero(), |sum, item| add(&sum, item))
     }
 }

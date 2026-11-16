@@ -60,9 +60,76 @@ fn is_code(text: &str) -> bool {
     text.len() == 3 && text.bytes().all(|byte| byte.is_ascii_uppercase())
 }
 
-/// A currency a reader returns money in: ISO 4217, current or withdrawn.
-fn read_currency(code: &str) -> Result<CurrencyCode, Error> {
-    CurrencyCode::iso(code).or_else(|_| withdrawn(code).ok_or(Error::UnknownCurrency))
+/// The currencies outside ISO 4217 that [`AnyMoney`]'s `_with` readers may return: ducat's
+/// `defineCurrency` registry, passed as an argument (there is no global registry).
+///
+/// It is implemented for one [`CurrencyCode`], a slice or array of them, and a closure from the
+/// code to the currency, such as `|code: &str| CurrencyCode::crypto(code).ok()` for the whole
+/// crypto table (ducat's `defineCryptoCurrencies`). An answer whose code isn't the text asked
+/// for is ignored.
+///
+/// ```
+/// use ducat::wire::{DineroObject, MinorUnitAmount};
+/// use ducat::{AnyMoney, CurrencyCode};
+///
+/// let btc = CurrencyCode::custom("BTC", 8)?;
+/// let points = CurrencyCode::custom("POINTS", 0)?;
+/// let sats = MinorUnitAmount { value: 1, currency: "BTC".into() };
+/// assert_eq!(AnyMoney::from_minor_units_with(&sats, &[btc, points])?.to_decimal(), "0.00000001");
+/// // without the definition, BTC is unknown, as in ducat
+/// assert!(AnyMoney::from_minor_units(&sats).is_err());
+/// let crypto = |code: &str| CurrencyCode::crypto(code).ok();
+/// let eth = DineroObject { amount: 15, currency: "ETH".into(), precision: 1 };
+/// assert_eq!(AnyMoney::from_dinero_object_with(&eth, &crypto)?.to_decimal(), "1.5");
+/// # Ok::<(), ducat::Error>(())
+/// ```
+pub trait KnownCurrencies {
+    /// The currency with this code, or `None` for one this set doesn't define.
+    fn currency(&self, code: &str) -> Option<CurrencyCode>;
+}
+
+impl KnownCurrencies for CurrencyCode {
+    fn currency(&self, code: &str) -> Option<CurrencyCode> {
+        (self.as_str() == code).then_some(*self)
+    }
+}
+
+impl KnownCurrencies for [CurrencyCode] {
+    fn currency(&self, code: &str) -> Option<CurrencyCode> {
+        self.iter().find_map(|known| known.currency(code))
+    }
+}
+
+impl<const N: usize> KnownCurrencies for [CurrencyCode; N] {
+    fn currency(&self, code: &str) -> Option<CurrencyCode> {
+        self.as_slice().currency(code)
+    }
+}
+
+impl<F: Fn(&str) -> Option<CurrencyCode>> KnownCurrencies for F {
+    fn currency(&self, code: &str) -> Option<CurrencyCode> {
+        self(code)
+    }
+}
+
+/// No currencies beyond ISO 4217's: the readers without `_with`.
+fn none(_: &str) -> Option<CurrencyCode> {
+    None
+}
+
+/// A currency a reader returns money in: ISO 4217 (whose codes can't be redefined, as in
+/// ducat), then one `known` defines, then a withdrawn ISO 4217 code at the exponent it had.
+fn read_currency(
+    code: &str,
+    known: &(impl KnownCurrencies + ?Sized),
+) -> Result<CurrencyCode, Error> {
+    CurrencyCode::iso(code).or_else(|_| {
+        known
+            .currency(code)
+            .filter(|currency| currency.as_str() == code)
+            .or_else(|| withdrawn(code))
+            .ok_or(Error::UnknownCurrency)
+    })
 }
 
 /// A withdrawn ISO 4217 code (List Three), not one ISO never published (CNH).
@@ -162,9 +229,13 @@ fn to_google(money: &AnyMoney, rounding: Rounding) -> Result<GoogleMoney, Error>
     GoogleMoney::new(code.as_str(), units, nanos)
 }
 
-fn from_google(value: &GoogleMoney, options: &WireReadOptions) -> Result<AnyMoney, Error> {
+fn from_google(
+    value: &GoogleMoney,
+    options: &WireReadOptions,
+    known: &(impl KnownCurrencies + ?Sized),
+) -> Result<AnyMoney, Error> {
     value.check()?;
-    let currency = read_currency(&value.currency_code)?;
+    let currency = read_currency(&value.currency_code, known)?;
     let total = Int::from(value.units) * Int::from(NANOS_PER_UNIT) + Int::from(value.nanos);
     at_scale(total, 9, currency, options)
 }
@@ -182,12 +253,12 @@ pub struct Iso20022Amount {
 }
 
 /// Whether ISO 20022's ActiveOrHistoricCurrencyCode takes the code: ISO 4217, current (including
-/// the codes with no minor unit, XAU and XDR) or withdrawn.
-fn is_iso_4217(code: CurrencyCode) -> bool {
-    let text = code.as_str();
-    CurrencyCode::iso(text).is_ok_and(|iso| iso == code)
-        || CurrencyCode::iso_non_monetary().any(|known| known == text)
-        || withdrawn(text).is_some()
+/// the codes with no minor unit, XAU and XDR) or withdrawn. A custom code is never an active ISO
+/// one, so the text decides.
+fn is_iso_4217(code: &str) -> bool {
+    CurrencyCode::iso(code).is_ok()
+        || CurrencyCode::iso_non_monetary().any(|known| known == code)
+        || withdrawn(code).is_some()
 }
 
 /// Whether a decimal's value fits the schema's facets, counting digits as XSD does: leading zeros
@@ -205,7 +276,7 @@ fn to_iso_20022(
     scale: Option<u16>,
 ) -> Result<Iso20022Amount, Error> {
     let code = money.currency();
-    if !is_iso_4217(code) {
+    if !is_iso_4217(code.as_str()) {
         return Err(Error::UnknownCurrency);
     }
     let scale = scale.unwrap_or(u16::from(code.exponent()));
@@ -229,11 +300,19 @@ fn to_iso_20022(
     })
 }
 
-fn from_iso_20022(amount: &Iso20022Amount, options: &WireReadOptions) -> Result<AnyMoney, Error> {
+fn from_iso_20022(
+    amount: &Iso20022Amount,
+    options: &WireReadOptions,
+    known: &(impl KnownCurrencies + ?Sized),
+) -> Result<AnyMoney, Error> {
     if !is_code(&amount.ccy) {
         return Err(Error::Syntax);
     }
-    let currency = read_currency(&amount.ccy)?;
+    // ActiveOrHistoricCurrencyCode: a code ISO never published (BTC) is refused even when
+    // `known` defines it, as in ducat; a non-monetary one (XAU) is read once defined
+    if !is_iso_4217(&amount.ccy) {
+        return Err(Error::UnknownCurrency);
+    }
     // an xs:decimal (XML Schema 1.0, 3.2.3.1): an optional sign, digits, an optional point and
     // digits; "12." and ".5" are only in XSD 1.1's lexical rule
     let text = amount.value.as_str();
@@ -257,6 +336,8 @@ fn from_iso_20022(amount: &Iso20022Amount, options: &WireReadOptions) -> Result<
     }
     // at most 5 decimals
     let from = u16::try_from(fraction.len()).map_err(|_| Error::Syntax)?;
+    // after the text's checks, as ducat looks up the exponent last
+    let currency = read_currency(&amount.ccy, known)?;
     at_scale(units, from, currency, options)
 }
 
@@ -288,10 +369,13 @@ fn to_minor_units(money: &AnyMoney, rounding: Rounding) -> Result<MinorUnitAmoun
     })
 }
 
-fn from_minor_units(amount: &MinorUnitAmount) -> Result<AnyMoney, Error> {
+fn from_minor_units(
+    amount: &MinorUnitAmount,
+    known: &(impl KnownCurrencies + ?Sized),
+) -> Result<AnyMoney, Error> {
     Ok(AnyMoney::from_minor(
         amount.value,
-        read_currency(&amount.currency)?,
+        read_currency(&amount.currency, known)?,
     ))
 }
 
@@ -324,8 +408,15 @@ fn to_dinero(money: &AnyMoney) -> Result<DineroObject, Error> {
     })
 }
 
-fn from_dinero(object: &DineroObject) -> Result<AnyMoney, Error> {
-    let currency = read_currency(&object.currency)?;
+fn from_dinero(
+    object: &DineroObject,
+    known: &(impl KnownCurrencies + ?Sized),
+) -> Result<AnyMoney, Error> {
+    // the precision first, as ducat checks it before the currency
+    if object.precision > crate::MAX_SCALE {
+        return Err(Error::InvalidScale);
+    }
+    let currency = read_currency(&object.currency, known)?;
     AnyMoney::from_units(object.amount, object.precision, currency)
 }
 
@@ -343,7 +434,9 @@ impl AnyMoney {
         to_google(self, rounding)
     }
 
-    /// Reads `google.type.Money` exactly, at `options.scale` (default the currency's exponent).
+    /// Reads `google.type.Money` exactly, at `options.scale` (default the currency's exponent),
+    /// in an ISO 4217 currency, current or withdrawn; [`AnyMoney::from_google_money_with`] reads
+    /// others.
     ///
     /// # Errors
     ///
@@ -353,7 +446,21 @@ impl AnyMoney {
         value: &GoogleMoney,
         options: &WireReadOptions,
     ) -> Result<Self, Error> {
-        from_google(value, options)
+        from_google(value, options, &none)
+    }
+
+    /// As [`AnyMoney::from_google_money`], also in a currency `known` defines (a three-letter
+    /// code, as the format requires: `BTC`), as ducat reads a `defineCurrency`'d code.
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::from_google_money`].
+    pub fn from_google_money_with(
+        value: &GoogleMoney,
+        options: &WireReadOptions,
+        known: &(impl KnownCurrencies + ?Sized),
+    ) -> Result<Self, Error> {
+        from_google(value, options, known)
     }
 
     /// As an ISO 20022 amount, at the currency's decimals (or `scale`, at most 5), as the payment
@@ -379,14 +486,31 @@ impl AnyMoney {
     ///
     /// # Errors
     ///
-    /// [`Error::Syntax`] for any other text or a malformed code; [`Error::InvalidWire`] for a
-    /// negative amount; [`Error::UnknownCurrency`]; [`Error::Rounding`] as
-    /// [`AnyMoney::from_google_money`].
+    /// [`Error::Syntax`] for any other text or a malformed code; [`Error::UnknownCurrency`] for a
+    /// code that isn't ISO 4217, current or withdrawn (checked before the text), or for one with
+    /// no minor unit (XAU, after the text); [`Error::InvalidWire`] for a negative amount;
+    /// [`Error::Rounding`] as [`AnyMoney::from_google_money`].
     pub fn from_iso20022_amount(
         amount: &Iso20022Amount,
         options: &WireReadOptions,
     ) -> Result<Self, Error> {
-        from_iso_20022(amount, options)
+        from_iso_20022(amount, options, &none)
+    }
+
+    /// As [`AnyMoney::from_iso20022_amount`], also in a currency `known` defines among ISO 4217's
+    /// codes with no minor unit (XAU, XDR) or withdrawn ones (at `known`'s exponent), as ducat
+    /// reads a `defineCurrency`'d one. A code ISO never published (BTC) is still refused: the
+    /// format takes ISO 4217 codes only.
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::from_iso20022_amount`].
+    pub fn from_iso20022_amount_with(
+        amount: &Iso20022Amount,
+        options: &WireReadOptions,
+        known: &(impl KnownCurrencies + ?Sized),
+    ) -> Result<Self, Error> {
+        from_iso_20022(amount, options, known)
     }
 
     /// As `{ value, currency }` in ISO 4217 minor units, rounded only with `rounding`.
@@ -400,13 +524,27 @@ impl AnyMoney {
         to_minor_units(self, rounding)
     }
 
-    /// Reads `{ value, currency }` in ISO 4217 minor units.
+    /// Reads `{ value, currency }` in ISO 4217 minor units, in an ISO 4217 currency, current or
+    /// withdrawn; [`AnyMoney::from_minor_units_with`] reads others.
     ///
     /// # Errors
     ///
     /// [`Error::UnknownCurrency`].
     pub fn from_minor_units(amount: &MinorUnitAmount) -> Result<Self, Error> {
-        from_minor_units(amount)
+        from_minor_units(amount, &none)
+    }
+
+    /// As [`AnyMoney::from_minor_units`], also in a currency `known` defines, in its minor units
+    /// (its exponent), as ducat reads a `defineCurrency`'d code.
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::from_minor_units`].
+    pub fn from_minor_units_with(
+        amount: &MinorUnitAmount,
+        known: &(impl KnownCurrencies + ?Sized),
+    ) -> Result<Self, Error> {
+        from_minor_units(amount, known)
     }
 
     /// As dinero.js 1's `{ amount, currency, precision }`, at this money's scale: nothing is
@@ -425,9 +563,24 @@ impl AnyMoney {
     ///
     /// # Errors
     ///
-    /// [`Error::InvalidScale`] for a precision past 1000; [`Error::UnknownCurrency`].
+    /// [`Error::InvalidScale`] for a precision past 1000; then [`Error::UnknownCurrency`] for a
+    /// code that isn't ISO 4217, current or withdrawn ([`AnyMoney::from_dinero_object_with`]
+    /// reads others).
     pub fn from_dinero_object(object: &DineroObject) -> Result<Self, Error> {
-        from_dinero(object)
+        from_dinero(object, &none)
+    }
+
+    /// As [`AnyMoney::from_dinero_object`], also in a currency `known` defines (`{ amount: 1,
+    /// currency: "POINTS", precision: 0 }`), as ducat reads a `defineCurrency`'d code.
+    ///
+    /// # Errors
+    ///
+    /// As [`AnyMoney::from_dinero_object`].
+    pub fn from_dinero_object_with(
+        object: &DineroObject,
+        known: &(impl KnownCurrencies + ?Sized),
+    ) -> Result<Self, Error> {
+        from_dinero(object, known)
     }
 }
 
@@ -441,16 +594,17 @@ impl<C: Currency> Money<C> {
         to_google(&self.to_any(), rounding)
     }
 
-    /// As [`AnyMoney::from_google_money`], in `C`.
+    /// As [`AnyMoney::from_google_money`], in `C`, which may be a currency outside ISO 4217
+    /// ([`define_currency!`](crate::define_currency)): its own code is read at its exponent.
     ///
     /// # Errors
     ///
-    /// As [`AnyMoney::from_google_money`]; [`Error::CurrencyMismatch`] for another currency.
+    /// As [`AnyMoney::from_google_money_with`]; [`Error::CurrencyMismatch`] for another currency.
     pub fn from_google_money(
         value: &GoogleMoney,
         options: &WireReadOptions,
     ) -> Result<Self, Error> {
-        of_type(from_google(value, options)?)
+        of_type(from_google(value, options, &C::CODE)?)
     }
 
     /// As [`AnyMoney::to_iso20022_amount`].
@@ -466,16 +620,17 @@ impl<C: Currency> Money<C> {
         to_iso_20022(&self.to_any(), rounding, scale)
     }
 
-    /// As [`AnyMoney::from_iso20022_amount`], in `C`.
+    /// As [`AnyMoney::from_iso20022_amount`], in `C`, which may be a currency outside ISO 4217
+    /// ([`define_currency!`](crate::define_currency)): its own code is read at its exponent.
     ///
     /// # Errors
     ///
-    /// As [`AnyMoney::from_iso20022_amount`]; [`Error::CurrencyMismatch`] for another currency.
+    /// As [`AnyMoney::from_iso20022_amount_with`]; [`Error::CurrencyMismatch`] for another currency.
     pub fn from_iso20022_amount(
         amount: &Iso20022Amount,
         options: &WireReadOptions,
     ) -> Result<Self, Error> {
-        of_type(from_iso_20022(amount, options)?)
+        of_type(from_iso_20022(amount, options, &C::CODE)?)
     }
 
     /// As [`AnyMoney::to_minor_units`].
@@ -487,13 +642,14 @@ impl<C: Currency> Money<C> {
         to_minor_units(&self.to_any(), rounding)
     }
 
-    /// As [`AnyMoney::from_minor_units`], in `C`.
+    /// As [`AnyMoney::from_minor_units`], in `C`, which may be a currency outside ISO 4217
+    /// ([`define_currency!`](crate::define_currency)): its own code is read at its exponent.
     ///
     /// # Errors
     ///
-    /// As [`AnyMoney::from_minor_units`]; [`Error::CurrencyMismatch`] for another currency.
+    /// As [`AnyMoney::from_minor_units_with`]; [`Error::CurrencyMismatch`] for another currency.
     pub fn from_minor_units(amount: &MinorUnitAmount) -> Result<Self, Error> {
-        of_type(from_minor_units(amount)?)
+        of_type(from_minor_units(amount, &C::CODE)?)
     }
 
     /// As [`AnyMoney::to_dinero_object`].
@@ -505,13 +661,14 @@ impl<C: Currency> Money<C> {
         to_dinero(&self.to_any())
     }
 
-    /// As [`AnyMoney::from_dinero_object`], in `C`.
+    /// As [`AnyMoney::from_dinero_object`], in `C`, which may be a currency outside ISO 4217
+    /// ([`define_currency!`](crate::define_currency)): its own code is read at its exponent.
     ///
     /// # Errors
     ///
-    /// As [`AnyMoney::from_dinero_object`]; [`Error::CurrencyMismatch`] for another currency.
+    /// As [`AnyMoney::from_dinero_object_with`]; [`Error::CurrencyMismatch`] for another currency.
     pub fn from_dinero_object(object: &DineroObject) -> Result<Self, Error> {
-        of_type(from_dinero(object)?)
+        of_type(from_dinero(object, &C::CODE)?)
     }
 }
 

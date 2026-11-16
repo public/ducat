@@ -238,3 +238,192 @@ fn malformed_text_is_refused() {
         );
     }
 }
+
+/// ducat's `moneyMinor('EUR', { scale })` with `scaledMoney` (ducat#380): `SCALED_EUROS` round-trip
+/// with their scales, loaded straight into `ScaledMinorColumn` from the two columns; a NULL
+/// amount is `None`, and a NULL or too large scale is refused.
+#[test]
+fn a_scale_column_round_trips_any_scale() {
+    let connection = &mut database();
+    use ducat_diesel::ScaledMinorColumn;
+
+    use crate::scaled::{SCALED_EUROS, euros};
+
+    diesel::table! {
+        scaled (id) {
+            id -> Integer,
+            amount_minor -> Nullable<BigInt>,
+            amount_scale -> Nullable<Integer>,
+        }
+    }
+
+    diesel::sql_query(
+        "CREATE TABLE scaled (id INTEGER PRIMARY KEY, amount_minor INTEGER, amount_scale INTEGER)",
+    )
+    .execute(connection)
+    .unwrap();
+    for (id, (amount, scale, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let (units, scale) = ScaledMinorColumn(euros(amount, scale))
+            .to_columns()
+            .unwrap();
+        diesel::insert_into(scaled::table)
+            .values((
+                scaled::id.eq(i32::try_from(id).unwrap()),
+                scaled::amount_minor.eq(units),
+                scaled::amount_scale.eq(i32::from(scale)),
+            ))
+            .execute(connection)
+            .unwrap();
+    }
+    diesel::sql_query(
+        "INSERT INTO scaled VALUES (100, NULL, NULL), (101, 5, NULL), (102, 5, 1001)",
+    )
+    .execute(connection)
+    .unwrap();
+    let amounts: Vec<ScaledMinorColumn<Eur>> = scaled::table
+        .filter(scaled::id.lt(100))
+        .order(scaled::id)
+        .select((scaled::amount_minor.assume_not_null(), scaled::amount_scale))
+        .load(connection)
+        .unwrap();
+    assert_eq!(amounts.len(), SCALED_EUROS.len());
+    for (read, (amount, at, _)) in amounts.iter().zip(SCALED_EUROS) {
+        assert!(read.0.identical(&euros(amount, at)), "{amount}");
+    }
+    // a scale column declared NOT NULL loads too
+    let first: ScaledMinorColumn<Eur> = scaled::table
+        .filter(scaled::id.eq(0))
+        .select((
+            scaled::amount_minor.assume_not_null(),
+            scaled::amount_scale.assume_not_null(),
+        ))
+        .first(connection)
+        .unwrap();
+    assert_eq!(first.0.to_string(), "1.005 EUR");
+    for (id, expected) in [(101, None), (102, Some(1001))] {
+        let error = scaled::table
+            .filter(scaled::id.eq(id))
+            .select((scaled::amount_minor.assume_not_null(), scaled::amount_scale))
+            .first::<ScaledMinorColumn<Eur>>(connection)
+            .unwrap_err();
+        assert_eq!(decode_error(error), Error::InvalidScaleColumn(expected));
+    }
+    // a nullable amount: NULL is None, whatever the scale
+    let rows: Vec<(Option<i64>, Option<i32>)> = scaled::table
+        .filter(scaled::id.ge(100))
+        .order(scaled::id)
+        .select((scaled::amount_minor, scaled::amount_scale))
+        .load(connection)
+        .unwrap();
+    let read: Vec<_> = rows
+        .into_iter()
+        .map(|(units, scale)| {
+            ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale.map(i64::from))
+        })
+        .collect();
+    assert_eq!(
+        read,
+        [
+            Ok(None),
+            Err(Error::InvalidScaleColumn(None)),
+            Err(Error::InvalidScaleColumn(Some(1001))),
+        ]
+    );
+}
+
+/// ducat's `moneyJson` on SQLite: TEXT holding `{"amount":"12.34","currency":"EUR"}`, any currency
+/// or a fixed one, and what a TEXT column could slip in instead.
+#[test]
+fn json_columns_round_trip() {
+    use ducat_diesel::JsonColumn;
+
+    diesel::table! {
+        docs (id) {
+            id -> BigInt,
+            doc -> Nullable<Text>,
+        }
+    }
+
+    let connection = &mut database();
+    diesel::sql_query("CREATE TABLE docs (id INTEGER PRIMARY KEY, doc)")
+        .execute(connection)
+        .unwrap();
+    for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
+        let money = AnyMoney::parse(amount, iso(code)).unwrap();
+        diesel::insert_into(docs::table)
+            .values((
+                docs::id.eq(i64::try_from(id).unwrap()),
+                docs::doc.eq(JsonColumn(money)),
+            ))
+            .execute(connection)
+            .unwrap();
+    }
+    let rows: Vec<(JsonColumn<AnyMoney>, String)> = docs::table
+        .order(docs::id)
+        .select((docs::doc.assume_not_null(), docs::doc.assume_not_null()))
+        .load(connection)
+        .unwrap();
+    assert_eq!(rows.len(), AMOUNTS.len());
+    for ((JsonColumn(money), text), (amount, code)) in rows.iter().zip(AMOUNTS) {
+        assert!(money.identical(&AnyMoney::parse(amount, iso(code)).unwrap()));
+        assert_eq!(
+            text,
+            &format!(r#"{{"amount":"{amount}","currency":"{code}"}}"#)
+        );
+    }
+    // a fixed currency: written and read back, and refused for another
+    let price: Money<Eur> = "12.34".parse().unwrap();
+    diesel::insert_into(docs::table)
+        .values((docs::id.eq(100), docs::doc.eq(JsonColumn(price.clone()))))
+        .execute(connection)
+        .unwrap();
+    let by_id = |id: i64| {
+        docs::table
+            .filter(docs::id.eq(id))
+            .select(docs::doc.assume_not_null())
+    };
+    let JsonColumn(back) = by_id(100)
+        .first::<JsonColumn<Money<Eur>>>(connection)
+        .unwrap();
+    assert!(back.identical(&price));
+    let error = by_id(100)
+        .first::<JsonColumn<Money<Jpy>>>(connection)
+        .unwrap_err();
+    assert!(matches!(
+        decode_error(error),
+        Error::CurrencyMismatch { .. }
+    ));
+    let error = diesel::insert_into(docs::table)
+        .values((
+            docs::id.eq(101),
+            docs::doc.eq(JsonColumn(
+                price.to_scale(3, Rounding::Unnecessary).unwrap(),
+            )),
+        ))
+        .execute(connection)
+        .unwrap_err();
+    assert!(matches!(downcast_query(error), Error::ScaleMismatch { .. }));
+    // TEXT that isn't money JSON, and values that aren't TEXT
+    diesel::sql_query(
+        r#"INSERT INTO docs (id, doc) VALUES (200, '{"amount":12.34,"currency":"EUR"}'), (201, '{'),
+           (202, '"{\"amount\":\"1\",\"currency\":\"EUR\"}"'), (203, 0.5), (204, 12)"#,
+    )
+    .execute(connection)
+    .unwrap();
+    let read = |id: i64, connection: &mut SqliteConnection| {
+        decode_error(
+            by_id(id)
+                .first::<JsonColumn<AnyMoney>>(connection)
+                .unwrap_err(),
+        )
+    };
+    assert_eq!(read(200, connection), Error::NotMoneyJson);
+    assert!(matches!(read(201, connection), Error::Malformed(_)));
+    // TEXT is parsed once: a JSON string isn't money JSON
+    assert_eq!(read(202, connection), Error::NotMoneyJson);
+    assert_eq!(read(203, connection), Error::UnexpectedType("REAL".into()));
+    assert_eq!(
+        read(204, connection),
+        Error::UnexpectedType("INTEGER".into())
+    );
+}

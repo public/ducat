@@ -3,11 +3,11 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use ducat::{AnyMoney, MAX_SCALE, Rounding};
+use ducat::{AnyMoney, Int, MAX_SCALE, Ratio, Rounding};
 
 use crate::Error;
 use crate::locale::Locale;
-use crate::pattern::{self, Affix};
+use crate::pattern::{self, Affix, Pattern, Subpattern};
 use crate::plural::{self, Operands};
 use crate::tables::{Numbers, category_tag};
 use crate::unicode;
@@ -39,14 +39,156 @@ pub enum CurrencySign {
     Accounting,
 }
 
+/// How the sign is shown: `Intl`'s `signDisplay`.
+///
+/// A negative amount that `Intl`'s rounding takes to zero (−0.004 at two fraction digits) is a
+/// negative zero, as in `Intl`: [`Auto`](Self::Auto) and [`Always`](Self::Always) show its minus
+/// sign (`-€0.00`), the others don't. ducat's own `digits` round to a plain zero first.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum SignDisplay {
+    /// The minus sign for negative amounts, negative zero included (`'auto'`).
+    #[default]
+    Auto,
+    /// No sign at all: `$1.00` for −1 (`'never'`); in the accounting form too.
+    Never,
+    /// The plus sign for positive amounts and zero, the minus sign for negative ones (`'always'`).
+    Always,
+    /// The plus sign for positive amounts, the minus sign for negative ones, none for zero,
+    /// negative zero included (`'exceptZero'`).
+    ExceptZero,
+    /// The minus sign for negative amounts, but not for negative zero (`'negative'`).
+    Negative,
+}
+
+/// Where group separators go: `Intl`'s `useGrouping`.
+///
+/// `From<bool>` is `Intl`'s reading of a boolean: `true` is [`Always`](Self::Always), `false`
+/// [`Off`](Self::Off).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum UseGrouping {
+    /// The locale's group sizes from its minimum grouping digits (CLDR's
+    /// `minimumGroupingDigits`: 2 in es and it, so `1234,00 €` but `12.345,00 €`) (`'auto'`).
+    #[default]
+    Auto,
+    /// Grouped from the first group on, whatever the locale's minimum: `1.234,00 €` in es
+    /// (`'always'`, `true`); three-digit groups where the pattern has none.
+    Always,
+    /// Grouped from two digits beyond the first group on, or the locale's minimum if it is more:
+    /// `$1234.00` but `$12,345.00` (`'min2'`).
+    Min2,
+    /// Never grouped (`false`).
+    Off,
+}
+
+impl From<bool> for UseGrouping {
+    fn from(grouping: bool) -> Self {
+        if grouping { Self::Always } else { Self::Off }
+    }
+}
+
+/// Which rounding wins when both fraction and significant digits are given: `Intl`'s
+/// `roundingPriority`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum RoundingPriority {
+    /// Significant digits when either is given, else fraction digits (`'auto'`).
+    #[default]
+    Auto,
+    /// The rounding that keeps more digits (`'morePrecision'`). Without significant digits they
+    /// are 1 to 21, so `1.20` shows as `1.2`: significant digits drop trailing zeros.
+    MorePrecision,
+    /// The rounding that keeps fewer digits (`'lessPrecision'`).
+    LessPrecision,
+}
+
+/// Whether a whole amount keeps its fraction digits: `Intl`'s `trailingZeroDisplay`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum TrailingZeroDisplay {
+    /// As the fraction digits say (`'auto'`).
+    #[default]
+    Auto,
+    /// None at all when the amount, rounded, is whole: `€5` for 5.00, `€5.50` for 5.5
+    /// (`'stripIfInteger'`). A name takes the plural of the number shown (`1 US dollar`).
+    StripIfInteger,
+}
+
+/// `FromStr` for the option enums: `Intl`'s names, [`Error::InvalidOptions`] (its `RangeError`)
+/// for any other.
+macro_rules! intl_names {
+    ($kind:ty { $($name:literal => $value:expr),* $(,)? }) => {
+        impl core::str::FromStr for $kind {
+            type Err = Error;
+
+            fn from_str(name: &str) -> Result<Self, Error> {
+                match name {
+                    $($name => Ok($value),)*
+                    _ => Err(Error::InvalidOptions),
+                }
+            }
+        }
+    };
+}
+
+intl_names!(SignDisplay {
+    "auto" => Self::Auto,
+    "never" => Self::Never,
+    "always" => Self::Always,
+    "exceptZero" => Self::ExceptZero,
+    "negative" => Self::Negative,
+});
+// Intl reads the strings "true" and "false" as the default, and "" as false
+intl_names!(UseGrouping {
+    "auto" => Self::Auto,
+    "always" => Self::Always,
+    "min2" => Self::Min2,
+    "true" => Self::Auto,
+    "false" => Self::Auto,
+    "" => Self::Off,
+});
+intl_names!(RoundingPriority {
+    "auto" => Self::Auto,
+    "morePrecision" => Self::MorePrecision,
+    "lessPrecision" => Self::LessPrecision,
+});
+intl_names!(TrailingZeroDisplay {
+    "auto" => Self::Auto,
+    "stripIfInteger" => Self::StripIfInteger,
+});
+
 /// Options of [`format()`]: ducat's `FormatOptions`, which are `Intl.NumberFormat`'s options plus
 /// `digits` and `rounding`.
 ///
 /// Without any, the amount is shown with as many fraction digits as its scale, unrounded. With
 /// `digits`, it is first rounded once, exactly, to that many decimal places with `rounding`
 /// (default half-expand), then shown with them. `Intl`'s fraction and significant digits and
-/// rounding increment round too, half-expand, as `Intl` does: here on the decimal, exactly, with
-/// ducat's rounding kernel.
+/// rounding increment round too, with `rounding_mode` (default half-expand), as `Intl` does: here
+/// on the decimal, exactly, with ducat's rounding kernel. As in ducat, the fraction digits
+/// `Intl` is given default to the amount's scale (or `digits`).
+///
+/// An invoice line: signs on both sides of zero, no grouping, whole amounts without decimals.
+///
+/// ```
+/// # #[cfg(feature = "en")] {
+/// use ducat::{AnyMoney, CurrencyCode};
+/// use ducat_format::{
+///     FormatOptions, Locale, SignDisplay, TrailingZeroDisplay, UseGrouping, format,
+/// };
+///
+/// let usd = CurrencyCode::iso("USD")?;
+/// let english = Locale::new("en")?;
+/// let line = FormatOptions::new()
+///     .sign_display(SignDisplay::ExceptZero)
+///     .use_grouping(UseGrouping::Off)
+///     .trailing_zero_display(TrailingZeroDisplay::StripIfInteger);
+/// assert_eq!(format(&AnyMoney::parse("1234.00", usd)?, &english, &line)?, "+$1234");
+/// assert_eq!(format(&AnyMoney::parse("-1234.50", usd)?, &english, &line)?, "-$1234.50");
+/// assert_eq!(format(&AnyMoney::parse("0.00", usd)?, &english, &line)?, "$0");
+/// # }
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct FormatOptions {
@@ -62,11 +204,29 @@ pub struct FormatOptions {
     pub minimum_fraction_digits: Option<u16>,
     /// `Intl`'s `maximumFractionDigits` (default: the amount's scale).
     pub maximum_fraction_digits: Option<u16>,
-    /// `Intl`'s `maximumSignificantDigits`, 1 to 21.
+    /// `Intl`'s `minimumSignificantDigits`, 1 to 21 (default 1 when significant digits are used).
+    pub minimum_significant_digits: Option<u16>,
+    /// `Intl`'s `maximumSignificantDigits`, the minimum to 21 (default 21 when significant digits
+    /// are used).
     pub maximum_significant_digits: Option<u16>,
     /// `Intl`'s `roundingIncrement`: 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000,
     /// 2500 or 5000 units of the last fraction digit.
     pub rounding_increment: Option<u16>,
+    /// `Intl`'s `roundingMode`, how its fraction digits, significant digits and increment round
+    /// (default [`Rounding::HalfExpand`]); [`Rounding::Unnecessary`] is no `Intl` mode
+    /// ([`Error::InvalidOptions`]). It changes nothing where `Intl` doesn't round (after `digits`).
+    pub rounding_mode: Option<Rounding>,
+    /// `Intl`'s `roundingPriority`.
+    pub rounding_priority: RoundingPriority,
+    /// `Intl`'s `minimumIntegerDigits`, 1 to 21: the integer part padded with zeros, which are
+    /// grouped as digits are (`$00,001.00`).
+    pub minimum_integer_digits: Option<u16>,
+    /// `Intl`'s `trailingZeroDisplay`.
+    pub trailing_zero_display: TrailingZeroDisplay,
+    /// `Intl`'s `signDisplay`.
+    pub sign_display: SignDisplay,
+    /// `Intl`'s `useGrouping`.
+    pub use_grouping: UseGrouping,
 }
 
 impl FormatOptions {
@@ -96,6 +256,34 @@ impl FormatOptions {
     pub const fn digits(mut self, digits: u16, rounding: Option<Rounding>) -> Self {
         self.digits = Some(digits);
         self.rounding = rounding;
+        self
+    }
+
+    /// With `Intl`'s `signDisplay`.
+    #[must_use]
+    pub const fn sign_display(mut self, sign_display: SignDisplay) -> Self {
+        self.sign_display = sign_display;
+        self
+    }
+
+    /// With `Intl`'s `useGrouping`.
+    #[must_use]
+    pub const fn use_grouping(mut self, use_grouping: UseGrouping) -> Self {
+        self.use_grouping = use_grouping;
+        self
+    }
+
+    /// With `Intl`'s `roundingMode`.
+    #[must_use]
+    pub const fn rounding_mode(mut self, rounding_mode: Rounding) -> Self {
+        self.rounding_mode = Some(rounding_mode);
+        self
+    }
+
+    /// With `Intl`'s `trailingZeroDisplay`.
+    #[must_use]
+    pub const fn trailing_zero_display(mut self, trailing: TrailingZeroDisplay) -> Self {
+        self.trailing_zero_display = trailing;
         self
     }
 }
@@ -148,14 +336,25 @@ pub struct Part {
     pub value: String,
 }
 
-/// The number to show: its sign, and its digits in ASCII (`"1234.50"`).
+/// Which subpattern a number takes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SignForm {
+    Positive,
+    Negative,
+    Plus,
+}
+
+/// The number to show: its subpattern, and its digits in ASCII (`"1234.50"`).
 struct Shown {
-    negative: bool,
+    sign: SignForm,
     digits: String,
 }
 
 /// The largest fraction digits `Intl` takes.
 const MAX_FRACTION_DIGITS: u16 = 100;
+
+/// The most significant and integer digits `Intl` takes.
+const MAX_DIGITS: u16 = 21;
 
 const INCREMENTS: [u16; 15] = [
     1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000,
@@ -169,79 +368,276 @@ fn rescale(money: &AnyMoney, scale: u16, rounding: Rounding) -> Result<AnyMoney,
     money.to_scale(scale, rounding).map_err(Error::Money)
 }
 
-/// The magnitude's ASCII digits at the money's scale: `"1234.50"`.
-fn magnitude(money: &AnyMoney) -> String {
-    let text = money.to_decimal();
-    match text.strip_prefix('-') {
-        Some(rest) => String::from(rest),
-        None => text,
+/// 10^`exponent`.
+fn pow10(exponent: u32) -> Int {
+    let ten = Int::from(10_u8);
+    let mut out = Int::from(1_u8);
+    for _ in 0..exponent {
+        out = out * ten.clone();
     }
+    out
 }
 
-/// The digits of `money` rounded to `significant` significant digits, half-expand.
-fn significant(money: &AnyMoney, significant: u16) -> Result<String, Error> {
-    let text = magnitude(money);
-    let (integer, fraction) = text.split_once('.').unwrap_or((&text, ""));
-    let integer = integer.trim_start_matches('0');
-    // the scale that keeps `significant` digits: positive keeps fraction digits
-    let leading = if integer.is_empty() {
-        let zeros = fraction.len() - fraction.trim_start_matches('0').len();
-        if zeros == fraction.len() {
-            return Ok(String::from("0"));
+/// `Intl`'s digit options, resolved as `SetNumberFormatDigitOptions` resolves them, with ducat's
+/// fraction digits (the amount's scale) under the caller's.
+struct Digits {
+    minimum_integer: usize,
+    increment: u16,
+    mode: Rounding,
+    strip_if_integer: bool,
+    /// `(minimum, maximum)` significant digits, where they take part.
+    significant: Option<(u16, u16)>,
+    /// `(minimum, maximum)` fraction digits, where they take part.
+    fraction: Option<(u16, u16)>,
+    /// With both: whether the more precise result wins (`morePrecision`).
+    more_precise: bool,
+}
+
+impl Digits {
+    /// The options for an amount at `scale`, or `Intl`'s errors in its order.
+    fn new(options: &FormatOptions, scale: u16) -> Result<Self, Error> {
+        let in_range = |value: u16, low: u16, high: u16| {
+            if (low..=high).contains(&value) {
+                Ok(value)
+            } else {
+                Err(Error::InvalidOptions)
+            }
+        };
+        let minimum_integer = in_range(options.minimum_integer_digits.unwrap_or(1), 1, MAX_DIGITS)?;
+        let increment = options.rounding_increment.unwrap_or(1);
+        if !INCREMENTS.contains(&increment) {
+            return Err(Error::InvalidOptions);
         }
-        -(i64::try_from(zeros).map_err(|_| Error::InvalidOptions)?)
-    } else {
-        i64::try_from(integer.len()).map_err(|_| Error::InvalidOptions)?
-    };
-    let keep = i64::from(significant) - leading;
-    let rounded = if keep >= 0 {
-        let scale = u16::try_from(keep).map_err(|_| Error::InvalidOptions)?;
-        if scale >= money.scale() {
-            return Ok(trim_fraction(text, 0));
-        }
-        magnitude(&rescale(money, scale, Rounding::HalfExpand)?)
-    } else {
-        // round to 10^-keep: divide by it (a larger scale), round to an integer, multiply back
-        let shift = u16::try_from(-keep).map_err(|_| Error::InvalidOptions)?;
-        let scale = money
-            .scale()
-            .checked_add(shift)
-            .filter(|&scale| scale <= MAX_SCALE)
-            .ok_or(Error::InvalidOptions)?;
-        let shifted = AnyMoney::from_units(money.units().clone(), scale, money.currency())
-            .map_err(Error::Money)?;
-        let mut digits = magnitude(&rescale(&shifted, 0, Rounding::HalfExpand)?);
-        if digits != "0" {
-            for _ in 0..shift {
-                digits.push('0');
+        let mode = match options.rounding_mode {
+            None => Rounding::HalfExpand,
+            Some(Rounding::Unnecessary) => return Err(Error::InvalidOptions),
+            Some(mode) => mode,
+        };
+        let has_significant = options.minimum_significant_digits.is_some()
+            || options.maximum_significant_digits.is_some();
+        let auto = options.rounding_priority == RoundingPriority::Auto;
+        let significant = if !auto || has_significant {
+            let minimum = in_range(
+                options.minimum_significant_digits.unwrap_or(1),
+                1,
+                MAX_DIGITS,
+            )?;
+            let maximum = in_range(
+                options.maximum_significant_digits.unwrap_or(MAX_DIGITS),
+                minimum,
+                MAX_DIGITS,
+            )?;
+            Some((minimum, maximum))
+        } else {
+            None
+        };
+        let fraction = if !auto || !has_significant {
+            let minimum = in_range(
+                options.minimum_fraction_digits.unwrap_or(scale),
+                0,
+                MAX_FRACTION_DIGITS,
+            )?;
+            let maximum = in_range(
+                options.maximum_fraction_digits.unwrap_or(scale),
+                0,
+                MAX_FRACTION_DIGITS,
+            )?;
+            if minimum > maximum {
+                return Err(Error::InvalidOptions);
+            }
+            Some((minimum, maximum))
+        } else {
+            None
+        };
+        if increment != 1 {
+            match fraction {
+                Some((minimum, maximum)) if significant.is_none() => {
+                    if minimum != maximum {
+                        return Err(Error::InvalidOptions);
+                    }
+                }
+                _ => return Err(Error::IncrementNeedsFractionDigits),
             }
         }
-        digits
-    };
-    Ok(trim_fraction(rounded, 0))
-}
+        Ok(Self {
+            minimum_integer: usize::from(minimum_integer),
+            increment,
+            mode,
+            strip_if_integer: options.trailing_zero_display == TrailingZeroDisplay::StripIfInteger,
+            significant,
+            fraction,
+            more_precise: options.rounding_priority == RoundingPriority::MorePrecision,
+        })
+    }
 
-/// `text` without trailing fraction zeros beyond `minimum` fraction digits.
-fn trim_fraction(text: String, minimum: usize) -> String {
-    let Some(point) = text.find('.') else {
-        return text;
-    };
-    let fraction = &text[point + 1..];
-    let keep = fraction.trim_end_matches('0').len().max(minimum);
-    if keep == 0 {
-        String::from(&text[..point])
-    } else {
-        String::from(&text[..point + 1 + keep])
+    /// `FormatNumericToString`: the magnitude's ASCII digits as shown, and whether the rounded
+    /// value is zero.
+    fn apply(&self, money: &AnyMoney) -> Result<(String, bool), Error> {
+        let fixed = self
+            .fraction
+            .map(|(minimum, maximum)| raw_fixed(money, minimum, maximum, self.increment, self.mode))
+            .transpose()?;
+        let precision = self
+            .significant
+            .map(|(minimum, maximum)| raw_precision(money, minimum, maximum, self.mode))
+            .transpose()?;
+        let raw = match (fixed, precision) {
+            (Some(fixed), Some(precision)) => {
+                let fixed_more_precise = fixed.magnitude < precision.magnitude;
+                if fixed_more_precise == self.more_precise {
+                    fixed
+                } else {
+                    precision
+                }
+            }
+            (Some(raw), None) | (None, Some(raw)) => raw,
+            (None, None) => return Err(Error::InvalidOptions),
+        };
+        let mut text = raw.text;
+        let (integer, fraction) = text.split_once('.').unwrap_or((&text, ""));
+        let whole = fraction.bytes().all(|byte| byte == b'0');
+        let mut integer_digits = integer.len();
+        if self.strip_if_integer && whole {
+            text.truncate(integer_digits);
+        }
+        if integer_digits < self.minimum_integer {
+            let mut padded = String::with_capacity(self.minimum_integer + text.len());
+            while integer_digits < self.minimum_integer {
+                padded.push('0');
+                integer_digits += 1;
+            }
+            padded.push_str(&text);
+            text = padded;
+        }
+        Ok((text, raw.zero))
     }
 }
 
-/// The number `options` show for `money`, rounded as they say.
+/// A rounded number: its magnitude's ASCII digits, trailing zeros stripped as asked, whether it
+/// is zero, and the power of ten of its last digit (`Intl`'s rounding magnitude).
+struct Raw {
+    text: String,
+    zero: bool,
+    magnitude: i64,
+}
+
+/// The digits of `count` × 10^`magnitude` (`count`'s magnitude), with −`magnitude` fraction
+/// digits, then at most `cut` trailing fraction zeros removed (and a decimal point left last).
+fn decimal_text(count: &Int, magnitude: i64, cut: u16) -> Result<String, Error> {
+    let digits = alloc::format!("{}", count.abs());
+    let mut text = if magnitude >= 0 {
+        let mut text = digits;
+        if text != "0" {
+            for _ in 0..magnitude {
+                text.push('0');
+            }
+        }
+        text
+    } else {
+        let places = usize::try_from(-magnitude).map_err(|_| Error::InvalidOptions)?;
+        let mut padded = String::new();
+        for _ in digits.len()..=places {
+            padded.push('0');
+        }
+        padded.push_str(&digits);
+        padded.insert(padded.len() - places, '.');
+        padded
+    };
+    if text.contains('.') {
+        let mut cut = cut;
+        while cut > 0 && text.ends_with('0') {
+            text.pop();
+            cut -= 1;
+        }
+        if text.ends_with('.') {
+            text.pop();
+        }
+    }
+    Ok(text)
+}
+
+/// The signed count of `step` × 10^`magnitude` nearest `money` by `mode`, rounded once by
+/// ducat's kernel; rounding the signed amount is `Intl`'s unsigned rounding mode for its sign.
+fn round_at(money: &AnyMoney, magnitude: i64, step: u16, mode: Rounding) -> Result<Int, Error> {
+    // money / (step × 10^magnitude) = units × 10^-(scale + magnitude) / step
+    let shift = i64::from(money.scale()) + magnitude;
+    let exponent = u32::try_from(shift.unsigned_abs()).map_err(|_| Error::InvalidOptions)?;
+    let (numerator, denominator) = if shift >= 0 {
+        (money.units().clone(), pow10(exponent) * Int::from(step))
+    } else {
+        (money.units().clone() * pow10(exponent), Int::from(step))
+    };
+    let count = Ratio::new(numerator, denominator)
+        .and_then(|ratio| ratio.round_to_units(0, mode))
+        .map_err(Error::Money)?;
+    Ok(count * Int::from(step))
+}
+
+/// `ToRawFixed`: `money` rounded to a multiple of `increment` × 10^−`maximum`.
+fn raw_fixed(
+    money: &AnyMoney,
+    minimum: u16,
+    maximum: u16,
+    increment: u16,
+    mode: Rounding,
+) -> Result<Raw, Error> {
+    let magnitude = -i64::from(maximum);
+    let count = round_at(money, magnitude, increment, mode)?;
+    Ok(Raw {
+        text: decimal_text(&count, magnitude, maximum - minimum)?,
+        zero: count.is_zero(),
+        magnitude,
+    })
+}
+
+/// `ToRawPrecision`: `money` rounded to `maximum` significant digits.
+fn raw_precision(
+    money: &AnyMoney,
+    minimum: u16,
+    maximum: u16,
+    mode: Rounding,
+) -> Result<Raw, Error> {
+    let units = money.units();
+    let (mut exponent, mut count) = if units.is_zero() {
+        (0, Int::from(0_u8))
+    } else {
+        // the power of ten of the leading digit
+        let length = i64::try_from(alloc::format!("{}", units.abs()).len())
+            .map_err(|_| Error::InvalidOptions)?;
+        let exponent = length - 1 - i64::from(money.scale());
+        let count = round_at(money, exponent - i64::from(maximum) + 1, 1, mode)?;
+        (exponent, count)
+    };
+    // rounded up to 10^maximum: one digit more, at the next power of ten
+    let digits = alloc::format!("{}", count.abs());
+    if digits.len() > usize::from(maximum) {
+        exponent += 1;
+        let shorter: Int = digits[..digits.len() - 1]
+            .parse()
+            .map_err(|_| Error::InvalidOptions)?;
+        count = if count.is_negative() {
+            -shorter
+        } else {
+            shorter
+        };
+    }
+    let magnitude = exponent - i64::from(maximum) + 1;
+    Ok(Raw {
+        text: decimal_text(&count, magnitude, maximum - minimum)?,
+        zero: count.is_zero(),
+        magnitude,
+    })
+}
+
+/// The number `options` show for `money`, rounded as they say, and its subpattern.
 fn shown(money: &AnyMoney, options: &FormatOptions) -> Result<Shown, Error> {
     let intl_digits = options.minimum_fraction_digits.is_some()
         || options.maximum_fraction_digits.is_some()
+        || options.minimum_significant_digits.is_some()
         || options.maximum_significant_digits.is_some()
         || options.rounding_increment.is_some();
-    if options.digits.is_some() || options.rounding.is_some() {
+    let rounded;
+    let money = if options.digits.is_some() || options.rounding.is_some() {
         // ducat rounds once, exactly; Intl's digit options beside it would round again
         let Some(digits) = options.digits else {
             return Err(Error::ConflictingOptions);
@@ -253,74 +649,46 @@ fn shown(money: &AnyMoney, options: &FormatOptions) -> Result<Shown, Error> {
         if digits > MAX_FRACTION_DIGITS {
             return Err(Error::InvalidOptions);
         }
-        let rounded = rescale(
+        rounded = rescale(
             money,
             digits,
             options.rounding.unwrap_or(Rounding::HalfExpand),
         )?;
-        return Ok(Shown {
-            negative: rounded.is_negative(),
-            digits: magnitude(&rounded),
-        });
-    }
-    // Intl keeps the sign of a negative amount that rounds to zero (-€0.00)
-    let negative = money.is_negative();
-    let scale = money.scale();
-    let minimum = options.minimum_fraction_digits.unwrap_or(scale);
-    let maximum = options.maximum_fraction_digits.unwrap_or(scale);
-    if minimum > MAX_FRACTION_DIGITS || maximum > MAX_FRACTION_DIGITS || minimum > maximum {
-        return Err(Error::InvalidOptions);
-    }
-    if let Some(increment) = options.rounding_increment {
-        if options.maximum_significant_digits.is_some() {
-            return Err(Error::ConflictingOptions);
-        }
-        if !INCREMENTS.contains(&increment) || minimum != maximum {
-            return Err(Error::InvalidOptions);
-        }
-        // to a multiple of increment × 10^-maximum, half-expand
-        let rounded = round_to_step(money, increment, maximum)?;
-        return Ok(Shown {
-            negative,
-            digits: magnitude(&rounded),
-        });
-    }
-    if let Some(significant_digits) = options.maximum_significant_digits {
-        if !(1..=21).contains(&significant_digits) {
-            return Err(Error::InvalidOptions);
-        }
-        return Ok(Shown {
-            negative,
-            digits: significant(money, significant_digits)?,
-        });
-    }
-    let digits = if maximum >= scale {
-        // padded with zeros to the minimum, never cut below the scale's digits
-        let padded = rescale(money, maximum, Rounding::Unnecessary)?;
-        trim_fraction(magnitude(&padded), usize::from(minimum))
+        &rounded
     } else {
-        let rounded = rescale(money, maximum, Rounding::HalfExpand)?;
-        trim_fraction(magnitude(&rounded), usize::from(minimum))
+        money
     };
-    Ok(Shown { negative, digits })
+    let (digits, zero) = Digits::new(options, money.scale())?.apply(money)?;
+    // a negative amount Intl rounds to zero is a negative zero (ECMA-402's
+    // GetNumberFormatPattern)
+    let negative = money.is_negative();
+    let sign = match options.sign_display {
+        SignDisplay::Never => SignForm::Positive,
+        SignDisplay::Auto | SignDisplay::Always if negative => SignForm::Negative,
+        SignDisplay::Auto => SignForm::Positive,
+        SignDisplay::Always => SignForm::Plus,
+        SignDisplay::ExceptZero | SignDisplay::Negative if negative && !zero => SignForm::Negative,
+        SignDisplay::ExceptZero if !zero => SignForm::Plus,
+        SignDisplay::ExceptZero | SignDisplay::Negative => SignForm::Positive,
+    };
+    Ok(Shown { sign, digits })
 }
 
-/// `money` rounded half-expand to a multiple of `increment` × 10^-`scale`, at `scale`.
-fn round_to_step(money: &AnyMoney, increment: u16, scale: u16) -> Result<AnyMoney, Error> {
-    // both at the finer scale, where they are integers: count the steps, round, multiply back
-    let common = money.scale().max(scale);
-    let units = rescale(money, common, Rounding::Unnecessary)?;
-    let mut step = ducat::Int::from(increment);
-    for _ in scale..common {
-        step = step * ducat::Int::from(10_u8);
+/// The group sizes and the minimum grouping digits `use_grouping` gives a pattern's grouping, or
+/// `None` for no grouping.
+fn group_rule(
+    numbers: &Numbers,
+    grouping: Option<(usize, usize)>,
+    use_grouping: UseGrouping,
+) -> Option<((usize, usize), usize)> {
+    let locale = usize::from(numbers.minimum_grouping.max(1));
+    match use_grouping {
+        UseGrouping::Off => None,
+        UseGrouping::Auto => grouping.map(|sizes| (sizes, locale)),
+        UseGrouping::Min2 => grouping.map(|sizes| (sizes, locale.max(2))),
+        // ICU's aligned grouping: three-digit groups where the pattern has none
+        UseGrouping::Always => Some((grouping.unwrap_or((3, 3)), 1)),
     }
-    let count = AnyMoney::from_units(units.units().clone(), 0, money.currency())
-        .map_err(Error::Money)?
-        .divide(alloc::format!("{step}").as_str(), Rounding::HalfExpand)
-        .map_err(Error::Money)?;
-    let product = count.units() * &step;
-    let result = AnyMoney::from_units(product, common, money.currency()).map_err(Error::Money)?;
-    rescale(&result, scale, Rounding::Unnecessary)
 }
 
 /// Collects characters into parts, merging adjacent characters of one kind.
@@ -374,13 +742,14 @@ fn number(
     numbers: &Numbers,
     (decimal, group): (&str, &str),
     digits: &str,
-    grouping: Option<(usize, usize)>,
+    grouping: Option<((usize, usize), usize)>,
 ) -> Parts {
     let (integer, fraction) = digits.split_once('.').unwrap_or((digits, ""));
     let mut out = Parts::default();
     let length = integer.len();
     let grouped = grouping
-        .filter(|&(primary, _)| length >= primary + usize::from(numbers.minimum_grouping.max(1)));
+        .filter(|&((primary, _), minimum)| length >= primary + minimum)
+        .map(|(sizes, _)| sizes);
     for (at, byte) in integer.bytes().enumerate() {
         if let Some((primary, secondary)) = grouped {
             let left = length - at;
@@ -440,6 +809,15 @@ fn currency_code(money: &AnyMoney) -> Result<alloc::string::String, Error> {
     Ok(code.to_ascii_uppercase())
 }
 
+/// The subpattern for a sign form.
+fn subpattern(pattern: &Pattern, sign: SignForm) -> &Subpattern {
+    match sign {
+        SignForm::Positive => &pattern.positive,
+        SignForm::Negative => &pattern.negative,
+        SignForm::Plus => &pattern.plus,
+    }
+}
+
 /// The amount in a currency pattern, with currency spacing: a currency that ends (or starts)
 /// with a non-symbol touching a digit gets the locale's `insertBetween`.
 fn in_pattern(
@@ -448,16 +826,18 @@ fn in_pattern(
     source: &str,
     shown: &Shown,
     currency: &str,
+    use_grouping: UseGrouping,
 ) -> Result<Parts, Error> {
     let pattern = pattern::parse(source).map_err(|_| Error::MalformedData)?;
-    let sub = if shown.negative {
-        &pattern.negative
-    } else {
-        &pattern.positive
-    };
+    let sub = subpattern(&pattern, shown.sign);
     let mut out = Parts::default();
     affixes(&mut out, numbers, &sub.prefix, currency);
-    let digits = number(numbers, separators, &shown.digits, pattern.grouping);
+    let digits = number(
+        numbers,
+        separators,
+        &shown.digits,
+        group_rule(numbers, pattern.grouping, use_grouping),
+    );
     let first_digit = digits
         .parts
         .first()
@@ -528,7 +908,15 @@ pub fn format_to_parts(
                 if found.is_empty() { &code } else { found }
             }
         };
-        return Ok(in_pattern(numbers, separators, source, &shown, currency)?.parts);
+        return Ok(in_pattern(
+            numbers,
+            separators,
+            source,
+            &shown,
+            currency,
+            options.use_grouping,
+        )?
+        .parts);
     }
     // a name, as TR35 has it: the number, then the unit pattern for its plural category. The
     // number's sign and grouping come from the locale's decimal pattern (no accounting form; lakhs
@@ -537,12 +925,8 @@ pub fn format_to_parts(
     // currency's own pattern and symbol never enter it (where ICU's code writes them, it garbles
     // the text: data/icu/README.md).
     let pattern = pattern::parse(numbers.decimal_pattern).map_err(|_| Error::MalformedData)?;
-    let sub = if shown.negative {
-        &pattern.negative
-    } else {
-        &pattern.positive
-    };
-    let grouping = pattern.grouping;
+    let sub = subpattern(&pattern, shown.sign);
+    let grouping = group_rule(numbers, pattern.grouping, options.use_grouping);
     let mut amount = Parts::default();
     affixes(&mut amount, numbers, &sub.prefix, "");
     for part in number(numbers, separators, &shown.digits, grouping).parts {
@@ -635,8 +1019,9 @@ mod properties {
         ) {
             let locale = Locale::new("und").unwrap();
             let digits = if fraction.is_empty() { integer } else { alloc::format!("{integer}.{fraction}") };
-            let shown = Shown { negative, digits };
-            if let Ok(parts) = in_pattern(locale.numbers(), (",", "."), &source, &shown, &currency) {
+            let sign = if negative { SignForm::Negative } else { SignForm::Plus };
+            let shown = Shown { sign, digits };
+            if let Ok(parts) = in_pattern(locale.numbers(), (",", "."), &source, &shown, &currency, UseGrouping::Always) {
                 prop_assert!(parts.parts.iter().all(|part| !part.value.is_empty()));
             }
         }

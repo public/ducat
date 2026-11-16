@@ -76,6 +76,8 @@ async fn postgres() {
     composite_refusals(&pool).await;
     composite_sum(&pool).await;
     other_composite_names(&pool).await;
+    scale_column(&pool).await;
+    json_columns(&pool).await;
     pool.close().await;
 }
 
@@ -429,4 +431,178 @@ async fn other_composite_names(pool: &PgPool) {
             .await
             .unwrap();
     assert_eq!(dinars.to_string(), "2.000 KWD");
+}
+
+/// ducat's `moneyMinor('EUR', { scale })` with `scaledMoney` (ducat#380): `SCALED_EUROS` and a
+/// NULL amount round-trip with their scales through a BIGINT and a SMALLINT scale column; a NULL
+/// scale is refused.
+async fn scale_column(pool: &PgPool) {
+    use ducat_sqlx::ScaledMinorColumn;
+
+    use crate::scaled::{SCALED_EUROS, euros};
+
+    sqlx::raw_sql(
+        "DROP TABLE IF EXISTS scaled;
+         CREATE TABLE scaled (id INT PRIMARY KEY, amount_minor BIGINT, amount_scale SMALLINT)",
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    for (id, (amount, scale, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let (units, scale) = ScaledMinorColumn(euros(amount, scale))
+            .to_columns()
+            .unwrap();
+        sqlx::query("INSERT INTO scaled VALUES ($1, $2, $3)")
+            .bind(i32::try_from(id).unwrap())
+            .bind(units)
+            .bind(scale)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+    sqlx::raw_sql("INSERT INTO scaled VALUES (100, NULL, NULL), (101, 5, NULL), (102, 5, 1001)")
+        .execute(pool)
+        .await
+        .unwrap();
+    let rows: Vec<(i32, Option<i64>, Option<i16>)> =
+        sqlx::query_as("SELECT id, amount_minor, amount_scale FROM scaled ORDER BY id")
+            .fetch_all(pool)
+            .await
+            .unwrap();
+    assert_eq!(rows.len(), SCALED_EUROS.len() + 3);
+    let read = |index: usize| {
+        let (_, units, scale) = rows[index];
+        ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale.map(i64::from))
+    };
+    for (index, (amount, at, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let money = read(index).unwrap().unwrap().0;
+        assert!(money.identical(&euros(amount, at)), "{amount}");
+    }
+    assert_eq!(read(SCALED_EUROS.len()), Ok(None));
+    assert_eq!(
+        read(SCALED_EUROS.len() + 1),
+        Err(Error::InvalidScaleColumn(None))
+    );
+    assert_eq!(
+        read(SCALED_EUROS.len() + 2),
+        Err(Error::InvalidScaleColumn(Some(1001)))
+    );
+    sqlx::raw_sql("DROP TABLE scaled")
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
+/// ducat's `moneyJson` on Postgres: jsonb (as ducat's Drizzle column) and json, written as
+/// jsonb and as ducat's text, Postgres's own text of each, and the values node-postgres would
+/// parse twice.
+async fn json_columns(pool: &PgPool) {
+    use ducat_sqlx::JsonColumn;
+
+    sqlx::raw_sql("CREATE TABLE docs (id integer PRIMARY KEY, jb jsonb, j json, t json)")
+        .execute(pool)
+        .await
+        .unwrap();
+    for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
+        let money = AnyMoney::parse(amount, iso(code)).unwrap();
+        // t is json from ducat's text, bound as text and cast
+        let text = JsonColumn(money.clone()).to_json().unwrap();
+        sqlx::query("INSERT INTO docs (id, jb, j, t) VALUES ($1, $2, $3, $4::json)")
+            .bind(i32::try_from(id).unwrap())
+            .bind(JsonColumn(money.clone()))
+            .bind(JsonColumn(money))
+            .bind(text)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+    type Row = (
+        JsonColumn<AnyMoney>,
+        JsonColumn<AnyMoney>,
+        JsonColumn<AnyMoney>,
+        String,
+        String,
+        String,
+    );
+    let rows: Vec<Row> =
+        sqlx::query_as("SELECT jb, j, t, jb::text, j::text, t::text FROM docs ORDER BY id")
+            .fetch_all(pool)
+            .await
+            .unwrap();
+    assert_eq!(rows.len(), AMOUNTS.len());
+    for ((JsonColumn(jb), JsonColumn(j), JsonColumn(t), jb_text, j_text, t_text), (amount, code)) in
+        rows.iter().zip(AMOUNTS)
+    {
+        let original = AnyMoney::parse(amount, iso(code)).unwrap();
+        assert!(
+            jb.identical(&original) && j.identical(&original) && t.identical(&original),
+            "{amount} {code}"
+        );
+        // ducat writes compact JSON, which jsonb normalises to its own spacing; a json column
+        // given that jsonb value takes jsonb's text (the cast goes through text), and one given
+        // ducat's text keeps it as written
+        let spaced = format!(r#"{{"amount": "{amount}", "currency": "{code}"}}"#);
+        assert_eq!(jb_text, &spaced);
+        assert_eq!(j_text, &spaced);
+        assert_eq!(
+            t_text,
+            &format!(r#"{{"amount":"{amount}","currency":"{code}"}}"#)
+        );
+    }
+    // a fixed currency, read back from both types, and another refused
+    let (JsonColumn(eur), JsonColumn(eur_json)): (JsonColumn<Money<Eur>>, JsonColumn<Money<Eur>>) =
+        sqlx::query_as("SELECT jb, j FROM docs WHERE id = 1")
+            .fetch_one(pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        (eur.to_string(), eur_json.to_string()),
+        ("12.34 EUR".into(), "12.34 EUR".into())
+    );
+    let error = sqlx::query_scalar::<_, JsonColumn<Money<Jpy>>>("SELECT jb FROM docs WHERE id = 1")
+        .fetch_one(pool)
+        .await
+        .unwrap_err();
+    assert!(matches!(
+        decode_error(&error),
+        Some(Error::CurrencyMismatch { .. })
+    ));
+    // node-postgres parses json and jsonb, so ducat parses a JSON string's text again
+    let read = |sql: &'static str| async move {
+        sqlx::query_scalar::<_, JsonColumn<AnyMoney>>(sql)
+            .fetch_one(pool)
+            .await
+    };
+    let twice = read(r#"SELECT '"{\"amount\":\"1\",\"currency\":\"EUR\"}"'::jsonb"#)
+        .await
+        .unwrap();
+    assert_eq!(twice.0.to_string(), "1.00 EUR");
+    for sql in [
+        "SELECT '42'::jsonb",
+        r#"SELECT '{"amount": 12.34, "currency": "EUR"}'::jsonb"#,
+        r#"SELECT '{"amount": "1"}'::json"#,
+    ] {
+        assert_eq!(
+            decode_error(&read(sql).await.unwrap_err()),
+            Some(&Error::NotMoneyJson),
+            "{sql}"
+        );
+    }
+    let error = read(r#"SELECT '{"amount": "12.345", "currency": "EUR"}'::jsonb"#)
+        .await
+        .unwrap_err();
+    assert_eq!(
+        decode_error(&error),
+        Some(&Error::Ducat(ducat::Error::Rounding))
+    );
+    // text isn't JSON
+    let row = sqlx::query("SELECT '{}'::text")
+        .fetch_one(pool)
+        .await
+        .unwrap();
+    assert!(row.try_get::<JsonColumn<AnyMoney>, _>(0).is_err());
+    sqlx::raw_sql("DROP TABLE docs")
+        .execute(pool)
+        .await
+        .unwrap();
 }

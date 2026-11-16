@@ -3,8 +3,11 @@
 a standard-library Python implementation of Unicode TR35's number and currency formatting
 (https://www.unicode.org/reports/tr35/tr35-numbers.html: patterns, symbols, numbering systems,
 grouping and minimum grouping digits, currency spacing, accounting patterns, currency names with
-plural rules from https://www.unicode.org/reports/tr35/tr35-numbers.html#Language_Plural_Rules)
-over the CLDR 48 snapshot in data/cldr/, and of the parse rules docs/reference/parse.md documents,
+plural rules from https://www.unicode.org/reports/tr35/tr35-numbers.html#Language_Plural_Rules),
+with the Intl.NumberFormat options ducat passes on read as ECMA-402 defines them
+(https://tc39.es/ecma402/#sec-setnfdigitoptions: signDisplay, useGrouping, minimumIntegerDigits,
+fraction and significant digits, roundingIncrement, roundingMode, roundingPriority and
+trailingZeroDisplay), over the CLDR 48 snapshot in data/cldr/, and of the parse rules docs/reference/parse.md documents,
 reading the separators, group sizes and currency symbols from the same data. It never runs ducat
 or Intl.
 
@@ -33,7 +36,7 @@ from fractions import Fraction
 sys.dont_write_bytecode = True  # no __pycache__ in scripts/
 from spec_vectors import ISO4217_PUBLISHED, ROOT, file_text, vector_path, write_or_check  # noqa: E402
 
-GENERATOR_VERSION = "1"
+GENERATOR_VERSION = "2"
 CLDR = ROOT / "data" / "cldr"
 CLDR_VERSION = "48.0"
 MODES = ["halfEven", "halfExpand", "halfTrunc", "halfCeil", "halfFloor", "expand", "trunc", "ceil", "floor"]
@@ -262,6 +265,16 @@ def places_of(text: str) -> int:
 def split_pattern(pattern: str):
     """A pattern's positive and negative subpatterns, each as (prefix, number, suffix). Without a
     negative subpattern the negative is the minus sign before the positive one (TR35)."""
+    pos, neg, _ = subpatterns(pattern)
+    return pos, neg
+
+
+def subpatterns(pattern: str):
+    """A pattern's positive, negative and plus subpatterns, each as (prefix, number, suffix). The
+    plus subpattern (TR35's explicit plus sign, for signDisplay "always" and "exceptZero") is the
+    negative one with its minus sign replaced by the plus sign; where the negative subpattern has
+    no minus sign (accounting's parentheses) or there is none, it is the positive subpattern with
+    the plus sign before it, as ICU writes it."""
     positive, _, negative = pattern.partition(";")
 
     def parts(sub: str):
@@ -272,7 +285,11 @@ def split_pattern(pattern: str):
 
     pos = parts(positive)
     neg = parts(negative) if negative else ("-" + pos[0], pos[1], pos[2])
-    return pos, neg
+    if negative and "-" in neg[0] + neg[2]:
+        plus = (neg[0].replace("-", "+"), neg[1], neg[2].replace("-", "+"))
+    else:
+        plus = ("+" + pos[0], pos[1], pos[2])
+    return pos, neg, plus
 
 
 def group_sizes(number_pattern: str):
@@ -295,14 +312,19 @@ def currency_matches(ch: str) -> bool:
     return unicodedata.category(ch)[0] not in "SZ"
 
 
-def number_chars(loc: Locale, digits: str, pattern_number: str, decimal: str, group: str):
+def number_chars(loc: Locale, digits: str, pattern_number: str, decimal: str, group: str, grouping="auto"):
     """The number's characters as (type, char): integer and fraction digits in the locale's
-    numbering system, group and decimal separators."""
+    numbering system, group and decimal separators. `grouping` is useGrouping's strategy: False
+    for none, "auto" for the pattern's group sizes from the locale's minimum grouping digits,
+    "min2" for at least two, "always" for one (and three-digit groups for a pattern without)."""
     whole, _, fraction = digits.partition(".")
     sizes = group_sizes(pattern_number)
+    if grouping == "always" and sizes is None:
+        sizes = (3, 3)
+    minimum = {"auto": loc.minimum_grouping, "min2": max(2, loc.minimum_grouping), "always": 1}.get(grouping)
     out = []
     positions = []
-    if sizes is not None and len(whole) >= sizes[0] + loc.minimum_grouping:
+    if grouping is not False and sizes is not None and len(whole) >= sizes[0] + minimum:
         primary, secondary = sizes
         cut = len(whole) - primary
         positions.append(cut)
@@ -363,9 +385,154 @@ def merge(chars: list) -> list:
     return parts
 
 
+# --- ECMA-402's number options (https://tc39.es/ecma402/#sec-setnfdigitoptions) -------------------
+
+SIGN_DISPLAYS = ["auto", "never", "always", "exceptZero", "negative"]
+INCREMENTS = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000]
+
+
+def number_option(value, low: int, high: int, fallback):
+    """DefaultNumberOption: the fallback for undefined, else an integer in [low, high] (RangeError
+    otherwise; the rows use integers only)."""
+    if value is None:
+        return fallback
+    if not isinstance(value, int) or isinstance(value, bool) or not low <= value <= high:
+        raise Refused("range")
+    return value
+
+
+def string_option(options: dict, key: str, allowed: list, fallback: str) -> str:
+    value = options.pop(key, None)
+    if value is None:
+        return fallback
+    if value not in allowed:
+        raise Refused("range")
+    return value
+
+
+def digit_options(options: dict, scale: int) -> dict:
+    """SetNumberFormatDigitOptions, with ducat's minimumFractionDigits and maximumFractionDigits
+    (the amount's scale) under the caller's, so the fraction digits are always given."""
+    mnid = number_option(options.pop("minimumIntegerDigits", None), 1, 21, 1)
+    mnfd = options.pop("minimumFractionDigits", scale)
+    mxfd = options.pop("maximumFractionDigits", scale)
+    mnsd = options.pop("minimumSignificantDigits", None)
+    mxsd = options.pop("maximumSignificantDigits", None)
+    increment = number_option(options.pop("roundingIncrement", None), 1, 5000, 1)
+    if increment not in INCREMENTS:
+        raise Refused("range")
+    mode = string_option(options, "roundingMode", MODES, "halfExpand")
+    priority = string_option(options, "roundingPriority", ["auto", "morePrecision", "lessPrecision"], "auto")
+    trailing = string_option(options, "trailingZeroDisplay", ["auto", "stripIfInteger"], "auto")
+    has_sd = mnsd is not None or mxsd is not None
+    need_sd, need_fd = True, True
+    if priority == "auto":
+        need_sd = has_sd
+        need_fd = not need_sd
+    out = {"mnid": mnid, "increment": increment, "mode": mode, "trailing": trailing}
+    if need_sd:
+        out["mnsd"] = number_option(mnsd, 1, 21, 1) if has_sd else 1
+        out["mxsd"] = number_option(mxsd, out["mnsd"], 21, 21) if has_sd else 21
+    if need_fd:
+        # both are given (ducat's scale where the caller gives none)
+        out["mnfd"] = number_option(mnfd, 0, 100, None)
+        out["mxfd"] = number_option(mxfd, 0, 100, None)
+        if out["mnfd"] > out["mxfd"]:
+            raise Refused("range")
+    out["type"] = ("significantDigits" if need_sd else "fractionDigits") if priority == "auto" else priority
+    if increment != 1:
+        if out["type"] != "fractionDigits":
+            raise Refused("type")
+        if out["mxfd"] != out["mnfd"]:
+            raise Refused("range")
+    return out
+
+
+def decimal_text(units: int, magnitude: int) -> str:
+    """units × 10^magnitude (units >= 0) written out, with -magnitude fraction digits."""
+    if magnitude >= 0:
+        return str(units * 10**magnitude)
+    return scaled(units, -magnitude)
+
+
+def strip_zeros(text: str, cut: int) -> str:
+    """Up to `cut` trailing fraction zeros removed, and a decimal point left last."""
+    if "." not in text:
+        return text
+    while cut > 0 and text.endswith("0"):
+        text, cut = text[:-1], cut - 1
+    return text.removesuffix(".")
+
+
+def raw_fixed(x: Fraction, mnfd: int, mxfd: int, increment: int, mode: str):
+    """ToRawFixed: x rounded (signed, so the unsigned rounding mode follows its sign) to a multiple
+    of increment × 10^-mxfd; the text of its magnitude, the rounded value and the magnitude."""
+    count = round_integer(x * 10**mxfd / increment, mode) * increment
+    return strip_zeros(decimal_text(abs(count), -mxfd), mxfd - mnfd), Fraction(count, 10**mxfd), -mxfd
+
+
+def raw_precision(x: Fraction, mnsd: int, mxsd: int, mode: str):
+    """ToRawPrecision: x rounded to mxsd significant digits; as raw_fixed."""
+    if x == 0:
+        exponent, count = 0, 0
+    else:
+        size = abs(x)
+        exponent = len(str(size.numerator // size.denominator)) - 1 if size >= 1 else -1
+        while size < Fraction(10) ** exponent:
+            exponent -= 1
+        count = round_integer(x / Fraction(10) ** (exponent - mxsd + 1), mode)
+        if abs(count) == 10**mxsd:
+            exponent, count = exponent + 1, count // 10
+    magnitude = exponent - mxsd + 1
+    text = decimal_text(abs(count), magnitude)
+    if mxsd > mnsd:
+        text = strip_zeros(text, mxsd - mnsd)
+    return text, count * Fraction(10) ** magnitude, magnitude
+
+
+def numeric_text(x: Fraction, digits: dict):
+    """FormatNumericToString: the magnitude's ASCII digits as shown and the rounded value."""
+    kind = digits["type"]
+    fixed = precision = None
+    if kind != "significantDigits":
+        fixed = raw_fixed(x, digits["mnfd"], digits["mxfd"], digits["increment"], digits["mode"])
+    if kind != "fractionDigits":
+        precision = raw_precision(x, digits["mnsd"], digits["mxsd"], digits["mode"])
+    if fixed is not None and precision is not None:
+        fixed_more_precise = fixed[2] < precision[2]
+        if kind == "morePrecision":
+            result = fixed if fixed_more_precise else precision
+        else:
+            result = precision if fixed_more_precise else fixed
+    else:
+        result = fixed or precision
+    text, rounded, _ = result
+    if digits["trailing"] == "stripIfInteger" and rounded.denominator == 1:
+        text = text.split(".")[0]
+    whole = text.split(".")[0]
+    if len(whole) < digits["mnid"]:
+        text = "0" * (digits["mnid"] - len(whole)) + text
+    return text, rounded
+
+
+def sign_type(sign_display: str, negative: bool, zero: bool) -> str:
+    """Which subpattern a number takes (ECMA-402's GetNumberFormatPattern): negative includes a
+    negative amount that rounded to zero, which "auto" and "always" show with its minus sign."""
+    if sign_display == "never":
+        return "positive"
+    if sign_display in ("auto", "always"):
+        if negative:
+            return "negative"
+        return "plus" if sign_display == "always" else "positive"
+    if negative and not zero:
+        return "negative"
+    return "plus" if sign_display == "exceptZero" and not zero else "positive"
+
+
 def format_parts(amount: str, currency: str, tag: str, options: dict) -> list:
     """The parts of a money amount formatted the way ducat documents: its scale's fraction digits
-    (or `digits`, rounded first with `rounding`), currencyDisplay and currencySign."""
+    (or `digits`, rounded first with `rounding`), and the Intl options ducat passes on, as
+    ECMA-402's Intl.NumberFormat reads them, over TR35's patterns."""
     options = dict(options or {})
     digits = options.pop("digits", None)
     rounding = options.pop("rounding", None)
@@ -373,26 +540,37 @@ def format_parts(amount: str, currency: str, tag: str, options: dict) -> list:
         raise Refused("type")
     if digits is not None and any(key in options for key in ("minimumFractionDigits", "maximumFractionDigits", "minimumSignificantDigits", "maximumSignificantDigits", "roundingIncrement")):
         raise Refused("type")
-    display = options.pop("currencyDisplay", "symbol")
-    sign = options.pop("currencySign", "standard")
-    if options:
-        raise ValueError(f"options not modelled: {options}")
-    if display not in ("symbol", "narrowSymbol", "code", "name") or sign not in ("standard", "accounting"):
-        raise Refused("range")
     value = Fraction(amount)
     if digits is not None:
         amount = scaled(round_integer(value * 10**digits, rounding or "halfExpand"), digits)
         value = Fraction(amount)
+    # Intl.NumberFormat's constructor, in its order: the currency options, the digit options,
+    # then useGrouping and signDisplay
+    display = string_option(options, "currencyDisplay", ["symbol", "narrowSymbol", "code", "name"], "symbol")
+    sign = string_option(options, "currencySign", ["standard", "accounting"], "standard")
+    number_options = digit_options(options, places_of(amount))
+    grouping = options.pop("useGrouping", "auto")
+    if grouping is True:
+        grouping = "always"
+    elif grouping in (False, ""):
+        grouping = False
+    elif grouping in ("true", "false"):
+        grouping = "auto"
+    elif grouping not in ("always", "auto", "min2"):
+        raise Refused("range")
+    sign_display = string_option(options, "signDisplay", SIGN_DISPLAYS, "auto")
+    if options:
+        raise ValueError(f"options not modelled: {options}")
     loc = locale(tag)
-    negative = value < 0
-    text = amount.lstrip("-")
+    text, rounded = numeric_text(value, number_options)
+    subpattern = sign_type(sign_display, value < 0, rounded == 0)
     decimal, group = loc.currency_decimal(), loc.currency_group()
+    pick = ("positive", "negative", "plus").index(subpattern)
     if display == "name":
         # the plural form of the number as shown, in the decimal pattern; no accounting form
-        pos, neg = split_pattern(loc.decimal_formats["standard"])
-        prefix, number_pattern, suffix = neg if negative else pos
-        number = affix_chars(loc, prefix, "") + number_chars(loc, text, number_pattern, decimal, group) + affix_chars(loc, suffix, "")
-        category = plural_category(loc.language, amount)
+        prefix, number_pattern, suffix = subpatterns(loc.decimal_formats["standard"])[pick]
+        number = affix_chars(loc, prefix, "") + number_chars(loc, text, number_pattern, decimal, group, grouping) + affix_chars(loc, suffix, "")
+        category = plural_category(loc.language, text)
         name = loc.name(currency, category)
         unit = loc.formats.get(f"unitPattern-count-{category}", loc.formats["unitPattern-count-other"])
         out = []
@@ -404,10 +582,9 @@ def format_parts(amount: str, currency: str, tag: str, options: dict) -> list:
             else:
                 out.extend(("literal", ch) for ch in piece)
         return merge(out)
-    pos, neg = split_pattern(loc.formats[sign])
-    prefix, number_pattern, suffix = neg if negative else pos
+    prefix, number_pattern, suffix = subpatterns(loc.formats[sign])[pick]
     symbol = loc.symbol(currency, display)
-    return merge(spaced(loc, affix_chars(loc, prefix, symbol), number_chars(loc, text, number_pattern, decimal, group), affix_chars(loc, suffix, symbol)))
+    return merge(spaced(loc, affix_chars(loc, prefix, symbol), number_chars(loc, text, number_pattern, decimal, group, grouping), affix_chars(loc, suffix, symbol)))
 
 
 # --- parsing (docs/reference/parse.md) -------------------------------------------------------------
@@ -691,12 +868,146 @@ def format_rows(tags: list, general: bool) -> list:
     for tag in ["en", "de-DE", "fr", "ar-EG", "en-IN", "fa-IR"]:
         for amount in ["0.000001", "-0.123456789012345678", "123456789.123456789012", "12345678901234567.89", "-9007199254740993.00", "0.00"]:
             rows.append(format_row(amount, "EUR", tag))
+    rows.extend(option_rows())
     # what format refuses: Intl's digit options beside digits, rounding without digits, an
     # invalid display or a malformed tag
     for options in [{"digits": 2, "maximumFractionDigits": 3}, {"digits": 2, "minimumFractionDigits": 1}, {"digits": 2, "maximumSignificantDigits": 3}, {"digits": 2, "roundingIncrement": 5}, {"rounding": "halfEven"}, {"currencyDisplay": "symbols"}, {"currencySign": "negative"}]:
         rows.append(format_row("1.00", "EUR", "en", options))
     for tag in ["en_US", "e", "en-US-", "123"]:
         rows.append(format_row("1.00", "EUR", tag))
+    return rows
+
+
+# The Intl options ducat passes on, across locales with each kind of pattern: a negative
+# subpattern with a minus sign (nl, de-CH), accounting parentheses (en, fr), bidi marks around the
+# signs (ar-EG, fa-IR), a minimum of two grouping digits (es, it), lakh grouping (en-IN), other
+# digits (ar-EG, fa-IR) and another minus sign (sv-SE)
+OPTION_TAGS = ["en", "de-DE", "es", "nl", "ar-EG", "en-IN", "fa-IR", "de-CH", "fr", "sv-SE", "ja", "it"]
+# useGrouping's values: booleans, its three strategies, and the strings "true" and "false", which
+# Intl reads as the default
+GROUPINGS = [True, False, "always", "auto", "min2", "true", "false"]
+
+
+def option_rows() -> list:
+    rows = []
+    # signDisplay: every value, in both currency signs, for a negative, zero and positive amount
+    for tag in OPTION_TAGS:
+        currency = LOCAL_CURRENCY[tag]
+        exponent = EXPONENT[currency]
+        for sign_display in SIGN_DISPLAYS:
+            for sign in SIGNS:
+                for units in (-123456, 0, 123456):
+                    options = {"signDisplay": sign_display}
+                    if sign != "standard":
+                        options["currencySign"] = sign
+                    rows.append(format_row(scaled(units, exponent), currency, tag, options))
+    # with the code and the name, whose number takes the decimal pattern's signs
+    for tag in ["en", "nl", "ar-EG", "fa-IR", "de-CH", "ru-RU"]:
+        for sign_display in SIGN_DISPLAYS:
+            for display in ("code", "name"):
+                for amount in ("-1.00", "0.00", "2.00"):
+                    rows.append(format_row(amount, "USD", tag, {"signDisplay": sign_display, "currencyDisplay": display}))
+    # a negative amount Intl rounds to zero keeps its minus sign with "auto" and "always"; one
+    # ducat's digits rounds to zero is zero
+    for tag in ["en", "nl", "de-CH", "ar-EG"]:
+        for sign_display in SIGN_DISPLAYS:
+            for sign in SIGNS:
+                options = {"signDisplay": sign_display, "minimumFractionDigits": 2, "maximumFractionDigits": 2}
+                if sign != "standard":
+                    options["currencySign"] = sign
+                rows.append(format_row("-0.004", "EUR", tag, options))
+            rows.append(format_row("-0.004", "EUR", tag, {"signDisplay": sign_display, "digits": 2}))
+            rows.append(format_row("0.004", "EUR", tag, {"signDisplay": sign_display, "minimumFractionDigits": 0, "maximumFractionDigits": 0}))
+    # useGrouping: each value around each locale's grouping threshold
+    for tag in OPTION_TAGS:
+        currency = LOCAL_CURRENCY[tag]
+        exponent = EXPONENT[currency]
+        for grouping in GROUPINGS:
+            for whole in (123, 1234, 12345, -1234567):
+                rows.append(format_row(scaled(whole * 10**exponent + (5 if exponent else 0), exponent), currency, tag, {"useGrouping": grouping}))
+    for tag in ["en", "es", "en-IN"]:
+        for grouping in GROUPINGS:
+            for amount in ("1234.00", "1234567.00"):
+                rows.append(format_row(amount, "USD", tag, {"useGrouping": grouping, "currencyDisplay": "name"}))
+    # minimumIntegerDigits: padding, which is grouped as the number is
+    for tag in ["en", "es", "de-DE", "en-IN", "ar-EG", "fa-IR"]:
+        for minimum in (1, 2, 4, 5, 21):
+            for amount in ("0.05", "1.00", "1234.50", "-12.30"):
+                rows.append(format_row(amount, "EUR", tag, {"minimumIntegerDigits": minimum}))
+        rows.append(format_row("1.00", "EUR", tag, {"minimumIntegerDigits": 6, "useGrouping": False}))
+        rows.append(format_row("1.00", "EUR", tag, {"minimumIntegerDigits": 6, "useGrouping": "min2"}))
+        rows.append(format_row("1.00", "EUR", tag, {"minimumIntegerDigits": 3, "currencyDisplay": "name"}))
+    # significant digits: a minimum, a maximum, both, over zero, fractions, carries and large values
+    significant = [
+        {"maximumSignificantDigits": 3}, {"minimumSignificantDigits": 3}, {"minimumSignificantDigits": 2, "maximumSignificantDigits": 4},
+        {"minimumSignificantDigits": 5}, {"minimumSignificantDigits": 21}, {"maximumSignificantDigits": 1},
+        {"minimumSignificantDigits": 1, "maximumSignificantDigits": 21}, {"minimumSignificantDigits": 4, "maximumSignificantDigits": 4},
+        # fraction digits beside them are ignored without roundingPriority, out of range or not
+        {"maximumSignificantDigits": 3, "maximumFractionDigits": 1}, {"maximumSignificantDigits": 3, "maximumFractionDigits": 500},
+    ]
+    for tag in ["en", "de-DE", "ar-EG"]:
+        for options in significant:
+            for amount in ("0.00", "0.05", "1.00", "9.99", "-1234.56", "1234567.89", "0.001234", "-99.995", "12345678901234567.89"):
+                rows.append(format_row(amount, "EUR", tag, options))
+    # roundingMode: every mode, with fraction digits, significant digits and increments, at ties
+    # and off them, on either side of zero, and past a double's digits (Intl reads a string)
+    rounding_cases = [
+        ({"minimumFractionDigits": 2, "maximumFractionDigits": 2}, ["1.005", "-1.005", "1.015", "-1.015", "1.004", "-1.006", "9999999999999999.995", "-9999999999999999.995"]),
+        ({"minimumFractionDigits": 0, "maximumFractionDigits": 0}, ["2.50", "-2.50", "3.50", "-3.50", "2.51", "-0.50", "0.49"]),
+        ({"minimumFractionDigits": 0, "maximumFractionDigits": 2}, ["1.505", "-1.505", "1.999"]),
+        ({"maximumSignificantDigits": 2}, ["1250.00", "-1250.00", "1350.00", "9.95", "-0.125", "123456789012345678.90"]),
+        ({"minimumFractionDigits": 2, "maximumFractionDigits": 2, "roundingIncrement": 5}, ["1.025", "1.074", "-1.025", "1.075"]),
+        ({"minimumFractionDigits": 1, "maximumFractionDigits": 1, "roundingIncrement": 25}, ["1.125", "-3.75"]),
+        ({"maximumSignificantDigits": 2, "minimumFractionDigits": 0, "maximumFractionDigits": 1, "roundingPriority": "lessPrecision"}, ["12.35", "-0.125"]),
+    ]
+    for options, amounts in rounding_cases:
+        for amount in amounts:
+            for mode in MODES:
+                for tag in ["en", "de-DE"]:
+                    rows.append(format_row(amount, "EUR", tag, {**options, "roundingMode": mode}))
+    # without Intl rounding, or after ducat's own, a mode changes nothing
+    for mode in MODES:
+        rows.append(format_row("1.25", "EUR", "en", {"roundingMode": mode}))
+        rows.append(format_row("1.255", "EUR", "en", {"digits": 2, "rounding": "floor", "roundingMode": mode}))
+    # roundingPriority: fraction digits against significant digits, the more or the less precise
+    priority_options = [
+        {}, {"maximumSignificantDigits": 2}, {"minimumSignificantDigits": 2}, {"maximumSignificantDigits": 3, "minimumFractionDigits": 0, "maximumFractionDigits": 1},
+        {"minimumSignificantDigits": 3, "minimumFractionDigits": 0, "maximumFractionDigits": 0}, {"maximumSignificantDigits": 5, "minimumFractionDigits": 2, "maximumFractionDigits": 3},
+    ]
+    for priority in ("auto", "morePrecision", "lessPrecision"):
+        for options in priority_options:
+            for amount in ("1.20", "9.99", "1234.56", "0.00", "0.05", "-0.123456", "12345678901234567890.12"):
+                rows.append(format_row(amount, "EUR", "en", {**options, "roundingPriority": priority}))
+        for tag in ["de-DE", "ar-EG"]:
+            rows.append(format_row("1234.56", "EUR", tag, {"maximumSignificantDigits": 2, "roundingPriority": priority}))
+        rows.append(format_row("1.20", "EUR", "en", {"digits": 2, "roundingPriority": priority}))
+    # trailingZeroDisplay: whole amounts lose their fraction digits, the others keep them all
+    for tag in ["en", "de-DE", "ar-EG", "ru-RU", "ja", "fr"]:
+        for trailing in ("auto", "stripIfInteger"):
+            for amount, options in [("1.00", {}), ("1.50", {}), ("0.00", {}), ("-5.00", {}), ("1234.00", {}), ("1.001", {"minimumFractionDigits": 2, "maximumFractionDigits": 2}), ("4.999", {"digits": 2}), ("1.00", {"currencyDisplay": "name"}), ("2.00", {"currencyDisplay": "name"}), ("-5.00", {"currencySign": "accounting"})]:
+                rows.append(format_row(amount, "EUR", tag, {**options, "trailingZeroDisplay": trailing}))
+    # together: an invoice line (+/- signs, no grouping, whole amounts plain) and a padded code
+    for tag in ["en", "de-DE", "nl", "ar-EG"]:
+        for amount in ("1234.00", "-1234.50", "0.00"):
+            rows.append(format_row(amount, "EUR", tag, {"signDisplay": "exceptZero", "useGrouping": False, "trailingZeroDisplay": "stripIfInteger"}))
+            rows.append(format_row(amount, "EUR", tag, {"signDisplay": "always", "currencySign": "accounting", "minimumIntegerDigits": 6, "useGrouping": "always"}))
+    # what Intl refuses: values out of range (RangeError), an increment beside significant digits
+    # or roundingPriority (TypeError), in Intl's order
+    for options in [
+        {"signDisplay": "plus"}, {"useGrouping": "yes"}, {"minimumIntegerDigits": 0}, {"minimumIntegerDigits": 22},
+        {"minimumSignificantDigits": 0}, {"minimumSignificantDigits": 22}, {"maximumSignificantDigits": 0}, {"maximumSignificantDigits": 22},
+        {"minimumSignificantDigits": 4, "maximumSignificantDigits": 3}, {"roundingMode": "up"}, {"roundingMode": "unnecessary"},
+        {"roundingPriority": "most"}, {"trailingZeroDisplay": "strip"}, {"roundingIncrement": 3}, {"roundingIncrement": 5000},
+        {"roundingIncrement": 5, "maximumSignificantDigits": 3}, {"roundingIncrement": 1, "maximumSignificantDigits": 3},
+        {"roundingIncrement": 5, "roundingPriority": "morePrecision"}, {"roundingIncrement": 5, "maximumFractionDigits": 3},
+        {"roundingIncrement": 5, "maximumSignificantDigits": 3, "maximumFractionDigits": 3}, {"roundingIncrement": 5, "useGrouping": "yes"},
+        {"minimumIntegerDigits": 0, "roundingIncrement": 5, "maximumSignificantDigits": 3},
+        {"maximumSignificantDigits": 3, "minimumFractionDigits": 3, "maximumFractionDigits": 1, "roundingPriority": "morePrecision"},
+        {"maximumSignificantDigits": 3, "maximumFractionDigits": 101, "roundingPriority": "lessPrecision"},
+        {"maximumFractionDigits": 1}, {"minimumSignificantDigits": 3, "digits": 2}, {"digits": 2, "signDisplay": "plus"},
+        {"digits": 2, "roundingMode": "up"}, {"currencyDisplay": "symbols", "signDisplay": "plus"},
+    ]:
+        rows.append(format_row("1.00", "EUR", "en", options))
     return rows
 
 
@@ -860,13 +1171,17 @@ PARTS_RULE = (
     "TR35 doesn't define formatToParts: here the number's digits, separators and signs are the integer, group, decimal, fraction and minusSign parts, the symbol or name is the currency part, "
     "bidi marks (format characters) in a symbol are literals, and every other pattern character, including currency spacing, is a literal; adjacent characters of one type merge. "
     "That convention, and how a currency name is shown (the number in the decimal pattern with the currency's separators, never in the accounting form, then unitPattern with the name in the number's plural form), "
-    "were settled after looking at ICU's output, so agreement on them is not independent evidence; the text of every other row is."
+    "were settled after looking at ICU's output, so agreement on them is not independent evidence; the text of every other row is. "
+    "So was the explicit plus sign (signDisplay always and exceptZero) where TR35 leaves it open: the negative subpattern with its minus sign replaced by the plus sign, "
+    "or, where the negative subpattern has no minus sign (accounting's parentheses) or there is none, the plus sign before the positive subpattern."
 )
 
 
 def main() -> None:
     method = (
-        "Unicode TR35's number and currency formatting (https://www.unicode.org/reports/tr35/tr35-numbers.html) and the parse rules of docs/reference/parse.md, "
+        "Unicode TR35's number and currency formatting (https://www.unicode.org/reports/tr35/tr35-numbers.html), with the Intl.NumberFormat options ducat passes on read as ECMA-402 defines them "
+        "(SetNumberFormatDigitOptions, FormatNumericToString, ToRawFixed, ToRawPrecision and GetNumberFormatPattern: https://tc39.es/ecma402/#sec-setnfdigitoptions; "
+        "rounding on exact fractions, never a double; useGrouping's min2 and auto from CLDR's minimumGroupingDigits), and the parse rules of docs/reference/parse.md, "
         "implemented with Python's standard library over the CLDR 48.0 JSON snapshot in data/cldr/ (data/cldr/README.md), independently of ducat's TypeScript and of ICU. "
         "ducat formats and parses through the runtime's Intl, whose ICU 78.3 carries CLDR 48, so passing these vectors means two independent implementations agree on the same CLDR release. "
         + PARTS_RULE + " " + FR_CH_EVIDENCE
@@ -898,7 +1213,7 @@ def main() -> None:
         vector_path("format", "cldr"): file_text(
             "format",
             "cldr",
-            "Money formatted as currency in the locales the documentation and tests use: every display (symbol, narrow symbol, code, name) and sign (standard, accounting), digits and rounding, amounts beyond a double's digits, and the options format refuses; the text and its parts.",
+            "Money formatted as currency in the locales the documentation and tests use: every display (symbol, narrow symbol, code, name) and sign (standard, accounting), digits and rounding, amounts beyond a double's digits, the Intl options ducat passes on (signDisplay, useGrouping, minimumIntegerDigits, fraction and significant digits, roundingIncrement, roundingMode, roundingPriority, trailingZeroDisplay), and the options format and Intl refuse; the text and its parts.",
             provenance,
             [{"op": "format.money", "rows": format_cldr}],
         ),

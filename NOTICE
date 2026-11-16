@@ -159,6 +159,16 @@ data/cldr/, data/icu/ (in the repository only, not in the npm package)
   vectors and the Rust ports' locale data. Used under the Unicode
   License v3, as above (data/cldr/LICENSE).
 
+IANA Time Zone Database (the Rust crate ducat with its tz feature only;
+not in the npm package)
+  The Rust crate ducat (rust/crates/ducat), built with its optional tz
+  feature, embeds the IANA Time Zone Database (tzdb), release 2026f,
+  https://www.iana.org/time-zones, compiled to TZif by the jiff-tzdb
+  crate 1.0.0 (https://github.com/BurntSushi/jiff, Unlicense OR MIT),
+  a dependency of jiff. The tz database is in the public domain: "Unless
+  specified below, all files in the tz code and data (including this
+  LICENSE file) are in the public domain." (tzdb's LICENSE).
+
 assets/logo.png
   Gold ducat of Francesco Foscari, Venice, 1423-1457. Photo by
   Francesco Bini, CC BY-SA 4.0, via Wikimedia Commons. See

@@ -6,20 +6,34 @@
 
 mod common;
 
+mod adyen_fx;
+// the account time zone needs the `tz` feature: `cargo test -p ducat --features tz --test it adyen_tz::`
+#[cfg(feature = "tz")]
+mod adyen_tz;
+#[cfg(feature = "tz")]
+mod adyen_tz_cases;
 mod allocate;
 mod currency_data;
 mod currency_data_api;
+mod exact;
+mod exact_fixed_gaps;
 mod exact_rate;
 mod excel;
 mod finance;
+mod float_input_order;
+mod floats;
 mod iso_table;
+mod order;
+mod parts;
 mod policy;
 mod pricing_math;
 mod processor_tables;
 mod processors;
+mod rate_checks;
 mod rate_providers;
 mod rate_sources;
 mod regressions;
+mod snapshots;
 mod spec;
 mod tax_fixed;
 // ducat::testing needs the `proptest` feature: `cargo test -p ducat --features proptest --test it testing::`

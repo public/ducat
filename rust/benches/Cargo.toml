@@ -1,0 +1,28 @@
+[package]
+name = "ducat-benches"
+version = "0.0.0"
+description = "Benchmarks of ducat against other Rust money and decimal libraries; not published"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+# no library, binary, test or example: the only target is the criterion bench below
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+
+# The competitors and criterion are dev-dependencies of this crate only. No other crate depends on
+# ducat-benches, and CI excludes it from every --workspace build (see .github/workflows/rust.yml),
+# so their features never unify with what the other crates are built and tested with.
+[dev-dependencies]
+ducat = { path = "../crates/ducat" }
+criterion = { version = "=0.5.1", default-features = false }
+rust_decimal = { version = "1", default-features = false, features = ["std"] }
+rusty-money = { version = "0.4", default-features = false, features = ["iso"] }
+bigdecimal = { version = "0.4", default-features = false, features = ["std"] }
+fixed = { version = "1", default-features = false, features = ["std"] }
+
+[[bench]]
+name = "money"
+harness = false

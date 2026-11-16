@@ -41,11 +41,18 @@ jobs:
       - run: python3 ../scripts/check-rust-notices.py
       # the conformance runner (tests/it/spec.rs) prints its counts per area and operation; ducat-words
       # runs the words area, which the core runner delegates to it
-      - run: cargo test --workspace --locked --no-fail-fast -- --nocapture
+      # ducat-benches (rust/benches) is excluded from every --workspace command: its competitors and
+      # criterion must not unify features with what the libraries are tested and documented with,
+      # and CI never runs the benchmarks. The lint job checks it once.
+      - run: cargo test --workspace --exclude ducat-benches --locked --no-fail-fast -- --nocapture
       # every language, for the locale and ICU-behaviour tests that need pa, uz, sr and my
       - run: cargo test -p ducat-format --locked --no-fail-fast --features full -- --nocapture
+      # ducat-words' CLDR currency names (not a default feature)
+      - run: cargo test -p ducat-words --locked --no-fail-fast --features cldr-names
       # ducat::testing: the strategies' coverage, the assertion macros and their doc examples
       - run: cargo test -p ducat --locked --no-fail-fast --features proptest
+      # Adyen's account time zone: the tz feature (jiff, bundled tzdb), not a default
+      - run: cargo test -p ducat --locked --no-fail-fast --features tz
       # ducat-fetch's sans-IO core without ureq (the README's doc examples need ureq); its live
       # smoke test is #[ignore]d: CI makes no requests
       - run: cargo test -p ducat-fetch --locked --no-fail-fast --no-default-features --lib --tests
@@ -126,8 +133,11 @@ jobs:
       # the proptest feature (proptest needs 1.88)
       - run: cargo +1.85 check -p ducat --lib --locked
       - run: cargo +1.85 check -p ducat --lib --locked --no-default-features
+      # jiff 1.0.0 declares 1.85
+      - run: cargo +1.85 check -p ducat --lib --locked --features tz
       - run: cargo +1.85 check -p ducat-words --lib --locked
       - run: cargo +1.85 check -p ducat-words --lib --locked --no-default-features
+      - run: cargo +1.85 check -p ducat-words --lib --locked --features cldr-names
       - run: cargo +1.85 check -p ducat-format --lib --locked
       - run: cargo +1.85 check -p ducat-format --lib --locked --no-default-features
       # ureq 3, ureq-proto and zeroize declare 1.85; rustls, ring and webpki-roots less
@@ -156,7 +166,7 @@ jobs:
       - run: cargo build -p ducat --lib --locked --no-default-features --features convert,serde,finance --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features ecb,boc,fed,boe,hmrc,history,stripe-fx,adyen-fx --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features wire,serde --target thumbv7em-none-eabihf
-      - run: cargo build -p ducat-words --lib --locked --no-default-features --features en,de,fr,es,it,nl,pt --target thumbv7em-none-eabihf
+      - run: cargo build -p ducat-words --lib --locked --no-default-features --features en,de,fr,es,it,nl,pt,cldr-names --target thumbv7em-none-eabihf
       - run: cargo build -p ducat-format --lib --locked --no-default-features --features en --target thumbv7em-none-eabihf
       - run: cargo build -p ducat --lib --locked --no-default-features --features cash,policy,currencies,historic,territories,crypto,stripe,adyen,checkout,paypal,braintree,klarna --target thumbv7em-none-eabihf
 
@@ -167,7 +177,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal --component rustfmt,clippy && rustup default stable
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - run: cargo clippy --workspace --exclude ducat-benches --all-targets --all-features --locked -- -D warnings
+      # the benchmarks compile and lint clean; they are never run in CI
+      - run: cargo clippy -p ducat-benches --benches --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features finance --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features convert --locked -- -D warnings
@@ -180,6 +192,8 @@ jobs:
       - run: cargo clippy -p ducat --lib --no-default-features --features hmrc --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features stripe-fx --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features adyen-fx --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features adyen-fx,tz --locked -- -D warnings
+      - run: cargo clippy -p ducat --all-targets --features tz --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features wire --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features wire,serde --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features policy --locked -- -D warnings
@@ -206,6 +220,8 @@ jobs:
       - run: cargo clippy -p ducat-words --lib --no-default-features --features it --locked -- -D warnings
       - run: cargo clippy -p ducat-words --lib --no-default-features --features nl --locked -- -D warnings
       - run: cargo clippy -p ducat-words --lib --no-default-features --features pt --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features cldr-names --locked -- -D warnings
+      - run: cargo clippy -p ducat-words --lib --no-default-features --features cldr-names,en --locked -- -D warnings
       - run: cargo clippy -p ducat-format --lib --no-default-features --locked -- -D warnings
       - run: cargo clippy -p ducat-format --lib --no-default-features --features en --locked -- -D warnings
       - run: cargo clippy -p ducat-format --all-targets --locked -- -D warnings
@@ -245,7 +261,7 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
       # intra-doc links to feature-gated items must resolve with every feature and with none
-      - run: cargo doc --workspace --no-deps --locked --no-default-features
+      - run: cargo doc --workspace --exclude ducat-benches --no-deps --locked --no-default-features
         env:
           RUSTDOCFLAGS: -D warnings
       # in the workspace build ducat-format enables ducat's territories feature (feature
@@ -253,6 +269,6 @@ jobs:
       - run: cargo doc -p ducat --no-deps --locked --no-default-features
         env:
           RUSTDOCFLAGS: -D warnings
-      - run: cargo doc --workspace --no-deps --locked --all-features
+      - run: cargo doc --workspace --exclude ducat-benches --no-deps --locked --all-features
         env:
           RUSTDOCFLAGS: -D warnings

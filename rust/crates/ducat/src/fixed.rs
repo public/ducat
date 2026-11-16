@@ -9,7 +9,7 @@
 //! assert_eq!(unit_price.multiply(1200, Rounding::Unnecessary)?.to_string(), "51.0000");
 //! let third = "100.00".parse::<Fixed>()?.divide(3, Rounding::HalfEven)?;
 //! assert_eq!(third.to_string(), "33.33");
-//! assert_eq!("12.3400".parse::<Fixed>()?.trim_scale(0).to_string(), "12.34");
+//! assert_eq!("12.3400".parse::<Fixed>()?.trim_scale(None)?.to_string(), "12.34");
 //! # Ok::<(), ducat::Error>(())
 //! ```
 
@@ -21,7 +21,7 @@ use core::iter::Sum;
 use core::ops::{Add, Neg, Sub};
 use core::str::FromStr;
 
-use crate::amount::Amount;
+use crate::amount::{Amount, AmountSum};
 use crate::decimal::{faithful_decimal, parse_decimal};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, Rounding};
 
@@ -85,6 +85,32 @@ impl Fixed {
             &decimal,
             decimal.scale,
             Rounding::Unnecessary,
+        )?))
+    }
+
+    /// A float at its shortest round-trip form, rounded to `scale` with `rounding`: ducat's
+    /// `fixed(value, { scale, rounding })` for a number. The 15-digit rule of
+    /// [`Fixed::from_f64`] doesn't apply, as in ducat: the caller has said how to round, so
+    /// `0.1 + 0.2` at scale 2 is 0.30.
+    ///
+    /// ```
+    /// use ducat::Rounding;
+    /// use ducat::fixed::Fixed;
+    ///
+    /// let price = Fixed::from_f64_at(2.675, 2, Rounding::HalfEven)?;
+    /// assert_eq!(price.to_string(), "2.68");
+    /// assert_eq!(Fixed::from_f64_at(0.1 + 0.2, 2, Rounding::HalfExpand)?.to_string(), "0.30");
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// In ducat's order: [`Error::InvalidScale`] for a scale beyond
+    /// [`MAX_SCALE`](crate::MAX_SCALE); [`Error::NotFinite`] for NaN and the infinities;
+    /// [`Error::Rounding`] for more decimals than `scale` with [`Rounding::Unnecessary`].
+    pub fn from_f64_at(value: f64, scale: u16, rounding: Rounding) -> Result<Self, Error> {
+        Ok(Self::from_amount(Amount::from_f64(
+            value, scale, rounding, false,
         )?))
     }
 
@@ -173,19 +199,19 @@ impl Fixed {
         Ok(Self::from_amount(self.amount.rescale(scale, rounding)?))
     }
 
-    /// The smallest scale, at least `minimum`, that keeps the value exact: `12.3400` is `12.34`.
-    /// It never adds digits.
-    #[must_use]
-    pub fn trim_scale(&self, minimum: u16) -> Self {
-        let (units, scale) = self.amount.normalized();
-        if scale >= minimum {
-            return Self::from_amount(Amount { units, scale });
-        }
-        let target = minimum.min(self.amount.scale);
-        Self::from_amount(Amount {
-            units: units.mul_pow10(u32::from(target - scale)),
-            scale: target,
-        })
+    /// The smallest scale, at least `minimum_scale` (default 0, as ducat's), that keeps the value
+    /// exact, as ducat's `trimScale`: trailing zeros are dropped, so `12.3400` with `None` is
+    /// `12.34` and `5.000` with `Some(2)` is `5.00`. It never adds digits: a value already at or
+    /// below the minimum is returned as it is.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::InvalidScale`] for a minimum beyond [`MAX_SCALE`](crate::MAX_SCALE), ducat's
+    /// `RangeError` (checked first, as ducat does, whatever the value).
+    pub fn trim_scale(&self, minimum_scale: Option<u16>) -> Result<Self, Error> {
+        Ok(Self::from_amount(
+            self.amount.trim_scale(minimum_scale.unwrap_or(0))?,
+        ))
     }
 
     /// The order of the two values, whatever their scales.
@@ -198,6 +224,24 @@ impl Fixed {
     #[must_use]
     pub fn identical(&self, other: &Self) -> bool {
         self.amount.identical(&other.amount)
+    }
+
+    /// The nearest double, for display, charts and other places that take a float. **For
+    /// display or interop only; never round-trip** (and never do arithmetic on it). Lossy on
+    /// purpose, so it has a name: `0.1` is 0.1, and a value beyond a double's 15 to 17 digits is
+    /// rounded once, to the nearest double (ties to even), ±infinity beyond the largest double,
+    /// bit for bit as ducat's `Fixed#toNumber` (`Number` of the exact decimal string).
+    ///
+    /// ```
+    /// use ducat::fixed::Fixed;
+    ///
+    /// let tenth: Fixed = "0.1".parse()?;
+    /// assert_eq!(tenth.to_f64(), 0.1);
+    /// # Ok::<(), ducat::Error>(())
+    /// ```
+    #[must_use]
+    pub fn to_f64(&self) -> f64 {
+        crate::float::decimal_to_f64(&self.amount.units, self.amount.scale)
     }
 
     /// The value as a reduced [`Ratio`].
@@ -400,14 +444,22 @@ impl Neg for Fixed {
 impl Sum for Fixed {
     /// The exact sum, at the largest scale among the items.
     fn sum<I: Iterator<Item = Self>>(items: I) -> Self {
-        items.fold(Self::ZERO, |sum, item| sum + item)
+        let mut sum = AmountSum::zero(0);
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
 impl<'a> Sum<&'a Fixed> for Fixed {
     /// As the sum of owned values.
     fn sum<I: Iterator<Item = &'a Fixed>>(items: I) -> Self {
-        items.fold(Self::ZERO, |sum, item| sum + item)
+        let mut sum = AmountSum::zero(0);
+        for item in items {
+            sum.add(&item.amount);
+        }
+        Self::from_amount(sum.finish())
     }
 }
 
@@ -488,5 +540,19 @@ mod serde_impl {
             let text = String::deserialize(deserializer)?;
             text.parse().map_err(de::Error::custom)
         }
+    }
+}
+
+/// The general path that summing `Fixed` took before its inline fast path, for the differential
+/// tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Fixed;
+
+    /// `Sum`: a fold with the general add from zero at scale 0.
+    pub(crate) fn sum<'a>(items: impl IntoIterator<Item = &'a Fixed>) -> Fixed {
+        items.into_iter().fold(Fixed::ZERO, |sum, item| {
+            Fixed::from_amount(sum.amount.add_general(&item.amount))
+        })
     }
 }

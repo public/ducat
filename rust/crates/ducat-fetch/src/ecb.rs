@@ -31,7 +31,7 @@ pub const ECB_URLS: EcbUrls = EcbUrls {
 pub const ECB_DATA_API: &str = "https://data-api.ecb.europa.eu/service/data/EXR";
 
 /// The ECB's first day of reference rates.
-const ECB_FIRST_DAY: Date = match Date::new(1999, 1, 4) {
+pub(crate) const ECB_FIRST_DAY: Date = match Date::new(1999, 1, 4) {
     Ok(day) => day,
     Err(_) => panic!("1999-01-04 is a date"),
 };
