@@ -76,6 +76,7 @@ async fn postgres() {
     composite_refusals(&pool).await;
     composite_sum(&pool).await;
     other_composite_names(&pool).await;
+    scale_column(&pool).await;
     pool.close().await;
 }
 
@@ -429,4 +430,64 @@ async fn other_composite_names(pool: &PgPool) {
             .await
             .unwrap();
     assert_eq!(dinars.to_string(), "2.000 KWD");
+}
+
+/// ducat's `moneyMinor('EUR', { scale })` with `scaledMoney` (ducat#380): `SCALED_EUROS` and a
+/// NULL amount round-trip with their scales through a BIGINT and a SMALLINT scale column; a NULL
+/// scale is refused.
+async fn scale_column(pool: &PgPool) {
+    use ducat_sqlx::ScaledMinorColumn;
+
+    use crate::scaled::{SCALED_EUROS, euros};
+
+    sqlx::raw_sql(
+        "DROP TABLE IF EXISTS scaled;
+         CREATE TABLE scaled (id INT PRIMARY KEY, amount_minor BIGINT, amount_scale SMALLINT)",
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    for (id, (amount, scale, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let (units, scale) = ScaledMinorColumn(euros(amount, scale))
+            .to_columns()
+            .unwrap();
+        sqlx::query("INSERT INTO scaled VALUES ($1, $2, $3)")
+            .bind(i32::try_from(id).unwrap())
+            .bind(units)
+            .bind(scale)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+    sqlx::raw_sql("INSERT INTO scaled VALUES (100, NULL, NULL), (101, 5, NULL), (102, 5, 1001)")
+        .execute(pool)
+        .await
+        .unwrap();
+    let rows: Vec<(i32, Option<i64>, Option<i16>)> =
+        sqlx::query_as("SELECT id, amount_minor, amount_scale FROM scaled ORDER BY id")
+            .fetch_all(pool)
+            .await
+            .unwrap();
+    assert_eq!(rows.len(), SCALED_EUROS.len() + 3);
+    let read = |index: usize| {
+        let (_, units, scale) = rows[index];
+        ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale.map(i64::from))
+    };
+    for (index, (amount, at, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let money = read(index).unwrap().unwrap().0;
+        assert!(money.identical(&euros(amount, at)), "{amount}");
+    }
+    assert_eq!(read(SCALED_EUROS.len()), Ok(None));
+    assert_eq!(
+        read(SCALED_EUROS.len() + 1),
+        Err(Error::InvalidScaleColumn(None))
+    );
+    assert_eq!(
+        read(SCALED_EUROS.len() + 2),
+        Err(Error::InvalidScaleColumn(Some(1001)))
+    );
+    sqlx::raw_sql("DROP TABLE scaled")
+        .execute(pool)
+        .await
+        .unwrap();
 }

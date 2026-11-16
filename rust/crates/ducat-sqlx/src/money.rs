@@ -171,6 +171,112 @@ impl<C: Currency> From<MinorColumn<C>> for Money<C> {
     }
 }
 
+/// The units and scale to store in a minor-unit column with a scale column, for any money
+/// (ducat's `minorToDriver` with a scale, the layout of `toMinorColumns` and Kysely's `setMoney`
+/// with `{ scale }`): the amount in units of 10^−scale at the money's own scale, and that scale.
+/// [`ScaledMinorColumn`] binds a `Money<C>` the same way.
+///
+/// ```
+/// use ducat::{AnyMoney, CurrencyCode, Rounding};
+///
+/// let eur = CurrencyCode::iso("EUR")?;
+/// let money = AnyMoney::parse_at("1.005", eur, 3, Rounding::Unnecessary)?;
+/// assert_eq!(ducat_sqlx::scaled_minor_units(&money)?, (1005, 3));
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// # Errors
+///
+/// [`Error::OutOfRange`] beyond ±(2^63 − 1) units, where MySQL outside strict mode would store
+/// the nearest limit instead. Any scale is stored, so there is no [`Error::ScaleMismatch`].
+pub fn scaled_minor_units<M: MoneyValue>(money: &M) -> Result<(i64, i16), Error> {
+    Ok(ducat_sql_core::scaled_units(money.units(), money.scale())?)
+}
+
+/// A BIGINT (Postgres, MySQL) or INTEGER (SQLite) column of units with an integer scale column
+/// beside it, in a fixed currency: `(1005, 3)` is 1.005 EUR, `(12, 0)` is 12 EUR. ducat's
+/// `moneyMinor(currency, { scale })` with `scaledMoney` (ducat#380): the units are counted at
+/// each value's own scale, which the scale column records, so any scale round-trips (above, at or
+/// below the currency's exponent) and stored amounts keep their meaning if an exponent changes.
+///
+/// It spans two columns, so it is written with [`to_columns`](Self::to_columns) (bind the units
+/// and the scale) and read with [`from_columns`](Self::from_columns) from the units and the
+/// scale as selected, or [`from_nullable_columns`](Self::from_nullable_columns) for a nullable
+/// amount (ducat's `scaledMoney`: NULL for a NULL amount). A [`MinorColumn<C>`] reads the units
+/// column alone at the exponent, which is what ducat refuses for a column with a scale column:
+/// read both.
+///
+/// Writing refuses only units beyond ±(2^63 − 1) ([`Error::OutOfRange`]). Reading refuses a
+/// NULL, negative or too large scale ([`Error::InvalidScaleColumn`]), checked before the units,
+/// as ducat's `readScale`.
+///
+/// ```
+/// use ducat::{iso::Eur, Money, Rounding};
+/// use ducat_sqlx::{Error, ScaledMinorColumn};
+///
+/// let amount = ScaledMinorColumn(Money::<Eur>::parse_at("1.005", 3, Rounding::Unnecessary)?);
+/// assert_eq!(amount.to_columns()?, (1005, 3));
+/// assert_eq!(ScaledMinorColumn::<Eur>::from_columns(1005, Some(3))?, amount);
+/// assert_eq!(
+///     ScaledMinorColumn::<Eur>::from_columns(5, None),
+///     Err(Error::InvalidScaleColumn(None)),
+/// );
+/// assert_eq!(ScaledMinorColumn::<Eur>::from_nullable_columns(None, None)?, None);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct ScaledMinorColumn<C: Currency>(pub Money<C>);
+
+impl<C: Currency> ScaledMinorColumn<C> {
+    /// The units and the scale to store, as [`scaled_minor_units`].
+    ///
+    /// # Errors
+    ///
+    /// As [`scaled_minor_units`].
+    pub fn to_columns(&self) -> Result<(i64, i16), Error> {
+        scaled_minor_units(&self.0)
+    }
+
+    /// The money from stored units and the scale column's value (`None` for NULL).
+    ///
+    /// # Errors
+    ///
+    /// [`Error::InvalidScaleColumn`] for a NULL scale, a negative one or one beyond
+    /// [`ducat::MAX_SCALE`].
+    pub fn from_columns(units: i64, scale: Option<i64>) -> Result<Self, Error> {
+        let scale = ducat_sql_core::read_scale(scale)?;
+        Ok(Self(Money::from_units(units, scale)?))
+    }
+
+    /// The money from a nullable units column and its scale column: `None` for a NULL amount,
+    /// whatever the scale holds (ducat's `scaledMoney`), else as
+    /// [`from_columns`](Self::from_columns).
+    ///
+    /// # Errors
+    ///
+    /// As [`from_columns`](Self::from_columns), for a non-NULL amount.
+    pub fn from_nullable_columns(
+        units: Option<i64>,
+        scale: Option<i64>,
+    ) -> Result<Option<Self>, Error> {
+        units
+            .map(|units| Self::from_columns(units, scale))
+            .transpose()
+    }
+}
+
+impl<C: Currency> From<Money<C>> for ScaledMinorColumn<C> {
+    fn from(money: Money<C>) -> Self {
+        Self(money)
+    }
+}
+
+impl<C: Currency> From<ScaledMinorColumn<C>> for Money<C> {
+    fn from(column: ScaledMinorColumn<C>) -> Self {
+        column.0
+    }
+}
+
 /// A decimal column in a fixed currency, at the currency's exponent: Postgres NUMERIC, MySQL
 /// DECIMAL, or SQLite TEXT (SQLite's NUMERIC affinity would store some decimals as REAL and lose
 /// digits). ducat's `moneyDecimal` column shape.
