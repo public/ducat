@@ -315,36 +315,35 @@ export function snapshots(
   if (!Number.isSafeInteger(max) || max < 1) {
     throw new RangeError(`max must be a positive integer, got ${max}`);
   }
-  // Map iteration order is insertion order, so re-inserting on every use makes it an LRU.
+  // Map iteration order is insertion order, so re-inserting on every use makes it an LRU. It holds
+  // pending loads too, so lookups of a day share one, placed when asked for like any use. Only the
+  // days kept (loaded with a table) count toward `max`, and room is made when a load returns a
+  // table, so a miss, pending or not, never drops a kept day. A pending load is never dropped.
   const cache = new Map<string, Promise<RateProvider | undefined>>();
-
-  // Only drop the entry this load created: a newer load for the same day may have replaced it.
-  function forget(day: string, loading: Promise<RateProvider | undefined>): void {
-    if (cache.get(day) === loading) {
-      cache.delete(day);
-    }
-  }
+  const kept = new Set<string>();
 
   function loadDay(day: string): Promise<RateProvider | undefined> {
     let pending = cache.get(day);
     if (pending === undefined) {
-      const loading: Promise<RateProvider | undefined> = load(day).then((table) => {
+      pending = load(day).then((table) => {
         if (table === undefined) {
-          forget(day, loading);
+          cache.delete(day);
+        } else if (kept.add(day).size > max) {
+          // the least recently used kept day: this one, if every other was used since it was asked for
+          for (const used of cache.keys()) {
+            if (kept.delete(used)) {
+              cache.delete(used);
+              break;
+            }
+          }
         }
         return table;
       });
-      loading.catch(() => forget(day, loading));
-      pending = loading;
+      pending.catch(() => cache.delete(day));
     } else {
       cache.delete(day);
     }
-
     cache.set(day, pending);
-    if (cache.size > max) {
-      const leastRecentlyUsed = cache.keys().next().value!;
-      cache.delete(leastRecentlyUsed);
-    }
     return pending;
   }
 
