@@ -31,6 +31,8 @@ libsqlite3-sys = { version = ">=0.30, <0.41", optional = true, default-features 
 [dev-dependencies]
 ducat = { path = "../ducat", default-features = false, features = ["std", "iso", "proptest"] }
 proptest = { version = "1.6", default-features = false, features = ["std"] }
+# reading the spec's vectors
+serde_json = "1"
 # `PgValue::new` and `MysqlValue::new`, for reading hand-built values in the tests (diesel-async
 # enables this anyway)
 diesel = { version = "2.2", default-features = false, features = ["i-implement-a-third-party-backend-and-opt-into-breaking-changes"] }

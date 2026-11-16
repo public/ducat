@@ -27,6 +27,7 @@ spec/
 | `cash`       | `rules.json`            |   514 | reference data     | the cash-rounding rules by currency and country, and amounts rounded through them               |
 | `processors` | `rules.json`            | 2,372 | reference data     | each payment processor's exponents and multiples, and amounts to and from its API               |
 | `wire`       | `formats.json`          |   610 | Python `fractions` | google.type.Money, ISO 20022 amounts, ISO minor units and dinero.js objects, both ways          |
+| `wire`       | `money-json.json`       |   180 | Python `fractions` | money JSON in a JSON, JSONB or TEXT column (`moneyJson`): the text written and read back        |
 | `currency`   | `data.json`             | 1,367 | reference data     | ISO exponents and numeric codes, historic codes, CLDR cash fractions, territories, crypto units |
 | `excel`      | `xnpv-lean.json`        |   120 | Lean               | XNPV's exact bounds and its rounded value in every mode                                         |
 | `excel`      | `xirr-lean.json`        |    35 | Lean               | XIRR floored to a number of digits, or no root                                                  |
@@ -606,6 +607,18 @@ rounding.
 | `wire.fromMinorUnits` | `amount`: the Money at the currency's exponent                                              |
 | `wire.toDinero`       | `wire`: the Money as `{ amount, currency, precision }`, at its scale                        |
 | `wire.fromDinero`     | `amount`: the Money at the object's precision                                               |
+| `wire.toMoneyJson`    | `wire`: the column's text for the Money, in a column fixed to `column` if given             |
+| `wire.fromMoneyJson`  | `amount` and `currency`: the Money a column's text `wire` is, in a column fixed to `column` |
+
+`wire/money-json.json` holds ducat's money JSON in a database column (`moneyJson`'s
+`jsonToDriver` and `jsonFromDriver`), as `scripts/gen-money-json-vectors.py` computes it with
+Python's `json` and `fractions`: written exactly as `{"amount":"12.34","currency":"EUR"}` (that
+order, no spaces, the amount a string at the currency's exponent; another scale is `range`, another
+currency than `column`'s `currency-mismatch`), and read from any JSON object whose `amount` and
+`currency` are strings (other members ignored, the last duplicate winning), in this order: text
+that isn't JSON is `syntax`, JSON that isn't such an object `type`, a code that isn't ISO 4217 with
+a minor unit `range`, an amount outside ducat's grammar `syntax`, more decimals than the
+currency's `rounding`, and another currency than `column`'s `currency-mismatch`.
 
 ### Finance and Excel tables
 

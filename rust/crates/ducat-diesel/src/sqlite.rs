@@ -6,6 +6,7 @@
 //! | [`Decimal`] | `Text` | TEXT | the exact value and its scale | the decimal text |
 //! | [`DecimalColumn<C>`] | `Text` | TEXT | `Money<C>` at the exponent, trailing zeros allowed | `Money<C>` at the exponent |
 //! | [`MinorColumn<C>`] | `BigInt` | INTEGER | `Money<C>` from minor units | minor units |
+//! | [`JsonColumn<M>`] | `Text` | TEXT | ducat's money JSON, in any currency or `C` | the JSON text |
 //!
 //! Decimals are kept as TEXT because SQLite's NUMERIC affinity stores some of them as REAL and
 //! loses digits. SQLite types values, not columns, so each value's own type is checked: a REAL
@@ -49,7 +50,7 @@ use diesel::sql_types::{BigInt, Text};
 use diesel::sqlite::{Sqlite, SqliteType, SqliteValue};
 use ducat::Currency;
 
-use crate::{Decimal, DecimalColumn, Error, MinorColumn};
+use crate::{Decimal, DecimalColumn, Error, JsonColumn, MinorColumn, MoneyValue};
 
 /// Checks the value's own storage class: diesel would let SQLite convert a REAL to text or
 /// truncate it to an integer.
@@ -111,6 +112,20 @@ impl<C: Currency> FromSql<BigInt, Sqlite> for MinorColumn<C> {
 impl<C: Currency> ToSql<BigInt, Sqlite> for MinorColumn<C> {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
         out.set_value(self.minor_units()?);
+        Ok(IsNull::No)
+    }
+}
+
+impl<M: MoneyValue> FromSql<Text, Sqlite> for JsonColumn<M> {
+    fn from_sql(mut value: SqliteValue<'_, '_, '_>) -> deserialize::Result<Self> {
+        check_value(&value, SqliteType::Text)?;
+        Ok(Self::from_json(value.read_text())?)
+    }
+}
+
+impl<M: MoneyValue + core::fmt::Debug> ToSql<Text, Sqlite> for JsonColumn<M> {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
+        out.set_value(self.to_json()?);
         Ok(IsNull::No)
     }
 }

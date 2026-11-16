@@ -79,6 +79,7 @@ async fn postgres() {
     composite_sum(connection).await;
     other_composite_names(connection).await;
     scale_column(connection).await;
+    json_columns(connection).await;
     connection
         .batch_execute(&format!(
             "DROP SCHEMA {SCHEMA} CASCADE; DROP SCHEMA ducat_diesel_other CASCADE"
@@ -552,4 +553,107 @@ async fn scale_column(connection: &mut AsyncPgConnection) {
         ]
     );
     connection.batch_execute("DROP TABLE scaled").await.unwrap();
+}
+
+/// ducat's `moneyJson` on Postgres: jsonb (as ducat's Drizzle column) and json, Postgres's own
+/// text of each, and the values node-postgres would parse twice.
+async fn json_columns(connection: &mut AsyncPgConnection) {
+    use diesel::sql_types::{Json, Jsonb};
+    use ducat_diesel::JsonColumn;
+
+    diesel::table! {
+        docs (id) {
+            id -> Int4,
+            jb -> Nullable<Jsonb>,
+            j -> Nullable<Json>,
+        }
+    }
+
+    connection
+        .batch_execute("CREATE TABLE docs (id integer PRIMARY KEY, jb jsonb, j json)")
+        .await
+        .unwrap();
+    for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
+        let money = AnyMoney::parse(amount, iso(code)).unwrap();
+        diesel::insert_into(docs::table)
+            .values((
+                docs::id.eq(i32::try_from(id).unwrap()),
+                docs::jb.eq(JsonColumn(money.clone())),
+                docs::j.eq(JsonColumn(money)),
+            ))
+            .execute(connection)
+            .await
+            .unwrap();
+    }
+    let rows: Vec<(JsonColumn<AnyMoney>, JsonColumn<AnyMoney>, String, String)> = docs::table
+        .order(docs::id)
+        .select((
+            docs::jb.assume_not_null(),
+            docs::j.assume_not_null(),
+            sql::<Text>("jb::text"),
+            sql::<Text>("j::text"),
+        ))
+        .load(connection)
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), AMOUNTS.len());
+    for ((JsonColumn(jb), JsonColumn(j), jb_text, j_text), (amount, code)) in
+        rows.iter().zip(AMOUNTS)
+    {
+        let original = AnyMoney::parse(amount, iso(code)).unwrap();
+        assert!(
+            jb.identical(&original) && j.identical(&original),
+            "{amount} {code}"
+        );
+        // json keeps the text as written; jsonb has its own spacing
+        assert_eq!(
+            j_text,
+            &format!(r#"{{"amount":"{amount}","currency":"{code}"}}"#)
+        );
+        assert_eq!(
+            jb_text,
+            &format!(r#"{{"amount": "{amount}", "currency": "{code}"}}"#)
+        );
+    }
+    // a fixed currency, and another refused
+    let (JsonColumn(eur), JsonColumn(eur_json)): (JsonColumn<Money<Eur>>, JsonColumn<Money<Eur>>) =
+        docs::table
+            .filter(docs::id.eq(1))
+            .select((docs::jb.assume_not_null(), docs::j.assume_not_null()))
+            .first(connection)
+            .await
+            .unwrap();
+    assert_eq!(eur.to_string(), "12.34 EUR");
+    assert_eq!(eur_json.to_string(), "12.34 EUR");
+    let error = docs::table
+        .filter(docs::id.eq(1))
+        .select(docs::jb.assume_not_null())
+        .first::<JsonColumn<Money<Jpy>>>(connection)
+        .await
+        .unwrap_err();
+    assert!(matches!(
+        decode_error(error),
+        Error::CurrencyMismatch { .. }
+    ));
+    // node-postgres parses json and jsonb, so ducat parses a JSON string's text again
+    let twice: JsonColumn<AnyMoney> = diesel::select(sql::<Jsonb>(
+        r#"'"{\"amount\":\"1\",\"currency\":\"EUR\"}"'::jsonb"#,
+    ))
+    .get_result(connection)
+    .await
+    .unwrap();
+    assert_eq!(twice.0.to_string(), "1.00 EUR");
+    let error = diesel::select(sql::<Jsonb>("'42'::jsonb"))
+        .get_result::<JsonColumn<AnyMoney>>(connection)
+        .await
+        .unwrap_err();
+    assert_eq!(decode_error(error), Error::NotMoneyJson);
+    let error = diesel::select(sql::<Json>(
+        r#"'{"amount": "12.345", "currency": "EUR"}'::json"#,
+    ))
+    .get_result::<JsonColumn<AnyMoney>>(connection)
+    .await
+    .unwrap_err();
+    assert_eq!(decode_error(error), Error::Ducat(ducat::Error::Rounding));
+    connection.batch_execute("DROP TABLE docs").await.unwrap();
 }

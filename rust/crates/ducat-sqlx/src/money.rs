@@ -277,6 +277,104 @@ impl<C: Currency> From<ScaledMinorColumn<C>> for Money<C> {
     }
 }
 
+/// A JSON column holding ducat's money JSON, `{"amount":"12.34","currency":"EUR"}`, with the
+/// currency in each value: Postgres jsonb or json, MySQL JSON, or SQLite TEXT. ducat's `moneyJson`
+/// column shape: `JsonColumn<AnyMoney>` is `moneyJson()`, any currency, and `JsonColumn<Money<C>>`
+/// is `moneyJson('EUR')`, a fixed one. The SQL types are Postgres jsonb (bound as jsonb; json columns take it by assignment) and json, MySQL JSON, and SQLite TEXT.
+///
+/// Writing gives exactly ducat's `JSON.stringify(money)`: the amount a string at the currency's
+/// exponent, then the code, in that order and without spaces; money at another scale is
+/// [`Error::ScaleMismatch`] (round it first, as ducat's `checkIsoScale` asks).
+///
+/// Reading is ducat's `jsonFromDriver`: any JSON object whose `amount` and `currency` are strings,
+/// other fields ignored and the last of duplicate keys winning (`JSON.parse`), else
+/// [`Error::NotMoneyJson`] (or [`Error::Malformed`] for text that isn't JSON). The amount is read
+/// in ducat's grammar at the JSON currency's exponent without rounding (`"12.3"` is 12.30 EUR,
+/// `"12.345"` is [`ducat::Error::Rounding`]); in ducat's order, an unknown code is
+/// [`Error::UnknownCurrency`] first, then the amount's errors, then another currency than `C`'s
+/// [`Error::CurrencyMismatch`]. A JSON or JSONB value that is a JSON string is parsed again, as
+/// ducat's drivers (node-postgres, mysql2) hand ducat the string; SQLite's TEXT is parsed once.
+///
+/// ```
+/// use ducat::{iso::Eur, AnyMoney, Money};
+/// use ducat_sqlx::{Error, JsonColumn};
+///
+/// let refund = JsonColumn("12.34".parse::<Money<Eur>>()?);
+/// assert_eq!(refund.to_json()?, r#"{"amount":"12.34","currency":"EUR"}"#);
+/// let any = JsonColumn::<AnyMoney>::from_json(r#"{"currency": "KWD", "amount": "1.5"}"#)?;
+/// assert_eq!(any.0.to_string(), "1.500 KWD");
+/// assert!(matches!(
+///     JsonColumn::<Money<Eur>>::from_json(r#"{"amount":"1","currency":"USD"}"#),
+///     Err(Error::CurrencyMismatch { .. }),
+/// ));
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct JsonColumn<M: MoneyValue>(pub M);
+
+impl<M: MoneyValue> JsonColumn<M> {
+    /// The JSON text the column stores.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::ScaleMismatch`] unless the money is at its currency's exponent.
+    pub fn to_json(&self) -> Result<String, Error> {
+        check_exponent_scale(&self.0)?;
+        let amount = Decimal::from_money(&self.0).to_string();
+        Ok(ducat_sql_core::json::write(
+            &amount,
+            self.0.currency().as_str(),
+        ))
+    }
+
+    /// The money from a TEXT column's JSON (ducat's `fromJSON` of the text).
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Malformed`] for text that isn't JSON; [`Error::NotMoneyJson`]; then as
+    /// [`JsonColumn`] says: [`Error::UnknownCurrency`], [`Error::Ducat`] for the amount
+    /// ([`ducat::Error::Syntax`], [`ducat::Error::Rounding`]), [`Error::CurrencyMismatch`].
+    pub fn from_json(text: &str) -> Result<Self, Error> {
+        let (amount, code) = ducat_sql_core::json::read(text)?;
+        Self::from_fields(&amount, &code)
+    }
+
+    /// The money from a JSON or JSONB column's JSON, where a JSON string is parsed again, as
+    /// ducat's drivers do (see [`JsonColumn`]).
+    ///
+    /// # Errors
+    ///
+    /// As [`from_json`](Self::from_json).
+    pub fn from_parsed_json(text: &str) -> Result<Self, Error> {
+        let (amount, code) = ducat_sql_core::json::read_parsed(text)?;
+        Self::from_fields(&amount, &code)
+    }
+
+    /// ducat's `money(amount, currency)` then `checkCurrency`: the JSON's currency is resolved
+    /// first (`C` itself for a custom currency), the amount read at its exponent, and only then
+    /// compared with `C`.
+    fn from_fields(amount: &str, code: &str) -> Result<Self, Error> {
+        let currency = match M::resolve_currency(code) {
+            Ok(currency) => currency,
+            Err(_) => CurrencyCode::iso(code).map_err(|_| Error::UnknownCurrency(code.into()))?,
+        };
+        let money = AnyMoney::parse(amount, currency)?;
+        Ok(Self(M::from_any(money)?))
+    }
+}
+
+impl<C: Currency> From<Money<C>> for JsonColumn<Money<C>> {
+    fn from(money: Money<C>) -> Self {
+        Self(money)
+    }
+}
+
+impl From<AnyMoney> for JsonColumn<AnyMoney> {
+    fn from(money: AnyMoney) -> Self {
+        Self(money)
+    }
+}
+
 /// A decimal column in a fixed currency, at the currency's exponent: Postgres NUMERIC, MySQL
 /// DECIMAL, or SQLite TEXT (SQLite's NUMERIC affinity would store some decimals as REAL and lose
 /// digits). ducat's `moneyDecimal` column shape.

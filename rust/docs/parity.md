@@ -1139,14 +1139,14 @@ Not ported: Prisma result-extension fields and `Decimal` helpers are an adapter 
 
 ### `./drizzle/pg`
 
-The column shapes (not Drizzle, a TypeScript ORM) are in `ducat-sqlx` and `ducat-diesel` (feature `postgres`, the default): `DecimalColumn<C>`, `MinorColumn<C>`, `Decimal`, `DecimalColumnSize` at each crate's root, shared through the internal `ducat-sql-core`. The JSON shape is a known gap.
+The column shapes (not Drizzle, a TypeScript ORM) are in `ducat-sqlx` and `ducat-diesel` (feature `postgres`, the default): `DecimalColumn<C>`, `MinorColumn<C>`, `Decimal`, `DecimalColumnSize` at each crate's root, shared through the internal `ducat-sql-core`. The JSON shape is `JsonColumn<M>` (`moneyJson`).
 
 | TS | Rust | status | note |
 |---|---|---|---|
 | `DEFAULT_DECIMAL_SIZE` | [`ducat_sqlx::DEFAULT_DECIMAL_SIZE`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DEFAULT_DECIMAL_SIZE`](../crates/ducat-diesel/src/decimal.rs) | same | NUMERIC(19,4) |
 | `DecimalColumnSize` | [`ducat_sqlx::DecimalColumnSize`](../crates/ducat-sqlx/src/decimal.rs), [`ducat_diesel::DecimalColumnSize`](../crates/ducat-diesel/src/decimal.rs) | same | a validated struct (`new(precision, scale)`: precision at least 1, scale at most precision, else `Error::InvalidColumnSize`) with `precision()`/`scale()`, `check_currency` and `fit` |
 | `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | `DecimalColumn<C>` has no size: check it with `DecimalColumnSize::check_currency`, and bind `fit`'s `Decimal` after `to_decimal`'s scale check |
-| `moneyJson` | — | missing | design.md Known gaps: the JSON column shapes (`moneyJson`, `jsonToDriver`) in both crates; workaround: a JSON/TEXT column with `ducat`'s `serde` impls |
+| `moneyJson` | [`ducat_sqlx::JsonColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::JsonColumn`](../crates/ducat-diesel/src/money.rs) | same | jsonb (bound as jsonb, as ducat's column) or json; `JsonColumn<AnyMoney>` is `moneyJson()`, `JsonColumn<Money<C>>` `moneyJson('EUR')`. Written exactly as `JSON.stringify` (`{"amount":"12.34","currency":"EUR"}`, at the exponent, else `Err(ScaleMismatch)`); read as `jsonFromDriver`: `Err(Malformed)` for text that isn't JSON (`SyntaxError`), `Err(NotMoneyJson)` unless `amount` and `currency` are strings (`TypeError`; other members ignored, the last duplicate wins), then `Err(UnknownCurrency)`, the amount's `Err(Ducat(Syntax | Rounding))` at the exponent, then `Err(CurrencyMismatch)`, in ducat's order. A json or jsonb value that is a JSON string is parsed again: ducat's `jsonFromDriver` parses a string value too ([`src/drizzle/mysql.ts:96`](../../src/drizzle/mysql.ts), "mysql2 parses JSON columns itself; other drivers may return the text"), and node-postgres hands it such a value as the string. Pinned by `spec/vectors/wire/money-json.json` |
 | `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs); [`ducat_sqlx::ScaledMinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::ScaledMinorColumn`](../crates/ducat-diesel/src/money.rs) with a scale column | same | BIGINT; `ScaleMismatch`, `OutOfRange` beyond the i64 range; the `{ scale }` option (ducat#380) is `ScaledMinorColumn<C>`, units at each value's own scale beside a scale column |
 | `scaledMoney` | `ScaledMinorColumn::from_columns`, `from_nullable_columns` ([`ducat_sqlx::ScaledMinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::ScaledMinorColumn`](../crates/ducat-diesel/src/money.rs)) | same | reads the units with their scale column (ducat#380): `from_columns(units, scale)` keeps the stored scale (above, at or below the exponent), `from_nullable_columns` gives `None` for a NULL amount whatever the scale, and a NULL, negative or past-`MAX_SCALE` scale is `Err(InvalidScaleColumn)` (ducat's `RangeError`). diesel loads it straight from `(BigInt, S)` or `(BigInt, Nullable<S>)` selected together (`S` a `SmallInt`, `Integer` or `BigInt`); sqlx reads the two columns and calls `from_columns`. Nothing stops `MinorColumn<C>` reading the units alone at the exponent, where ducat throws for such a column read by itself |
 
@@ -1157,7 +1157,7 @@ The MySQL column shapes are `ducat-sqlx`'s and `ducat-diesel`'s root types with 
 | TS | Rust | status | note |
 |---|---|---|---|
 | `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | DECIMAL; size via `DecimalColumnSize::check_currency`/`fit`, not the column; FLOAT/DOUBLE is `Error::UnexpectedType`; text read as `-?[0-9]+(\.[0-9]+)?` |
-| `moneyJson` | — | missing | design.md Known gaps (JSON column shapes); workaround: a JSON column with `ducat`'s `serde` impls |
+| `moneyJson` | [`ducat_sqlx::JsonColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::JsonColumn`](../crates/ducat-diesel/src/money.rs) | same | JSON (diesel's `Json`), or a string column with sqlx; as `./drizzle/pg`, a JSON column's JSON string parsed again as mysql2 does, a string column's text once |
 | `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs); [`ducat_sqlx::ScaledMinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::ScaledMinorColumn`](../crates/ducat-diesel/src/money.rs) with a scale column | same | BIGINT; signed integer types only (`UnexpectedType`); the `{ scale }` option is `ScaledMinorColumn<C>`, as `./drizzle/pg` |
 | `scaledMoney` | `ScaledMinorColumn::from_columns`, `from_nullable_columns` | same | as `./drizzle/pg` |
 
@@ -1168,7 +1168,7 @@ The SQLite column shapes are `ducat-sqlx`'s and `ducat-diesel`'s root types with
 | TS | Rust | status | note |
 |---|---|---|---|
 | `moneyDecimal` | [`ducat_sqlx::DecimalColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::DecimalColumn`](../crates/ducat-diesel/src/money.rs) | divergent: [column and test-strategy shapes](design.md#parity-decisions) | TEXT read as `-?[0-9]+(\.[0-9]+)?` only (ducat's `money()` also takes `+` and exponents); a REAL value is `Error::UnexpectedType` |
-| `moneyJson` | — | missing | design.md Known gaps (JSON column shapes); workaround: a TEXT column with `ducat`'s `serde` impls |
+| `moneyJson` | [`ducat_sqlx::JsonColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::JsonColumn`](../crates/ducat-diesel/src/money.rs) | same | TEXT, its storage class checked per value (`UnexpectedType`) and its text parsed once, as ducat's `fromJSON` of the string; otherwise as `./drizzle/pg` |
 | `moneyMinor` | [`ducat_sqlx::MinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::MinorColumn`](../crates/ducat-diesel/src/money.rs); [`ducat_sqlx::ScaledMinorColumn`](../crates/ducat-sqlx/src/money.rs), [`ducat_diesel::ScaledMinorColumn`](../crates/ducat-diesel/src/money.rs) with a scale column | same | INTEGER; storage class checked per value; the `{ scale }` option is `ScaledMinorColumn<C>`, as `./drizzle/pg` |
 | `scaledMoney` | `ScaledMinorColumn::from_columns`, `from_nullable_columns` | same | as `./drizzle/pg`; SQLite INTEGER for both columns |
 
@@ -1316,7 +1316,7 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 | `decimalTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | `DecimalColumn<C>` |
 | `fromRawDecimal` | — | not ported: by design (adapter for a TypeScript ORM) | `DecimalColumn::from_decimal` |
 | `fromRawMinor` | — | not ported: by design (adapter for a TypeScript ORM) | `MinorColumn::from_minor_units` |
-| `jsonTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | the JSON column shape is a Known gap in both crates |
+| `jsonTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | `JsonColumn<M>` (`moneyJson`): `JsonColumn<AnyMoney>` is `jsonTransformer()`, `JsonColumn<Money<C>>` `jsonTransformer('EUR')`; `Err(ScaleMismatch)` on write, `Err(CurrencyMismatch)` on read |
 | `minorTransformer` | — | not ported: by design (adapter for a TypeScript ORM) | `MinorColumn<C>` |
 
 ### `./all`
@@ -1324,12 +1324,9 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 Re-exports every plugin entry and `./fn`'s functions, and installs every plugin's methods on `Money`; its rows are in those entries. Rust has no prototype to install on: every method is there once its feature is on ([mapping](design.md#mapping-ducats-entries)).
 
 ## Missing, in proposed order
-Every `missing` row, grouped into pull requests in the order users would hit them. Four pieces are decided (marked
+Every `missing` row, grouped into pull requests in the order users would hit them. Three pieces are decided (marked
 **decided**); the rest are proposals.
 
-8. **JSON column shapes** (**decided**: `ducat-sqlx` and `ducat-diesel`, in the exact TS JSON shape):
-   `./drizzle/pg` `moneyJson`, `./drizzle/mysql` `moneyJson`, `./drizzle/sqlite` `moneyJson`. Storing money is the
-   first thing an application does, and a JSON column is the layout that needs no currency column.
 10. **Processor tables and wire currency case** (`ducat`; from the re-audit): `./stripe` `STRIPE_RULES`,
    `./adyen` `ADYEN_EXPONENTS`, `./checkout` `CHECKOUT_RULES`, `./paypal` `PAYPAL_EXPONENTS`,
    `./braintree` `BRAINTREE_EXPONENTS`, `./klarna` `KLARNA_EXPONENTS` (a public `currencies()` iterator: the tables

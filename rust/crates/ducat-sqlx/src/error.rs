@@ -23,7 +23,8 @@ pub enum Error {
     },
     /// Bytes or text that aren't a valid value of the column's type: a truncated NUMERIC, a
     /// digit beyond 9999, NUMERIC digits the display scale would hide, decimal text outside
-    /// `-?[0-9]+(\.[0-9]+)?`, or composite text that isn't `(amount,currency)`.
+    /// `-?[0-9]+(\.[0-9]+)?`, composite text that isn't `(amount,currency)`, or a JSON column's
+    /// text that isn't JSON (ducat's `SyntaxError`).
     Malformed(&'static str),
     /// A value of a column type this column shape doesn't read: a SQLite REAL where TEXT or
     /// INTEGER was expected, a MySQL DOUBLE where DECIMAL was. The name is the database's.
@@ -81,6 +82,10 @@ pub enum Error {
     /// [`ducat::MAX_SCALE`] (ducat's `readScale`, which caps it as parsed decimals are, so that
     /// a corrupt row can't build a huge power of ten).
     InvalidScaleColumn(Option<i64>),
+    /// JSON that isn't ducat's money JSON: not an object, or an object whose `amount` or
+    /// `currency` isn't a string (`{"amount": 12.34, …}`, a missing field), ducat's `fromJSON`
+    /// `TypeError`. Text that isn't JSON at all is [`Error::Malformed`].
+    NotMoneyJson,
     /// An error from ducat itself, such as a scale beyond [`ducat::MAX_SCALE`]
     /// ([`ducat::Error::InvalidScale`]) or a decimal with more digits than the currency's exponent
     /// ([`ducat::Error::Rounding`]).
@@ -116,6 +121,7 @@ impl From<ducat_sql_core::Error> for Error {
             },
             Core::OutOfRange => Self::OutOfRange,
             Core::InvalidScaleColumn(value) => Self::InvalidScaleColumn(value),
+            Core::NotMoneyJson => Self::NotMoneyJson,
             Core::Ducat(error) => Self::Ducat(error),
         }
     }
@@ -174,6 +180,7 @@ impl fmt::Display for Error {
                 "expected an integer scale from 0 to {} in the scale column, got {value}",
                 ducat::MAX_SCALE
             ),
+            Self::NotMoneyJson => f.write_str("expected { amount: string, currency: string }"),
             Self::Ducat(error) => fmt::Display::fmt(error, f),
         }
     }

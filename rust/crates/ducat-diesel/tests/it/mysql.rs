@@ -207,6 +207,7 @@ async fn mysql() {
     sized_writes(connection).await;
     inexact_types_are_refused(connection).await;
     scale_column(connection).await;
+    json_columns(connection).await;
     connection
         .batch_execute("DROP TABLE ducat_diesel_items")
         .await
@@ -505,6 +506,93 @@ async fn scale_column(connection: &mut AsyncMysqlConnection) {
     );
     connection
         .batch_execute("DROP TABLE ducat_diesel_scaled")
+        .await
+        .unwrap();
+}
+
+/// ducat's `moneyJson` on MySQL: a JSON column, a fixed currency, and the values mysql2 would
+/// parse twice.
+async fn json_columns(connection: &mut AsyncMysqlConnection) {
+    use ducat_diesel::JsonColumn;
+
+    diesel::table! {
+        ducat_diesel_docs (id) {
+            id -> Integer,
+            doc -> Nullable<Json>,
+        }
+    }
+    use ducat_diesel_docs as docs;
+
+    connection
+        .batch_execute("DROP TABLE IF EXISTS ducat_diesel_docs")
+        .await
+        .unwrap();
+    connection
+        .batch_execute("CREATE TABLE ducat_diesel_docs (id INT PRIMARY KEY, doc JSON)")
+        .await
+        .unwrap();
+    for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
+        let money = AnyMoney::parse(amount, iso(code)).unwrap();
+        diesel::insert_into(docs::table)
+            .values((
+                docs::id.eq(i32::try_from(id).unwrap()),
+                docs::doc.eq(JsonColumn(money)),
+            ))
+            .execute(connection)
+            .await
+            .unwrap();
+    }
+    let rows: Vec<JsonColumn<AnyMoney>> = docs::table
+        .order(docs::id)
+        .select(docs::doc.assume_not_null())
+        .load(connection)
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), AMOUNTS.len());
+    for (JsonColumn(money), (amount, code)) in rows.iter().zip(AMOUNTS) {
+        assert!(
+            money.identical(&AnyMoney::parse(amount, iso(code)).unwrap()),
+            "{amount}"
+        );
+    }
+    let by_id = |id: i32| {
+        docs::table
+            .filter(docs::id.eq(id))
+            .select(docs::doc.assume_not_null())
+    };
+    let JsonColumn(eur) = by_id(1)
+        .first::<JsonColumn<Money<Eur>>>(connection)
+        .await
+        .unwrap();
+    assert_eq!(eur.to_string(), "12.34 EUR");
+    let error = by_id(1)
+        .first::<JsonColumn<Money<Jpy>>>(connection)
+        .await
+        .unwrap_err();
+    assert!(matches!(
+        decode_error(error),
+        Error::CurrencyMismatch { .. }
+    ));
+    connection
+        .batch_execute(
+            r#"INSERT INTO ducat_diesel_docs (id, doc) VALUES
+               (100, '"{\\"amount\\":\\"1\\",\\"currency\\":\\"EUR\\"}"'), (101, '42')"#,
+        )
+        .await
+        .unwrap();
+    // mysql2 parses a JSON column, so ducat parses a JSON string's text again
+    let twice = by_id(100)
+        .first::<JsonColumn<AnyMoney>>(connection)
+        .await
+        .unwrap();
+    assert_eq!(twice.0.to_string(), "1.00 EUR");
+    let error = by_id(101)
+        .first::<JsonColumn<AnyMoney>>(connection)
+        .await
+        .unwrap_err();
+    assert_eq!(decode_error(error), Error::NotMoneyJson);
+    connection
+        .batch_execute("DROP TABLE ducat_diesel_docs")
         .await
         .unwrap();
 }

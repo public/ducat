@@ -10,3 +10,5 @@ publish = false
 
 [dependencies]
 ducat = { path = "../ducat", default-features = false, features = ["std"] }
+# reading JSON columns as ducat's `JSON.parse` does: any JSON, the last of duplicate keys wins
+serde_json = { version = "1", default-features = false, features = ["std"] }

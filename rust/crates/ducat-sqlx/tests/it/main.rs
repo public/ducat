@@ -10,6 +10,7 @@ mod common;
 #[cfg(feature = "postgres")]
 mod composite;
 mod decimal;
+mod money_json;
 #[cfg(feature = "mysql")]
 mod mysql;
 #[cfg(feature = "postgres")]

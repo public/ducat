@@ -720,6 +720,7 @@ dependencies = [
  "ducat-sql-core",
  "libsqlite3-sys",
  "proptest",
+ "serde_json",
  "tokio",
 ]
 
@@ -745,6 +746,7 @@ name = "ducat-sql-core"
 version = "0.0.0"
 dependencies = [
  "ducat",
+ "serde_json",
 ]
 
 [[package]]
@@ -754,6 +756,7 @@ dependencies = [
  "ducat",
  "ducat-sql-core",
  "proptest",
+ "serde_json",
  "sqlx",
  "tokio",
 ]
