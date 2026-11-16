@@ -8396,7 +8396,11 @@
                         "decimal",
                         "fraction",
                         "minusSign",
-                        "plusSign"
+                        "plusSign",
+                        "compact",
+                        "exponentSeparator",
+                        "exponentMinusSign",
+                        "exponentInteger"
                       ]
                     },
                     "value": {
