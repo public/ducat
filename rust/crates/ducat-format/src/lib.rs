@@ -82,6 +82,8 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
+// without `compact` there is no Notation::Compact to link to
+#![cfg_attr(not(feature = "compact"), doc = "[`Notation::Compact`]: crate::Notation")]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
