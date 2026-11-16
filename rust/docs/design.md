@@ -78,7 +78,8 @@ fixtures live in `spec/fixtures/`, shared with ducat's tests, and `spec/vectors/
   read as ducat reads the number (at most 15 significant digits unless a safe integer).
 - **Years 0 to 99** are refused in file dates, as ducat's `Date.UTC` check refuses them.
 - **Left out:** Adyen's IANA `timeZone` option (it needs time-zone data; the TimeZone column's abbreviations and
-  offsets are read), and `src/fetch.ts` (milestone 7b's `ducat-fetch`).
+  offsets are read; it came later, behind the `tz` feature: "Adyen's account time zone" below), and `src/fetch.ts`
+  (milestone 7b's `ducat-fetch`).
 
 ### Milestone 5e: wire formats
 
@@ -421,10 +422,44 @@ with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
   lockfile stays on diesel 2.2 (2.3 needs 1.86, 2.4 1.88). The requirement `2.2` admits them; the library was checked
   against diesel 2.4.0 outside the workspace and compiles unchanged.
 
+### Adyen's account time zone (`tz`)
+
+ducat's `adyenRate(row, { timeZone })` reads Creation Date in the account's IANA zone, summer time included, through
+`Intl.DateTimeFormat`. The port has it behind `tz`, an optional feature of `ducat`, off by default:
+`AdyenRateOptions { time_zone }` and `adyen_rate_with(row, options)` (`adyen_rate` is unchanged).
+- **Data:** jiff 1.0.0 (`default-features = false`, `std` and `tzdb-bundle-always`), which embeds the IANA time zone
+  database through jiff-tzdb (tzdb **2026f** in jiff-tzdb 1.0.0; public domain, listed in NOTICE). Zones are looked up
+  only in `TimeZoneDatabase::bundled()`, never `jiff::tz::db()` or the host's zoneinfo, so a result depends neither
+  on the machine nor on another crate in the build turning on jiff's `tzdb-zoneinfo`. The normal dependencies added
+  are jiff, jiff-core and jiff-tzdb (the lockfile also lists jiff-static, portable-atomic and portable-atomic-util,
+  which jiff declares for other targets and `cfg(any())`; none is built). A release binary reading one zone grows by
+  about 333 KiB with `tz` on (492,712 to 833,680 bytes, stripped, x86_64 Linux), nearly all of it the tzdb.
+- **Results follow the bundled tzdb's version,** not ducat's runtime's: a jiff-tzdb release with new rules changes
+  them. `tests/it/adyen_tz.rs` pins the version (`jiff_tzdb::VERSION == "2026f"`), so a bump that changes it fails
+  until someone re-checks the zones it changes and the docs. Node 24.22.2 (ducat's reference runtime) has tzdb 2026e;
+  of the 4,634 cases `scripts/adyen-tz-cases.mjs --all` writes (every zone `Intl` lists, at midday in four years
+  and around each 2026 clock change) one differs, America/Havana at 01:00 on 1 November 2026, which 2026f keeps on
+  −04:00. The test lists it.
+- **Only `std`:** `tz` implies `std` (jiff's cache of parsed zones). An alloc-only `tz` is a possible additive
+  follow-up: jiff builds with `alloc` and the bundled tzdb, parsing a zone on each lookup.
+- **Clock changes:** a wall time is resolved with `to_ambiguous_timestamp(dt).compatible()`, Temporal's
+  `'compatible'`, which ducat's own algorithm matches since #402: a fold is the earlier instant, a gap the wall time
+  pushed forward by the gap. jiff's instants end late on 9999-12-30, so the last hours of 9999 are resolved 400 years
+  earlier (the calendar and a zone's rule repeat); an instant past 9999 is no `as_of`, as for the TimeZone column.
+- **Names** are looked up case-insensitively, as `Intl`. `Intl` refuses the tzdb's `Factory` and jiff's
+  `Etc/Unknown`, so the port does too.
+- **Offsets** are what Node 24's `Intl.DateTimeFormat` takes as a `timeZone` (ES2024's offset time zones): a sign (`+`,
+  `-` or U+2212) and `HH`, `HHMM` or `HH:MM`, to 23:59, used as a fixed offset. A one-digit hour, seconds, `Z`, a `UTC`
+  or `GMT` prefix and spaces are refused, as `Intl` refuses them (the TimeZone column's own reading, which takes
+  `UTC+1` and `GMT-0530`, is unchanged).
+- **Errors:** a zone that is neither is `Error::UnknownTimeZone` (kind `Range`, ducat's `RangeError`), only when
+  Creation Date has a time to read in it: ducat builds its formatter there, so a day-only Creation Date, an unreadable
+  one or none at all never reaches the zone.
+
 ### Known gaps
 
 Known gaps, to close later:
-- `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
+- `snapshots` and `snapshotsFrom` (asynchronous loaders).
 - Fuzzing (milestone 8).
 
 The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.
@@ -467,6 +502,17 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
 - **Adyen's Creation Date.** `adyen_rate` reads the Creation Date as `Date.parse` would but never fails on it: a date
   or time it can't read gives the local day (or no `as_of`), where ducat throws a `RangeError`; and it takes ISO and
   historic codes only (`UnknownCurrency`), where ducat takes any string.
+- **Adyen's account time zone.** `AdyenRateOptions::time_zone` refuses ICU's legacy three-letter IDs (`ACT`, `AET`,
+  `AGT`, `ART`, `AST`, `BET`, `BST`, `CAT`, `CNT`, `CST`, `CTT`, `EAT`, `ECT`, `IET`, `IST`, `JST`, `MIT`, `NET`, `NST`,
+  `PLT`, `PNT`, `PRT`, `PST`, `SST`, `VST`) and the removed `SystemV/` zones, `US/Pacific-New` and
+  `Canada/East-Saskatchewan`, which ducat's `Intl` (ICU 78) accepts: they aren't in the tz database, and some would
+  read differently from the TimeZone column. ICU's `IST` is Asia/Kolkata, where ducat's column reading leaves `IST`
+  out as ambiguous (India, Ireland or Israel), and ICU's `PST` is America/Los_Angeles with summer time, where the
+  column's `PST` is −08:00 all year. They are `Error::UnknownTimeZone`, ducat's error for an unknown zone; the IANA
+  name (`Asia/Kolkata`) works in both. The tzdb's own `EST`, `MST`, `HST`, `CET`, `EET`, `MET`, `WET` and `EST5EDT`-style
+  names are in the bundle and accepted. Offsets that include seconds (local mean time, Liberia before 1972) are used
+  exactly, where ducat rounds them to the minute, and years before 100 are read correctly, where ducat's `Date.UTC`
+  takes years 0 to 99 as 1900 to 1999.
 - **Column and test-strategy shapes.** `DecimalColumn<C>` carries no size and checks only the scale: a sized
   NUMERIC/DECIMAL is checked with `DecimalColumnSize::check_currency` and `fit` (ducat's `moneyDecimal` checks the
   integer digits itself). Decimal text read from a column (SQLite TEXT, a MySQL string column) is held to

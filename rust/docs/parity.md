@@ -1115,10 +1115,10 @@ The crate [`ducat-format`](../crates/ducat-format/src/parse.rs): `parse` and `pa
 
 | TS | Rust | status | note |
 |---|---|---|---|
-| `AdyenRateOptions` | — | missing | its one field is `timeZone` |
-| `AdyenRateOptions#timeZone` | — | missing | an IANA zone for the TimeZone column all year; decided: optional `tz` feature on `ducat` (jiff, bundled tzdb, off by default, not `no_std`) |
+| `AdyenRateOptions` | `ducat::convert::adyen_fx::AdyenRateOptions` | same | behind the `tz` feature (off by default; implies `std`), passed to `adyen_rate_with` |
+| `AdyenRateOptions#timeZone` | `AdyenRateOptions::time_zone` | divergent: [Adyen's account time zone](design.md#parity-decisions) | IANA names from jiff's bundled tzdb (2026f), case-insensitive, and the offsets `Intl` takes (`±HH`, `±HHMM`, `±HH:MM`, U+2212 too); folds and gaps as Temporal's `'compatible'`; ICU's legacy IDs (`IST`, `PST`, `ACT`, ...) and `SystemV/` zones are `UnknownTimeZone` (ducat's `RangeError`): write the IANA name (`Asia/Kolkata`) |
 | `AdyenSettlementRow` | the row argument of `adyen_rate` (column name to value) | same |  |
-| `adyenRate` | `ducat::convert::adyen_fx::adyen_rate` | divergent: [Adyen's Creation Date](design.md#parity-decisions) | abbreviations and offsets only; a Creation Date `Date.parse` refuses gives the local day, not ducat's `RangeError`; codes ISO or historic, as given |
+| `adyenRate` | `ducat::convert::adyen_fx::adyen_rate` | divergent: [Adyen's Creation Date](design.md#parity-decisions) | the TimeZone column's abbreviations and offsets; an account zone is `adyen_rate_with` (`tz`); a Creation Date `Date.parse` refuses gives the local day, not ducat's `RangeError`; codes ISO or historic, as given |
 
 ### `./prisma`
 
@@ -1324,12 +1324,9 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 Re-exports every plugin entry and `./fn`'s functions, and installs every plugin's methods on `Money`; its rows are in those entries. Rust has no prototype to install on: every method is there once its feature is on ([mapping](design.md#mapping-ducats-entries)).
 
 ## Missing, in proposed order
-Every `missing` row, grouped into pull requests in the order users would hit them. One piece is decided (marked
-**decided**); the rest are proposals.
+Every `missing` row, grouped into pull requests in the order users would hit them. None is decided yet; they are
+proposals.
 
-14. **Adyen's IANA time zone** (**decided**: an optional `tz` feature on `ducat`, with jiff and a bundled tzdb, off by
-   default, not `no_std`): `./adyen-fx` `AdyenRateOptions`, `./adyen-fx` `AdyenRateOptions#timeZone`. Only reports
-   whose TimeZone column switches with daylight saving need it; abbreviations and offsets already work.
 15. **Compact notation and numbering systems** (`ducat-format`, new CLDR data): `./format` `FormatOptions#notation`,
    `./format` `FormatOptions#compactDisplay`, `./format` `FormatOptions#numberingSystem`,
    `./format` `FormatOptions#localeMatcher`. Dashboards (`€1.2M`) and native digits; compact patterns and numbering systems add
