@@ -25,16 +25,50 @@ pub struct CheckoutRule {
     pub standalone_multiple: u64,
 }
 
+/// A row of Checkout.com's table (ducat's `CHECKOUT_RULES`): a currency and its rule.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct CheckoutEntry {
+    /// The currency code, in uppercase.
+    pub code: &'static str,
+    /// As [`CheckoutRule::exponent`].
+    pub exponent: u8,
+    /// As [`CheckoutRule::multiple`].
+    pub multiple: u64,
+    /// As [`CheckoutRule::standalone_multiple`].
+    pub standalone_multiple: u64,
+}
+
+impl CheckoutEntry {
+    /// The entry's rule, as [`rule`] gives it.
+    #[must_use]
+    pub const fn rule(&self) -> CheckoutRule {
+        CheckoutRule {
+            exponent: self.exponent,
+            multiple: self.multiple,
+            standalone_multiple: self.standalone_multiple,
+        }
+    }
+}
+
+/// Every currency Checkout.com lists with its rule, sorted by code: ducat's `CHECKOUT_RULES`
+/// (code → `[exponent, multiple, standaloneMultiple]`) as a slice.
+///
+/// ```
+/// use ducat::processors::checkout;
+///
+/// let clp = checkout::rules().iter().find(|entry| entry.code == "CLP").unwrap();
+/// assert_eq!((clp.exponent, clp.multiple, clp.standalone_multiple), (2, 100, 1));
+/// ```
+#[must_use]
+pub fn rules() -> &'static [CheckoutEntry] {
+    &CHECKOUT
+}
+
 /// Checkout.com's rule for a currency (case-insensitive), or `None` for one it doesn't list.
 #[must_use]
 pub fn rule(currency: &str) -> Option<CheckoutRule> {
-    lookup(&CHECKOUT, currency, false, |entry| entry.0).map(
-        |&(_, exponent, multiple, standalone)| CheckoutRule {
-            exponent,
-            multiple,
-            standalone_multiple: standalone,
-        },
-    )
+    lookup(&CHECKOUT, currency, false, |entry| entry.code).map(CheckoutEntry::rule)
 }
 
 /// Whether Checkout.com lists the currency (case-insensitive).
@@ -118,7 +152,8 @@ impl<C: Currency> Money<C> {
         to_amount(&self.amount, C::CODE, options)
     }
 
-    /// `{ amount, currency }` for a payment request.
+    /// `{ amount, currency }` for a payment request, the code in uppercase (as ducat's
+    /// `toCheckout`, for a custom currency defined in lowercase).
     ///
     /// # Errors
     ///
@@ -126,7 +161,7 @@ impl<C: Currency> Money<C> {
     pub fn to_checkout(&self, options: &CheckoutOptions) -> Result<CheckoutAmount, Error> {
         Ok(CheckoutAmount {
             amount: self.to_checkout_amount(options)?,
-            currency: String::from(C::CODE.as_str()),
+            currency: C::CODE.as_str().to_ascii_uppercase(),
         })
     }
 
@@ -162,7 +197,7 @@ impl AnyMoney {
     pub fn to_checkout(&self, options: &CheckoutOptions) -> Result<CheckoutAmount, Error> {
         Ok(CheckoutAmount {
             amount: self.to_checkout_amount(options)?,
-            currency: String::from(self.currency().as_str()),
+            currency: self.currency().as_str().to_ascii_uppercase(),
         })
     }
 

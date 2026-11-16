@@ -4,14 +4,28 @@
 //! looked up as given, in uppercase. The Terminal API takes major units instead.
 
 use super::tables::ADYEN;
-use super::{Sign, from_integer, lookup, to_integer};
+use super::{ExponentEntry, Sign, from_integer, lookup, to_integer};
 use crate::{AnyMoney, Currency, CurrencyCode, Error, Money, Rounding};
+
+/// Every currency Adyen lists with its exponent, sorted by code: ducat's `ADYEN_EXPONENTS`
+/// (code → exponent) as a slice.
+///
+/// ```
+/// use ducat::processors::adyen;
+///
+/// let entry = adyen::exponents().iter().find(|entry| entry.code == "IDR").unwrap();
+/// assert_eq!(entry.exponent, 0);
+/// ```
+#[must_use]
+pub fn exponents() -> &'static [ExponentEntry] {
+    &ADYEN
+}
 
 /// The exponent Adyen's API uses for a currency (CLP 2, ISK 2, IDR 0 and CVE 0 differ from ISO),
 /// or `None` for a code not in its table. Unlike the other processors, the code is case-sensitive.
 #[must_use]
 pub fn rule(currency: &str) -> Option<u8> {
-    lookup(&ADYEN, currency, true, |entry| entry.0).map(|entry| entry.1)
+    lookup(&ADYEN, currency, true, |entry| entry.code).map(|entry| entry.exponent)
 }
 
 /// Whether Adyen lists the currency (its table, not ISO 4217).

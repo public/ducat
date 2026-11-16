@@ -24,16 +24,50 @@ pub struct StripeRule {
     pub payout_multiple: u64,
 }
 
+/// A row of Stripe's table (ducat's `STRIPE_RULES`): a presentment currency and its rule.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct StripeEntry {
+    /// The currency code, in uppercase.
+    pub code: &'static str,
+    /// As [`StripeRule::exponent`].
+    pub exponent: u8,
+    /// As [`StripeRule::charge_multiple`].
+    pub charge_multiple: u64,
+    /// As [`StripeRule::payout_multiple`].
+    pub payout_multiple: u64,
+}
+
+impl StripeEntry {
+    /// The entry's rule, as [`rule`] gives it.
+    #[must_use]
+    pub const fn rule(&self) -> StripeRule {
+        StripeRule {
+            exponent: self.exponent,
+            charge_multiple: self.charge_multiple,
+            payout_multiple: self.payout_multiple,
+        }
+    }
+}
+
+/// Every Stripe presentment currency with its rule, sorted by code: ducat's `STRIPE_RULES`
+/// (code → `[exponent, chargeMultiple, payoutMultiple]`) as a slice.
+///
+/// ```
+/// use ducat::processors::stripe;
+///
+/// let isk = stripe::rules().iter().find(|entry| entry.code == "ISK").unwrap();
+/// assert_eq!((isk.exponent, isk.charge_multiple, isk.payout_multiple), (2, 100, 100));
+/// ```
+#[must_use]
+pub fn rules() -> &'static [StripeEntry] {
+    &STRIPE
+}
+
 /// Stripe's rule for a currency (case-insensitive), or `None` when it isn't a presentment currency.
 #[must_use]
 pub fn rule(currency: &str) -> Option<StripeRule> {
-    lookup(&STRIPE, currency, false, |entry| entry.0).map(|&(_, exponent, charge, payout)| {
-        StripeRule {
-            exponent,
-            charge_multiple: charge,
-            payout_multiple: payout,
-        }
-    })
+    lookup(&STRIPE, currency, false, |entry| entry.code).map(StripeEntry::rule)
 }
 
 /// Whether Stripe supports the currency as a presentment currency (case-insensitive).
