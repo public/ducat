@@ -26,6 +26,9 @@ it = []
 nl = []
 ## Portuguese (`ducat_words::PORTUGUESE`).
 pt = []
+## CLDR 48's currency names, as `amount_in_words`' defaults when the options give none
+## (`ducat_words::currency_names`), for the languages built in.
+cldr-names = []
 
 [dependencies]
 ducat = { path = "../ducat", default-features = false }

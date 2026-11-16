@@ -8,6 +8,16 @@
 mod common;
 
 mod cldr;
+#[cfg(all(
+    feature = "en",
+    feature = "de",
+    feature = "fr",
+    feature = "es",
+    feature = "it",
+    feature = "nl",
+    feature = "pt"
+))]
+mod names;
 mod rules;
 #[cfg(all(
     feature = "en",
