@@ -33,6 +33,11 @@ pub(crate) struct Subpattern {
 pub(crate) struct Pattern {
     pub(crate) positive: Subpattern,
     pub(crate) negative: Subpattern,
+    /// The explicit plus form (`signDisplay` always and except-zero): the negative subpattern
+    /// with its minus sign replaced by the plus sign, or, where it has no minus sign (accounting's
+    /// parentheses) or there is none, the plus sign before the positive subpattern, as ICU writes
+    /// it.
+    pub(crate) plus: Subpattern,
     /// The group sizes, primary (the last group) and secondary: (3, 3) for `#,##0`, (3, 2) for
     /// `#,##,##0`; `None` without grouping.
     pub(crate) grouping: Option<(usize, usize)>,
@@ -169,14 +174,48 @@ pub(crate) fn parse(pattern: &str) -> Result<Pattern, Malformed> {
         prefix: affixes(prefix)?,
         suffix: affixes(suffix)?,
     };
-    let negative = match negative {
+    let explicit = match negative {
         Some(negative) => {
             let (prefix, _, suffix) = split(negative)?;
-            Subpattern {
+            Some(Subpattern {
                 prefix: affixes(prefix)?,
                 suffix: affixes(suffix)?,
-            }
+            })
         }
+        None => None,
+    };
+    let with_minus = explicit.as_ref().filter(|negative| {
+        negative
+            .prefix
+            .iter()
+            .chain(&negative.suffix)
+            .any(|affix| *affix == Affix::Minus)
+    });
+    let plus = if let Some(negative) = with_minus {
+        let to_plus = |affixes: &[Affix]| -> Vec<Affix> {
+            affixes
+                .iter()
+                .map(|affix| match affix {
+                    Affix::Minus => Affix::Plus,
+                    other => other.clone(),
+                })
+                .collect()
+        };
+        Subpattern {
+            prefix: to_plus(&negative.prefix),
+            suffix: to_plus(&negative.suffix),
+        }
+    } else {
+        let mut prefix = Vec::with_capacity(positive.prefix.len() + 1);
+        prefix.push(Affix::Plus);
+        prefix.extend(positive.prefix.iter().cloned());
+        Subpattern {
+            prefix,
+            suffix: positive.suffix.clone(),
+        }
+    };
+    let negative = match explicit {
+        Some(negative) => negative,
         None => {
             let mut prefix = Vec::with_capacity(positive.prefix.len() + 1);
             prefix.push(Affix::Minus);
@@ -190,6 +229,7 @@ pub(crate) fn parse(pattern: &str) -> Result<Pattern, Malformed> {
     Ok(Pattern {
         positive,
         negative,
+        plus,
         grouping,
     })
 }
@@ -210,6 +250,9 @@ mod tests {
         assert_eq!(pattern.positive.prefix, vec![Affix::Currency]);
         assert_eq!(pattern.negative.prefix, vec![literal("("), Affix::Currency]);
         assert_eq!(pattern.negative.suffix, vec![literal(")")]);
+        // parentheses have no minus sign: the plus goes before the positive subpattern
+        assert_eq!(pattern.plus.prefix, vec![Affix::Plus, Affix::Currency]);
+        assert_eq!(pattern.plus.suffix, vec![]);
         assert_eq!(pattern.grouping, Some((3, 3)));
         let pattern = parse("¤#,##,##0.00").unwrap();
         assert_eq!(pattern.grouping, Some((3, 2)));
@@ -223,6 +266,11 @@ mod tests {
         assert_eq!(
             pattern.negative.prefix,
             vec![Affix::Currency, literal("\u{a0}"), Affix::Minus]
+        );
+        // a minus sign in the negative subpattern: the plus takes its place
+        assert_eq!(
+            pattern.plus.prefix,
+            vec![Affix::Currency, literal("\u{a0}"), Affix::Plus]
         );
         assert_eq!(parse("'#'#0").unwrap().positive.prefix, vec![literal("#")]);
         assert_eq!(

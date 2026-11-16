@@ -7,7 +7,8 @@ use std::time::{Duration, Instant};
 use ducat::{AnyMoney, CurrencyCode, Int, MAX_SCALE, Rounding};
 use ducat_format::{
     CurrencyDisplay, CurrencySign, Error, FormatOptions, Locale, ParseMoneyOptions, ParseOptions,
-    format, format_to_parts, locales, parse, parse_money,
+    RoundingPriority, SignDisplay, TrailingZeroDisplay, UseGrouping, format, format_to_parts,
+    locales, parse, parse_money,
 };
 use proptest::prelude::*;
 
@@ -145,6 +146,61 @@ fn options() -> impl Strategy<Value = FormatOptions> {
                 options
             },
         )
+        .prop_flat_map(|options| (Just(options), intl_options()))
+        .prop_map(|(mut options, intl)| {
+            let (sign_display, grouping, integer, significant, mode, priority, trailing) = intl;
+            options.sign_display = sign_display;
+            options.use_grouping = grouping;
+            options.minimum_integer_digits = integer;
+            options.minimum_significant_digits = significant;
+            options.rounding_mode = mode;
+            options.rounding_priority = priority;
+            options.trailing_zero_display = trailing;
+            options
+        })
+}
+
+/// `Intl`'s sign, grouping, integer-digit, rounding-mode and priority options, out of range
+/// included.
+#[allow(clippy::type_complexity)]
+fn intl_options() -> impl Strategy<
+    Value = (
+        SignDisplay,
+        UseGrouping,
+        Option<u16>,
+        Option<u16>,
+        Option<Rounding>,
+        RoundingPriority,
+        TrailingZeroDisplay,
+    ),
+> {
+    (
+        prop::sample::select(vec![
+            SignDisplay::Auto,
+            SignDisplay::Never,
+            SignDisplay::Always,
+            SignDisplay::ExceptZero,
+            SignDisplay::Negative,
+        ]),
+        prop::sample::select(vec![
+            UseGrouping::Auto,
+            UseGrouping::Always,
+            UseGrouping::Min2,
+            UseGrouping::Off,
+        ]),
+        prop::option::of(0_u16..30),
+        prop::option::of(0_u16..30),
+        prop::option::of(rounding()),
+        prop::sample::select(vec![
+            RoundingPriority::Auto,
+            RoundingPriority::MorePrecision,
+            RoundingPriority::LessPrecision,
+        ]),
+        prop::sample::select(vec![
+            TrailingZeroDisplay::Auto,
+            TrailingZeroDisplay::StripIfInteger,
+        ]),
+    )
 }
 
 proptest! {
@@ -228,7 +284,10 @@ proptest! {
             }
             Err(error) => prop_assert!(matches!(
                 error,
-                Error::ConflictingOptions | Error::InvalidOptions | Error::Money(_)
+                Error::ConflictingOptions
+                    | Error::InvalidOptions
+                    | Error::IncrementNeedsFractionDigits
+                    | Error::Money(_)
             ), "{error:?}"),
         }
         FORMAT_WORST.record(start.elapsed());

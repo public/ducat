@@ -78,8 +78,8 @@ mod unicode;
 
 pub use error::{Error, SyntaxError};
 pub use format::{
-    CurrencyDisplay, CurrencySign, FormatOptions, Part, PartKind, currency_name, currency_symbol,
-    format, format_to_parts,
+    CurrencyDisplay, CurrencySign, FormatOptions, Part, PartKind, RoundingPriority, SignDisplay,
+    TrailingZeroDisplay, UseGrouping, currency_name, currency_symbol, format, format_to_parts,
 };
 pub use locale::{Locale, locales};
 pub use parse::{ParseMoneyOptions, ParseOptions, parse, parse_money};
