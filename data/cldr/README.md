@@ -23,15 +23,21 @@ ducat's TypeScript doesn't read it: `format` and `parse` use the runtime's `Intl
 modern (430, root `und` included, which covers every locale the format and parse documentation,
 tests and vectors use):
 
-- `main/<locale>/numbers.json`: the default and latn numbering systems' symbols, and the standard
-  decimal and currency patterns (no compact or scientific forms), resolved;
+- `main/<locale>/numbers.json`: the symbols of every numbering system cldr-json gives the locale
+  (its default, latn, and the native one where it lists one: thai for th, deva for hi), with
+  each one's standard decimal and currency patterns and its compact patterns (decimal short and
+  long, currency short, each by magnitude and plural form, without the alphaNextToNumber
+  variants), resolved. Scientific, percent and other formats are left out: `Intl`'s scientific
+  notation writes the currency pattern with the `exponential` symbol;
 - `main/<locale>/currencies.json`: every currency's symbol, narrow symbol and names, written as
   what differs from the locale named by its `inherits` field (`parents.json`), down to root;
   the script checks that resolving them gives back cldr-json's resolved data exactly;
 - `main/<language>/listPatterns.json`: the list patterns of ducat-words' seven languages;
 - `supplemental/plurals.json`, `supplemental/ordinals.json`: the plural rules of those locales and
   their languages;
-- `supplemental/numberingSystems.json`: the digits of the numbering systems used;
+- `supplemental/numberingSystems.json`: the digits of every numeric numbering system (`Intl`'s
+  `numberingSystem` and `-u-nu-` take any of them for any locale), and the algorithmic ones the
+  locales name;
 - `supplemental/likelySubtags.json`: the likely subtags of the kept languages, alone or with a
   region (`zh-TW` is `zh-Hant-TW`), which ducat-format resolves tags with;
 - `parents.json`: the locale each locale's currencies inherit from (CLDR's `parentLocales`, else
