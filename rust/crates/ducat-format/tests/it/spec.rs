@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 
 /// The rows per operation, from the spec's README (as the core runner's `CASES_PER_AREA`).
 const ROWS: [(&str, usize); 3] = [
-    ("format.money", 2538),
+    ("format.money", 4846),
     ("parse.money", 1629),
     ("parse.detect", 1757),
 ];

@@ -54,7 +54,7 @@ const CASES_PER_AREA: Record<string, number> = {
   currency: 1367,
   processors: 2372,
   wire: 790,
-  format: 2538,
+  format: 4846,
   parse: 3386,
 };
 

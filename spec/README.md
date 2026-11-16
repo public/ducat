@@ -48,7 +48,7 @@ spec/
 | `excel`      | `microsoft.json`        |    23 | Microsoft's pages  | the worked examples on Excel's function pages                                                   |
 | `words`      | `rbnf.json`             | 2,808 | ICU 79.1           | numbers spelled out by ICU on its own CLDR 49 data, each language's main rule sets              |
 | `words`      | `rbnf-data.json`        | 4,096 | ICU 74.2           | the same on the CLDR 49 rule text ducat ships, for the other public rule sets                   |
-| `format`     | `cldr.json`             | 2,475 | CLDR 48 (TR35)     | money as currency text and parts: every display and sign, digits and rounding, large values     |
+| `format`     | `cldr.json`             | 4,783 | CLDR 48 (TR35)     | money as currency text and parts: every display and sign, digits and rounding, Intl's options   |
 | `format`     | `icu-overrides.json`    |    63 | CLDR 48 + ICU 78.3 | the same where ICU's shipped data overrides CLDR's (fr-CH's group separator)                    |
 | `parse`      | `cldr.json`             | 3,274 | CLDR 48 (TR35)     | parse and parseMoney: format's text read back, separators, leniency, signs, detection, errors   |
 | `parse`      | `icu-overrides.json`    |   112 | CLDR 48 + ICU 78.3 | the same where ICU's shipped data overrides CLDR's (fr-CH)                                      |
@@ -706,7 +706,9 @@ Known gaps:
 parser written with Python's standard library from Unicode
 [TR35](https://www.unicode.org/reports/tr35/tr35-numbers.html) (patterns, symbols, numbering
 systems, grouping and minimum grouping digits, currency spacing, accounting patterns, currency names
-in their plural forms) and from the parse rules of
+in their plural forms), with the `Intl.NumberFormat` options ducat passes on read as
+[ECMA-402](https://tc39.es/ecma402/#sec-setnfdigitoptions) defines them (rounding on exact
+fractions), and from the parse rules of
 [docs/reference/parse.md](../docs/reference/parse.md), over the CLDR 48 snapshot in
 [`data/cldr/`](../data/cldr/README.md). It never runs ducat or Intl. ducat formats and parses with
 the runtime's Intl, whose ICU 78.3 (Node 24, Bun) carries CLDR 48, so when ducat passes these rows
@@ -716,27 +718,33 @@ that formats without ICU needs the same data.
 
 A Money is `amount` (a decimal at the scale its fraction digits give) in `currency`. `locale` is a
 BCP 47 tag, and `options` are ducat's: `currencyDisplay` (`symbol`, `narrowSymbol`, `code`,
-`name`), `currencySign` (`standard`, `accounting`) and `digits` with `rounding` for `format`;
+`name`), `currencySign` (`standard`, `accounting`), `digits` with `rounding`, and Intl's
+`signDisplay`, `useGrouping`, `minimumIntegerDigits`, `minimumFractionDigits`,
+`maximumFractionDigits`, `minimumSignificantDigits`, `maximumSignificantDigits`,
+`roundingIncrement`, `roundingMode`, `roundingPriority` and `trailingZeroDisplay` for `format`;
 `scale`, `rounding` and `lenient` for `parse`; and `hint`, `symbols`, `currencies`, `lenient`,
-`scale` and `rounding` for `parseMoney`. Other Intl options aren't covered. Every field is judged
-exactly, as JSON.
+`scale` and `rounding` for `parseMoney`. Intl's other options (`notation`, `compactDisplay`,
+`numberingSystem`, `localeMatcher`) aren't covered. Every field is judged exactly, as JSON.
 
-| op             | expected fields and how each is judged                                                                                                                                          |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `format.money` | `text`: `format`'s string; `parts`: `formatToParts`'s `{ type, value }` list; `null` with `error` `type` (Intl digit options beside `digits`, `rounding` without it) or `range` |
-| `parse.money`  | `amount`: what `parse(input, currency, locale, options)` reads, at the result's scale; `null` with `error` `syntax`, `range` (a locale without data) or `rounding`              |
-| `parse.detect` | `money`: `{ amount, currency }`, what `parseMoney(input, locale, options)` reads and detects; `null` with `error` as `parse.money`                                              |
+| op             | expected fields and how each is judged                                                                                                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `format.money` | `text`: `format`'s string; `parts`: `formatToParts`'s `{ type, value }` list; `null` with `error` `type` (Intl digit options beside `digits`, `rounding` without it, `roundingIncrement` beside significant digits or a `roundingPriority`) or `range` |
+| `parse.money`  | `amount`: what `parse(input, currency, locale, options)` reads, at the result's scale; `null` with `error` `syntax`, `range` (a locale without data) or `rounding`                                                                                     |
+| `parse.detect` | `money`: `{ amount, currency }`, what `parseMoney(input, locale, options)` reads and detects; `null` with `error` as `parse.money`                                                                                                                     |
 
 TR35 doesn't define the parts. The rows use Intl's part types: the digits, separators and signs
 are `integer`, `group`, `decimal`, `fraction` and `minusSign`; the symbol, code or name is
 `currency`; bidi marks (format characters) in a symbol, such as the ALM in ar-EG's minus sign, are
 `literal`, as are the pattern's other characters and the currency spacing; adjacent characters of
-one type form one part.
+one type form one part. A plus sign (`signDisplay` `always` and `exceptZero`) is `plusSign`.
 
 That convention, and how a currency name is shown (the number in the decimal pattern with the
 currency's separators, never in the accounting form, then the locale's `unitPattern` with the name
 in the number's plural form), are where TR35 leaves a choice; the oracle's choices were settled after
-looking at ICU's output, so agreement on them isn't independent evidence. The rest is.
+looking at ICU's output, so agreement on them isn't independent evidence. So was the explicit plus
+sign, which TR35 leaves open: the negative subpattern with its minus sign replaced by the plus sign,
+or the plus sign before the positive subpattern where the negative one has no minus sign
+(accounting's parentheses) or there is none. The rest is.
 
 #### Runtime divergences
 

@@ -47,7 +47,7 @@ const CASES_PER_AREA: &[(&str, usize)] = &[
     ("excel", 2878),
     ("finance", 2720),
     ("fixed", 28),
-    ("format", 2538),
+    ("format", 4846),
     ("math", 750),
     ("parse", 3386),
     ("pricing", 300),
