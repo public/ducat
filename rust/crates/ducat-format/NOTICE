@@ -11,7 +11,7 @@ version and the date it was retrieved.
 [Unicode CLDR 48: locale data]
   Data from the Unicode Common Locale Data Repository (CLDR), release
   48, for the locales CLDR rates modern: the number symbols, numbering
-  systems' digits and decimal, currency and accounting patterns
+  systems' digits and decimal, currency, accounting and compact patterns
   (main/<locale>/numbers.json, supplemental/numberingSystems.json), the
   currencies' symbols, narrow symbols and names (main/<locale>/
   currencies.json), the cardinal plural rules (supplemental/
