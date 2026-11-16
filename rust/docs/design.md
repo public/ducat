@@ -427,6 +427,12 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
   `to_minor_f64` without `lossy` is `Err(Overflow)` past 2^53 − 1 minor units (ducat's `RangeError`), after
   `Err(Rounding)` for digits below the minor unit. A zero amount has no sign, so it is +0.0 at any scale; −0.0 comes
   only from a negative amount below the smallest subnormal (−1 at scale 400), as in ducat.
+- **Exact amounts have no JSON form.** ducat's `ExactMoney#toJSON` always throws (`TypeError`: `ExactMoney has no
+  JSON form; round() it to Money first`), and nothing reads one back, so there is no shape to port. `ExactMoney<C>`
+  and `AnyExactMoney` implement neither `Serialize` nor `Deserialize` under `serde`: where ducat fails when
+  `JSON.stringify` runs, here a value or struct holding one fails to compile. A total to be stored is rounded to
+  `Money` first (`round`, or `to_money` where it is exact), as in ducat. Earlier notes proposed serde for exact
+  amounts; it would be a JSON form ducat refuses.
 
 - **Adyen's Creation Date.** `adyen_rate` reads the Creation Date as `Date.parse` would but never fails on it: a date
   or time it can't read gives the local day (or no `as_of`), where ducat throws a `RangeError`; and it takes ISO and
