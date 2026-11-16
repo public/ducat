@@ -128,6 +128,52 @@ mod cldr {
         );
     }
 
+    /// The cases `scripts/words-names-cases.mjs` writes from ducat on Node, at the path in
+    /// `DUCAT_WORDS_NAMES_CASES`; not run by default (it needs the TypeScript build).
+    #[test]
+    #[ignore = "needs DUCAT_WORDS_NAMES_CASES from scripts/words-names-cases.mjs"]
+    fn matches_ducat_on_node() {
+        let path = std::env::var("DUCAT_WORDS_NAMES_CASES").expect("DUCAT_WORDS_NAMES_CASES");
+        let file: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let mut differences = Vec::new();
+        let cases = file["cases"].as_array().unwrap();
+        for case in cases {
+            let field = |name: &str| case[name].as_str().unwrap();
+            let rules = match field("language") {
+                "en" => ENGLISH,
+                "de" => GERMAN,
+                "fr" => FRENCH,
+                "es" => SPANISH,
+                "it" => ITALIAN,
+                "nl" => DUTCH,
+                _ => PORTUGUESE,
+            };
+            let (code, expected) = (field("code"), field("expected"));
+            let units: i64 = field("units").parse().unwrap();
+            let scale = u16::try_from(case["scale"].as_u64().unwrap()).unwrap();
+            let got = words(units, scale, code, &rules);
+            let same = match &got {
+                Ok(text) => text == expected,
+                // ducat's RangeError for a code Intl can't name
+                Err(Error::NoCurrencyNames) => expected.starts_with("RangeError"),
+                Err(_) => false,
+            };
+            // ICU writes ITL's own symbol before its name in it (design.md); the crate doesn't
+            let documented = field("language") == "it"
+                && code == "ITL"
+                && got.as_deref().ok() == expected.strip_prefix("ITL\u{a0}");
+            if !same && !documented {
+                differences.push(format!(
+                    "{} {code} {units}: {expected:?}, got {got:?}",
+                    field("language")
+                ));
+            }
+        }
+        println!("{} cases from {}", cases.len(), file["runtime"]);
+        assert!(differences.is_empty(), "{}", differences.join("\n"));
+    }
+
     #[test]
     fn currency_names_gives_cldrs_forms() {
         assert_eq!(
