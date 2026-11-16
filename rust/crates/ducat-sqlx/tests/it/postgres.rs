@@ -494,46 +494,59 @@ async fn scale_column(pool: &PgPool) {
 }
 
 /// ducat's `moneyJson` on Postgres: jsonb (as ducat's Drizzle column) and json, written as
-/// jsonb, Postgres's own text of each, and the values node-postgres would parse twice.
+/// jsonb and as ducat's text, Postgres's own text of each, and the values node-postgres would
+/// parse twice.
 async fn json_columns(pool: &PgPool) {
     use ducat_sqlx::JsonColumn;
 
-    sqlx::raw_sql("CREATE TABLE docs (id integer PRIMARY KEY, jb jsonb, j json)")
+    sqlx::raw_sql("CREATE TABLE docs (id integer PRIMARY KEY, jb jsonb, j json, t json)")
         .execute(pool)
         .await
         .unwrap();
     for (id, (amount, code)) in AMOUNTS.iter().enumerate() {
         let money = AnyMoney::parse(amount, iso(code)).unwrap();
-        sqlx::query("INSERT INTO docs (id, jb, j) VALUES ($1, $2, $3)")
+        // t is json from ducat's text, bound as text and cast
+        let text = JsonColumn(money.clone()).to_json().unwrap();
+        sqlx::query("INSERT INTO docs (id, jb, j, t) VALUES ($1, $2, $3, $4::json)")
             .bind(i32::try_from(id).unwrap())
             .bind(JsonColumn(money.clone()))
             .bind(JsonColumn(money))
+            .bind(text)
             .execute(pool)
             .await
             .unwrap();
     }
-    let rows: Vec<(JsonColumn<AnyMoney>, JsonColumn<AnyMoney>, String, String)> =
-        sqlx::query_as("SELECT jb, j, jb::text, j::text FROM docs ORDER BY id")
+    type Row = (
+        JsonColumn<AnyMoney>,
+        JsonColumn<AnyMoney>,
+        JsonColumn<AnyMoney>,
+        String,
+        String,
+        String,
+    );
+    let rows: Vec<Row> =
+        sqlx::query_as("SELECT jb, j, t, jb::text, j::text, t::text FROM docs ORDER BY id")
             .fetch_all(pool)
             .await
             .unwrap();
     assert_eq!(rows.len(), AMOUNTS.len());
-    for ((JsonColumn(jb), JsonColumn(j), jb_text, j_text), (amount, code)) in
+    for ((JsonColumn(jb), JsonColumn(j), JsonColumn(t), jb_text, j_text, t_text), (amount, code)) in
         rows.iter().zip(AMOUNTS)
     {
         let original = AnyMoney::parse(amount, iso(code)).unwrap();
         assert!(
-            jb.identical(&original) && j.identical(&original),
+            jb.identical(&original) && j.identical(&original) && t.identical(&original),
             "{amount} {code}"
         );
-        // json keeps the text as written; jsonb has its own spacing
+        // ducat writes compact JSON, which jsonb normalises to its own spacing; a json column
+        // given that jsonb value takes jsonb's text (the cast goes through text), and one given
+        // ducat's text keeps it as written
+        let spaced = format!(r#"{{"amount": "{amount}", "currency": "{code}"}}"#);
+        assert_eq!(jb_text, &spaced);
+        assert_eq!(j_text, &spaced);
         assert_eq!(
-            j_text,
+            t_text,
             &format!(r#"{{"amount":"{amount}","currency":"{code}"}}"#)
-        );
-        assert_eq!(
-            jb_text,
-            &format!(r#"{{"amount": "{amount}", "currency": "{code}"}}"#)
         );
     }
     // a fixed currency, read back from both types, and another refused
