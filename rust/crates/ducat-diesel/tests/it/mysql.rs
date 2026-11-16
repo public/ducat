@@ -206,6 +206,7 @@ async fn mysql() {
     fixed_currency_columns(connection).await;
     sized_writes(connection).await;
     inexact_types_are_refused(connection).await;
+    scale_column(connection).await;
     connection
         .batch_execute("DROP TABLE ducat_diesel_items")
         .await
@@ -392,6 +393,118 @@ async fn inexact_types_are_refused(connection: &mut AsyncMysqlConnection) {
     assert_eq!(from_text, decimal("12.50"));
     diesel::delete(items::table)
         .execute(connection)
+        .await
+        .unwrap();
+}
+
+/// ducat's `moneyMinor('EUR', { scale })` with `scaledMoney` (ducat#380): `SCALED_EUROS` round-trip
+/// with their scales, loaded straight into `ScaledMinorColumn` from the two columns; a NULL
+/// amount is `None`, and a NULL or too large scale is refused.
+async fn scale_column(connection: &mut AsyncMysqlConnection) {
+    use ducat_diesel::ScaledMinorColumn;
+
+    use crate::scaled::{SCALED_EUROS, euros};
+
+    diesel::table! {
+        ducat_diesel_scaled (id) {
+            id -> Integer,
+            amount_minor -> Nullable<BigInt>,
+            amount_scale -> Nullable<SmallInt>,
+        }
+    }
+
+    connection
+        .batch_execute("DROP TABLE IF EXISTS ducat_diesel_scaled")
+        .await
+        .unwrap();
+    connection
+        .batch_execute(
+            "CREATE TABLE ducat_diesel_scaled (id INT PRIMARY KEY, amount_minor BIGINT, amount_scale SMALLINT)",
+        )
+        .await
+        .unwrap();
+    for (id, (amount, scale, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let (units, scale) = ScaledMinorColumn(euros(amount, scale))
+            .to_columns()
+            .unwrap();
+        diesel::insert_into(ducat_diesel_scaled::table)
+            .values((
+                ducat_diesel_scaled::id.eq(i32::try_from(id).unwrap()),
+                ducat_diesel_scaled::amount_minor.eq(units),
+                ducat_diesel_scaled::amount_scale.eq(scale),
+            ))
+            .execute(connection)
+            .await
+            .unwrap();
+    }
+    connection
+        .batch_execute("INSERT INTO ducat_diesel_scaled VALUES (100, NULL, NULL), (101, 5, NULL), (102, 5, 1001)")
+        .await
+        .unwrap();
+    let amounts: Vec<ScaledMinorColumn<Eur>> = ducat_diesel_scaled::table
+        .filter(ducat_diesel_scaled::id.lt(100))
+        .order(ducat_diesel_scaled::id)
+        .select((
+            ducat_diesel_scaled::amount_minor.assume_not_null(),
+            ducat_diesel_scaled::amount_scale,
+        ))
+        .load(connection)
+        .await
+        .unwrap();
+    assert_eq!(amounts.len(), SCALED_EUROS.len());
+    for (read, (amount, at, _)) in amounts.iter().zip(SCALED_EUROS) {
+        assert!(read.0.identical(&euros(amount, at)), "{amount}");
+    }
+    // a scale column declared NOT NULL loads too
+    let first: ScaledMinorColumn<Eur> = ducat_diesel_scaled::table
+        .filter(ducat_diesel_scaled::id.eq(0))
+        .select((
+            ducat_diesel_scaled::amount_minor.assume_not_null(),
+            ducat_diesel_scaled::amount_scale.assume_not_null(),
+        ))
+        .first(connection)
+        .await
+        .unwrap();
+    assert_eq!(first.0.to_string(), "1.005 EUR");
+    for (id, expected) in [(101, None), (102, Some(1001))] {
+        let error = ducat_diesel_scaled::table
+            .filter(ducat_diesel_scaled::id.eq(id))
+            .select((
+                ducat_diesel_scaled::amount_minor.assume_not_null(),
+                ducat_diesel_scaled::amount_scale,
+            ))
+            .first::<ScaledMinorColumn<Eur>>(connection)
+            .await
+            .unwrap_err();
+        assert_eq!(decode_error(error), Error::InvalidScaleColumn(expected));
+    }
+    // a nullable amount: NULL is None, whatever the scale
+    let rows: Vec<(Option<i64>, Option<i16>)> = ducat_diesel_scaled::table
+        .filter(ducat_diesel_scaled::id.ge(100))
+        .order(ducat_diesel_scaled::id)
+        .select((
+            ducat_diesel_scaled::amount_minor,
+            ducat_diesel_scaled::amount_scale,
+        ))
+        .load(connection)
+        .await
+        .unwrap();
+    let read: Vec<_> = rows
+        .into_iter()
+        .map(|(units, scale)| {
+            ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale.map(i64::from))
+        })
+        .collect();
+    assert_eq!(
+        read,
+        [
+            Ok(None),
+            Err(Error::InvalidScaleColumn(None)),
+            Err(Error::InvalidScaleColumn(Some(1001))),
+        ]
+    );
+    connection
+        .batch_execute("DROP TABLE ducat_diesel_scaled")
         .await
         .unwrap();
 }

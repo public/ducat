@@ -266,3 +266,58 @@ async fn malformed_text_is_refused() {
         );
     }
 }
+
+/// ducat's `moneyMinor('EUR', { scale })` with `scaledMoney` (ducat#380): `SCALED_EUROS` and a
+/// NULL amount round-trip with their scales; a NULL scale is refused.
+#[tokio::test]
+async fn a_scale_column_round_trips_any_scale() {
+    use ducat_sqlx::ScaledMinorColumn;
+
+    use crate::scaled::{SCALED_EUROS, euros};
+
+    let pool = database().await;
+    sqlx::raw_sql(
+        "CREATE TABLE scaled (id INTEGER PRIMARY KEY, amount_minor INTEGER, amount_scale INTEGER)",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    for (id, (amount, scale, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let (units, scale) = ScaledMinorColumn(euros(amount, scale))
+            .to_columns()
+            .unwrap();
+        sqlx::query("INSERT INTO scaled VALUES (?, ?, ?)")
+            .bind(i64::try_from(id).unwrap())
+            .bind(units)
+            .bind(scale)
+            .execute(&pool)
+            .await
+            .unwrap();
+    }
+    sqlx::raw_sql("INSERT INTO scaled VALUES (100, NULL, NULL), (101, 5, NULL)")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let rows: Vec<(i64, Option<i64>, Option<i64>)> =
+        sqlx::query_as("SELECT id, amount_minor, amount_scale FROM scaled ORDER BY id")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(rows.len(), SCALED_EUROS.len() + 2);
+    for ((_, units, scale), (amount, at, _)) in rows.iter().zip(SCALED_EUROS) {
+        let read = ScaledMinorColumn::<Eur>::from_nullable_columns(*units, *scale)
+            .unwrap()
+            .unwrap();
+        assert!(read.0.identical(&euros(amount, at)), "{amount}");
+    }
+    let (_, units, scale) = rows[SCALED_EUROS.len()];
+    assert_eq!(
+        ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale),
+        Ok(None)
+    );
+    let (_, units, scale) = rows[SCALED_EUROS.len() + 1];
+    assert_eq!(
+        ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale),
+        Err(Error::InvalidScaleColumn(None))
+    );
+}

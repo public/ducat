@@ -16,5 +16,6 @@ mod mysql;
 mod numeric;
 #[cfg(feature = "postgres")]
 mod postgres;
+mod scaled;
 #[cfg(feature = "sqlite")]
 mod sqlite;

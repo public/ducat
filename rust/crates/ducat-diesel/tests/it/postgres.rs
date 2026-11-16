@@ -78,6 +78,7 @@ async fn postgres() {
     composite_refusals(connection).await;
     composite_sum(connection).await;
     other_composite_names(connection).await;
+    scale_column(connection).await;
     connection
         .batch_execute(&format!(
             "DROP SCHEMA {SCHEMA} CASCADE; DROP SCHEMA ducat_diesel_other CASCADE"
@@ -455,4 +456,100 @@ async fn other_composite_names(connection: &mut AsyncPgConnection) {
     .await
     .unwrap();
     assert_eq!(dinars.to_string(), "2.000 KWD");
+}
+
+/// ducat's `moneyMinor('EUR', { scale })` with `scaledMoney` (ducat#380): `SCALED_EUROS` round-trip
+/// with their scales, loaded straight into `ScaledMinorColumn` from the two columns; a NULL
+/// amount is `None`, and a NULL or too large scale is refused.
+async fn scale_column(connection: &mut AsyncPgConnection) {
+    use ducat_diesel::ScaledMinorColumn;
+
+    use crate::scaled::{SCALED_EUROS, euros};
+
+    diesel::table! {
+        scaled (id) {
+            id -> Integer,
+            amount_minor -> Nullable<BigInt>,
+            amount_scale -> Nullable<SmallInt>,
+        }
+    }
+
+    connection
+        .batch_execute("DROP TABLE IF EXISTS scaled; CREATE TABLE scaled (id INT PRIMARY KEY, amount_minor BIGINT, amount_scale SMALLINT)")
+        .await
+        .unwrap();
+    for (id, (amount, scale, _)) in SCALED_EUROS.into_iter().enumerate() {
+        let (units, scale) = ScaledMinorColumn(euros(amount, scale))
+            .to_columns()
+            .unwrap();
+        diesel::insert_into(scaled::table)
+            .values((
+                scaled::id.eq(i32::try_from(id).unwrap()),
+                scaled::amount_minor.eq(units),
+                scaled::amount_scale.eq(scale),
+            ))
+            .execute(connection)
+            .await
+            .unwrap();
+    }
+    connection
+        .batch_execute(
+            "INSERT INTO scaled VALUES (100, NULL, NULL), (101, 5, NULL), (102, 5, 1001)",
+        )
+        .await
+        .unwrap();
+    let amounts: Vec<ScaledMinorColumn<Eur>> = scaled::table
+        .filter(scaled::id.lt(100))
+        .order(scaled::id)
+        .select((scaled::amount_minor.assume_not_null(), scaled::amount_scale))
+        .load(connection)
+        .await
+        .unwrap();
+    assert_eq!(amounts.len(), SCALED_EUROS.len());
+    for (read, (amount, at, _)) in amounts.iter().zip(SCALED_EUROS) {
+        assert!(read.0.identical(&euros(amount, at)), "{amount}");
+    }
+    // a scale column declared NOT NULL loads too
+    let first: ScaledMinorColumn<Eur> = scaled::table
+        .filter(scaled::id.eq(0))
+        .select((
+            scaled::amount_minor.assume_not_null(),
+            scaled::amount_scale.assume_not_null(),
+        ))
+        .first(connection)
+        .await
+        .unwrap();
+    assert_eq!(first.0.to_string(), "1.005 EUR");
+    for (id, expected) in [(101, None), (102, Some(1001))] {
+        let error = scaled::table
+            .filter(scaled::id.eq(id))
+            .select((scaled::amount_minor.assume_not_null(), scaled::amount_scale))
+            .first::<ScaledMinorColumn<Eur>>(connection)
+            .await
+            .unwrap_err();
+        assert_eq!(decode_error(error), Error::InvalidScaleColumn(expected));
+    }
+    // a nullable amount: NULL is None, whatever the scale
+    let rows: Vec<(Option<i64>, Option<i16>)> = scaled::table
+        .filter(scaled::id.ge(100))
+        .order(scaled::id)
+        .select((scaled::amount_minor, scaled::amount_scale))
+        .load(connection)
+        .await
+        .unwrap();
+    let read: Vec<_> = rows
+        .into_iter()
+        .map(|(units, scale)| {
+            ScaledMinorColumn::<Eur>::from_nullable_columns(units, scale.map(i64::from))
+        })
+        .collect();
+    assert_eq!(
+        read,
+        [
+            Ok(None),
+            Err(Error::InvalidScaleColumn(None)),
+            Err(Error::InvalidScaleColumn(Some(1001))),
+        ]
+    );
+    connection.batch_execute("DROP TABLE scaled").await.unwrap();
 }

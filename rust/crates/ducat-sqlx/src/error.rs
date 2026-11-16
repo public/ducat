@@ -77,6 +77,10 @@ pub enum Error {
         /// The column's size.
         size: DecimalColumnSize,
     },
+    /// A scale column's value that isn't a scale: NULL (`None`), negative, or beyond
+    /// [`ducat::MAX_SCALE`] (ducat's `readScale`, which caps it as parsed decimals are, so that
+    /// a corrupt row can't build a huge power of ten).
+    InvalidScaleColumn(Option<i64>),
     /// An error from ducat itself, such as a scale beyond [`ducat::MAX_SCALE`]
     /// ([`ducat::Error::InvalidScale`]) or a decimal with more digits than the currency's exponent
     /// ([`ducat::Error::Rounding`]).
@@ -111,6 +115,7 @@ impl From<ducat_sql_core::Error> for Error {
                 size: DecimalColumnSize(size),
             },
             Core::OutOfRange => Self::OutOfRange,
+            Core::InvalidScaleColumn(value) => Self::InvalidScaleColumn(value),
             Core::Ducat(error) => Self::Ducat(error),
         }
     }
@@ -158,6 +163,16 @@ impl fmt::Display for Error {
                 f,
                 "the money does not fit {size}, which holds {} integer digits",
                 size.precision() - size.scale()
+            ),
+            Self::InvalidScaleColumn(None) => write!(
+                f,
+                "expected an integer scale from 0 to {} in the scale column, got NULL",
+                ducat::MAX_SCALE
+            ),
+            Self::InvalidScaleColumn(Some(value)) => write!(
+                f,
+                "expected an integer scale from 0 to {} in the scale column, got {value}",
+                ducat::MAX_SCALE
             ),
             Self::Ducat(error) => fmt::Display::fmt(error, f),
         }
