@@ -31,6 +31,12 @@ contain breaking changes; they are always listed under **Changed** or **Removed*
   in pt-CV, read as negative before, is positive. On a runtime without the bug, nothing
   changes.
 
+### Repository
+
+- ducat-format: some `FormatOptions` combinations that returned `InvalidOptions` now format, as
+  Intl does (fraction digits beside significant digits under `roundingPriority` auto;
+  `roundingIncrement` 1 beside significant digits).
+
 ## [0.4.1] - 2026-11-15
 
 A patch release of fixes. Nothing in the package's API is added or removed.

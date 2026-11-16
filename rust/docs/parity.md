@@ -906,23 +906,23 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | `FormatOptions#currencySign` | `FormatOptions::currency_sign`, `sign` (`CurrencySign`) | same | `CurrencySign`: `Standard` (default), `Accounting` |
 | `FormatOptions#digits` | `FormatOptions::digits` | same | `Option<u16>`, rounded once by ducat's kernel; beside `Intl`'s digit options it is `Error::ConflictingOptions`, ducat's `TypeError` |
 | `FormatOptions#localeMatcher` | — | missing | Intl's `localeMatcher`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#maximumFractionDigits` | `FormatOptions::maximum_fraction_digits` | same | `Option<u16>`; past 100, or below the minimum, `Error::InvalidOptions` (`Intl`'s `RangeError`) |
+| `FormatOptions#maximumFractionDigits` | `FormatOptions::maximum_fraction_digits` | same | `Option<u16>`; past 100, or below the minimum, `Error::InvalidOptions` (`Intl`'s `RangeError`), except with significant digits and `roundingPriority` auto, where `Intl` neither uses nor validates the fraction digits, so they aren't checked then (as `Intl`) |
 | `FormatOptions#maximumSignificantDigits` | `FormatOptions::maximum_significant_digits` | same | `Option<u16>`, 1 to 21 (`Error::InvalidOptions` outside) |
-| `FormatOptions#minimumFractionDigits` | `FormatOptions::minimum_fraction_digits` | same | `Option<u16>`, as `#maximumFractionDigits` |
-| `FormatOptions#minimumIntegerDigits` | — | missing | Intl's `minimumIntegerDigits`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#minimumSignificantDigits` | — | missing | Intl's `minimumSignificantDigits`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
+| `FormatOptions#minimumFractionDigits` | `FormatOptions::minimum_fraction_digits` | same | `Option<u16>`, as `#maximumFractionDigits`, including the exception: with significant digits and `roundingPriority` auto they aren't checked (as `Intl`, which neither uses nor validates them) |
+| `FormatOptions#minimumIntegerDigits` | `FormatOptions::minimum_integer_digits` | same | `Option<u16>`, 1 to 21 (`Error::InvalidOptions` outside, `Intl`'s `RangeError`); the padding zeros are grouped as digits are (`$00,001.00`) |
+| `FormatOptions#minimumSignificantDigits` | `FormatOptions::minimum_significant_digits` | same | `Option<u16>`, 1 to 21 and at most the maximum (`Error::InvalidOptions` otherwise); the maximum defaults to 21. With significant digits and `roundingPriority` auto the fraction digits play no part, unchecked, as in `Intl`; beside `digits` it is `Error::ConflictingOptions`, ducat's `TypeError` |
 | `FormatOptions#notation` | — | missing | Intl's `notation`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#numberingSystem` | — | missing | Intl's `numberingSystem`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
 | `FormatOptions#rounding` | `FormatOptions::rounding` | same | `Option<Rounding>`, `None` is ducat's default halfExpand; without `digits` it is `Error::ConflictingOptions`, ducat's `TypeError` |
 | `FormatOptions#roundingIncrement` | `FormatOptions::rounding_increment` | same | `Option<u16>`, one of `Intl`'s 15 increments (`Error::InvalidOptions` otherwise) |
-| `FormatOptions#roundingMode` | — | missing | Intl's `roundingMode`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#roundingPriority` | — | missing | Intl's `roundingPriority`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
-| `FormatOptions#signDisplay` | — | missing | Intl's `signDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
+| `FormatOptions#roundingMode` | `FormatOptions::rounding_mode` | same | `Option<Rounding>`, `None` is `Intl`'s halfExpand: how `Intl`'s fraction digits, significant digits and increment round, on the exact decimal with ducat's kernel (no floats). `Rounding::Unnecessary` is no `Intl` mode (`Error::InvalidOptions`, its `RangeError`); after `digits` there is nothing left to round |
+| `FormatOptions#roundingPriority` | `FormatOptions::rounding_priority` (`RoundingPriority`) | same | `Auto` (default), `MorePrecision`, `LessPrecision`, comparing ECMA-402's rounding magnitudes (significant digits default to 1 to 21, so `MorePrecision` shows 1.20 as `1.2`); a `roundingIncrement` other than 1 beside it or beside significant digits is `Error::IncrementNeedsFractionDigits` (`Intl`'s `TypeError`) |
+| `FormatOptions#signDisplay` | `FormatOptions::sign_display` (`SignDisplay`) | same | `Auto` (default), `Never`, `Always`, `ExceptZero`, `Negative`; a negative amount `Intl` rounds to zero keeps its minus sign with `Auto` and `Always`, as in `Intl`. The plus form is the negative subpattern with the plus sign for the minus, or the plus sign before the positive one where the negative has none (accounting's parentheses), as ICU writes it |
 | `FormatOptions#style` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions)) | ducat sets `currency`; another style drops the currency |
-| `FormatOptions#trailingZeroDisplay` | — | missing | Intl's `trailingZeroDisplay`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
+| `FormatOptions#trailingZeroDisplay` | `FormatOptions::trailing_zero_display` (`TrailingZeroDisplay`) | same | `Auto` (default), `StripIfInteger` (`€5` for 5.00, after rounding); a name takes the plural of the number shown (`1 US dollar`) |
 | `FormatOptions#unit` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions); only with `style: 'unit'`) |  |
 | `FormatOptions#unitDisplay` | — | not ported: by design ([money is always formatted as its own currency](design.md#parity-decisions); only with `style: 'unit'`) |  |
-| `FormatOptions#useGrouping` | — | missing | Intl's `useGrouping`, passed through by ducat; no counterpart in `ducat_format::FormatOptions` |
+| `FormatOptions#useGrouping` | `FormatOptions::use_grouping` (`UseGrouping`) | same | `Auto` (default; CLDR's minimum grouping digits), `Always` (`true`), `Min2` (at least two, or the locale's), `Off` (`false`); `From<bool>`, and `FromStr` for `Intl`'s strings (`"true"` and `"false"` are `Auto`, as in `Intl`). The option enums' `FromStr` take `Intl`'s names, `Error::InvalidOptions` for others |
 | `Money#format` | `ducat_format::format` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) | a free function over `AnyMoney` and a `Locale` |
 | `Money#formatToParts` | `ducat_format::format_to_parts` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) | `Part`, `PartKind` |
 | `format` | `ducat_format::format` | divergent: [CLDR 48 data, a fixed set of locales](design.md#coverage) |  |
@@ -1327,12 +1327,6 @@ Re-exports every plugin entry and `./fn`'s functions, and installs every plugin'
 Every `missing` row, grouped into pull requests in the order users would hit them. Three pieces are decided (marked
 **decided**); the rest are proposals.
 
-11. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
-   `./format` `FormatOptions#useGrouping`, `./format` `FormatOptions#minimumIntegerDigits`,
-   `./format` `FormatOptions#minimumSignificantDigits`, `./format` `FormatOptions#roundingMode`,
-   `./format` `FormatOptions#roundingPriority`, `./format` `FormatOptions#trailingZeroDisplay`. Invoices (`+`/`−`
-   signs, no grouping) and price displays (`€5` for whole amounts) use these; all are TR35 number formatting over data
-   the crate already has.
 12. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
    `ducat-fetch` on `Transport`): `./convert` `snapshots`, `./convert` `snapshotsFrom`, `./convert` `Snapshots`,
    `./convert` `Snapshots#at`, `./convert` `SnapshotOptions`, `./convert` `SnapshotOptions#lookback`,

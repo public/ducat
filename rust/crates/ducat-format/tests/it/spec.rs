@@ -11,13 +11,13 @@ use std::process::ExitCode;
 use ducat::{AnyMoney, CurrencyCode, ErrorKind, Rounding};
 use ducat_format::{
     CurrencyDisplay, CurrencySign, Error, FormatOptions, Locale, ParseMoneyOptions, ParseOptions,
-    format_to_parts, parse, parse_money,
+    UseGrouping, format_to_parts, parse, parse_money,
 };
 use serde_json::{Value, json};
 
 /// The rows per operation, from the spec's README (as the core runner's `CASES_PER_AREA`).
 const ROWS: [(&str, usize); 3] = [
-    ("format.money", 2538),
+    ("format.money", 4846),
     ("parse.money", 1629),
     ("parse.detect", 1757),
 ];
@@ -56,6 +56,11 @@ fn money(row: &Value) -> AnyMoney {
     .unwrap()
 }
 
+/// An option enum from `Intl`'s name for its value; `Err` (`Intl`'s `RangeError`) for another.
+fn intl_name<T: std::str::FromStr>(value: &Value) -> Result<T, &'static str> {
+    value.as_str().unwrap().parse().map_err(|_| "range")
+}
+
 /// The options of a format row; `Err` for an option value no Rust value expresses (an invalid
 /// display or sign name is `Intl`'s `RangeError`).
 fn format_options(options: &Value) -> Result<FormatOptions, &'static str> {
@@ -90,8 +95,24 @@ fn format_options(options: &Value) -> Result<FormatOptions, &'static str> {
             "rounding" => out.rounding = rounding(value),
             "minimumFractionDigits" => out.minimum_fraction_digits = digits(key),
             "maximumFractionDigits" => out.maximum_fraction_digits = digits(key),
+            "minimumSignificantDigits" => out.minimum_significant_digits = digits(key),
             "maximumSignificantDigits" => out.maximum_significant_digits = digits(key),
             "roundingIncrement" => out.rounding_increment = digits(key),
+            "minimumIntegerDigits" => out.minimum_integer_digits = digits(key),
+            // Intl's names; another is its RangeError, as FromStr's InvalidOptions
+            "roundingMode" => {
+                out.rounding_mode = Some(value.as_str().unwrap().parse().map_err(|_| "range")?);
+            }
+            "roundingPriority" => out.rounding_priority = intl_name(value)?,
+            "trailingZeroDisplay" => out.trailing_zero_display = intl_name(value)?,
+            "signDisplay" => out.sign_display = intl_name(value)?,
+            // a boolean, or one of Intl's strings
+            "useGrouping" => {
+                out.use_grouping = match value.as_bool() {
+                    Some(grouping) => UseGrouping::from(grouping),
+                    None => intl_name(value)?,
+                };
+            }
             other => panic!("a format option the runner doesn't know: {other}"),
         }
     }

@@ -65,8 +65,16 @@ pub enum Error {
     /// beside `digits`, which would round twice (ducat's `TypeError`).
     ConflictingOptions,
     /// An option out of range (`Intl`'s `RangeError`): fraction digits beyond 100 or a minimum
-    /// above the maximum, significant digits outside 1 to 21, an increment `Intl` doesn't take.
+    /// above the maximum, significant digits outside 1 to 21 or a minimum above the maximum,
+    /// integer digits outside 1 to 21, an increment `Intl` doesn't take (or one with fraction
+    /// digits whose minimum and maximum differ), a rounding mode `Intl` doesn't have
+    /// ([`Rounding::Unnecessary`](ducat::Rounding::Unnecessary)), or an option name `FromStr`
+    /// doesn't know.
     InvalidOptions,
+    /// A `roundingIncrement` other than 1 where `Intl` doesn't round by fraction digits alone:
+    /// beside significant digits, or with a `roundingPriority` other than auto (`Intl`'s
+    /// `TypeError`).
+    IncrementNeedsFractionDigits,
     /// A currency code that isn't three letters, which `Intl` can't format (`RangeError`).
     InvalidCurrency,
     /// Text longer than [`MAX_INPUT`](crate::MAX_INPUT) bytes.
@@ -85,7 +93,7 @@ impl Error {
     #[must_use]
     pub fn kind(&self) -> ErrorKind {
         match self {
-            Self::ConflictingOptions => ErrorKind::Type,
+            Self::ConflictingOptions | Self::IncrementNeedsFractionDigits => ErrorKind::Type,
             Self::Syntax(_) => ErrorKind::Syntax,
             Self::Money(error) => error.kind(),
             Self::InvalidLocale
@@ -109,6 +117,9 @@ impl fmt::Display for Error {
                 f.write_str("digits replaces Intl's digit and rounding options; rounding needs it")
             }
             Self::InvalidOptions => f.write_str("an option out of range"),
+            Self::IncrementNeedsFractionDigits => f.write_str(
+                "roundingIncrement rounds by fraction digits alone: not beside significant digits or a roundingPriority",
+            ),
             Self::InvalidCurrency => f.write_str("a currency code that isn't three letters"),
             Self::InputTooLong => f.write_str("text longer than ducat-format reads"),
             Self::Syntax(error) => write!(f, "cannot parse: {}", error.message()),
