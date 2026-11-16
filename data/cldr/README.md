@@ -5,7 +5,8 @@ A trimmed copy of the Unicode Common Locale Data Repository's JSON release. Thre
 - the format and parse oracle, `scripts/gen-format-vectors.py`, which writes `spec/vectors/format/`
   and `spec/vectors/parse/`;
 - ducat-words' generator, `rust/crates/ducat-words/tests/it/cldr.rs` (plural rules, digit grouping
-  and the word for "and" of its seven languages);
+  and the word for "and" of its seven languages into `src/cldr.rs`, and their currency names, from
+  `main/<language>/currencies.json`, into `src/names.rs` for the `cldr-names` feature);
 - ducat-format's generator, `rust/crates/ducat-format/tests/it/data.rs` (its locale tables and Cargo
   features).
 
@@ -55,16 +56,24 @@ describe different CLDR releases:
 3. `python3 scripts/gen-format-vectors.py` rewrites the format and parse vectors (and their
    provenance's `cldr`). Review every changed row: a change is CLDR's, and ducat's Intl must carry
    the same release, so update the files' `referenceRuntime` and the runtime it names in step 6.
-4. `DUCAT_REGENERATE=1 cargo test -p ducat-words --test it cldr::` and
+4. `DUCAT_REGENERATE=1 cargo test -p ducat-words --test it cldr::` (both `src/cldr.rs` and
+   `src/names.rs`) and
    `DUCAT_REGENERATE=1 cargo test -p ducat-format --test it data::` (from `rust/`) rewrite the Rust
    tables; the same commands without `DUCAT_REGENERATE` are the drift checks CI runs.
    If the shape of the tables changed (`src/tables.rs`, or what `src/data.rs` must define), the
    crate can't compile its own generator against the old file: first replace `src/data.rs` with
    a placeholder that defines the items the crate reads (`CLDR_VERSION`, `NAMES`, `locale`,
    `is_default_content`, `likely_script`, returning nothing), then regenerate. ducat-words'
-   `src/cldr.rs` is bootstrapped the same way.
+   `src/cldr.rs` is bootstrapped the same way; its `src/names.rs` needs no placeholder, since
+   only the `cldr-names` feature compiles it and the generator runs without it.
+   A changed currency name changes `amount_in_words`' defaults (feature `cldr-names`): after
+   `pnpm build`, on the new reference runtime, `node scripts/words-names-cases.mjs <out.json>`
+   writes ducat's `amountInWords` for every currency and
+   `DUCAT_WORDS_NAMES_CASES=<out.json> cargo test -p ducat-words --features cldr-names --test it names:: -- --ignored`
+   compares the crate with it (the one known difference, ITL in `it`, is in
+   `rust/docs/design.md`, "Currency names in words").
 5. Survey the new ICU release's locale files against the new CLDR (`data/icu/README.md`) and
    update `data/icu/`; the format generator writes the override vectors and ducat-format's
    `src/icu.rs` from it.
 6. Run the checks: `pnpm vectors:check`, the spec test on Node and Bun, and the Rust workspace
-   tests. A row ducat or a port fails is investigated, never regenerated away.
+   tests (and `cargo test -p ducat-words --features cldr-names`). A row ducat or a port fails is investigated, never regenerated away.

@@ -105,21 +105,53 @@ recursion is bounded, so adversarial rule text is an error, not a stack overflow
 the digit grouping of numbers the rules write as digits (separator and minimum grouping digits), and the word for "and"
 come from the CLDR 48 snapshot (`data/cldr/`), generated into `src/cldr.rs` by `tests/it/cldr.rs` with a drift check, as the
 rule text is; ducat reads them from `Intl`, CLDR 48 on Node 24. The rule text is CLDR 49 and these values
-CLDR 48, the release ducat's `Intl` carries. `amount_in_words` takes the currency's names from the caller, as both take the minor unit's.
+CLDR 48, the release ducat's `Intl` carries. `amount_in_words` takes the currency's names from the caller, as both take the minor unit's,
+or, with the feature `cldr-names`, CLDR 48's (below).
 
 #### Currency names in words
 
-**Currency names diverge here.** ducat's `amountInWords` takes the currency's name, its plural form and its place next to
-the number from the runtime's `Intl` (a currency format with `currencyDisplay: 'name'`, its digits replaced by the
-words), so the text follows that runtime's CLDR data and build: ICU 78.3 puts U+00A0 before a name in fr-CA, Deno
-2.9.8's data a space (spec/README.md, "Runtime divergences"). `ducat-words` has no `Intl`: the caller passes the
-names (`UnitNames`: `other`, with `one` and `many` where they differ), they follow the number after a plain space, and the plural category comes from
-CLDR 48's rules (`src/cldr.rs`). For the seven languages CLDR 48's `unitPattern` is `{0} {1}` with a plain space, so the
-two agree when the caller passes CLDR's names. They differ where the caller's names aren't CLDR's, where a runtime's
-data isn't CLDR 48 (or isn't ICU's build of it), and for `many` (a million euros in es, fr, it, pt): CLDR has no
-`many` name for most currencies, and `Intl` falls back to `other`, as `UnitNames` does without `many`. The snapshot
-in `data/cldr/` carries CLDR's names (`main/<locale>/currencies.json`), so a later milestone can offer them as
-defaults; until then they are the caller's, and the words vectors (`words.spellOut`) don't cover names. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
+ducat's `amountInWords` takes the currency's name, its plural form and its place next to the number from the runtime's
+`Intl` (a currency format with `currencyDisplay: 'name'`, its digits replaced by the words), so the text follows that
+runtime's CLDR data and build: ICU 78.3 puts U+00A0 before a name in fr-CA, Deno 2.9.8's data a space (spec/README.md,
+"Runtime divergences"). `ducat-words` has no `Intl`. The caller can pass the names (`AmountInWordsOptions::new`, with
+`UnitNames`: `other`, with `one` and `many` where they differ), or, with the feature `cldr-names` (not a default),
+take CLDR 48's (`AmountInWordsOptions::default()`, `currency: None`; `ducat_words::currency_names`). Either way the
+name follows the number after a plain space (for the seven languages CLDR 48's `unitPattern` is `{0} {1}`, which the
+generator checks), in the plural category CLDR 48's rules give (`src/cldr.rs`), else `other`.
+
+- **Data:** `tests/it/cldr.rs` also generates `src/names.rs` from `data/cldr/main/<language>/currencies.json`, with a
+  drift check, as it does `src/cldr.rs`: for each language a table sorted by code of `other`
+  (`displayName-count-other`, else `displayName`), and `one` and `many` where CLDR has them and they differ from
+  `other` (two, few and zero aren't categories of the seven languages; the generator refuses one that is). CLDR 48 has
+  no `many` name in these languages, so a million euros in es, fr, it and pt is `other`'s, as ICU falls back. The
+  languages inherit their names from root, which has none (the generator checks). Each table is behind its language's
+  feature too, so `cldr-names` with `en` alone carries English names only (about 300 currencies a language, some
+  30 KB of text each).
+- **Why not reuse `ducat-format`'s tables, or a crate of their own:** `ducat-format`'s names are spread through the
+  locale tables of its 430 locales (as differences from each parent, in the same records as symbols and patterns), so
+  depending on it, even for names alone, would pull its data and locale features in. A small shared crate
+  (`ducat-cldr-names`) would hold the same 2,000 entries `src/names.rs` does: `ducat-format` couldn't use it without
+  reshaping its per-locale inheritance (it needs every locale's names, not seven languages'), so it would remove no
+  duplication, and it would add a crate to build, publish and license. Generating into `ducat-words` keeps one
+  regeneration (`data/cldr/README.md`), one source snapshot for both crates, and nothing new to publish; the cost is
+  that the seven languages' names exist in both crates' generated files.
+- **Lookup:** the code is read as `Intl` reads it, three ASCII letters in either case (`btc` is `BTC`). A three-letter
+  code CLDR doesn't name in the language is written as the code, upper-cased (`two XBT`), as `Intl` writes it; a code
+  that isn't three letters (`USDC`) is `Err(NoCurrencyNames)`, ducat's `RangeError`, as is `currency: None` in a build
+  without `cldr-names` or without the language's feature.
+- **Checked against ducat:** every currency CLDR 48 or Node 24's `Intl.supportedValuesOf('currency')` names, plus
+  unknown, lower-case and longer codes (315 codes), at 0, 1, 2, 21, 101, a million, two million, a million and one,
+  three billion and four fractional amounts, in the seven languages: 28,189 amounts, compared with the built
+  `amountInWords` on Node 24 (ICU 78.3). All agree but the 13 of ITL in `it`: CLDR gives ITL there its own pattern
+  (`¤ #,##0.00`), and ICU puts its symbol before the name (`ITL un lire italiane e 00/100`); the crate writes
+  `un lire italiane e 00/100`, following TR35 as `ducat-format` does for names (milestone 6c), which leaves a
+  currency's own pattern and symbol out of the name form. That is a divergence from ducat's words: ducat's TypeScript
+  takes ICU's long name, garbled as in ducat#363, until [ducat#400](https://github.com/public/ducat/issues/400). `scripts/words-names-cases.mjs` writes the cases and
+  `tests/it/names.rs`' ignored `matches_ducat_on_node` compares them (`data/cldr/README.md`); the test keeps a spread
+  of them that runs every time.
+
+The words still differ from ducat where the caller's names aren't CLDR's and where a runtime's data isn't CLDR 48 (or
+isn't ICU's build of it); the words vectors (`words.spellOut`) don't cover names. The core runner delegates `words.spellOut` to `ducat-words`' own spec test, which reads the same files
 and runs every row; the MSRV is the core's, 1.85.
 
 ### Milestone 6c: format and parse
@@ -393,7 +425,6 @@ with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
 
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
-- CLDR's currency names as defaults for `ducat-words`' `amount_in_words` (the caller passes them).
 - Fuzzing (milestone 8).
 
 The decisions in "Choices that are expensive to reverse" are the coordinator's, flagged to Alex for review.

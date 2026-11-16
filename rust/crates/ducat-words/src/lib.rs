@@ -25,9 +25,27 @@
 //! # Ok::<(), ducat_words::Error>(())
 //! ```
 //!
-//! ducat takes the currency's name from the runtime's `Intl`; there is no `Intl` here, and this crate
-//! has no CLDR currency names, so the caller gives the name, in the plural forms the
-//! language uses, as ducat already has the caller give the minor unit's name.
+//! ducat takes the currency's name from the runtime's `Intl`; there is no `Intl` here. With the
+//! feature `cldr-names` (not a default), the crate carries CLDR 48's currency names for the
+//! languages built in, the data ICU 78.3 gives `Intl`, and [`amount_in_words`] uses them when the
+//! options name no currency ([`AmountInWordsOptions::default`]); without it, or for names of your
+//! own, the caller gives the name, in the plural forms the language uses
+//! ([`AmountInWordsOptions::new`]), as ducat already has the caller give the minor unit's name.
+//!
+//! ```
+//! # #[cfg(all(feature = "en", feature = "fr", feature = "cldr-names"))] {
+//! use ducat::iso::Eur;
+//! use ducat::Money;
+//! use ducat_words::{AmountInWordsOptions, ENGLISH, FRENCH, amount_in_words};
+//!
+//! let price: Money<Eur> = "1000000".parse().unwrap();
+//! let cldr = AmountInWordsOptions::default();
+//! assert_eq!(amount_in_words(&price.to_any(), &FRENCH, &cldr)?, "un million euros et 00/100");
+//! let one: Money<Eur> = "1.00".parse().unwrap();
+//! assert_eq!(amount_in_words(&one.to_any(), &ENGLISH, &cldr)?, "one euro and 00/100");
+//! # }
+//! # Ok::<(), ducat_words::Error>(())
+//! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
@@ -38,6 +56,9 @@ extern crate alloc;
 #[rustfmt::skip]
 mod cldr;
 mod digits;
+#[cfg(feature = "cldr-names")]
+#[rustfmt::skip]
+mod names;
 mod plural;
 mod rbnf;
 #[rustfmt::skip]
@@ -73,6 +94,10 @@ pub enum Error {
     TooManySteps,
     /// A negative amount: words are for amounts to pay.
     NegativeAmount,
+    /// No currency names: the options give none, and CLDR's (the feature `cldr-names`, with the
+    /// language's feature) don't apply, or the code isn't three letters, which is all `Intl` names
+    /// (ducat's `RangeError`).
+    NoCurrencyNames,
 }
 
 impl fmt::Display for Error {
@@ -91,6 +116,9 @@ impl fmt::Display for Error {
             Self::TooDeep => "the RBNF rules nest more than 64 deep",
             Self::TooManySteps => "the RBNF rules take more than 10000 steps",
             Self::NegativeAmount => "amounts in words are zero or more",
+            Self::NoCurrencyNames => {
+                "no currency names: give them, or use CLDR's (feature cldr-names) for a three-letter code"
+            }
         })
     }
 }
@@ -276,16 +304,139 @@ impl UnitNames {
         self
     }
 
-    fn select(&self, locale: Locale, count: i128) -> &str {
+    fn forms(&self) -> Forms<'_> {
+        Forms {
+            one: self.one.as_deref(),
+            two: self.two.as_deref(),
+            few: self.few.as_deref(),
+            many: self.many.as_deref(),
+            other: &self.other,
+        }
+    }
+}
+
+/// A unit's plural forms, borrowed: the caller's [`UnitNames`] or CLDR's table.
+#[derive(Clone, Copy)]
+struct Forms<'a> {
+    one: Option<&'a str>,
+    two: Option<&'a str>,
+    few: Option<&'a str>,
+    many: Option<&'a str>,
+    other: &'a str,
+}
+
+impl<'a> Forms<'a> {
+    /// The form for `count`, else `other` (as ICU falls back to it).
+    fn select(self, locale: Locale, count: i128) -> &'a str {
         let chosen = match plural::unit_category(locale, count) {
-            "one" => self.one.as_deref(),
-            "two" => self.two.as_deref(),
-            "few" => self.few.as_deref(),
-            "many" => self.many.as_deref(),
+            "one" => self.one,
+            "two" => self.two,
+            "few" => self.few,
+            "many" => self.many,
             _ => None,
         };
-        chosen.unwrap_or(&self.other)
+        chosen.unwrap_or(self.other)
     }
+
+    /// Only a code: what `Intl` writes for a three-letter code its data doesn't name.
+    #[cfg(feature = "cldr-names")]
+    const fn code(code: &'a str) -> Self {
+        Self {
+            one: None,
+            two: None,
+            few: None,
+            many: None,
+            other: code,
+        }
+    }
+}
+
+/// CLDR's table of the language's currency names, if the crate is built with it.
+#[cfg(feature = "cldr-names")]
+const fn cldr_names(locale: Locale) -> Option<&'static [names::CurrencyNames]> {
+    match locale {
+        #[cfg(feature = "en")]
+        Locale::En => Some(names::EN),
+        #[cfg(feature = "de")]
+        Locale::De => Some(names::DE),
+        #[cfg(feature = "fr")]
+        Locale::Fr => Some(names::FR),
+        #[cfg(feature = "es")]
+        Locale::Es => Some(names::ES),
+        #[cfg(feature = "it")]
+        Locale::It => Some(names::IT),
+        #[cfg(feature = "nl")]
+        Locale::Nl => Some(names::NL),
+        #[cfg(feature = "pt")]
+        Locale::Pt => Some(names::PT),
+        #[allow(unreachable_patterns)]
+        _ => None,
+    }
+}
+
+/// CLDR's names of `code` in the language: three ASCII letters, in either case.
+#[cfg(feature = "cldr-names")]
+fn cldr_lookup(locale: Locale, code: &[u8; 3]) -> Option<&'static names::CurrencyNames> {
+    let table = cldr_names(locale)?;
+    table
+        .binary_search_by(|entry| entry.code.as_bytes().cmp(code.as_slice()))
+        .ok()
+        .map(|index| &table[index])
+}
+
+/// A code as `Intl` reads it: three ASCII letters, upper-cased.
+fn intl_code(code: &str) -> Option<[u8; 3]> {
+    let bytes: [u8; 3] = code.as_bytes().try_into().ok()?;
+    bytes
+        .iter()
+        .all(u8::is_ascii_alphabetic)
+        .then(|| bytes.map(|byte| byte.to_ascii_uppercase()))
+}
+
+/// CLDR's forms of the currency `letters` (upper-cased) in the language, or the code where CLDR
+/// doesn't name it.
+#[cfg(feature = "cldr-names")]
+fn cldr_forms(locale: Locale, letters: &[u8; 3]) -> Result<Forms<'_>, Error> {
+    if cldr_names(locale).is_none() {
+        return Err(Error::NoCurrencyNames);
+    }
+    Ok(match cldr_lookup(locale, letters) {
+        Some(entry) => Forms {
+            one: entry.one,
+            two: None,
+            few: None,
+            many: entry.many,
+            other: entry.other,
+        },
+        None => Forms::code(core::str::from_utf8(letters).map_err(|_| Error::NoCurrencyNames)?),
+    })
+}
+
+/// Without `cldr-names`, there are no default names.
+#[cfg(not(feature = "cldr-names"))]
+const fn cldr_forms(_: Locale, _: &[u8; 3]) -> Result<Forms<'static>, Error> {
+    Err(Error::NoCurrencyNames)
+}
+
+/// CLDR 48's names of a currency in a language (feature `cldr-names`, and the language's feature),
+/// as ducat's `amountInWords` takes them from `Intl` (ICU 78.3): `currency_names(Locale::En, "EUR")`
+/// is `UnitNames::new("euros").one("euro")`. The code is read as `Intl` reads it, three ASCII
+/// letters in either case. `None` for a code CLDR doesn't name in the language (for which
+/// [`amount_in_words`] writes the code, as `Intl` does), another code, or a language not built in.
+///
+/// Forms the same as `other` are left out: `one` is `None` where CLDR's `one` is `other`'s, and
+/// no currency of the seven languages has a `many` of its own in CLDR 48.
+#[cfg(feature = "cldr-names")]
+#[must_use]
+pub fn currency_names(locale: Locale, code: &str) -> Option<UnitNames> {
+    let entry = cldr_lookup(locale, &intl_code(code)?)?;
+    Some(UnitNames {
+        one: entry.one.map(Into::into),
+        two: None,
+        few: None,
+        many: entry.many.map(Into::into),
+        other: entry.other.into(),
+    })
 }
 
 /// The grammatical gender of a currency's name, which some languages' numbers agree with.
@@ -310,10 +461,20 @@ impl Gender {
 }
 
 /// Options for [`amount_in_words`]: ducat's `AmountInWordsOptions`, plus the currency's names.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+/// The default is ducat's: CLDR's names (feature `cldr-names`), the masculine cardinal where the
+/// language has genders, and the cheque form.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct AmountInWordsOptions<'a> {
-    /// The currency's name in the plural forms the language uses (`euro`, `euros`).
-    pub currency: UnitNames,
+    /// The currency's name in the plural forms the language uses (`euro`, `euros`). `None` takes
+    #[cfg_attr(
+        feature = "cldr-names",
+        doc = "CLDR's (feature `cldr-names`; see [`currency_names`]), as ducat takes `Intl`'s."
+    )]
+    #[cfg_attr(
+        not(feature = "cldr-names"),
+        doc = "CLDR's (feature `cldr-names`; see `currency_names`), as ducat takes `Intl`'s."
+    )]
+    pub currency: Option<UnitNames>,
     /// The gender of the currency's name (Spanish `un euro` but `una libra`); default masculine,
     /// where the language has genders.
     pub gender: Option<Gender>,
@@ -325,11 +486,12 @@ pub struct AmountInWordsOptions<'a> {
 }
 
 impl AmountInWordsOptions<'_> {
-    /// The cheque form, with the currency's names.
+    /// The cheque form, with the currency's names. [`AmountInWordsOptions::default`] takes
+    /// CLDR's names instead (feature `cldr-names`).
     #[must_use]
     pub const fn new(currency: UnitNames) -> Self {
         Self {
-            currency,
+            currency: Some(currency),
             gender: None,
             rule_set: None,
             minor: None,
@@ -351,10 +513,24 @@ fn whole(digits: &str) -> Result<i128, Error> {
 /// amount's scale (an amount at scale 3 gives `/1000`); zero minor units are `00/100`, and left
 /// out with `minor` names. ducat's `amountInWords`.
 ///
+/// Without `options.currency`, the currency's name is CLDR 48's in the language (feature
+#[cfg_attr(
+    feature = "cldr-names",
+    doc = "`cldr-names`; see [`currency_names`]), as `Intl` gives ducat's: a three-letter code CLDR doesn't"
+)]
+#[cfg_attr(
+    not(feature = "cldr-names"),
+    doc = "`cldr-names`; see `currency_names`), as `Intl` gives ducat's: a three-letter code CLDR doesn't"
+)]
+/// name in the language is written as the code, upper-cased (`five XBT`), as `Intl` writes it.
+///
 /// # Errors
 ///
 /// [`Error::NegativeAmount`]; [`Error::OutOfRange`] for whole units, or spelled minor units,
-/// beyond 2^63 − 1; as [`CompiledRules::spell_out`] for the rule set.
+/// beyond 2^63 − 1; as [`CompiledRules::spell_out`] for the rule set;
+/// [`Error::NoCurrencyNames`] without `options.currency` where CLDR's names don't apply: a code
+/// that isn't three ASCII letters (ducat's `RangeError`), or a build without `cldr-names` or the
+/// language's feature.
 pub fn amount_in_words(
     money: &AnyMoney,
     rules: &SpelloutRules,
@@ -363,6 +539,14 @@ pub fn amount_in_words(
     if money.is_negative() {
         return Err(Error::NegativeAmount);
     }
+    let letters;
+    let currency = match &options.currency {
+        Some(names) => names.forms(),
+        None => {
+            letters = intl_code(money.currency().as_str()).ok_or(Error::NoCurrencyNames)?;
+            cldr_forms(rules.locale, &letters)?
+        }
+    };
     let compiled = CompiledRules::new(rules)?;
     let locale = rules.locale;
     let rule_set = match options.rule_set {
@@ -372,7 +556,7 @@ pub fn amount_in_words(
     let text = money.to_decimal();
     let (whole_digits, fraction_digits) = text.split_once('.').unwrap_or((&text, ""));
     let units = whole(whole_digits)?;
-    let named = |count: i128, names: &UnitNames| -> Result<String, Error> {
+    let named = |count: i128, names: Forms<'_>| -> Result<String, Error> {
         let mut words = compiled.spell_out(count, Some(&rule_set))?;
         words.push(' ');
         words.push_str(names.select(locale, count));
@@ -386,11 +570,11 @@ pub fn amount_in_words(
         } else {
             whole(significant)?
         };
-        let minor_words = named(fraction, minor)?;
+        let minor_words = named(fraction, minor.forms())?;
         if fraction > 0 && units == 0 {
             return Ok(minor_words);
         }
-        let mut words = named(units, &options.currency)?;
+        let mut words = named(units, currency)?;
         if fraction != 0 {
             words.push_str(locale.conjunction());
             words.push_str(&minor_words);
@@ -398,7 +582,7 @@ pub fn amount_in_words(
         return Ok(words);
     }
 
-    let mut words = named(units, &options.currency)?;
+    let mut words = named(units, currency)?;
     if !fraction_digits.is_empty() {
         words.push_str(locale.conjunction());
         words.push_str(fraction_digits);
