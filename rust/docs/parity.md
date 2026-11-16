@@ -309,11 +309,11 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `RateUnavailableError#asOf` | `Error::RateUnavailable { as_of }` | same | an `Option<Time>` |
 | `RateUnavailableError#from` | `Error::RateUnavailable { from }` | same | a `CurrencyCode` |
 | `RateUnavailableError#to` | `Error::RateUnavailable { to }` | same | a `CurrencyCode` |
-| `SnapshotOptions` | — | missing | with `snapshots` |
-| `SnapshotOptions#lookback` | — | missing | with `snapshots` |
-| `SnapshotOptions#max` | — | missing | with `snapshots` |
-| `Snapshots` | — | missing | with `snapshots` |
-| `Snapshots#at` | — | missing | with `snapshots` |
+| `SnapshotOptions` | `ducat::convert::SnapshotOptions` | same | `Default` is ducat's no-options call (a lookback of 4, 32 days kept); `check` refuses them as `snapshots` does, for a caller that checks before loading |
+| `SnapshotOptions#lookback` | `SnapshotOptions::lookback` | same | a `u32`, so ducat's `RangeError` for a negative or fractional lookback can't happen; a lookback reaching past 0000-01-01 stops there |
+| `SnapshotOptions#max` | `SnapshotOptions::max` | same | a `usize`: 0 is `Err(NotPositive)` from `snapshots` and `snapshots_from`, ducat's `RangeError` |
+| `Snapshots` | `ducat::convert::Snapshots`, `SnapshotsFrom` | same | `Snapshots<L, T, E>` over a loader `L` of tables `T` failing with `E`; `snapshots_from` gives a `SnapshotsFrom`, which has nothing to load |
+| `Snapshots#at` | `Snapshots::at`, `SnapshotsFrom::at` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | synchronous, returning `&T`; `Snapshots::at` takes `&mut self`, so loads never overlap (ducat shares a pending load between concurrent lookups). The days, the order they're loaded in, what is kept and every failure are ducat's: the loader's error as it is, then `Err(NoSnapshot { as_of })` (the day) where ducat throws `RateUnavailableError('*', '*', day)`, as `*` isn't a `CurrencyCode`. `as_of` is a `Time`, so ducat's `RangeError` for an invalid one is the caller's `Err(InvalidTime)` reading it |
 | `TotalOptions` | `ducat::convert::TotalOptions` | same | `Default` is ducat's no-options call |
 | `TotalOptions#asOf` | `TotalOptions::query` | divergent: [times are read strictly](design.md#milestone-5d1-rates-providers-and-bags) | the `RateQuery`'s `Time`, as `ComparatorOptions#asOf` |
 | `TotalOptions#scale` | `TotalOptions::scale` | same | an `Option<u16>`: `Err(InvalidScale)` past `MAX_SCALE` |
@@ -331,8 +331,8 @@ No split in Rust: unused methods cost nothing ([mapping](design.md#mapping-ducat
 | `rateOf` | `ducat::convert::rate_of`, `Rate::lookup` | same | `Err(RateUnavailable)` when the provider has none, `Err(CurrencyMismatch)` when it answers for another pair, as ducat |
 | `rateTable` | `RateTable::with_base`, `RateTable::from_rates` | same | see `RateTableSpec` |
 | `reversed` | `ducat::convert::reversed` | same |  |
-| `snapshots` | — | missing | tables loaded on demand by date; decided: a sync loader closure/trait in `ducat`, async in `ducat-fetch` |
-| `snapshotsFrom` | — | missing | as `snapshots`, from a list of loaders |
+| `snapshots` | [`ducat::convert::snapshots`](../crates/ducat/src/convert/snapshots.rs), `SnapshotLoader`, `SnapshotTable` | same | the loader is synchronous: a closure `FnMut(Date) -> Result<Option<T>, E>` or a `SnapshotLoader`, with `E: From<Error>`; `T` is a `SnapshotTable`, a `RateTable` or a provider that says when it was published (ducat reads a provider's `availableAt`). Hits are kept by day, least recently used dropped first, room made when a load starts, as ducat. Its docs show an async loader driving it without a runtime; `ducat_fetch::ecb_day_snapshots` loads each day from the ECB over a `Transport` |
+| `snapshotsFrom` | `ducat::convert::snapshots_from` | same | `RateTable`s by the UTC day of their `as_of`, the last of a day winning and undated ones left out, as ducat; `ducat_fetch::ecb_snapshots` is it over `fetch_ecb`, in one call |
 | `sortByValue` | `ducat::convert::sort_by_value` | same | every rate is looked up before anything is reordered; `Err(RateUnavailable)` where ducat throws |
 | `sumByCurrency` | `ducat::convert::sum_by_currency` | same | a `Vec` in first-seen order, ducat's `Map` |
 | `via` | `ducat::convert::via` | same |  |
@@ -1324,7 +1324,7 @@ Not ported: TypeORM transformers are an adapter for a TypeScript ORM (design.md,
 Re-exports every plugin entry and `./fn`'s functions, and installs every plugin's methods on `Money`; its rows are in those entries. Rust has no prototype to install on: every method is there once its feature is on ([mapping](design.md#mapping-ducats-entries)).
 
 ## Missing, in proposed order
-Every `missing` row, grouped into pull requests in the order users would hit them. Three pieces are decided (marked
+Every `missing` row, grouped into pull requests in the order users would hit them. Two pieces are decided (marked
 **decided**); the rest are proposals.
 
 11. **Format options a currency display uses** (`ducat-format`): `./format` `FormatOptions#signDisplay`,
@@ -1333,10 +1333,6 @@ Every `missing` row, grouped into pull requests in the order users would hit the
    `./format` `FormatOptions#roundingPriority`, `./format` `FormatOptions#trailingZeroDisplay`. Invoices (`+`/`−`
    signs, no grouping) and price displays (`€5` for whole amounts) use these; all are TR35 number formatting over data
    the crate already has.
-12. **Rate snapshots** (**decided**: synchronous in `ducat` through a loader closure or trait; asynchronous in
-   `ducat-fetch` on `Transport`): `./convert` `snapshots`, `./convert` `snapshotsFrom`, `./convert` `Snapshots`,
-   `./convert` `Snapshots#at`, `./convert` `SnapshotOptions`, `./convert` `SnapshotOptions#lookback`,
-   `./convert` `SnapshotOptions#max`. Converting at historical dates without loading every table up front.
 13. **CLDR currency names as `ducat-words` defaults** (**decided**: feature `cldr-names`, reusing `ducat-format`'s
    generated names without all its data): no `missing` row; `./words` `amountInWords` is `divergent` until then,
    because the caller must pass `UnitNames`.
