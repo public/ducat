@@ -349,16 +349,15 @@ where
             self.next_use += 1;
             return Ok(Some(table.available_at()));
         }
-        // ducat makes room when the load starts, before knowing whether the day has a table, so a
-        // miss still drops the least recently used day
+        let Some(table) = self.load.load(day)? else {
+            return Ok(None);
+        };
+        // room is made only for a table to keep, as ducat: a miss never drops a kept day
         if self.tables.len() >= self.max {
             if let Some((_, oldest)) = self.uses.pop_first() {
                 self.tables.remove(&oldest);
             }
         }
-        let Some(table) = self.load.load(day)? else {
-            return Ok(None);
-        };
         let available_at = table.available_at();
         self.tables.insert(day, (stamp, table));
         self.uses.insert(stamp, day);
