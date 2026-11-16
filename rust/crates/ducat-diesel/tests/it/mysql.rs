@@ -431,7 +431,7 @@ async fn scale_column(connection: &mut AsyncMysqlConnection) {
             .values((
                 ducat_diesel_scaled::id.eq(i32::try_from(id).unwrap()),
                 ducat_diesel_scaled::amount_minor.eq(units),
-                ducat_diesel_scaled::amount_scale.eq(i16::from(scale)),
+                ducat_diesel_scaled::amount_scale.eq(scale),
             ))
             .execute(connection)
             .await

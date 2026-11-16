@@ -486,7 +486,7 @@ async fn scale_column(connection: &mut AsyncPgConnection) {
             .values((
                 scaled::id.eq(i32::try_from(id).unwrap()),
                 scaled::amount_minor.eq(units),
-                scaled::amount_scale.eq(i16::from(scale)),
+                scaled::amount_scale.eq(scale),
             ))
             .execute(connection)
             .await
