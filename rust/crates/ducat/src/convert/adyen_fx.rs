@@ -1,7 +1,7 @@
 //! Adyen exchange rates as exact rates, from settlement details report rows (ducat's
 //! `@ducatjs/money/adyen-fx`).
 //!
-//! With the `tz` feature, [`adyen_rate_with`] also reads Creation Date in the account's IANA time
+//! With the `tz` feature, `adyen_rate_with` also reads Creation Date in the account's IANA time
 //! zone, summer time included. Zones come from the copy of the IANA time zone database that jiff
 //! bundles (jiff-tzdb: tzdb 2026f with jiff 1.0.0), never from the host, so results follow that
 //! copy's version: a jiff-tzdb release with new rules changes them.
@@ -168,15 +168,13 @@ mod tz {
     /// `HH`, `HHMM` or `HH:MM`, hours 00 to 23 and minutes 00 to 59. No seconds, no `UTC` or `GMT`
     /// prefix, no `Z`, no one-digit hour.
     fn offset(name: &str) -> Option<Offset> {
-        let (sign, rest) = if let Some(rest) = name.strip_prefix('+') {
-            (1, rest)
-        } else if let Some(rest) = name
-            .strip_prefix('-')
-            .or_else(|| name.strip_prefix('\u{2212}'))
-        {
-            (-1, rest)
-        } else {
-            return None;
+        let (sign, rest) = match name.strip_prefix('+') {
+            Some(rest) => (1, rest),
+            None => (
+                -1,
+                name.strip_prefix('-')
+                    .or_else(|| name.strip_prefix('\u{2212}'))?,
+            ),
         };
         let two = |text: &str| {
             (text.len() == 2 && text.bytes().all(|byte| byte.is_ascii_digit()))
@@ -261,7 +259,7 @@ mod tz {
 /// Date, read in the TimeZone column's zone when that names one offset (CET, PST, `+01:00`), else
 /// as the local day: Adyen's documentation doesn't say whether the column switches to CEST in
 /// summer, and if it doesn't, a literal CET is an hour off then. `None` when the row has no rate.
-/// With the `tz` feature, [`adyen_rate_with`] reads Creation Date in the account's IANA time zone
+/// With the `tz` feature, `adyen_rate_with` reads Creation Date in the account's IANA time zone
 /// instead, summer time included.
 ///
 /// # Errors
