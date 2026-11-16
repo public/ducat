@@ -393,7 +393,6 @@ with the same types, errors, checks, docs and test cases, on `ducat-sql-core`.
 
 Known gaps, to close later:
 - `snapshots` and `snapshotsFrom` (asynchronous loaders), and Adyen's IANA time zones.
-- The JSON column shapes (`moneyJson`, `jsonToDriver`) in `ducat-sqlx` and `ducat-diesel`.
 - CLDR's currency names as defaults for `ducat-words`' `amount_in_words` (the caller passes them).
 - Fuzzing (milestone 8).
 
