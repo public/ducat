@@ -139,7 +139,10 @@ pub enum Notation {
     Compact,
 }
 
-#[cfg_attr(not(feature = "compact"), doc = "[`Notation::Compact`]: crate::Notation")]
+#[cfg_attr(
+    not(feature = "compact"),
+    doc = "[`Notation::Compact`]: crate::Notation"
+)]
 /// Which compact patterns [`Notation::Compact`] takes: `Intl`'s `compactDisplay`. A symbol or
 /// code always takes CLDR's short currency patterns (it has no long ones), as ICU does; a name
 /// takes the decimal patterns of this length (`1.2 thousand US dollars`).
@@ -287,7 +290,10 @@ pub struct FormatOptions {
     pub use_grouping: UseGrouping,
     /// `Intl`'s `notation`.
     pub notation: Notation,
-    #[cfg_attr(not(feature = "compact"), doc = "[`Notation::Compact`]: crate::Notation")]
+    #[cfg_attr(
+        not(feature = "compact"),
+        doc = "[`Notation::Compact`]: crate::Notation"
+    )]
     /// `Intl`'s `compactDisplay`: with [`Notation::Compact`], the length of a name's
     /// abbreviations.
     pub compact_display: CompactDisplay,
