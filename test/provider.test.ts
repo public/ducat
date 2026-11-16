@@ -154,26 +154,85 @@ describe('snapshots', () => {
     expect(n).toBe(4); // 06 was evicted by 05
   });
 
-  it('a slow miss does not evict a newer load for the same day', async () => {
-    const loads: Array<(table: RateProvider | undefined) => void> = [];
+  it('a miss does not evict a kept day', async () => {
+    const calls: string[] = [];
+    const lookups = () =>
+      snapshots(async (d) => (calls.push(d), d === '2026-11-06' ? ecb : undefined), {
+        lookback: 2,
+        max: 1,
+      });
+    let hist = lookups();
+    expect(await hist.at('2026-11-06')).toBe(ecb);
+    expect(await hist.at('2026-11-08')).toBe(ecb); // misses 08 and 07, then the kept 06
+    expect(await hist.at('2026-11-06')).toBe(ecb);
+    expect(calls).toEqual(['2026-11-06', '2026-11-08', '2026-11-07']);
+
+    // in parallel: the pending miss of the 8th makes no room, and the 6th is loaded once
+    calls.length = 0;
+    hist = lookups();
+    expect(await Promise.all([hist.at('2026-11-06'), hist.at('2026-11-08')])).toEqual([ecb, ecb]);
+    expect(await hist.at('2026-11-06')).toBe(ecb);
+    expect(calls).toEqual(['2026-11-06', '2026-11-08', '2026-11-07']);
+
+    // two lookups of one day share each pending load, misses included
+    calls.length = 0;
+    hist = lookups();
+    expect(await Promise.all([hist.at('2026-11-08'), hist.at('2026-11-08')])).toEqual([ecb, ecb]);
+    expect(calls).toEqual(['2026-11-08', '2026-11-07', '2026-11-06']);
+  });
+
+  it('a pending load is shared and kept in the order its days were asked for', async () => {
+    const calls: string[] = [];
+    const slow: Array<(table: RateProvider | undefined) => void> = [];
     const hist = snapshots(
-      (day) =>
-        day === '2026-11-05'
-          ? Promise.resolve(ecb)
-          : new Promise((resolve) => {
-              loads.push(resolve);
-            }),
+      (day) => {
+        calls.push(day);
+        return day === '2026-11-06'
+          ? new Promise((resolve) => {
+              slow.push(resolve);
+            })
+          : Promise.resolve(ecb);
+      },
+      { lookback: 0, max: 2 },
+    );
+    expect(await hist.at('2026-11-04')).toBe(ecb);
+    const first = hist.at('2026-11-06'); // pending
+    expect(await hist.at('2026-11-05')).toBe(ecb); // kept: 04, 05; the pending 6th isn't dropped
+    const second = hist.at('2026-11-06'); // shares the pending load
+    expect(await hist.at('2026-11-05')).toBe(ecb);
+    slow[0]!(ecb); // 06 arrives last, but was asked for after 04: 04 is the one dropped
+    expect(await Promise.all([first, second])).toEqual([ecb, ecb]);
+    expect(await hist.at('2026-11-05')).toBe(ecb);
+    expect(await hist.at('2026-11-06')).toBe(ecb);
+    expect(await hist.at('2026-11-04')).toBe(ecb);
+    expect(calls).toEqual(['2026-11-04', '2026-11-06', '2026-11-05', '2026-11-04']);
+  });
+
+  it('a slow miss makes no room and is tried again', async () => {
+    const calls: string[] = [];
+    const slow: Array<(table: RateProvider | undefined) => void> = [];
+    const hist = snapshots(
+      (day) => {
+        calls.push(day);
+        return day === '2026-11-06'
+          ? new Promise((resolve) => {
+              slow.push(resolve);
+            })
+          : Promise.resolve(ecb);
+      },
       { lookback: 0, max: 1 },
     );
-    const slow = hist.at('2026-11-06'); // first load of the 6th, still pending
-    expect(await hist.at('2026-11-05')).toBe(ecb); // evicts the pending 6th
-    const fresh = hist.at('2026-11-06'); // second load of the 6th
-    loads[1]!(ecb);
+    const missing = hist.at('2026-11-06');
+    expect(await hist.at('2026-11-05')).toBe(ecb);
+    slow[0]!(undefined);
+    await expect(missing).rejects.toThrow(RateUnavailableError);
+    expect(await hist.at('2026-11-05')).toBe(ecb); // still kept
+    const fresh = hist.at('2026-11-06'); // the miss wasn't kept: loaded again
+    slow[1]!(ecb);
     expect(await fresh).toBe(ecb);
-    loads[0]!(undefined); // the first load now misses: it must not drop the second's entry
-    await expect(slow).rejects.toThrow(RateUnavailableError);
     expect(await hist.at('2026-11-06')).toBe(ecb);
-    expect(loads).toHaveLength(2);
+    expect(await hist.at('2026-11-05')).toBe(ecb); // the hit on the 6th made room: 05 again
+    expect(calls).toEqual(['2026-11-06', '2026-11-05', '2026-11-06', '2026-11-05']);
   });
 
   it('snapshotsFrom indexes tables by day', async () => {
