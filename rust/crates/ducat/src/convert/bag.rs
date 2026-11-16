@@ -238,3 +238,29 @@ pub fn sort_by_value<P: RateProvider>(
     keyed.sort_by(|first, second| first.0.value().cmp(second.0.value()));
     Ok(keyed.into_iter().map(|(_, item)| item).collect())
 }
+
+/// The general path that [`sum_by_currency`] took before its running sums, for the differential
+/// tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use alloc::vec::Vec;
+
+    use crate::{AnyMoney, Error};
+
+    /// Each currency's total folded with the general `checked_add` from its first item.
+    pub(crate) fn sum_by_currency(
+        items: impl IntoIterator<Item = AnyMoney>,
+    ) -> Result<Vec<AnyMoney>, Error> {
+        let mut totals: Vec<AnyMoney> = Vec::new();
+        for money in items {
+            match totals
+                .iter_mut()
+                .find(|total| total.currency() == money.currency())
+            {
+                Some(total) => *total = crate::any::reference::checked_add(total, &money)?,
+                None => totals.push(money),
+            }
+        }
+        Ok(totals)
+    }
+}

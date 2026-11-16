@@ -43,14 +43,14 @@ impl AnyMoney {
         Self { amount, currency }
     }
 
-    pub(crate) fn with_amount(&self, amount: Amount) -> Self {
+    fn with_amount(&self, amount: Amount) -> Self {
         Self {
             amount,
             currency: self.currency,
         }
     }
 
-    pub(crate) fn same_currency(&self, other: &Self) -> Result<(), Error> {
+    fn same_currency(&self, other: &Self) -> Result<(), Error> {
         if self.currency == other.currency {
             Ok(())
         } else {
@@ -582,5 +582,37 @@ impl fmt::Debug for AnyMoney {
         f.write_str("AnyMoney(")?;
         fmt::Display::fmt(self, f)?;
         f.write_str(")")
+    }
+}
+
+/// The general paths that adding and summing `AnyMoney` took before their inline fast paths, for
+/// the differential tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::AnyMoney;
+    use crate::{CurrencyCode, Error};
+
+    /// [`AnyMoney::checked_add`], by the general path.
+    pub(crate) fn checked_add(a: &AnyMoney, b: &AnyMoney) -> Result<AnyMoney, Error> {
+        a.same_currency(b)?;
+        Ok(a.with_amount(a.amount.add_general(&b.amount)))
+    }
+
+    /// [`AnyMoney::checked_sub`], by the general path.
+    pub(crate) fn checked_sub(a: &AnyMoney, b: &AnyMoney) -> Result<AnyMoney, Error> {
+        a.same_currency(b)?;
+        Ok(a.with_amount(a.amount.sub_general(&b.amount)))
+    }
+
+    /// [`AnyMoney::try_sum`]: a fold with [`checked_add`] from zero in `currency`.
+    pub(crate) fn try_sum<'a>(
+        items: impl IntoIterator<Item = &'a AnyMoney>,
+        currency: CurrencyCode,
+    ) -> Result<AnyMoney, Error> {
+        items
+            .into_iter()
+            .try_fold(AnyMoney::zero(currency), |sum, item| {
+                checked_add(&sum, item)
+            })
     }
 }

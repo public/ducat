@@ -25,9 +25,6 @@ mod rate_providers;
 mod rate_sources;
 mod regressions;
 mod spec;
-// the fast paths against `ducat::testing::__reference`, which needs the `proptest` feature
-#[cfg(feature = "proptest")]
-mod sum_add;
 mod tax_fixed;
 // ducat::testing needs the `proptest` feature: `cargo test -p ducat --features proptest --test it testing::`
 #[cfg(feature = "proptest")]

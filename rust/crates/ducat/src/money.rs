@@ -689,3 +689,31 @@ impl<C: Currency> PartialEq<Money<C>> for AnyMoney {
         other == self
     }
 }
+
+/// The general paths that adding and summing `Money` took before their inline fast paths, for the
+/// differential tests in `crate::sum_tests`: every add aligns both amounts to the larger scale and
+/// builds a new value, and every sum folds with that add from zero at the currency's exponent.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Money;
+    use crate::Currency;
+
+    /// `a + b`, by the general path.
+    pub(crate) fn add<C: Currency>(a: &Money<C>, b: &Money<C>) -> Money<C> {
+        Money::from_amount(a.amount.add_general(&b.amount))
+    }
+
+    /// `a − b`, by the general path.
+    pub(crate) fn sub<C: Currency>(a: &Money<C>, b: &Money<C>) -> Money<C> {
+        Money::from_amount(a.amount.sub_general(&b.amount))
+    }
+
+    /// `Sum`: a fold with [`add`] from zero at the currency's exponent.
+    pub(crate) fn sum<'a, C: Currency + 'a>(
+        items: impl IntoIterator<Item = &'a Money<C>>,
+    ) -> Money<C> {
+        items
+            .into_iter()
+            .fold(Money::zero(), |sum, item| add(&sum, item))
+    }
+}

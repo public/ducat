@@ -234,3 +234,34 @@ impl AnyMoney {
         ))
     }
 }
+
+/// The general path that [`Money::average`] took before its running sum, for the differential
+/// tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use crate::amount::Amount;
+    use crate::{Currency, Error, Int, Money, RoundingInput};
+
+    /// [`Money::average`]: the sum folded with the general add from the first amount, rounded
+    /// once.
+    pub(crate) fn average<C: Currency>(
+        amounts: &[Money<C>],
+        rounding: impl Into<RoundingInput>,
+    ) -> Result<Money<C>, Error> {
+        let Some(first) = amounts.first() else {
+            return Err(Error::NoAmounts);
+        };
+        let sum: Amount = amounts[1..]
+            .iter()
+            .fold(first.amount.clone(), |total, money| {
+                total.add_general(&money.amount)
+            });
+        Ok(Money::from_amount(sum.round_input(
+            &Int::ONE,
+            &Int::from(amounts.len()),
+            sum.scale,
+            rounding.into(),
+            C::CODE,
+        )?))
+    }
+}

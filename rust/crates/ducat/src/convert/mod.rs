@@ -73,6 +73,8 @@ use alloc::vec::Vec;
 use core::fmt;
 use core::marker::PhantomData;
 
+#[cfg(test)]
+pub(crate) use bag::reference as bag_reference;
 pub use bag::{Comparator, MoneyBag, TotalOptions, comparator, sort_by_value, sum_by_currency};
 pub use provider::{
     Chain, FromFn, Identity, RateProvider, RateQuery, RateTable, RateTableBuilder, Reversed, Via,

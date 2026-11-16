@@ -568,3 +568,15 @@ impl<'a> core::iter::Sum<&'a Int> for Int {
         total.finish()
     }
 }
+
+/// The general path that summing `Int`s took before [`IntSum`], for the differential tests in
+/// `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Int;
+
+    /// `Sum`: a fold with `+` from zero.
+    pub(crate) fn sum<'a>(items: impl IntoIterator<Item = &'a Int>) -> Int {
+        items.into_iter().fold(Int::ZERO, |sum, item| &sum + item)
+    }
+}

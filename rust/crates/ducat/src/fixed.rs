@@ -36,11 +36,11 @@ use crate::{AnyMoney, Currency, CurrencyCode, Error, Factor, Int, Money, Ratio, 
 ///   exponent, and it ignores format flags.
 #[derive(Clone)]
 pub struct Fixed {
-    pub(crate) amount: Amount,
+    amount: Amount,
 }
 
 impl Fixed {
-    pub(crate) const fn from_amount(amount: Amount) -> Self {
+    const fn from_amount(amount: Amount) -> Self {
         Self { amount }
     }
 
@@ -514,5 +514,19 @@ mod serde_impl {
             let text = String::deserialize(deserializer)?;
             text.parse().map_err(de::Error::custom)
         }
+    }
+}
+
+/// The general path that summing `Fixed` took before its inline fast path, for the differential
+/// tests in `crate::sum_tests`.
+#[cfg(test)]
+pub(crate) mod reference {
+    use super::Fixed;
+
+    /// `Sum`: a fold with the general add from zero at scale 0.
+    pub(crate) fn sum<'a>(items: impl IntoIterator<Item = &'a Fixed>) -> Fixed {
+        items.into_iter().fold(Fixed::ZERO, |sum, item| {
+            Fixed::from_amount(sum.amount.add_general(&item.amount))
+        })
     }
 }

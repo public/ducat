@@ -1,17 +1,24 @@
-//! The inline fast paths of summing and adding against the general paths they replaced
-//! (`ducat::testing::__reference`): the same value, scale and representation, and the same errors,
-//! weighted around ±`i128::MAX` and over mixed scales. The cases follow `PROPTEST_CASES` (256 by
-//! default); run them at 10,000 with
-//! `PROPTEST_CASES=10000 cargo test -p ducat --features proptest --test it sum_add::`.
+//! The inline fast paths of summing and adding against the general paths they replaced (each
+//! module's `#[cfg(test)] reference`): the same value, scale and representation, and the same
+//! errors, weighted around ±`i128::MAX` and over mixed scales. The cases follow `PROPTEST_CASES`
+//! (256 by default); run them at 10,000 with
+//! `PROPTEST_CASES=10000 cargo test -p ducat --lib sum_tests::`.
 
-use ducat::convert::sum_by_currency;
-use ducat::fixed::Fixed;
-use ducat::iso::{Eur, Jpy};
-use ducat::testing::__reference as reference;
-use ducat::testing::proptest::collection::vec;
-use ducat::testing::proptest::prelude::*;
-use ducat::testing::{MoneyOptions, int, int_in, money, rounding};
-use ducat::{AnyMoney, CurrencyCode, Error, Int, Money};
+use alloc::vec::Vec;
+
+use crate::any::reference as any_reference;
+use crate::convert::bag_reference;
+use crate::convert::sum_by_currency;
+use crate::fixed::Fixed;
+use crate::fixed::reference as fixed_reference;
+use crate::int::reference as int_reference;
+use crate::iso::{Eur, Jpy};
+use crate::math::reference as math_reference;
+use crate::money::reference as money_reference;
+use crate::testing::proptest::collection::vec;
+use crate::testing::proptest::prelude::*;
+use crate::testing::{MoneyOptions, int, int_in, money, rounding};
+use crate::{AnyMoney, CurrencyCode, Error, Int, Money};
 
 fn code(text: &str) -> CurrencyCode {
     text.parse().expect("a currency code")
@@ -84,7 +91,7 @@ proptest! {
 
     #[test]
     fn money_sum_matches_the_fold(items in vec(eur(), 0..40)) {
-        let expected = reference::sum(&items);
+        let expected = money_reference::sum(&items);
         let by_ref: Money<Eur> = items.iter().sum();
         let owned: Money<Eur> = items.iter().cloned().sum();
         prop_assert!(by_ref.identical(&expected), "{by_ref:?} != {expected:?}");
@@ -99,43 +106,43 @@ proptest! {
             .map(|(units, scale)| Money::from_units(units, scale).unwrap())
             .collect();
         let sum: Money<Jpy> = items.iter().sum();
-        let expected = reference::sum(&items);
+        let expected = money_reference::sum(&items);
         prop_assert!(sum.identical(&expected), "{sum:?} != {expected:?}");
     }
 
     #[test]
     fn try_sum_matches_the_fold(items in vec(any_money(), 0..30), eur_or_jpy in any::<bool>()) {
         let currency = code(if eur_or_jpy { "EUR" } else { "JPY" });
-        same(&AnyMoney::try_sum(&items, currency), &reference::try_sum(&items, currency))?;
+        same(&AnyMoney::try_sum(&items, currency), &any_reference::try_sum(&items, currency))?;
         // the same items all in the currency: the sums themselves, not only the first mismatch
         let only: Vec<AnyMoney> = items
             .iter()
             .map(|item| AnyMoney::from_units(item.units().clone(), item.scale(), currency).unwrap())
             .collect();
-        same(&AnyMoney::try_sum(&only, currency), &reference::try_sum(&only, currency))?;
+        same(&AnyMoney::try_sum(&only, currency), &any_reference::try_sum(&only, currency))?;
     }
 
     #[test]
     fn add_and_sub_match_the_general_path(a in eur(), b in eur()) {
-        let (sum, expected) = (&a + &b, reference::add(&a, &b));
+        let (sum, expected) = (&a + &b, money_reference::add(&a, &b));
         prop_assert!(sum.identical(&expected), "{sum:?} != {expected:?}");
         prop_assert_eq!(sum.units().to_i128(), expected.units().to_i128());
         let owned = a.clone() + b.clone();
         prop_assert!(owned.identical(&expected));
-        let (difference, expected) = (&a - &b, reference::sub(&a, &b));
+        let (difference, expected) = (&a - &b, money_reference::sub(&a, &b));
         prop_assert!(difference.identical(&expected), "{difference:?} != {expected:?}");
         prop_assert_eq!(difference.units().to_i128(), expected.units().to_i128());
     }
 
     #[test]
     fn checked_add_and_sub_match_the_general_path(a in any_money(), b in any_money()) {
-        same(&a.checked_add(&b), &reference::checked_add(&a, &b))?;
-        same(&a.checked_sub(&b), &reference::checked_sub(&a, &b))?;
+        same(&a.checked_add(&b), &any_reference::checked_add(&a, &b))?;
+        same(&a.checked_sub(&b), &any_reference::checked_sub(&a, &b))?;
     }
 
     #[test]
     fn int_sum_matches_the_fold(items in vec(units(), 0..40)) {
-        let expected = reference::int_sum(&items);
+        let expected = int_reference::sum(&items);
         prop_assert_eq!(items.iter().sum::<Int>(), expected.clone());
         prop_assert_eq!(items.iter().cloned().sum::<Int>(), expected.clone());
         prop_assert_eq!(items.iter().sum::<Int>().to_i128(), expected.to_i128());
@@ -143,7 +150,7 @@ proptest! {
 
     #[test]
     fn fixed_sum_matches_the_fold(items in vec(fixed(), 0..40)) {
-        let expected = reference::fixed_sum(&items);
+        let expected = fixed_reference::sum(&items);
         let sum: Fixed = items.iter().sum();
         let owned: Fixed = items.iter().cloned().sum();
         prop_assert!(sum.identical(&expected), "{sum:?} != {expected:?}");
@@ -153,7 +160,7 @@ proptest! {
     #[test]
     fn sum_by_currency_matches_the_fold(items in vec(any_money(), 0..30)) {
         let actual = sum_by_currency(items.clone()).unwrap();
-        let expected = reference::sum_by_currency(items).unwrap();
+        let expected = bag_reference::sum_by_currency(items).unwrap();
         prop_assert_eq!(actual.len(), expected.len());
         for (actual, expected) in actual.iter().zip(&expected) {
             prop_assert_eq!(actual.currency(), expected.currency());
@@ -164,7 +171,7 @@ proptest! {
     #[test]
     fn average_matches_the_fold(items in vec(eur(), 0..20), mode in rounding()) {
         let actual = Money::average(&items, mode);
-        let expected = reference::average(&items, mode);
+        let expected = math_reference::average(&items, mode);
         match (&actual, &expected) {
             (Ok(actual), Ok(expected)) => {
                 prop_assert!(actual.identical(expected), "{actual:?} != {expected:?}");
@@ -220,7 +227,7 @@ fn all_zeros_sum_to_zero_at_the_largest_scale() {
     let zeros = [eur_units(0, 0), eur_units(0, 5), eur_units(0, 3)];
     let sum: Money<Eur> = zeros.iter().sum();
     assert!(sum.identical(&eur_units(0, 5)));
-    assert!(sum.identical(&reference::sum(&zeros)));
+    assert!(sum.identical(&money_reference::sum(&zeros)));
     let low = [eur_units(0, 0), eur_units(0, 1)];
     assert!(low.iter().sum::<Money<Eur>>().identical(&Money::zero()));
 }
@@ -238,7 +245,7 @@ fn an_overflow_in_the_middle_comes_back_inline() {
     let sum: Money<Eur> = items.iter().sum();
     assert!(sum.identical(&eur_units(1, 2)));
     assert_eq!(sum.units().to_i128(), Some(1));
-    assert!(sum.identical(&reference::sum(&items)));
+    assert!(sum.identical(&money_reference::sum(&items)));
     // the same with a rescale past i128 in the middle: i128::MAX at scale 2, then scale 4
     let items = [
         top.clone(),
@@ -279,7 +286,7 @@ fn try_sum_stops_at_the_first_mismatch() {
         actual: code("USD"),
     });
     assert_eq!(AnyMoney::try_sum(&items, eur), expected);
-    assert_eq!(reference::try_sum(&items, eur), expected);
+    assert_eq!(any_reference::try_sum(&items, eur), expected);
     // the first item already mismatches: the error names it, whatever follows
     assert_eq!(
         AnyMoney::try_sum(&items[2..], eur),
