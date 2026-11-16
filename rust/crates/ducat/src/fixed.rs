@@ -9,7 +9,7 @@
 //! assert_eq!(unit_price.multiply(1200, Rounding::Unnecessary)?.to_string(), "51.0000");
 //! let third = "100.00".parse::<Fixed>()?.divide(3, Rounding::HalfEven)?;
 //! assert_eq!(third.to_string(), "33.33");
-//! assert_eq!("12.3400".parse::<Fixed>()?.trim_scale(0)?.to_string(), "12.34");
+//! assert_eq!("12.3400".parse::<Fixed>()?.trim_scale(None)?.to_string(), "12.34");
 //! # Ok::<(), ducat::Error>(())
 //! ```
 
@@ -200,17 +200,19 @@ impl Fixed {
         Ok(Self::from_amount(self.amount.rescale(scale, rounding)?))
     }
 
-    /// The smallest scale, at least `minimum`, that keeps the value exact, as ducat's
-    /// `trimScale`: trailing zeros are dropped, so `12.3400` is `12.34` and `5.000` with a
-    /// minimum of 2 is `5.00`. It never adds digits: a value already at or below `minimum` is
-    /// returned as it is.
+    /// The smallest scale, at least `minimum_scale` (default 0, as ducat's), that keeps the value
+    /// exact, as ducat's `trimScale`: trailing zeros are dropped, so `12.3400` with `None` is
+    /// `12.34` and `5.000` with `Some(2)` is `5.00`. It never adds digits: a value already at or
+    /// below the minimum is returned as it is.
     ///
     /// # Errors
     ///
     /// [`Error::InvalidScale`] for a minimum beyond [`MAX_SCALE`](crate::MAX_SCALE), ducat's
     /// `RangeError` (checked first, as ducat does, whatever the value).
-    pub fn trim_scale(&self, minimum: u16) -> Result<Self, Error> {
-        Ok(Self::from_amount(self.amount.trim_scale(minimum)?))
+    pub fn trim_scale(&self, minimum_scale: Option<u16>) -> Result<Self, Error> {
+        Ok(Self::from_amount(
+            self.amount.trim_scale(minimum_scale.unwrap_or(0))?,
+        ))
     }
 
     /// The order of the two values, whatever their scales.

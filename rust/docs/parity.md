@@ -961,7 +961,7 @@ The crate [`ducat-format`](../crates/ducat-format/src/format.rs): CLDR 48's data
 | `Fixed#toScale` | `Fixed::to_scale` | divergent: [no default rounding](design.md#decisions-made-while-building-milestone-1) | the mode is required |
 | `Fixed#toScaled` | `Fixed::units`, `Fixed::scale` | same | |
 | `Fixed#toString` | `Display` | same | |
-| `Fixed#trimScale` | `Fixed::trim_scale` | same | a `Result`: `Err(InvalidScale)` for a minimum past `MAX_SCALE`, ducat's `RangeError` (`Invalid scale`), checked before the value; the minimum is required (ducat's default is 0) |
+| `Fixed#trimScale` | `Fixed::trim_scale` | same | a `Result`: `Err(InvalidScale)` for a minimum past `MAX_SCALE`, ducat's `RangeError` (`Invalid scale`), checked before the value; the minimum is an `Option<u16>` (`None` is 0, ducat's default), as `Money::trim_scale` |
 | `Fixed#value` | `Fixed::units` | same | |
 | `FixedInput` | `Fixed::new`, `FromStr`, `parse_at`, `from_f64`, `from_f64_at`, `From<Int>` | same | |
 | `FixedOptions` | arguments of `Fixed::parse_at` | same | |

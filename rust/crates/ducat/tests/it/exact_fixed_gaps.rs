@@ -319,19 +319,33 @@ fn fixed(text: &str) -> Fixed {
 fn fixed_trim_scale() {
     // fixed('12.3400').trimScale() is 12.34; ('5.000').trimScale(2) 5.00; ('5.1').trimScale(3)
     // 5.1; ('0.000').trimScale() 0; ('-120.500').trimScale(0) -120.5
-    assert_eq!(fixed("12.3400").trim_scale(0).unwrap().to_string(), "12.34");
-    assert_eq!(fixed("5.000").trim_scale(2).unwrap().to_string(), "5.00");
-    assert_eq!(fixed("5.1").trim_scale(3).unwrap().to_string(), "5.1");
-    assert_eq!(fixed("0.000").trim_scale(0).unwrap().to_string(), "0");
     assert_eq!(
-        fixed("-120.500").trim_scale(0).unwrap().to_string(),
+        fixed("12.3400").trim_scale(None).unwrap().to_string(),
+        "12.34"
+    );
+    assert_eq!(
+        fixed("5.000").trim_scale(Some(2)).unwrap().to_string(),
+        "5.00"
+    );
+    assert_eq!(fixed("5.1").trim_scale(Some(3)).unwrap().to_string(), "5.1");
+    assert_eq!(fixed("0.000").trim_scale(None).unwrap().to_string(), "0");
+    assert_eq!(
+        fixed("-120.500").trim_scale(Some(0)).unwrap().to_string(),
         "-120.5"
     );
-    assert_eq!(fixed("1200").trim_scale(0).unwrap().to_string(), "1200");
+    assert_eq!(fixed("1200").trim_scale(None).unwrap().to_string(), "1200");
+    // None is ducat's default minimum, 0
+    assert_eq!(
+        fixed("-120.500").trim_scale(None),
+        fixed("-120.500").trim_scale(Some(0))
+    );
     // trimScale(1001): RangeError Invalid scale, whatever the value
-    assert_eq!(fixed("5.1").trim_scale(1001), Err(Error::InvalidScale));
-    assert_eq!(fixed("5").trim_scale(1001), Err(Error::InvalidScale));
-    assert_eq!(fixed("5").trim_scale(1000).unwrap().scale(), 0);
+    assert_eq!(
+        fixed("5.1").trim_scale(Some(1001)),
+        Err(Error::InvalidScale)
+    );
+    assert_eq!(fixed("5").trim_scale(Some(1001)), Err(Error::InvalidScale));
+    assert_eq!(fixed("5").trim_scale(Some(1000)).unwrap().scale(), 0);
 }
 
 #[test]
