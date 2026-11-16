@@ -96,6 +96,32 @@ fn creation_date_in_the_account_zone() {
 }
 
 #[test]
+fn offsets_with_seconds_and_early_years_are_exact() {
+    // design.md, "Adyen's account time zone" (divergent): ducat rounds an offset to the minute
+    // (1960-07-01T12:44:00.000Z, 0100-06-01T02:41:00.000Z) and reads years 0 to 99 as 1900 to 1999
+    // (-001850-06-02T12:00:00.000Z in UTC)
+    assert_eq!(
+        at("1960-07-01 12:00:00", "Africa/Monrovia"),
+        "1960-07-01T12:44:30.000Z"
+    );
+    assert_eq!(
+        at("0100-06-01 12:00:00", "Asia/Tokyo"),
+        "0100-06-01T02:41:01.000Z"
+    );
+    assert_eq!(at("0050-06-01 12:00:00", "UTC"), "0050-06-01T12:00:00.000Z");
+    assert_eq!(
+        at("0050-06-01 12:00:00", "+01:00"),
+        "0050-06-01T11:00:00.000Z"
+    );
+    // the same as ducat: the tzdb's default build, where Europe/Amsterdam links to Europe/Brussels
+    // before 1970, in both
+    assert_eq!(
+        at("1930-07-01 12:00:00", "Europe/Amsterdam"),
+        "1930-07-01T11:00:00.000Z"
+    );
+}
+
+#[test]
 fn an_unknown_zone_is_a_range_error_when_creation_date_has_a_time() {
     let error = read(Some("2026-11-06 12:00:00"), None, "Mars/Olympus").unwrap_err();
     assert_eq!(error, Error::UnknownTimeZone);

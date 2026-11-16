@@ -46,6 +46,8 @@ jobs:
       - run: cargo test -p ducat-words --locked --no-fail-fast --features cldr-names
       # ducat::testing: the strategies' coverage, the assertion macros and their doc examples
       - run: cargo test -p ducat --locked --no-fail-fast --features proptest
+      # Adyen's account time zone: the tz feature (jiff, bundled tzdb), not a default
+      - run: cargo test -p ducat --locked --no-fail-fast --features tz
       # ducat-fetch's sans-IO core without ureq (the README's doc examples need ureq); its live
       # smoke test is #[ignore]d: CI makes no requests
       - run: cargo test -p ducat-fetch --locked --no-fail-fast --no-default-features --lib --tests
@@ -126,6 +128,8 @@ jobs:
       # the proptest feature (proptest needs 1.88)
       - run: cargo +1.85 check -p ducat --lib --locked
       - run: cargo +1.85 check -p ducat --lib --locked --no-default-features
+      # jiff 1.0.0 declares 1.85
+      - run: cargo +1.85 check -p ducat --lib --locked --features tz
       - run: cargo +1.85 check -p ducat-words --lib --locked
       - run: cargo +1.85 check -p ducat-words --lib --locked --no-default-features
       - run: cargo +1.85 check -p ducat-words --lib --locked --features cldr-names
@@ -183,6 +187,8 @@ jobs:
       - run: cargo clippy -p ducat --lib --no-default-features --features hmrc --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features stripe-fx --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features adyen-fx --locked -- -D warnings
+      - run: cargo clippy -p ducat --lib --no-default-features --features adyen-fx,tz --locked -- -D warnings
+      - run: cargo clippy -p ducat --all-targets --features tz --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features wire --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features wire,serde --locked -- -D warnings
       - run: cargo clippy -p ducat --lib --no-default-features --features policy --locked -- -D warnings

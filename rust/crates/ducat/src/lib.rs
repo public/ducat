@@ -24,6 +24,11 @@
 //! assert_eq!(Money::<Eur>::try_from(any)?, "12.34".parse::<Money<Eur>>()?);
 //! # Ok::<(), ducat::Error>(())
 //! ```
+//!
+//! The optional `tz` feature (off by default; it implies `std`) reads Adyen's Creation Date in an
+//! account's IANA time zone (`convert::adyen_fx::adyen_rate_with`). It embeds the IANA time zone
+//! database that jiff bundles (tzdb 2026f with jiff 1.0.0) and never reads the host's, so its
+//! results follow that bundled version.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
