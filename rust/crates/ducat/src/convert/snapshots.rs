@@ -36,13 +36,19 @@ impl Default for SnapshotOptions {
 }
 
 impl SnapshotOptions {
-    /// Checks the options as [`snapshots`] does, for a caller that wants to refuse them before
-    /// loading anything.
+    /// Checks the options: `max` must be at least 1. That is the only check; every `lookback` is
+    /// valid (it is a `u32`, so ducat's other check, a non-negative integer lookback, can't fail
+    /// here), and 0 means "only the day asked for".
+    ///
+    /// [`snapshots`] and [`snapshots_from`] call this themselves before using the options, so
+    /// callers never need to. It is public for code that builds options ahead of time (from
+    /// configuration, say) and wants to refuse bad ones early, before anything is loaded.
+    /// [`snapshots_from`] checks `max` too, though it keeps every table it is given and doesn't
+    /// otherwise use it, so options are accepted or refused the same way by both.
     ///
     /// # Errors
     ///
-    /// [`Error::NotPositive`] for a `max` of 0 (ducat's `RangeError`). `lookback` is a `u32`, so
-    /// ducat's other check, a non-negative integer lookback, can't fail here.
+    /// [`Error::NotPositive`] for a `max` of 0 (ducat's `RangeError`).
     pub const fn check(&self) -> Result<(), Error> {
         if self.max == 0 {
             Err(Error::NotPositive)
