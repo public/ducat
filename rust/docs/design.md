@@ -145,7 +145,8 @@ generator checks), in the plural category CLDR 48's rules give (`src/cldr.rs`), 
   `amountInWords` on Node 24 (ICU 78.3). All agree but the 13 of ITL in `it`: CLDR gives ITL there its own pattern
   (`¤ #,##0.00`), and ICU puts its symbol before the name (`ITL un lire italiane e 00/100`); the crate writes
   `un lire italiane e 00/100`, following TR35 as `ducat-format` does for names (milestone 6c), which leaves a
-  currency's own pattern and symbol out of the name form. `scripts/words-names-cases.mjs` writes the cases and
+  currency's own pattern and symbol out of the name form. That is a divergence from ducat's words: ducat's TypeScript
+  takes ICU's long name, garbled as in ducat#363, until [ducat#400](https://github.com/public/ducat/issues/400). `scripts/words-names-cases.mjs` writes the cases and
   `tests/it/names.rs`' ignored `matches_ducat_on_node` compares them (`data/cldr/README.md`); the test keeps a spread
   of them that runs every time.
 
