@@ -27,13 +27,15 @@ describe('ISO 20022 amounts name only ISO 4217 codes', () => {
     expect(fromIso20022Amount({ Ccy: 'HRK', value: '12.5' }).toString()).toBe('12.50 HRK');
   });
 
-  it('accepts the ISO codes without a currency, such as XAU, as ISO 4217 lists them', () => {
-    // XAU is in List One with "N.A." minor units, so ducat holds it only once a program defines it
-    // with the decimals it uses (troy ounces to 3 places here). It is ISO 4217, so ISO 20022 may
-    // name it.
-    defineCurrency('XAU', 3);
-    expect(toIso20022Amount(money('1.5', 'XAU'))).toEqual({ Ccy: 'XAU', value: '1.500' });
-    expect(fromIso20022Amount({ Ccy: 'XAU', value: '10' }).toString()).toBe('10.000 XAU');
+  it('accepts the ISO codes without a currency, such as XPD, as ISO 4217 lists them', () => {
+    // XPD (palladium) is in List One with "N.A." minor units, so ducat holds it only once a program
+    // defines it with the decimals it uses (troy ounces to 3 places here). It is ISO 4217, so ISO
+    // 20022 may name it. Bun runs every test file in one process with one currency registry, so this
+    // uses a code no other test file or spec vector registers or expects to be unknown: not XAU, the
+    // usual example of an unknown code, nor XDR, which checkout.test.ts expects unknown at first.
+    defineCurrency('XPD', 3);
+    expect(toIso20022Amount(money('1.5', 'XPD'))).toEqual({ Ccy: 'XPD', value: '1.500' });
+    expect(fromIso20022Amount({ Ccy: 'XPD', value: '10' }).toString()).toBe('10.000 XPD');
   });
 
   it('still reads and writes current codes', () => {
