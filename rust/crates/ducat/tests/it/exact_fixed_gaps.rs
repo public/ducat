@@ -94,8 +94,9 @@ fn ratio_of() {
     // third.ratioOf(EUR 5) is 2/3; a Money or an exact total
     let two_thirds = Ratio::new(2, 3).unwrap();
     assert_eq!(third().ratio_of(eur("5")), Ok(two_thirds.clone()));
-    assert_eq!(third().ratio_of(&eur("5")), Ok(two_thirds.clone()));
-    assert_eq!(third().ratio_of(&eur("5").exact()), Ok(two_thirds.clone()));
+    let (five, five_exact) = (eur("5"), eur("5").exact());
+    assert_eq!(third().ratio_of(&five), Ok(two_thirds.clone()));
+    assert_eq!(third().ratio_of(&five_exact), Ok(two_thirds.clone()));
     // ratioOf(EUR 0): RangeError Division by zero
     assert_eq!(third().ratio_of(eur("0")), Err(Error::DivisionByZero));
 
@@ -103,7 +104,8 @@ fn ratio_of() {
         any_third().ratio_of(any("5", "EUR")),
         Ok(two_thirds.clone())
     );
-    assert_eq!(any_third().ratio_of(&any_exact("5", "EUR")), Ok(two_thirds));
+    let any_five = any_exact("5", "EUR");
+    assert_eq!(any_third().ratio_of(&any_five), Ok(two_thirds));
     assert_eq!(
         any_third().ratio_of(any("0", "EUR")),
         Err(Error::DivisionByZero)
@@ -123,7 +125,8 @@ fn ratio_of() {
 fn min_and_max() {
     // third.min(EUR 3, EUR 4) is 3 EUR; third.max(EUR 3, EUR 4) is 4 EUR
     assert_eq!(third().min(eur("3")).min(eur("4")).to_string(), "3 EUR");
-    assert_eq!(third().max(&eur("3")).max(&eur("4")).to_string(), "4 EUR");
+    let (three_eur, four_eur) = (eur("3"), eur("4"));
+    assert_eq!(third().max(&three_eur).max(&four_eur).to_string(), "4 EUR");
     assert_eq!(third().min(third()), third());
     assert_eq!(third().max(eur("1").exact()), third());
     let items = [
