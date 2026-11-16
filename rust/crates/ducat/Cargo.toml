@@ -1,12 +1,19 @@
 [package]
 name = "ducat"
-version = "0.0.0"
+version.workspace = true
 description = "Exact, typed money: a Rust port of @ducatjs/money"
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+license = "MIT AND Unicode-3.0"
 repository.workspace = true
-publish = false
+homepage.workspace = true
+documentation = "https://docs.rs/ducat"
+readme = "README.md"
+keywords = ["money", "currency", "decimal", "finance", "iso4217"]
+categories = ["finance", "mathematics", "no-std", "data-structures"]
+# only what builds and documents the crate: no tests (they read the repository's spec/ and data/),
+# generators or proptest regressions
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/LICENSE-UNICODE", "/NOTICE"]
 
 [features]
 default = ["std", "iso", "serde", "allocate", "cash", "tax", "fixed", "exact", "convert", "finance", "excel", "policy", "pricing", "math", "currencies", "historic", "territories", "crypto", "stripe", "adyen", "checkout", "paypal", "braintree", "klarna", "ecb", "boc", "fed", "boe", "hmrc", "history", "stripe-fx", "adyen-fx", "wire"]

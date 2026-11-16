@@ -1,0 +1,46 @@
+ducat-format
+Copyright (c) Alex Stapleton
+Licensed under the MIT License (see LICENSE).
+
+This crate embeds tables compiled from the third-party sources below
+(the generated files under src/, made from the snapshots in the data/
+directory of https://github.com/public/ducat, and the short Unicode
+property lists in src/unicode.rs). Each section names the source, its
+version and the date it was retrieved.
+
+[Unicode CLDR 48: locale data]
+  Data from the Unicode Common Locale Data Repository (CLDR), release
+  48, for the locales CLDR rates modern: the number symbols, numbering
+  systems' digits and decimal, currency, accounting and compact patterns
+  (main/<locale>/numbers.json, supplemental/numberingSystems.json), the
+  currencies' symbols, narrow symbols and names (main/<locale>/
+  currencies.json), the cardinal plural rules (supplemental/
+  plurals.json), the likely subtags (supplemental/likelySubtags.json),
+  and the locale parents, default content and coverage levels
+  (parents.json, defaultContent.json, coverageLevels.json), from the
+  cldr-json 48.0.0 archive,
+  https://github.com/unicode-org/cldr-json/releases/download/48.0.0/cldr-48.0.0-json-full.zip
+  (sha256 25ab2651a1a874dd62a727d3c213d7c6bf0fc269b09d2937f0499b82d99fa58e),
+  retrieved 2026-11-14.
+  Used under the Unicode License v3 (SPDX: Unicode-3.0), whose text is
+  in LICENSE-UNICODE. Copyright © Unicode, Inc.
+
+[ICU 78.3 overrides]
+  The number symbols and currency unit patterns where ICU's shipped
+  data deliberately differs from CLDR's, from ICU 78.3's
+  icu4c/source/data/locales/fr_CH.txt, curr/my.txt and curr/root.txt
+  at tag release-78.3 of https://github.com/unicode-org/icu, retrieved
+  2026-11-14.
+  Used under the Unicode License v3 (SPDX: Unicode-3.0), whose text is
+  in LICENSE-UNICODE. Copyright © Unicode, Inc.
+
+[Unicode Character Database 17.0]
+  The General_Category ranges of the currency symbols (Sc), format
+  characters (Cf) and separators (Z), from the Unicode Character
+  Database, Unicode 17.0, https://www.unicode.org/Public/17.0.0/ucd/
+  The lists record no retrieval date; they were added to the
+  repository on 2026-11-15.
+  Used under the Unicode License v3 (SPDX: Unicode-3.0), whose text is
+  in LICENSE-UNICODE. Copyright © Unicode, Inc.
+
+The data is provided as is, with no warranty of accuracy.

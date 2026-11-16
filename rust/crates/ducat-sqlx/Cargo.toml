@@ -1,12 +1,19 @@
 [package]
 name = "ducat-sqlx"
-version = "0.0.0"
+version.workspace = true
 description = "Money columns for sqlx: exact Postgres NUMERIC and BIGINT amounts, ducat's money composite type, and MySQL and SQLite column shapes"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-publish = false
+homepage.workspace = true
+documentation = "https://docs.rs/ducat-sqlx"
+readme = "README.md"
+keywords = ["money", "sqlx", "postgres", "mysql", "sqlite"]
+categories = ["finance", "database"]
+# only what builds and documents the crate: no tests (they read the repository's spec/ and data/),
+# generators or proptest regressions
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/NOTICE"]
 
 [features]
 default = ["postgres"]
@@ -18,12 +25,12 @@ mysql = ["sqlx/mysql"]
 sqlite = ["sqlx/sqlite"]
 
 [dependencies]
-ducat = { path = "../ducat", default-features = false, features = ["std"] }
-ducat-sql-core = { path = "../ducat-sql-core" }
+ducat = { path = "../ducat", version = "0.1.0", default-features = false, features = ["std"] }
+ducat-sql-core = { path = "../ducat-sql-core", version = "0.1.0" }
 sqlx = { version = "0.8", default-features = false }
 
 [dev-dependencies]
-ducat = { path = "../ducat", default-features = false, features = ["std", "iso", "proptest"] }
+ducat = { path = "../ducat", version = "0.1.0", default-features = false, features = ["std", "iso", "proptest"] }
 proptest = { version = "1.6", default-features = false, features = ["std"] }
 # reading the spec's vectors
 serde_json = "1"

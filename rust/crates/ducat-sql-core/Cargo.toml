@@ -1,14 +1,21 @@
 [package]
 name = "ducat-sql-core"
-version = "0.0.0"
-description = "The database-library independent core of ducat-sqlx and ducat-diesel: exact decimals, column sizes, Postgres NUMERIC digits and ducat's money composite"
+version.workspace = true
+description = "An internal detail of ducat-sqlx and ducat-diesel, with no stability promise: use those crates. Their shared core: exact decimals, column sizes, Postgres NUMERIC digits and ducat's money composite"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-publish = false
+homepage.workspace = true
+documentation = "https://docs.rs/ducat-sql-core"
+readme = "README.md"
+keywords = ["money", "decimal", "numeric", "postgres"]
+categories = ["finance", "database"]
+# only what builds and documents the crate: no tests (they read the repository's spec/ and data/),
+# generators or proptest regressions
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/NOTICE"]
 
 [dependencies]
-ducat = { path = "../ducat", default-features = false, features = ["std"] }
+ducat = { path = "../ducat", version = "0.1.0", default-features = false, features = ["std"] }
 # reading JSON columns as ducat's `JSON.parse` does: any JSON, the last of duplicate keys wins
 serde_json = { version = "1", default-features = false, features = ["std"] }

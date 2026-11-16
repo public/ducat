@@ -1,0 +1,85 @@
+name: Rust release
+
+# Publishes the Rust crates in rust/ to crates.io when a tag rust-v<version> is pushed, from the
+# second release on (0.1.0 went out by hand). Every crate has the same version, and the tag must be
+# that version. The job runs in the crates-io environment, whose required reviewer approves each
+# release, and publishes with a short-lived token from crates.io's trusted publishing (no stored
+# token). See rust/docs/design.md, "Versioning and releases".
+on:
+  push:
+    tags: ['rust-v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  publish:
+    name: publish to crates.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: crates-io
+    permissions:
+      contents: read
+      # trusted publishing: the OIDC token crates.io exchanges for a short-lived publish token
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+
+      - name: Check the tag is the crates' version
+        env:
+          TAG: ${{ github.ref_name }}
+        # the publishable crates (publish = false ones, like ducat-benches, aren't) must be the
+        # script's list, each at the tag's version
+        run: |
+          version=$(../scripts/rust-release.sh check "$TAG")
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Record the spec commit
+        run: |
+          # the release notes name this commit: the spec/ the crates were verified against
+          echo "Rust crates $VERSION, verified against spec/ at $(git rev-parse HEAD)." >> "$GITHUB_STEP_SUMMARY"
+
+      # crates.io's trusted publishing (https://crates.io/docs/trusted-publishing): a short-lived token
+      # in the action's `token` output; its optional `url` input is left at its default
+      - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+        id: auth
+
+      - name: Publish, in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          # the sparse index path of a crate name of 4 or more characters: na/me/name
+          indexed() {
+            curl -fsS "https://index.crates.io/${1:0:2}/${1:2:2}/$1" 2>/dev/null \
+              | jq -e --arg v "$VERSION" 'select(.vers == $v)' > /dev/null
+          }
+          # the list the tag check used, in dependency order
+          for crate in $(../scripts/rust-release.sh crates); do
+            if indexed "$crate"; then
+              echo "$crate $VERSION is already on crates.io; skipping"
+              continue
+            fi
+            cargo publish -p "$crate" --locked
+            # the next crate resolves this one from the registry: wait for the index (10 minutes)
+            for _ in $(seq 60); do
+              indexed "$crate" && break
+              sleep 10
+            done
+            if ! indexed "$crate"; then
+              echo "::error::$crate $VERSION was published but is not in the index after 10 minutes"
+              exit 1
+            fi
+            echo "$crate $VERSION is in the index"
+          done

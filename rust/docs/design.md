@@ -680,7 +680,8 @@ Shapes [`parity.md`](parity.md) marks `divergent` or `not ported` in this sectio
      (format and parse, on CLDR's data), `ducat-sqlx`, `ducat-diesel` (on the internal `ducat-sql-core`) and
      `ducat-fetch` (rate fetchers: sans-IO, with a blocking ureq transport; reqwest was the plan, M7b chose otherwise
      to need no async runtime).
-8. **The licence is MIT,** as ducat's is.
+8. **The licence is MIT,** as ducat's is. The crates that embed Unicode data (`ducat`: CLDR's territories and cash
+   rounding; `ducat-words`, `ducat-format`) are `MIT AND Unicode-3.0` and ship the Unicode licence as LICENSE-UNICODE.
 
 ## Decisions made while building milestone 1
 Agreed with the coordinator on 2026-11-14. The port moved into ducat's repository the same day (see "Where it
@@ -801,6 +802,33 @@ on both sides of the `i128` boundary; sub-minor fractions follow the spec's vect
 The research in `docs/research/rust-money-libs.md` (section 6.1) lists 24 bug classes from other Rust libraries. Each
 becomes a regression test with the milestone it belongs to (T5, T7, T8, T10–T14, T16, T18–T21 and T23 with
 milestone 1).
+
+## Versioning and releases
+- **One version for every crate.** `ducat`, `ducat-words`, `ducat-format`, `ducat-sql-core`, `ducat-sqlx`,
+  `ducat-diesel` and `ducat-fetch` share `workspace.package.version` and release together, even a crate that did not
+  change; the first release is 0.1.0. The version is independent of the TypeScript package's semver: a TS release
+  does not imply a Rust one, and the numbers are not kept in step.
+- **Each release records its spec.** A release's notes (the GitHub release for its tag) name the commit of `spec/`
+  (the repository at that commit) that the crates were verified against, the commit the tag points at.
+- **ducat-sql-core is internal.** It is published only because `ducat-sqlx` and `ducat-diesel` depend on it; its items
+  are `#[doc(hidden)]` and it makes no stability promise, whatever its version says.
+- **Publish order:** `ducat`, `ducat-words`, `ducat-format`, `ducat-sql-core`, `ducat-sqlx`, `ducat-diesel`,
+  `ducat-fetch`; each crate after those it depends on. That list lives once, in `scripts/rust-release.sh`, which the
+  release's tag check and its publish loop both read; the check also fails if the workspace's publishable crates
+  (`ducat-benches` is `publish = false`) aren't exactly that list, and rust.yml dry-runs it on every PR. Path dependencies between the crates carry
+  `version = "<the version>"`, so a release bumps them with `workspace.package.version`.
+- **Publishing:** the first release (0.1.0) is published by hand, in that order. From the second on, pushing a tag
+  `rust-v<version>` runs `.github/workflows/rust-release.yml`: it checks that the tag is the crates' version, waits for
+  approval in the `crates-io` environment, gets a short-lived token through crates.io's trusted publishing, and runs
+  `cargo publish` for each crate in order, waiting for the index to show each version before the next.
+- **What a .crate holds:** each crate's `include` keeps the package to its sources, README, LICENSE and NOTICE
+  (ducat, ducat-words and ducat-format: and LICENSE-UNICODE; ducat-format: and its example). Tests, generators, `spec/` and `data/` stay in the repository; the generated
+  tables are committed under each crate's `src/`, so nothing a build reads is outside the crate.
+- **NOTICE:** each crate has its own, with a `[Section]` per third-party source it embeds (its version, URL and
+  retrieval date). `scripts/check-rust-notices.py` (CI, `rust.yml`) maps each generated file's `GENERATED ... from
+  <inputs>` header, and each hand-copied table's `// DATA from <source>` line, to the sections they need, and fails
+  on a missing or extra section, an unknown input, or a licence that doesn't follow. A new data input means a new
+  entry in its `INPUTS` and a section in the NOTICE of each crate that embeds it.
 
 ## Working rules
 - Conventional Commits, and no AI attribution in commits or PRs (ducat's rule).

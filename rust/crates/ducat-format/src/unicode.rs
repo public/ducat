@@ -1,3 +1,4 @@
+// DATA from the Unicode Character Database (Unicode 17.0).
 //! The few Unicode properties formatting and parsing test, without a Unicode database: currency
 //! symbols (`Sc`), separators (`Z`), format characters (`Cf`) and letters. `core` has white space
 //! and `Alphabetic`; the rest are short, stable lists from the Unicode Character Database.

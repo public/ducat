@@ -1,0 +1,35 @@
+ducat-words
+Copyright (c) Alex Stapleton
+Licensed under the MIT License (see LICENSE).
+
+This crate embeds tables compiled from the third-party sources below
+(the generated files under src/, made from the snapshots in the data/
+directory of https://github.com/public/ducat). Each section names the
+source, its version and the date it was retrieved.
+
+[Unicode CLDR 49: spell-out rules (RBNF)]
+  The rule-based number format spell-out rules of en, de, fr, es, it,
+  nl and pt, from the Unicode Common Locale Data Repository (CLDR),
+  release 49, as the cldr-rbnf 49.0.0 package publishes them,
+  https://unpkg.com/cldr-rbnf@49.0.0/rbnf/<language>-SpelloutRules.txt
+  The snapshot records no retrieval date; it was taken on 2026-11-08,
+  the day it was added to the repository.
+  Used under the Unicode License v3 (SPDX: Unicode-3.0), whose text is
+  in LICENSE-UNICODE. Copyright © Unicode, Inc.
+
+[Unicode CLDR 48: plurals, numbers and list patterns]
+  Data from the Unicode Common Locale Data Repository (CLDR), release
+  48, for the same seven languages: the cardinal and ordinal plural
+  rules (supplemental/plurals.json, supplemental/ordinals.json), the
+  group separator and minimum grouping digits (main/<language>/
+  numbers.json), the standard two-item list pattern (main/<language>/
+  listPatterns.json) and, with the cldr-names feature, each currency's
+  display names by plural form (main/<language>/currencies.json, in
+  src/names.rs), from the cldr-json 48.0.0 archive,
+  https://github.com/unicode-org/cldr-json/releases/download/48.0.0/cldr-48.0.0-json-full.zip
+  (sha256 25ab2651a1a874dd62a727d3c213d7c6bf0fc269b09d2937f0499b82d99fa58e),
+  retrieved 2026-11-14.
+  Used under the Unicode License v3 (SPDX: Unicode-3.0), whose text is
+  in LICENSE-UNICODE. Copyright © Unicode, Inc.
+
+The data is provided as is, with no warranty of accuracy.

@@ -1,0 +1,103 @@
+ducat
+Copyright (c) Alex Stapleton
+Licensed under the MIT License (see LICENSE).
+
+This crate embeds tables compiled from the third-party sources below
+(the generated files under src/, made from the snapshots in the data/
+directory of https://github.com/public/ducat). Each section names the
+source, its version and the date it was retrieved.
+
+[ISO 4217 List One]
+  ISO 4217 List One (current currency and funds code list), published
+  by SIX Financial Information AG as the ISO 4217 maintenance agency,
+  https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
+  Snapshot published 2026-09-17, retrieved and checked against the live
+  list 2026-11-07: the codes, names, numeric codes and minor units.
+  ISO 4217 is a standard of the International Organization for
+  Standardization.
+
+[ISO 4217 List Three]
+  ISO 4217 List Three (withdrawn currency and funds codes), published
+  by SIX Financial Information AG as the ISO 4217 maintenance agency,
+  https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-three.xml
+  Snapshot published 2026-01-01, retrieved 2026-11-08: the withdrawn
+  codes, names, numeric codes and withdrawal dates.
+
+[OpenJDK currency data]
+  The minor units of withdrawn ISO 4217 codes, taken as facts from
+  OpenJDK's CurrencyData.properties (dataVersion 180, GPLv2 with the
+  Classpath Exception),
+  https://github.com/openjdk/jdk/blob/master/src/java.base/share/data/currency/CurrencyData.properties
+  retrieved 2026-11-08. List Three carries no minor units; none was
+  verified against an ISO source directly.
+
+[Unicode CLDR 49: currency data]
+  Data from the Unicode Common Locale Data Repository (CLDR), release
+  49: the <currencyData> of supplementalData.xml, the currencies each
+  territory uses and used (with their dates and tender), and the cash
+  digits and cash rounding of the currencies CLDR cash-rounds, from
+  https://raw.githubusercontent.com/unicode-org/cldr/release-49/common/supplemental/supplementalData.xml
+  The snapshot records no retrieval date; it was taken on 2026-11-08,
+  the day it was added to the repository.
+  Used under the Unicode License v3 (SPDX: Unicode-3.0), whose text is
+  in LICENSE-UNICODE. Copyright © Unicode, Inc.
+
+[Cash-rounding rules]
+  Cash rounding rules compiled from central-bank, statutory and
+  government publications, retrieved 2026-11-07 (rules added later
+  carry their own retrieval date). Each rule records its source URL and
+  whether it was verified against a primary source.
+
+[Crypto units]
+  Decimals, names and contract addresses (facts) of crypto currencies
+  and tokens, from the sources that define them, pinned to: Bitcoin
+  Core v28.0 (src/consensus/amount.h), ethereum-lists/chains at commit
+  e17474286275730fb6b0490b1d7ea1c64a36ed9e (eip155-1.json), the Solana
+  SDK at commit dcc9f4df80afeaaa093316ab9d0dccba4ca55525
+  (native-token), and the Uniswap default token list 22.34.0 for the
+  Ethereum mainnet tokens. Retrieved 2026-11-08. Token names are their
+  issuers'.
+
+[Stripe documentation]
+  Currency and minor-unit rules from Stripe's documentation,
+  https://docs.stripe.com/currencies, retrieved 2026-11-07. Stripe is a
+  trademark of Stripe, Inc.
+
+[Adyen documentation]
+  Currency codes and decimals from Adyen's documentation,
+  https://docs.adyen.com/development-resources/currency-codes,
+  retrieved 2026-11-07. Adyen is a trademark of Adyen N.V.
+
+[Checkout.com documentation]
+  Amount rules from Checkout.com's documentation,
+  https://www.checkout.com/docs/payments/accept-payments/format-the-amount-value,
+  https://www.checkout.com/docs/developer-resources/codes/currency-codes
+  and https://api-reference.checkout.com/v1/swagger.json, retrieved
+  2026-11-07. Checkout.com is a trademark of Checkout Ltd.
+
+[PayPal documentation]
+  Currency codes and decimals from PayPal's documentation,
+  https://developer.paypal.com/api/rest/reference/currency-codes/,
+  https://developer.paypal.com/reference/currency-codes/ and
+  https://developer.paypal.com/api/orders/v2/schema.yaml, retrieved
+  2026-11-07. PayPal is a trademark of PayPal, Inc.
+
+[Braintree documentation]
+  Supported currencies and zero-decimal currencies from Braintree's
+  documentation,
+  https://developer.paypal.com/braintree/docs/reference/general/currencies,
+  https://developer.paypal.com/braintree/docs/reference/request/transaction/sale,
+  https://developer.paypal.com/braintree/docs/reference/general/validation-errors/all/
+  and https://developer.paypal.com/braintree/graphql/reference/types/amount,
+  retrieved 2026-11-07. Braintree is a service of PayPal, Inc.
+
+[Klarna documentation]
+  Amount rules from Klarna's documentation,
+  https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/data-types/,
+  https://docs.klarna.com/klarna-payments/in-depth-knowledge/puchase-countries-currencies-locales/
+  and https://docs.klarna.com/acquirer/klarna/api/payments/, retrieved
+  2026-11-07. Klarna is a trademark of Klarna Bank AB.
+
+The data is provided as is, with no warranty of accuracy. Check
+processor rules against the processor's current documentation before
+relying on them.

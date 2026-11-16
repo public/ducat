@@ -1,12 +1,19 @@
 [package]
 name = "ducat-words"
-version = "0.0.0"
+version.workspace = true
 description = "Amounts and numbers in words for ducat, by CLDR's rule-based number formats (RBNF), with its own interpreter and no ICU"
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+license = "MIT AND Unicode-3.0"
 repository.workspace = true
-publish = false
+homepage.workspace = true
+documentation = "https://docs.rs/ducat-words"
+readme = "README.md"
+keywords = ["money", "words", "spellout", "cldr", "rbnf"]
+categories = ["finance", "internationalization", "localization", "value-formatting", "no-std"]
+# only what builds and documents the crate: no tests (they read the repository's spec/ and data/),
+# generators or proptest regressions
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE", "/LICENSE-UNICODE", "/NOTICE"]
 
 [features]
 default = ["std", "en", "de", "fr", "es", "it", "nl", "pt"]
@@ -31,9 +38,9 @@ pt = []
 cldr-names = []
 
 [dependencies]
-ducat = { path = "../ducat", default-features = false }
+ducat = { path = "../ducat", version = "0.1.0", default-features = false }
 
 [dev-dependencies]
-ducat = { path = "../ducat", features = ["iso"] }
+ducat = { path = "../ducat", version = "0.1.0", features = ["iso"] }
 serde_json = "1.0.140"
 proptest = { version = "1.6", default-features = false, features = ["std"] }
