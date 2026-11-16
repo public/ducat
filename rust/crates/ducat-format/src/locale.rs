@@ -1,5 +1,6 @@
 //! Locale tags (BCP 47) and their data: the tag is checked as `Intl` checks it, then resolved by
-//! TR35's fallback, dropping subtags from the end down to root (`und`).
+//! TR35's fallback, dropping subtags from the end down to root (`und`); its `-u-nu-` keyword
+//! picks the numbering system.
 
 use alloc::string::String;
 
@@ -18,10 +19,85 @@ const MAX_TAG: usize = 256;
 #[derive(Clone, Copy, Debug)]
 pub struct Locale {
     data: &'static LocaleData,
+    /// The number data of its numbering system (`-u-nu-`, else the default).
     numbers: &'static Numbers,
+    /// That numbering system's digits.
+    digits: &'static [char; 10],
+    /// That numbering system's name.
+    system: &'static str,
     has_data: bool,
     /// The tag's region (or the resolved locale's), ASCII, for its currency.
     region: [u8; 3],
+}
+
+/// How a tag is matched to the locales of the build: `Intl`'s `localeMatcher`.
+///
+/// Both give the same locale. ECMA-402 lets `"best fit"` be `"lookup"`, and V8 (Node 24, ICU
+/// 78.3) makes it so: for every locale of CLDR's snapshot, alone, with an unknown region and
+/// with extensions, Node resolves both to the same locale (`scripts/check-locale-matcher.mjs`).
+/// Its `"lookup"` is ECMA-402's `LookupMatcher` over ICU's locales, which include the aliases
+/// (`zh-TW`, `sr-ME`) whose data is a script's (`zh-Hant-TW`, `sr-Latn-ME`): the resolution
+/// [`Locale::new`] does, CLDR's likely script, then dropping subtags from the end.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum LocaleMatcher {
+    /// `'best fit'`, `Intl`'s default.
+    #[default]
+    BestFit,
+    /// `'lookup'`: RFC 4647's lookup, as ECMA-402's `LookupMatcher` does it.
+    Lookup,
+}
+
+impl core::str::FromStr for LocaleMatcher {
+    type Err = Error;
+
+    /// `Intl`'s names, `"best fit"` and `"lookup"`; [`Error::InvalidOptions`] (its `RangeError`)
+    /// for another.
+    fn from_str(name: &str) -> Result<Self, Error> {
+        match name {
+            "best fit" => Ok(Self::BestFit),
+            "lookup" => Ok(Self::Lookup),
+            _ => Err(Error::InvalidOptions),
+        }
+    }
+}
+
+/// The type of the first `-u-` extension's `nu` keyword, lowercase (`"arab"`; `""` for a key
+/// without one), in a tag [`subtags`] has checked. Private use (`-x-u-nu-…`) isn't an extension.
+fn unicode_nu(tag: &str) -> Option<String> {
+    let mut in_unicode = false;
+    let mut seen_unicode = false;
+    let mut found: Option<String> = None;
+    let mut collecting = false;
+    for part in tag.split('-').skip(1) {
+        if part.len() == 1 {
+            if part.eq_ignore_ascii_case("x") {
+                break;
+            }
+            in_unicode = part.eq_ignore_ascii_case("u") && !seen_unicode;
+            seen_unicode |= in_unicode;
+            collecting = false;
+            continue;
+        }
+        if !in_unicode {
+            continue;
+        }
+        if part.len() == 2 {
+            // the first nu keyword counts (UTS #35 drops the later duplicates)
+            collecting = found.is_none() && part.eq_ignore_ascii_case("nu");
+            if collecting {
+                found = Some(String::new());
+            }
+        } else if collecting {
+            if let Some(value) = found.as_mut() {
+                if !value.is_empty() {
+                    value.push('-');
+                }
+                value.push_str(&part.to_ascii_lowercase());
+            }
+        }
+    }
+    found
 }
 
 /// A tag's language, script, region and variants, case-normalised; extensions are dropped.
@@ -180,13 +256,27 @@ fn walk(start: &str, floor: usize) -> Option<(&str, &'static LocaleData)> {
 impl Locale {
     /// The locale for a BCP 47 tag (`"de-CH"`, `"ar-EG"`, `"sr-Latn-RS"`). Its data is the tag's
     /// own if the build has it, else its nearest ancestor's by TR35's fallback (`de-XX` is `de`,
-    /// `xx-YY` is root); extensions such as `-u-nu-` are ignored.
+    /// `xx-YY` is root). The `-u-nu-` keyword picks the numbering system (`ar-EG-u-nu-latn`),
+    /// where the build supports it (see [`FormatOptions::numbering_system`](crate::FormatOptions::numbering_system));
+    /// other extensions are ignored.
     ///
     /// # Errors
     ///
     /// [`Error::InvalidLocale`] for a tag that isn't a structurally valid BCP 47 tag, as `Intl`
     /// throws a `RangeError` for one.
     pub fn new(tag: &str) -> Result<Self, Error> {
+        Self::with_matcher(tag, LocaleMatcher::BestFit)
+    }
+
+    /// The locale for a tag, matched by `matcher` (`Intl`'s `localeMatcher`): the same locale
+    /// either way, as in V8 ([`LocaleMatcher`]).
+    ///
+    /// # Errors
+    ///
+    /// As [`Locale::new`].
+    pub fn with_matcher(tag: &str, matcher: LocaleMatcher) -> Result<Self, Error> {
+        // V8's "best fit" is its lookup
+        let (LocaleMatcher::BestFit | LocaleMatcher::Lookup) = matcher;
         let subtags = subtags(tag).ok_or(Error::InvalidLocale)?;
         let requested = normal(&subtags);
         // A language-region tag is first looked up with its likely script, as CLDR's likely subtags
@@ -240,20 +330,82 @@ impl Locale {
             && script_kept
             && language_and_region(&resolved_name) == language_and_region(&requested);
         let numbers = icu::numbers(data.name).unwrap_or(data.numbers);
+        let mut locale = Self {
+            data,
+            numbers,
+            digits: &numbers.digits,
+            system: data.system,
+            has_data,
+            region: [0; 3],
+        };
+        if let Some((numbers, digits, system)) =
+            unicode_nu(tag).and_then(|name| locale.find_system(&name))
+        {
+            locale.numbers = numbers;
+            locale.digits = digits;
+            locale.system = system;
+        }
         let region_text = subtags
             .region
             .map(str::to_ascii_uppercase)
             .unwrap_or_else(|| String::from(language_and_region(data.name).1));
-        let mut region = [0; 3];
-        for (slot, byte) in region.iter_mut().zip(region_text.bytes()) {
+        for (slot, byte) in locale.region.iter_mut().zip(region_text.bytes()) {
             *slot = byte;
         }
-        Ok(Self {
-            data,
-            numbers,
-            has_data,
-            region,
-        })
+        Ok(locale)
+    }
+
+    /// The number data and digits of the numbering system `name`, if the build supports it for
+    /// this locale: its default, and with the `numbering-systems` feature every numeric system
+    /// of CLDR's (with the locale's data for it, else latn's, as TR35 and ICU fall back).
+    fn find_system(
+        &self,
+        name: &str,
+    ) -> Option<(&'static Numbers, &'static [char; 10], &'static str)> {
+        let default = icu::numbers(self.data.name).unwrap_or(self.data.numbers);
+        if name == self.data.system {
+            return Some((default, &default.digits, self.data.system));
+        }
+        #[cfg(feature = "numbering-systems")]
+        {
+            let (system, digits) = data::digits(name)?;
+            let own = |wanted: &str| {
+                self.data
+                    .systems
+                    .iter()
+                    .find(|(found, _)| *found == wanted)
+                    .map(|(_, numbers)| *numbers)
+            };
+            let numbers = own(system).or_else(|| {
+                if self.data.system == "latn" {
+                    Some(default)
+                } else {
+                    own("latn")
+                }
+            })?;
+            Some((numbers, digits, system))
+        }
+        #[cfg(not(feature = "numbering-systems"))]
+        None
+    }
+
+    /// The number data and digits for `option` (`FormatOptions::numbering_system`) where the
+    /// build supports it, else the tag's (its `-u-nu-`, else the default), as ECMA-402's
+    /// `ResolveLocale` keeps the keyword for an unsupported option (JavaScriptCore does; V8 drops
+    /// it: `th-TH-u-nu-thai` with `roman` is latn there).
+    pub(crate) fn system(&self, option: Option<&str>) -> (&'static Numbers, &'static [char; 10]) {
+        option
+            .and_then(|name| self.find_system(name))
+            .map_or((self.numbers, self.digits), |(numbers, digits, _)| {
+                (numbers, digits)
+            })
+    }
+
+    /// The numbering system the tag's data is written in: its `-u-nu-` where the build supports
+    /// it, else the locale's default (`latn`, `arab` for ar-EG).
+    #[must_use]
+    pub const fn numbering_system(&self) -> &'static str {
+        self.system
     }
 
     /// The cldr-json name of the locale whose data this is: `de-CH`, `de` for `de-DE` or `de-XX`,

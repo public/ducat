@@ -43,9 +43,12 @@
 //! here the set is fixed when the crate is built.
 //!
 //! The default set is 31 languages (313 locales): the languages ducat's vectors use and the most
-//! spoken others. In a stripped release binary it costs about 1.15 MB of data; `full` about
-//! 3.24 MB; root alone nearly nothing (`examples/locales.rs` measures it). To keep only what you
-//! use:
+//! spoken others. Two more default features add data to every built locale: `compact`, CLDR's
+//! compact patterns ([`Notation::Compact`]), and `numbering-systems`, the numbering systems other
+//! than a locale's default ([`FormatOptions::numbering_system`], `-u-nu-`). In a stripped release
+//! binary the default set costs about 1.23 MB of data, 31 KB of it compact patterns and 21 KB
+//! numbering systems; `full` about 3.42 MB (81 KB and 33 KB); root alone nearly nothing
+//! (`examples/locales.rs` measures it). To keep only what you use:
 //!
 //! ```toml
 //! [dependencies]
@@ -53,6 +56,31 @@
 //! ```
 //!
 //! The crate needs only `alloc` (`default-features = false` without `std`).
+//!
+//! # Notation and numbering systems
+//!
+//! ```
+//! # #[cfg(all(feature = "en", feature = "ar", feature = "compact"))] {
+//! use ducat::{AnyMoney, CurrencyCode};
+//! use ducat_format::{CompactDisplay, CurrencyDisplay, FormatOptions, Locale, Notation, format};
+//!
+//! let usd = CurrencyCode::iso("USD")?;
+//! let revenue = AnyMoney::parse("1234567.89", usd)?;
+//! let english = Locale::new("en")?;
+//! let compact = FormatOptions::new().notation(Notation::Compact);
+//! assert_eq!(format(&revenue, &english, &compact)?, "$1.23M");
+//! let long = compact
+//!     .display(CurrencyDisplay::Name)
+//!     .compact_display(CompactDisplay::Long);
+//! assert_eq!(format(&revenue, &english, &long)?, "1.23 million US dollars");
+//! let scientific = FormatOptions::new().notation(Notation::Scientific);
+//! assert_eq!(format(&revenue, &english, &scientific)?, "$1.23E6");
+//! // Egyptian Arabic in Western digits, by the tag or the option
+//! let latn = Locale::new("ar-EG-u-nu-latn")?;
+//! assert_eq!(format(&revenue, &latn, &FormatOptions::new())?, "\u{200f}1,234,567.89\u{a0}US$");
+//! # }
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
@@ -60,6 +88,8 @@
 
 extern crate alloc;
 
+#[cfg(feature = "compact")]
+mod compact;
 // which items a build uses depends on its language features
 #[rustfmt::skip]
 #[allow(dead_code, unused_imports)]
@@ -78,10 +108,11 @@ mod unicode;
 
 pub use error::{Error, SyntaxError};
 pub use format::{
-    CurrencyDisplay, CurrencySign, FormatOptions, Part, PartKind, RoundingPriority, SignDisplay,
-    TrailingZeroDisplay, UseGrouping, currency_name, currency_symbol, format, format_to_parts,
+    CompactDisplay, CurrencyDisplay, CurrencySign, FormatOptions, Notation, Part, PartKind,
+    RoundingPriority, SignDisplay, TrailingZeroDisplay, UseGrouping, currency_name,
+    currency_symbol, format, format_to_parts,
 };
-pub use locale::{Locale, locales};
+pub use locale::{Locale, LocaleMatcher, locales};
 pub use parse::{ParseMoneyOptions, ParseOptions, parse, parse_money};
 
 /// The longest text [`parse()`] and [`parse_money`] read, in bytes: an amount is far shorter, and

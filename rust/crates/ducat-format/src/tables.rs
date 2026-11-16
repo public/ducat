@@ -27,6 +27,23 @@ pub(crate) struct Numbers {
     pub(crate) spacing: (&'static str, &'static str),
     /// `unitPattern-count-<category>`, the pattern of a number with a currency's name.
     pub(crate) unit_patterns: &'static [(&'static str, &'static str)],
+    /// The exponent separator of scientific notation (`exponential`: `E`, `×10^`).
+    pub(crate) exponential: &'static str,
+    /// The compact patterns (the numbering system's, else latn's, as ICU falls back).
+    #[cfg(feature = "compact")]
+    pub(crate) compact: &'static Compact,
+}
+
+/// A numbering system's compact patterns, each table as [`crate::compact::Table`] encodes it.
+#[cfg(feature = "compact")]
+#[derive(Debug)]
+pub(crate) struct Compact {
+    /// `decimalFormats`' `short`.
+    pub(crate) decimal_short: crate::compact::Table,
+    /// `decimalFormats`' `long` (empty where the locale has none).
+    pub(crate) decimal_long: crate::compact::Table,
+    /// `currencyFormats`' `short`.
+    pub(crate) currency_short: crate::compact::Table,
 }
 
 /// One currency's display data in a locale: only what differs from the locale it inherits from.
@@ -73,8 +90,14 @@ pub(crate) struct LocaleData {
     pub(crate) name: &'static str,
     /// The locale its currency data inherits from (`""` for root).
     pub(crate) parent: &'static str,
-    /// Its number data.
+    /// Its default numbering system (`latn`, `arab`).
+    pub(crate) system: &'static str,
+    /// Its number data, in its default numbering system.
     pub(crate) numbers: &'static Numbers,
+    /// Its number data in the other numbering systems CLDR gives it data for (its own, or
+    /// root's: `arab` and `arabext` for every locale), by name.
+    #[cfg(feature = "numbering-systems")]
+    pub(crate) systems: &'static [(&'static str, &'static Numbers)],
     /// Its currencies that differ from the parent's, by code.
     pub(crate) currencies: &'static [CurrencyData],
     /// Its cardinal plural rules.
@@ -99,7 +122,7 @@ pub(crate) enum Operand {
     F,
     /// The visible fraction digits, without trailing zeros, as an integer.
     T,
-    /// The compact decimal exponent, always 0 here.
+    /// The compact or scientific exponent (`c` and `e`).
     E,
 }
 

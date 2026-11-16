@@ -127,19 +127,99 @@ fn plural_rules(rules: &Value) -> String {
     format!("&[{}]", out.join(", "))
 }
 
-/// A locale's number data as the Rust expression `Numbers { … }`.
-fn numbers(locale: &str, numbers: &Value, systems: &Value) -> String {
-    let system = text(&numbers["defaultNumberingSystem"]);
+/// A numbering system's block of a locale's numbers.json (`symbols`, `decimalFormats`,
+/// `currencyFormats`), else latn's, as TR35 falls back for a numbering system without data.
+fn block<'a>(numbers: &'a Value, kind: &str, system: &str) -> &'a Value {
+    numbers
+        .get(format!("{kind}-numberSystem-{system}"))
+        .unwrap_or(&numbers[format!("{kind}-numberSystem-latn")])
+}
+
+/// One key of a numbering system's block, else latn's.
+fn key<'a>(numbers: &'a Value, kind: &str, system: &str, name: &str) -> &'a Value {
+    let own = block(numbers, kind, system);
+    own.get(name)
+        .unwrap_or_else(|| &numbers[format!("{kind}-numberSystem-latn")][name])
+}
+
+/// A table of compact patterns (`{"1000-count-one": "0K", …}`) as `compact::Table` encodes it:
+/// two-digit magnitude, plural tag, pattern; a category with the `other` pattern is left out.
+fn compact_table(patterns: Option<&Value>) -> String {
+    let Some(patterns) = patterns.and_then(Value::as_object) else {
+        return String::new();
+    };
+    let mut entries: BTreeMap<(usize, char), String> = BTreeMap::new();
+    for (name, pattern) in patterns {
+        if name.contains("-alt-") {
+            continue;
+        }
+        let (power, category) = name
+            .split_once("-count-")
+            .unwrap_or_else(|| panic!("{name}"));
+        assert!(
+            power.starts_with('1') && power[1..].bytes().all(|b| b == b'0'),
+            "{name}"
+        );
+        let tag = match category {
+            "0" => 'z',
+            "1" => 'y',
+            "zero" => '0',
+            "one" => '1',
+            "two" => '2',
+            "few" => '3',
+            "many" => '4',
+            "other" => '5',
+            other => panic!("compact category {other}"),
+        };
+        let pattern = text(pattern);
+        assert!(!pattern.contains('\u{1f}'), "{pattern:?}");
+        entries.insert((power.len() - 1, tag), pattern.to_owned());
+    }
+    let mut out = Vec::new();
+    for (&(magnitude, tag), pattern) in &entries {
+        assert!(magnitude < 100);
+        let other = &entries[&(magnitude, '5')];
+        if tag != '5' && pattern == other {
+            continue;
+        }
+        out.push(format!("{magnitude:02}{tag}{pattern}"));
+    }
+    out.join("\u{1f}")
+}
+
+/// A numbering system's compact patterns as the Rust expression `Compact { … }`: its own, else
+/// latn's (ICU falls back so), the short currency ones a table each.
+fn compact(numbers: &Value, system: &str) -> String {
+    let own_or_latn = |kind: &str, length: &str, inner: &str| {
+        let own = numbers
+            .get(format!("{kind}-numberSystem-{system}"))
+            .and_then(|formats| formats.get(length))
+            .and_then(|formats| formats.get(inner));
+        let latn = numbers[format!("{kind}-numberSystem-latn")]
+            .get(length)
+            .and_then(|formats| formats.get(inner));
+        compact_table(own.or(latn))
+    };
+    format!(
+        "Compact {{ decimal_short: Table({:?}), decimal_long: Table({:?}), currency_short: Table({:?}) }}",
+        own_or_latn("decimalFormats", "short", "decimalFormat"),
+        own_or_latn("decimalFormats", "long", "decimalFormat"),
+        own_or_latn("currencyFormats", "short", "standard"),
+    )
+}
+
+/// A locale's number data in a numbering system as the Rust expression `Numbers { … }`, with
+/// `{compact}` standing for its compact patterns' static.
+fn numbers(locale: &str, numbers: &Value, systems: &Value, system: &str) -> String {
     let digits: Vec<char> = text(&systems[system]["_digits"]).chars().collect();
     assert_eq!(digits.len(), 10, "{locale} {system}");
-    let symbols = &numbers[format!("symbols-numberSystem-{system}")];
-    let formats = &numbers[format!("currencyFormats-numberSystem-{system}")];
-    let decimals = &numbers[format!("decimalFormats-numberSystem-{system}")];
+    let symbols = block(numbers, "symbols", system);
+    let formats = block(numbers, "currencyFormats", system);
     let decimal = symbols
         .get("currencyDecimal")
         .unwrap_or(&symbols["decimal"]);
     let group = symbols.get("currencyGroup").unwrap_or(&symbols["group"]);
-    let spacing = &formats["currencySpacing"];
+    let spacing = key(numbers, "currencyFormats", system, "currencySpacing");
     for side in ["beforeCurrency", "afterCurrency"] {
         // the rule src/format.rs implements
         assert_eq!(
@@ -166,19 +246,35 @@ fn numbers(locale: &str, numbers: &Value, systems: &Value) -> String {
         "{locale}"
     );
     format!(
-        "Numbers {{ digits: {digits:?}, decimal: {:?}, group: {:?}, minus: {:?}, plus: {:?}, minimum_grouping: {}, decimal_pattern: {:?}, currency_pattern: {:?}, accounting_pattern: {:?}, spacing: ({:?}, {:?}), unit_patterns: &[{}] }}",
+        "Numbers {{ digits: {digits:?}, decimal: {:?}, group: {:?}, minus: {:?}, plus: {:?}, minimum_grouping: {}, decimal_pattern: {:?}, currency_pattern: {:?}, accounting_pattern: {:?}, spacing: ({:?}, {:?}), unit_patterns: &[{}], exponential: {:?}, #[cfg(feature = \"compact\")] compact: &{{compact}} }}",
         text(decimal),
         text(group),
         text(&symbols["minusSign"]),
         text(&symbols["plusSign"]),
         text(&numbers["minimumGroupingDigits"]),
-        text(&decimals["standard"]),
-        text(&formats["standard"]),
-        text(&formats["accounting"]),
+        text(key(numbers, "decimalFormats", system, "standard")),
+        text(key(numbers, "currencyFormats", system, "standard")),
+        text(key(numbers, "currencyFormats", system, "accounting")),
         text(&spacing["beforeCurrency"]["insertBetween"]),
         text(&spacing["afterCurrency"]["insertBetween"]),
-        units.join(", ")
+        units.join(", "),
+        text(&symbols["exponential"]),
     )
+}
+
+/// The numbering systems a locale's numbers.json has data for, other than its default.
+fn other_systems(numbers: &Value) -> Vec<String> {
+    let default = text(&numbers["defaultNumberingSystem"]);
+    let mut out: Vec<String> = numbers
+        .as_object()
+        .unwrap()
+        .keys()
+        .filter_map(|name| name.strip_prefix("symbols-numberSystem-"))
+        .filter(|system| *system != default)
+        .map(str::to_owned)
+        .collect();
+    out.sort();
+    out
 }
 
 fn currency(code: &str, entry: &Value) -> String {
@@ -210,9 +306,16 @@ fn currency(code: &str, entry: &Value) -> String {
     )
 }
 
-/// A locale as the generator collects it: name, language (feature), parent, numbers.json, plural
-/// rules key, currency entries.
-type Entry = (String, String, String, Value, String, Vec<String>);
+/// A locale as the generator collects it: name, language (feature), parent, its numbering
+/// systems' number blocks (the default first), plural rules key, currency entries.
+type Entry = (
+    String,
+    String,
+    String,
+    Vec<(String, String)>,
+    String,
+    Vec<String>,
+);
 
 /// The languages with a locale in the snapshot (root aside).
 fn languages_of(entries: &[Entry]) -> BTreeSet<String> {
@@ -221,6 +324,83 @@ fn languages_of(entries: &[Entry]) -> BTreeSet<String> {
         .map(|(_, lang, ..)| lang.clone())
         .filter(|lang| lang != "und")
         .collect()
+}
+
+/// Deduplicated statics: each body's name (its first user's) and which languages use it, by
+/// default or only with the `numbering-systems` feature.
+#[derive(Default)]
+struct Blocks {
+    names: BTreeMap<String, String>,
+    users: BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)>,
+}
+
+impl Blocks {
+    fn add(&mut self, body: String, name: &str, lang: &str, only_with_feature: bool) -> String {
+        let name = self
+            .names
+            .entry(body.clone())
+            .or_insert_with(|| name.to_owned())
+            .clone();
+        let users = self.users.entry(body).or_default();
+        if only_with_feature {
+            users.1.insert(lang.to_owned());
+        } else {
+            users.0.insert(lang.to_owned());
+        }
+        name
+    }
+
+    /// The statics by name, each with the `cfg` condition it is built under (`None`: always).
+    fn sorted(&self) -> Vec<(String, String, Option<String>)> {
+        let mut out: Vec<(String, String, Option<String>)> = self
+            .names
+            .iter()
+            .map(|(body, name)| {
+                let (default, with_feature) = &self.users[body];
+                (name.clone(), body.clone(), condition(default, with_feature))
+            })
+            .collect();
+        out.sort();
+        out
+    }
+}
+
+/// The `cfg` condition for statics the `default` languages always use and the `with_feature`
+/// ones only with `numbering-systems`; `None` when root (always built) uses it by default.
+fn condition(default: &BTreeSet<String>, with_feature: &BTreeSet<String>) -> Option<String> {
+    if default.contains("und") {
+        return None;
+    }
+    let mut any: Vec<String> = default
+        .iter()
+        .map(|language| format!("feature = {language:?}"))
+        .collect();
+    let extra: Vec<String> = with_feature
+        .iter()
+        .filter(|language| !default.contains(*language))
+        .map(|language| {
+            if language == "und" {
+                "feature = \"numbering-systems\"".to_owned()
+            } else {
+                format!("feature = {language:?}")
+            }
+        })
+        .collect();
+    if with_feature.contains("und") {
+        any.push("feature = \"numbering-systems\"".to_owned());
+    } else if !extra.is_empty() {
+        let inner = if extra.len() == 1 {
+            extra[0].clone()
+        } else {
+            format!("any({})", extra.join(", "))
+        };
+        any.push(format!("all(feature = \"numbering-systems\", {inner})"));
+    }
+    Some(if any.len() == 1 {
+        any.remove(0)
+    } else {
+        format!("any({})", any.join(", "))
+    })
 }
 
 struct Generated {
@@ -284,7 +464,7 @@ fn icu_unit_patterns(text: &str) -> Option<BTreeMap<String, String>> {
 
 /// `src/icu.rs`: each overridden locale's number data with ICU's symbols and unit patterns over
 /// CLDR's.
-fn generate_icu(systems: &Value) -> String {
+fn generate_icu(systems: &Value, compacts: &Blocks) -> String {
     let mut out = String::new();
     writeln!(
         out,
@@ -385,7 +565,10 @@ fn generate_icu(systems: &Value) -> String {
             out,
             "static {}: Numbers = {};",
             ident("NUMBERS", &locale),
-            numbers(&locale, body, systems)
+            numbers(&locale, body, systems, &system).replace(
+                "{compact}",
+                &format!("crate::data::{}", compacts.names[&compact(body, &system)])
+            )
         )
         .unwrap();
         arms.push((locale, lang));
@@ -432,12 +615,14 @@ fn generate() -> Generated {
 
     // which languages need which: a locale inheriting from another language's locale
     let mut needs: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    let mut numbers_users: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    // each distinct number block is named after the first locale (in code order) that uses it, so
-    // a CLDR update renames few of them
-    let mut numbers_names: BTreeMap<String, String> = BTreeMap::new();
+    // each distinct number block (and compact block) is named after the first locale (in code
+    // order) that uses it, so a CLDR update renames few of them; its users are the languages
+    // that take it as a default numbering system, and those that take it only with the
+    // numbering-systems feature
+    let mut numbers_blocks = Blocks::default();
+    let mut compact_blocks = Blocks::default();
     let mut plural_users: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    let mut entries = Vec::new();
+    let mut entries: Vec<Entry> = Vec::new();
     for locale in &locales {
         let lang = if locale == "und" {
             "und"
@@ -456,14 +641,36 @@ fn generate() -> Generated {
                 .insert(language(&parent).to_owned());
         }
         let numbers_json = json(&format!("main/{locale}/numbers.json"));
-        let body = numbers(locale, &numbers_json["main"][locale]["numbers"], systems);
-        numbers_names
-            .entry(body.clone())
-            .or_insert_with(|| ident("NUMBERS", locale));
-        numbers_users
-            .entry(body)
-            .or_default()
-            .insert(lang.to_owned());
+        let body = &numbers_json["main"][locale]["numbers"];
+        let default = text(&body["defaultNumberingSystem"]).to_owned();
+        let mut own = Vec::new();
+        for system in std::iter::once(default.clone()).chain(other_systems(body)) {
+            // an algorithmic system (no digits) has no numbers of its own
+            if systems[&system].get("_digits").is_none() {
+                continue;
+            }
+            let only_with_feature = system != default;
+            let suffix = if only_with_feature {
+                format!("{locale}-{system}")
+            } else {
+                locale.clone()
+            };
+            let compact_name = compact_blocks.add(
+                compact(body, &system),
+                &ident("COMPACT", &suffix),
+                lang,
+                only_with_feature,
+            );
+            let numbers_body =
+                numbers(locale, body, systems, &system).replace("{compact}", &compact_name);
+            let name = numbers_blocks.add(
+                numbers_body,
+                &ident("NUMBERS", &suffix),
+                lang,
+                only_with_feature,
+            );
+            own.push((system, name));
+        }
         // TR35: a locale's plural rules are its own, else its language's, else root's
         let key = [locale.as_str(), language(locale), "und"]
             .into_iter()
@@ -483,14 +690,7 @@ fn generate() -> Generated {
             .map(|(code, entry)| currency(code, entry))
             .collect();
         list.sort();
-        entries.push((
-            locale.clone(),
-            lang.to_owned(),
-            parent,
-            numbers_json,
-            key,
-            list,
-        ));
+        entries.push((locale.clone(), lang.to_owned(), parent, own, key, list));
     }
 
     let mut out = String::new();
@@ -510,17 +710,25 @@ fn generate() -> Generated {
         "use crate::tables::{{CurrencyData, LocaleData, Numbers, Operand, Relation, Rule}};"
     )
     .unwrap();
+    writeln!(out, "#[cfg(feature = \"compact\")]").unwrap();
+    writeln!(out, "use crate::{{compact::Table, tables::Compact}};").unwrap();
     writeln!(out).unwrap();
     writeln!(out, "/// The CLDR release of these tables.").unwrap();
     writeln!(out, "pub(crate) const CLDR_VERSION: &str = \"48.0\";").unwrap();
-    let mut blocks: Vec<(&String, &String)> = numbers_names
-        .iter()
-        .map(|(body, name)| (name, body))
-        .collect();
-    blocks.sort();
-    for (name, body) in blocks {
+    for (name, body, condition) in compact_blocks.sorted() {
         writeln!(out).unwrap();
-        write!(out, "{}", cfg(&numbers_users[body])).unwrap();
+        let condition = match condition {
+            Some(condition) => format!("all(feature = \"compact\", {condition})"),
+            None => "feature = \"compact\"".to_owned(),
+        };
+        writeln!(out, "#[cfg({condition})]").unwrap();
+        writeln!(out, "pub(crate) static {name}: Compact = {body};").unwrap();
+    }
+    for (name, body, condition) in numbers_blocks.sorted() {
+        writeln!(out).unwrap();
+        if let Some(condition) = condition {
+            writeln!(out, "#[cfg({condition})]").unwrap();
+        }
         writeln!(out, "static {name}: Numbers = {body};").unwrap();
     }
     for (key, users) in &plural_users {
@@ -534,20 +742,21 @@ fn generate() -> Generated {
         )
         .unwrap();
     }
-    for (locale, lang, parent, numbers_json, key, list) in &entries {
-        let body = numbers(
-            locale,
-            &numbers_json["main"][locale.as_str()]["numbers"],
-            systems,
-        );
+    for (locale, lang, parent, own, key, list) in &entries {
         let users = BTreeSet::from([lang.clone()]);
         writeln!(out).unwrap();
         write!(out, "{}", cfg(&users)).unwrap();
+        let others = own[1..]
+            .iter()
+            .map(|(system, name)| format!("({system:?}, &{name})"))
+            .collect::<Vec<_>>();
         writeln!(
             out,
-            "static {}: LocaleData = LocaleData {{ name: {locale:?}, parent: {parent:?}, numbers: &{}, plurals: {}, currencies: &[",
+            "static {}: LocaleData = LocaleData {{ name: {locale:?}, parent: {parent:?}, system: {:?}, numbers: &{}, #[cfg(feature = \"numbering-systems\")] systems: &[{}], plurals: {}, currencies: &[",
             ident("L", locale),
-            numbers_names[&body],
+            own[0].0,
+            own[0].1,
+            others.join(", "),
             ident("PLURALS", key),
         )
         .unwrap();
@@ -556,6 +765,31 @@ fn generate() -> Generated {
         }
         writeln!(out, "] }};").unwrap();
     }
+    // the digits of every numeric numbering system, which any locale may be formatted in
+    writeln!(out).unwrap();
+    writeln!(
+        out,
+        "/// The name and digits of a numeric numbering system of CLDR's (`arab`, `deva`)."
+    )
+    .unwrap();
+    writeln!(out, "#[cfg(feature = \"numbering-systems\")]").unwrap();
+    writeln!(
+        out,
+        "pub(crate) fn digits(name: &str) -> Option<(&'static str, &'static [char; 10])> {{"
+    )
+    .unwrap();
+    writeln!(out, "    match name {{").unwrap();
+    for (name, system) in systems.as_object().unwrap() {
+        if system["_type"] != "numeric" {
+            continue;
+        }
+        let digits: Vec<char> = text(&system["_digits"]).chars().collect();
+        assert_eq!(digits.len(), 10, "{name}");
+        writeln!(out, "        {name:?} => Some(({name:?}, &{digits:?})),").unwrap();
+    }
+    writeln!(out, "        _ => None,").unwrap();
+    writeln!(out, "    }}").unwrap();
+    writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
     writeln!(
         out,
@@ -694,13 +928,30 @@ fn generate() -> Generated {
         .iter()
         .map(|language| format!("{language:?}"))
         .collect::<Vec<_>>();
-    writeln!(features, "default = [\"std\", {}]", defaults.join(", ")).unwrap();
+    writeln!(
+        features,
+        "default = [\"std\", \"compact\", \"numbering-systems\", {}]",
+        defaults.join(", ")
+    )
+    .unwrap();
     writeln!(
         features,
         "## The standard library; the crate needs only `alloc`."
     )
     .unwrap();
     writeln!(features, "std = [\"ducat/std\"]").unwrap();
+    writeln!(
+        features,
+        "## Compact notation (`Notation::Compact`): CLDR's compact patterns of every built locale."
+    )
+    .unwrap();
+    writeln!(features, "compact = []").unwrap();
+    writeln!(
+        features,
+        "## Numbering systems other than a locale's default (`numberingSystem`, `-u-nu-`): their digits, and the symbols and patterns CLDR gives the built locales for them."
+    )
+    .unwrap();
+    writeln!(features, "numbering-systems = []").unwrap();
     let all = languages
         .iter()
         .map(|language| format!("{language:?}"))
@@ -736,7 +987,7 @@ fn generate() -> Generated {
     writeln!(features, "# END GENERATED by tests/it/data.rs").unwrap();
     Generated {
         data: out,
-        icu: generate_icu(systems),
+        icu: generate_icu(systems, &compact_blocks),
         features,
     }
 }
